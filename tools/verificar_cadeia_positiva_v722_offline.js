@@ -12,6 +12,10 @@ const {PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
 const {blob}=require("./gerar_tres_vias_par_leitor_v68_offline.js");
 const {fresh,reserve,resumeDecision,descriptorsFromProof}=
  require("./comandas_idempotencia_v754_offline.js");
+const {reserveDurablyInSyntheticSandbox}=
+ require("./comandas_journal_v755_sandbox.js");
+const {auditExpectedThreeViews}=
+ require("./comandas_reconciliation_v756_offline.js");
 const sha=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
 const SOURCE=path.join(__dirname,"fixtures/canonical-packaging-v63-pinned.js");
 const CONSUMER=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
@@ -205,6 +209,28 @@ try{
   assert.equal(resumeDecision(JSON.parse(JSON.stringify(ledger)),descriptor).status,"HOLD");
   assert.equal(reserve(ledger,descriptor,ledger.revision).status,"HOLD");
  }
+ // V7.56: the same ACTUAL pinned V2->V6.8 proof must fail safely if only
+ // the first of its three native receipt attempts was journaled at a crash.
+ const lab=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v755-"));
+ try{
+  let commit=reserveDurablyInSyntheticSandbox(lab,plan.descriptors[0],0);
+  assert.equal(commit.status,"SYNTHETIC_JOURNAL_COMMIT_OBSERVED");
+  let audit=auditExpectedThreeViews(lab,plan.descriptors);
+  assert.equal(audit.status,"MANUAL_RECONCILIATION_REQUIRED");
+  assert.equal(audit.recorded_attempts,1);
+  assert.equal(audit.missing_attempt_records,2);
+  assert.equal(audit.print_authorized,false);
+  for(let i=1;i<3;i++){
+   commit=reserveDurablyInSyntheticSandbox(lab,plan.descriptors[i],i);
+   assert.equal(commit.status,"SYNTHETIC_JOURNAL_COMMIT_OBSERVED");
+  }
+  audit=auditExpectedThreeViews(lab,plan.descriptors);
+  assert.equal(audit.recorded_attempts,3);
+  assert.equal(audit.missing_attempt_records,0);
+  assert.equal(audit.no_automatic_retry,true);
+  assert.equal(audit.exact_once_physical_proven,false);
+  assert.equal(audit.effects.print,false);
+ }finally{fs.rmSync(lab,{recursive:true,force:true});}
  const manifest=JSON.parse(fs.readFileSync(path.join(got.proof_dir,"manifest.json"),"utf8"));
  assert.deepEqual(manifest.outputs,got.outputs);
  for(const o of got.outputs){
