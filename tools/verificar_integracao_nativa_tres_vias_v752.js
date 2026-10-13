@@ -45,7 +45,7 @@ assert.deepEqual(wrapVerifiedLine(" "),[" "]);
 assert.deepEqual(wrapVerifiedLine("1  COMBINADO KIDS"),["1  COMBINADO KIDS"],
  "quantity separator spaces must not be collapsed");
 assert.deepEqual(wrapVerifiedLine("C1  CAIXA 750"),["C1  CAIXA 750"]);
-assert.throws(()=>wrapVerifiedLine("OBS:  "+ "MUITA OBSERVAÇÃO ".repeat(5)),
+assert.throws(()=>wrapVerifiedLine(("OBS:  "+ "MUITA OBSERVAÇÃO ".repeat(5)).trimEnd()),
  /MULTISPACE_LINE_REQUIRES_REVIEW/);
 assert.throws(()=>wrapVerifiedLine(" SEM CAMARÃO"),/TRACE_EDGE_SPACES_NOT_APPROVED/);
 assert.throws(()=>wrapVerifiedLine("SEM CAMARÃO\r"),/TRACE_LINE_INVALID/);
