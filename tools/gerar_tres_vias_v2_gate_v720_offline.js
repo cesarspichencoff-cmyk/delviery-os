@@ -100,18 +100,19 @@ function lineageMatchesPinnedSources(decision,sources){
   ORIGINS.every(([label,name],i)=>Buffer.isBuffer(sources.get(name))&&
    actual[i]===label+"#sha256="+sha(sources.get(name)));
 }
-// V7.27: bind event key to its three raw SQL order identifiers.
-// A matching event/decision pair alone cannot authenticate a forged key.
+// V7.39 REAL CAIXA watcher: bind all four raw SQL identifiers in exact order:
+// CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA. The prior three-part synthetic
+// fixture did NOT represent the installed V2 watcher and must fail closed.
 function exactOrderIdentity(event){
  const order=event?.order;
  if(!event||!order||event.schema!=="deliveryos.tata-reader-stable-order-event.v1")
   return false;
- const fields=["CDFILIAL","CDLOJA","NRCOMANDA"];
+ const fields=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA"];
  if(fields.some(k=>typeof order[k]!=="string"||!order[k].length||
     order[k].length>96||/[|\r\n]/.test(order[k])))
   return false;
  return typeof event.order_key==="string"&&
-  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRCOMANDA].join("|");
+  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRVENDAREST,order.NRCOMANDA].join("|");
 }
 function withoutNodePreloads(environment){
  const copy={...environment};
