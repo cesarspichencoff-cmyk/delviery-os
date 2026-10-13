@@ -8,10 +8,10 @@ const expectedSHA="E8FF2B0DA98577C1A25C9E0D61792C4B4BDE265D570989FBFE41BA05C8DDF
 const result=app.proof(),data=result.bytes;
 assert.equal(crypto.createHash("sha256").update(data).digest("hex").toUpperCase(),expectedSHA);
 assert.equal(data.length,851);assert.equal(result.lines,19);
-assert.deepEqual([...app.encodeCp850("CONFERÊNCIA")],Buffer.from("434f4e464552d24e434941","hex"));
-assert.deepEqual([...app.encodeCp850("FINALIZAÇÃO")],Buffer.from("46494e414c495a4180c74f","hex"));
-assert.deepEqual([...app.encodeCp850("NÃO")],Buffer.from("4ec74f","hex"));
-assert.deepEqual([...app.encodeCp850("AC\u0327A\u0303O")],Buffer.from("4180c74f","hex"));
+assert.deepEqual(app.encodeCp850("CONFERÊNCIA")],Buffer.from("434f4e464552d24e434941","hex"));
+assert.deepEqual(app.encodeCp850("FINALIZAÇÃO")],Buffer.from("46494e414c495a4180c74f","hex"));
+assert.deepEqual(app.encodeCp850("NÃO")],Buffer.from("4ec74f","hex"));
+assert.deepEqual(app.encodeCp850("AC\u0327A\u0303O")],Buffer.from("4180c74f","hex"));
 assert.throws(()=>app.encodeCp850("PEDIDO 🚨"),/UNREPRESENTABLE/);
 assert.throws(()=>app.encodeCp850("\u001bPAUSA"),/UNREPRESENTABLE/);
 assert.throws(()=>app.line("X".repeat(49)),/NO_TRUNCATE/);
