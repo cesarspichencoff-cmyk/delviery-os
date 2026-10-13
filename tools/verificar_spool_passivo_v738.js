@@ -38,9 +38,9 @@ check("spool capture never proves source or paper",()=>{
  assert.match(source,/status='OBSERVATION_ONLY_NOT_SPOOL_CONTENT_PROOF'/);
 });
 check("PowerShell parse only, never execute passive probe",()=>{
- const cmd="& { $t=$null; $e=$null; [void][System.Management.Automation.Language.Parser]::ParseFile($args[0],[ref]$t,[ref]$e); if($e.Count -gt 0){$e | ForEach-Object {$_.Message}; exit 5}; 'V738_POWERSHELL_PARSE_PASS' }";
- const r=spawnSync("pwsh",["-NoProfile","-NonInteractive","-Command",cmd,psFile],
-   {encoding:"utf8",timeout:15000,windowsHide:true});
+ const cmd="$t=$null; $e=$null; [void][System.Management.Automation.Language.Parser]::ParseFile($env:V738_PROBE_PATH,[ref]$t,[ref]$e); if($e.Count -gt 0){$e | ForEach-Object {$_.Message}; exit 5}; 'V738_POWERSHELL_PARSE_PASS'";
+ const r=spawnSync("pwsh",["-NoProfile","-NonInteractive","-Command",cmd],
+   {encoding:"utf8",timeout:15000,windowsHide:true,env:{...process.env,V738_PROBE_PATH:psFile}});
  assert.equal(r.status,0,(r.stderr||"").slice(0,350)+" "+(r.stdout||"").slice(0,350));
  assert.match(r.stdout,/V738_POWERSHELL_PARSE_PASS/);
 });
