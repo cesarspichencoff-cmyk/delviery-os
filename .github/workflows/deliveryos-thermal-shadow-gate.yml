@@ -169,6 +169,10 @@ jobs:
         run: npm run build
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
+      - name: Bind live four-field watcher identity (Windows CI)
+        run: node tools/verificar_identidade_pedido_v727.js
+      - name: Reconcile V2 consumer, V6.8, pinned Academy motor and three SVG receipts
+        run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Verify Epson ESC/POS bytes on Windows
