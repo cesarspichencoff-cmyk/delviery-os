@@ -119,9 +119,29 @@ export class SimulatedCopilotoConsumer {
     this.isolated.length = 0;
   }
 
-  /** Correlação por trip_id — ordenação local daquela Trip no que foi consumido */
+  /**
+   * Correlacao somente por contratos publicos; nunca ler o dominio Entregas.
+   * Eventos de chegada/entrega carregam delivery_id, sem trip_id obrigatorio.
+   * Aresta delivery_added fornece a relacao observada; unidade e source_mode
+   * particionam a identidade. Atribuicao ambigua e rejeitada.
+   */
   eventsForTrip(trip_id: string): EntregasPublicEvent[] {
-    return this.appliedOrder.filter((e) => e.trip_id === trip_id);
+    const owners = new Map<string, Set<string>>();
+    const key = (event: EntregasPublicEvent): string =>
+      JSON.stringify([event.unit_id, event.source_mode ?? null, event.delivery_id]);
+    for (const event of this.appliedOrder) {
+      if (event.event_type !== "delivery_added" || !event.trip_id || !event.delivery_id) continue;
+      const k = key(event);
+      const seen = owners.get(k) ?? new Set<string>();
+      seen.add(event.trip_id);
+      owners.set(k, seen);
+    }
+    return this.appliedOrder.filter((event) => {
+      if (event.trip_id) return event.trip_id === trip_id;
+      if (!event.delivery_id) return false;
+      const seen = owners.get(key(event));
+      return seen?.size === 1 && seen.has(trip_id);
+    });
   }
 
   reset(): void {
