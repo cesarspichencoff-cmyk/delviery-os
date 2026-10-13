@@ -11,7 +11,7 @@ for(const s of ["TataEscPosFn112V747","GS_L_MAGIC_INVALID","FN112_INVALID",
 assert.doesNotMatch(encSrc,/\b(?:WritePrinter|StartDocPrinter|EndDocPrinter|Start-Process|Set-Printer|Set-PrintConfiguration|Restart-Service|Stop-Service|Invoke-WebRequest)\b|\$doc\.Print\s*\(/i);
 const trailer=Buffer.from([0x1d,0x28,0x4c,0x02,0x00,0x30,0x32]);
 function payload(width,height,isBlack){
- assert.equal(width,576===width?576:8);
+ assert.ok(width===8||width===576);
  assert.ok(height>0&&height<=1000);
  const data=Buffer.alloc(Math.ceil(width/8)*height,0);
  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
@@ -78,4 +78,4 @@ if(process.argv[2]==="--fixture-dir"){
 console.log(JSON.stringify({schema:"deliveryos.escpos-graphics-v747-independent-check",
  status:"PASS",positive_fixture:"8x2 golden",bit_mutations_rejected:6,
  image_sizes_checked:[418,466],real_binary_checked:process.argv[2]==="--fixture-dir",
- no_print:true,no_driver:false===true,no_spooler_write:true}));
+ no_print:true,no_driver_changes:true,no_spooler_write:true}));
