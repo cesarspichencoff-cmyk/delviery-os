@@ -15,6 +15,11 @@ $status = [ordered]@{
 }
 try {
  if ($env:USERNAME -ne 'WDAGUtilityAccount') { throw 'SANDBOX_IDENTITY_NOT_PRESENT' }
+ # Delivery first: never start any one-shot attempt within 30 minutes of opening.
+ # Freeze is absolute UTC, independent of the guest Windows timezone.
+ if ([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse('2026-10-13T14:14:00+00:00')) {
+  throw 'DELIVERY_OPENING_FREEZE_REACHED'
+ }
  $base = 'C:\ComandasBundleRO'
  $node = 'C:\NodeRO\node.exe'
  $state = 'C:\TataStateRO'
