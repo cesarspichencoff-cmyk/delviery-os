@@ -106,3 +106,60 @@ não-duplicação na impressora e ausência de efeitos na Teknisa continua
 
 **NO MERGE / NO DEPLOY / NO INSTALL / NO PRINT / NO SPOOLER WRITE /
 NO TEKNISA CHANGE / NO SEQUENCE WRITE / NO GITHUB PROTECTION CHANGES.**
+
+## Adendo V7.59 — commit condicionado, outage e readback
+
+**Código:** `tools/comandas_external_cas_v759_offline.js` e testes
+`tools/verificar_external_cas_v759_offline.js`. A cadeia histórica V2→V6.8
+também exercita uma proposta de anexação condicionada da terceira via.
+
+A V7.59 é um **protocolo puro de validação**; ele não contém cliente de nuvem
+nem códigos de impressão. Sua preparação exige:
+1. testemunha anterior assinada válida contra pin previamente confiável;
+2. novo estado assinado com apenas UMA revisão anexada, sem modificar
+   nenhum registro anterior e sem trocar a chave ou a identidade;
+3. versão/hash anterior como pré-condição de transação CAS no serviço externo;
+4. resposta e **nova leitura verificável** da testemunha, identidade e revisão.
+
+**Erro de rede, falta de ACK, versão antiga, colisão de escritor, assinatura
+incorreta, perda do pin ou consulta inconclusiva = HOLD**. Mesmo com readback
+sintético perfeito, o retorno é `authorize_print=false`: ainda faltam
+atomicidade do provedor real, custódia externa e prova de papel.
+
+### Seleção técnica custo-zero-primeiro (não implantação)
+
+A documentação oficial consultada em 13/10/2026 indica:
+
+| Alternativa | Propriedade documentada | Decisão atual |
+|---|---|---|
+| Cloudflare Workers KV Free | Consistência eventual; escritas concorrentes na mesma chave podem sobrescrever; leitura pode ver estado antigo até cache expirar | **REJEITADO como único controle CAS de sequência** |
+| GitHub Contents API, repositório privado | Atualização exige SHA anterior, mas conflitos/concorrrência e privilégios de admin precisam de tratamento; não é arquivo imutável / custódia separada comprovada | Possível **espelho de evidências**, não fonte transacional exclusiva |
+| Google Cloud Firestore Standard, cota gratuita | Transações atômicas com controle de concorrência; cota publicada de 1 GiB, 50.000 leituras/dia e 20.000 gravações/dia para uma base gratuita por projeto | **Candidato técnico preferido** para testemunha transacional, sujeito a verificação de conta, região, autenticação, separação de administração, retenção, ausência de faturamento e autorização humana |
+
+Documentação pública:
+- https://developers.cloudflare.com/kv/concepts/how-kv-works/
+- https://docs.github.com/en/rest/repos/contents
+- https://firebase.google.com/docs/firestore/manage-data/transactions
+- https://cloud.google.com/firestore/pricing
+
+**Não é declaração de serviço gratuito para a conta de César.** Não há
+projeto Google Cloud, banco Firestore, identidade de serviço, cobrança,
+firewall, retenção nem permissões verificados. Não foi instalado ou
+provisionado nada. Mesmo Firestore com transações **não é WORM**: a conta
+privilegiada pode modificar o estado, de modo que o último pin/assinatura
+também precisa ser custodiado por autoridade separada.
+
+### Gates de promoção restantes
+
+- Provar isolamento administrativo e chave exclusiva da testemunha sem
+  colocar credenciais no computador da CAIXA, no repositório ou em logs.
+- Provar CAS real com dois escritores e queda/timeout entre commit e ACK;
+  compare leitura posterior contra o pin monotônico sem fazer retry cego.
+- Orçar volumetria de três vias, número de pedidos e retenção; evitar surpresas
+  de cobrança; sem gasto novo sem autorização.
+- Provar durabilidade Windows após perda de energia, recuperação e rastreio
+  das três vias físicas no Itaim sem interferência na Teknisa.
+- Separar decisão de confiança da decisão de imprimir: `SIGNED_ACK != PAPER`.
+
+**Efeito autorizado neste PR:** somente código/testes/documentação isolados.
+NO FIRESTORE SETUP / NO CLOUD ACCOUNT CHANGE / NO PRINT / NO TEKNISA CHANGE.
