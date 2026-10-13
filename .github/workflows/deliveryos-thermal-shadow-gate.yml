@@ -149,6 +149,8 @@ jobs:
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Direct Epson renderer source-semantic rejection V7.1 (Issue 25)
         run: node tools/verificar_renderer_semantico_direto_v71.js
+      - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Linux)
+        run: node tools/verificar_escpos_graphics_v747_offline.js
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
         # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
         run: node tools/verificar_integridade_termica_v57.js
@@ -201,5 +203,17 @@ jobs:
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
+      - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
+        run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Parse V7.47 offline PowerShell encoder without execution
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_escpos_graphics_fn112_v747_offline.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V747_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V747_SYNTAX_PASS=1 NO_PRINT NO_WINDOWS_DEVICE"
       - name: Verify Epson ESC/POS bytes on Windows
         run: node tools/verificar_integridade_termica_v57.js
