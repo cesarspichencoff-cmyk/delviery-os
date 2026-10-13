@@ -65,7 +65,7 @@ function createSource(){
  const service={service:"LUNCH",evidence:"HUMAN_CONFIRMED_RULE",
   source_ref:"fixture:fictional-service-only",blockers:[]};
  const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
-  order_key:"0001|01|0000000001",snapshot_hash:hash,
+  order_key:[order.CDFILIAL,order.CDLOJA,order.NRVENDAREST,order.NRCOMANDA].join("|"),snapshot_hash:hash,
   ready_for_downstream_shadow:true,blockers:[],service_resolution:service,order};
  textJson(path.join(temp,"event.json"),event);
  textJson(path.join(temp,"sequence.json"),
