@@ -107,6 +107,22 @@ não-duplicação na impressora e ausência de efeitos na Teknisa continua
 **NO MERGE / NO DEPLOY / NO INSTALL / NO PRINT / NO SPOOLER WRITE /
 NO TEKNISA CHANGE / NO SEQUENCE WRITE / NO GITHUB PROTECTION CHANGES.**
 
+## Verificação de visibilidade do repositório
+
+A consulta atual pela integração GitHub confirmou que o repositório
+`cesarspichencoff-cmyk/delviery-os` está **PUBLIC**, na branch padrão
+`main`, e a conta conectada tem permissão administrativa. Por isso:
+
+- **NÃO** armazenar evidências de pedidos, registros operacionais, chaves,
+  tokens, assinaturas com conteúdo sensível, observações ou dados de clientes
+  nesse repositório.
+- Código, testes com valores sintéticos, documentação e hashes de
+  *fixtures puramente fictícias* permanecem adequados ao PR atual.
+- Para usar GitHub como transporte de prova real seria necessário um
+  destino privado **diferente**, política de acesso/custo confirmada e
+  autoridade sobre a última referência em um domínio independente.
+  Nenhuma dessas alterações foi feita.
+
 ## Adendo V7.59 — commit condicionado, outage e readback
 
 **Código:** `tools/comandas_external_cas_v759_offline.js` e testes
