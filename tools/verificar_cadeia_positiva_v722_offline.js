@@ -10,6 +10,8 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),os=require("nod
 const {PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
 const {blob}=require("./gerar_tres_vias_par_leitor_v68_offline.js");
+const {fresh,reserve,resumeDecision,descriptorsFromProof}=
+ require("./comandas_idempotencia_v754_offline.js");
 const sha=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
 const SOURCE=path.join(__dirname,"fixtures/canonical-packaging-v63-pinned.js");
 const CONSUMER=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
@@ -180,6 +182,29 @@ try{
  assert.ok(got.outputs.every(o=>/^[0-9a-f]{64}$/.test(o.svg_sha256)));
  assert.equal(got.origin.event_sha256,sha(fs.readFileSync(path.join(temp,"event.json"))));
  assert.equal(got.origin.motor_blob_sha,PACKAGING_SOURCE_BLOB_V63);
+ // V7.54: FULL pinned candidate V2 -> V6.8 -> THREE native view identities.
+ // Only simulate reservation proposals; no print dispatch or durable state.
+ const plan=descriptorsFromProof(got,event,{
+  scope_id:"STORE:SIMULATED|DATE:2026-10-11",
+  scope_evidence:"SYNTHETIC_SCOPE_ONLY",tata_sequence:"001",
+  event_file_sha256:sha(fs.readFileSync(path.join(temp,"event.json")))
+ });
+ assert.equal(plan.status,"OFFLINE_DESCRIPTORS_ONLY",
+  "source-bound synthetic print intents must be unique per verified view");
+ assert.equal(plan.authorize_print,false);
+ assert.equal(plan.descriptors.length,3);
+ let ledger=fresh();
+ for(const descriptor of plan.descriptors){
+  const proposal=reserve(ledger,descriptor,ledger.revision);
+  assert.equal(proposal.status,"RESERVATION_PROPOSAL_ONLY");
+  assert.equal(proposal.authorize_print,false);
+  ledger=proposal.next_state; // IN MEMORY ONLY; this is NOT durable CAS
+ }
+ assert.equal(ledger.entries.length,3);
+ for(const descriptor of plan.descriptors){
+  assert.equal(resumeDecision(JSON.parse(JSON.stringify(ledger)),descriptor).status,"HOLD");
+  assert.equal(reserve(ledger,descriptor,ledger.revision).status,"HOLD");
+ }
  const manifest=JSON.parse(fs.readFileSync(path.join(got.proof_dir,"manifest.json"),"utf8"));
  assert.deepEqual(manifest.outputs,got.outputs);
  for(const o of got.outputs){
