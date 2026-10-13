@@ -165,8 +165,8 @@ jobs:
           cache: npm
       - name: Locked dependencies, no lifecycle scripts
         run: npm ci --ignore-scripts
-      - name: Compile exact source contracts
-        run: npm run typecheck
+      - name: Compile source contracts and prepare dist for Node tests
+        run: npm run build
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Reject malformed quantities on Windows
