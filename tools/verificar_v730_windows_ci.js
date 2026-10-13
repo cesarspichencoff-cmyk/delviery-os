@@ -68,7 +68,7 @@ function make(){
  hashed.items=order.items.map(p=>Object.fromEntries(raw.map(k=>[k,p[k]])));
  const digest=sha(Buffer.from(JSON.stringify(hashed)));
  const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
-  order_key:"0001|01|0000000001",snapshot_hash:digest,
+  order_key:[order.CDFILIAL,order.CDLOJA,order.NRVENDAREST,order.NRCOMANDA].join("|"),snapshot_hash:digest,
   ready_for_downstream_shadow:true,blockers:[],
   service_resolution:{service:"LUNCH",evidence:"HUMAN_CONFIRMED_RULE",
     source_ref:"fixture:fictional-service-only",blockers:[]},order};
