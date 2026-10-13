@@ -63,6 +63,8 @@ jobs:
           grep -F 'Q026_LEITOR_INCREMENTAL_PROPRIEDADES: 9/9 PASS' q026-properties.log
       - name: Neemo and Teknisa identity audit must not guess correlation
         run: node tools/verificar_neemo_teknisa_identidade_v1.cjs
+      - name: Internal Trip rejects external and unknown order channels
+        run: npx tsx src/entregas/foundation/run-tests.ts
       - name: Q016 replay, Product and governance regressions
         run: |
           npm run -s test:platform:q016
