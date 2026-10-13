@@ -17,7 +17,12 @@ const GATE=path.join(__dirname,"gerar_tres_vias_v2_gate_v720_offline.js");
 const ENGINE=fs.readFileSync(SOURCE);
 assert.equal(blob(ENGINE),PACKAGING_SOURCE_BLOB_V63,"canonical motor blob mismatch");
 assert.equal(sha(ENGINE),PACKAGING_SOURCE_SHA256_V78,"canonical motor SHA-256 mismatch");
-assert.equal(process.platform,"linux","proof must not inspect Windows ProgramData");
+// The V7.20 entrypoint strictly gates Windows execution to ephemeral CI and
+// redirects the candidate's single real Windows sequence path to a fixture.
+assert.ok(process.platform==="linux"||
+ (process.platform==="win32"&&process.env.GITHUB_ACTIONS==="true"&&
+  process.env.CI==="true"&&process.env.RUNNER_OS==="Windows"),
+ "replay requires Linux sandbox or ephemeral Windows CI");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v722-positive-"));
 const consumerDir=path.join(temp,"consumer");
 const textJson=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n");
@@ -65,7 +70,7 @@ function createSource(){
  const service={service:"LUNCH",evidence:"HUMAN_CONFIRMED_RULE",
   source_ref:"fixture:fictional-service-only",blockers:[]};
  const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
-  order_key:"0001|01|0000000001",snapshot_hash:hash,
+  order_key:"0001|01|0000000001|0000000001",snapshot_hash:hash,
   ready_for_downstream_shadow:true,blockers:[],service_resolution:service,order};
  textJson(path.join(temp,"event.json"),event);
  textJson(path.join(temp,"sequence.json"),
