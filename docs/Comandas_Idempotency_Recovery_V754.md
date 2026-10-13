@@ -81,3 +81,43 @@ comando de impressora, confirmação de papel ou garantia de zero perdas.
 Nenhum destes arquivos é uma implementação de registro operacional.
 A presença de `fsync` e cinco processos PASS no laboratório não prova a
 atomicidade em rede, a durabilidade de hardware nem *exactly once* física.
+
+## Complemento V7.57 — prova criptográfica com âncora sintética independente
+
+O histórico encadeado V7.55, isoladamente, detecta alterações parciais e revisões
+quebradas, mas pode ser inteiramente reescrito se um atacante também recalcular
+todas as hashes locais. A V7.57 acrescenta apenas uma **interface verificadora**
+de assinatura Ed25519 de um *checkpoint* monotônico, comparado com a última
+hash do diário validado.
+
+- Verificador puro `tools/comandas_signed_anchor_v757_offline.js`: recebe
+  separadamente **diário sintético**, **assinatura** e **contexto confiável**
+  (identidade da instância, revisão exigida, última hash exigida, chave
+  pública Ed25519 e impressão digital da chave). **Nunca** busca a chave
+  do próprio envelope assinado nem autoriza impressão ou reimpressão.
+- A mensagem assinada contém domínio explícito da aplicação, identidade da
+  instância, revisão e hash da última versão do diário, para evitar uso
+  acidental em outra aplicação, instância ou revisão.
+- `tools/verificar_signed_anchor_v757_offline.js`: usa um par de chaves
+  **efêmero, gerado apenas no runner**, sem salvá-lo no repositório nem no
+  diário. Testa signature flip, troca de chave, rollback para revisão anterior,
+  falsificação de envelope, corrupção, trava pendente, outra instância e
+  reconstrução completa de um diário com cadeia local ainda válida.
+- `tools/verificar_cadeia_positiva_v722_offline.js` verifica a assinatura
+  do diário de três vias produzido a partir do replay fonte-pinado V2→V6.8.
+- Windows e Linux verificam tudo sem imprimir, abrir serviços, spooler, rede
+  ou acessar os diretórios operacionais do restaurante.
+
+**Limite obrigatório:** no laboratório, até o *contexto confiável* pode
+ser substituído por um atacante que controla todos os argumentos: a prova
+criptográfica, sozinha, não impede isso. Uma implantação futura precisa
+definir **onde a chave pública e a revisão mínima monotônica ficarão
+custodiadas de forma independente** do computador que imprime (acesso,
+auditoria, recuperação, troca de chave e ciclo de retenção), além de provar
+disponibilidade, consistência e custo zero/suficiente. Chave efêmera do CI
+não é custódia empresarial; **sucesso do teste não prova âncora operacional
+externa**.
+
+O diário do Windows também não demonstrou durabilidade após perda real de
+energia; a âncora assinada não fornece garantia de papel nem exatamente uma
+impressão física. As três vias continuam em HOLD até os demais portões.
