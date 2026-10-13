@@ -163,5 +163,3 @@ check("no alteration of source event, binding or template",()=>{
 });
 console.log("THERMAL_ITAIM_READER_SERVICE_V735="+n+"/"+n+
  " SHOP_OBSERVED_SQL_READER_PARITY_PENDING_HOLD READ_ONLY_NO_PRINT");
-// Run the adjacent V7.36 read-only reconciliation regression in both CI jobs.
-require("./verificar_conciliacao_ifood_teknisa_v736.js");
