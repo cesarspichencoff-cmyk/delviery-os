@@ -40,7 +40,7 @@ interface ReaderEventV735 {
   snapshot_hash:string;
   ready_for_downstream_shadow:boolean;
   blockers:string[];
-  order:{CDFILIAL:string;CDLOJA:string;NRCOMANDA:string;
+  order:{CDFILIAL:string;CDLOJA:string;NRVENDAREST:string;NRCOMANDA:string;
     DTHRABERMESA:string;items:unknown[]};
 }
 export interface ItaimEventServiceReviewV735 {
@@ -88,9 +88,9 @@ export function reviewItaimReaderServiceV735(
  const t=(object(template)?template:{}) as Partial<ItaimHoursTemplateV734>;
  const e=(object(event)?event:{}) as Partial<ReaderEventV735>;
  const o=(object(e.order)?e.order:{}) as Partial<ReaderEventV735["order"]>;
- const identity=plain(o.CDFILIAL)&&plain(o.CDLOJA)&&plain(o.NRCOMANDA)&&
+ const identity=plain(o.CDFILIAL)&&plain(o.CDLOJA)&&plain(o.NRVENDAREST)&&plain(o.NRCOMANDA)&&
   typeof e.order_key==="string"&&
-  e.order_key===[o.CDFILIAL,o.CDLOJA,o.NRCOMANDA].join("|");
+  e.order_key===[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join("|");
  const blockedUpstream=e.ready_for_downstream_shadow!==true||
    !Array.isArray(e.blockers)||e.blockers.length!==0;
  if(b.schema!=="deliveryos.itaim-reader-binding-candidate.v735"||
