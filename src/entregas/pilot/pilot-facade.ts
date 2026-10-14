@@ -2,6 +2,7 @@
  * Facade do piloto: ApplicationService + UnitOfWork injetável + sessão por token.
  * O backend arquivo continua default; a facade não conhece mais o formato do store.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createPilotPolicy } from "../foundation/policy";
@@ -85,7 +86,18 @@ export class PilotApplicationFacade {
   private uow: UnitOfWork;
   private readonly storage: PilotUnitOfWorkSource;
   private svc: EntregasApplicationService;
+  /** Legacy non-HTTP access, never authority for concurrent requests. */
   private actor: ActorContext | null = null;
+  private readonly actorScope = new AsyncLocalStorage<{ readonly actor: ActorContext | null }>();
+  private get activeActor(): ActorContext | null {
+    const scope = this.actorScope.getStore();
+    return scope === undefined ? this.actor : scope.actor;
+  }
+  /** Snapshot one identity for the entire asynchronous HTTP request. */
+  withActor<T>(actor: ActorContext | null, work: () => Promise<T>): Promise<T> {
+    const snapshot = actor ? Object.freeze({ ...actor }) : null;
+    return this.actorScope.run({ actor: snapshot }, work);
+  }
   private last_error: string | null = null;
   private last_human_error: string | null = null;
   private tripCache = new Map<string, TripAggregate>();
@@ -149,11 +161,12 @@ export class PilotApplicationFacade {
         human: "Acesso não autorizado. Use o token fornecido pelo responsável pelo piloto.",
       };
     }
-    this.actor = { actor_id: user.actor_id, role: user.role };
+    const loginActor = { actor_id: user.actor_id, role: user.role };
+    if (this.actorScope.getStore() === undefined) this.actor = loginActor;
     this.log.info("session_login", `${user.label} entrou no piloto.`, undefined, {
       actor_id: user.actor_id,
     });
-    return { ok: true, human: `Olá, ${user.label}.`, actor: this.actor };
+    return { ok: true, human: `Olá, ${user.label}.`, actor: loginActor };
   }
 
   logout(): void {
@@ -179,7 +192,7 @@ export class PilotApplicationFacade {
   }
 
   getActor(): ActorContext | null {
-    return this.actor;
+    return this.activeActor;
   }
 
   /**
@@ -207,12 +220,12 @@ export class PilotApplicationFacade {
     label: string,
     channel?: string,
   ): Promise<{ ok: boolean; human: string }> {
-    if (!this.actor) {
+    if (!this.activeActor) {
       return { ok: false, human: "É preciso entrar com seu acesso antes." };
     }
-    if (!["operador_expedicao", "lider_delivery", "gerente"].includes(this.actor.role)) {
-      this.log.warn("auth_failed", "Sem permissão para registrar pedido.", this.actor.role, {
-        actor_id: this.actor.actor_id,
+    if (!["operador_expedicao", "lider_delivery", "gerente"].includes(this.activeActor.role)) {
+      this.log.warn("auth_failed", "Sem permissão para registrar pedido.", this.activeActor.role, {
+        actor_id: this.activeActor.actor_id,
       });
       return { ok: false, human: "Seu perfil não pode registrar pedidos prontos." };
     }
@@ -231,7 +244,7 @@ export class PilotApplicationFacade {
 
   // Legacy interface captures the actor at invocation, not after awaiting I/O.
   async execute(cmd: Command | Record<string, unknown>): Promise<AppResult> {
-    return this.executeAs(this.actor, cmd);
+    return this.executeAs(this.activeActor, cmd);
   }
 
   // Explicit per-request identity. Caller must authenticate before invoking.
@@ -426,7 +439,7 @@ export class PilotApplicationFacade {
         max_stops: this.cfg.max_stops,
         policy_bundle_id: `pilot-${this.cfg.unit_id}`,
       },
-      actor: this.actor,
+      actor: this.activeActor,
       session_required: true,
       trips,
       handoffs: handoffRecords.map(({ handoff: h }) => ({
