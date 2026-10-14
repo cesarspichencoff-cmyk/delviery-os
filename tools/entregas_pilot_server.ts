@@ -711,7 +711,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         if (typeof cmd.rider_id === "string") {
           cmd.rider_id = asInternalRiderActorId(cmd.rider_id);
         }
-        const r = await facade.execute(cmd as never);
+        const r = await facade.executeAs(actor, cmd as never);
         results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
       }
       return reply(200, { ok: true, results });
@@ -910,7 +910,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       if (typeof body.external_courier_ref === "string") {
         body.external_courier_ref = asExternalCourierRef(body.external_courier_ref);
       }
-      const result = await facade.execute(body as never);
+      const result = await facade.executeAs(actor, body as never);
       const snap = await facade.snapshot();
       return reply(200, { result, snapshot: snap });
     }
