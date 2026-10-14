@@ -3,7 +3,7 @@
   "recorded_date": "2026-10-14",
   "source": "CESAR_DIRECT_CHAT_2026_10_14",
   "scope": "TATA_ITAIM_V2_SHADOW_REVIEW",
-  "status": "HUMAN_APPROVALS_CAPTURED_NOT_CONSUMER_INTEGRATED",
+  "status": "HUMAN_APPROVALS_CAPTURED_WITH_C1_D1_CORRECTIONS_NOT_CONSUMER_INTEGRATED",
   "policy": {
     "no_live_effects": true,
     "no_inference_to_similar_orders": true,
@@ -736,6 +736,27 @@
       "authority": "HUMAN_CONFIRMATION_2026-10-14",
       "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
       "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C1",
+      "scope": [
+        "COMBINADO KIDS",
+        "COCA COLA ZERO 350ML - UN"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit Kids",
+            "quantity": 1
+          }
+        ],
+        "other_kits": 0
+      },
+      "remarks": "Correção explícita de César: somente 1 Kit Kids. Resposta anterior Kit p/1 + Kit Sobremesa foi erro e está revogada para este caso exato.",
+      "authority": "HUMAN_CORRECTION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
     }
   ],
   "physical": [
@@ -814,27 +835,26 @@
       "authority": "HUMAN_CONFIRMATION_2026-10-14",
       "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
       "print_authorized": false
+    },
+    {
+      "kind": "physical",
+      "id": "D1",
+      "scope": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI"
+      ],
+      "value": {
+        "exact_combo_quantity": 3,
+        "total_physical_boxes": 3,
+        "box_model": "750",
+        "box_allocation_per_unit": "NOT_EXPLICITLY_STATED"
+      },
+      "remarks": "Resposta textual D1: '3 caixas 750'. Regra comprovada SOMENTE para 3 Letras B; não supor quantidade para 1 ou 2 Letras B nem junção de caixas sem validação.",
+      "authority": "HUMAN_CORRECTION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
     }
   ],
   "pending": [
-    {
-      "code": "C1",
-      "case": [
-        "COMBINADO KIDS",
-        "COCA COLA ZERO 350ML - UN"
-      ],
-      "raw_reply": "kit P 1 ‘e sobremesa",
-      "status": "CLARIFY",
-      "why": "Interpretação Kit p/1 + Kit Sobremesa contradiz a regra humana vigente Kids=Kit Kids e refrigerante não é sobremesa. Não aplicar automaticamente."
-    },
-    {
-      "code": "D1",
-      "case": [
-        "LETRA B - COMB EXEC SUSHI + SASHIMI"
-      ],
-      "status": "CLARIFY",
-      "why": "Precisa quantidade de caixas reais por unidade e para 3 unidades, tamanhos e distribuição; foi respondido 'não entendi'."
-    },
     {
       "code": "A1_STRAW",
       "case": [
@@ -866,6 +886,29 @@
       "code": "PHYSICAL_V68",
       "status": "OPEN",
       "why": "A aprovação humana de regras não comprova vínculo da caixa física por item, origem independente de produção, idempotência e impressão."
+    },
+    {
+      "code": "D1_SINGLE_UNIT",
+      "case": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI"
+      ],
+      "status": "CLARIFY",
+      "why": "César confirmou três caixas 750 para 3 Letras B, mas não especificou expressamente quantas caixas saem para 1 ou 2 unidades. Não extrapolar."
+    }
+  ],
+  "corrections": [
+    {
+      "date": "2026-10-14",
+      "codes": [
+        "C1",
+        "D1"
+      ],
+      "class": "HUMAN_AMBIGUITY_RESOLVED_PARTIALLY",
+      "scope": {
+        "C1": "1 Kids + 1 Coca-Cola Zero = somente 1 Kit Kids",
+        "D1": "3 Letras B = 3 caixas modelo 750; unidades 1 e 2 permanecem sem confirmação de quantidade física"
+      },
+      "original_reply_C1_revoked": true
     }
   ]
 }
