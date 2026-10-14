@@ -1036,15 +1036,22 @@ teste("servidor: a URL ADMINISTRATIVA do harness (DELIVERYOS_PG_URL) nunca vira 
     "  const j = await r.json(); console.log(JSON.stringify({ disponivel: j.historico && j.historico.disponivel }));",
     "  s.close(); process.exit(0);",
     "})();",
-  ].join("\n");
-  const r = spawnSync("npx", ["tsx", "-e", codigo], {
+  ].join(" "); // npm exec em Windows/Node 24 perde linhas apos o primeiro LF de -e.
+  // Windows/Node 24 nao inicia o shim npx.cmd como executavel direto (status=null).
+  // Executar o CLI do npm via Node evita shell e preserva os argumentos como array.
+  const npmCli = process.env.npm_execpath;
+  const executor = process.platform === "win32" && npmCli
+    ? { bin: process.execPath, args: [npmCli, "exec", "--", "tsx", "-e", codigo] }
+    : { bin: "npx", args: ["tsx", "-e", codigo] };
+  const r = spawnSync(executor.bin, executor.args, {
     cwd: process.cwd(),
     encoding: "utf8",
     timeout: 60000,
     env: { ...process.env, DELIVERYOS_PG_URL: "postgres://administrador:x@127.0.0.1:1/nao_existe", DELIVERYOS_DATABASE_URL: "" },
   });
   const linha = (r.stdout || "").trim().split("\n").pop() || "";
-  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.status, 0, `status=${r.status}, erro=${r.error?.message || "nenhum"}, stderr=${r.stderr || "vazio"}`);
+  assert.ok(linha, `processo filho nao produziu JSON; stdout=${r.stdout || "vazio"}; stderr=${r.stderr || "vazio"}`);
   assert.deepEqual(JSON.parse(linha), { disponivel: true }, `com a URL administrativa no ambiente o historico mudou: ${linha}`);
 });
 
