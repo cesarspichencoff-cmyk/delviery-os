@@ -256,6 +256,16 @@ async function main(): Promise<void> {
     assert.deepEqual(erradas, [], `respostas trocadas: ${JSON.stringify(erradas)}`);
   });
 
+  await test("snapshot paralela conserva identidade apos leitura assincrona", async () => {
+    const attempts = await Promise.all(Array.from({length:24},(_,i)=> {
+      const token = i%3===0?null:i%3===1?GERENTE:RIDER;
+      return api("/api/snapshot", {token}).then(r => ({token,r}));
+    }));
+    for(const {token,r} of attempts) {
+      assert.equal(r.status,token?200:401);
+      if(token) assert.equal((r.json.actor as {actor_id:string}).actor_id, token===GERENTE?"ger-1":"rid-1");
+    }
+  });
   await test("rajada mista com e sem token: as sem token continuam 401", async () => {
     const resultados = await Promise.all(
       Array.from({ length: 12 }, (_, i) =>
