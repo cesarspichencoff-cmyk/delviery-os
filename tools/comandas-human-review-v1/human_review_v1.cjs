@@ -89,7 +89,21 @@ function reviewV2(decision){
  const h=assess(decision.items);
  if(h.status!=='REVIEW_ONLY')return hold(h.status);
  const onlyBag=decision.blocking_reasons.length>0&&decision.blocking_reasons.every(x=>BAG.has(x));
- return {status:'REVIEW_ONLY',bag:h.bag,boxes:h.boxes,kits:h.kits,
+ // C4: only this source-proven one-unit dupla + one-person combo. A second
+ // human-reviewed KIT candidate never clears V2's original KITS_NOT_FACT.
+ const special=decision.items.find(x=>x.canonical_code===N.ESPECIAL_1P[0]&&x.quantity===1);
+ const dupla=decision.items.find(x=>x.canonical_code===N.SUSHI_POLVO_TRUFADO[0]&&x.quantity===1);
+ const c4=h.bag?.case==='B8'&&decision.items.length===2&&!!special&&!!dupla&&
+   special.classification?.family==='combinado'&&
+   dupla.classification?.family==='dupla'&&
+   dupla.classification?.subfamily==='dupla_dyo'&&
+   dupla.classification?.truth_class==='PROVEN_ACADEMIA_PACKAGING_RULE'&&
+   dupla.classification?.review_required===false&&
+   dupla.classification_source==='ACADEMIA_DOCUMENTED_CATEGORY_EXACT_NAME_AND_ROUTED_STATION_2026_10_07';
+ const kitReview=c4?[{kind:'Kit p/1',count:1,case:'C4',
+   authority:'HUMAN_CONFIRMED_EXACT_COMPOSITION_PLUS_LIVE_SOURCE_CLASSIFICATION',
+   operational_authority:false}]:[];
+ return {status:'REVIEW_ONLY',bag:h.bag,boxes:h.boxes,kits:[...h.kits,...kitReview],
   original_v2_ready:decision.ready,original_blockers:decision.blocking_reasons.length,
   candidate_for_reconciliation:onlyBag&&h.bag!==null,
   snapshot_authenticated:false,human_attestation_authenticated:false,
