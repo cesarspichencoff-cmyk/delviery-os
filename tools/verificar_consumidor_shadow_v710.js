@@ -148,3 +148,5 @@ try{
 }finally{fs.rmSync(tmp,{recursive:true,force:true});}
 // Human-confirmed D1/C1/B1-B15 is review-only and must never upgrade V2 readiness.
 require('./comandas-human-review-v1/human_review_v1.test.cjs');
+// Only synthetic data; original customer event bytes are NOT checked in.
+require('./verificar_comandas_exact_intake_v1.cjs');
