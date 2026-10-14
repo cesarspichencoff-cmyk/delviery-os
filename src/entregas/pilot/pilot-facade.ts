@@ -229,8 +229,18 @@ export class PilotApplicationFacade {
     return { ok: true, human: `Pedido ${order_ref} na fila de prontos.` };
   }
 
+  // Legacy interface captures the actor at invocation, not after awaiting I/O.
   async execute(cmd: Command | Record<string, unknown>): Promise<AppResult> {
-    if (!this.actor) {
+    return this.executeAs(this.actor, cmd);
+  }
+
+  // Explicit per-request identity. Caller must authenticate before invoking.
+  // Never bind a new actor globally while a different command is awaiting I/O.
+  async executeAs(
+    actor: ActorContext | null,
+    cmd: Command | Record<string, unknown>,
+  ): Promise<AppResult> {
+    if (!actor) {
       this.last_human_error = "É preciso entrar com seu acesso antes de agir.";
       this.last_error = "NO_SESSION";
       this.log.warn("auth_failed", this.last_human_error);
@@ -242,7 +252,7 @@ export class PilotApplicationFacade {
       this.last_human_error = "Esta ação já foi registrada. Não envie de novo.";
       this.last_error = "DUPLICATE_COMMAND";
       this.log.warn("conflict", this.last_human_error, command_id, {
-        actor_id: this.actor.actor_id,
+        actor_id: actor.actor_id,
       });
       return { ok: false, error: this.last_human_error, code: "DUPLICATE_COMMAND" };
     }
@@ -251,7 +261,7 @@ export class PilotApplicationFacade {
       ...cmd,
       // A sessão é a autoridade. Actor e unidade vindos do corpo são dados
       // não confiáveis e nunca podem elevar papel nem atravessar unidade.
-      actor: this.actor,
+      actor: actor,
       unit_id: this.cfg.unit_id,
     } as Command;
 
@@ -307,7 +317,7 @@ export class PilotApplicationFacade {
           "command_failed",
           this.last_human_error,
           result.code || result.error,
-          { actor_id: this.actor.actor_id, meta: { type: full.type } },
+          { actor_id: actor.actor_id, meta: { type: full.type } },
         );
         if (/já|duplic|terminal|repassado/i.test(result.error || "")) {
           if (full.type === "ConfirmHandoff") {
@@ -334,7 +344,7 @@ export class PilotApplicationFacade {
         this.occCache.set(result.occurrence.occurrence_id, result.occurrence);
       if (result.rider) this.riderCache.set(result.rider.rider_id, result.rider);
       this.log.info("command_ok", `Ação ${full.type} concluída.`, undefined, {
-        actor_id: this.actor.actor_id,
+        actor_id: actor.actor_id,
         meta: { type: full.type, command_id },
       });
       return result;
@@ -343,7 +353,7 @@ export class PilotApplicationFacade {
       this.last_error = technical;
       this.last_human_error = "Não foi possível concluir a ação. Tente de novo ou avise o responsável.";
       this.log.error("command_failed", this.last_human_error, technical, {
-        actor_id: this.actor.actor_id,
+        actor_id: actor.actor_id,
       });
       if (/version conflict|Concurrency/i.test(technical)) {
         this.log.warn("conflict", "Conflito de versão nos dados.", technical);

@@ -114,6 +114,41 @@ console.log("\n=== Pilot gate tests ===\n");
     assert.equal(r.code, "NO_SESSION");
   });
 
+  await test("ator explicitamente atestado prevalece sobre sessao mutavel da facade", async () => {
+    const dir = join(root, "identity-per-request");
+    mkdirSync(dir, { recursive: true });
+    const f = new PilotApplicationFacade(makeCfg(dir), createPilotLogger(dir));
+    const ops = { actor_id: "ops-1", role: "operador_expedicao" as const };
+    const rider = { actor_id: "rid-1", role: "motoboy_interno" as const };
+    const admin = { actor_id: "admin-1", role: "gerente" as const };
+    f.bindActor(null);
+    const created = await f.executeAs(ops, {
+      type: "CreateTrip", command_id: "iso-1", occurred_at: new Date().toISOString(),
+      trip_id: "ISO-TRIP-1", courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "iso-d1", order_ref: "iso-order" }],
+    });
+    assert.equal(created.ok, true, created.error);
+    // Another request updates the global actor; explicit request identity wins.
+    f.bindActor(admin);
+    const denied = await f.executeAs(rider, {
+      type: "CloseTripManually", command_id: "iso-2",
+      occurred_at: new Date().toISOString(), trip_id: "ISO-TRIP-1",
+      reason: "not allowed",
+    });
+    assert.equal(denied.ok, false, "Rider must not inherit manager privileges");
+    const missing = await f.executeAs(null, {
+      type: "StartTripReturn", command_id: "iso-3",
+      occurred_at: new Date().toISOString(), trip_id: "ISO-TRIP-1",
+    });
+    assert.equal(missing.ok, false);
+    assert.equal(missing.code, "NO_SESSION");
+    const started = await f.executeAs(rider, {
+      type: "ConfirmTripDeparture", command_id: "iso-4",
+      occurred_at: new Date().toISOString(), trip_id: "ISO-TRIP-1",
+    });
+    assert.equal(started.ok, true, started.error);
+  });
+
   await test("fluxo viagem + persistência + reinício UoW", async () => {
     const dir = join(root, "c");
     mkdirSync(dir, { recursive: true });
