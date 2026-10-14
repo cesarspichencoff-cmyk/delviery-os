@@ -146,3 +146,5 @@ try{
  });
  console.log("THERMAL_CONSUMER_V710_PARITY="+checks+"/"+checks+" HISTORIC_V2_BEHAVIOR_PRESERVED NO_PRODUCTION_EFFECT");
 }finally{fs.rmSync(tmp,{recursive:true,force:true});}
+// Human-confirmed D1/C1/B1-B15 is review-only and must never upgrade V2 readiness.
+require('./comandas-human-review-v1/human_review_v1.test.cjs');
