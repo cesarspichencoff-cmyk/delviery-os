@@ -3,7 +3,7 @@
   "recorded_date": "2026-10-14",
   "source": "CESAR_DIRECT_CHAT_2026_10_14",
   "scope": "TATA_ITAIM_V2_SHADOW_REVIEW",
-  "status": "HUMAN_APPROVALS_CAPTURED_WITH_C1_D1_CORRECTIONS_NOT_CONSUMER_INTEGRATED",
+  "status": "HUMAN_APPROVALS_CAPTURED_D1_1_TO_3_CONFIRMED_NOT_CONSUMER_INTEGRATED",
   "policy": {
     "no_live_effects": true,
     "no_inference_to_similar_orders": true,
@@ -846,10 +846,25 @@
         "exact_combo_quantity": 3,
         "total_physical_boxes": 3,
         "box_model": "750",
-        "box_allocation_per_unit": "NOT_EXPLICITLY_STATED"
+        "box_allocation_per_unit": "ONE_750_PER_LETRA_B_FOR_QTY_1_TO_3_ONLY",
+        "verified_quantity_box_counts": [
+          {
+            "combo_quantity": 1,
+            "total_physical_boxes": 1
+          },
+          {
+            "combo_quantity": 2,
+            "total_physical_boxes": 2
+          },
+          {
+            "combo_quantity": 3,
+            "total_physical_boxes": 3
+          }
+        ],
+        "unverified_quantities": "QTY_4_OR_MORE_UNKNOWN"
       },
-      "remarks": "Resposta textual D1: '3 caixas 750'. Regra comprovada SOMENTE para 3 Letras B; não supor quantidade para 1 ou 2 Letras B nem junção de caixas sem validação.",
-      "authority": "HUMAN_CORRECTION_2026-10-14",
+      "remarks": "César confirmou expressamente: 1 Letra B = 1 caixa 750; 2 = 2 caixas 750; 3 = 3 caixas 750. Não extrapolar a 4+ nem a composições com outros itens.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14_D1_1_TO_3",
       "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
       "print_authorized": false
     }
@@ -886,14 +901,6 @@
       "code": "PHYSICAL_V68",
       "status": "OPEN",
       "why": "A aprovação humana de regras não comprova vínculo da caixa física por item, origem independente de produção, idempotência e impressão."
-    },
-    {
-      "code": "D1_SINGLE_UNIT",
-      "case": [
-        "LETRA B - COMB EXEC SUSHI + SASHIMI"
-      ],
-      "status": "CLARIFY",
-      "why": "César confirmou três caixas 750 para 3 Letras B, mas não especificou expressamente quantas caixas saem para 1 ou 2 unidades. Não extrapolar."
     }
   ],
   "corrections": [
@@ -909,6 +916,19 @@
         "D1": "3 Letras B = 3 caixas modelo 750; unidades 1 e 2 permanecem sem confirmação de quantidade física"
       },
       "original_reply_C1_revoked": true
+    },
+    {
+      "date": "2026-10-14",
+      "codes": [
+        "D1"
+      ],
+      "class": "HUMAN_CLARIFICATION_CONFIRMED",
+      "scope": {
+        "D1": "1 Letra B = 1 caixa 750; 2 Letras B = 2 caixas 750; 3 Letras B = 3 caixas 750. Quantidade 4+ não comprovada."
+      },
+      "previous_pending_code": "D1_SINGLE_UNIT",
+      "human_reply": "Sim, está correto",
+      "print_authorized": false
     }
   ]
 }
