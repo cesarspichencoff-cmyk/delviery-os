@@ -423,7 +423,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
    */
   const token = extractToken(req, url);
   const actor = requestActor(token);
-  facade.bindActor(actor);
+  return facade.withActor(actor, async () => {
 
   /*
    * Resposta desta requisição, já com a origem dela.
@@ -477,7 +477,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       // login() valida e registra a entrada; o vinculo desta requisicao ja'
       // foi feito no topo do handler e nao depende deste corpo.
       const result = facade.login(body.token || "");
-      facade.bindActor(actor);
+
       return reply(result.ok ? 200 : 401, result);
     }
 
@@ -1002,6 +1002,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       // technical only in logs
     });
   }
+  });
 };
 
 /*
