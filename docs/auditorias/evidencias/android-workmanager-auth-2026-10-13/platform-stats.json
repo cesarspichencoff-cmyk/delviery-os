@@ -1,0 +1,9 @@
+{
+  "source_mode": "simulated",
+  "platform_fake": true,
+  "session_ok": 1,
+  "queue_authorized": 2,
+  "queue_missing_token": 0,
+  "location_points_requests": 0,
+  "invalid": 0
+}

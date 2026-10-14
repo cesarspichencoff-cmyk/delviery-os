@@ -1,0 +1,11 @@
+{
+  "fixture_only": true,
+  "source_mode": "simulated",
+  "unique": 1,
+  "requests": 1,
+  "duplicates": 0,
+  "invalid": 0,
+  "event_ids": [
+    "LAB-WM-20261013-E1"
+  ]
+}
