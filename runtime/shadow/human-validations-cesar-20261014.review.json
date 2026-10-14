@@ -1,0 +1,871 @@
+{
+  "schema": "deliveryos.cesar-exact-human-validation.v1",
+  "recorded_date": "2026-10-14",
+  "source": "CESAR_DIRECT_CHAT_2026_10_14",
+  "scope": "TATA_ITAIM_V2_SHADOW_REVIEW",
+  "status": "HUMAN_APPROVALS_CAPTURED_NOT_CONSUMER_INTEGRATED",
+  "policy": {
+    "no_live_effects": true,
+    "no_inference_to_similar_orders": true,
+    "do_not_claim_v68": true,
+    "keep_original_observations": true,
+    "do_not_change_teknisa": true,
+    "review_latest_source_before_promotion": true
+  },
+  "products": [
+    {
+      "kind": "product",
+      "id": "A1",
+      "scope": [
+        "COCA COLA 350ML - UN",
+        "FANTA GUARANA ZERO 350ML - UN",
+        "BLUE MOON LONG NECK - UN"
+      ],
+      "value": {
+        "classification": "bebida",
+        "station": "bar_bebidas",
+        "food_box": false,
+        "own_kit": false,
+        "straw": "ONE_STRAW_STATED_SCOPE_UNCLEAR"
+      },
+      "remarks": "Conferir canudo em Blue Moon e se 1 canudo é por item ou pedido; não generalizar.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A2",
+      "scope": [
+        "CARPACCIO DE SALMAO"
+      ],
+      "value": {
+        "classification": "entrada_fria",
+        "fixed_box": "750",
+        "max_units_in_single_box": 3
+      },
+      "remarks": "Caixa 750 fixa mesmo com 2 ou 3 unidades; >3 sem regra.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A3",
+      "scope": [
+        "TARTAR DE ATUM SPICY",
+        "TUNA SHISSO TARTAR"
+      ],
+      "value": {
+        "classification": "entrada_fria",
+        "fixed_box": "650_SELADA",
+        "max_units_in_single_box": 3
+      },
+      "remarks": "Usuário confirmou mesma embalagem mesmo com 2 ou 3; não supor >3.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A4",
+      "scope": [
+        "MISSOSHIRO"
+      ],
+      "value": {
+        "classification": "sopa_acompanhamento_quente",
+        "container": "ISOPOR",
+        "render_container_in_ticket": false
+      },
+      "remarks": "Não afirmar caixa 650; usuário corrigiu a embalagem.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A5",
+      "scope": [
+        "SALMAO/ATUM 1 PESSOA"
+      ],
+      "value": {
+        "classification": "combinado_1p",
+        "fixed_box": "750",
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A6",
+      "scope": [
+        "MOCHI INDIVIDUAL"
+      ],
+      "value": {
+        "container": "ISOPOR",
+        "render_container_in_ticket": false,
+        "dessert_kit": false
+      },
+      "remarks": "Sem modelo de caixa específico; não inferir número de potes.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A7",
+      "scope": [
+        "FISHKATSU KIDS"
+      ],
+      "value": {
+        "fixed_box": "1500_SELADA",
+        "kits": [
+          {
+            "kind": "Kit Quente",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A8",
+      "scope": [
+        "TATA CHOCOLATE"
+      ],
+      "value": {
+        "fixed_box": "450",
+        "kits": [
+          {
+            "kind": "Kit Sobremesa",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A9",
+      "scope": [
+        "CHOUX CREAM"
+      ],
+      "value": {
+        "fixed_box": "450",
+        "dessert_kit": false
+      },
+      "remarks": "",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "product",
+      "id": "A10",
+      "scope": [
+        "COOKIE TRES CHOCOLATES"
+      ],
+      "value": {
+        "food_box": false,
+        "physical_container": "NENHUMA",
+        "routing": "NOT_CONFIRMED"
+      },
+      "remarks": "Não inventar rota de produção nem sacola sem olhar B15.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    }
+  ],
+  "bags": [
+    {
+      "kind": "bag",
+      "id": "B1",
+      "scope": [
+        "COMB EXEC SUSHI SALMAO"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B2",
+      "scope": [
+        "COMB EXEC SUSHI SALMAO",
+        "REFRIGERANTE_1_A_2"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B3",
+      "scope": [
+        "COMB EXEC SUSHI SALMAO",
+        "REFRIGERANTE",
+        "TATA CHOCOLATE"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B4",
+      "scope": [
+        "COMBINADO KIDS",
+        "COCA COLA ZERO 350ML - UN"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B5",
+      "scope": [
+        "COMBINADO KIDS",
+        "TEMAKI DE SALMAO",
+        "SPRITE 350ML - UN"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B6",
+      "scope": [
+        "COMBINADO KIDS",
+        "BATERA DE SALMAO",
+        "HOT ROLL"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B7",
+      "scope": [
+        "COMB EXEC SUSHI SALMAO",
+        "HOT ROLL"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B8",
+      "scope": [
+        "COMB SUSHI ESPECIAL 1 P",
+        "SASHIMI_OU_SUSHI_AVULSO_UNIDADE"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B9",
+      "scope": [
+        "TEMAKI",
+        "HOSSOMAKI_OU_URAMAKI"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B10",
+      "scope": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B11",
+      "scope": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI",
+        "MOCHI INDIVIDUAL",
+        "MOCHI INDIVIDUAL"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B12",
+      "scope": [
+        "LETRA A - COMB EXEC SUSHI",
+        "MISSOSHIRO"
+      ],
+      "value": {
+        "bags": [
+          "M",
+          "P"
+        ],
+        "bag_count": 2
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B13",
+      "scope": [
+        "TUNA SHISSO TARTAR",
+        "SHIMEJI",
+        "COCA COLA ZERO 350ML - UN",
+        "GENGIBRE PORÇÃO"
+      ],
+      "value": {
+        "bags": [
+          "P",
+          "P"
+        ],
+        "bag_count": 2
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B14",
+      "scope": [
+        "CARPACCIO DE SALMAO",
+        "SUSHIS",
+        "URAMAKIS",
+        "BATERA DE SALMAO"
+      ],
+      "value": {
+        "bags": [
+          "M"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "bag",
+      "id": "B15",
+      "scope": [
+        "COOKIE TRES CHOCOLATES"
+      ],
+      "value": {
+        "bags": [
+          "P"
+        ],
+        "bag_count": 1
+      },
+      "remarks": "Somente composição descrita; sem inferir outras combinações.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    }
+  ],
+  "kits": [
+    {
+      "kind": "kit",
+      "id": "C2",
+      "scope": [
+        "COMBINADO KIDS",
+        "BATERA DE SALMAO",
+        "HOT ROLL"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit Kids",
+            "quantity": 1
+          },
+          {
+            "kind": "Kit Simples",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C3",
+      "scope": [
+        "COMB EXEC SUSHI SALMAO",
+        "HOT ROLL"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C4",
+      "scope": [
+        "COMB SUSHI ESPECIAL 1 P",
+        "DUPLA_SUSHI_UNIDADE"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C5",
+      "scope": [
+        "TEMAKI_UNIDADE",
+        "SASHIMI_2_UNIDADES"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit Simples",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C6",
+      "scope": [
+        "SASHIMI_UNIDADE",
+        "DUPLA_UNIDADE",
+        "ENROLADO_UNIDADE"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C7",
+      "scope": [
+        "DUPLA_3_UNIDADES",
+        "ENROLADO_UNIDADE"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C8",
+      "scope": [
+        "DUPLA_3_UNIDADES",
+        "ENROLADO_2_UNIDADES"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C9",
+      "scope": [
+        "SASHIMI_3_UNIDADES",
+        "ENROLADO_UNIDADE"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C10",
+      "scope": [
+        "SASHIMI_4_UNIDADES",
+        "DUPLA_3_UNIDADES"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C11",
+      "scope": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI",
+        "MOCHI_OPCIONAL"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C12",
+      "scope": [
+        "LETRA A - COMB EXEC SUSHI",
+        "MISSOSHIRO"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C13",
+      "scope": [
+        "FISHKATSU KIDS"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit Quente",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "kit",
+      "id": "C14",
+      "scope": [
+        "SUSHI_URAMAKI",
+        "SHITAKE",
+        "TARTAR DE ATUM SPICY"
+      ],
+      "value": {
+        "kits": [
+          {
+            "kind": "Kit p/1",
+            "quantity": 1
+          }
+        ]
+      },
+      "remarks": "Validado como caso exato; não aplicar a outros números de peças.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    }
+  ],
+  "physical": [
+    {
+      "kind": "physical",
+      "id": "D2",
+      "scope": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI",
+        "EBI SPICY"
+      ],
+      "value": {
+        "bags": [
+          "G"
+        ],
+        "internal_hot_cold_separation": true
+      },
+      "remarks": "Uma G com separação interna; caixas ainda dependem de D1 e Ebi.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "physical",
+      "id": "D3",
+      "scope": [
+        "TEMAKI DE SALMAO",
+        "YAKISOBA MISTO"
+      ],
+      "value": {
+        "bags": [
+          "G",
+          "P"
+        ],
+        "internal_hot_cold_separation": true
+      },
+      "remarks": "Duas sacolas, não uma; revisar o tipo de conteúdo de cada uma.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "physical",
+      "id": "D4",
+      "scope": [
+        "SHITAKE",
+        "SHIMEJI",
+        "EBI SPICY"
+      ],
+      "value": {
+        "bags": [
+          "P"
+        ]
+      },
+      "remarks": "Define sacola, NÃO as embalagens individuais que ainda faltam.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    },
+    {
+      "kind": "physical",
+      "id": "D5",
+      "scope": [
+        "FISHKATSU KIDS",
+        "MOCHI INDIVIDUAL",
+        "CHOUX CREAM",
+        "TATA CHOCOLATE",
+        "COOKIE TRES CHOCOLATES"
+      ],
+      "value": {
+        "bags": [
+          "G",
+          "P"
+        ]
+      },
+      "remarks": "Somente para a composição agrupada; não aplicar individualmente.",
+      "authority": "HUMAN_CONFIRMATION_2026-10-14",
+      "applies_to": "EXACT_PRODUCT_OR_EXACT_COMPOSITION_ONLY",
+      "print_authorized": false
+    }
+  ],
+  "pending": [
+    {
+      "code": "C1",
+      "case": [
+        "COMBINADO KIDS",
+        "COCA COLA ZERO 350ML - UN"
+      ],
+      "raw_reply": "kit P 1 ‘e sobremesa",
+      "status": "CLARIFY",
+      "why": "Interpretação Kit p/1 + Kit Sobremesa contradiz a regra humana vigente Kids=Kit Kids e refrigerante não é sobremesa. Não aplicar automaticamente."
+    },
+    {
+      "code": "D1",
+      "case": [
+        "LETRA B - COMB EXEC SUSHI + SASHIMI"
+      ],
+      "status": "CLARIFY",
+      "why": "Precisa quantidade de caixas reais por unidade e para 3 unidades, tamanhos e distribuição; foi respondido 'não entendi'."
+    },
+    {
+      "code": "A1_STRAW",
+      "case": [
+        "COCA COLA 350ML - UN",
+        "FANTA GUARANA ZERO 350ML - UN",
+        "BLUE MOON LONG NECK - UN"
+      ],
+      "status": "CLARIFY",
+      "why": "'somente 1 canudo' pode ser por pedido ou por bebida; não supor canudo na cerveja."
+    },
+    {
+      "code": "A3_BOX_DISTRIBUTION",
+      "case": [
+        "TARTAR DE ATUM SPICY",
+        "TUNA SHISSO TARTAR"
+      ],
+      "status": "VERIFY",
+      "why": "Interpretação máxima: uma 650 para até 3 unidades; não transportar para 4+ nem misturar produtos diferentes."
+    },
+    {
+      "code": "COOKIE_ROUTE",
+      "case": [
+        "COOKIE TRES CHOCOLATES"
+      ],
+      "status": "MISSING_SOURCE",
+      "why": "Teknisa não possui rota de impressão no snapshot; ausência de embalagem não define quem separa o cookie."
+    },
+    {
+      "code": "PHYSICAL_V68",
+      "status": "OPEN",
+      "why": "A aprovação humana de regras não comprova vínculo da caixa física por item, origem independente de produção, idempotência e impressão."
+    }
+  ]
+}
