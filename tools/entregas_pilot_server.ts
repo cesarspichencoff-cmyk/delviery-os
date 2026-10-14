@@ -8,6 +8,7 @@
  */
 import http from "node:http";
 import https from "node:https";
+import { createPublicKey, type KeyObject } from "node:crypto";
 import { readFileSync, existsSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { join, extname, isAbsolute } from "node:path";
 import { loadPilotConfig, resolveBanner, findUserByToken } from "../src/entregas/pilot/pilot-config";
@@ -55,6 +56,7 @@ import {
 } from "../src/entregas/pilot/trip-timeline";
 import { freshnessOf } from "../src/entregas/pilot/dispatch-projection";
 import { consultarIdentidadeDoAparelho } from "../src/entregas/pilot/device-identity-client";
+import { authorizeDelegatedPilotHttp } from "../src/entregas/pilot/delegated-http-authorization";
 import { fetchCanonicalTripGps } from "../src/entregas/pilot/platform-location-client";
 import {
   decidirControleDeCaptura,
@@ -108,6 +110,27 @@ const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
  */
 const PLATFORM_URL = (process.env.ENTREGAS_PLATFORM_URL || "").trim().replace(/\/$/, "");
 const PLATFORM_READ_SECRET = (process.env.ENTREGAS_PLATFORM_READ_SECRET || "").trim();
+// An explicitly scoped public verification key, never the platform device secret.
+const pilotDelegationKeyB64 = process.env.ENTREGAS_PILOT_DELEGATION_PUBLIC_KEY_B64 ?? "";
+const pilotDelegationKid = process.env.ENTREGAS_PILOT_DELEGATION_KEY_ID ?? "";
+let pilotDelegationPublicKey: KeyObject | null = null;
+if (pilotDelegationKeyB64 || pilotDelegationKid) {
+  try {
+    if (!pilotDelegationKeyB64 || !/^[A-Za-z0-9_-]{1,128}$/.test(pilotDelegationKid)) {
+      throw new Error("missing_pilot_delegation_key");
+    }
+    const bytes = Buffer.from(pilotDelegationKeyB64, "base64");
+    if (bytes.length > 4096 || bytes.toString("base64") !== pilotDelegationKeyB64) {
+      throw new Error("malformed_pilot_public_key");
+    }
+    const key = createPublicKey(bytes);
+    if (key.asymmetricKeyType !== "ed25519") throw new Error("invalid_key_algorithm");
+    pilotDelegationPublicKey = key;
+  } catch {
+    console.error("[piloto] public key delegacao invalida: boot recusado");
+    process.exit(78);
+  }
+}
 // Plataforma configurada = GPS canônico ativo. Nesse modo nunca caímos de
 // volta silenciosamente para a memória do piloto.
 const CANONICAL_GPS_ACTIVE = PLATFORM_URL.length > 0;
@@ -697,7 +720,23 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/events/batch" && req.method === "POST") {
-      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
+      let eventActor: ActorContext | null = actor;
+      // Delegation is accepted only in the Authorization header (never query).
+      const delegatedHeader = typeof req.headers.authorization === "string"
+        ? /^Bearer\s+(pt1\.[^\s]+)$/i.exec(req.headers.authorization)?.[1]
+        : undefined;
+      if (!eventActor && delegatedHeader) {
+        const auth = await authorizeDelegatedPilotHttp({
+          bearer:delegatedHeader,unit_id:cfg.unit_id,
+          public_key:pilotDelegationPublicKey,key_id:pilotDelegationKid,
+          platform_base_url:PLATFORM_URL,now_s:Math.floor(Date.now()/1000),
+        });
+        if (!auth.ok) return reply(auth.status, {
+          ok:false,code:auth.reason,retryable:auth.status===503,
+        });
+        eventActor = {actor_id:auth.claims.actor_id,role:auth.claims.role};
+      }
+      if (!eventActor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as {
         events?: Array<{ event_id: string; command: Record<string, unknown> }>;
       };
@@ -711,7 +750,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         if (typeof cmd.rider_id === "string") {
           cmd.rider_id = asInternalRiderActorId(cmd.rider_id);
         }
-        const r = await facade.executeAs(actor, cmd as never);
+        const r = await facade.executeAs(eventActor, cmd as never);
         results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
       }
       return reply(200, { ok: true, results });
