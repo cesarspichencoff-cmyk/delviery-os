@@ -57,3 +57,10 @@ Diretório: `docs/auditorias/evidencias/android-workmanager-auth-2026-10-13/`.
 - `platform-stats.json`, `pilot-receipt-stats.json`: contagens independentes; nenhum token, senha, segredo bruto, chave TLS ou coordenada publicado.
 
 **Veredito:** `TEST_PASS` para agendamento real, falha de endpoint, recuperação e classificação de 401; `WORLD_PROVEN` **não** alcançado. O impedimento de autenticação do piloto permanece aberto e deve bloquear homologação operacional, merge e deploy até resolução com provas.
+
+
+## Atualização de continuação — contrato delegado isolado (13/10/2026)
+
+Para atacar a incompatibilidade 401 sem compartilhar o token da plataforma com o piloto, foi criado o **PR Draft/HOLD #110**, https://github.com/cesarspichencoff-cmyk/delviery-os/pull/110, commit `029193a7f50f765ed7178df7a12d9a8449b32b86`. A proposta adiciona apenas um verificador Ed25519 puro para audiência exclusiva `deliveryos-pilot-event-write`, seus testes e ADR, **sem integração HTTP nem Android**. Provas locais: **25/25 testes adversariais PASS**, **M1/C6 40/40 PASS**, **TypeScript exit 0**. Diff de exatamente 3 arquivos, verificado no GitHub. A execução CI remota não estava confirmada.
+
+**Estado honesto:** a recusa 401 do piloto continua intencional e o evento segue pendente no cenário real; o contrato candidato **não corrige ainda** o aplicativo. Próximo portão: emissão atestada na plataforma, verificação online de revogação no piloto, associação de identidade/papel/unidade a cada comando, integração Android com credenciais por audiência e teste instrumentado de fila/recibo no servidor oficial. Mantenha PR #110 em DRAFT/HOLD, sem merge ou deploy.
