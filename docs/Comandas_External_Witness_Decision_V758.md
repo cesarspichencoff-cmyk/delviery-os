@@ -179,3 +179,59 @@ também precisa ser custodiado por autoridade separada.
 
 **Efeito autorizado neste PR:** somente código/testes/documentação isolados.
 NO FIRESTORE SETUP / NO CLOUD ACCOUNT CHANGE / NO PRINT / NO TEKNISA CHANGE.
+
+## Durable Objects SQLite — reavaliação de opção sem nova assinatura (13/10/2026)
+
+A comparação anterior colocava Firestore como primeira opção e descartava
+Cloudflare **KV** por consistência eventual. Isso NÃO descarta o produto
+**Cloudflare Durable Objects (SQLite)**: é outra tecnologia com operações
+fortemente consistentes, isolamento por objeto e armazenamento transacional.
+A documentação oficial confirma suporte no plano Workers Free, usando
+exclusivamente o backend SQLite, com limites gratuitos documentados.
+
+**Escolha técnica atual:** preferir **Durable Objects SQLite como candidato a
+protótipo de transação externa**, porque pode reaproveitar a superfície
+Cloudflare já utilizada em outros projetos, sem provisionar Firestore só
+para explorar viabilidade. Firestore permanece alternativa equivalente para
+comparação se o modelo de identidade/custódia exigir um provedor diferente.
+Essa preferência é de ARQUITETURA, não declaração de que uma conta específica
+possui disponibilidade, nem licença para criar recursos ou publicar código.
+
+### O que Durable Objects entrega e o que não entrega
+
+| Requisito | Evidência / limitação |
+|---|---|
+| CAS serializado por instância | SQLite-backed Durable Objects executam transações atômicas e isoladas; o escritor ainda precisa comparar versão/hash dentro da transação |
+| Plano sem cobrança incremental | Workers Free tem cota de Durable Objects; ultrapassar os limites gera erro em vez de cobrança adicional no plano Free. Plano real/uso atual ainda UNKNOWN |
+| Independência administrativa da CAIXA | **Não comprovada**: mesma credencial ou mesma conta que controla o consumidor/segredo pode comprometer as duas superfícies |
+| Última referência externa intocável | **Não garantida** por SQLite nem por backup/PITR; um administrador autorizado pode alterar, excluir ou restaurar estado. Exige pin externo sob outra autoridade |
+| Alta disponibilidade e falhas | Limites, indisponibilidade, timeout e respostas ambíguas exigem HOLD, sem retry de papel |
+| Exatamente uma impressão física | **Não provado**; transação remota apenas registra tentativas e hashes, não controla papel nem ACK físico |
+
+### Mínimo protótipo seguro, ainda NÃO provisionado
+
+Um único Durable Object para cada domínio `loja + escopo de data`, com
+transação síncrona SQLite:
+
+1. Ler `revision`, `head_sha256` e identidade da testemunha.
+2. Comparar ambos com o pai assinado esperado; conflito = `409 HOLD`.
+3. Inserir somente o próximo checkpoint assinado e avançar a cabeça **na
+   mesma transação**, com chave única e vínculo à hash anterior.
+4. Relê-la sob identidade autenticada; ambiguidade, ausência ou atraso = HOLD.
+5. Nunca receber nomes, endereço, CPF, itens do pedido ou payload ESC/POS:
+   somente IDs minimizados e hashes das fixtures, segundo minimização definida.
+
+O worker não pode assinar em nome de César nem tornar seu próprio token uma
+referência independente. Precisaremos confirmar a custódia do pin externo,
+permissões, cotas, auditoria, rotatividade e real independência de contas.
+Até então os resultados da V7.59 são laboratório e o serviço permanece
+**NÃO CRIADO**.
+
+Documentação oficial:
+- https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/
+- https://developers.cloudflare.com/durable-objects/platform/pricing/
+- https://developers.cloudflare.com/workers/platform/pricing/
+- https://firebase.google.com/docs/firestore/pricing
+
+**Nenhum deploy, criação de Durable Object, credencial, regra ou alteração de
+billing foi autorizado ou realizado.**
