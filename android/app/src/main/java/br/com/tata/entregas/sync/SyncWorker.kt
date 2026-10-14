@@ -105,6 +105,9 @@ class SyncWorker(
         val piloto = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { null })
 
         var retryable = false
+        // Pilot 401 is an authorization block, not a successful transfer.
+        // Keep Room data; do not clear the separate platform session.
+        var pilotAuthorizationBlocked = false
         // Houve 401 da PLATAFORMA depois de ja termos autenticado? Entao o
         // token nao serve, e o lote precisa voltar para a fila — nunca ser
         // descartado.
@@ -164,11 +167,11 @@ class SyncWorker(
                     db.outbox().markFailed(ids, r.reason)
                     retryable = true
                 }
-                is ApiResult.Unauthorized ->
-                    // `markFailed` registra o motivo e mantem o item na fila.
-                    // O que NAO se faz aqui e desistir: o comando foi coletado
-                    // e fica; e a recusa e do piloto, nao da plataforma.
+                is ApiResult.Unauthorized -> {
+                    // The pilot denied authorization. Keep the original Room event.
                     db.outbox().markFailed(ids, r.reason)
+                    pilotAuthorizationBlocked = true
+                }
                 is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
             }
         }
@@ -298,7 +301,10 @@ class SyncWorker(
             DeviceSession.limparCredencial(db)
             return retryOrYield()
         }
-        return if (retryable) retryOrYield() else Result.success()
+        // Other transient work (including GPS platform sync) retains bounded retry.
+        if (retryable) return retryOrYield()
+        if (pilotAuthorizationBlocked) return Result.failure()
+        return Result.success()
     }
 
     private fun ackJson(ack: br.com.tata.entregas.data.TermAckEntity) = JSONObject().apply {
