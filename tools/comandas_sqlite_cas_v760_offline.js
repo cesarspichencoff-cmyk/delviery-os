@@ -26,7 +26,9 @@ function valid(p){
 function createSyntheticSchema(db){
  db.exec("CREATE TABLE IF NOT EXISTS witness_head ("+
   "instance_id TEXT PRIMARY KEY,revision INTEGER NOT NULL,"+
-  "head_sha TEXT NOT NULL,journal_head_sha TEXT NOT NULL);"+
+  "head_sha TEXT NOT NULL,journal_head_sha TEXT NOT NULL,"+
+  "seed_revision INTEGER NOT NULL,seed_head_sha TEXT NOT NULL,"+
+  "seed_journal_head_sha TEXT NOT NULL);"+
   "CREATE TABLE IF NOT EXISTS witness_commits ("+
   "instance_id TEXT NOT NULL,revision INTEGER NOT NULL,"+
   "request_id TEXT NOT NULL UNIQUE,parent_sha TEXT NOT NULL,"+
@@ -40,8 +42,8 @@ function seedOnlySyntheticFixture(db,instance,revision,head,journalHead){
   ![head,journalHead].every(x=>typeof x==="string"&&DIGEST.test(x)))
   return hold("INVALID_SYNTHETIC_FIXTURE");
  try{
-  db.prepare("INSERT INTO witness_head(instance_id,revision,head_sha,journal_head_sha) VALUES (?,?,?,?)")
-   .run(instance,revision,head,journalHead);
+  db.prepare("INSERT INTO witness_head(instance_id,revision,head_sha,journal_head_sha,seed_revision,seed_head_sha,seed_journal_head_sha) VALUES (?,?,?,?,?,?,?)")
+   .run(instance,revision,head,journalHead,revision,head,journalHead);
   return {status:"SYNTHETIC_SEED_ONLY",authorize_print:false};
  }catch{return hold("FIXTURE_ALREADY_EXISTS")}
 }
@@ -50,10 +52,12 @@ function applyConditionalSyntheticCommit(db,p){
  let inTx=false;
  try{
   db.exec("BEGIN IMMEDIATE");inTx=true;
-  const prev=db.prepare("SELECT revision,head_sha FROM witness_head WHERE instance_id=?")
-   .get(p.witness_instance_id);
-  if(!prev||prev.revision!==p.expected_revision||
-   prev.head_sha!==p.expected_head_sha256){
+  // Reject head-only or history-only tampering BEFORE creating another
+  // reservation, not merely on an optional post-commit status screen.
+  const prev=inspectSyntheticHead(db,p.witness_instance_id);
+  if(prev.status!=="LOCAL_SQLITE_READBACK_NOT_REMOTE_PROOF"||
+   prev.revision!==p.expected_revision||
+   prev.head_sha256!==p.expected_head_sha256){
    db.exec("ROLLBACK");inTx=false;
    return hold("CAS_EXPECTED_HEAD_CONFLICT_OR_MISSING");
   }
@@ -77,12 +81,36 @@ function applyConditionalSyntheticCommit(db,p){
 }
 function inspectSyntheticHead(db,instance){
  try{
-  const r=db.prepare("SELECT revision,head_sha,journal_head_sha FROM witness_head WHERE instance_id=?")
+  const r=db.prepare("SELECT revision,head_sha,journal_head_sha,seed_revision,seed_head_sha,seed_journal_head_sha FROM witness_head WHERE instance_id=?")
    .get(instance);
-  return r?{schema:SCHEMA,status:"LOCAL_SQLITE_READBACK_NOT_REMOTE_PROOF",
+  if(!r)return hold("MISSING_HEAD");
+  const digest=s=>typeof s==="string"&&DIGEST.test(s);
+  if(!Number.isSafeInteger(r.revision)||!Number.isSafeInteger(r.seed_revision)||
+    r.seed_revision<1||r.revision<r.seed_revision||
+    ![r.head_sha,r.journal_head_sha,r.seed_head_sha,
+       r.seed_journal_head_sha].every(digest))
+   return hold("INVALID_HEAD_OR_SEED_RECORD");
+  const history=db.prepare("SELECT revision,request_id,parent_sha,head_sha,journal_head_sha FROM witness_commits WHERE instance_id=? ORDER BY revision ASC")
+   .all(instance);
+  if(history.length!==r.revision-r.seed_revision)
+   return hold("AUDIT_RECORD_COUNT_NOT_EQUAL_TO_REVISION");
+  let parent=r.seed_head_sha,journal=r.seed_journal_head_sha;
+  for(let i=0;i<history.length;i++){
+   const item=history[i];
+   if(item.revision!==r.seed_revision+i+1||
+      item.parent_sha!==parent||
+      ![item.request_id,item.parent_sha,item.head_sha,
+       item.journal_head_sha].every(digest)||
+      item.head_sha===item.parent_sha)
+    return hold("AUDIT_PARENT_OR_REVISION_CHAIN_INVALID");
+   parent=item.head_sha;journal=item.journal_head_sha;
+  }
+  if(parent!==r.head_sha||journal!==r.journal_head_sha)
+   return hold("AUDIT_LAST_COMMIT_DIFFERS_FROM_HEAD");
+  return {schema:SCHEMA,status:"LOCAL_SQLITE_READBACK_NOT_REMOTE_PROOF",
    revision:r.revision,head_sha256:r.head_sha,
-   journal_head_sha256:r.journal_head_sha,authorize_print:false}:
-   hold("MISSING_HEAD");
+   journal_head_sha256:r.journal_head_sha,history_checked:true,
+   independent_trust_proven:false,authorize_print:false};
  }catch{return hold("READBACK_UNAVAILABLE")}
 }
 module.exports={SCHEMA,NO_EFFECTS,createSyntheticSchema,
