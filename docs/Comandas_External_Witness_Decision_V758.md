@@ -271,3 +271,57 @@ O bloqueio anterior de escrita de workflow permanece respeitado: a V7.60
 Próximo portão: executar o mesmo teste exato em Windows e Linux por
 mecanismo de CI autorizado, depois investigar conta/recursos de Durable
 Objects com permissão explícita, sem gastos ou mudanças na produção.
+
+## V7.61 — recuperação segura e integridade do histórico SQLite (13/10/2026)
+
+A auditoria adversarial encontrou uma **falha material** na V7.60:
+`inspectSyntheticHead()` consultava apenas `witness_head`. A exclusão da
+linha correspondente em `witness_commits` deixava a revisão principal
+aparentemente válida, embora a prova histórica estivesse incompleta.
+Nenhuma conta ou impressora real foi afetada.
+
+**Contra-regra aplicada no próprio módulo V7.60** (`tools/comandas_sqlite_cas_v760_offline.js`):
+- A tabela de cabeça inclui agora `seed_revision`, `seed_head_sha` e
+  `seed_journal_head_sha` para fixar a origem sintética.
+- A leitura verifica quantidade exata de commits, sequência contínua,
+  vínculo de hashes pai/filho, ausência de estados órfãos e igualdade
+  entre a última revisão auditada e a cabeça.
+- A nova transação executa essa mesma conferência **dentro de
+  `BEGIN IMMEDIATE` e antes de reservar**; inconsistência bloqueia tanto
+  reenvio quanto nova gravação.
+- Não há auto-reparo, deleção corretiva ou concessão de autorização de
+  impressão.
+
+**Provas executadas no laboratório Linux / Node 22.16.0**:
+- `verificar_sqlite_cas_v760_offline.js`: **11/11 PASS**,
+  oito processos reais sobre um banco SQLite temporário compartilhado,
+  exatamente um commit, sete conflitos bloqueados.
+- `verificar_sqlite_crash_v761_offline.js`: **14/14 PASS**,
+  término de processo antes de `COMMIT` gera rollback, término após
+  `COMMIT` mas antes da resposta preserva a única revisão;
+  remoção/adulteração/orfandade do registro de auditoria bloqueia
+  leitura e futuras transações.
+- Os **bytes exatos dos arquivos versionados** foram conferidos via Git
+  blob SHA antes da execução:
+  - `comandas_sqlite_cas_v760_offline.js`:
+    `a9e692e43e845acc55f66aa10a93993572a323ad`.
+  - `verificar_sqlite_crash_v761_offline.js`:
+    `51b2f245d7bb759f2f4fdadcee746a19dc5a442a`.
+  - `verificar_sqlite_cas_v760_offline.js`:
+    `b52d9bdd14d652a7bb91651918d2388452e2573d`.
+
+**Fronteira do teste:** término de processo em Node/SQLite e durabilidade
+local após reabrir banco não equivalem a falha abrupta de energia, corrupção
+física de disco, teste de Windows, execução na Cloudflare nem custódia
+externa independente. A cadeia de auditoria ainda pode ser inteiramente
+reescrita por administrador privilegiado; somente uma referência de
+confiança verdadeiramente separada poderá mitigar esse ataque.
+
+O workflow protegido de GitHub Actions continua **sem os passos V7.59,
+V7.60 e V7.61**. Portanto, sucesso dos jobs de CI já existentes
+não deve ser chamado de aprovação específica dessas baterias.
+O próximo portão é executar esses scripts **sem contornar a restrição**
+do workflow, estabelecer fronteira real de credenciais e só depois avaliar
+qualquer recurso externo com autorização humana.
+
+**Sem acesso à Epson/Teknisa, sem produção, sem serviço e sem custo novo.**
