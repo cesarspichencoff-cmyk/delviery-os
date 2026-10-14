@@ -17,6 +17,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createPrivateKey, type KeyObject } from "node:crypto";
 import { loadPlatformConfig, describe, ConfigError } from "../config/platform-config";
 import { lerModoDaInstancia } from "../config/modo-da-instancia";
 import { runMigrations } from "../migrations/runner";
@@ -30,6 +31,8 @@ import {
   PgTransactionalWriter,
 } from "../persistence/pg-repositories";
 import { lerSegredo, SegredoAusente } from "../auth/device-token";
+import { PgPilotDelegationRegistry } from "../auth/pg-pilot-delegation-registry";
+import { ROTA_DELEGACAO_PILOTO, tratarDelegacaoPiloto } from "../runtime/rota-delegacao-piloto";
 import { carregarCatalogo, ContratoIndisponivel } from "../contracts/event-schema";
 import type { SourceMode } from "../contracts/event-catalog";
 import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
@@ -105,6 +108,33 @@ async function main(): Promise<void> {
   // o registro decide revogação a cada requisição.
   const escritor = new PgTransactionalWriter(cliente);
   const registro = new PgDeviceRegistry(cliente);
+  const registroDelegacao = new PgPilotDelegationRegistry(cliente);
+  // Explicit opt-in; missing configuration never creates a token.
+  // Invalid configured signing keys abort startup; no key generated at boot.
+  let chaveDelegacao: KeyObject | null = null;
+  let idChaveDelegacao = "";
+  const signingKeyEncoded = process.env.DELIVERYOS_PILOT_DELEGATION_PRIVATE_KEY_B64 ?? "";
+  const signingKeyId = process.env.DELIVERYOS_PILOT_DELEGATION_KEY_ID ?? "";
+  if (signingKeyEncoded || signingKeyId) {
+    try {
+      if (!signingKeyEncoded || !signingKeyId || !/^[A-Za-z0-9_-]{1,128}$/.test(signingKeyId)) {
+        throw new Error("incomplete_key_configuration");
+      }
+      const decoded = Buffer.from(signingKeyEncoded, "base64");
+      if (decoded.length > 8192 || decoded.toString("base64") !== signingKeyEncoded) {
+        throw new Error("invalid_key_encoding");
+      }
+      const key = createPrivateKey(decoded);
+      if (key.asymmetricKeyType !== "ed25519") throw new Error("invalid_key_type");
+      chaveDelegacao = key;
+      idChaveDelegacao = signingKeyId;
+    } catch {
+      console.error("[critico] configuracao delegacao piloto invalida: boot recusado");
+      await cliente.close();
+      process.exit(78);
+      return;
+    }
+  }
 
   // Falha fechada: o contrato de eventos é lido em RUNTIME pela rota de
   // ingestão, e sem ele NENHUM lote de GPS é aceito. Sem esta checagem o
@@ -281,6 +311,24 @@ async function main(): Promise<void> {
       )
         .then((r) => responder(res, r.status, r.corpo))
         .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      return;
+    }
+
+    if (rota === ROTA_DELEGACAO_PILOTO && req.method === "POST") {
+      // Bearer belongs to platform only; never forward it to pilot.
+      const authorization =
+        typeof req.headers.authorization === "string" ? req.headers.authorization : undefined;
+      void tratarDelegacaoPiloto(authorization, {
+        platform_secret: segredoDeDispositivo,
+        private_key: chaveDelegacao,
+        key_id: idChaveDelegacao,
+        registry: registroDelegacao,
+        now: () => new Date(),
+      })
+        .then((r) => responder(res, r.status, r.corpo))
+        .catch(() => responder(res, 503, {
+          ok: false, code: "pilot_delegation_unavailable", retryable: true,
+        }));
       return;
     }
 
