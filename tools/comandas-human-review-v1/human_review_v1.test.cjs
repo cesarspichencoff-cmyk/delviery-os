@@ -38,4 +38,19 @@ assert.equal(reviewV2({...base,blocking_reasons:['BAG_SIZE_NOT_FACT','KITS_NOT_F
 assert.equal(reviewV2({...base,blocking_reasons:['ALLERGEN_NOTE_REQUIRES_HUMAN_REVIEW']}).candidate_for_reconciliation,false);checks++;
 assert.equal(reviewV2({...base,ready:true}).status,'HOLD');checks++;
 assert.equal(reviewV2(base).print_authorized,false);checks++;
+
+// C4 requires the V2 source-proven exact dupla classification. It never clears KITS_NOT_FACT.
+const special={...mk('ESPECIAL_1P'),classification:{family:'combinado'}};
+const dupla={...mk('SUSHI_POLVO_TRUFADO'),classification:{family:'dupla',subfamily:'dupla_dyo',truth_class:'PROVEN_ACADEMIA_PACKAGING_RULE',review_required:false},classification_source:'ACADEMIA_DOCUMENTED_CATEGORY_EXACT_NAME_AND_ROUTED_STATION_2026_10_07'};
+const b8={schema:'deliveryos.live-shadow-decision.v1',items:[special,dupla],ready:false,blocking_reasons:['BAG_SIZE_NOT_FACT','KITS_NOT_FACT']};
+const b8before=JSON.stringify(b8);
+const b8review=reviewV2(b8);
+assert.equal(b8review.kits[0].kind,'Kit p/1');checks++;
+assert.equal(b8review.kits[0].count,1);checks++;
+assert.equal(b8review.kits[0].case,'C4');checks++;
+assert.equal(b8review.candidate_for_reconciliation,false);checks++;
+assert.equal(b8review.print_authorized,false);checks++;
+assert.equal(JSON.stringify(b8),b8before);checks++;
+assert.equal(reviewV2({...b8,items:[special,{...dupla,classification:{family:'enrolado'}}]}).kits.length,0);checks++;
+assert.equal(reviewV2({...b8,items:[special,{...dupla,quantity:2}]}).kits.length,0);checks++;
 console.log(JSON.stringify({result:'PASS',checks,synthetic_only:true,consumer_modified:false,prints:0}));
