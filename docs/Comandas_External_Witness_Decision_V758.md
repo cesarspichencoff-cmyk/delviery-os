@@ -235,3 +235,39 @@ Documentação oficial:
 
 **Nenhum deploy, criação de Durable Object, credencial, regra ou alteração de
 billing foi autorizado ou realizado.**
+
+## V7.60 — CAS SQLite de laboratório, sem criação de serviço
+
+Foi criado um **ensaio com transação SQLite verdadeira** para diminuir a
+distância entre o protocolo V7.59 e um possível Durable Object transacional.
+
+- Código-fonte isolado: `tools/comandas_sqlite_cas_v760_offline.js`.
+- Verificador: `tools/verificar_sqlite_cas_v760_offline.js`.
+- Protocolo SQL: `BEGIN IMMEDIATE`, comparação simultânea de revisão/hash,
+  gravação de nova revisão com unicidade de requisição, avanço da cabeça na
+  mesma transação e `COMMIT`. Conflito, replay, proposta inválida,
+  erro de gravação ou revisão antiga = HOLD sem reimpressão.
+- O teste só aceita o banco `witness.db` em pasta temporária com prefixo
+  `deliveryos-v760-` no diretório temporário do sistema.
+- O ensaio exerce **oito processos independentes sobre o mesmo arquivo**,
+  e confirma exclusivamente uma gravação; fechamento/reabertura da conexão
+  conserva a revisão e bloqueia outra tentativa.
+- A versão local foi exercitada em Node.js 22 com SQLite experimental:
+  **11/11 verificações PASS**, incluindo 8 concorrentes, um commit.
+  O código equivalente está versionado no PR; a execução CI do arquivo exato
+  e testes Windows específicos **não estão comprovados nesta etapa**.
+- A gravação aqui se limita ao banco de testes e não acessa provedor externo
+  nem spooler, driver, impressora ou serviço instalado.
+
+**Alcance:** atomicidade de transação SQLite de laboratório ≠ Durable
+Objects em conta Cloudflare; `synchronous=FULL` e WAL ≠ prova de
+durabilidade em hardware Windows após falta de energia; registro da
+tentativa ≠ impressão física. Um único registro de testemunha continua
+dependendo de identidade independente e prova de última revisão fora da
+CAIXA. Não há token, credencial ou serviço real configurado.
+
+O bloqueio anterior de escrita de workflow permanece respeitado: a V7.60
+**não foi injetada no workflow existente** por uma rota alternativa.
+Próximo portão: executar o mesmo teste exato em Windows e Linux por
+mecanismo de CI autorizado, depois investigar conta/recursos de Durable
+Objects com permissão explícita, sem gastos ou mudanças na produção.
