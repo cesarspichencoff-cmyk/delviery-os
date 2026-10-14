@@ -383,23 +383,49 @@ async function main(): Promise<void> {
    * ---------------------------------------------------------------- */
   console.log("\nK. A FRONTEIRA NO KOTLIN — duas autoridades, nunca misturadas");
 
-  await teste("K1 no SyncWorker, sessão e GPS usam só a PLATAFORMA com o token; termo, comandos e políticas usam só o PILOTO, sem token", () => {
+  await teste("K1 audiência separada: GPS e sessão na plataforma, eventos com token delegado; termo/políticas no piloto", () => {
     const { readFileSync } = require("node:fs") as typeof import("node:fs");
     const w = readFileSync(join(raiz, "android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt"), "utf8")
+      .replace(/\/\/[^\n]*/g, "");
+    const helper = readFileSync(join(raiz, "android/app/src/main/java/br/com/tata/entregas/sync/PilotEventDispatch.kt"), "utf8")
+      .replace(/\/\/[^\n]*/g, "");
+    const api = readFileSync(join(raiz, "android/app/src/main/java/br/com/tata/entregas/sync/EntregasApi.kt"), "utf8")
       .replace(/\/\/[^\n]*/g, "");
     assert.match(w, /val semCredencial = EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ null \}\)/);
     assert.match(w, /val api = EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ tokenAtual \}\)/);
     assert.match(w, /val piloto = EntregasApi\(BuildConfig\.ENTREGAS_BASE_URL, \{ null \}\)/);
-    assert.match(w, /api\.sendPoints\(/, "GPS não vai pela plataforma");
-    assert.doesNotMatch(w, /piloto\.sendPoints\(/, "GPS indo para o piloto");
-    for (const chamada of ["sendEvents", "sendTermAcknowledgement", "policies"]) {
-      assert.match(w, new RegExp(`piloto\\.${chamada}\\(`), `${chamada} não vai pelo piloto`);
-      assert.doesNotMatch(w, new RegExp(`api\\.${chamada}\\(`), `${chamada} indo pela plataforma com o token — autoridade misturada`);
-    }
-    // A recusa do piloto nunca apaga a credencial da plataforma.
-    const blocoPiloto = w.slice(w.indexOf("piloto.sendTermAcknowledgement"), w.indexOf("api.sendPoints"));
-    assert.doesNotMatch(blocoPiloto, /credencialRecusada = true/, "401 do piloto derruba a credencial da plataforma");
+    assert.match(w, /api\.sendPoints\(/, "GPS deve usar a plataforma");
+    assert.doesNotMatch(w, /piloto\.sendPoints\(/, "GPS não pode ir ao piloto");
+    assert.match(w, /api\.requestPilotWriteToken\(localActor\)/,
+      "a plataforma deve emitir a delegação");
+    assert.match(api, /request\("\/api\/device\/pilot-delegation", "POST", JSONObject\(\)\)/,
+      "a troca acontece somente no endpoint da plataforma");
+    assert.match(w, /sendWithPilotDelegation\(/,
+      "o envio de eventos deve usar a delegação");
+    assert.match(w, /sendToPilot = \{ writeToken ->\s*EntregasApi\(BuildConfig\.ENTREGAS_BASE_URL, \{ writeToken \}\)\s*\.sendEvents\(payloads, correlationId\)/,
+      "o piloto só pode receber eventos com a credencial delegada");
+    assert.doesNotMatch(w, /api\.sendEvents\(/,
+      "token da plataforma não autoriza eventos no piloto");
+    assert.doesNotMatch(w, /piloto\.sendEvents\(/,
+      "o cliente legado sem credencial não envia eventos");
+    assert.doesNotMatch(w, /EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ writeToken \}\)/,
+      "credencial do piloto não volta à plataforma");
+    assert.match(helper, /if \(first\.result !is ApiResult\.Unauthorized \|\| first\.platformUnauthorized\) return first/,
+      "401 da plataforma não dispara retry no piloto");
+    assert.match(helper, /return dispatch\(exchangeAtPlatform\(\)\)/,
+      "no máximo uma renovação após 401 do piloto");
+    assert.match(w, /if \(platformDelegationUnauthorized\)/,
+      "a recusa da plataforma é distinguida do piloto");
+    assert.match(w, /piloto\.sendTermAcknowledgement\(/, "termo permanece no piloto");
+    assert.match(w, /piloto\.policies\(/, "políticas permanecem no piloto");
+    assert.doesNotMatch(w, /api\.sendTermAcknowledgement\(/);
+    assert.doesNotMatch(w, /api\.policies\(/);
+    const ackBlock = w.slice(w.indexOf("piloto.sendTermAcknowledgement"), w.indexOf("val events ="));
+    assert.doesNotMatch(ackBlock, /credencialRecusada = true/,
+      "401 de termo não pode apagar a sessão da plataforma");
   });
+
+
 
   /* ---------------------------------------------------------------- *
    * C. A cadeia, com os binários reais

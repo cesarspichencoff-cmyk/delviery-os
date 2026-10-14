@@ -144,6 +144,14 @@ class EntregasApi(
             },
         )
 
+    /** Exchange platform-only device session for a short-lived pilot event credential.
+     * This method talks to PLATFORM only; never forwards its bearer to pilot.
+     */
+    fun requestPilotWriteToken(expectedActor: String?): ApiResult<String> =
+        classifyPilotDelegation(
+            request("/api/device/pilot-delegation", "POST", JSONObject()),
+            expectedActor,
+        )
     /** Flags, política de captura, termo vigente e unidade. */
     fun policies(): ApiResult<JSONObject> = request("/api/policies", "GET", null)
 

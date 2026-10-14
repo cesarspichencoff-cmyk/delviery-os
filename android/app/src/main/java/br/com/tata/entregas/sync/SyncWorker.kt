@@ -138,7 +138,21 @@ class SyncWorker(
                     put("command", JSONObject(e.payload))
                 }
             }
-            when (val r = piloto.sendEvents(payloads, correlationId)) {
+            // The platform token NEVER reaches the pilot. Exchange it at the
+            // platform endpoint and use the pilot-only result for this batch.
+            // No pilot credential is persisted or exposed to WebView.
+            val localActor = db.deviceState().get(EntregasDatabase.KEY_RIDER_ID)
+            val dispatch = sendWithPilotDelegation(
+                exchangeAtPlatform = { api.requestPilotWriteToken(localActor) },
+                sendToPilot = { writeToken ->
+                    EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { writeToken })
+                        .sendEvents(payloads, correlationId)
+                },
+            )
+            val platformDelegationUnauthorized = dispatch.platformUnauthorized
+            val eventResponse = dispatch.result
+            if (dispatch.delegationDenied) pilotAuthorizationBlocked = true
+            when (val r = eventResponse) {
                 is ApiResult.Ok -> {
                     // O piloto retorna HTTP 200 inclusive quando uma parte do
                     // lote foi recusada pelo dominio. Ler o recibo POR EVENTO.
@@ -170,7 +184,12 @@ class SyncWorker(
                 is ApiResult.Unauthorized -> {
                     // The pilot denied authorization. Keep the original Room event.
                     db.outbox().markFailed(ids, r.reason)
-                    pilotAuthorizationBlocked = true
+                    if (platformDelegationUnauthorized) {
+                        // Only a PLATFORM 401 invalidates the platform session.
+                        credencialRecusada = true
+                    } else {
+                        pilotAuthorizationBlocked = true
+                    }
                 }
                 is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
             }
