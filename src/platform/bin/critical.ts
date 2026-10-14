@@ -17,7 +17,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { createPrivateKey, type KeyObject } from "node:crypto";
+import { createPrivateKey, createPublicKey, type KeyObject } from "node:crypto";
 import { loadPlatformConfig, describe, ConfigError } from "../config/platform-config";
 import { lerModoDaInstancia } from "../config/modo-da-instancia";
 import { runMigrations } from "../migrations/runner";
@@ -33,6 +33,9 @@ import {
 import { lerSegredo, SegredoAusente } from "../auth/device-token";
 import { PgPilotDelegationRegistry } from "../auth/pg-pilot-delegation-registry";
 import { ROTA_DELEGACAO_PILOTO, tratarDelegacaoPiloto } from "../runtime/rota-delegacao-piloto";
+import {
+  ROTA_IDENTIDADE_DELEGADA_PILOTO, tratarIdentidadeDelegadaPiloto,
+} from "../runtime/rota-identidade-delegada-piloto";
 import { carregarCatalogo, ContratoIndisponivel } from "../contracts/event-schema";
 import type { SourceMode } from "../contracts/event-catalog";
 import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
@@ -311,6 +314,25 @@ async function main(): Promise<void> {
       )
         .then((r) => responder(res, r.status, r.corpo))
         .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      return;
+    }
+
+    if (rota === ROTA_IDENTIDADE_DELEGADA_PILOTO && req.method === "GET") {
+      const authorization =
+        typeof req.headers.authorization === "string" ? req.headers.authorization : undefined;
+      const unidade =
+        typeof req.headers["x-entregas-unit"] === "string"
+          ? req.headers["x-entregas-unit"] : undefined;
+      void tratarIdentidadeDelegadaPiloto(authorization, unidade, {
+        key_id: idChaveDelegacao,
+        public_key: chaveDelegacao ? createPublicKey(chaveDelegacao) : null,
+        registry: registroDelegacao,
+        now: () => new Date(),
+      })
+        .then((r) => responder(res, r.status, r.corpo))
+        .catch(() => responder(res, 503, {
+          ok:false, code:"delegation_registry_unavailable", retryable:true,
+        }));
       return;
     }
 
