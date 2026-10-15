@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-15",
-    "state_basis": "d6e23a38d6d96585d0ca0f60e9c51242bafeeb39",
+    "state_basis": "c03c5a4e70b0100cdfd8c6227552f4277d7b9b5c",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2520,17 +2520,17 @@
     "next": "Run same remote CI against candidate; review unit scope and authorization before any real pilot."
   },
   "deliveryos_api_scope_shadow_lab_20261015": {
-    "status": "LAB_HTTP_SQL_RLS_AND_LEGACY_PASS_NO_PRODUCTION_AUTH",
+    "status": "LAB_HTTP_SQL_RLS_LEGACY_12_12_HUMAN_AUTH_NO_GO",
     "dated": "2026-10-15",
     "reviewed_code_head": "8d57691333d2f678dacd419890c783bdb00eced3",
     "focus": "G0/G4 unit-scoped HTTP read boundary; not human login, not tenant DB isolation",
     "change": "opt-in server mode shadow_lab with explicit unit, 32-byte bearer, no conference store or reader, narrow /api/ allowlist; default unchanged",
     "proof": {
-      "ci_run": 38779913901,
-      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913901",
+      "ci_run": 38790845622,
+      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38790845622",
       "outcome": "SUCCESS",
       "isolated_postgres": "2 synthetic units ITAIM and VILA-LAB, ephemeral PostgreSQL 16 socket-only, no commercial DB",
-      "test": "ENTREGAS_SERVIDOR_PG 11/11 S10 HTTP S11 SQL S12 RLS scoped role S13 pre-0003 migration, product-ux 38779913867 31 successful steps",
+      "test": "ENTREGAS_SERVIDOR_PG 12/12 incl S14 HTTP local legacy unknown, full product-ux 38790845623 success 31 steps",
       "negative": "401 no/wrong secret; 403 disallowed routes, cross-unit and duplicate scope; no VILA-LAB device/trip/actor in authorized ITAIM HTTP responses",
       "cleanup": "PostgreSQL ephemeral runner stopped"
     },
@@ -2552,7 +2552,7 @@
   },
   "deliveryos_api_scope_sql_lab_20261015": {
     "status": "SQL_WHERE_AND_DISPOSABLE_RLS_ROLE_PASS_PROD_NOT_DONE",
-    "source_commit": "d6e23a38d6d96585d0ca0f60e9c51242bafeeb39",
+    "source_commit": "c03c5a4e70b0100cdfd8c6227552f4277d7b9b5c",
     "checked_at": "2026-10-15",
     "evidence": {
       "isolation": "Postgres 16 ephemeral two synthetic units, SQL query and parameter audit S11 for canonical and incremental",
@@ -2571,23 +2571,34 @@
   },
   "deliveryos_rls_legacy_lab_20261015": {
     "status": "LAB_TEST_PASS_NOT_DEPLOYED",
-    "source_commit": "d6e23a38d6d96585d0ca0f60e9c51242bafeeb39",
+    "source_commit": "c03c5a4e70b0100cdfd8c6227552f4277d7b9b5c",
     "rls": "runner-only temporary PostgreSQL role NOSUPERUSER NOBYPASSRLS, limited SELECT, RLS policies on event log and device, cross-unit SELECT denied even without WHERE",
     "legacy": "real migrations pre0003 null mode historical row remains UNKNOWN; local unit count 1, other unit 0 in both readers",
     "proof": {
-      "scope": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913901",
-      "tests": "11/11 PASS",
-      "full": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913867",
+      "scope": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38790845622",
+      "tests": "12/12 incl S14 HTTP",
+      "full": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38790845623",
       "steps": "31 PASS"
     },
     "open": [
       "Production RLS migration and application role (not authorized)",
       "Operator identity/browser session",
-      "HTTP local legacy positive test",
       "G1 real sources",
       "G3 real Android physical trip",
       "G4/G5 human pilot"
     ],
     "authority": "DRAFT_NO_MERGE_NO_DEPLOY"
+  },
+  "deliveryos_legacy_http_lab_20261015": {
+    "status": "LAB_TEST_PASS_NOT_DEPLOYED",
+    "source_commit": "c03c5a4e70b0100cdfd8c6227552f4277d7b9b5c",
+    "proof": {
+      "scope": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38790845622",
+      "tests": "12/12 PASS",
+      "full": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38790845623",
+      "steps": "31 PASS"
+    },
+    "result": "Itaim available; Vila-Lab own pre0003 UNKNOWN unavailable; 401/403 guard; no writes",
+    "limit": "Synthetic only. No real operator session, production RLS, operational data, merge/deploy/pilot."
   }
 }
