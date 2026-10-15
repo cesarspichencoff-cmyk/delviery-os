@@ -20,6 +20,11 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           & .\tests\tata-reader\lab\run-service-state-v2-lab-tests.ps1
+      - name: Provar contrato contra funcao Read-ServiceState do watcher v2 instalado
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & .\tests\tata-reader\lab\run-installed-watcher-v2-contract-tests.ps1
       - name: Confirmar que a suite nao acessa o estado da loja
         shell: powershell
         run: |
