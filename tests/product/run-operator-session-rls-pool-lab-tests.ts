@@ -23,6 +23,7 @@ if (process.env.GITHUB_ACTIONS !== "true" || !localTmp ||
 }
 const nome = "operator_lab_" + process.pid + "_" + Date.now().toString(36);
 assert.match(nome,/^[a-z][a-z0-9_]{4,60}$/);
+async function main(): Promise<void> {
 const banco = await bancoIsolado(URL_BASE, undefined, "usrpool");
 let criado = false;
 let policyEvent = false;
@@ -175,3 +176,6 @@ try {
   }
   await banco.descartar();
 }
+
+}
+void main().catch((e) => { console.error(e); process.exitCode = 1; });
