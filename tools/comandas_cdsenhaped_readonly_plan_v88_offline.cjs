@@ -106,6 +106,13 @@ function makePlan(event,manifest){
     sql_template:SQL,parameters:['cdfilial','cdloja','nrvendarest',
      'nrcomanda','day_start','day_end'],
     sql_contains_actual_order_values:false,
+    // The live SQL rows have no watcher snapshot_hash or order_key:
+    // copying those fields from a watcher into SQL rows would be a forged
+    // provenance assertion, NOT proof of the same historical revision.
+    sql_result_contains_watcher_snapshot_hash:false,
+    sql_result_contains_watcher_order_key:false,
+    can_attest_historical_revision_from_this_sql:false,
+    sql_result_directly_satisfies_v87:false,
     expected_order_day:'2026-10-14',
     row_ceiling:101,
     source_snapshot_hash_self_checked:true,
