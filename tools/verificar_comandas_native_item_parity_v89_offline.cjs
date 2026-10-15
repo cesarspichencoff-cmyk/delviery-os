@@ -81,6 +81,7 @@ trial('wrong item status',(n)=>{n[0].IDSTPRCOMVEN='X'},'HOLD');
 trial('wrong quantity',(n)=>{n[1].QTPRODCOMVEN='3.000'},'HOLD');
 trial('invalid zero quantity',(n)=>{n[0].QTPRODCOMVEN='0.000'},'HOLD');
 trial('overlong senha',(n)=>{n[0].CDSENHAPED='999999'},'HOLD');
+trial('zero senha',(n)=>{n[0].CDSENHAPED='00000'},'HOLD');
 trial('B5 description removed',(n)=>{n[0].DSOBSPEDDIGCMD=null},'HOLD');
 trial('B5 production note modified',(n)=>{n[0].TXPRODCOMVEN='SEM CEBOLINHA'},'HOLD');
 trial('extra source note not in watcher',(n)=>{n[1].DSOBSDESCIT='ADD EXTRA'},'HOLD');
