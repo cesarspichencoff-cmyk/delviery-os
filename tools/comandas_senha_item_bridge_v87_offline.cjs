@@ -1,7 +1,7 @@
 'use strict';
 /** V8.7 — Future SOURCE-CLAIM review ONLY. Data inputs can be forged; passing
  * never authenticates SQL, print, physical effect or production V6.8. */
-const ID=/^[0-9]{1,20}$/,SHA=/^[0-9a-f]{64}$/i;
+const ID=/^[0-9]{1,5}$/,SHA=/^[0-9a-f]{64}$/i;
 const str=x=>typeof x==='string'&&x.length>0&&x===x.trim();
 const finish=(status,reason,info={})=>({
  schema:'tata.comandas.senha-item-bridge.v87.review-only',status,reason,...info,
@@ -36,9 +36,12 @@ function assess(x){
    if(!ID.test(String(row.CDSENHAPED||'')))return finish('HOLD','NATIVE_SENHA_MISSING');
    senhas.add(String(Number(row.CDSENHAPED)));
    const notes=it.source_item_notes||{};
-   for(const f of ['DSOBSPEDDIGCMD','TXPRODCOMVEN'])
+   for(const f of ['DSOBSPEDDIGCMD','TXPRODCOMVEN']){
     if(Object.hasOwn(notes,f)&&row[f]!==notes[f])
      return finish('HOLD','PREPARATION_NOTE_SOURCE_DIVERGENCE');
+    if(!Object.hasOwn(notes,f)&&typeof row[f]==='string'&&row[f].trim())
+     return finish('HOLD','UNLINKED_NATIVE_PREPARATION_NOTE');
+   }
   }
   if(!x.print_blocks.length)return finish('HOLD','LOG_BLOCK_MISSING');
   const blocks=new Set(),candidate=new Set();
