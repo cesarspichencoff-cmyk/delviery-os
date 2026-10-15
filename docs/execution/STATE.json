@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-15",
-    "state_basis": "d9985970147b067408232ae7feef4d5998c06395",
+    "state_basis": "b77011c599aa9f3c7e1a25a423de3dd60b34e9d5",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2470,5 +2470,29 @@
     "effect_boundary": "DRAFT_NO_MERGE_NO_DEPLOY_NO_IFOOD_API_NO_COST",
     "historical_note": "Os demais campos deste STATE sao checkpoints historicos de suas missoes e nao provam prontidao de V1; esta revisao so ratifica o delta verificado. Nenhuma aprovacao humana implicita.",
     "next_proof": "CI remoto integral verde; mesma Trip Android real/TLS/PG/browser; Gestor autorizado; Tek turno autenticado"
+  },
+  "deliveryos_ui_race_guard_20261015": {
+    "status": "LAB_REGRESSION_FIXED_NOT_PRODUCTION_APPROVED",
+    "dated": "2026-10-15",
+    "source_commit": "b77011c599aa9f3c7e1a25a423de3dd60b34e9d5",
+    "scope": "src/product/ui/app.js only (plus browser test); no domain change, no new engine, no source connection",
+    "failure_class": "STALE_ASYNC_NAVIGATION_RESPONSE",
+    "negative_proof": "Baseline 641c578: Chromium localhost after Copiloto->Home, stale successful Copiloto response overwrote Home; test failed AssertionError, RACE_OBSERVED copilotoSobrescreveu=true.",
+    "correction": "Navigation generation captured before request, stale success and stale 503 suppressed, busy finalization guarded for current generation only.",
+    "positive_proof": [
+      "Chromium localhost success delayed => Home preserved",
+      "Chromium localhost 503 delayed => Home preserved",
+      "TypeScript check pass",
+      "build:platform pass",
+      "Product System 52/52",
+      "Home 44/44",
+      "Copiloto 41/41",
+      "Visual order 6/6",
+      "git diff --check pass"
+    ],
+    "ci_remote": "Prior PR #120 641c578 passed GitHub Actions run 38685647799; new commit needs independent remote revalidation.",
+    "authorization": "DRAFT_ONLY_NO_MERGE_NO_DEPLOY_NO_PRODUCTION_CONNECTION",
+    "other_gates": "G1 Gestor and Teknisa still not proven live; G3 Android physical end-to-end still missing; G4/G5 no human acceptance.",
+    "next": "Run same remote CI against candidate; review unit scope and authorization before any real pilot."
   }
 }
