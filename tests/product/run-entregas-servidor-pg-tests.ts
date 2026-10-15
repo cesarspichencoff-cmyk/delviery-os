@@ -339,15 +339,15 @@ void (async () => {
         assert.ok(leitura.aparelhos.length > 0, modo);
         assert.ok(leitura.aparelhos.every((a) => a.unit_id === "ITAIM"), modo);
         assert.ok(leitura.projecoes.every((p) => p.unit_id === "ITAIM"), modo);
-        const eventos = registros.filter((x) => /\\bFROM\\s+platform\\.event_log\\b/i.test(x.sql));
-        const dispositivos = registros.filter((x) => /\\bFROM\\s+identity\\.device\\s+d\\b/i.test(x.sql));
+        const eventos = registros.filter((x) => /\bFROM\s+platform\.event_log\b/i.test(x.sql));
+        const dispositivos = registros.filter((x) => /\bFROM\s+identity\.device\s+d\b/i.test(x.sql));
         assert.equal(eventos.length, 3, modo + ": replay/cursor, ultimo GPS e contagem");
         assert.equal(dispositivos.length, 1, modo);
         for (const q of [...eventos, ...dispositivos]) {
-          assert.match(q.sql, /\\bunit_id\\s*=\\s*\\$[12]\\b/i, modo + ": consulta sem recorte SQL");
+          assert.match(q.sql, /\bunit_id\s*=\s*\$[12]\b/i, modo + ": consulta sem recorte SQL");
           assert.ok(q.params.includes("ITAIM"), modo + ": sem parametro de unidade no SQL");
         }
-        assert.equal(registros.some((q) => /\\bINSERT\\b|\\bUPDATE\\b|\\bDELETE\\b/i.test(q.sql)), false,
+        assert.equal(registros.some((q) => /\bINSERT\b|\bUPDATE\b|\bDELETE\b/i.test(q.sql)), false,
           modo + ": leitura escreveu");
       }
       assert.equal(await impressaoDoBanco(b), antes, "S11 não alterou banco");
