@@ -5,7 +5,8 @@ const crypto=require("node:crypto");
 const {PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
 const {preparePaymentOnlyOfflineViewV80,PAYMENT_NOTE_POLICY_V80,
- projectVerifiedReaderPairV68,verifyLiveReaderPairV68}=
+ projectVerifiedReaderPairV68,verifyLiveReaderPairV68,
+ prepareOrderNoteReviewPacketV77}=
  require("../dist/src/production/stableReaderShadowPairV68.js");
 const deep=v=>structuredClone(v);
 let checks=0;
@@ -165,6 +166,8 @@ function scenario(value=paymentNote().value){
 }
 check("strict approved payment note: original unchanged and ticket view excludes ONLY order note",()=>{
  const f=scenario(),before=JSON.stringify(f);
+ const packet=prepareOrderNoteReviewPacketV77(f.event,f.decision);
+ assert.equal(packet.status,"REVIEW_REQUIRED",packet.reasons.join(","));
  const result=preparePaymentOnlyOfflineViewV80(f.event,f.decision,f.ctx.delivery,PAYMENT_NOTE_POLICY_V80);
  assert.equal(result.status,"REVIEWED_PAYMENT_OFFLINE_VIEW",result.reason);
  assert.equal(result.original_preserved,true);
