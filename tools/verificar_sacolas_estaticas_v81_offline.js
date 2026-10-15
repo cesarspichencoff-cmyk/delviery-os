@@ -137,6 +137,7 @@ try{
  assert.ok(process.platform==='linux'||(process.platform==='win32'&&process.env.CI==='true'));
  create(oldDir,consumer,motor);create(newDir,Buffer.from(future),wrapped);
  let positive=0,negative=0,unknownRemoved=0,remainsBlocked=0;
+ const remainingReasons=new Map();
  for(const [id,parts]of cases){
   const event=eventFor(parts),baseline=invoke(oldDir,event),next=invoke(newDir,event);
   assert.deepEqual(next.items,baseline.items,'item source classifications must not change');
@@ -150,6 +151,7 @@ try{
   assert.deepEqual(other(next),other(baseline),'other V2 blockers cannot be removed');
   if(baseline.blocking_reasons.includes('BAG_SIZE_NOT_FACT'))unknownRemoved++;
   if(!next.ready)remainsBlocked++;
+  for(const reason of next.blocking_reasons)remainingReasons.set(reason,(remainingReasons.get(reason)||0)+1);
   positive++;
   for(const miss of [
    [...parts,['SHIMEJI',1]],
@@ -168,6 +170,7 @@ try{
  console.log(JSON.stringify({schema:'tata.static-bag-policy-v81-lab',
   status:'PASS',positive,negative,unknownRemoved,remainsBlocked,
   original_consumer_unchanged:true,original_motor_unchanged:true,
+  remaining_blockers_by_reason:Object.fromEntries([...remainingReasons].sort()),
   source_event_fake:true,all_effects_false:true,real_world_authority:false,
   historical_v2_promotions:0,physical_prints:0}));
 }finally{fs.rmSync(root,{recursive:true,force:true})}
