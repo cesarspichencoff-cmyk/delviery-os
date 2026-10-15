@@ -2,7 +2,7 @@ name: deliveryos-product-ux
 
 # Product System / Entregas — "a rua, lida agora" (missao de 2026-10-09).
 # So roda na branch desta frente. Nao toca a frente Android, nao publica nada,
-# nao usa segredo: PostgreSQL de servico descartavel (trust, como o resto do CI)
+# nao usa segredo: PostgreSQL 16 efemero do proprio runner, socket Unix privado
 # e Chromium do proprio Playwright. Repositorio publico: runner padrao.
 #
 # O que NAO prova: aparelho fisico, CAIXA, producao. A falha pre-existente do
@@ -21,17 +21,6 @@ jobs:
   product-ux:
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    services:
-      postgres:
-        # Docker Official Image no ECR Public: evita limite anonimo do Docker Hub no runner (run 37992818657).
-        image: public.ecr.aws/docker/library/postgres:16
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
-    env:
-      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,6 +28,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      # Alternativa comprovada ao pull publico ECR com quota esgotada.
+      # Postgres 16 ja integra a imagem Ubuntu 24.04 do runner; nao usa sudo
+      # nem toca em serviço global. Cluster/sock proprio; TCP desativado.
+      - name: PostgreSQL 16 efemero sem Docker pull
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin=/usr/lib/postgresql/16/bin
+          test -x "$pg_bin/initdb"
+          pg_data="$RUNNER_TEMP/deliveryos-pg-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pg_sock="$RUNNER_TEMP/deliveryos-sock-$GITHUB_RUN_ATTEMPT"
+          mkdir -m 700 "$pg_sock"
+          "$pg_bin/initdb" -D "$pg_data" --username="$USER" --auth-local=trust --auth-host=trust --no-instructions > "$RUNNER_TEMP/pg-init.log" 2>&1
+          "$pg_bin/pg_ctl" -D "$pg_data" -o "-c listen_addresses='' -c unix_socket_directories='$pg_sock' -c port=55434" -l "$RUNNER_TEMP/pg-server.log" -w start
+          "$pg_bin/pg_isready" -h "$pg_sock" -p 55434 -U "$USER" -d postgres
+          echo "DELIVERYOS_PG_URL=postgresql://$USER@localhost:55434/postgres?host=$pg_sock" >> "$GITHUB_ENV"
+          echo "DELIVERYOS_PG_DATA=$pg_data" >> "$GITHUB_ENV"
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
@@ -78,6 +84,13 @@ jobs:
       - run: npm run -s test:platform:cadeia
       - name: guardas de governanca, sem FAIL_NOVO
         run: npx tsx tests/product/run-sem-fail-novo.ts
+      - name: Encerrar PostgreSQL descartavel
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${DELIVERYOS_PG_DATA:-}" && -d "$DELIVERYOS_PG_DATA" ]]; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$DELIVERYOS_PG_DATA" -m immediate -w stop
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
