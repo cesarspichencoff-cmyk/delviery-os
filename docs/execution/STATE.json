@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-15",
-    "state_basis": "7ca1b8562deb416b2bd4c7c55f6e2e8bb097f2d4",
+    "state_basis": "d6e23a38d6d96585d0ca0f60e9c51242bafeeb39",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2520,25 +2520,25 @@
     "next": "Run same remote CI against candidate; review unit scope and authorization before any real pilot."
   },
   "deliveryos_api_scope_shadow_lab_20261015": {
-    "status": "LAB_HTTP_AND_SQL_QUERY_SCOPE_PASS_PRODUCTION_AUTH_NO_GO",
+    "status": "LAB_HTTP_SQL_RLS_AND_LEGACY_PASS_NO_PRODUCTION_AUTH",
     "dated": "2026-10-15",
     "reviewed_code_head": "8d57691333d2f678dacd419890c783bdb00eced3",
     "focus": "G0/G4 unit-scoped HTTP read boundary; not human login, not tenant DB isolation",
     "change": "opt-in server mode shadow_lab with explicit unit, 32-byte bearer, no conference store or reader, narrow /api/ allowlist; default unchanged",
     "proof": {
-      "ci_run": 38778604797,
-      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38778604797",
+      "ci_run": 38779913901,
+      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913901",
       "outcome": "SUCCESS",
       "isolated_postgres": "2 synthetic units ITAIM and VILA-LAB, ephemeral PostgreSQL 16 socket-only, no commercial DB",
-      "test": "ENTREGAS_SERVIDOR_PG 9/9 (S10 HTTP + S11 canonical/incremental SQL WHERE unit_id and params) + ESCOPO_API_SHADOW_CONTRACT PASS; full product-ux 38778604862 SUCCESS 31 steps",
+      "test": "ENTREGAS_SERVIDOR_PG 11/11 S10 HTTP S11 SQL S12 RLS scoped role S13 pre-0003 migration, product-ux 38779913867 31 successful steps",
       "negative": "401 no/wrong secret; 403 disallowed routes, cross-unit and duplicate scope; no VILA-LAB device/trip/actor in authorized ITAIM HTTP responses",
       "cleanup": "PostgreSQL ephemeral runner stopped"
     },
     "limits": [
-      "HTTP bearer is lab environment credential, NOT human login or browser session",
-      "SQL WHERE scope was confirmed for audited readers, but DB role still has unrestricted cross-unit SELECT; PostgreSQL RLS/least-privilege NOT proven",
-      "Legacy local pre-0003 source_mode null guarded as unavailable but positive test fixture not yet proven",
-      "No data from real TATA operations, no production state, TLS/device/human signoff"
+      "Opt-in bearer is not operator authentication or browser session.",
+      "RLS/least privilege validated only in disposable runner PostgreSQL with temporary role; application credentials and migrations NOT updated.",
+      "Pre-0003 legacy UNKNOWN counted by unit in both readers; missing end-to-end HTTP guard test for local legacy.",
+      "Real source G1, physical Android/TLS/PG trip G3, human signoff G4/G5 not proven."
     ],
     "prior": "PR #120 CI run 38688005633 success remains; PR #122 32/32 + 26/26 watcher function lab success separately",
     "gates": {
@@ -2551,14 +2551,14 @@
     }
   },
   "deliveryos_api_scope_sql_lab_20261015": {
-    "status": "LAB_SQL_WHERE_SCOPE_PASS_NOT_RLS_OR_PRODUCTION",
-    "source_commit": "7ca1b8562deb416b2bd4c7c55f6e2e8bb097f2d4",
+    "status": "SQL_WHERE_AND_DISPOSABLE_RLS_ROLE_PASS_PROD_NOT_DONE",
+    "source_commit": "d6e23a38d6d96585d0ca0f60e9c51242bafeeb39",
     "checked_at": "2026-10-15",
     "evidence": {
       "isolation": "Postgres 16 ephemeral two synthetic units, SQL query and parameter audit S11 for canonical and incremental",
-      "scope_run": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38778604797",
-      "scope_result": "9/9 PASS",
-      "full_run": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38778604862",
+      "scope_run": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913901",
+      "scope_result": "11/11 includes SQL unit filter S11 and RLS scoped role S12, pre-0003 legacy S13",
+      "full_run": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913867",
       "full_result": "31 steps success"
     },
     "open": [
@@ -2568,5 +2568,26 @@
       "real source G1, physical Trip G3, human acceptance G4/G5"
     ],
     "authority": "DRAFT_ONLY_NO_MERGE_NO_DEPLOY"
+  },
+  "deliveryos_rls_legacy_lab_20261015": {
+    "status": "LAB_TEST_PASS_NOT_DEPLOYED",
+    "source_commit": "d6e23a38d6d96585d0ca0f60e9c51242bafeeb39",
+    "rls": "runner-only temporary PostgreSQL role NOSUPERUSER NOBYPASSRLS, limited SELECT, RLS policies on event log and device, cross-unit SELECT denied even without WHERE",
+    "legacy": "real migrations pre0003 null mode historical row remains UNKNOWN; local unit count 1, other unit 0 in both readers",
+    "proof": {
+      "scope": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913901",
+      "tests": "11/11 PASS",
+      "full": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38779913867",
+      "steps": "31 PASS"
+    },
+    "open": [
+      "Production RLS migration and application role (not authorized)",
+      "Operator identity/browser session",
+      "HTTP local legacy positive test",
+      "G1 real sources",
+      "G3 real Android physical trip",
+      "G4/G5 human pilot"
+    ],
+    "authority": "DRAFT_NO_MERGE_NO_DEPLOY"
   }
 }
