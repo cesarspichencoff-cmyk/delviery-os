@@ -145,7 +145,7 @@ const paymentNote=(value="PAGO ONLINE (VALOR: 69.48) ID: 100123 - COD. P/ CANCEL
  ({source_field:"DSOBSCOMANDA",value,scope_hint:"order",join_proven:true});
 function scenario(value=paymentNote().value){
  const item={source_field:"DSOBSDESCIT",value:"SEM PIMENTA",
-  scope_hint:"item",item_index:1,CDPRODUTO:source[1].internal,join_proven:true};
+  item_index:1,CDPRODUTO:source[1].internal,scope_hint:"item",join_proven:true};
  const f=asWatcherV2(fixture(),[paymentNote(value),item]);
  // A real watcher hashes the four-field order identity and exact origin day.
  const order=f.event.order;
