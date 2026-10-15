@@ -18,7 +18,7 @@ const REQUIRED={
   'TXPRODCOMVEN'],
  VENDAREST:['CDFILIAL','NRVENDAREST','DTHRABERMESA']};
 const SQL=[
- 'SELECT TOP (101)',
+ 'SELECT TOP (@row_limit)',
  ' I.CDFILIAL, C.CDLOJA, I.NRVENDAREST, I.NRCOMANDA,',
  ' I.NRPRODCOMVEN, I.CDPRODUTO, I.QTPRODCOMVEN, I.IDSTPRCOMVEN,',
  ' I.CDSENHAPED, I.DSOBSDESCIT, I.DSOBSPEDDIGCMD, I.TXPRODCOMVEN,',
@@ -103,7 +103,7 @@ function makePlan(event,manifest){
   return hold(missing.length?'NEW_COLUMN_NOT_IN_LAST_PROVEN_GRANT':
    'HISTORIC_GRANT_NOT_CURRENT_SQL_PROOF',{
     status:'OFFLINE_SQL_TEMPLATE_REVIEW_HOLD',
-    sql_template:SQL,parameters:['cdfilial','cdloja','nrvendarest',
+    sql_template:SQL,parameters:['row_limit','cdfilial','cdloja','nrvendarest',
      'nrcomanda','day_start','day_end'],
     sql_contains_actual_order_values:false,
     // The live SQL rows have no watcher snapshot_hash or order_key:
@@ -114,7 +114,12 @@ function makePlan(event,manifest){
     can_attest_historical_revision_from_this_sql:false,
     sql_result_directly_satisfies_v87:false,
     expected_order_day:'2026-10-14',
-    row_ceiling:101,
+    // This numeric parameter is computed ONLY from validated watcher items.
+    // Limit N+1 is an overflow sentinel: a newer/mutated order must not
+    // silently truncate to N records and appear matching.
+    row_limit_parameter_value:o.items.length+1,
+    expected_exact_item_rows:o.items.length,
+    row_ceiling:o.items.length+1,
     source_snapshot_hash_self_checked:true,
     missing_historic_grants:missing,
     grant_claim_is_historic_not_fresh:true});
