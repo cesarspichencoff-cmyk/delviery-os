@@ -49,6 +49,8 @@ jobs:
         run: npx --no-install tsx tests/product/run-operator-role-routing-lab-tests.ts
       - name: Auditar RLS nas tabelas filhas de viagens e GPS em PostgreSQL isolado
         run: npx --no-install tsx tests/product/run-entregas-related-rls-lab-tests.ts
+      - name: Auditar 21 tabelas e aplicar GRANTs versionados em PostgreSQL descartavel
+        run: npx --no-install tsx tests/product/run-schema-access-matrix-lab-tests.ts
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
