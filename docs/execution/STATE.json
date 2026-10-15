@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-12",
-    "state_basis": "acca4a53f6787be4cdc479daff81bd4f3e7584d5",
+    "atualizado_em": "2026-10-15",
+    "state_basis": "d9985970147b067408232ae7feef4d5998c06395",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -14,7 +14,7 @@
     ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
-  "atualizado_em": "2026-10-12",
+  "atualizado_em": "2026-10-15",
   "_nota_atualizado_em": "Ate 2026-08-07 este campo declarava 2026-08-03 enquanto o arquivo continha o bloco revolution_0a datado de 2026-08-05 e havia sido gravado no commit 953a3fb, de 2026-08-07. Foi o primeiro defeito que a guarda G6c acusou.",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
@@ -2429,5 +2429,46 @@
       "no_prod_network_or_data": true
     },
     "next_proof": "Exact-head Product UX CI, Q026 Promotion CI and PG session survival"
+  },
+  "deliveryos_v1_checkpoint_20261015": {
+    "status": "PARTIAL_NO_GO",
+    "reviewed_at": "2026-10-15",
+    "verified_code_basis": "d9985970147b067408232ae7feef4d5998c06395",
+    "source_scope": [
+      "src/product/",
+      "src/perfil-delivery/",
+      "labs/"
+    ],
+    "reviewed_diff": "a7d737c9: src/product/ui/app.js parcial opt-in Copiloto; evita confundir Home demo-unit com Itaim",
+    "proven_local": [
+      "Product System 52/52",
+      "Home 44/44",
+      "Copiloto 41/41",
+      "Visual order 6/6",
+      "PG + HTTP + Chromium 9/9 com viagens simuladas",
+      "cadeia logica PG 36/36",
+      "Android 14 emulador 19/19"
+    ],
+    "remote_ci": {
+      "run_id": 38681215979,
+      "overall": "FAILURE",
+      "technical_gates": "PASS",
+      "governance": "G6b novo e G6c herdado; sem desabilitar gate"
+    },
+    "real_sources": {
+      "teknisa": "reader atualizou heartbeat 15/10; consumidor 76 bloqueados e 0 prontos; turno disponivel cobria so 14/10 almoco",
+      "gestor": "nao acessado nem validado"
+    },
+    "gates": {
+      "G0": "PARCIAL_CI_RED",
+      "G1": "ABERTO",
+      "G2": "PARCIAL_DADOS_SIMULADOS",
+      "G3": "PARCIAL_TESTES_SEPARADOS",
+      "G4": "NAO_INICIADO",
+      "G5": "NAO_INICIADO"
+    },
+    "effect_boundary": "DRAFT_NO_MERGE_NO_DEPLOY_NO_IFOOD_API_NO_COST",
+    "historical_note": "Os demais campos deste STATE sao checkpoints historicos de suas missoes e nao provam prontidao de V1; esta revisao so ratifica o delta verificado. Nenhuma aprovacao humana implicita.",
+    "next_proof": "CI remoto integral verde; mesma Trip Android real/TLS/PG/browser; Gestor autorizado; Tek turno autenticado"
   }
 }
