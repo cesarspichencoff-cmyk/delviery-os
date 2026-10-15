@@ -68,6 +68,27 @@ A primeira auditoria de roles testou isolamento do próprio banco. O novo teste 
 
 **Escopo da prova:** o novo teste cobre **três tabelas de entregas e duas unidades sintéticas**, não os demais fluxos, múltiplos bancos, papéis existentes, payloads reais, views, operações de escrita, gatilhos de segurança, performance, nem identidade humana. O acesso aos dados reais continua **NO_GO**. É necessária revisão de migration/RLS e rollback separado do PR de teste, com autorização expressa para aplicar qualquer política no banco de operação.
 
+## Inventário de relações e concessões SQL do próprio repositório (15/10/2026)
+
+**Contrato de auditoria agora executável:** `tests/product/run-schema-access-matrix-lab-tests.ts` migra um PostgreSQL 16 efêmero no socket privado `operator-pg-socket-*` do runner GitHub e rejeita banco externo (exit 78). O teste enumera `pg_class`, `pg_attribute`, políticas RLS e funções diretamente no catálogo SQL, em vez de presumir que os arquivos de DDL representam o schema materializado. Objetos novos sem classificação reprovam a suite.
+
+| Classe do schema migrado | Relações | Resultado |
+| --- | --- | --- |
+| Unidade direta `unit_id` | 15, incluindo `identity`, fatos e entidades de entregas, fontes e pedidos | Precisam de revisão de policy por unidade conforme sensibilidade e acesso efetivo |
+| Unidade via pai `trip_id` | `entregas.delivery`, `entregas.gps_point` | Requerem RLS próprio ligado à `entregas.trip`, não apenas RLS no pai |
+| Sem coluna de unidade | `platform.audit`, `platform.job`, `platform.outbox`, `platform.schema_migration` | **Não assumir que o payload ou o contexto seja global/inofensivo**; inventariar campos, propósito, rota e nível de privilégio |
+| **Total** | **21 relações** | Nenhuma view não mapeada no baseline; as 21 tabelas estão com RLS desabilitado nas migrations atuais |
+
+O catálogo encontrou **três funções** nos schemas de migrations atuais e nenhuma marcada `SECURITY DEFINER`. Isso não garante segurança para funções futuras ou dependências fora desses schemas.
+
+**Teste de GRANT real do repositório, mas exclusivamente em LAB:** em banco criado pela suíte é executado `deploy/sql/papeis_minimos.sql` via `psql -f`. O papel exato **`deliveryos_entregas_pilot`** é criado/conferido como não superusuário e não `BYPASSRLS`. `has_table_privilege` confirma SELECT em oito tabelas operacionais (viagens, entregas, handoff, ocorrências, rider state, domínio de eventos, public outbox, ready order) e em `platform.schema_migration`. Confirma ausência de SELECT direto em `entregas.gps_point`, `identity.actor` e `platform.event_log` e presença de DELETE/UPDATE em certas tabelas (papel operacional de escrita, **não** perfil de leitura de dashboard).
+
+**Falha demonstrada somente no banco de teste:** com duas viagens e duas entregas sintéticas, conexão pelo papel exato `deliveryos_entregas_pilot` consegue `SELECT` de ambas as viagens e `order_ref` de ambas as unidades, na ausência de políticas RLS. A role não consegue ler `identity.actor` nem executar DDL para desligar RLS. **Essa prova NÃO afirma que o banco de produção possua essa role/grants ou ausência de RLS; compara a declaração versionada aplicada à migração versionada.**
+
+**Prova [GitHub Actions 38824805676](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38824805676) SUCCESS:** `OPERATOR_DB_SCHEMA_ACCESS_MATRIX: 15/15 PASS`, mais `ENTREGAS_RELATED_RLS_LAB: 20/20`, sessões fictícias `27/27`, pool de sessão `15/15`, risco GUC `16/16`, roteamento de roles `18/18` e guarda HTTP anterior. O cluster PostgreSQL efêmero foi desligado ao final. Nenhum acesso real foi feito.
+
+**Novo gate negativo de G0/G4:** não conectar usuários humanos ao papel `deliveryos_entregas_pilot` como se fosse papel de leitura multiunidade. Antes de piloto, reconciliar `SELECT/INSERT/UPDATE/DELETE` por tabela/função, portadores de credenciais, joins sem `unit_id`, payloads globais, RLS de escrita (`USING` / `WITH CHECK`), impactos do trigger de delivery e migração/rollback. O desenho de autenticação humana permanece não implementado e não autorizado. O próximo passo pode testar controles de escrita por unidade **apenas em banco descartável**, nunca executar novas GRANTs/RLS na loja sem autorização.
+
 ## Fronteiras de confiança críticas (AINDA NÃO RESOLVIDAS)
 1. **Não existe login humano, IdP, assinatura externa, provedor autorizado, cookie emitido pela aplicação nem prova de navegador real.** A emissão de sessão recebe uma atestação propositalmente fictícia; isso prova lógica de sessão apenas. Não usar com dados pessoais.
 2. **Nenhuma migration, política, credencial de banco ou sessão foi instalada** na aplicação ou em loja. O RLS temporário foi criado e destruído apenas no banco isolado. Nenhum merge/deploy/piloto.
