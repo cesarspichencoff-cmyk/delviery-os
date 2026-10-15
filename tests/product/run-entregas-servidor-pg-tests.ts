@@ -18,6 +18,9 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-entregas";
+import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
+import type { TransactionalSqlClient, SqlClient, SqlRow } from "../../src/platform/persistence/sql-client";
 
 import { bancoIsolado, type BancoIsolado } from "../../src/platform/banco-isolado";
 import { fontesEmUso, servirFontesCanonicas } from "./fontes-canonicas";
@@ -311,6 +314,43 @@ void (async () => {
           try { process.kill(-servidorRestrito.pid, "SIGTERM"); } catch {}
         }
       }
+    });
+
+    await teste("S11 SQL de leitura aplica WHERE unit_id ANTES de materializar log, GPS e aparelhos", async () => {
+      const agora = new Date();
+      for (const [modo, funcao] of [
+        ["canonica", lerRealidadeDeEntregas],
+        ["incremental", lerRealidadeDeEntregasIncremental],
+      ] as const) {
+        const registros: { sql: string; params: readonly unknown[] }[] = [];
+        const client: TransactionalSqlClient = {
+          query: <T extends SqlRow = SqlRow>(sql: string, params?: readonly unknown[]) =>
+            b.cliente.query<T>(sql, params),
+          transaction: <T>(fn: (tx: SqlClient) => Promise<T>) =>
+            b.cliente.transaction((tx) => fn({
+              query: <R extends SqlRow = SqlRow>(sql: string, params: readonly unknown[] = []) => {
+                registros.push({ sql, params });
+                return tx.query<R>(sql, params);
+              },
+            })),
+          close: async () => undefined,
+        };
+        const leitura = await funcao(client, { agora, unit_id: "ITAIM" });
+        assert.ok(leitura.aparelhos.length > 0, modo);
+        assert.ok(leitura.aparelhos.every((a) => a.unit_id === "ITAIM"), modo);
+        assert.ok(leitura.projecoes.every((p) => p.unit_id === "ITAIM"), modo);
+        const eventos = registros.filter((x) => /\\bFROM\\s+platform\\.event_log\\b/i.test(x.sql));
+        const dispositivos = registros.filter((x) => /\\bFROM\\s+identity\\.device\\s+d\\b/i.test(x.sql));
+        assert.equal(eventos.length, 3, modo + ": replay/cursor, ultimo GPS e contagem");
+        assert.equal(dispositivos.length, 1, modo);
+        for (const q of [...eventos, ...dispositivos]) {
+          assert.match(q.sql, /\\bunit_id\\s*=\\s*\\$[12]\\b/i, modo + ": consulta sem recorte SQL");
+          assert.ok(q.params.includes("ITAIM"), modo + ": sem parametro de unidade no SQL");
+        }
+        assert.equal(registros.some((q) => /\\bINSERT\\b|\\bUPDATE\\b|\\bDELETE\\b/i.test(q.sql)), false,
+          modo + ": leitura escreveu");
+      }
+      assert.equal(await impressaoDoBanco(b), antes, "S11 não alterou banco");
     });
 
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {
