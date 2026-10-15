@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-15",
-    "state_basis": "b77011c599aa9f3c7e1a25a423de3dd60b34e9d5",
+    "state_basis": "8d57691333d2f678dacd419890c783bdb00eced3",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2494,5 +2494,37 @@
     "authorization": "DRAFT_ONLY_NO_MERGE_NO_DEPLOY_NO_PRODUCTION_CONNECTION",
     "other_gates": "G1 Gestor and Teknisa still not proven live; G3 Android physical end-to-end still missing; G4/G5 no human acceptance.",
     "next": "Run same remote CI against candidate; review unit scope and authorization before any real pilot."
+  },
+  "deliveryos_api_scope_shadow_lab_20261015": {
+    "status": "API_SHADOW_LAB_HTTP_PASS_PRODUCTION_AUTH_NO_GO",
+    "dated": "2026-10-15",
+    "reviewed_code_head": "8d57691333d2f678dacd419890c783bdb00eced3",
+    "focus": "G0/G4 unit-scoped HTTP read boundary; not human login, not tenant DB isolation",
+    "change": "opt-in server mode shadow_lab with explicit unit, 32-byte bearer, no conference store or reader, narrow /api/ allowlist; default unchanged",
+    "proof": {
+      "ci_run": 38772038204,
+      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38772038204",
+      "outcome": "SUCCESS",
+      "isolated_postgres": "2 synthetic units ITAIM and VILA-LAB, ephemeral PostgreSQL 16 socket-only, no commercial DB",
+      "test": "ENTREGAS_SERVIDOR_PG 8/8 includes S10 cross-unit HTTP requests; ESCOPO_API_SHADOW_CONTRACT PASS; Product System regression PASS",
+      "negative": "401 no/wrong secret; 403 disallowed routes, cross-unit and duplicate scope; no VILA-LAB device/trip/actor in authorized ITAIM HTTP responses",
+      "cleanup": "PostgreSQL ephemeral runner stopped"
+    },
+    "limits": [
+      "Token is environment credential for API test only; no operator authentication or browser session",
+      "Canonical PostgreSQL replay still loads mixed-unit events internally before presentation-level filter; no row-level SQL or RLS proof",
+      "Fail-closed ambiguous global legacy historic counter coded but its positive path not yet proven by isolated PG test",
+      "No real TATA customer/order, Gestor, TLS, device, production user, pilot or human approval",
+      "Do not merge or deploy without backend-level SQL scope, trustworthy identity, browser auth flow and negative tests"
+    ],
+    "prior": "PR #120 CI run 38688005633 success remains; PR #122 32/32 + 26/26 watcher function lab success separately",
+    "gates": {
+      "G0": "LAB_GREEN_MAIN_REVIEW_PENDING",
+      "G1": "NO_GO_REAL_SOURCES",
+      "G2": "SIMULATED_ONLY",
+      "G3": "LAB_SEPARATE",
+      "G4": "NO_GO",
+      "G5": "NO_GO"
+    }
   }
 }
