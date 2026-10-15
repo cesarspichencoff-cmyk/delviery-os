@@ -45,6 +45,29 @@ A primeira auditoria de roles testou isolamento do próprio banco. O novo teste 
 
 **Rota preferida para próxima revisão:** papéis realmente separados por unidade reduzem o risco da GUC mutável, mas dependem de autenticação humana confiável, gestão operacional de credenciais, revisão de todo o SQL, isolamento da connection pool e autorização antes de implantação.
 
+## Contra-prova de tabelas filhas: pedidos e GPS sem coluna de unidade (15/10/2026)
+
+**Novo bloqueio de segurança demonstrado** na implementação de LAB: os exemplos de RLS anteriores cobriam `platform.event_log` e `identity.device`, mas o modelo de entregas mantém a unidade em `entregas.trip.unit_id`. As tabelas `entregas.delivery` (inclusive `order_ref`) e `entregas.gps_point` (coordenadas) não contêm `unit_id`; ambas apontam para `trip_id`. **Proteger apenas a tabela pai não protege um SELECT direto nas tabelas filhas.**
+
+- Teste versionado: `tests/product/run-entregas-related-rls-lab-tests.ts`. Requer exclusivamente PostgreSQL 16 socket UNIX `operator-pg-socket-*` dentro de `RUNNER_TEMP` no GitHub Actions, `localhost:55441`; em qualquer outro alvo **sai 78**, não emite verde e não cria papéis.
+- Banco temporário migra o schema real até a versão atual, cria **duas viagens, duas entregas e dois pontos GPS sintéticos**. Um papel de demonstração com `SELECT` nas três tabelas, mas **sem RLS**, observa as duas unidades, inclusive os identificadores de pedido. Depois de ligar RLS **apenas em `trip`**, esse mesmo papel deixa de observar viagens, mas ainda consegue ler ambas as entregas e pontos GPS — **falha reproduzida** no contexto de bancada.
+- Contraprova da mitigação: RLS fixo por role em `trip`, mais policies em `delivery` e `gps_point` que usam `EXISTS` sobre a viagem ligada por `trip_id` e verificam `t.unit_id`. Roles distintos Itaim/Vila-Lab, sem membership cruzado e com `SELECT` mínimo, observam somente sua viagem, seu pedido sintético e seu GPS. Sem policy, o papel adversarial vê zero linhas.
+- Testou alterações da GUC, consultas concorrentes, tentativa de `SET ROLE` cruzado e `ALTER TABLE ... DISABLE ROW LEVEL SECURITY` — sem obter os registros da outra unidade. O catálogo da bancada não apresentou função `SECURITY DEFINER` no schema `entregas` com as migrations carregadas; esse fato **não cobre outros schemas nem futuras funções**.
+- **[GitHub Actions 38823299460](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38823299460) SUCCESS** — `ENTREGAS_RELATED_RLS_LAB: 20/20 PASS`, além das regressões `27/27` sessões fictícias, `15/15` contexto transacional, `16/16` falha GUC e papéis, `18/18` roteamento de sessões para pools distintos. Banco e políticas criados somente no runner e descartados ao concluir.
+- **Não há correção de produção.** O papel `deliveryos_entregas_pilot` de `deploy/sql/papeis_minimos.sql` concede SELECT/INSERT/UPDATE em múltiplas tabelas operacionais, porém **não contém políticas RLS por unidade**. A existência do arquivo no repositório não comprova que essas permissões estejam aplicadas a um banco produtivo específico. Não comparar esta role produtiva com a role de leitura que é criada só nos testes.
+
+### Inventário mínimo pendente antes de abrir acesso multiunidade
+
+| Família | Situação estrutural observada | Obrigação antes de piloto |
+| --- | --- | --- |
+| `entregas.trip` | Possui `unit_id` | Política por role/unidade em banco autorizado |
+| `entregas.delivery`, `entregas.gps_point` | Sem `unit_id`; FK/ligação por `trip_id` | Policy correlacionada com `trip` em todas as rotas diretas e joins |
+| `entregas.occurrence`, `handoff`, `rider_state`, `domain_event`, `public_outbox`, `ready_order`, `term_acknowledgement` | Possuem `unit_id` no schema | Revisar concessões, políticas próprias e operações de escrita por tabela |
+| `identity.actor`, `identity.device`, `orders.order_twin`, `sources.source_event` | Possuem unidade/campos pessoais ou operacionais | Menor privilégio e limite de fonte; separar identidade de banco de usuário |
+| `platform.*` e funções/views/rotinas | Mistura fatos com unidade e estados técnicos sem unidade | Matriz efetiva de direitos, análise de funções e nenhuma exposição global por engano |
+
+**Escopo da prova:** o novo teste cobre **três tabelas de entregas e duas unidades sintéticas**, não os demais fluxos, múltiplos bancos, papéis existentes, payloads reais, views, operações de escrita, gatilhos de segurança, performance, nem identidade humana. O acesso aos dados reais continua **NO_GO**. É necessária revisão de migration/RLS e rollback separado do PR de teste, com autorização expressa para aplicar qualquer política no banco de operação.
+
 ## Fronteiras de confiança críticas (AINDA NÃO RESOLVIDAS)
 1. **Não existe login humano, IdP, assinatura externa, provedor autorizado, cookie emitido pela aplicação nem prova de navegador real.** A emissão de sessão recebe uma atestação propositalmente fictícia; isso prova lógica de sessão apenas. Não usar com dados pessoais.
 2. **Nenhuma migration, política, credencial de banco ou sessão foi instalada** na aplicação ou em loja. O RLS temporário foi criado e destruído apenas no banco isolado. Nenhum merge/deploy/piloto.
