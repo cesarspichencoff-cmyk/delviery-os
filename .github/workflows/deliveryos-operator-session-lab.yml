@@ -1,0 +1,39 @@
+name: DeliveryOS — sessao ficticia e autorizacao em LAB
+on:
+  push:
+    branches:
+      - test/deliveryos-operator-session-rls-lab-20261015
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sessao-sintetica:
+    name: Sessao ficticia, unidade e revogacao (sem usuario real)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Instalar dependencias de teste em runner descartavel
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
+      - name: Checagem Typescript
+        run: npx --no-install tsc --noEmit
+      - name: Provar sessao ficticia e negativas HTTP
+        run: npx --no-install tsx tests/product/run-operator-session-lab-tests.ts
+      - name: Garantir regressao do escopo existente
+        run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
+      - name: Confirmar ausência de usuario, banco ou login real
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f tests/product/lab/operator-session-simulated.ts
+          grep -q 'LAB_SYNTHETIC_ONLY' tests/product/lab/operator-session-simulated.ts
+          grep -q 'NO IDP, NO REAL LOGIN, NO PRODUCTION' tests/product/run-operator-session-lab-tests.ts
+          echo 'OPERATOR_SESSION_ONLY_SYNTHETIC=PASS'
