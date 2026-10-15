@@ -42,12 +42,22 @@ function inspect(envelope){
   if(sourceNoteRows!==undefined) return hold('READER_SOURCE_PROJECTION_CONTRACT_CHANGED_REAUDIT');
   const shadowHasNotes=Array.isArray(decision.order_observations)||
     decision.items?.some(x=>Array.isArray(x.observations))===true;
+  const rawOrderNotes=(decision.order_observations||[]).some(x=>typeof x?.value==="string"&&x.value.trim());
+  const rawItemNotes=(decision.items||[]).some(x=>(x.observations||[]).some(y=>typeof y?.value==="string"&&y.value.trim()));
+  const rawNoteValues=rawOrderNotes||rawItemNotes;
+  // Metadata privacy claims do NOT inspect note content and cannot prove
+  // absence of customer-sensitive values. Preserve source; require review.
+  const privacyClaimRequiresAudit=rawNoteValues&&
+    (envelope.privacy?.customer_pii_persisted===false||
+     envelope.privacy?.raw_customer_payload_persisted===false);
   return {schema:'deliveryos.v68-reader-envelope-boundary.v82',
    status:'READER_ENVELOPE_VALID_ONLY_V68_HOLD',
    reason:'NATIVE_ENVELOPE_NOT_FIVE_INDEPENDENT_V68_SOURCES',
    reader_source_only:true,
    excluded_from_source_event_observation_rows:true,
    shadow_decision_carries_note_surfaces:Boolean(shadowHasNotes),
+   shadow_decision_contains_raw_note_values:rawNoteValues,
+   privacy_assertions_require_content_review:privacyClaimRequiresAudit,
    missing_independent_sources:[...NEED],
    independent_production_verified:false,independent_delivery_verified:false,
    independent_plan_verified:false,independent_identity_verified:false,
