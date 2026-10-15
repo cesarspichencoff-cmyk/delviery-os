@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {createHash}=require('node:crypto');
 const {makePlan}=require('./comandas_cdsenhaped_readonly_plan_v88_offline.cjs');
+const {assess}=require('./comandas_senha_item_bridge_v87_offline.cjs');
 const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,
  '../data/tata_reader_permission_manifest_v1.json'),'utf8'));
 function fixture(){
@@ -49,6 +50,13 @@ assert.equal(p.status,'OFFLINE_SQL_TEMPLATE_REVIEW_HOLD');
 assert.equal(p.reason,'NEW_COLUMN_NOT_IN_LAST_PROVEN_GRANT');
 assert.deepEqual(p.missing_historic_grants,['ITCOMANDAVEN.CDSENHAPED']);
 assert.equal(p.source_snapshot_hash_self_checked,true);
+assert.equal(p.sql_result_contains_watcher_snapshot_hash,false);
+assert.equal(p.sql_result_contains_watcher_order_key,false);
+assert.equal(p.can_attest_historical_revision_from_this_sql,false);
+assert.equal(p.sql_result_directly_satisfies_v87,false);
+assert.ok(!p.sql_template.includes('snapshot_hash'));
+assert.ok(!p.sql_template.includes('order_key'));
+
 assert.equal(p.row_ceiling,101);
 assert.equal(p.expected_order_day,'2026-10-14');
 assert.deepEqual(p.parameters,['cdfilial','cdloja','nrvendarest','nrcomanda','day_start','day_end']);
@@ -86,6 +94,38 @@ assert.equal(withFake.status,'OFFLINE_SQL_TEMPLATE_REVIEW_HOLD');
 assert.equal(withFake.reason,'HISTORIC_GRANT_NOT_CURRENT_SQL_PROOF');
 assert.equal(withFake.sql_execution_allowed,false);
 assert.equal(withFake.sql_identity_authenticated,false);
+tests++;
+// V8.9 inter-contract guard: native V8.8 SELECT does not return per-row
+// watcher hash/order_key; V8.7 must REJECT direct handoff even when a
+// fictional caller sets all provenance booleans. Never stamp V2 fields
+// onto DB rows and call that independent proof.
+const nativeSourceOnly={
+ CDFILIAL:'0001',CDLOJA:'01',
+ NRVENDAREST:e.order.NRVENDAREST,NRCOMANDA:e.order.NRCOMANDA,
+ NRPRODCOMVEN:e.order.items[0].NRPRODCOMVEN,
+ CDPRODUTO:e.order.items[0].CDPRODUTO,
+ QTPRODCOMVEN:e.order.items[0].QTPRODCOMVEN,
+ CDSENHAPED:'00042',
+ DSOBSDESCIT:null,DSOBSPEDDIGCMD:'SEM CEBOLINHA',
+ TXPRODCOMVEN:'SEM CEBOLINHA'};
+const attempt=assess({
+ event:{order_key:e.order_key,snapshot_hash:e.snapshot_hash,
+  items:[{NRPRODCOMVEN:nativeSourceOnly.NRPRODCOMVEN,
+   CDPRODUTO:nativeSourceOnly.CDPRODUTO,
+   QTPRODCOMVEN:nativeSourceOnly.QTPRODCOMVEN,
+   source_item_notes:{DSOBSPEDDIGCMD:'SEM CEBOLINHA',
+    TXPRODCOMVEN:'SEM CEBOLINHA'}}]},
+ provenance:{human_authorized_new_sql_column:true,
+  current_effective_grant_verified:true,executed_as_service_sid:true,
+  snapshot_hash:e.snapshot_hash,order_key:e.order_key,
+  full_senha_collision_scope_covered:true},
+ sql_item_rows:[nativeSourceOnly],
+ print_blocks:[{log_source:'FICTIONAL_LOG',line_offset:42,senha:'00042'}],
+ collision_evidence:[]});
+assert.equal(attempt.status,'HOLD');
+assert.equal(attempt.reason,'NATIVE_ITEM_SOURCE_ORDER_OR_REVISION_MISMATCH');
+assert.equal(attempt.order_print_identity_proven,false);
+assert.equal(attempt.physical_print_authorized,false);
 tests++;
 console.log(JSON.stringify({status:'PASS',tests,
  query_plan_only:true,customer_data_used:false,source_is_fictional:true,
