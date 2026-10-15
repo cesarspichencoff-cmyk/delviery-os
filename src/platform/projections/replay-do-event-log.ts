@@ -94,14 +94,15 @@ export async function lerFatosParaReplay(
 export async function lerFatosParaReplayNaTransacao(
   tx: SqlClient,
   tipos: readonly string[],
+  unit_id?: string,
 ): Promise<LeituraParaReplay> {
     const linhas = await tx.query(
       `SELECT event_id, unit_id, object_type, object_id, event_type, occurred_at, origin,
               device_id, sequence_local, idempotency_key, contract_version, source_mode,
               recorded_at, clock_trust
          FROM platform.event_log
-        WHERE event_type = ANY($1)`,
-      [tipos],
+        WHERE event_type = ANY($1)${unit_id ? " AND unit_id = $2" : ""}`,
+      unit_id ? [tipos, unit_id] : [tipos],
     );
 
     const aptos: EventEnvelope[] = [];

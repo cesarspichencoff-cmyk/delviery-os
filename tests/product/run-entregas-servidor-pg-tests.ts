@@ -18,6 +18,10 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-entregas";
+import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
+import type { TransactionalSqlClient, SqlClient, SqlRow } from "../../src/platform/persistence/sql-client";
+import { createPgClient } from "../../src/platform/persistence/sql-client";
 
 import { bancoIsolado, type BancoIsolado } from "../../src/platform/banco-isolado";
 import { fontesEmUso, servirFontesCanonicas } from "./fontes-canonicas";
@@ -225,6 +229,342 @@ void (async () => {
       assert.match(ausente.entregas_observadas.motivo, /não significa zero/i);
       assert.equal(ausente.celulas_operacionais.celulas[5].estado, "sem_evidencia");
       assert.equal(await impressaoDoBanco(b), antes, "consultas nao podem gravar fatos nem aparelhos");
+    });
+
+    await teste("S10 recorte HTTP SHADOW exige credencial e nao revela segunda unidade", async () => {
+      // Segunda instancia no mesmo PostgreSQL isolado do S8, com duas unidades.
+      // Nao existe credencial real neste teste; nenhuma interface recebe token.
+      const token = "ab".repeat(32);
+      const portRestrito = PORTA + 201;
+      const servidorRestrito = spawn("npx", ["tsx", "tools/product_system_server.ts"], {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          PRODUCT_UI_PORT: String(portRestrito),
+          DELIVERYOS_DATABASE_URL: b.url,
+          DELIVERYOS_PG_URL: "",
+          DELIVERYOS_PRODUCT_READ_UNIT: "ITAIM",
+          DELIVERYOS_PRODUCT_SCOPE_MODE: "shadow_lab",
+          DELIVERYOS_PRODUCT_SCOPE_UNIT: "ITAIM",
+          DELIVERYOS_PRODUCT_SCOPE_TOKEN: token,
+          CONFERENCE_BRAIN_DATA_DIR: "",
+          TATA_READER_INSTALL_ROOT: "",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+      });
+      let erroBoot = "";
+      servidorRestrito.stderr?.on("data", (chunk) => (erroBoot += String(chunk)));
+      servidorRestrito.stdout?.on("data", () => {});
+      const url = (path: string) => `http://127.0.0.1:${portRestrito}${path}`;
+      const get = (path: string, bearer?: string) => fetch(url(path), {
+        headers: bearer === undefined ? {} : { Authorization: `Bearer ${bearer}` },
+      });
+      try {
+        let pronto = false;
+        const fim = Date.now() + 25_000;
+        while (Date.now() < fim) {
+          if (servidorRestrito.exitCode !== null) throw Error(`servidor restrito saiu: ${erroBoot.slice(-200)}`);
+          try {
+            const health = await get("/api/health");
+            if (health.status === 401) { pronto = true; break; }
+          } catch {}
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+        assert.equal(pronto, true, "servidor restrito nao abriu");
+        for (const path of ["/api/entregas", "/api/copiloto?unit_id=ITAIM", "/api/health", "/api/fontes"]) {
+          assert.equal((await get(path)).status, 401, `sem token: ${path}`);
+          assert.equal((await get(path, "cd".repeat(32))).status, 401, `token errado: ${path}`);
+        }
+        for (const path of [
+          "/api/entregas?unidade=VILA-LAB",
+          "/api/copiloto?unit_id=VILA-LAB",
+          "/api/entregas?unidade=ITAIM&unidade=VILA-LAB",
+          "/api/entregas?unit_id=ITAIM",
+          "/api/copiloto?unidade=ITAIM",
+          "/api/historico?unit_id=ITAIM",
+          "/api/operacao-viva?unit_id=ITAIM",
+          "/api/conference-brain",
+          "/api/fontes",
+          "/api/navegacao",
+        ]) {
+          assert.equal((await get(path, token)).status, 403, `rota/unidade nao recusada: ${path}`);
+        }
+        const entregasRes = await get("/api/entregas", token);
+        assert.equal(entregasRes.status, 200);
+        const entregas = await entregasRes.json();
+        assert.equal(entregas.leitura.disponivel, true);
+        assert.equal(entregas.leitura.unidade_selecionada, "ITAIM");
+        assert.equal(entregas.realidade.aparelhos.length, 7);
+        assert.ok(entregas.realidade.aparelhos.every((a: { unidade: string }) => a.unidade === "ITAIM"));
+        assert.deepEqual(entregas.leitura.unidades.map((a: { unit_id: string }) => a.unit_id), ["ITAIM"]);
+        assert.doesNotMatch(JSON.stringify(entregas), /VILA-LAB|dev-g|T-201|rider-g/, "fato da outra unidade exposto");
+
+        const copilotoRes = await get("/api/copiloto?unit_id=ITAIM", token);
+        assert.equal(copilotoRes.status, 200);
+        const copiloto = await copilotoRes.json();
+        assert.equal(copiloto.entregas_observadas.unidade_solicitada, "ITAIM");
+        assert.ok(copiloto.entregas_observadas.grupos.length > 0);
+        assert.ok(copiloto.entregas_observadas.grupos.every((g: { unit_id: string }) => g.unit_id === "ITAIM"));
+        assert.equal(copiloto.entregas_observadas.historico_sem_modo, null);
+        assert.doesNotMatch(JSON.stringify(copiloto), /VILA-LAB|dev-g|T-201|rider-g/, "copiloto expôs outra unidade");
+        assert.equal((await get("/api/health", token)).status, 200);
+        assert.equal(await impressaoDoBanco(b), antes, "barreira nao pode escrever no PG");
+      } finally {
+        if (servidorRestrito.pid) {
+          try { process.kill(-servidorRestrito.pid, "SIGTERM"); } catch {}
+        }
+      }
+    });
+
+    await teste("S11 SQL de leitura aplica WHERE unit_id ANTES de materializar log, GPS e aparelhos", async () => {
+      const agora = new Date();
+      for (const [modo, funcao] of [
+        ["canonica", lerRealidadeDeEntregas],
+        ["incremental", lerRealidadeDeEntregasIncremental],
+      ] as const) {
+        const registros: { sql: string; params: readonly unknown[] }[] = [];
+        const client: TransactionalSqlClient = {
+          query: <T extends SqlRow = SqlRow>(sql: string, params?: readonly unknown[]) =>
+            b.cliente.query<T>(sql, params),
+          transaction: <T>(fn: (tx: SqlClient) => Promise<T>) =>
+            b.cliente.transaction((tx) => fn({
+              query: <R extends SqlRow = SqlRow>(sql: string, params: readonly unknown[] = []) => {
+                registros.push({ sql, params });
+                return tx.query<R>(sql, params);
+              },
+            })),
+          close: async () => undefined,
+        };
+        const leitura = await funcao(client, { agora, unit_id: "ITAIM" });
+        assert.ok(leitura.aparelhos.length > 0, modo);
+        assert.ok(leitura.aparelhos.every((a) => a.unit_id === "ITAIM"), modo);
+        assert.ok(leitura.projecoes.every((p) => p.unit_id === "ITAIM"), modo);
+        const eventos = registros.filter((x) => /\bFROM\s+platform\.event_log\b/i.test(x.sql));
+        const dispositivos = registros.filter((x) => /\bFROM\s+identity\.device\s+d\b/i.test(x.sql));
+        assert.equal(eventos.length, 3, modo + ": replay/cursor, ultimo GPS e contagem");
+        assert.equal(dispositivos.length, 1, modo);
+        for (const q of [...eventos, ...dispositivos]) {
+          assert.match(q.sql, /\bunit_id\s*=\s*\$[12]\b/i, modo + ": consulta sem recorte SQL");
+          assert.ok(q.params.includes("ITAIM"), modo + ": sem parametro de unidade no SQL");
+        }
+        assert.equal(registros.some((q) => /\bINSERT\b|\bUPDATE\b|\bDELETE\b/i.test(q.sql)), false,
+          modo + ": leitura escreveu");
+      }
+      assert.equal(await impressaoDoBanco(b), antes, "S11 não alterou banco");
+    });
+
+    // Criar roles e politicas é uma ação de nível CLUSTER. Nunca rodar
+    // contra banco externo/compartilhado. Este subteste é opt-in somente
+    // no PostgreSQL socket-only OWNED pelo runner deste workflow de LAB.
+    const uRls = new URL(URL_BASE);
+    const sockRls = uRls.searchParams.get("host") ?? "";
+    const runnerTemp = process.env.RUNNER_TEMP ?? "";
+    const rlsLabAutorizado = process.env.GITHUB_ACTIONS === "true"
+      && runnerTemp !== ""
+      && sockRls.startsWith(runnerTemp + "/scope-pg-socket-")
+      && uRls.port === "55441"
+      && uRls.hostname === "localhost";
+    if (rlsLabAutorizado) {
+      await teste("S12 papel PostgreSQL isolado RLS barra acesso sem WHERE, inclusive leitor incremental", async () => {
+        const nome = "scope_lab_" + process.pid + "_" + Date.now().toString(36);
+        assert.match(nome, /^[a-z][a-z0-9_]+$/);
+        let tenant: Awaited<ReturnType<typeof createPgClient>> | null = null;
+        let roleCreated = false;
+        let policyLog = false;
+        let policyDevice = false;
+        try {
+          await b.cliente.query(`CREATE ROLE ${nome} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`);
+          roleCreated = true;
+          await b.cliente.query(`GRANT CONNECT ON DATABASE ${b.nome} TO ${nome}`);
+          await b.cliente.query(`GRANT USAGE ON SCHEMA platform, identity TO ${nome}`);
+          await b.cliente.query(`GRANT SELECT ON platform.event_log, identity.device TO ${nome}`);
+          await b.cliente.query("ALTER TABLE platform.event_log ENABLE ROW LEVEL SECURITY");
+          await b.cliente.query("ALTER TABLE identity.device ENABLE ROW LEVEL SECURITY");
+          await b.cliente.query(`CREATE POLICY scope_lab_eventos ON platform.event_log FOR SELECT TO ${nome} USING (unit_id = 'ITAIM')`);
+          policyLog = true;
+          await b.cliente.query(`CREATE POLICY scope_lab_aparelhos ON identity.device FOR SELECT TO ${nome} USING (unit_id = 'ITAIM')`);
+          policyDevice = true;
+          const tenantUrl = new URL(b.url);
+          tenantUrl.username = nome;
+          tenantUrl.password = "";
+          tenant = await createPgClient({ url: tenantUrl.toString(), max: 1 });
+          const papel = await tenant.query("SELECT current_user AS usuario, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user");
+          assert.equal(papel.length, 1);
+          assert.equal(papel[0].usuario, nome);
+          assert.equal(papel[0].rolsuper, false);
+          assert.equal(papel[0].rolbypassrls, false);
+          const adminItaim = await b.cliente.query("SELECT COUNT(*)::int AS n FROM platform.event_log WHERE unit_id='ITAIM'");
+          const restritoTotal = await tenant.query("SELECT COUNT(*)::int AS n FROM platform.event_log");
+          assert.equal(restritoTotal[0].n, adminItaim[0].n, "RLS deve limitar query sem WHERE");
+          assert.equal((await tenant.query("SELECT COUNT(*)::int AS n FROM platform.event_log WHERE unit_id='VILA-LAB'"))[0].n, 0);
+          assert.equal((await tenant.query("SELECT COUNT(*)::int AS n FROM identity.device"))[0].n, 7);
+          assert.equal((await tenant.query("SELECT COUNT(*)::int AS n FROM identity.device WHERE unit_id='VILA-LAB'"))[0].n, 0);
+          await assert.rejects(
+            tenant.query("SELECT COUNT(*)::int AS n FROM identity.actor"),
+            (e: unknown) => (e as { code?: string }).code === "42501",
+            "role não pode ler identity.actor",
+          );
+          await assert.rejects(
+            tenant.query("ALTER TABLE platform.event_log DISABLE ROW LEVEL SECURITY"),
+            (e: unknown) => (e as { code?: string }).code === "42501",
+            "role não pode desligar RLS",
+          );
+          for (const leitor of [lerRealidadeDeEntregas, lerRealidadeDeEntregasIncremental] as const) {
+            // Mesmo sem parametro unit_id, o BANCO só entrega fatos Itaim.
+            const realidade = await leitor(tenant, { agora: new Date() });
+            assert.ok(realidade.aparelhos.length > 0);
+            assert.ok(realidade.aparelhos.every((a) => a.unit_id === "ITAIM"));
+            assert.ok(realidade.projecoes.every((p) => p.unit_id === "ITAIM"));
+          }
+          assert.equal(await impressaoDoBanco(b), antes, "RLS no LAB não altera dados");
+        } finally {
+          await tenant?.close();
+          if (policyDevice) await b.cliente.query("DROP POLICY scope_lab_aparelhos ON identity.device");
+          if (policyLog) await b.cliente.query("DROP POLICY scope_lab_eventos ON platform.event_log");
+          if (roleCreated) {
+            await b.cliente.query(`REVOKE SELECT ON platform.event_log, identity.device FROM ${nome}`);
+            await b.cliente.query(`REVOKE USAGE ON SCHEMA platform, identity FROM ${nome}`);
+            await b.cliente.query(`REVOKE CONNECT ON DATABASE ${b.nome} FROM ${nome}`);
+            await b.cliente.query(`DROP ROLE ${nome}`);
+          }
+        }
+      });
+    } else {
+      console.log("S12_RLS_PULADO: requer GitHub Actions, runner TEMP e socket-only de laboratorio; nao e prova de RLS");
+    }
+
+    await teste("S13 historico real pre-0003 sem modo fica UNKNOWN somente em sua unidade", async () => {
+      // Migrations canonicas de verdade: cria uma linha pre-0003, quando a
+      // coluna source_mode nao existia, depois aplica 0003..0009 sem backfill.
+      // O banco é da suíte, temporário, distinto do banco de S1–S12.
+      const legado = await bancoIsolado(URL_BASE, "0002_event_log_contexto_dispositivo", "uxleg");
+      try {
+        await legado.cliente.query(
+          "INSERT INTO identity.unit(unit_id,display_name) VALUES ('ITAIM','Itaim'),('VILA-LAB','Vila Lab')",
+        );
+        await legado.cliente.query(
+          `INSERT INTO platform.event_log
+             (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,recorded_at,origin,idempotency_key,contract_version)
+           VALUES ('legacy-vila-1','VILA-LAB','trip','T-LEGADO','trip_created','{}'::jsonb,now(),now(),'device','legacy-vila-key','trip_created@1.0.0')`,
+        );
+        await legado.migrarTudo();
+        const historico = await legado.cliente.query(
+          "SELECT unit_id, source_mode FROM platform.event_log WHERE event_id = 'legacy-vila-1'",
+        );
+        assert.deepEqual(historico.map((l) => [l.unit_id, l.source_mode]), [["VILA-LAB", null]]);
+        for (const leitor of [lerRealidadeDeEntregas, lerRealidadeDeEntregasIncremental] as const) {
+          const itaim = await leitor(legado.cliente, { agora: new Date(), unit_id: "ITAIM" });
+          const vila = await leitor(legado.cliente, { agora: new Date(), unit_id: "VILA-LAB" });
+          const todas = await leitor(legado.cliente, { agora: new Date() });
+          assert.equal(itaim.historico_sem_modo, 0, "legado alheio nao bloqueia Itaim");
+          assert.equal(vila.historico_sem_modo, 1, "legado da propria unidade exige indisponibilidade");
+          assert.equal(todas.historico_sem_modo, 1, "leitura global ainda conhece historico");
+          assert.deepEqual(vila.projecoes, [], "legado desconhecido nao vira viagem real ou simulada");
+        }
+      } finally {
+        await legado.descartar();
+      }
+      assert.equal(await impressaoDoBanco(b), antes, "S13 nao alterou os dados do banco principal");
+    });
+
+    await teste("S14 HTTP legado local UNKNOWN bloqueia so a unidade afetada, sem mascarar Itaim", async () => {
+      // Legado de VERDADE na estrutura: 0002 -> insercao sem source_mode ->
+      // migrations 0003..0009, jamais INSERT artificial NULL pos-0003.
+      const legado = await bancoIsolado(URL_BASE, "0002_event_log_contexto_dispositivo", "uxhttp");
+      try {
+        await legado.cliente.query(
+          "INSERT INTO identity.unit(unit_id,display_name) VALUES ('ITAIM','Itaim'),('VILA-LAB','Vila Lab')",
+        );
+        await legado.cliente.query(
+          `INSERT INTO platform.event_log
+             (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,recorded_at,origin,idempotency_key,contract_version)
+           VALUES ('legacy-vila-http','VILA-LAB','trip','T-LEGADO-HTTP','trip_created','{}'::jsonb,now(),now(),'device','legacy-vila-http-key','trip_created@1.0.0')`,
+        );
+        await legado.migrarTudo();
+        await legado.cliente.query(
+          "INSERT INTO identity.device(device_id,unit_id,label) VALUES ('it-http','ITAIM','Moto de teste ITAIM')",
+        );
+        await legado.cliente.query(
+          `INSERT INTO platform.event_log
+             (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,recorded_at,origin,idempotency_key,contract_version,source_mode)
+           VALUES ('it-http-new','ITAIM','trip','T-ITAIM-HTTP','trip_created','{}'::jsonb,now(),now(),'device','it-http-new-key','trip_created@1.0.0','simulated')`,
+        );
+        const imprint = await impressaoDoBanco(legado);
+        for (const [unit_id, idx] of [["ITAIM", 0], ["VILA-LAB", 1]] as const) {
+          const port = PORTA + 311 + idx;
+          const token = "ab".repeat(32);
+          const child = spawn("npx", ["tsx", "tools/product_system_server.ts"], {
+            cwd: process.cwd(),
+            env: {
+              ...process.env,
+              PRODUCT_UI_PORT: String(port),
+              DELIVERYOS_DATABASE_URL: legado.url,
+              DELIVERYOS_PG_URL: "",
+              DELIVERYOS_PRODUCT_READ_UNIT: unit_id,
+              DELIVERYOS_PRODUCT_SCOPE_MODE: "shadow_lab",
+              DELIVERYOS_PRODUCT_SCOPE_UNIT: unit_id,
+              DELIVERYOS_PRODUCT_SCOPE_TOKEN: token,
+              CONFERENCE_BRAIN_DATA_DIR: "",
+              TATA_READER_INSTALL_ROOT: "",
+            },
+            stdio: ["ignore", "pipe", "pipe"],
+            detached: true,
+          });
+          let stderr = "";
+          child.stderr?.on("data", (c) => (stderr += String(c)));
+          child.stdout?.on("data", () => {});
+          const get = (path: string, authorized = true) => fetch(`http://127.0.0.1:${port}${path}`, {
+            headers: authorized ? { Authorization: `Bearer ${token}` } : {},
+          });
+          try {
+            let ready = false;
+            const deadline = Date.now() + 25000;
+            while (Date.now() < deadline) {
+              if (child.exitCode !== null) throw Error("servidor de legado saiu: " + stderr.slice(-180));
+              try {
+                if ((await get("/api/health", false)).status === 401) { ready = true; break; }
+              } catch {}
+              await new Promise((resolve) => setTimeout(resolve, 160));
+            }
+            assert.equal(ready, true, "servidor de legado nao iniciou");
+            assert.equal((await get("/api/entregas", false)).status, 401);
+            const other = unit_id === "ITAIM" ? "VILA-LAB" : "ITAIM";
+            assert.equal((await get(`/api/entregas?unidade=${other}`)).status, 403);
+            assert.equal((await get(`/api/copiloto?unit_id=${other}`)).status, 403);
+            const entRes = await get("/api/entregas");
+            assert.equal(entRes.status, 200);
+            const entregas = await entRes.json();
+            const copRes = await get(`/api/copiloto?unit_id=${unit_id}`);
+            assert.equal(copRes.status, 200);
+            const copiloto = await copRes.json();
+            if (unit_id === "VILA-LAB") {
+              assert.equal(entregas.leitura.disponivel, false, "legado proprio deve tornar leitura indisponivel");
+              assert.notEqual(entregas.leitura.motivo, "", "motivo de ausencia obrigatorio");
+              assert.equal(copiloto.entregas_observadas.estado, "indisponivel");
+              assert.equal(copiloto.entregas_observadas.fonte, null);
+              assert.deepEqual(copiloto.entregas_observadas.grupos, []);
+              assert.equal(copiloto.entregas_observadas.historico_sem_modo, null);
+              assert.doesNotMatch(JSON.stringify([entregas, copiloto]), /T-LEGADO-HTTP|legacy-vila-http/,
+                "legado nao pode virar viagem ou ser publicado em resposta");
+            } else {
+              assert.equal(entregas.leitura.disponivel, true, "legado alheio nao pode bloquear Itaim");
+              assert.equal(copiloto.entregas_observadas.estado, "observado");
+              assert.deepEqual(copiloto.entregas_observadas.grupos.map((g: { unit_id: string }) => g.unit_id), ["ITAIM"]);
+              assert.doesNotMatch(JSON.stringify([entregas, copiloto]), /VILA-LAB|T-LEGADO-HTTP|legacy-vila-http/,
+                "legado alheio nao pode aparecer no recorte Itaim");
+            }
+          } finally {
+            if (child.pid) {
+              try { process.kill(-child.pid, "SIGTERM"); } catch {}
+            }
+          }
+        }
+        assert.equal(await impressaoDoBanco(legado), imprint, "HTTP nao pode alterar base do legado");
+      } finally {
+        await legado.descartar();
+      }
+      assert.equal(await impressaoDoBanco(b), antes, "S14 nao alterou o banco principal");
     });
 
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {

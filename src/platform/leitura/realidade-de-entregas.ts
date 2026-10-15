@@ -102,7 +102,7 @@ export async function lerRealidadeDeEntregas(
   // assegurado pelo servidor, e o cliente libera a conexão no finally.
   const { leitura, linhas, ultimos, contagens } = await cliente.transaction(async (tx) => {
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
-    const leitura = await lerFatosParaReplayNaTransacao(tx, TIPOS_DA_OPERACAO_VIVA);
+    const leitura = await lerFatosParaReplayNaTransacao(tx, TIPOS_DA_OPERACAO_VIVA, opcoes.unit_id);
 
     const filtro = opcoes.unit_id ? "WHERE d.unit_id = $1" : "";
     const params = opcoes.unit_id ? [opcoes.unit_id] : [];
@@ -125,13 +125,17 @@ export async function lerRealidadeDeEntregas(
               source_mode, correlation_id, clock_trust
          FROM platform.event_log
         WHERE event_type = 'gps_batch_received' AND device_id IS NOT NULL
+          ${opcoes.unit_id ? "AND unit_id = $1" : ""}
         ORDER BY device_id, recorded_at DESC, sequence_local DESC NULLS LAST`,
+      opcoes.unit_id ? [opcoes.unit_id] : [],
     );
     const contagens = await tx.query(
       `SELECT device_id, source_mode, count(*)::int AS n
          FROM platform.event_log
         WHERE event_type = 'gps_batch_received' AND device_id IS NOT NULL
+          ${opcoes.unit_id ? "AND unit_id = $1" : ""}
         GROUP BY device_id, source_mode`,
+      opcoes.unit_id ? [opcoes.unit_id] : [],
     );
 
     // Materialize every SQL result from the SAME snapshot, then release the
@@ -198,6 +202,7 @@ export async function lerRealidadeDeEntregas(
     // `toISOString()`, `event_id` texto e `sequence` inteiro seguro.
     const escopos = new Map<string, { unit_id: string; source_mode: SourceMode; fatos: EventEnvelope[] }>();
     for (const f of leitura.aptos) {
+      // Defense in depth; SQL already restricted event log in scoped mode.
       if (opcoes.unit_id && f.unit_id !== opcoes.unit_id) continue;
       const chave = `${f.unit_id}|${f.source_mode}`;
       const escopo = escopos.get(chave);
