@@ -143,10 +143,10 @@ function asWatcherV2(f,rows){
 const day="2026-10-14T12:07:00.0000000";
 const paymentNote=(value="PAGO ONLINE (VALOR: 69.48) ID: 100123 - COD. P/ CANCELAMENTO: 456789")=>
  ({source_field:"DSOBSCOMANDA",value,scope_hint:"order",join_proven:true});
-function scenario(value=paymentNote().value){
+function scenario(value=paymentNote().value,overrides=null){
  const item={source_field:"DSOBSDESCIT",value:"SEM PIMENTA",
   item_index:1,CDPRODUTO:source[1].internal,scope_hint:"item",join_proven:true};
- const f=asWatcherV2(fixture(),[paymentNote(value),item]);
+ const f=asWatcherV2(fixture(),[paymentNote(value),...(overrides||[item])]);
  // A real watcher hashes the four-field order identity and exact origin day.
  const order=f.event.order;
  order.DTHRABERMESA=day;
@@ -235,5 +235,38 @@ check("missing V2 readiness or item proof does not authorize three tickets",()=>
  const q=projectVerifiedReaderPairV68(b.event,b.decision,b.ctx,PAYMENT_NOTE_POLICY_V80);
  assert.equal(q.status,"BLOCKED");assert.equal(q.tickets,null);
 });
+check("V8.0 B5 duplicated source note is retained once as preparation instruction",()=>{
+ const sentence="EM CUBOS, SEM CEBOLINHA E SEM CREMA CHEESE POR FAVOR;";
+ const row=field=>({source_field:field,value:sentence,
+  item_index:1,CDPRODUTO:source[1].internal,scope_hint:"item",join_proven:true});
+ const f=scenario(paymentNote().value,[row("DSOBSPEDDIGCMD"),row("TXPRODCOMVEN")]);
+ f.ctx.delivery.items[1].observacoes=[sentence];
+ f.ctx.production.lines[1].tx_prod_com_ven=[sentence];
+ f.ctx.observation_proofs[1].delivery_observations=[sentence];
+ f.ctx.observation_proofs[1].production_observations=[sentence];
+ f.ctx.production_plan.print_intents[0].lines[1].item_observations=[sentence];
+ const before=JSON.stringify(f);
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx,PAYMENT_NOTE_POLICY_V80);
+ assert.equal(r.status,"OFFLINE_PREVIEW_PROVEN",r.reasons.join(","));
+ assert.deepEqual(r.tickets.conference.boxes[0].items[1].observations,[sentence]);
+ assert.equal(r.print_authorized,false);
+ assert.equal(JSON.stringify(f),before,"source surfaces never modified");
+});
+check("V8.0 B5 source divergence is not de-duplicated into a false ticket",()=>{
+ const sentence="EM CUBOS, SEM CEBOLINHA E SEM CREMA CHEESE POR FAVOR;";
+ const row=field=>({source_field:field,value:sentence,
+  item_index:1,CDPRODUTO:source[1].internal,scope_hint:"item",join_proven:true});
+ const f=scenario(paymentNote().value,[row("DSOBSPEDDIGCMD"),row("TXPRODCOMVEN")]);
+ f.ctx.delivery.items[1].observacoes=[sentence];
+ f.ctx.production.lines[1].tx_prod_com_ven=["COM CEBOLINHA"];
+ f.ctx.observation_proofs[1].delivery_observations=[sentence];
+ f.ctx.observation_proofs[1].production_observations=["COM CEBOLINHA"];
+ f.ctx.production_plan.print_intents[0].lines[1].item_observations=[sentence];
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx,PAYMENT_NOTE_POLICY_V80);
+ assert.equal(r.status,"BLOCKED");
+ assert.equal(r.tickets,null);assert.equal(r.print_authorized,false);
+ assert.ok(r.reasons.some(x=>x.startsWith("WATCHER_V2_ITEM_NOTE_NOT_RECONCILED")));
+});
+
 console.log(JSON.stringify({status:"PASS",synthetic_only:true,checks,
   print_authorized:false,original_customer_notes_used:false}));
