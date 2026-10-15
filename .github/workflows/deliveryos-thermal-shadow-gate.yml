@@ -117,6 +117,8 @@ jobs:
         run: node tools/verificar_sacolas_estaticas_v81_offline.js
       - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Linux)
         run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
+      - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
+        run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
       - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
@@ -231,6 +233,8 @@ jobs:
         run: node tools/verificar_sacolas_estaticas_v81_offline.js
       - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Windows)
         run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
+      - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
+        run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
