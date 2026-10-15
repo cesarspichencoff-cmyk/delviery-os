@@ -468,6 +468,105 @@ void (async () => {
       assert.equal(await impressaoDoBanco(b), antes, "S13 nao alterou os dados do banco principal");
     });
 
+    await teste("S14 HTTP legado local UNKNOWN bloqueia so a unidade afetada, sem mascarar Itaim", async () => {
+      // Legado de VERDADE na estrutura: 0002 -> insercao sem source_mode ->
+      // migrations 0003..0009, jamais INSERT artificial NULL pos-0003.
+      const legado = await bancoIsolado(URL_BASE, "0002_event_log_contexto_dispositivo", "uxhttp");
+      try {
+        await legado.cliente.query(
+          "INSERT INTO identity.unit(unit_id,display_name) VALUES ('ITAIM','Itaim'),('VILA-LAB','Vila Lab')",
+        );
+        await legado.cliente.query(
+          `INSERT INTO platform.event_log
+             (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,recorded_at,origin,idempotency_key,contract_version)
+           VALUES ('legacy-vila-http','VILA-LAB','trip','T-LEGADO-HTTP','trip_created','{}'::jsonb,now(),now(),'device','legacy-vila-http-key','trip_created@1.0.0')`,
+        );
+        await legado.migrarTudo();
+        await legado.cliente.query(
+          "INSERT INTO identity.device(device_id,unit_id,label) VALUES ('it-http','ITAIM','Moto de teste ITAIM')",
+        );
+        await legado.cliente.query(
+          `INSERT INTO platform.event_log
+             (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,recorded_at,origin,idempotency_key,contract_version,source_mode)
+           VALUES ('it-http-new','ITAIM','trip','T-ITAIM-HTTP','trip_created','{}'::jsonb,now(),now(),'device','it-http-new-key','trip_created@1.0.0','simulated')`,
+        );
+        const imprint = await impressaoDoBanco(legado);
+        for (const [unit_id, idx] of [["ITAIM", 0], ["VILA-LAB", 1]] as const) {
+          const port = PORTA + 311 + idx;
+          const token = "ab".repeat(32);
+          const child = spawn("npx", ["tsx", "tools/product_system_server.ts"], {
+            cwd: process.cwd(),
+            env: {
+              ...process.env,
+              PRODUCT_UI_PORT: String(port),
+              DELIVERYOS_DATABASE_URL: legado.url,
+              DELIVERYOS_PG_URL: "",
+              DELIVERYOS_PRODUCT_READ_UNIT: unit_id,
+              DELIVERYOS_PRODUCT_SCOPE_MODE: "shadow_lab",
+              DELIVERYOS_PRODUCT_SCOPE_UNIT: unit_id,
+              DELIVERYOS_PRODUCT_SCOPE_TOKEN: token,
+              CONFERENCE_BRAIN_DATA_DIR: "",
+              TATA_READER_INSTALL_ROOT: "",
+            },
+            stdio: ["ignore", "pipe", "pipe"],
+            detached: true,
+          });
+          let stderr = "";
+          child.stderr?.on("data", (c) => (stderr += String(c)));
+          child.stdout?.on("data", () => {});
+          const get = (path: string, authorized = true) => fetch(`http://127.0.0.1:${port}${path}`, {
+            headers: authorized ? { Authorization: `Bearer ${token}` } : {},
+          });
+          try {
+            let ready = false;
+            const deadline = Date.now() + 25000;
+            while (Date.now() < deadline) {
+              if (child.exitCode !== null) throw Error("servidor de legado saiu: " + stderr.slice(-180));
+              try {
+                if ((await get("/api/health", false)).status === 401) { ready = true; break; }
+              } catch {}
+              await new Promise((resolve) => setTimeout(resolve, 160));
+            }
+            assert.equal(ready, true, "servidor de legado nao iniciou");
+            assert.equal((await get("/api/entregas", false)).status, 401);
+            const other = unit_id === "ITAIM" ? "VILA-LAB" : "ITAIM";
+            assert.equal((await get(`/api/entregas?unidade=${other}`)).status, 403);
+            assert.equal((await get(`/api/copiloto?unit_id=${other}`)).status, 403);
+            const entRes = await get("/api/entregas");
+            assert.equal(entRes.status, 200);
+            const entregas = await entRes.json();
+            const copRes = await get(`/api/copiloto?unit_id=${unit_id}`);
+            assert.equal(copRes.status, 200);
+            const copiloto = await copRes.json();
+            if (unit_id === "VILA-LAB") {
+              assert.equal(entregas.leitura.disponivel, false, "legado proprio deve tornar leitura indisponivel");
+              assert.notEqual(entregas.leitura.motivo, "", "motivo de ausencia obrigatorio");
+              assert.equal(copiloto.entregas_observadas.estado, "indisponivel");
+              assert.equal(copiloto.entregas_observadas.fonte, null);
+              assert.deepEqual(copiloto.entregas_observadas.grupos, []);
+              assert.equal(copiloto.entregas_observadas.historico_sem_modo, null);
+              assert.doesNotMatch(JSON.stringify([entregas, copiloto]), /T-LEGADO-HTTP|legacy-vila-http/,
+                "legado nao pode virar viagem ou ser publicado em resposta");
+            } else {
+              assert.equal(entregas.leitura.disponivel, true, "legado alheio nao pode bloquear Itaim");
+              assert.equal(copiloto.entregas_observadas.estado, "observado");
+              assert.deepEqual(copiloto.entregas_observadas.grupos.map((g: { unit_id: string }) => g.unit_id), ["ITAIM"]);
+              assert.doesNotMatch(JSON.stringify([entregas, copiloto]), /VILA-LAB|T-LEGADO-HTTP|legacy-vila-http/,
+                "legado alheio nao pode aparecer no recorte Itaim");
+            }
+          } finally {
+            if (child.pid) {
+              try { process.kill(-child.pid, "SIGTERM"); } catch {}
+            }
+          }
+        }
+        assert.equal(await impressaoDoBanco(legado), imprint, "HTTP nao pode alterar base do legado");
+      } finally {
+        await legado.descartar();
+      }
+      assert.equal(await impressaoDoBanco(b), antes, "S14 nao alterou o banco principal");
+    });
+
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {
       const depois = await impressaoDoBanco(b);
       assert.equal(depois, antes);
