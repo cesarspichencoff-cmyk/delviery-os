@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-15",
-    "state_basis": "8d57691333d2f678dacd419890c783bdb00eced3",
+    "state_basis": "7ca1b8562deb416b2bd4c7c55f6e2e8bb097f2d4",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2340,10 +2340,19 @@
     "visual_code_last_touch": "6f52755",
     "code_review_head": "b4144b6",
     "scope": "Product System Entregas and the mobile Home bottom navigation contrast; operational rollout exclusively Itaim",
-    "preserved": ["Android Room and SyncWorker", "PostgreSQL error-detail boundary", "no TATA Comanda changes", "no main merge", "no production deploy"],
+    "preserved": [
+      "Android Room and SyncWorker",
+      "PostgreSQL error-detail boundary",
+      "no TATA Comanda changes",
+      "no main merge",
+      "no production deploy"
+    ],
     "quality_gate": "CI composition required; Claude-only green CI is not a composed-branch result",
     "performance": "Q-026 open; log window and open journeys not modified",
-    "references": ["docs/execution/PERGUNTAS.jsonl#Q-025", "docs/execution/PRODUCT_UX_Q025_REVIEW_2026-10-09.md"]
+    "references": [
+      "docs/execution/PERGUNTAS.jsonl#Q-025",
+      "docs/execution/PRODUCT_UX_Q025_REVIEW_2026-10-09.md"
+    ]
   },
   "copiloto_entregas_unified_shadow_20261012": {
     "status": "COMBINED_CODE_TEST_PASS_LOCAL_CI_GATE_RECHECK_REQUIRED_NOT_DEPLOYED",
@@ -2388,11 +2397,26 @@
     "verified_code_basis": "081e54ceed1aef39e023677c044cea8e27b353c1",
     "legacy_reference": "integration/copiloto-celulas-shadow-v1:docs/copiloto/CELULAS_OPERACIONAIS_V1.md",
     "scope": "six source-coverage cells in /api/copiloto and existing Product System UI; not V3.3 motor or live pressure",
-    "cells": ["Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Entregas"],
+    "cells": [
+      "Caixa",
+      "Sushi",
+      "Quentes",
+      "Cozinha",
+      "Conferência",
+      "Entregas"
+    ],
     "source_mapping": {
-      "sushi": ["combinados", "duplas", "enrolados"],
-      "quentes": ["enrolados_quentes"],
-      "cozinha": ["cozinha_quentes"],
+      "sushi": [
+        "combinados",
+        "duplas",
+        "enrolados"
+      ],
+      "quentes": [
+        "enrolados_quentes"
+      ],
+      "cozinha": [
+        "cozinha_quentes"
+      ],
       "caixa": "NO_SOURCE",
       "conferencia": "NO_ORDER_OBSERVATIONS",
       "entregas": "SHARED_PLATFORM_EVENT_LOG_HISTORICAL_ONLY"
@@ -2496,26 +2520,25 @@
     "next": "Run same remote CI against candidate; review unit scope and authorization before any real pilot."
   },
   "deliveryos_api_scope_shadow_lab_20261015": {
-    "status": "API_SHADOW_LAB_HTTP_PASS_PRODUCTION_AUTH_NO_GO",
+    "status": "LAB_HTTP_AND_SQL_QUERY_SCOPE_PASS_PRODUCTION_AUTH_NO_GO",
     "dated": "2026-10-15",
     "reviewed_code_head": "8d57691333d2f678dacd419890c783bdb00eced3",
     "focus": "G0/G4 unit-scoped HTTP read boundary; not human login, not tenant DB isolation",
     "change": "opt-in server mode shadow_lab with explicit unit, 32-byte bearer, no conference store or reader, narrow /api/ allowlist; default unchanged",
     "proof": {
-      "ci_run": 38772038204,
-      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38772038204",
+      "ci_run": 38778604797,
+      "url": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38778604797",
       "outcome": "SUCCESS",
       "isolated_postgres": "2 synthetic units ITAIM and VILA-LAB, ephemeral PostgreSQL 16 socket-only, no commercial DB",
-      "test": "ENTREGAS_SERVIDOR_PG 8/8 includes S10 cross-unit HTTP requests; ESCOPO_API_SHADOW_CONTRACT PASS; Product System regression PASS",
+      "test": "ENTREGAS_SERVIDOR_PG 9/9 (S10 HTTP + S11 canonical/incremental SQL WHERE unit_id and params) + ESCOPO_API_SHADOW_CONTRACT PASS; full product-ux 38778604862 SUCCESS 31 steps",
       "negative": "401 no/wrong secret; 403 disallowed routes, cross-unit and duplicate scope; no VILA-LAB device/trip/actor in authorized ITAIM HTTP responses",
       "cleanup": "PostgreSQL ephemeral runner stopped"
     },
     "limits": [
-      "Token is environment credential for API test only; no operator authentication or browser session",
-      "Canonical PostgreSQL replay still loads mixed-unit events internally before presentation-level filter; no row-level SQL or RLS proof",
-      "Fail-closed ambiguous global legacy historic counter coded but its positive path not yet proven by isolated PG test",
-      "No real TATA customer/order, Gestor, TLS, device, production user, pilot or human approval",
-      "Do not merge or deploy without backend-level SQL scope, trustworthy identity, browser auth flow and negative tests"
+      "HTTP bearer is lab environment credential, NOT human login or browser session",
+      "SQL WHERE scope was confirmed for audited readers, but DB role still has unrestricted cross-unit SELECT; PostgreSQL RLS/least-privilege NOT proven",
+      "Legacy local pre-0003 source_mode null guarded as unavailable but positive test fixture not yet proven",
+      "No data from real TATA operations, no production state, TLS/device/human signoff"
     ],
     "prior": "PR #120 CI run 38688005633 success remains; PR #122 32/32 + 26/26 watcher function lab success separately",
     "gates": {
@@ -2526,5 +2549,24 @@
       "G4": "NO_GO",
       "G5": "NO_GO"
     }
+  },
+  "deliveryos_api_scope_sql_lab_20261015": {
+    "status": "LAB_SQL_WHERE_SCOPE_PASS_NOT_RLS_OR_PRODUCTION",
+    "source_commit": "7ca1b8562deb416b2bd4c7c55f6e2e8bb097f2d4",
+    "checked_at": "2026-10-15",
+    "evidence": {
+      "isolation": "Postgres 16 ephemeral two synthetic units, SQL query and parameter audit S11 for canonical and incremental",
+      "scope_run": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38778604797",
+      "scope_result": "9/9 PASS",
+      "full_run": "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38778604862",
+      "full_result": "31 steps success"
+    },
+    "open": [
+      "RLS or DB least-privilege tenant boundary",
+      "operator identity and authorized session",
+      "pre-0003 local legacy positive test",
+      "real source G1, physical Trip G3, human acceptance G4/G5"
+    ],
+    "authority": "DRAFT_ONLY_NO_MERGE_NO_DEPLOY"
   }
 }
