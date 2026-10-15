@@ -150,3 +150,5 @@ try{
 require('./comandas-human-review-v1/human_review_v1.test.cjs');
 // Only synthetic data; original customer event bytes are NOT checked in.
 require('./verificar_comandas_exact_intake_v1.cjs');
+// Shadow-only: source hashes plus pinned human ledger never authorize FACT or print.
+require('./verificar_comandas_bag_human_proposal_v1.cjs');
