@@ -23,10 +23,26 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
+      - name: Criar PostgreSQL local descartavel por socket privado
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin=/usr/lib/postgresql/16/bin
+          test -x "$bin/initdb"
+          data="$RUNNER_TEMP/operator-pg-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          sock="$RUNNER_TEMP/operator-pg-socket-$GITHUB_RUN_ATTEMPT"
+          mkdir -m 700 "$sock"
+          "$bin/initdb" -D "$data" --username="$USER" --auth-local=trust --auth-host=trust --no-instructions > "$RUNNER_TEMP/operator-pg-init.log" 2>&1
+          "$bin/pg_ctl" -D "$data" -o "-c listen_addresses='' -c unix_socket_directories='$sock' -c port=55441" -l "$RUNNER_TEMP/operator-pg-server.log" -w start
+          "$bin/pg_isready" -h "$sock" -p 55441 -U "$USER" -d postgres
+          echo "DELIVERYOS_PG_URL=postgresql://$USER@localhost:55441/postgres?host=$sock" >> "$GITHUB_ENV"
+          echo "OPERATOR_PG_DATA=$data" >> "$GITHUB_ENV"
       - name: Checagem Typescript
         run: npx --no-install tsc --noEmit
       - name: Provar sessao ficticia e negativas HTTP
         run: npx --no-install tsx tests/product/run-operator-session-lab-tests.ts
+      - name: Provar escopo RLS com pool PostgreSQL reutilizado
+        run: npx --no-install tsx tests/product/run-operator-session-rls-pool-lab-tests.ts
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
@@ -37,3 +53,11 @@ jobs:
           grep -q 'LAB_SYNTHETIC_ONLY' tests/product/lab/operator-session-simulated.ts
           grep -q 'NO IDP, NO REAL LOGIN, NO PRODUCTION' tests/product/run-operator-session-lab-tests.ts
           echo 'OPERATOR_SESSION_ONLY_SYNTHETIC=PASS'
+      - name: Parar PostgreSQL descartavel do laboratorio
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${OPERATOR_PG_DATA:-}" && -d "$OPERATOR_PG_DATA" ]]; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$OPERATOR_PG_DATA" -m immediate -w stop
+          fi
