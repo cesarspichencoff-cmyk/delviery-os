@@ -48,6 +48,7 @@ import { lerHistoricoOperacional } from "../src/platform/leitura/historico-opera
 import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
+import { configurarEscopoShadow, checarAcessoEscopado } from "../src/product/security/escopo-api-shadow";
 import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
 import {
   adaptarAuditoriaTataComanda,
@@ -113,6 +114,7 @@ const UNIDADES_NAVEGACAO = URL_PLATAFORMA && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(U
       nome: `Leitura da plataforma · ${UNIDADE_LEITURA_PILOTO}`,
       praca: "leitura parcial" }]
   : UNIDADES;
+const ESCOPO_SHADOW = configurarEscopoShadow(process.env);
 const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
 /**
  * A faixa de topo diz a COMPOSICAO deste servidor, nao a de uma build
@@ -282,7 +284,7 @@ function servirEstatico(res: http.ServerResponse, caminho: string): void {
  * Servidor
  * ------------------------------------------------------------------ */
 
-async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr): Promise<LeituraDeRealidade> {
+async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr, unit_id?: string): Promise<LeituraDeRealidade> {
   if (!cliente) {
     return {
       disponivel: false,
@@ -292,15 +294,22 @@ async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr):
     };
   }
   try {
-    return {
-      disponivel: true,
-      realidade: await (USAR_INCREMENTAL_RR
-        ? lerRealidadeDeEntregasIncremental
-        : lerRealidadeDeEntregas)(
-        protecao ? leitorRrCancelavel(cliente, protecao) : cliente,
-        { agora: new Date() },
-      ),
-    };
+    const realidade = await (USAR_INCREMENTAL_RR
+      ? lerRealidadeDeEntregasIncremental
+      : lerRealidadeDeEntregas)(
+      protecao ? leitorRrCancelavel(cliente, protecao) : cliente,
+      { agora: new Date(), ...(unit_id ? { unit_id } : {}) },
+    );
+    // Historico legado sem unidade qualificavel e agregado GLOBAL. Nunca
+    // atribuir esse numero a uma unidade restrita nem publicar falso zero.
+    if (unit_id && realidade.historico_sem_modo > 0) {
+      return {
+        disponivel: false,
+        motivo: "indisponivel",
+        explicacao: "Recorte de unidade bloqueado: existem fatos legados sem atribuicao segura.",
+      };
+    }
+    return { disponivel: true, realidade };
   } catch (e) {
     // Preserve the specific queue-overload cause only for the explicit HTTP
     // guard. A generic outage, DNS/TLS/connect failure or SQLSTATE is still
@@ -416,6 +425,16 @@ export async function criarServidor(): Promise<http.Server> {
     const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
     const p = url.pathname;
 
+    // SHADOW opt-in somente API local: segredo de servidor nao vai para JS.
+    // Nao e login de operador. Sem proxy confiavel, navegacao humana NO_GO.
+    if (ESCOPO_SHADOW && p.startsWith("/api/")) {
+      const decisao = checarAcessoEscopado(
+        ESCOPO_SHADOW, url,
+        Array.isArray(req.headers.authorization) ? undefined : req.headers.authorization,
+      );
+      if (!decisao.autorizado) return json(res, decisao.status, { erro: decisao.erro });
+    }
+
     try {
       if (p === "/api/health") {
         return json(res, 200, {
@@ -508,7 +527,8 @@ export async function criarServidor(): Promise<http.Server> {
         // servidor subiu, e "agora" e o que quem olha esta perguntando.
         // `unidade` filtra a leitura pelas unidades que ELA encontrou; texto
         // curto, so comparado por igualdade — nunca vai para SQL.
-        const unidade = (url.searchParams.get("unidade") || "").trim().slice(0, 64) || null;
+        const unidade = ESCOPO_SHADOW?.unit_id ||
+          (url.searchParams.get("unidade") || "").trim().slice(0, 64) || null;
         void (async () => {
           const snap = await facade.snapshot();
           const leitura = await lerRealidade(
@@ -516,6 +536,7 @@ export async function criarServidor(): Promise<http.Server> {
             abortador && canceladorEntregas
               ? { signal: abortador.signal, prazoAbsolutoMs, cancelador: canceladorEntregas }
               : undefined,
+            ESCOPO_SHADOW?.unit_id,
           );
           if (abortador && Date.now() >= prazoAbsolutoMs) interromper("prazo");
           if (abortador?.signal.aborted || res.destroyed || res.writableEnded) return;
@@ -551,10 +572,11 @@ export async function criarServidor(): Promise<http.Server> {
         // Entregas e Copiloto compartilham a MESMA porta de realidade. Este
         // resumo NAO cria recomendacao, nao acessa GPS e nao executa comando.
         // A demo ja montada permanece separada do bloco observado do servidor.
-        const unidade = (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        const unidade = ESCOPO_SHADOW?.unit_id ||
+          (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
         void Promise.all([
           lerHistorico(clientePlataforma, pronto.historico, unidade),
-          lerRealidade(clientePlataforma),
+          lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id),
         ])
           .then(([h, leitura]) => {
             const entregas = copilotoEntregasLeitura(leitura, unidade);
