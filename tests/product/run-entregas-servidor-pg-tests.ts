@@ -434,6 +434,40 @@ void (async () => {
       console.log("S12_RLS_PULADO: requer GitHub Actions, runner TEMP e socket-only de laboratorio; nao e prova de RLS");
     }
 
+    await teste("S13 historico real pre-0003 sem modo fica UNKNOWN somente em sua unidade", async () => {
+      // Migrations canonicas de verdade: cria uma linha pre-0003, quando a
+      // coluna source_mode nao existia, depois aplica 0003..0009 sem backfill.
+      // O banco é da suíte, temporário, distinto do banco de S1–S12.
+      const legado = await bancoIsolado(URL_BASE, "0002_event_log_contexto_dispositivo", "uxleg");
+      try {
+        await legado.cliente.query(
+          "INSERT INTO identity.unit(unit_id,display_name) VALUES ('ITAIM','Itaim'),('VILA-LAB','Vila Lab')",
+        );
+        await legado.cliente.query(
+          `INSERT INTO platform.event_log
+             (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,recorded_at,origin,idempotency_key,contract_version)
+           VALUES ('legacy-vila-1','VILA-LAB','trip','T-LEGADO','trip_created','{}'::jsonb,now(),now(),'device','legacy-vila-key','trip_created@1.0.0')`,
+        );
+        await legado.migrarTudo();
+        const historico = await legado.cliente.query(
+          "SELECT unit_id, source_mode FROM platform.event_log WHERE event_id = 'legacy-vila-1'",
+        );
+        assert.deepEqual(historico.map((l) => [l.unit_id, l.source_mode]), [["VILA-LAB", null]]);
+        for (const leitor of [lerRealidadeDeEntregas, lerRealidadeDeEntregasIncremental] as const) {
+          const itaim = await leitor(legado.cliente, { agora: new Date(), unit_id: "ITAIM" });
+          const vila = await leitor(legado.cliente, { agora: new Date(), unit_id: "VILA-LAB" });
+          const todas = await leitor(legado.cliente, { agora: new Date() });
+          assert.equal(itaim.historico_sem_modo, 0, "legado alheio nao bloqueia Itaim");
+          assert.equal(vila.historico_sem_modo, 1, "legado da propria unidade exige indisponibilidade");
+          assert.equal(todas.historico_sem_modo, 1, "leitura global ainda conhece historico");
+          assert.deepEqual(vila.projecoes, [], "legado desconhecido nao vira viagem real ou simulada");
+        }
+      } finally {
+        await legado.descartar();
+      }
+      assert.equal(await impressaoDoBanco(b), antes, "S13 nao alterou os dados do banco principal");
+    });
+
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {
       const depois = await impressaoDoBanco(b);
       assert.equal(depois, antes);
