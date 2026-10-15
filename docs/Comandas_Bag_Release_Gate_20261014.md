@@ -50,3 +50,12 @@ Arquivos: tools/comandas_bag_attestation_v1.cjs e tools/verificar_comandas_bag_a
 5. **Efeito final separado:** mesmo com a política e prévia V2→V6.8 aprovadas, o piloto Epson, controle de duplicação, serviço e cutover ficam sujeitos a autorização expressa separada e a evidência em papel/rollback.
 
 **PR #107:** manter DRAFT/HOLD. Não abrir nova frente de blockchain/assinaturas/chaves, nem instalar serviço, nem repetir pesquisas genéricas. Próximo delta precisa remover um bloqueio verificável de V2 ou V6.8.
+
+## Ferramenta para o portão seguinte: origem das observações (15/10)
+
+- `tools/comandas_ten_v68_note_scope_audit_v1.cjs` é auditoria LOCAL read-only, não um novo leitor nem um classificador de texto. Parâmetros de CLI: `node tools/comandas_ten_v68_note_scope_audit_v1.cjs <manifesto-privado-original> <diretorio-eventos-originais> <diretorio-decisoes-v1-originais>`.
+- O manifesto privado original deve conter os dez pares com SHA-256 de cada evento/decisão; nunca inserir esses dados operacionais no repositório, na Issue ou nos logs públicos. Antes de executar no host de origem, provar instalação autorizada apenas em pasta isolada e ausência de efeitos no serviço.
+- O gate confere 20 arquivos imutáveis, 10 snapshots exatos, autorreferência de hash do watcher e `join_proven` das notas. Emite exclusivamente CONTAGENS de `DSOBSCOMANDA` (ordem geral), `DSOBSDESCIT`/`DSOBSPEDDIGCMD` (item delivery) e `TXPRODCOMVEN` (item produção), mais número de pedidos por tipo; não imprime texto, nome, número do pedido ou hash.
+- Resultado `REVIEW_REQUIRED_FOR_GENERAL_NOTES` indica pendência de relevância operacional, NÃO aprovação para excluir observações. Resultado `NO_GENERAL_NOTES_V68_STILL_UNPROVEN` também NÃO libera V6.8 sem prova independente da mesma revisão.
+- Testes sintéticos e adversariais: `tools/verificar_comandas_ten_v68_note_scope_audit_v1.cjs`. A prova sobre os dez pedidos originais fica PENDENTE enquanto CAIXA_MOOCA estiver inacessível, sem presumir que 12 observações sejam todas gerais.
+- Não executar reprocessamento com efeitos, não remover nota para passar no gate, não criar aprovação sintética do operador e não considerar esta contagem como tickets finais.
