@@ -34,6 +34,9 @@ jobs:
       - name: Dependencias e build canonico
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
+          # O package.json nao declara tsx; instalar versao de TESTE somente
+          # no runner, sem atualizar package.json ou lockfile do projeto.
+          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
           npm run build:platform
           npx --no-install tsc --noEmit
       - name: Guarda de configuracao e cabecalho de acesso
