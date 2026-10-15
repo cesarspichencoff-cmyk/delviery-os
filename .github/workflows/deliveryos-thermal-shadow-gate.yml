@@ -121,6 +121,8 @@ jobs:
         run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
       - name: SQL principal and exact column-surface drift V8.5 (synthetic, no SQL)
         run: node tools/verificar_comandas_sql_surface_drift_v85.cjs
+      - name: V8.7 SENHA per-item bridge collision guard (synthetic only)
+        run: node tools/verificar_comandas_senha_item_bridge_v87_offline.cjs
       - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
@@ -239,6 +241,8 @@ jobs:
         run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
       - name: SQL principal and exact column-surface drift V8.5 (synthetic, no SQL)
         run: node tools/verificar_comandas_sql_surface_drift_v85.cjs
+      - name: V8.7 SENHA per-item bridge collision guard (synthetic only)
+        run: node tools/verificar_comandas_senha_item_bridge_v87_offline.cjs
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
