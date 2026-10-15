@@ -57,10 +57,12 @@ assert.equal(p.sql_result_directly_satisfies_v87,false);
 assert.ok(!p.sql_template.includes('snapshot_hash'));
 assert.ok(!p.sql_template.includes('order_key'));
 
-assert.equal(p.row_ceiling,101);
+assert.equal(p.row_ceiling,2);
+assert.equal(p.expected_exact_item_rows,1);
+assert.equal(p.row_limit_parameter_value,2);
 assert.equal(p.expected_order_day,'2026-10-14');
-assert.deepEqual(p.parameters,['cdfilial','cdloja','nrvendarest','nrcomanda','day_start','day_end']);
-for(const x of ['TOP (101)','TEKNISA.ITCOMANDAVEN','TEKNISA.COMANDAVEN',
+assert.deepEqual(p.parameters,['row_limit','cdfilial','cdloja','nrvendarest','nrcomanda','day_start','day_end']);
+for(const x of ['TOP (@row_limit)','TEKNISA.ITCOMANDAVEN','TEKNISA.COMANDAVEN',
  'TEKNISA.VENDAREST','I.CDSENHAPED','I.NRPRODCOMVEN',
  'C.CDLOJA=@cdloja','I.NRCOMANDA=@nrcomanda',
  'V.DTHRABERMESA>=@day_start','V.DTHRABERMESA<@day_end'])
@@ -87,6 +89,29 @@ assertHold('too many items',e=>{e.order.items=Array.from({length:101},(_,i)=>({.
 assertHold('manifest principal changed',(e,m)=>{m.principal='dbo'},'HISTORIC_GRANT_MANIFEST_INVALID');
 assertHold('manifest schema changed',(e,m)=>{m.schema='unknown'},'HISTORIC_GRANT_MANIFEST_INVALID');
 assertHold('manifest table missing',(e,m)=>{delete m.effective_columns.ITCOMANDAVEN},'HISTORIC_GRANT_SURFACE_INCOMPLETE');
+// V8.10: emulate 3 and 100 *fictitious* item snapshots with consistent hashes.
+// A per-order N+1 TOP is an overflow sentinel: fewer rows indicate incomplete
+// data, extra rows force hold, and no user data is ever embedded into SQL.
+for(const n of [3,100]){
+ const event=fixture(),o=event.order;
+ o.items=Array.from({length:n},(_,i)=>i===0?{...o.items[0]}:
+  {...o.items[0],NRPRODCOMVEN:String(i+1).padStart(6,'0'),
+   CDPRODUTO:'FICTIONAL_'+i});
+ const canonical=Object.fromEntries(['CDFILIAL','CDLOJA','NRVENDAREST','NRCOMANDA',
+  'NRCOMANDAEXT','IDORGCMDVENDA','IDSTCOMANDA','DTHRABERMESA'].map(k=>[k,o[k]]));
+ canonical.items=o.items.map(i=>Object.fromEntries(['NRPRODCOMVEN',
+  'CDPRODUTO','CDARVPROD','QTPRODCOMVEN','IDSTPRCOMVEN'].map(k=>[k,i[k]])));
+ canonical.observation_rows=o.observation_rows.map(r=>({...r}));
+ event.snapshot_hash=createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
+ const out=makePlan(event,manifest);
+ assert.equal(out.status,'OFFLINE_SQL_TEMPLATE_REVIEW_HOLD');
+ assert.equal(out.expected_exact_item_rows,n);
+ assert.equal(out.row_ceiling,n+1);
+ assert.equal(out.row_limit_parameter_value,n+1);
+ assert.ok(out.sql_template.includes('TOP (@row_limit)'));
+ assert.equal(out.sql_execution_allowed,false);
+ tests++;
+}
 const fakeGrants=structuredClone(manifest);
 fakeGrants.effective_columns.ITCOMANDAVEN.push('CDSENHAPED');
 const withFake=makePlan(fixture(),fakeGrants);
