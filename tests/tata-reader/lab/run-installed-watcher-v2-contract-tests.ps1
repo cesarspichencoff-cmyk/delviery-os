@@ -7,7 +7,10 @@ $ErrorActionPreference = "Stop"
 
 $fragment = Join-Path $PSScriptRoot "fixtures\watcher-v2-installed-read-service-state.ps1"
 $expectedSha = "6979C9E36D389F6D262E3045A34D170B6BA6569517BA8DD0CF5FFFF2A5039270"
-$actualSha = (Get-FileHash -LiteralPath $fragment -Algorithm SHA256).Hash
+$pureFunction = (Get-Content -LiteralPath $fragment -Raw -Encoding UTF8).Replace("`r`n","`n")
+$sha = [Security.Cryptography.SHA256]::Create()
+$bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($pureFunction)
+$actualSha = ([BitConverter]::ToString($sha.ComputeHash($bytes)) -replace "-","")
 if ($actualSha -cne $expectedSha) {
   throw "INSTALLED_WATCHER_PURE_FUNCTION_SHA_MISMATCH"
 }
