@@ -221,6 +221,8 @@ jobs:
           if ($errors.Count -ne 0) { throw 'SANDBOX_POWERSHELL_SYNTAX_INVALID' }
       - name: Reconcile V2 consumer, V6.8, pinned Academy motor and three SVG receipts
         run: node tools/verificar_cadeia_positiva_v722_offline.js
+      - name: Payment-note V8.0 and B5 preservation (offline, Windows)
+        run: node tools/verificar_nota_pagamento_v80_offline.js
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
