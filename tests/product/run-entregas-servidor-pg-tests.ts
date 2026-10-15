@@ -136,7 +136,7 @@ void (async () => {
     const antes = await impressaoDoBanco(b);
     servidor = spawn("npx", ["tsx", "tools/product_system_server.ts"], {
       cwd: process.cwd(),
-      env: { ...process.env, PRODUCT_UI_PORT: String(PORTA), DELIVERYOS_DATABASE_URL: b.url, DELIVERYOS_PG_URL: "" },
+      env: { ...process.env, PRODUCT_UI_PORT: String(PORTA), DELIVERYOS_DATABASE_URL: b.url, DELIVERYOS_PG_URL: "", DELIVERYOS_PRODUCT_READ_UNIT: "ITAIM" },
       stdio: ["ignore", "pipe", "pipe"],
       // Grupo proprio: `npx` -> `tsx` -> `node` sao tres processos, e matar so
       // o primeiro deixava o servidor vivo segurando os pipes (medido).
@@ -267,6 +267,53 @@ void (async () => {
               if (nome === "desktop" && rotulo === "todas") console.log(`      capturas com fontes ${await fontesEmUso(page)}`);
               await page.screenshot({ path: join(EVIDENCIAS, `pg-${rotulo}-${nome}-dobra.png`) });
               await page.screenshot({ path: join(EVIDENCIAS, `pg-${rotulo}-${nome}-inteira.png`), fullPage: true });
+              await ctx.close();
+            }
+          }
+        } finally {
+          await browser.close();
+        }
+      });
+      await teste("S9 Copiloto renderizado no Chromium usa a leitura do mesmo PG", async () => {
+        const { chromium } = await import("playwright");
+        const browser = await chromium.launch(process.env.PRODUCT_UI_CHROMIUM
+          ? { executablePath: process.env.PRODUCT_UI_CHROMIUM } : {});
+        try {
+          for (const [nome, viewport] of [
+            ["desktop", { width: 1440, height: 900 }],
+            ["celular", { width: 390, height: 844 }],
+          ] as const) {
+            const ctx = await browser.newContext({ viewport, reducedMotion: "reduce" });
+            try {
+              await servirFontesCanonicas(ctx, process.env.PRODUCT_UI_FONTES);
+              const page = await ctx.newPage();
+              await page.goto(`http://127.0.0.1:${PORTA}/#/copiloto`, { waitUntil: "domcontentloaded" });
+              // A tela DEVE selecionar a unidade que tem fatos no mesmo PG.
+              // Sem isso o banner fica verde mas a UI le demo-unit e prova NADA.
+              await page.locator("#seletorUnidade").selectOption("ITAIM", { timeout: 10000 });
+              await page.waitForFunction(() =>
+                document.querySelector("#superficie")?.textContent?.includes("viagens na projeção histórica"),
+                null, { timeout: 15000 });
+              const body = await page.locator("body").innerText();
+              assert.match(body, /Entregas · leitura compartilhada/);
+              assert.match(body, /ITAIM[\s\S]*viagens na projeção histórica/);
+              assert.match((await page.locator("#unidadeAtiva").innerText()), /ITAIM/);
+              const grupo = await page.locator(".fonte-linha").filter({ hasText: "ITAIM" }).first().innerText();
+              assert.match(grupo, /ITAIM[\s\S]*simulado[\s\S]*7 viagens na projeção histórica/);
+              assert.doesNotMatch(body, /A fonte da plataforma ainda não foi configurada/);
+              assert.match((await page.locator("#faixaAmbiente").innerText()), /LEITURA DO SERVIDOR/);
+              const estados = await page.locator("#conexaoShell [data-estado]")
+                .evaluateAll((els) => els.map((e) => e.getAttribute("data-estado")));
+              assert.deepEqual(estados, ["parcial", "simulado"], "moldura nao pode falar somente demonstracao");
+              await page.screenshot({ path: join(EVIDENCIAS, `pg-copiloto-${nome}.png`), fullPage: true });
+              // Ir para HOME nao pode carregar junto a unidade de leitura do Copiloto.
+              await page.goto(`http://127.0.0.1:${PORTA}/#/`, { waitUntil: "domcontentloaded" });
+              await page.waitForFunction(() =>
+                document.querySelector("#unidadeAtiva")?.textContent?.includes("demo-unit"),
+                null, { timeout: 15000 });
+              assert.equal(await page.locator("#seletorUnidade").inputValue(), "demo-unit");
+              assert.equal(await page.locator("#seletorUnidade option[value='ITAIM']").isDisabled(), true);
+            } finally {
               await ctx.close();
             }
           }

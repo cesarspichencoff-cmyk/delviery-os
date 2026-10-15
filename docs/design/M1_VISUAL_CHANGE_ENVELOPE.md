@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: m1_visual_change_authorization
   superseded_by: null
-  atualizado_em: "2026-10-12"
+  atualizado_em: "2026-10-15"
   state_basis: 642fa1e
   missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B) · exceção leitura da rua (fora de M1B, 2026-10-09)
 ---
@@ -582,3 +582,10 @@ existe cópia paralela para divergir em silêncio.
 
 **A metade do futuro** é afirmada uma vez só, em `C6`: a união de todos os
 caminhos protegidos, comparada com HEAD, precisa caber em `AUTHORIZED_PATHS`.
+
+
+---
+
+## Revisao temporal de 15/10/2026 (sem ampliar autoridade)
+
+O commit 5ba2339 de 13/10 registrou o recorte historico da Q-019; o lifecycle ainda dizia 12/10. Esta revisao reconcilia a data documental sem alterar a janela historica, os baselines, a autorizacao de M1B ou a fronteira entre prova e producao.

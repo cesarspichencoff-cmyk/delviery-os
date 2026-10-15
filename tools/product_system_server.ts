@@ -103,6 +103,16 @@ const USAR_INCREMENTAL_RR = incrementalExplicitamenteAtivo(process.env.DELIVERYO
  * demonstracao por um banco alheio (2026-10-07).
  */
 const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
+/** Unidade explicitamente configurada para leitura de piloto, nunca inferida de dados.
+ * Sem banco ou com id invalido, a navegacao permanece somente demonstracao.
+ * Visibilidade de um id NAO substitui autorizacao, fonte ou medicao real.
+ */
+const UNIDADE_LEITURA_PILOTO = (process.env.DELIVERYOS_PRODUCT_READ_UNIT || "").trim();
+const UNIDADES_NAVEGACAO = URL_PLATAFORMA && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_LEITURA_PILOTO)
+  ? [...UNIDADES, { unit_id: UNIDADE_LEITURA_PILOTO,
+      nome: `Leitura da plataforma · ${UNIDADE_LEITURA_PILOTO}`,
+      praca: "leitura parcial" }]
+  : UNIDADES;
 const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
 /**
  * A faixa de topo diz a COMPOSICAO deste servidor, nao a de uma build
@@ -447,7 +457,7 @@ export async function criarServidor(): Promise<http.Server> {
         return json(res, 200, {
           grupos: GRUPOS,
           modulos: MODULOS,
-          unidades: UNIDADES,
+          unidades: UNIDADES_NAVEGACAO,
         });
       }
       if (p === "/api/home") {

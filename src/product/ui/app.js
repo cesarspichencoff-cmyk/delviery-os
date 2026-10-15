@@ -124,6 +124,18 @@ const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sinteti
 function desenharMoldura(rota, vm) {
   const l = rota === "/entregas" && vm && vm.leitura && vm.leitura.disponivel === true ? vm.leitura : null;
   const sel = $("#seletorUnidade");
+  // Copiloto mistura proposta de demonstracao com leitura PARCIAL do servidor.
+  // Nunca rotular essa composicao "SOMENTE DEMONSTRACAO" quando ha fatos lidos.
+  const compartilhada = rota === "/copiloto" ? vm?.entregas_observadas : null;
+  if (compartilhada?.estado === "observado" && compartilhada.fonte === "platform.event_log"
+      && Array.isArray(compartilhada.grupos) && compartilhada.grupos.length > 0) {
+    const modos = [...new Set(compartilhada.grupos.map((g) =>
+      ({ real: "real", simulated: "simulado", control: "controle" })[g.source_mode] || "indisponivel"))];
+    $("#conexaoShell").innerHTML = selos([{ estado: "parcial" }, ...modos.map((estado) => ({ estado }))]);
+    sel.hidden = false;
+    atualizarUnidadeVisivel();
+    return;
+  }
   if (!l) {
     $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
     sel.hidden = false;
@@ -300,8 +312,20 @@ function apiDaRota(rota) {
 }
 
 async function desenhar(rota, opcoes = {}) {
-  estado.geracao += 1;
+  const geracao = ++estado.geracao;
   estado.relendo = false;
+  // A unidade configurada para LEITURA PARCIAL do Copiloto nao participa das
+  // cenas das demais telas. Evita rotular uma HOME de fixture como Itaim real.
+  const seletor = $("#seletorUnidade");
+  for (const opcao of seletor.options) {
+    const unidade = estado.navegacao.unidades.find((u) => u.unit_id === opcao.value);
+    if (unidade?.praca === "leitura parcial") opcao.disabled = rota !== "/copiloto";
+  }
+  const escolhida = estado.navegacao.unidades.find((u) => u.unit_id === estado.unidade);
+  if (rota !== "/copiloto" && escolhida?.praca === "leitura parcial") {
+    estado.unidade = estado.navegacao.unidades[0]?.unit_id ?? null;
+    seletor.value = estado.unidade ?? "";
+  }
   const alvo = $("#superficie");
   const modulo = estado.navegacao.modulos.find((m) => m.rota === rota);
   desenharNavegacao(rota);
@@ -331,11 +355,14 @@ async function desenhar(rota, opcoes = {}) {
   alvo.innerHTML = skeleton(4);
   try {
     const vm = await obter(api);
+    // Uma resposta de rota/unidade anterior nao pode substituir o contexto atual.
+    if (geracao !== estado.geracao) return;
     alvo.innerHTML = s.tela(vm);
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
   } catch (e) {
+    if (geracao !== estado.geracao) return;
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",
     // e o que houve foi "nao consegui perguntar".
     desenharMoldura(rota, null);
@@ -348,7 +375,7 @@ async function desenhar(rota, opcoes = {}) {
         `A leitura falhou (${e.message}). Isto NAO significa que nao ha nada — significa que nao foi possivel perguntar. Nada nesta tela representa o estado atual.`,
     );
   } finally {
-    alvo.setAttribute("aria-busy", "false");
+    if (geracao === estado.geracao) alvo.setAttribute("aria-busy", "false");
   }
 }
 
