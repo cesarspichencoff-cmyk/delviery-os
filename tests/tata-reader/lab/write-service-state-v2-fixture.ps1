@@ -74,7 +74,13 @@ function Write-Atomic([string]$path,$obj) {
   try { $f.Write($bytes,0,$bytes.Length); $f.Flush($true) }
   finally { $f.Dispose() }
   if (Test-Path -LiteralPath $path -PathType Leaf) {
-    [IO.File]::Replace($tmp,$path,$null,$true)
+    # .NET Framework/Windows nao aceita caminho de backup nulo em Replace.
+    # O backup tambem permanece sob o mesmo LAB, sem ponte para a loja.
+    $bak = $path + ".bak." + [guid]::NewGuid().ToString("N")
+    [IO.File]::Replace($tmp,$path,$bak,$true)
+    if (Test-Path -LiteralPath $bak -PathType Leaf) {
+      Remove-Item -LiteralPath $bak -Force
+    }
   } else {
     [IO.File]::Move($tmp,$path)
   }
