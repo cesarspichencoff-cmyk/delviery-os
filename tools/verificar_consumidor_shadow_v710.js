@@ -154,3 +154,5 @@ require('./verificar_comandas_exact_intake_v1.cjs');
 require('./verificar_comandas_bag_human_proposal_v1.cjs');
 // Ed25519 verification remains synthetic/shadow. Never mint FACT or print rights.
 require('./verificar_comandas_bag_attestation_v1.cjs');
+// Zero-PII aggregate audit of ten original note scopes; no V6.8/print authority.
+require('./verificar_comandas_ten_v68_note_scope_audit_v1.cjs');
