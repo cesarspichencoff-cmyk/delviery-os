@@ -1,0 +1,51 @@
+name: DeliveryOS — escopo de unidade API (LAB)
+on:
+  push:
+    branches: [test/deliveryos-scoped-api-lab-20261015]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unidade-isolada:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Preparar PostgreSQL descartavel local, sem Docker pull
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin=/usr/lib/postgresql/16/bin
+          test -x "$bin/initdb"
+          data="$RUNNER_TEMP/scope-pg-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          sock="$RUNNER_TEMP/scope-pg-socket-$GITHUB_RUN_ATTEMPT"
+          mkdir -m 700 "$sock"
+          "$bin/initdb" -D "$data" --username="$USER" --auth-local=trust --auth-host=trust --no-instructions > "$RUNNER_TEMP/scope-init.log" 2>&1
+          "$bin/pg_ctl" -D "$data" -o "-c listen_addresses='' -c unix_socket_directories='$sock' -c port=55441" -l "$RUNNER_TEMP/scope-server.log" -w start
+          "$bin/pg_isready" -h "$sock" -p 55441 -U "$USER" -d postgres
+          echo "DELIVERYOS_PG_URL=postgresql://$USER@localhost:55441/postgres?host=$sock" >> "$GITHUB_ENV"
+          echo "SCOPE_PG_DATA=$data" >> "$GITHUB_ENV"
+      - name: Dependencias e build canonico
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build:platform
+          npx --no-install tsc --noEmit
+      - name: Guarda de configuracao e cabecalho de acesso
+        run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
+      - name: PostgreSQL de duas unidades — tentativas cruzadas negadas
+        run: npx --no-install tsx tests/product/run-entregas-servidor-pg-tests.ts
+      - name: Regressao Product System (sem banco de loja)
+        run: npm run test:platform:product
+      - name: Parar PostgreSQL descartavel
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${SCOPE_PG_DATA:-}" && -d "$SCOPE_PG_DATA" ]]; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$SCOPE_PG_DATA" -m immediate -w stop
+          fi
