@@ -152,3 +152,5 @@ require('./comandas-human-review-v1/human_review_v1.test.cjs');
 require('./verificar_comandas_exact_intake_v1.cjs');
 // Shadow-only: source hashes plus pinned human ledger never authorize FACT or print.
 require('./verificar_comandas_bag_human_proposal_v1.cjs');
+// Ed25519 verification remains synthetic/shadow. Never mint FACT or print rights.
+require('./verificar_comandas_bag_attestation_v1.cjs');
