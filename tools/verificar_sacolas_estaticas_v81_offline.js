@@ -15,7 +15,11 @@ const humanSource=path.join(__dirname,'../runtime/shadow/human-validations-cesar
 const consumer=fs.readFileSync(consumerSource),motor=fs.readFileSync(engineSource);
 const ledger=fs.readFileSync(humanSource);
 assert.equal(sha(motor),PACKAGING_SOURCE_SHA256_V78);
-assert.equal(blob(ledger),'cd30d2039ea9228ff59c7581b0bc1c1f4cbaef98');
+// Git checkout on Windows may materialize CRLF. Verify EXACT committed LF
+// bytes, allowing ONLY a reversible line-ending normalization (no data edits).
+const ledgerCommitBlob='cd30d2039ea9228ff59c7581b0bc1c1f4cbaef98';
+const canonicalLedger=Buffer.from(ledger.toString('utf8').replace(/\r\n/g,'\n'));
+assert.equal(blob(canonicalLedger),ledgerCommitBlob,'HUMAN_LEDGER_CANONICAL_BLOB_MISMATCH');
 const cases=CASES.filter(([id])=>['B1','B5','B8','B9'].includes(id));
 assert.equal(cases.length,7);
 const human=JSON.parse(ledger).bags,defs=Object.fromEntries(
