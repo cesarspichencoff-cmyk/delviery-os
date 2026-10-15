@@ -227,6 +227,92 @@ void (async () => {
       assert.equal(await impressaoDoBanco(b), antes, "consultas nao podem gravar fatos nem aparelhos");
     });
 
+    await teste("S10 recorte HTTP SHADOW exige credencial e nao revela segunda unidade", async () => {
+      // Segunda instancia no mesmo PostgreSQL isolado do S8, com duas unidades.
+      // Nao existe credencial real neste teste; nenhuma interface recebe token.
+      const token = "ab".repeat(32);
+      const portRestrito = PORTA + 201;
+      const servidorRestrito = spawn("npx", ["tsx", "tools/product_system_server.ts"], {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          PRODUCT_UI_PORT: String(portRestrito),
+          DELIVERYOS_DATABASE_URL: b.url,
+          DELIVERYOS_PG_URL: "",
+          DELIVERYOS_PRODUCT_READ_UNIT: "ITAIM",
+          DELIVERYOS_PRODUCT_SCOPE_MODE: "shadow_lab",
+          DELIVERYOS_PRODUCT_SCOPE_UNIT: "ITAIM",
+          DELIVERYOS_PRODUCT_SCOPE_TOKEN: token,
+          CONFERENCE_BRAIN_DATA_DIR: "",
+          TATA_READER_INSTALL_ROOT: "",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+      });
+      let erroBoot = "";
+      servidorRestrito.stderr?.on("data", (chunk) => (erroBoot += String(chunk)));
+      servidorRestrito.stdout?.on("data", () => {});
+      const url = (path: string) => `http://127.0.0.1:${portRestrito}${path}`;
+      const get = (path: string, bearer?: string) => fetch(url(path), {
+        headers: bearer === undefined ? {} : { Authorization: `Bearer ${bearer}` },
+      });
+      try {
+        let pronto = false;
+        const fim = Date.now() + 25_000;
+        while (Date.now() < fim) {
+          if (servidorRestrito.exitCode !== null) throw Error(`servidor restrito saiu: ${erroBoot.slice(-200)}`);
+          try {
+            const health = await get("/api/health");
+            if (health.status === 401) { pronto = true; break; }
+          } catch {}
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+        assert.equal(pronto, true, "servidor restrito nao abriu");
+        for (const path of ["/api/entregas", "/api/copiloto?unit_id=ITAIM", "/api/health", "/api/fontes"]) {
+          assert.equal((await get(path)).status, 401, `sem token: ${path}`);
+          assert.equal((await get(path, "cd".repeat(32))).status, 401, `token errado: ${path}`);
+        }
+        for (const path of [
+          "/api/entregas?unidade=VILA-LAB",
+          "/api/copiloto?unit_id=VILA-LAB",
+          "/api/entregas?unidade=ITAIM&unidade=VILA-LAB",
+          "/api/entregas?unit_id=ITAIM",
+          "/api/copiloto?unidade=ITAIM",
+          "/api/historico?unit_id=ITAIM",
+          "/api/operacao-viva?unit_id=ITAIM",
+          "/api/conference-brain",
+          "/api/fontes",
+          "/api/navegacao",
+        ]) {
+          assert.equal((await get(path, token)).status, 403, `rota/unidade nao recusada: ${path}`);
+        }
+        const entregasRes = await get("/api/entregas", token);
+        assert.equal(entregasRes.status, 200);
+        const entregas = await entregasRes.json();
+        assert.equal(entregas.leitura.disponivel, true);
+        assert.equal(entregas.leitura.unidade_selecionada, "ITAIM");
+        assert.equal(entregas.realidade.aparelhos.length, 7);
+        assert.ok(entregas.realidade.aparelhos.every((a: { unidade: string }) => a.unidade === "ITAIM"));
+        assert.deepEqual(entregas.leitura.unidades.map((a: { unit_id: string }) => a.unit_id), ["ITAIM"]);
+        assert.doesNotMatch(JSON.stringify(entregas), /VILA-LAB|dev-g|T-201|rider-g/, "fato da outra unidade exposto");
+
+        const copilotoRes = await get("/api/copiloto?unit_id=ITAIM", token);
+        assert.equal(copilotoRes.status, 200);
+        const copiloto = await copilotoRes.json();
+        assert.equal(copiloto.entregas_observadas.unidade_solicitada, "ITAIM");
+        assert.ok(copiloto.entregas_observadas.grupos.length > 0);
+        assert.ok(copiloto.entregas_observadas.grupos.every((g: { unit_id: string }) => g.unit_id === "ITAIM"));
+        assert.equal(copiloto.entregas_observadas.historico_sem_modo, null);
+        assert.doesNotMatch(JSON.stringify(copiloto), /VILA-LAB|dev-g|T-201|rider-g/, "copiloto expôs outra unidade");
+        assert.equal((await get("/api/health", token)).status, 200);
+        assert.equal(await impressaoDoBanco(b), antes, "barreira nao pode escrever no PG");
+      } finally {
+        if (servidorRestrito.pid) {
+          try { process.kill(-servidorRestrito.pid, "SIGTERM"); } catch {}
+        }
+      }
+    });
+
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {
       const depois = await impressaoDoBanco(b);
       assert.equal(depois, antes);
