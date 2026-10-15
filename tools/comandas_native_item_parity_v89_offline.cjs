@@ -73,7 +73,8 @@ function compare(event,manifest,rows){
    const a=qty(row.QTPRODCOMVEN),b=qty(item.QTPRODCOMVEN);
    if(a===null||b===null||a!==b)
     return hold('NATIVE_SQL_QUANTITY_DIFFERENT');
-   if(!/^[0-9]{1,5}$/.test(String(row.CDSENHAPED??'')))
+   if(!/^[0-9]{1,5}$/.test(String(row.CDSENHAPED??''))||
+      Number(row.CDSENHAPED)===0)
     return hold('NATIVE_SQL_SENHA_INVALID');
    senhaSet.add(String(Number(row.CDSENHAPED)));
    const expected=noteMap.get(row.NRPRODCOMVEN);
