@@ -410,7 +410,10 @@ export async function lerRealidadeDeEntregasIncremental(
     const inicio = performance.now();
     // Primeiro comando da transação: o instante MVCC é o do comando seguinte.
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
-    await tx.query(SQL_CURSOR, [TIPOS_DA_OPERACAO_VIVA]);
+    await tx.query(
+      opcoes.unit_id ? SQL_CURSOR + " AND unit_id = $2" : SQL_CURSOR,
+      opcoes.unit_id ? [TIPOS_DA_OPERACAO_VIVA, opcoes.unit_id] : [TIPOS_DA_OPERACAO_VIVA],
+    );
     const buscar = () => tx.query(`FETCH FORWARD ${lote} FROM ${CURSOR}`);
     let emVoo: Promise<SqlRow[]> | null = buscar();
     try {
@@ -431,7 +434,7 @@ export async function lerRealidadeDeEntregasIncremental(
         conta.corrompidas += d.corrompidas.length;
         conta.aptos += d.aptos.length;
         for (const f of d.aptos) {
-          // Mesmo filtro da porta canônica (inclusive a veracidade de `unit_id`).
+          // Defesa em profundidade; o cursor SQL ja filtra o escopo.
           if (opcoes.unit_id && f.unit_id !== opcoes.unit_id) continue;
           let porModo = escoposPorUnidade.get(f.unit_id);
           if (porModo === undefined) {
@@ -480,13 +483,17 @@ export async function lerRealidadeDeEntregasIncremental(
               source_mode, correlation_id, clock_trust
          FROM platform.event_log
         WHERE event_type = 'gps_batch_received' AND device_id IS NOT NULL
+          ${opcoes.unit_id ? "AND unit_id = $1" : ""}
         ORDER BY device_id, recorded_at DESC, sequence_local DESC NULLS LAST`,
+      opcoes.unit_id ? [opcoes.unit_id] : [],
     );
     const contagens = await tx.query(
       `SELECT device_id, source_mode, count(*)::int AS n
          FROM platform.event_log
         WHERE event_type = 'gps_batch_received' AND device_id IS NOT NULL
+          ${opcoes.unit_id ? "AND unit_id = $1" : ""}
         GROUP BY device_id, source_mode`,
+      opcoes.unit_id ? [opcoes.unit_id] : [],
     );
     instantaneo_ms = performance.now() - inicio;
     return { linhas, ultimos, contagens };
