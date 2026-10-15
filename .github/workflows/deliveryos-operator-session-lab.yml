@@ -45,6 +45,8 @@ jobs:
         run: npx --no-install tsx tests/product/run-operator-session-rls-pool-lab-tests.ts
       - name: Contra-prova GUC mutavel versus roles RLS de unidade em banco isolado
         run: npx --no-install tsx tests/product/run-operator-rls-guc-threat-lab-tests.ts
+      - name: Encaminhar sessoes ficticias para pools RLS com roles por unidade
+        run: npx --no-install tsx tests/product/run-operator-role-routing-lab-tests.ts
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
