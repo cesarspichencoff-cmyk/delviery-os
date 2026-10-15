@@ -111,6 +111,8 @@ jobs:
         run: node tools/verificar_consumidor_shadow_v710.js
       - name: Stable Windows reader event/decision pairing V6.8 (offline)
         run: node tools/verificar_par_evento_leitor_v68.js
+      - name: Payment-note policy V8.0 strict opt-in and item-note preservation (synthetic offline)
+        run: node tools/verificar_nota_pagamento_v80_offline.js
       - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
