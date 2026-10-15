@@ -49,6 +49,8 @@ check('duplicated print anchor',x=>x.print_blocks[1]=structuredClone(x.print_blo
 check('cross-order reused senha',x=>x.collision_evidence=[{senha:'00042',order_key:'OTHER'}],'HOLD','SENHA_SHARED_WITH_OTHER_ORDER');
 check('no collision horizon',x=>x.provenance.full_senha_collision_scope_covered=false,'HOLD','SENHA_UNIQUENESS_SCOPE_NOT_PROVEN');
 check('extra SQL item',x=>x.sql_item_rows.push(structuredClone(x.sql_item_rows[0])),'HOLD','ITEM_ROW_COUNT_MISMATCH');
+check('more than 5 digits',x=>x.sql_item_rows[0].CDSENHAPED='999999','HOLD','NATIVE_SENHA_MISSING');
+check('unlinked note',x=>x.sql_item_rows[1].TXPRODCOMVEN='SEM CEBOLA','HOLD','UNLINKED_NATIVE_PREPARATION_NOTE');
 console.log(JSON.stringify({status:'PASS',tests:count,synthetic_only:true,
  external_identity_proof:false,real_order_join_proven:false,
  physical_print_authorized:false,operational_effects:false}));
