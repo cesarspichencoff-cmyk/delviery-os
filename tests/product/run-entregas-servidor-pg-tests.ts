@@ -21,6 +21,7 @@ import { createHash } from "node:crypto";
 import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-entregas";
 import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
 import type { TransactionalSqlClient, SqlClient, SqlRow } from "../../src/platform/persistence/sql-client";
+import { createPgClient } from "../../src/platform/persistence/sql-client";
 
 import { bancoIsolado, type BancoIsolado } from "../../src/platform/banco-isolado";
 import { fontesEmUso, servirFontesCanonicas } from "./fontes-canonicas";
@@ -352,6 +353,86 @@ void (async () => {
       }
       assert.equal(await impressaoDoBanco(b), antes, "S11 não alterou banco");
     });
+
+    // Criar roles e politicas é uma ação de nível CLUSTER. Nunca rodar
+    // contra banco externo/compartilhado. Este subteste é opt-in somente
+    // no PostgreSQL socket-only OWNED pelo runner deste workflow de LAB.
+    const uRls = new URL(URL_BASE);
+    const sockRls = uRls.searchParams.get("host") ?? "";
+    const runnerTemp = process.env.RUNNER_TEMP ?? "";
+    const rlsLabAutorizado = process.env.GITHUB_ACTIONS === "true"
+      && runnerTemp !== ""
+      && sockRls.startsWith(runnerTemp + "/scope-pg-socket-")
+      && uRls.port === "55441"
+      && uRls.hostname === "localhost";
+    if (rlsLabAutorizado) {
+      await teste("S12 papel PostgreSQL isolado RLS barra acesso sem WHERE, inclusive leitor incremental", async () => {
+        const nome = "scope_lab_" + process.pid + "_" + Date.now().toString(36);
+        assert.match(nome, /^[a-z][a-z0-9_]+$/);
+        let tenant: Awaited<ReturnType<typeof createPgClient>> | null = null;
+        let roleCreated = false;
+        let policyLog = false;
+        let policyDevice = false;
+        try {
+          await b.cliente.query(`CREATE ROLE ${nome} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`);
+          roleCreated = true;
+          await b.cliente.query(`GRANT CONNECT ON DATABASE ${b.nome} TO ${nome}`);
+          await b.cliente.query(`GRANT USAGE ON SCHEMA platform, identity TO ${nome}`);
+          await b.cliente.query(`GRANT SELECT ON platform.event_log, identity.device TO ${nome}`);
+          await b.cliente.query("ALTER TABLE platform.event_log ENABLE ROW LEVEL SECURITY");
+          await b.cliente.query("ALTER TABLE identity.device ENABLE ROW LEVEL SECURITY");
+          await b.cliente.query(`CREATE POLICY scope_lab_eventos ON platform.event_log FOR SELECT TO ${nome} USING (unit_id = 'ITAIM')`);
+          policyLog = true;
+          await b.cliente.query(`CREATE POLICY scope_lab_aparelhos ON identity.device FOR SELECT TO ${nome} USING (unit_id = 'ITAIM')`);
+          policyDevice = true;
+          const tenantUrl = new URL(b.url);
+          tenantUrl.username = nome;
+          tenantUrl.password = "";
+          tenant = await createPgClient({ url: tenantUrl.toString(), max: 1 });
+          const papel = await tenant.query("SELECT current_user AS usuario, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user");
+          assert.equal(papel.length, 1);
+          assert.equal(papel[0].usuario, nome);
+          assert.equal(papel[0].rolsuper, false);
+          assert.equal(papel[0].rolbypassrls, false);
+          const adminItaim = await b.cliente.query("SELECT COUNT(*)::int AS n FROM platform.event_log WHERE unit_id='ITAIM'");
+          const restritoTotal = await tenant.query("SELECT COUNT(*)::int AS n FROM platform.event_log");
+          assert.equal(restritoTotal[0].n, adminItaim[0].n, "RLS deve limitar query sem WHERE");
+          assert.equal((await tenant.query("SELECT COUNT(*)::int AS n FROM platform.event_log WHERE unit_id='VILA-LAB'"))[0].n, 0);
+          assert.equal((await tenant.query("SELECT COUNT(*)::int AS n FROM identity.device"))[0].n, 7);
+          assert.equal((await tenant.query("SELECT COUNT(*)::int AS n FROM identity.device WHERE unit_id='VILA-LAB'"))[0].n, 0);
+          await assert.rejects(
+            tenant.query("SELECT COUNT(*)::int AS n FROM identity.actor"),
+            (e: unknown) => (e as { code?: string }).code === "42501",
+            "role não pode ler identity.actor",
+          );
+          await assert.rejects(
+            tenant.query("ALTER TABLE platform.event_log DISABLE ROW LEVEL SECURITY"),
+            (e: unknown) => (e as { code?: string }).code === "42501",
+            "role não pode desligar RLS",
+          );
+          for (const leitor of [lerRealidadeDeEntregas, lerRealidadeDeEntregasIncremental] as const) {
+            // Mesmo sem parametro unit_id, o BANCO só entrega fatos Itaim.
+            const realidade = await leitor(tenant, { agora: new Date() });
+            assert.ok(realidade.aparelhos.length > 0);
+            assert.ok(realidade.aparelhos.every((a) => a.unit_id === "ITAIM"));
+            assert.ok(realidade.projecoes.every((p) => p.unit_id === "ITAIM"));
+          }
+          assert.equal(await impressaoDoBanco(b), antes, "RLS no LAB não altera dados");
+        } finally {
+          await tenant?.close();
+          if (policyDevice) await b.cliente.query("DROP POLICY scope_lab_aparelhos ON identity.device");
+          if (policyLog) await b.cliente.query("DROP POLICY scope_lab_eventos ON platform.event_log");
+          if (roleCreated) {
+            await b.cliente.query(`REVOKE SELECT ON platform.event_log, identity.device FROM ${nome}`);
+            await b.cliente.query(`REVOKE USAGE ON SCHEMA platform, identity FROM ${nome}`);
+            await b.cliente.query(`REVOKE CONNECT ON DATABASE ${b.nome} FROM ${nome}`);
+            await b.cliente.query(`DROP ROLE ${nome}`);
+          }
+        }
+      });
+    } else {
+      console.log("S12_RLS_PULADO: requer GitHub Actions, runner TEMP e socket-only de laboratorio; nao e prova de RLS");
+    }
 
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {
       const depois = await impressaoDoBanco(b);
