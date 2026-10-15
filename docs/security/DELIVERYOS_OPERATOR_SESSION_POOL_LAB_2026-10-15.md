@@ -31,6 +31,20 @@ A estratégia do ensaio original era `unit_id = NULLIF(current_setting('delivery
 - **Decisão de segurança:** não promover o desenho com único papel e GUC modificável como isolamento obrigatório da base. Avaliar **credenciais e pools separados por unidade**, com papéis sem membros cruzados e policies fixas, ou outro mecanismo comprovadamente robusto e revisado. Isso traz custos de gestão de conexão, credenciais e ciclo de revogação que ainda não foram medidos.
 - **Fronteira de prova da mitigação:** são apenas duas tabelas, dois pools/papéis de laboratório e dados sintéticos. Banco do DeliveryOS não foi alterado. A role do aplicativo ainda não foi vinculada a uma sessão **humana comprovada**. A aprovação é evidência de comportamento PostgreSQL nesse ensaio, não garantia para todos os schemas/portas, nem correção implantada.
 
+## Prova adicional: sessão fictícia → pool fixo por unidade (15/10/2026)
+
+A primeira auditoria de roles testou isolamento do próprio banco. O novo teste verifica **como o servidor deveria encaminhar uma sessão já validada à conexão da unidade correta**, sem permitir que navegador/URL escolham credenciais.
+
+- Arquivo novo: tests/product/run-operator-role-routing-lab-tests.ts, com guarda de GitHub Actions, RUNNER_TEMP e socket UNIX privado operator-pg-socket-* (localhost, porta 55441). Fora desse ambiente sai com código 78, sem falso verde.
+- Banco isolado do runner com dois fatos sintéticos, dois papéis LOGIN sem BYPASSRLS, sem membership cruzado, e duas policies por tabela em platform.event_log e identity.device. Cada unidade usa sua própria conexão PgSqlClient (pool max=1).
+- Mapeamento FIXO no harness entre sessão fictícia previamente verificada e pool da unidade. Não interpola valores de navegador em logins, nomes de roles ou SQL. Um gerente fictício com duas concessões precisa emitir tokens/sessões específicos por unidade.
+- Testes negativos: cookie falso é negado com HTTP 401 e zero SQL; URL cruzada, cabeçalho forjado, tentativa de texto SQL no seletor e troca indevida de unidade são negados com 403 antes de acessar PostgreSQL.
+- Seis leituras concorrentes conservam o mesmo backend PID **dentro de cada unidade**, PIDs diferentes entre unidades e não vazam fatos. Mudança adversarial de GUC não supera policy fixa; SET ROLE de outra unidade e tentativa de desligar RLS são negados por 42501. Revogação e expiração impedem novas consultas.
+- Prova: [GitHub Actions 38812505923](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38812505923) SUCCESS. OPERATOR_ROLE_ROUTING_LAB 18/18 PASS, junto com 27/27 sessões fictícias, 15/15 transações/pool, 16/16 auditoria adversarial GUC e regressão HTTP. Nenhuma fonte, credencial, usuário ou banco real foi acessado.
+- **Atenção:** são apenas dois pools, duas tabelas e sessões artificiais; não mede escalabilidade, conexões máximas ou custos de dezenas de unidades. Não verifica views, funções SECURITY DEFINER, writes, SQL injection no servidor real, nem substitui identidade de operador/IdP. Não houve modificação em tools/product_system_server.ts, role produtiva, migration, merge ou deploy.
+
+**Rota preferida para próxima revisão:** papéis realmente separados por unidade reduzem o risco da GUC mutável, mas dependem de autenticação humana confiável, gestão operacional de credenciais, revisão de todo o SQL, isolamento da connection pool e autorização antes de implantação.
+
 ## Fronteiras de confiança críticas (AINDA NÃO RESOLVIDAS)
 1. **Não existe login humano, IdP, assinatura externa, provedor autorizado, cookie emitido pela aplicação nem prova de navegador real.** A emissão de sessão recebe uma atestação propositalmente fictícia; isso prova lógica de sessão apenas. Não usar com dados pessoais.
 2. **Nenhuma migration, política, credencial de banco ou sessão foi instalada** na aplicação ou em loja. O RLS temporário foi criado e destruído apenas no banco isolado. Nenhum merge/deploy/piloto.
