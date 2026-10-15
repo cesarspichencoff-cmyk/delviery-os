@@ -124,6 +124,18 @@ const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sinteti
 function desenharMoldura(rota, vm) {
   const l = rota === "/entregas" && vm && vm.leitura && vm.leitura.disponivel === true ? vm.leitura : null;
   const sel = $("#seletorUnidade");
+  // Copiloto mistura proposta de demonstracao com leitura PARCIAL do servidor.
+  // Nunca rotular essa composicao "SOMENTE DEMONSTRACAO" quando ha fatos lidos.
+  const compartilhada = rota === "/copiloto" ? vm?.entregas_observadas : null;
+  if (compartilhada?.estado === "observado" && compartilhada.fonte === "platform.event_log"
+      && Array.isArray(compartilhada.grupos) && compartilhada.grupos.length > 0) {
+    const modos = [...new Set(compartilhada.grupos.map((g) =>
+      ({ real: "real", simulated: "simulado", control: "controle" })[g.source_mode] || "indisponivel"))];
+    $("#conexaoShell").innerHTML = selos([{ estado: "parcial" }, ...modos.map((estado) => ({ estado }))]);
+    sel.hidden = false;
+    atualizarUnidadeVisivel();
+    return;
+  }
   if (!l) {
     $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
     sel.hidden = false;
@@ -302,6 +314,18 @@ function apiDaRota(rota) {
 async function desenhar(rota, opcoes = {}) {
   estado.geracao += 1;
   estado.relendo = false;
+  // A unidade configurada para LEITURA PARCIAL do Copiloto nao participa das
+  // cenas das demais telas. Evita rotular uma HOME de fixture como Itaim real.
+  const seletor = $("#seletorUnidade");
+  for (const opcao of seletor.options) {
+    const unidade = estado.navegacao.unidades.find((u) => u.unit_id === opcao.value);
+    if (unidade?.praca === "leitura parcial") opcao.disabled = rota !== "/copiloto";
+  }
+  const escolhida = estado.navegacao.unidades.find((u) => u.unit_id === estado.unidade);
+  if (rota !== "/copiloto" && escolhida?.praca === "leitura parcial") {
+    estado.unidade = estado.navegacao.unidades[0]?.unit_id ?? null;
+    seletor.value = estado.unidade ?? "";
+  }
   const alvo = $("#superficie");
   const modulo = estado.navegacao.modulos.find((m) => m.rota === rota);
   desenharNavegacao(rota);
