@@ -50,24 +50,42 @@ function Assert-Generation([string]$dir,[string]$v){
   if([IO.File]::ReadAllText($p) -cne (Fixture $n $v)){throw 'ACTIVE_MISMATCH'}
  }
 }
+function Assert-ActiveMatchesBackup([string]$dir){
+ foreach($n in $names){
+  $active=Join-Path (Join-Path $dir 'active') $n
+  $backup=Join-Path (Join-Path $dir 'backup') $n
+  if((Sha $active) -cne (Sha $backup)){throw 'ACTIVE_NOT_BACKED_UP'}
+ }
+}
 function Replace([string]$dir,[string]$n,[string]$v){
  $dest=Join-Path (Join-Path $dir 'active') $n
  $tmp=$dest+'.pending'
  [IO.File]::WriteAllText($tmp,(Fixture $n $v),[Text.UTF8Encoding]::new($false))
  [IO.File]::Move($tmp,$dest,$true)
 }
+function Restore-Backup([string]$dir,[string]$n){
+ $source=Join-Path (Join-Path $dir 'backup') $n
+ $dest=Join-Path (Join-Path $dir 'active') $n
+ $tmp=$dest+'.pending'
+ # CRITICAL: restore bytes from the previously hash-validated backup,
+ # not from Fixture($n, 'old'), which would create a false-positive test.
+ [IO.File]::Copy($source,$tmp,$true)
+ [IO.File]::Move($tmp,$dest,$true)
+ if((Sha $dest) -cne (Sha $source)){throw 'RESTORED_BYTES_DIGEST_MISMATCH'}
+}
 if($Mode -ne 'Test'){
  $Root=Validate-Root $Root
  $null=Pins $Root
- if($Mode -eq 'Apply'){Assert-Generation $Root 'old'}
- $generation=if($Mode -eq 'Apply'){'candidate'}else{'old'}
+ if($Mode -eq 'Apply'){Assert-ActiveMatchesBackup $Root}
  $i=0
  foreach($n in $names){
-  Replace $Root $n $generation
+  if($Mode -eq 'Apply'){Replace $Root $n 'candidate'}
+  else{Restore-Backup $Root $n}
   $i++
   if($CrashAfter -eq $i){[Diagnostics.Process]::GetCurrentProcess().Kill()}
  }
- Assert-Generation $Root $generation
+ if($Mode -eq 'Apply'){Assert-Generation $Root 'candidate'}
+ else{Assert-ActiveMatchesBackup $Root}
  [pscustomobject]@{status=if($Mode -eq 'Apply'){'STAGED_REVIEW_ONLY'}else{'RESTORED'};
    authorized=$false;supervisor_executed=$false}|ConvertTo-Json -Compress
  exit 0
@@ -130,10 +148,37 @@ try{
  Assert-Generation $root 'candidate'
  $passed++
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}
-if($passed -ne 7){throw 'BAD_CASE_COUNT'}
+# A non-reconstructible backup proves recovery consumes actual stored bytes.
+$root=Sandbox
+try{
+ $original=[ordered]@{}
+ $manifestPath=Join-Path $root 'pins.json'
+ $manifest=Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8|ConvertFrom-Json
+ foreach($n in $names){
+  $unique=(Fixture $n 'old')+'# BACKUP_UNIQUE_'+[guid]::NewGuid().ToString('N')
+  $original[$n]=$unique
+  foreach($sub in @('active','backup')){
+   [IO.File]::WriteAllText((Join-Path (Join-Path $root $sub) $n),
+                          $unique,[Text.UTF8Encoding]::new($false))
+  }
+  $manifest.pins.$n=Sha (Join-Path (Join-Path $root 'backup') $n)
+ }
+ $manifest|ConvertTo-Json -Depth 5|
+  Set-Content -LiteralPath $manifestPath -Encoding UTF8
+ if((Child 'Apply' $root 0) -ne 0){throw 'UNIQUE_STAGE_FAILED'}
+ if((Child 'Recover' $root 0) -ne 0){throw 'UNIQUE_BACKUP_RESTORE_FAILED'}
+ foreach($n in $names){
+  $actual=[IO.File]::ReadAllText((Join-Path (Join-Path $root 'active') $n))
+  if($actual -cne $original[$n]){throw 'UNIQUE_BACKUP_BYTES_NOT_RESTORED'}
+  if($actual -ceq (Fixture $n 'old')){throw 'UNIQUE_TEST_RECONSTRUCTIBLE'}
+ }
+ $passed++
+}finally{Remove-Item -LiteralPath $root -Recurse -Force}
+if($passed -ne 8){throw 'BAD_CASE_COUNT'}
 [pscustomobject]@{
  schema='deliveryos.comandas.v824.ephemeral-windows-real-ntfs-rollback'
- status='PASS';cases=$passed
+ status='PASS';cases=$passed;backup_bytes_used_for_restore=$true
+ unique_non_reconstructible_original_bytes_restored=$true
  crash_after_staged_artifact=@(1,2,3)
  crash_during_rollback_after=@(1,2)
  idempotent_restoration=$true;corrupt_backup_rejected_before_restore=$true
