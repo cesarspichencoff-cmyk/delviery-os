@@ -165,7 +165,7 @@ check(admit(signedEnvelope(itaim, event("EV_OLD"), now - 120_001)).reason === "e
   "janela vencida bloqueia assinatura autentica");
 check(admit(signedEnvelope(itaim, event("EV_FUTURE"), now + 30_001)).reason === "envelope_invalid_or_stale",
   "carimbo futuro excessivo bloqueia assinatura autentica");
-check(admit(signedEnvelope(itaim, event("EV_NO_MODE", "ITAIM", undefined))).reason ===
+check(admit(signedEnvelope(itaim, { ...event("EV_NO_MODE"), source_mode: undefined })).reason ===
       "event_contract_invalid_or_unknown", "modo ausente fica UNKNOWN e nao vira real");
 const independent = admit(signedEnvelope(itaim, event("EV_SIGNAL", "ITAIM", "simulated", "delivery_ready")));
 check(independent.admitted && independent.receipt.event_type === "delivery_ready",
