@@ -116,6 +116,20 @@ O catálogo encontrou **três funções** nos schemas de migrations atuais e nen
 
 **Fronteira:** são regras testadas temporariamente em cinco tabelas incluindo `entregas.trip`, sem alterar roles, policies ou dados do banco da loja. Não significam autorização multiusuário real, prova de navegador/IdP, aprovação humana, migração pronta ou implementação em produção. Próximo passo seguro: inspecionar o produtor da `public_outbox`, vínculos de `handoff` por referências externas e permissões de fontes antes de projetar RLS produtivo com rollback.
 
+## Outbox pública: divergência entre colunas, JSON e origem (16/10/2026)
+
+**Novo resultado em laboratório:** `tests/product/run-public-outbox-envelope-rls-lab-tests.ts`, com as mesmas travas de runner GitHub e socket PostgreSQL 16 privado: recusa alvos externos com código 78 e usa somente migrations e fatos sintéticos. [GitHub Actions 38854199569](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38854199569) terminou **SUCCESS — `ENTREGAS_PUBLIC_OUTBOX_ENVELOPE_LAB: 29/29 PASS`**, preservando `ENTREGAS_REMAINING_WRITE_RLS_LAB: 45/45 PASS` e as regressões anteriores.
+
+**Risco reproduzido:** a definição oficial `entregas.public_outbox` tem `unit_id`, `event_id`, `idempotency_key` e JSON `event`, mas **não impõe igualdade entre coluna e envelope** nem FK de `event_id` para `entregas.domain_event`. Sob proprietário do banco descartável, um registro com coluna `unit_id='ITAIM'` e JSON `event.unit_id='VILA-LAB'` foi aceito; o teste executou `ROLLBACK`, portanto nenhum registro dessa tentativa permaneceu.
+
+**Mitigação de consistência testada**, **não aplicada à aplicação**: roles separadas por unidade e policy RLS fixa `FOR ALL ... USING/WITH CHECK` exigiram igualdade entre `event.unit_id` e coluna `unit_id`, `event.event_id` e `event_id`, `event.idempotency_key` e `idempotency_key`, além de `event.source='entregas'`. Tanto inserção quanto UPDATE que divergiu foram negados, sem bloquear alteração legítima de `status`. Mesmo após mudança adversarial de GUC, a role não leu dados de outra unidade.
+
+**Limite CRÍTICO demonstrado:** a própria role autorizada **ainda pôde inserir** um envelope coerente com `source_mode='real'` sem nenhum evento correspondente em `entregas.domain_event`. Logo, igualdade de JSON/colunas e `source='entregas'` são validação de **formato e consistência**, NÃO prova de que a fonte tenha emitido o evento e NÃO autorização para rotular eventos como reais. A prova executou somente em PostgreSQL efêmero; não indica incidente de loja.
+
+**O contrato atual prevê sinais públicos não necessariamente derivados de um evento de domínio** (`buildSignalEvent` em `src/entregas/integration/public-event-builder.ts`). Portanto, adicionar indiscriminadamente `FOREIGN KEY (event_id) REFERENCES domain_event` pode quebrar sinais legítimos. Primeiro é obrigatório inventariar emissores e distinguir, com evidência verificável, eventos que exigem linhagem de domínio versus sinais independentes autorizados. O guardrail precisa validar a **autoridade da fonte** e o modo `real/simulated/control/UNKNOWN`, idealmente impedindo que o papel de leitura ou um cliente SQL arbitrário gere prova de observação real.
+
+**Fronteira de autorização:** nenhuma migration, role, RLS, trigger ou emissor foi alterado no banco real. Falta integração com identidade humana autorizada, contrato de confiança dos produtores, atestação e testes adversariais de publicação/consumo ponta a ponta. **G0 laboratório PASS, origem real NO_GO.**
+
 ## Fronteiras de confiança críticas (AINDA NÃO RESOLVIDAS)
 1. **Não existe login humano, IdP, assinatura externa, provedor autorizado, cookie emitido pela aplicação nem prova de navegador real.** A emissão de sessão recebe uma atestação propositalmente fictícia; isso prova lógica de sessão apenas. Não usar com dados pessoais.
 2. **Nenhuma migration, política, credencial de banco ou sessão foi instalada** na aplicação ou em loja. O RLS temporário foi criado e destruído apenas no banco isolado. Nenhum merge/deploy/piloto.
