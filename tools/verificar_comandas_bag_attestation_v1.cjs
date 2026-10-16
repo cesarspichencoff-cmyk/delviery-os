@@ -93,7 +93,11 @@ block(verify(event,decision,ledger,a,{...trust,revoked_snapshots:[event.snapshot
 block(verify(event,decision,ledger,a,{...trust,public_key_sha256:'0'.repeat(64)},NOW));
 const another=crypto.generateKeyPairSync('ed25519');
 block(verify(event,decision,ledger,signed(event,decision,'B1',another.privateKey),trust,NOW));
-block(verify(event,decision,ledger,change(a,'signature_base64','A'+a.signature_base64.slice(1)),trust,NOW));
+// Select an actually different Base64 character; 'A' may already be the first
+// character of an ephemeral Ed25519 signature (a 1/64 false failure).
+const alteredFirstChar=a.signature_base64[0]==='A'?'B':'A';
+assert.notEqual(alteredFirstChar,a.signature_base64[0]);
+block(verify(event,decision,ledger,change(a,'signature_base64',alteredFirstChar+a.signature_base64.slice(1)),trust,NOW));
 block(verify(event,decision,ledger,a,trust,'2026-10-15T03:11:00.000Z'));
 block(verify(event,decision,ledger,a,trust,'2026-10-15T02:50:00.000Z'));
 block(verify(event,{...decision,ready:true},ledger,a,trust,NOW));
