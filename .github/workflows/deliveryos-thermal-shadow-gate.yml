@@ -251,6 +251,8 @@ jobs:
         run: node tools/verificar_comandas_cdsenhaped_readonly_plan_v88_offline.cjs
       - name: V8.9 independent native item parity cannot attest historical print (synthetic)
         run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
+      - name: V7.0/V7.4 shift upper-boundary exclusivity matches real Windows V2 (offline)
+        run: node tools/verificar_revisao_turno_humano_v70.js
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
