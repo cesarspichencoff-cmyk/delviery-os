@@ -45,3 +45,24 @@ Este achado demonstra **ausência de prova de origem nessa cadeia específica**,
 Fazer revisão do desenho de produtor/credencial e mapa dos emissores reais **sem acessar dados privados ou habilitar ingestão**. Uma prova em laboratório pode injetar identidades e concessões **fictícias** em um validador isolado e exercitar o produtor→feed→ingestão com papéis efêmeros. Isso **não** é autenticação funcional; integrar a versão real depende de superfície de edição autorizada e de aprovação operacional.
 
 **Borda preservada:** nenhum merge, deploy, gasto, publicação, usuário real, token produtivo, RLS/role do banco produtivo ou atualização de turno/pedido foram feitos por esta auditoria.
+
+
+## Segundo laboratório — assinatura de produtor + concessão independente (16/10/2026)
+
+**Estado: PASS EM LABORATÓRIO; ORIGEM REAL CONTINUA NO_GO.**
+
+- Artefato: tests/product/run-entregas-producer-attestation-lab-tests.mjs, executado no workflow isolado .github/workflows/deliveryos-operator-session-lab.yml.
+- **[GitHub Actions 38856957406](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38856957406) SUCCESS**, HEAD de teste 5419049099a1d2eb9e7f58693d2cd5fb00ee68e0: DELIVERYOS_PRODUCER_ATTESTATION_LAB: **27/27 PASS** e regressão preexistente ENTREGAS_SOURCE_PROVENANCE_BOUNDARY_LAB: **16/16 PASS**; job completo aprovado.
+- O harness gera pares Ed25519 **fictícios em memória**, mantém registro controlado pelo ensaio com chave pública, producer_id, unidade, tipos e modos autorizados, prazo e revogação. Não há credencial do restaurante, provedor real, chave operacional ou integração externa.
+- A declaração producer_id serve apenas para localizar a chave candidata. A prova criptográfica é verificada **antes** de confiar nos atributos assinados, que são então confrontados com a concessão independente. Uma assinatura válida de Itaim não permite Vila-Lab; uma assinatura de simulador não concede modo real.
+- As negativas cobrem identidade falsa, alteração do payload após assinar, unidade alheia, modo/tipo sem concessão, produtor revogado/expirado, rotação de chave, canal incorreto, assinatura antiga/futura, modo ausente, replay de nonce e duplicação de event_id.
+- Uma fonte fictícia autorizada para o **rótulo de política** real exerce apenas a regra de permissão. O recibo é sempre LAB_SIGNED_SYNTHETIC_NOT_REAL, com world_real_source_proven=false, e o escritor em memória jamais grava source_mode=real. O sinal independente delivery_ready pode ser autorizado sem inventar domain_event.
+- Feature flag desligada e kill switch são reprovados de forma fechada no ensaio; nenhum endpoint produtivo, consumidor produtivo, banco, feed da loja, operação humana ou fonte real foi ativado.
+
+### Fronteira da evidência e próximo gate
+
+O PASS **não prova** autenticação real de dispositivo/serviço, instalação segura da chave pública, cadeia de custódia, rotação e revogação operacionais, identidade da empresa/unidade, transporte protegido, outbox/checkpoint durável, nem o caminho completo **produtor real → transporte/feed real → validação de fronteira → consumidor/escrita real**. A verificação atual é uma política simulada em processo isolado, não uma proteção instalada na entrada do EntregasLiveConsumer.
+
+**Próximo passo seguro:** criar uma fronteira de verificação anterior ao consumidor e ensaiar ponta a ponta um feed inteiro **fictício**, inclusive mistura de eventos válidos e rejeitados, cursor/checkpoint, crash/replay e os dois caminhos domain_event e sinal independente, sem transportar uma assinatura já validada por meio de simples declaração no JSON. Somente depois avaliar a fonte real com autorização e evidência externa específica.
+
+**Gates mantidos:** G0 laboratório PASS; G1 BLOQUEADO; G2/G3 PARCIAIS; G4/G5 NÃO HOMOLOGADOS. PR #124 em DRAFT/HOLD, sem merge/deploy/gasto/modificação da loja.
