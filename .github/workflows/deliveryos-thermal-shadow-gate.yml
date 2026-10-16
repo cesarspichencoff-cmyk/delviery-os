@@ -277,6 +277,16 @@ jobs:
         shell: pwsh
         run: |
           ./tools/comandas_windows_live_cim_orphan_v817_sandbox.ps1
+      - name: V8.23 real host read-only preflight must HOLD without service (ephemeral Windows)
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw 'HOSTED_RUNNER_REQUIRED' }
+          $snapshot = ./tools/comandas_windows_cutover_readonly_v823.ps1 | ConvertFrom-Json
+          if ($snapshot.status -ne 'HOLD') { throw 'V823_NOT_FAIL_CLOSED' }
+          if ($snapshot.checks.service_present -ne $false) { throw 'V823_RUNNER_NOT_DISPOSABLE' }
+          if ($snapshot.deployment_authorized -ne $false -or $snapshot.snapshot_is_atomic -ne $false) { throw 'V823_AUTHORIZATION_ERROR' }
+          if (@($snapshot.effects.PSObject.Properties | Where-Object { $_.Value -ne $false }).Count -ne 0) { throw 'V823_EFFECTS_CLAIM_ERROR' }
+          Write-Host 'V823_HOSTED_WINDOWS_NO_SERVICE=HOLD NO_AUTHORITY NO_OPERATIONAL_EFFECTS'
       - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
         shell: pwsh
         run: |
