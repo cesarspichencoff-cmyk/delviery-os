@@ -59,6 +59,8 @@ jobs:
         run: npx --no-install tsx tests/product/run-public-outbox-envelope-rls-lab-tests.ts
       - name: Provar limite entre claim real e atestacao de fonte no consumer isolado
         run: npx --no-install tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
+      - name: Vincular produtor ficticio assinado a unidade e modos autorizados
+        run: node tests/product/run-entregas-producer-attestation-lab-tests.mjs
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
