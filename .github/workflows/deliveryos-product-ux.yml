@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015]
   workflow_dispatch:
 
 permissions:
