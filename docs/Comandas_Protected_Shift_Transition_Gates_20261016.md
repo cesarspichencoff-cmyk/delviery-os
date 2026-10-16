@@ -112,3 +112,33 @@ Além disso, se a enumeração de processos falha, `Stop-UnrecordedBatches` reto
 4. Mantêm-se os bloqueios prévios: identidade humana de aprovação do turno, pasta protegida sob ACL efetiva, testes próprios V8.15, SQL de menor privilégio, cinco provas reais V6.8 e impressão física autorizada.
 
 **Limites da auditoria:** nenhuma alteração, parada ou reinício de serviço, criação de contas, GRANT, modificação de arquivo de turno, spooler ou impressão no restaurante. O cenário de órfão intergeracional é inferência causal diretamente sustentada pelo código, **não incidente operacional presenciado**.
+
+
+## V8.23 — pré-voo real, somente leitura, do ambiente de corte
+
+**Data:** 16/10/2026, aproximadamente 20:00 UTC. **Host observado:** `CAIXA_MOOCA`, não o host do piloto Itaim. **Natureza da prova:** snapshot real por Win32_Service, `sc.exe qfailure`, CIM/Win32_Process, hashes SHA-256 de arquivos de código/configuração e existência de arquivos. **Sem escrita, alteração de serviço, execução de watcher ou consulta SQL.**
+
+O novo `tools/comandas_windows_cutover_readonly_v823.ps1` foi executado **em memória no próprio host** (blob Git `00ae0eee4f2dfb9ed5249c8e9f06afb0b5485ecb`). Devolveu `status=HOLD`, exatamente estes sete motivos:
+
+| Condição material no snapshot | Resultado |
+| --- | --- |
+| Serviço `TataComandaReader` ainda ativo | `SERVICE_NOT_STOPPED` |
+| Modo de início ainda habilitado (`Auto`) | `SERVICE_START_MODE_NOT_DISABLED` |
+| Ações de recuperação SCM incluem reinícios (5 s e 15 s) | `SCM_RESTART_ACTIONS_CONFIGURED` |
+| Um watcher V2 da geração antiga ainda executa | `OLD_GENERATION_PRESENT` |
+| Um supervisor V1 ainda executa (fato normal durante operação) | `SUPERVISOR_PROCESS_PRESENT` |
+| Registro do processo filho existe e ainda não foi reconciliado para corte | `CHILD_RECORD_NOT_RECONCILED` |
+| Arquivo de turno na localização protegida não existe | `PROTECTED_SHIFT_NOT_PRESENT` |
+
+**Condições positivas verificadas:** hash do supervisor `2B6DC012918F317C8D244531B3CCB2FD33E33B226C6E6E668BEE4B698936BEF5`, hash da configuração `FE213C3E865D88C48C7A6B803459804A44C8E287B85B1C574DC42400D73DCD19` e hash do watcher referenciado pela configuração coincidiram; enumeração de processos Windows completou, sem comando PowerShell ilegível neste instante; nenhum watcher V8.15 encontrado. **Esses sinais não anulam os sete bloqueios.**
+
+**Invariantes do pré-voo:** nunca devolve autorização; em ausência de motivos devolve somente `REVIEW_ONLY_NOT_AUTHORIZED`. Política SCM localizada sem prova independente de inexistência de restart permanece `HOLD`. Uma inspeção pontual, mesmo limpa, não prova ausência de corrida, não desativa ações SCM nem autentica aprovação humana. Não executar passos de parada/disable/ACL/config/rollback com base nesse relatório sem autorização específica.
+
+### Sequência técnica para demonstrar antes do corte autorizado
+
+1. **Laboratório isolado e privado:** usar o **supervisor COMPLETO real** e candidato V8.15 sob custódia aprovada, em Windows descartável, sem credenciais de produção, dados de pedidos ou acesso a impressora. O repositório público nunca deve receber o código operacional completo ou segredos. Executar recuperação verdadeira (registro válido/ausente/adulterado, PID reutilizado, falha de CIM, subprocesso resistente) e verificar fail-closed/heartbeat/rollback. O CI atual **não prova** isso.
+2. **Preparação de mudança e reversão:** identificar hashes originais, testemunha de autorização, backups privados, caminhos e arquivos alvo; comprovar a restauração com arquivos/pins originais após interrupção em cada estágio. O contrato `V8.15` envolve watcher, configuração e possivelmente supervisor V8.22: **três artefatos**; não instalar só um. A transição deve ser interruptível sem leitor duplicado nem fallback silencioso.
+3. **Janela humana aprovada:** no host-alvo verdadeiro, parar serviço, inibir seu início/restarts (ações de recuperação SCM inclusive), comprovar encerramento do supervisor e dos watchers **de ambas as gerações**, reconciliar registro filho e lock, verificar aprovação humana do turno e ACL efetiva. Somente então contemplar staging e ativação. Se qualquer prova for inconclusiva, `HOLD` e rollback controlado, nunca um `GO` deduzido de CI.
+4. **Prova de mundo separado:** após ativação autorizada, observar serviço/heartbeat real, evento de pedido real sem PII em relatório, cinco fontes V6.8, não duplicação, reimpressão controlada e **três vias físicas distintas** (cozinha, sushi, conferência) testemunhadas. Itaim exige inspeção própria; o snapshot da Mooca não representa automaticamente esse ambiente.
+
+**Estado de encerramento desta etapa:** `V823_REAL_HOST_READONLY_HOLD=OBSERVED`; `V815_FULL_SUPERVISOR_PRIVATE_SANDBOX=NOT_TESTED`; `SCM_CUTOVER_QUIESCENT=NOT_PROVEN`; `HUMAN_SHIFT_APPROVAL=UNKNOWN`; `PRINTED_THREE_WAYS=NOT_PROVEN`. Não houve interrupção de produção, merge nem deploy.
