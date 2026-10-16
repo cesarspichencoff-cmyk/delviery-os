@@ -55,6 +55,8 @@ jobs:
         run: npx --no-install tsx tests/product/run-entregas-write-rls-lab-tests.ts
       - name: Provar RLS escrita de handoff occurrence rider_state e outbox
         run: npx --no-install tsx tests/product/run-entregas-remaining-writes-rls-lab-tests.ts
+      - name: Provar integridade de unidade e identidade no JSON public_outbox
+        run: npx --no-install tsx tests/product/run-public-outbox-envelope-rls-lab-tests.ts
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
