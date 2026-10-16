@@ -221,6 +221,9 @@ console.log(JSON.stringify({schema:"deliveryos.comandas.v819.hosted-windows-pair
   # This is an observation, not an attempt to kill any production process.
   [ordered]@{
     integrated_v816_v818_guard_tested=$true
+    v815_pair_module_synthetic_contract_pass=($pairData.status -eq 'PASS')
+    v815_pair_module_synthetic_checks=[int]$pairData.checks
+    v815_real_supervisor_pair_activated=$false
     real_cim_old_and_staged_gates_hold=$true
     old_only_unrecorded_orphan_gates_hold=$true
     incomplete_enumeration_gates_hold=$true
