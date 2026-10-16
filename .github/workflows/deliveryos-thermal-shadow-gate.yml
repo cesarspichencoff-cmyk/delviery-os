@@ -135,6 +135,8 @@ jobs:
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.14 exact pinned watcher path move review (no Windows state writes)
         run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.16 cross-generation quiescence refusal (synthetic Linux)
+        run: node tools/verificar_cutover_quiescence_v816_offline.cjs
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
@@ -261,6 +263,8 @@ jobs:
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.14 exact pinned watcher path move review (Windows offline)
         run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.16 cross-generation quiescence refusal (synthetic Windows)
+        run: node tools/verificar_cutover_quiescence_v816_offline.cjs
       - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
         shell: pwsh
         run: |
