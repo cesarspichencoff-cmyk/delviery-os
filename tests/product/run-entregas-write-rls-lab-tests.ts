@@ -148,6 +148,20 @@ async function main(){
        "DELETE FROM entregas.domain_event WHERE event_id=$1",["ev-"+id]),
        (e:unknown)=>(e as {code?:string}).code==="42501");
    check(true,"role nao recebe DELETE no log append-only ("+unit+")");
+   await assert.rejects(db.query(
+       "UPDATE entregas.ready_order SET unit_id=$1 WHERE unit_id=$2 AND order_ref=$3",
+       [id==="i"?"VILA-LAB":"ITAIM",unit,"ready-"+id]),deniedRls);
+   check(true,"fila pronta recusa UPDATE que transfere pedido para outra unidade ("+unit+")");
+   await assert.rejects(db.transaction(async tx=>{
+      const moved=await tx.query<One>(
+        "UPDATE entregas.trip SET state='lab_em_transito' WHERE trip_id=$1 RETURNING trip_id",["trip-"+id]);
+      assert.equal(moved[0]?.trip_id,"trip-"+id);
+      const removed=await tx.query<One>(
+        "DELETE FROM entregas.delivery WHERE delivery_id=$1 RETURNING delivery_id",["delivery-"+id]);
+      assert.equal(removed[0]?.delivery_id,"delivery-"+id);
+      throw Error("LAB_ROLLBACK_OWN_WRITES");
+   }),/LAB_ROLLBACK_OWN_WRITES/);
+   check(true,"UPDATE e DELETE legitimos da propria unidade funcionam, com ROLLBACK ("+unit+")");
    const own=await db.query<One>(
        "INSERT INTO entregas.ready_order(unit_id,order_ref,label,created_at) VALUES($1,$2,'LAB_ONLY',now()) RETURNING order_ref",
        [unit,"own-ready-"+id]);
