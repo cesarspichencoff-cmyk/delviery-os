@@ -116,9 +116,14 @@ check("V7.4 lower boundary is inclusive at exact tick",()=>{
  assert.equal(assess("2026-10-10T10:15:00").status,
   "WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
 });
-check("V7.4 upper boundary inclusive at precise .0000000 tick",()=>{
- assert.equal(assess("2026-10-10T15:00:00.0000000").status,
-  "WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
+check("V7.4 upper boundary EXCLUSIVE at precise .0000000 tick (Windows V2 parity)",()=>{
+ const r=assess("2026-10-10T15:00:00.0000000");
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_AFTER_VALID_UNTIL"));
+});
+check("V7.4 last fractional tick BEFORE upper boundary remains reviewable",()=>{
+ const r=assess("2026-10-10T14:59:59.9999999");
+ assert.equal(r.status,"WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
 });
 check("V7.4 one second before human window is blocked",()=>{
  const r=assess("2026-10-10T10:14:59");
