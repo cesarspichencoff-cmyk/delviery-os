@@ -130,6 +130,10 @@ O catálogo encontrou **três funções** nos schemas de migrations atuais e nen
 
 **Fronteira de autorização:** nenhuma migration, role, RLS, trigger ou emissor foi alterado no banco real. Falta integração com identidade humana autorizada, contrato de confiança dos produtores, atestação e testes adversariais de publicação/consumo ponta a ponta. **G0 laboratório PASS, origem real NO_GO.**
 
+## Novo bloqueio comprovado: modo real precisa de origem autenticada (16/10/2026)
+
+A [suíte de procedência 16/16](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38855928358) reproduziu em memória que `source_mode=real` autodeclarado passa pelo validador, pelo adaptador e pelo consumidor se habilitado, sem uma atestação independente de produtor **nessa cadeia**. A flag segue OFF por padrão; não há prova de incidente ou configuração produtiva ativa. A regra de liberação e os testes negativos exigidos estão em [DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md](DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md). **GO de fonte real segue bloqueado.**
+
 ## Fronteiras de confiança críticas (AINDA NÃO RESOLVIDAS)
 1. **Não existe login humano, IdP, assinatura externa, provedor autorizado, cookie emitido pela aplicação nem prova de navegador real.** A emissão de sessão recebe uma atestação propositalmente fictícia; isso prova lógica de sessão apenas. Não usar com dados pessoais.
 2. **Nenhuma migration, política, credencial de banco ou sessão foi instalada** na aplicação ou em loja. O RLS temporário foi criado e destruído apenas no banco isolado. Nenhum merge/deploy/piloto.
