@@ -257,6 +257,10 @@ jobs:
         run: node tools/verificar_revisao_turno_humano_v70.js
       - name: V8.12 preview-only PowerShell shift writer adversarial Windows cases
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
+        shell: pwsh
+        run: |
+          ./tools/comandas_windows_acl_real_tokens_v813_sandbox.ps1
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
