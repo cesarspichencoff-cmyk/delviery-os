@@ -119,7 +119,7 @@ try{
    reader_could_not_change_approved_shift=$true
    writer_executed_as_second_windows_principal=$true
    writer_changed_synthetic_shift=$true
-   reader_checks=$readerProof.PSObject.Properties.Count
+   reader_checks=@($readerProof.PSObject.Properties).Count
    human_identity_or_approval_proven=$false
    production_effects=$false
  }|ConvertTo-Json -Compress
