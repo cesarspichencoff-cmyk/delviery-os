@@ -80,3 +80,15 @@ A eventual liberação da impressão é **outro efeito**, condicionado a provas 
 **Nenhuma modificação foi feita na CAIXA** para produzir este documento. Não consultar SQL, não conceder GRANT, não instalar, não reiniciar serviço, não ajustar ACL, não modificar turno/histórico, não executar o escritor, não usar dados de clientes, não imprimir, não mesclar a PR e não consumir recursos pagos.
 
 **Próxima implementação:** validar o par V8.15 e comportamento real do supervisor em sandbox, por um caminho de teste permitido, *antes* de preparar qualquer efeito no host. Se o bloqueio de criação do teste persistir, manter essa lacuna `UNKNOWN`; não reembalar uma rota equivalente para contorná-lo.
+
+## Adendo: referência operacional de supervisão — 16/10/2026, 02h41 BRT
+
+**Leitura passiva, não um monitoramento contínuo.** O computador `CAIXA_MOOCA` estava conectado. Foram lidos os metadados do serviço, a configuração já existente do supervisor e os campos técnicos sanitizados do heartbeat/registro de processo filho, sem consulta SQL e sem publicar conteúdo de pedidos.
+
+1. O arquivo `bin/tata_reader_supervisor_v1.config.json` manteve o SHA-256 exato `FE213C3E865D88C48C7A6B803459804A44C8E287B85B1C574DC42400D73DCD19` e `watcher_sha256` correspondeu ao hash atual do watcher V2 em seu caminho configurado; ambos os arquivos existiam.
+2. O `state/reader-heartbeat-v1.json` estava legível sob schema `deliveryos.tata-reader-heartbeat.v1`, apresentando `state=RUNNING`, `consecutive_failures=0` e timestamp local `2026-10-16T02:41:31.9885462-03:00`. O arquivo havia sido modificado aproximadamente **3 segundos antes da leitura**. Isto é prova pontual de heartbeat recente, **não** prova de funcionamento ininterrupto, aprovação do turno ou processamento correto de um pedido.
+3. O registro `reader-supervisor-child-v1.json` existia, era JSON válido no schema `deliveryos.tata-reader-supervisor-child.v1`; o arquivo de lock `reader-supervisor-v1.lock` existia. Não foi inferida a validade efetiva do lock nem provada a operação da rotina de recuperação a partir da mera presença dos arquivos.
+4. O envelope `effects` do heartbeat indicou `supervisor_database_read=false`, `database_write=false`, `network_call=false`, `print=false`, `spooler_write=false`, `odhen_write=false`, `fiscal_action=false` e `sefaz_call=false`. Informou `local_state_write=true`, que pode abranger registros auxiliares e **não comprova nem exclui** modificação específica de `production-service-state.json`.
+5. **Fronteira de regressão para futura mudança:** após um deploy autorizado, verificar novamente saúde e cadência dos mesmos campos, os hashes do par e a identidade real do processo V2, mantendo o leitor V1 intacto. Se não existir heartbeat recente, surgir falha/deriva, ou o turno protegido não estiver legível, **HOLD**, sem fallback silencioso ao arquivo anterior.
+
+Esta observação **não** amplia permissões de implantação. A V8.15 permanece sem suíte integrada própria e sem teste efetivo do supervisor com o novo caminho. Ações não praticadas: escrita local pelo assistente, alteração de ACL, instalação, restart, SQL, spooler, impressão e merge.
