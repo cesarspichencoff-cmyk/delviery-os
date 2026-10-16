@@ -53,6 +53,8 @@ jobs:
         run: npx --no-install tsx tests/product/run-schema-access-matrix-lab-tests.ts
       - name: Provar INSERT UPDATE DELETE USING WITH CHECK em banco isolado
         run: npx --no-install tsx tests/product/run-entregas-write-rls-lab-tests.ts
+      - name: Provar RLS escrita de handoff occurrence rider_state e outbox
+        run: npx --no-install tsx tests/product/run-entregas-remaining-writes-rls-lab-tests.ts
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
