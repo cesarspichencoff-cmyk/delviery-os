@@ -92,3 +92,23 @@ A eventual liberação da impressão é **outro efeito**, condicionado a provas 
 5. **Fronteira de regressão para futura mudança:** após um deploy autorizado, verificar novamente saúde e cadência dos mesmos campos, os hashes do par e a identidade real do processo V2, mantendo o leitor V1 intacto. Se não existir heartbeat recente, surgir falha/deriva, ou o turno protegido não estiver legível, **HOLD**, sem fallback silencioso ao arquivo anterior.
 
 Esta observação **não** amplia permissões de implantação. A V8.15 permanece sem suíte integrada própria e sem teste efetivo do supervisor com o novo caminho. Ações não praticadas: escrita local pelo assistente, alteração de ACL, instalação, restart, SQL, spooler, impressão e merge.
+
+
+## Adendo de auditoria adversarial — cobertura de processos entre gerações V2/V8.15
+
+**Criticidade: BLOQUEIO DE IMPLANTAÇÃO, não falha observada em produção.** Leitura passiva do arquivo instalado `bin/tata_reader_continuous_watch_candidate_v1.ps1` (790 linhas) esclareceu uma terminologia enganosa: **apesar do nome do arquivo, o V1 instalado é o SUPERVISOR DE LOTES**, não um segundo leitor V1 em paralelo. A entrada do serviço inicia esse supervisor; ele lança o watcher V2 a partir de `tata_reader_supervisor_v1.config.json`. Corrige-se assim a inferência anterior que denominou a entrada V1 de “leitor legado”. A existência simultânea de processos V1 e V2 é normal enquanto um é o supervisor e o outro é seu filho.
+
+**Bug de transição em cenário de falha (código lido, não reproduzido):** `Stop-UnrecordedBatches`, acionada no startup do supervisor, identifica lote órfão *sem registro* por linha de comando que contenha exclusivamente `$cfg.watcher_path`. A V8.15 troca justamente esse campo para o novo arquivo `v2_protected_v815.ps1`. Se restar um lote no caminho V2 antigo e seu registro `reader-supervisor-child-v1.json` estiver ausente, o novo supervisor não o selecionará pela busca de órfãos: pode iniciar outro lote sobre o mesmo checkpoint. `Stop-OrphanBatch` cobre o PID registrado, mas não resolve o cenário **sem registro**. O código do supervisor reconhece explicitamente a janela entre `Process.Start` e `Save-ChildRecord`.
+
+Além disso, se a enumeração de processos falha, `Stop-UnrecordedBatches` retorna `LIST_UNKNOWN`; o startup apenas registra essa condição e continua. Isso era limitação conhecida do supervisor atual, **inadequada como prova de exclusividade no momento de troca do caminho**.
+
+**Consequência:** os testes de hash do par V8.15, a sintaxe PowerShell V8.14 e a ACL NTFS V8.13, embora necessários, **não testam a coexistência de processos antigos e novos nem a recuperação de órfãos entre gerações**. `V815_CUTOVER_NO_DUPLICATE_WATCHER=NOT_PROVEN`. Não interpretar `CI 2/2 SUCCESS` de versões anteriores como passe desse portão.
+
+### Menor correção verificável antes de autorização real
+
+1. No teste Windows isolado, simular um watcher antigo sintético vivo **sem registro de filho** e conferir que a lógica candidata o identifica como bloqueio antes de iniciar um watcher novo. Testar também PID reutilizado, registro ilegível, lista de processos negada, morte durante staging e restart/rollback. **Falha de enumeração vira HOLD**, não `NONE`.
+2. Escolher a menor estratégia segura, após prova: **(a)** corte inteiramente quiescente com serviço supervisionado parado, prevenção de reinício, enumeração confiável e confirmação de que não existe processo V2 antigo/nova geração antes de aplicar config; ou **(b)** revisão versionada do supervisor para buscar ambas as gerações e bloquear quando a lista for desconhecida. Qualquer mudança do supervisor é terceiro artefato, com hash, rollback e teste próprios; não supor que apenas mudar `watcher_path` seja suficiente.
+3. A recuperação pós-falha exige o mesmo portão de ausência de processos duplicados **antes** de devolver a configuração anterior ou reiniciar. Se a enumeração ou encerramento de um processo for inconclusivo, HOLD e escalonamento humano, sem matar arbitrariamente outros processos.
+4. Mantêm-se os bloqueios prévios: identidade humana de aprovação do turno, pasta protegida sob ACL efetiva, testes próprios V8.15, SQL de menor privilégio, cinco provas reais V6.8 e impressão física autorizada.
+
+**Limites da auditoria:** nenhuma alteração, parada ou reinício de serviço, criação de contas, GRANT, modificação de arquivo de turno, spooler ou impressão no restaurante. O cenário de órfão intergeracional é inferência causal diretamente sustentada pelo código, **não incidente operacional presenciado**.
