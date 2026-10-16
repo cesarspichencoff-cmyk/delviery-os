@@ -45,3 +45,25 @@ Leitura realizada em `CAIXA_MOOCA`, no diretório `C:\ProgramData\TataComandaRea
 - **NOT AUTHORIZED/NOT PROVEN:** alteração de ACL, atualização do turno, nova instalação, impressão física, merge, deploy e liberação operacional.
 
 **Decisão:** manter PR #107 DRAFT/HOLD; preservar fonte e recibos; não aumentar complexidade de autenticação até provar uma fronteira de custódia distinta, já disponível e suficientemente segura.
+
+
+## Adendo de proveniência: proposta HOLD e backups (16/10)
+
+**Novas leituras reais no CAIXA_MOOCA, sem efeito operacional:** o diretório \`state\` contém \`proposals\` e \`backups\`, com três arquivos relevantes identificados por metadados, hashes e campos JSON limitados. Não foram lidos, exportados ou publicados textos de \`source_ref\`, nomes de pessoas, pedidos, clientes nem conteúdo das observações.
+
+| Arquivo | Data de modificação UTC | Data/serviço do JSON | SHA-256 |
+|---|---|---|---|
+| \`production-service-state.json\` (instalado) | \`2026-10-14T12:55:35.3552931Z\` | 14/10 LUNCH | \`5725D734C894E61D590B2453B593AC3E5C72BFB4BE84F8138FE525E8358D0EEC\` |
+| \`proposals/production-service-state.2026-10-14.LUNCH.1100-1500.HOLD.json\` | \`2026-10-14T11:46:10.9865809Z\` | 14/10 LUNCH | \`6557AAC5F540D80EACCA6F5572CBB552D207387E9605DD84D0680FF281C7FE20\` |
+| \`backups/watcher-start-guard-20261014/active-shift-pre-20261014-atomic-replace.bak\` | \`2026-10-13T14:59:15.4540751Z\` | 13/10 LUNCH | \`47F5D52CAD19EBE7BEE40291DC958D25E4905FDDD55BC8C8AFA8CFF67A17CE7C\` |
+| \`backups/watcher-start-guard-20261014/service-state-original.json\` | \`2026-10-13T14:59:15.4540751Z\` | 13/10 LUNCH | \`47F5D52CAD19EBE7BEE40291DC958D25E4905FDDD55BC8C8AFA8CFF67A17CE7C\` |
+
+**Comparação por campos:** estado instalado e proposta de 14/10 apresentam **10 valores de campo iguais** (inclusive valor de \`source_ref\`, comparado sem exibição), com **somente \`updated_at\` diferente**. Ambos possuem 556 bytes mas SHA-256 distintos; NÃO são a mesma versão byte a byte. O nome \`HOLD\` caracteriza o rótulo do arquivo de proposta, não um estado de autorização autenticada nem evidência de que aquela proposta foi executada.
+
+**Arquivos anteriores:** os dois backups de 13/10 são byte a byte idênticos entre si; a existência dos arquivos e o rótulo \`atomic-replace\` sugerem um processo de substituição/recuperação, **não comprovam como ele ocorreu, quando o conteúdo de 14/10 foi instalado ou quem o autorizou**. A trilha principal continua terminando em 07/10 DINNER, portanto não cobre essas transições posteriores.
+
+**Topologia passiva de execução:** consulta \`Win32_Service\` confirmou \`TataComandaReader\` Running/Auto sob \`NT SERVICE\\TataComandaReader\`. Busca \`Get-ScheduledTask\` pelas ações que contêm os termos do leitor/atualizador não retornou nenhuma tarefa correspondente. Esse negativo é **limitado aos agendamentos visíveis e ao filtro de termos**; NÃO prova ausência de escritor alternativo, tarefa com nome genérico, uso manual ou execução externa.
+
+**Impacto de decisão:** a priorização mudou de criar um gravador para **reconciliar o caminho de promoção de proposta de turno em estado instalado**, com prova de autoria, validação de \`valid_from_local\`, separação de quem lê/quem escreve e trilha verificável fora do alcance do próprio serviço. A similaridade de conteúdo é evidência de linhagem candidata, não um vínculo assinado e nem autorização.
+
+**Portão pendente, sem efeitos:** identificar, por evidência independente e apropriada, a origem do \`updated_at\` de 14/10, qualquer recibo de substituição e a custódia da aprovação. Se não houver registro, permanecer \`PROVENANCE_UNKNOWN\`; não inventar transição, não backfill sintético, não efetuar \`GRANT\`, mudança de ACL, troca de turno, merge/deploy ou impressão para resolver o desconhecido.
