@@ -2,7 +2,7 @@
 /**
  * V8.20 — SOURCE-PINNED PREVIEW ONLY for the installed Windows V1 supervisor.
  * The supervisor source is never committed. This only proposes a conservative
- * startup barrier that refuses to launch a batch when any old/staged watcher
+ * post-recovery barrier that refuses to launch a batch when old/staged watcher
  * is visible or CIM enumeration is incomplete. It does NOT prove an atomic
  * service cutover and it must NOT be installed without human authorization.
  */
@@ -13,6 +13,7 @@ const OLD="C:\\ProgramData\\TataComandaReader\\bin\\tata_reader_continuous_watch
 const STAGED="C:\\ProgramData\\TataComandaReader\\bin\\tata_reader_continuous_watch_candidate_v2_protected_v815.ps1";
 const MAIN='# ------------------------------------------------------------------- laco --';
 const LOOP='  $orphan = "NONE"';
+const RECOVERY=['  Remove-ChildRecord','  Write-Heartbeat','  $batchSeq = 0'];
 const LEGACY='if ($cl.IndexOf($cfg.watcher_path, [StringComparison]::OrdinalIgnoreCase) -ge 0)';
 const SHA=b=>crypto.createHash('sha256').update(b).digest('hex').toUpperCase();
 const HOLD=reason=>Object.freeze({schema:'deliveryos.comandas.v820.supervisor-guard-preview',
@@ -42,8 +43,8 @@ const FUNCTION=[
  ''
 ];
 const INVOCATION=[
- '  # V8.20: no watcher generation may survive a supervisor startup.',
- '  # This is defense-in-depth, NOT proof service restart was inhibited.',
+ '  # V8.20: validate both generations AFTER built-in orphan recovery.',
+ '  # Fail closed BEFORE removing child record or starting any new batch.',
  '  $crossGeneration = Test-CutoverGenerationsQuiet',
  '  if ($crossGeneration -ne "CLEAN") {',
  '    $state.blocked = "CUTOVER_GENERATION_" + $crossGeneration',
@@ -63,10 +64,10 @@ function transform(sourceBytes,pin={sha:SOURCE_SHA,size:SOURCE_BYTES}){
  const newline=text.includes('\r\n')?'\r\n':'\n';
  const prefix=FUNCTION.join(newline)+newline;
  const afterFunction=text.replace(MAIN,prefix+MAIN);
- const start='try {'+newline+LOOP;
- if(afterFunction.split(start).length!==2)return HOLD('STARTUP_ANCHOR_NOT_UNIQUE');
- const next=afterFunction.replace(start,'try {'+newline+INVOCATION.join(newline)+newline+LOOP);
- if(next.includes('try {'+newline+INVOCATION.join(newline)+newline+LOOP)===false||
+ const recovery=RECOVERY.join(newline);
+ if(afterFunction.split(recovery).length!==2)return HOLD('RECOVERY_ANCHOR_NOT_UNIQUE');
+ const next=afterFunction.replace(recovery,INVOCATION.join(newline)+newline+recovery);
+ if(next.includes(INVOCATION.join(newline)+newline+recovery)===false||
     next.split('Test-CutoverGenerationsQuiet').length!==3)
    return HOLD('PREVIEW_PATCH_INVARIANT');
  const report={schema:'deliveryos.comandas.v820.supervisor-guard-preview',
@@ -74,7 +75,8 @@ function transform(sourceBytes,pin={sha:SOURCE_SHA,size:SOURCE_BYTES}){
   original_sha256:SHA(sourceBytes),preview_sha256:SHA(Buffer.from(next,'utf8')),
   original_length:sourceBytes.length,preview_length:Buffer.byteLength(next,'utf8'),
   new_function_count:1,new_startup_guard_count:1,
-  existing_orphan_hunt_preserved:true,
+  existing_orphan_hunt_preserved:true,post_recovery_guard:true,
+  child_record_retained_if_guard_fails:true,
   unknown_inventory_blocks:true,old_and_staged_paths_checked:true,
   does_not_terminate_other_processes:true,real_supervisor_executed:false,
   atomic_cutover_proven:false,human_authorization_authenticated:false,
@@ -88,4 +90,4 @@ const safeReport=result=>{
  return rest;
 };
 module.exports={transform,previewPinned,safeReport,SHA,HOLD,
- SOURCE_SHA,SOURCE_BYTES,MAIN,LOOP,LEGACY,OLD,STAGED,FUNCTION,INVOCATION};
+ SOURCE_SHA,SOURCE_BYTES,MAIN,LOOP,RECOVERY,LEGACY,OLD,STAGED,FUNCTION,INVOCATION};
