@@ -38,8 +38,8 @@ async function main(){
     "INSERT INTO entregas.trip(trip_id,unit_id,courier_actor_id,state,created_by,created_at,contract_version) "+
     "VALUES($1,$2,$3,'ativa','LAB_ONLY',now(),'lab@1')",["trip-"+id,unit,"courier-"+id]);
    await lab.cliente.query(
-    "INSERT INTO entregas.handoff(handoff_id,unit_id,external_order_ref,state,confirmed,contract_version,version) "+
-    "VALUES($1,$2,$3,'aguardando',false,'lab@1',0)",["h-"+id,unit,"LAB_ORDER_"+id]);
+    "INSERT INTO entregas.handoff(handoff_id,unit_id,external_order_ref,state,courier_verified,confirmed,contract_version,version) "+
+    "VALUES($1,$2,$3,'aguardando',false,false,'lab@1',0)",["h-"+id,unit,"LAB_ORDER_"+id]);
    await lab.cliente.query(
     "INSERT INTO entregas.occurrence(occurrence_id,unit_id,trip_id,kind,state,opened_at,opened_by,version) "+
     "VALUES($1,$2,$3,'LAB_ONLY','aberta',now(),'lab',0)",["o-"+id,unit,"trip-"+id]);
@@ -94,8 +94,8 @@ async function main(){
     pass(true,unit+" nao transfere linha propria de "+table+" por WITH CHECK");
    }
    await assert.rejects(db.query(
-    "INSERT INTO entregas.handoff(handoff_id,unit_id,external_order_ref,state,confirmed,contract_version,version) "+
-    "VALUES($1,$2,'LAB','aguardando',false,'lab@1',0)",["foreign-h-"+id,id==="i"?"VILA-LAB":"ITAIM"]),isRls);
+    "INSERT INTO entregas.handoff(handoff_id,unit_id,external_order_ref,state,courier_verified,confirmed,contract_version,version) "+
+    "VALUES($1,$2,'LAB','aguardando',false,false,'lab@1',0)",["foreign-h-"+id,id==="i"?"VILA-LAB":"ITAIM"]),isRls);
    pass(true,unit+" nao insere handoff alheio");
    await assert.rejects(db.query(
     "INSERT INTO entregas.public_outbox(outbox_id,unit_id,event_id,idempotency_key,event,status,created_at) "+
