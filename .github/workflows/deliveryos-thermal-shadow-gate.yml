@@ -287,6 +287,10 @@ jobs:
           if ($snapshot.deployment_authorized -ne $false -or $snapshot.snapshot_is_atomic -ne $false) { throw 'V823_AUTHORIZATION_ERROR' }
           if (@($snapshot.effects.PSObject.Properties | Where-Object { $_.Value -ne $false }).Count -ne 0) { throw 'V823_EFFECTS_CLAIM_ERROR' }
           Write-Host 'V823_HOSTED_WINDOWS_NO_SERVICE=HOLD NO_AUTHORITY NO_OPERATIONAL_EFFECTS'
+          # sc.exe qfailure intentionally exits nonzero when no service exists.
+          # Asserted HOLD is the expected safety result, not a test failure.
+          # Clear the inherited native exit status ONLY after all assertions pass.
+          exit 0
       - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
         shell: pwsh
         run: |
