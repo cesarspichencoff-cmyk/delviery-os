@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {transform,previewPinned,safeReport,SHA,SOURCE_SHA,SOURCE_BYTES,
-  MAIN,LOOP,LEGACY,OLD,STAGED}=require('./comandas_supervisor_guard_v820_offline.cjs');
+  MAIN,LOOP,RECOVERY,LEGACY,OLD,STAGED}=require('./comandas_supervisor_guard_v820_offline.cjs');
 const nl='\n';
 const srcText=[
  '# V820 fixture only: nothing executed',
@@ -16,6 +16,8 @@ const srcText=[
  'try {',
  LOOP,
  '  $hunt = "NONE"',
+ '  try { $hunt = Stop-UnrecordedBatches } catch { $hunt = "LIST_UNKNOWN" }',
+ ...RECOVERY,
  '} catch { throw }',
  ...Array.from({length:90},(_,i)=>'# benign fixture padding '+i)
 ].join(nl)+nl;
@@ -38,10 +40,14 @@ check('both generation paths included in guard',()=>{
  assert.ok(result.proposed_supervisor_text.includes(OLD));
  assert.ok(result.proposed_supervisor_text.includes(STAGED));
 });
-check('preserves prior startup and recovery huntexactly',()=>{
- assert.ok(result.proposed_supervisor_text.includes(LEGACY));
- assert.ok(result.proposed_supervisor_text.includes('function Stop-UnrecordedBatches {'));
- assert.ok(result.proposed_supervisor_text.includes(LOOP));
+check('preserves recovery and gates only after its attempted cleanup',()=>{
+ const body=result.proposed_supervisor_text;
+ assert.ok(body.includes(LEGACY));
+ assert.ok(body.includes('function Stop-UnrecordedBatches {'));
+ assert.ok(body.includes(LOOP));
+ assert.ok(body.indexOf('  try { $hunt = Stop-UnrecordedBatches }')<body.indexOf('Stop-Fatal "CUTOVER_QUIESCENCE_NOT_PROVEN"'));
+ assert.ok(body.indexOf('Stop-Fatal "CUTOVER_QUIESCENCE_NOT_PROVEN"')<body.indexOf(RECOVERY.join('\n')));
+ assert.equal(result.child_record_retained_if_guard_fails,true);
 });
 check('never installs nor changes service and is not approval',()=>{
  assert.equal(result.host_effects,false);
