@@ -198,6 +198,98 @@ check("V7.4 output never authenticates human, event identity or runtime side eff
  assess("2026-10-10T12:00:00",{},review(original));
  assert.deepEqual(original,before);
 });
+
+// V7.4's review gate is advisory; the legacy resolver is a separate
+// consistency filter, NOT proof of a trusted human approval or live deployment.
+const shiftStateV2={schema:"deliveryos.production-service-shift-state.v2",
+  store_id:"0001",operational_date:"2026-10-10",service:"LUNCH",
+  evidence:"HUMAN_CONFIRMED_RULE",source_ref:"SELF_DECLARED_NOT_AUTHENTICATED",
+  clock_inference_used:false,
+  valid_from_local:"2026-10-10T10:15:00",
+  valid_until_local:"2026-10-10T15:00:00",
+  updated_at:"2026-10-10T09:59:00"};
+const legacy=(at="2026-10-10T12:00:00",state=shiftStateV2,date="2026-10-10")=>
+ resolveProductionServiceShiftState(state,{
+  store_id:"0001",operational_date:date,order_opened_at:at});
+check("legacy v2 contract admits only a structurally valid half-open window, not human auth",()=>{
+ const r=legacy();
+ assert.equal(r.ready,true);
+ assert.deepEqual(r.blocking_reasons,[]);
+});
+check("legacy lower bound is inclusive",()=>{
+ assert.equal(legacy("2026-10-10T10:15:00").ready,true);
+});
+check("legacy preceding tick is excluded",()=>{
+ assert.ok(legacy("2026-10-10T10:14:59.9999999").blocking_reasons.includes(
+  "SERVICE_STATE_NOT_YET_ACTIVE_FOR_ORDER"));
+});
+check("legacy EXACT end is exclusive and matches installed Windows V2",()=>{
+ assert.ok(legacy("2026-10-10T15:00:00.0000000").blocking_reasons.includes(
+  "SERVICE_STATE_EXPIRED_FOR_ORDER"));
+});
+check("legacy last fractional tick before end remains eligible structurally",()=>{
+ assert.equal(legacy("2026-10-10T14:59:59.9999999").ready,true);
+});
+check("legacy first fractional tick after end is blocked",()=>{
+ assert.ok(legacy("2026-10-10T15:00:00.0000001").blocking_reasons.includes(
+  "SERVICE_STATE_EXPIRED_FOR_ORDER"));
+});
+check("legacy missing start is NOT allowed to inherit prior writer format",()=>{
+ const {valid_from_local:ignored,...missing}=shiftStateV2;
+ assert.ok(legacy(undefined,missing).blocking_reasons.includes(
+  "SERVICE_STATE_VALID_FROM_REQUIRED"));
+});
+check("legacy missing end fails closed",()=>{
+ const {valid_until_local:ignored,...missing}=shiftStateV2;
+ assert.ok(legacy(undefined,missing).blocking_reasons.includes(
+  "SERVICE_STATE_VALID_UNTIL_REQUIRED"));
+});
+check("legacy invalid start clock fails closed",()=>{
+ assert.ok(legacy(undefined,{...shiftStateV2,
+  valid_from_local:"2026-10-10T25:00:00"}).blocking_reasons.includes(
+  "SERVICE_STATE_VALID_FROM_REQUIRED"));
+});
+check("legacy invalid end clock fails closed",()=>{
+ assert.ok(legacy(undefined,{...shiftStateV2,
+  valid_until_local:"2026-10-10T15:61:00"}).blocking_reasons.includes(
+  "SERVICE_STATE_VALID_UNTIL_REQUIRED"));
+});
+check("legacy inverted window is rejected",()=>{
+ assert.ok(legacy(undefined,{...shiftStateV2,
+  valid_from_local:"2026-10-10T16:00:00"}).blocking_reasons.includes(
+  "SERVICE_STATE_WINDOW_INVALID"));
+});
+check("legacy cross-day window is rejected",()=>{
+ assert.ok(legacy(undefined,{...shiftStateV2,
+  valid_until_local:"2026-10-11T00:30:00"}).blocking_reasons.includes(
+  "SERVICE_STATE_WINDOW_INVALID"));
+});
+check("legacy order date conflicts are not accepted as shift date",()=>{
+ assert.ok(legacy("2026-10-09T12:00:00").blocking_reasons.includes(
+  "SERVICE_STATE_ORDER_OPENED_DATE_MISMATCH"));
+});
+check("legacy invalid February date is rejected",()=>{
+ assert.ok(legacy(undefined,{...shiftStateV2,
+  operational_date:"2026-02-30"},"2026-02-30").blocking_reasons.includes(
+  "SERVICE_STATE_WINDOW_INVALID"));
+});
+check("legacy offset suffix is rejected instead of being truncated",()=>{
+ for(const value of ["2026-10-10T12:00:00Z",
+  "2026-10-10T12:00:00-03:00","2026-10-10T12:00:00.12345678"]){
+  assert.ok(legacy(value).blocking_reasons.includes("SERVICE_STATE_ORDER_OPENED_AT_INVALID"));
+ }
+});
+check("legacy timestamp parser cannot ignore fractional ticks",()=>{
+ assert.equal(legacy("2026-10-10T14:59:59.9999999").ready,true);
+ assert.equal(legacy("2026-10-10T15:00:00.0000000").ready,false);
+});
+check("legacy read-only filter does not mutate input",()=>{
+ const state=structuredClone(shiftStateV2);
+ const before=structuredClone(state);
+ legacy("2026-10-10T14:59:59",state);
+ assert.deepEqual(state,before);
+});
+
 console.log("READER_SHIFT_WINDOW_V74=16/16 REVIEW_ONLY NO_STATE_WRITE NO_PRINT");
 
 console.log("READER_SHIFT_HUMAN_REVIEW_V70="+checks+"/"+checks+
