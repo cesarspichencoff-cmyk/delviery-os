@@ -265,6 +265,10 @@ jobs:
         run: node tools/verificar_watcher_shift_path_v814_offline.js
       - name: V8.16 cross-generation quiescence refusal (synthetic Windows)
         run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.17 harmless real Windows CIM old and staged orphan markers (ephemeral hosted runner)
+        shell: pwsh
+        run: |
+          ./tools/comandas_windows_live_cim_orphan_v817_sandbox.ps1
       - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
         shell: pwsh
         run: |
