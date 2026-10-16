@@ -119,8 +119,35 @@ console.log(JSON.stringify({status:r.status,reasons:r.reasons}));
      $both.reasons -notcontains 'STAGED_GENERATION_PROCESS_PRESENT'){
     throw 'V818_BOTH_GENERATIONS_NOT_HELD'
   }
+  # V8.21 exercises the EXACT V8.20 function text produced by its JS module.
+  # It uses only the disposable runner's benign processes, never the installed
+  # supervisor, a TATA watcher, operational state, services, or printing.
+  $v821FunctionJavaScript=@'
+const m=require("./tools/comandas_supervisor_guard_v820_offline.cjs");
+if(m.SOURCE_SHA!=="2B6DC012918F317C8D244531B3CCB2FD33E33B226C6E6E668BEE4B698936BEF5")
+  process.exit(21);
+if(m.FUNCTION.length!==20 || m.INVOCATION.length!==7)process.exit(22);
+process.stdout.write(m.FUNCTION.join("\n")+"\n");
+'@
+  $v821FunctionLines=@(& node --eval $v821FunctionJavaScript)
+  if($LASTEXITCODE -ne 0 -or $v821FunctionLines.Count -ne 20){
+    throw 'V821_FUNCTION_SOURCE_NOT_PINNED'
+  }
+  $v821Code=($v821FunctionLines -join [Environment]::NewLine)
+  $v821Errors=$null
+  $v821Tokens=$null
+  $null=[Management.Automation.Language.Parser]::ParseInput(
+    $v821Code,[ref]$v821Tokens,[ref]$v821Errors)
+  if($v821Errors.Count -ne 0){throw 'V821_ACTUAL_FUNCTION_PARSE_FAILED'}
+  . ([scriptblock]::Create($v821Code))
+  if((Test-CutoverGenerationsQuiet) -cne 'ACTIVE'){
+    throw 'V821_BOTH_LIVE_GENERATIONS_NOT_BLOCKED'
+  }
   if(-not $b.HasExited){$b.Kill();$null=$b.WaitForExit(8000)}
   if(-not $b.HasExited){throw 'V818_OWN_STAGED_PROCESS_NOT_TERMINATED'}
+  if((Test-CutoverGenerationsQuiet) -cne 'ACTIVE'){
+    throw 'V821_UNRECORDED_OLD_GENERATION_NOT_BLOCKED'
+  }
   $oldOnly=Read-MarkedProcess $tagOld $a.Id
   $one=Probe-NodeGuard @((To-Record $oldOnly)) $true $false
   if($one.reasons -notcontains 'OLD_GENERATION_PROCESS_PRESENT'){
@@ -128,6 +155,15 @@ console.log(JSON.stringify({status:r.status,reasons:r.reasons}));
   }
   if(-not $a.HasExited){$a.Kill();$null=$a.WaitForExit(8000)}
   if(-not $a.HasExited){throw 'V818_OWN_OLD_PROCESS_NOT_TERMINATED'}
+  if((Test-CutoverGenerationsQuiet) -cne 'CLEAN'){
+    throw 'V821_OWNED_PROCESSES_GONE_BUT_FUNCTION_NOT_CLEAN'
+  }
+  # Use dynamic scoping to replace CIM only within this isolated test scope.
+  $v821Unknown=& {
+    function Get-CimInstance {throw 'V821_SIMULATED_ENUMERATION_DENIED'}
+    Test-CutoverGenerationsQuiet
+  }
+  if($v821Unknown -cne 'UNKNOWN'){throw 'V821_UNKNOWN_CIM_NOT_HELD'}
   # Incomplete enumeration must HOLD even if no test process is visible.
   $unknown=Probe-NodeGuard @() $false $false
   if($unknown.reasons -notcontains 'PROCESS_ENUMERATION_NOT_CONFIRMED'){
@@ -222,6 +258,12 @@ console.log(JSON.stringify({schema:"deliveryos.comandas.v819.hosted-windows-pair
   [ordered]@{
     integrated_v816_v818_guard_tested=$true
     v815_pair_module_synthetic_contract_pass=($pairData.status -eq 'PASS')
+    v820_function_executed_on_real_benign_windows_processes=$true
+    v820_two_live_generations_blocked=$true
+    v820_old_generation_without_child_record_blocked=$true
+    v820_no_owned_generations_returns_clean=$true
+    v820_injected_cim_failure_returns_unknown=$true
+    v820_full_supervisor_executed=$false
     v815_pair_module_synthetic_checks=[int]$pairData.checks
     v815_real_supervisor_pair_activated=$false
     real_cim_old_and_staged_gates_hold=$true
