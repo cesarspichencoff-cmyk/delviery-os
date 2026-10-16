@@ -57,6 +57,8 @@ jobs:
         run: npx --no-install tsx tests/product/run-entregas-remaining-writes-rls-lab-tests.ts
       - name: Provar integridade de unidade e identidade no JSON public_outbox
         run: npx --no-install tsx tests/product/run-public-outbox-envelope-rls-lab-tests.ts
+      - name: Provar limite entre claim real e atestacao de fonte no consumer isolado
+        run: npx --no-install tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
       - name: Garantir regressao do escopo existente
         run: npx --no-install tsx tests/product/run-escopo-api-shadow-tests.ts
       - name: Confirmar ausência de usuario, banco ou login real
