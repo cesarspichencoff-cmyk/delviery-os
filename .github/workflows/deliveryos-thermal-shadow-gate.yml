@@ -137,6 +137,8 @@ jobs:
         run: node tools/verificar_watcher_shift_path_v814_offline.js
       - name: V8.16 cross-generation quiescence refusal (synthetic Linux)
         run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.20 pinned supervisor safe startup preview (Linux synthetic)
+        run: node tools/verificar_supervisor_guard_v820_offline.cjs
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
@@ -265,6 +267,8 @@ jobs:
         run: node tools/verificar_watcher_shift_path_v814_offline.js
       - name: V8.16 cross-generation quiescence refusal (synthetic Windows)
         run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.20 pinned supervisor safe startup preview (Windows synthetic)
+        run: node tools/verificar_supervisor_guard_v820_offline.cjs
       - name: V8.17 harmless real Windows CIM old and staged orphan markers (ephemeral hosted runner)
         shell: pwsh
         run: |
