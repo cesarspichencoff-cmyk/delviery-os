@@ -291,10 +291,19 @@ jobs:
           # Asserted HOLD is the expected safety result, not a test failure.
           # Clear the inherited native exit status ONLY after all assertions pass.
           exit 0
-      - name: V8.24 disposable Windows real NTFS staged triple artifact crash and rollback
+      - name: V8.25 disposable Windows actual pinned backup-byte restoration after crashes
         shell: pwsh
         run: |
-          ./tools/comandas_windows_three_file_rollback_v824_sandbox.ps1
+          $lines = @(./tools/comandas_windows_three_file_rollback_v824_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v824.ephemeral-windows-real-ntfs-rollback"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V825_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 8 -or
+              $proof.backup_bytes_used_for_restore -ne $true -or
+              $proof.unique_non_reconstructible_original_bytes_restored -ne $true -or
+              $proof.deployment_authorized -ne $false -or
+              $proof.full_supervisor_executed -ne $false) { throw 'V825_ROLLBACK_PROOF_INCOMPLETE' }
+          Write-Host $receipt[0]
       - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
         shell: pwsh
         run: |
