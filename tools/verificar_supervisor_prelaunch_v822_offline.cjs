@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {SHA,MAIN,LOOP,LEGACY}=require('./comandas_supervisor_guard_v820_offline.cjs');
+const {SHA,MAIN,LOOP,RECOVERY,LEGACY}=require('./comandas_supervisor_guard_v820_offline.cjs');
 const {preview,safeReport,SOURCE_SHA,SOURCE_BYTES,LAUNCH,INJECT}=require('./comandas_supervisor_prelaunch_v822_offline.cjs');
 const fixture=[
  '# synthetic NO SERVICE fixture', 'param([int]$MaxBatches=0)',
@@ -13,6 +13,8 @@ const fixture=[
  'try {',
  LOOP,
  '  $hunt = "NONE"',
+ '  try { $hunt = Stop-UnrecordedBatches } catch { $hunt = "LIST_UNKNOWN" }',
+ ...RECOVERY,
  '} catch { throw }',
  'function Invoke-Batch([int]$BatchSeq) {',
  '  $proc = $null',
@@ -30,7 +32,12 @@ check('synthetic fixture generates review only',()=>assert.equal(good.status,'RE
 check('no runtime or authorization inferred',()=>{assert.equal(good.runtime_supervisor_tested,false);assert.equal(good.atomic_cutover_proven,false);assert.equal(good.operational_activation_allowed,false);assert.equal(good.host_effects,false)});
 check('source pinned digest is real observed supervisor',()=>{assert.equal(SOURCE_SHA,'2B6DC012918F317C8D244531B3CCB2FD33E33B226C6E6E668BEE4B698936BEF5');assert.equal(SOURCE_BYTES,34708)});
 check('preview pinned rejects synthetic replacement',()=>assert.equal(preview(input).reason,'SOURCE_V820_ORIGINAL_SUPERVISOR_SHA_OR_SIZE_DRIFT'));
-check('startup check maintained',()=>assert.ok(good.candidate_supervisor_text.includes('Stop-Fatal "CUTOVER_QUIESCENCE_NOT_PROVEN"')));
+check('post-recovery startup check maintained',()=>{
+ const s=good.candidate_supervisor_text;
+ assert.ok(s.includes('Stop-Fatal "CUTOVER_QUIESCENCE_NOT_PROVEN"'));
+ assert.ok(s.indexOf('  try { $hunt = Stop-UnrecordedBatches }')<s.indexOf('Stop-Fatal "CUTOVER_QUIESCENCE_NOT_PROVEN"'));
+ assert.ok(s.indexOf('Stop-Fatal "CUTOVER_QUIESCENCE_NOT_PROVEN"')<s.indexOf(RECOVERY.join('\n')));
+});
 check('pre-launch check exists exactly once',()=>assert.equal(good.candidate_supervisor_text.split('CUTOVER_PRELAUNCH_NOT_QUIET').length,2));
 check('new gate executes before child process startup',()=>assert.ok(good.candidate_supervisor_text.indexOf('CUTOVER_PRELAUNCH_NOT_QUIET')<good.candidate_supervisor_text.indexOf(LAUNCH)));
 check('function defined only once with 2 gate invocations',()=>assert.equal(good.candidate_supervisor_text.split('Test-CutoverGenerationsQuiet').length,4));
