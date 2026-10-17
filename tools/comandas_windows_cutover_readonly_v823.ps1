@@ -15,7 +15,10 @@ $new=Join-Path $root 'bin\tata_reader_continuous_watch_candidate_v2_protected_v8
 $sup=Join-Path $root 'bin\tata_reader_continuous_watch_candidate_v1.ps1'
 $cfgPath=Join-Path $root 'bin\tata_reader_supervisor_v1.config.json'
 $childRecord=Join-Path $root 'state\reader-supervisor-child-v1.json'
-$protectedShift=Join-Path $root 'approved-shift\production-service-state.json'
+$currentShift=Join-Path $root 'state\production-service-state.json'
+$protectedShiftDir=Join-Path $root 'approved-shift'
+$protectedShift=Join-Path $protectedShiftDir 'production-service-state.json'
+$wp=$null
 $checks=[ordered]@{
  windows_host=$false;service_present=$false;service_stopped=$false
  service_restart_inhibited=$false;scm_restart_actions_present=$null
@@ -24,6 +27,8 @@ $checks=[ordered]@{
  process_enumeration_complete=$false;old_watchers=0;staged_watchers=0
  supervisor_instances=0;unreadable_powershell_commandlines=0
  child_record_exists=$null;protected_shift_exists=$false
+ current_v2_shift_exists=$null;proposed_shift_dir_exists=$null
+ proposed_protected_shift_exists=$null
 }
 if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
  Hold 'NOT_WINDOWS'
@@ -93,9 +98,20 @@ if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
   if($checks.child_record_exists){Hold 'CHILD_RECORD_NOT_RECONCILED'}
  }catch{Hold 'CHILD_RECORD_STATE_UNKNOWN'}
  try{
-  $checks.protected_shift_exists=Test-Path -LiteralPath $protectedShift -PathType Leaf -ErrorAction Stop
-  if(-not $checks.protected_shift_exists){Hold 'PROTECTED_SHIFT_NOT_PRESENT'}
- }catch{Hold 'PROTECTED_SHIFT_UNKNOWN'}
+  # Distinguish the currently installed V2 input from the planned V8.15
+  # relocation. The new destination's absence is NOT evidence that the
+  # current production shift state file is missing.
+  $checks.current_v2_shift_exists=Test-Path -LiteralPath $currentShift -PathType Leaf -ErrorAction Stop
+  $checks.proposed_shift_dir_exists=Test-Path -LiteralPath $protectedShiftDir -PathType Container -ErrorAction Stop
+  $checks.proposed_protected_shift_exists=Test-Path -LiteralPath $protectedShift -PathType Leaf -ErrorAction Stop
+  $checks.protected_shift_exists=$checks.proposed_protected_shift_exists
+  if($wp -ceq $old -and -not $checks.current_v2_shift_exists){
+   Hold 'CURRENT_V2_SHIFT_INPUT_MISSING'
+  }
+  if(-not $checks.proposed_protected_shift_exists -or -not $checks.proposed_shift_dir_exists){
+   Hold 'PROPOSED_PROTECTED_SHIFT_NOT_PREPARED'
+  }
+ }catch{Hold 'SHIFT_PATHS_UNKNOWN'}
 }
 $effects=[ordered]@{services_changed=$false;processes_killed=$false
  config_written=$false;shift_written=$false;acl_changed=$false
