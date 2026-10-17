@@ -284,6 +284,8 @@ jobs:
           $snapshot = ./tools/comandas_windows_cutover_readonly_v823.ps1 | ConvertFrom-Json
           if ($snapshot.status -ne 'HOLD') { throw 'V823_NOT_FAIL_CLOSED' }
           if ($snapshot.checks.service_present -ne $false) { throw 'V823_RUNNER_NOT_DISPOSABLE' }
+          if ($snapshot.checks.current_v2_shift_exists -ne $false -or $snapshot.checks.proposed_protected_shift_exists -ne $false) { throw 'V826_RUNNER_STATE_PATH_ISOLATION_FAILED' }
+          if (@($snapshot.reasons) -notcontains 'PROPOSED_PROTECTED_SHIFT_NOT_PREPARED') { throw 'V826_PROPOSED_PATH_MISSING_NOT_HELD' }
           if ($snapshot.deployment_authorized -ne $false -or $snapshot.snapshot_is_atomic -ne $false) { throw 'V823_AUTHORIZATION_ERROR' }
           if (@($snapshot.effects.PSObject.Properties | Where-Object { $_.Value -ne $false }).Count -ne 0) { throw 'V823_EFFECTS_CLAIM_ERROR' }
           Write-Host 'V823_HOSTED_WINDOWS_NO_SERVICE=HOLD NO_AUTHORITY NO_OPERATIONAL_EFFECTS'
