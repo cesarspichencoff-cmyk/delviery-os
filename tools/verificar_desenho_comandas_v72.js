@@ -10,7 +10,7 @@
 const assert=require("node:assert/strict");
 const crypto=require("node:crypto");
 const fs=require("node:fs");
-const {render}=require("./gerar_prova_figma_v60_offline.js");
+const {render,makeProduction,makeConference}=require("./gerar_prova_figma_v60_offline.js");
 const {archivedResult}=require("./verificar_real_order_tickets_v46.js");
 const {renderOperationalTicketsProofV46}=
  require("../dist/src/production/operationalTicketEscposV46.js");
@@ -93,4 +93,31 @@ test("12 hashes prove SVG regression, never pixels or Epson paper",()=>{
  // Assertion is explicitly limited to SVG bytes and archived fixture.
  assert.ok(!("physical_pixel_parity" in t[0]));
 });
-console.log("THERMAL_DESIGN_LOCK_V72="+n+"/12; SVG_GOLDENS_MATCH; NO_PRINT; NO_FIGMA_PIXEL_PARITY_CLAIM");
+test("13 malformed box counts never become printable-looking SVG proofs",()=>{
+ for(const bad of [0,null,-1,1.5,"2",NaN,Infinity,Number.MAX_SAFE_INTEGER+1]){
+  const prod=structuredClone(projected.production[0]);
+  prod.boxes[0].physical_box_count=bad;
+  const preview=makeProduction(prod);
+  assert.equal(preview.ready_for_visual_review,false,String(bad));
+  assert.ok(preview.blocking_reasons.includes("INVALID_PHYSICAL_BOX_COUNT"),String(bad));
+  assert.equal(preview.ready_for_operational_print,false);
+  const conf=structuredClone(projected.conference);
+  conf.boxes[0].physical_box_count=bad;
+  const confPreview=makeConference(conf);
+  assert.equal(confPreview.ready_for_visual_review,false,String(bad));
+  assert.equal(confPreview.ready_for_operational_print,false);
+ }
+ const safeDefault=structuredClone(projected.production[0]);
+ delete safeDefault.boxes[0].physical_box_count;
+ assert.equal(makeProduction(safeDefault).ready_for_visual_review,true);
+ const giant=structuredClone(projected.production[1]);
+ giant.boxes[0].status="PROVEN";
+ giant.boxes[0].items=giant.boxes[0].items.slice(0,1);
+ giant.boxes[0].items[0].quantity=1000000;
+ giant.boxes[0].physical_box_count=1000000;
+ const giantPreview=makeProduction(giant);
+ assert.equal(giantPreview.ready_for_visual_review,false);
+ assert.ok(giantPreview.blocking_reasons.includes("PHYSICAL_BOX_PREVIEW_REQUIRES_REVIEW"));
+ assert.ok(giantPreview.boxes<100,"the renderer must not expand a million SVG boxes");
+});
+console.log("THERMAL_DESIGN_LOCK_V72="+n+"/"+n+"; SVG_GOLDENS_MATCH; NO_PRINT; NO_FIGMA_PIXEL_PARITY_CLAIM");

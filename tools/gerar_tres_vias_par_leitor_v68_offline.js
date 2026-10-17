@@ -5,7 +5,7 @@
  */
 const fs=require("node:fs"),os=require("node:os"),path=require("node:path"),
  crypto=require("node:crypto"),vm=require("node:vm");
-const {projectVerifiedReaderPairV68}=
+const {projectVerifiedReaderPairV68,PAYMENT_NOTE_POLICY_V80}=
  require("../dist/src/production/stableReaderShadowPairV68.js");
 const {PACKAGING_SOURCE_BLOB_V63}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
@@ -13,17 +13,26 @@ const {renderOperationalTicketsProofV46}=
  require("../dist/src/production/operationalTicketEscposV46.js");
 const {makeProduction,makeConference}=
  require("./gerar_prova_figma_v60_offline.js");
+const {renderVerifiedNativeCandidateV752}=
+ require("./comandas_native_v752_three_view_offline.js");
 function sha(buf){return crypto.createHash("sha256").update(buf).digest("hex");}
 function blob(buf){return crypto.createHash("sha1")
  .update(Buffer.from("blob "+buf.length+"\0")).update(buf).digest("hex");}
 function getArgs(args){
- const out={},required=new Set(["--event","--decision","--proof","--motor"]);
+ const out={},required=["--event","--decision","--proof","--motor"];
+ const allowed=new Set([...required,"--payment-policy"]);
+ if(!Array.isArray(args)||args.length%2)throw Error("EXACT_FLAG_VALUE_PAIRS_REQUIRED");
  for(let i=0;i<args.length;i+=2){
-  if(!required.has(args[i])||!args[i+1]||out[args[i]])
-   throw Error("USAGE: --event stable.json --decision decision.json --proof reconciled.json --motor canonical.js");
+  if(!allowed.has(args[i])||typeof args[i+1]!=="string"||
+     !args[i+1]||Object.hasOwn(out,args[i]))
+   throw Error("UNKNOWN_OR_REPEATED_V68_SOURCE_ARGUMENT");
   out[args[i]]=args[i+1];
  }
- if(Object.keys(out).length!==4)throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
+ if(required.some(k=>!out[k])||Object.keys(out).length>5)
+  throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
+ if(Object.hasOwn(out,"--payment-policy")&&
+    out["--payment-policy"]!==PAYMENT_NOTE_POLICY_V80)
+  throw Error("PAYMENT_NOTE_POLICY_NOT_EXACTLY_REVIEWED");
  return out;
 }
 function readBound(p){
@@ -53,9 +62,11 @@ function run(args=process.argv.slice(2)){
   production_plan:proof.production_plan,
   identities:proof.current_product_identities,
   observation_proofs:proof.item_observation_proofs,
-  motor,motor_blob_sha:blob(source)});
+  motor,motor_blob_sha:blob(source)},
+  locations["--payment-policy"]===PAYMENT_NOTE_POLICY_V80
+    ? PAYMENT_NOTE_POLICY_V80 : undefined);
  const origin={event_sha256:sha(files[0]),decision_sha256:sha(files[1]),proof_sha256:sha(files[2]),
-  motor_blob_sha:blob(source)};
+  motor_blob_sha:blob(source),payment_note_policy:locations["--payment-policy"]||"NOT_OPTED_IN"};
  if(!result.tickets){
   console.log(JSON.stringify({schema:"deliveryos.stable-reader-shadow-v68.proof",
    status:"BLOCKED",reasons:result.reasons,origin,
@@ -71,6 +82,14 @@ function run(args=process.argv.slice(2)){
     !rendered.every(t=>t.ready_for_offline_preview&&!t.ready_for_operational_print)||
     !pictures.every(t=>t.ready_for_visual_review&&!t.ready_for_operational_print))
    throw Error("SOURCE_VERIFIED_BUT_THERMAL_PREVIEW_BLOCKED");
+ // Native-font adaptation is SHADOW metadata only. It consumes the SAME
+ // verified structured V6.8 tickets and independently gates the legacy V4.6
+ // trace + approved Figma preview. Failure never authorizes a fallback print.
+ const nativeFontCandidate=renderVerifiedNativeCandidateV752(tickets);
+ if(nativeFontCandidate.ready_for_operational_print!==false ||
+    nativeFontCandidate.effects?.print!==false ||
+    nativeFontCandidate.effects?.spooler_write!==false)
+  throw Error("NATIVE_FONT_SHADOW_EFFECT_BOUNDARY_INVALID");
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v68-reader-pair-"));
  const outputs=pictures.map((p,i)=>{
   const filename=String(i+1).padStart(2,"0")+"-"+p.kind.toLowerCase()+
@@ -81,6 +100,7 @@ function run(args=process.argv.slice(2)){
  });
  const manifest={schema:"deliveryos.stable-reader-shadow-v68.proof",
   status:"OFFLINE_VERIFIED_NO_PHYSICAL_EFFECT",origin,outputs,
+  native_font_candidate:nativeFontCandidate,
   effects:{reader_access:false,print:false,spooler_write:false,
    database_write:false,sequence_binding_write:false,deploy:false,fiscal:false,
    temporary_artifact_write:true}};

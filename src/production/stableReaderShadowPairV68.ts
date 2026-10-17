@@ -338,6 +338,57 @@ export function inspectOrderNoteDispositionClaimV77(
   human_identity_authenticated:false};
 }
 
+/**
+ * Human-confirmed semantic policy, 15/10/2026: for the original Itaim
+ * order day 14/10, EXACT DSOBSCOMANDA payment/cancel metadata belongs in
+ * delivery/caixa records, NEVER in the three offline production tickets.
+ * Original event/decision/delivery are untouched; no physical authority.
+ */
+export const PAYMENT_NOTE_POLICY_V80=
+  "CESAR_CONFIRMED_20261015_PAYMENT_ONLY_20261014_OFFLINE" as const;
+const PAYMENT_TEMPLATE_V80=
+  /^PAGO ONLINE \(VALOR: (?:0|[1-9][0-9]{0,5})\.[0-9]{2}\) ID: [0-9]{1,24} - COD\. P\/ CANCELAMENTO: [0-9]{1,24}$/;
+export function preparePaymentOnlyOfflineViewV80(
+ event:StableReaderEventV68,decision:LiveShadowDecisionV68,
+ delivery:DeliveryJoinProjection,policy?:typeof PAYMENT_NOTE_POLICY_V80,
+):{status:"REVIEWED_PAYMENT_OFFLINE_VIEW"|"BLOCKED";
+   reason:string;source_digest:string|null;
+   delivery_for_tickets:DeliveryJoinProjection|null;
+   original_preserved:true;print_authorized:false;operator_authenticated:false} {
+ const hold=(why:string)=>({status:"BLOCKED" as const,reason:why,
+   source_digest:null,delivery_for_tickets:null,original_preserved:true as const,
+   print_authorized:false as const,operator_authenticated:false as const});
+ if(policy!==PAYMENT_NOTE_POLICY_V80)return hold("NO_EXPLICIT_OFFLINE_POLICY");
+ const order=event?.order;
+ if(!order||order.CDFILIAL!=="0001"||order.CDLOJA!=="01"||
+    !order.DTHRABERMESA?.startsWith("2026-10-14T")||
+    !/^DLV_/.test(order.IDORGCMDVENDA)||
+    event.order_key!==[order.CDFILIAL,order.CDLOJA,
+      order.NRVENDAREST,order.NRCOMANDA].join("|"))
+   return hold("PAYMENT_NOTE_OUTSIDE_APPROVED_ORDER_DAY");
+ // Recompute watcher snapshot SHA + V2 fingerprint and require same decision.
+ const packet=prepareOrderNoteReviewPacketV77(event,decision);
+ if(packet.status!=="REVIEW_REQUIRED"||!packet.general_note)
+   return hold("NOTE_SOURCE_FINGERPRINT_NOT_VERIFIED");
+ const general=order.observation_rows?.filter(x=>x.scope_hint==="order");
+ if(general?.length!==1||general[0].source_field!=="DSOBSCOMANDA"||
+    !PAYMENT_TEMPLATE_V80.test(general[0].value))
+   return hold("PAYMENT_GENERAL_NOTE_NOT_EXACT");
+ if(!delivery||delivery.pedido_interno!==decision.teknisa_sequence||
+    delivery.pedido_externo!==decision.ifood_sequence||
+    !Array.isArray(delivery.order_observations)||
+    delivery.order_observations.length!==1||
+    delivery.order_observations[0]!==general[0].value)
+   return hold("INDEPENDENT_DELIVERY_NOTE_DIFFERS");
+ const h=createHash("sha256").update(general[0].value,"utf8").digest("hex");
+ if(h!==packet.general_note.content_sha256)return hold("GENERAL_NOTE_DIGEST_DIFFERS");
+ return {status:"REVIEWED_PAYMENT_OFFLINE_VIEW",
+   reason:"EXCLUDE_PAYMENT_FROM_TICKET_VIEW_ONLY",source_digest:h,
+   delivery_for_tickets:{...delivery,order_observations:[]},
+   original_preserved:true,print_authorized:false,
+   operator_authenticated:false};
+}
+
 /** Verifies that the decision describes exactly the stable event.
  * Crucially SOURCE_VERIFIED is NOT permission to make or print tickets.
  */
@@ -467,13 +518,16 @@ export interface ReaderPairContextV68 {
 }
 export function projectVerifiedReaderPairV68(
  event:StableReaderEventV68,decision:LiveShadowDecisionV68,context:ReaderPairContextV68,
+ paymentPolicy?:typeof PAYMENT_NOTE_POLICY_V80,
 ):{status:"OFFLINE_PREVIEW_PROVEN"|"BLOCKED";reasons:string[];
   tickets:OperationalTicketsResultV45|null;print_authorized:false} {
  const pair=verifyLiveReaderPairV68(event,decision),errors=new Set(pair.reasons);
  const v2Notes=inspectV2WatcherNotesV76(event);
- // An order-level note cannot be dropped to make a clean-looking ticket.
- // No general observation gains item/station relevance from its text alone.
- if(v2Notes.detected&&v2Notes.rows.some(r=>r.scope_hint==="order"))
+ // Preserve the original note; only an exact opt-in creates a ticket view.
+ const paymentView=preparePaymentOnlyOfflineViewV80(
+   event,decision,context.delivery,paymentPolicy);
+ const hasGeneral=v2Notes.detected&&v2Notes.rows.some(r=>r.scope_hint==="order");
+ if(hasGeneral&&paymentView.status!=="REVIEWED_PAYMENT_OFFLINE_VIEW")
    errors.add("WATCHER_V2_ORDER_NOTE_REQUIRES_OPERATIONAL_RELEVANCE_PROOF");
  const block=()=>({status:"BLOCKED" as const,reasons:[...errors].sort(),
    tickets:null,print_authorized:false as const});
@@ -543,8 +597,10 @@ export function projectVerifiedReaderPairV68(
      errors.add("PRODUCTION_ROUTE_NOT_SAME_SHADOW_DECISION:"+selected.item_index);
  }
  if(errors.size)return block();
+ const ticketDelivery=hasGeneral&&paymentView.status==="REVIEWED_PAYMENT_OFFLINE_VIEW"
+   ?paymentView.delivery_for_tickets!:context.delivery;
  const projected=projectJoinedReaderTicketsV66(
-    context.delivery,context.production,context.production_plan,context.identities,
+    ticketDelivery,context.production,context.production_plan,context.identities,
     context.motor,context.motor_blob_sha);
  if(!projected.tickets||!projected.tickets.ready_for_semantic_preview){
    for(const reason of projected.reasons)errors.add(reason);

@@ -8,6 +8,7 @@ on:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
       - feat/thermal-v63-packaging-bridge-shadow-20261010
+      - validation/thermal-v714-raw-quantity-fail-closed-20261011
 
 permissions:
   contents: read
@@ -49,6 +50,14 @@ jobs:
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Exact raw store-shop-order key integrity V7.27 (offline)
         run: node tools/verificar_identidade_pedido_v727.js
+      - name: Passive real watcher-event audit privacy and integrity V7.30 (synthetic)
+        run: node tools/verificar_auditoria_eventos_v730.js
+      - name: Windows sidecar shift-and-V2 pin preflight V7.31 (synthetic only)
+        run: node tools/verificar_sidecar_preflight_windows_v731.js
+      - name: Adversarial 21-case iFood/Teknisa operational lunch simulation
+        run: node tools/verificar_riscos_almoco_v735_offline.js
+      - name: Windows Sandbox closed-loop config and host isolation V7.33 (static)
+        run: node tools/verificar_sandbox_comandas_v733.js
       - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
@@ -102,10 +111,36 @@ jobs:
         run: node tools/verificar_consumidor_shadow_v710.js
       - name: Stable Windows reader event/decision pairing V6.8 (offline)
         run: node tools/verificar_par_evento_leitor_v68.js
+      - name: Payment-note policy V8.0 strict opt-in and item-note preservation (synthetic offline)
+        run: node tools/verificar_nota_pagamento_v80_offline.js
+      - name: Static exact bag policy B1 B5 B8 B9 in ephemeral V2 motor (Linux)
+        run: node tools/verificar_sacolas_estaticas_v81_offline.js
+      - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Linux)
+        run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
+      - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
+        run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
+      - name: SQL principal and exact column-surface drift V8.5 (synthetic, no SQL)
+        run: node tools/verificar_comandas_sql_surface_drift_v85.cjs
+      - name: V8.7 SENHA per-item bridge collision guard (synthetic only)
+        run: node tools/verificar_comandas_senha_item_bridge_v87_offline.cjs
+      - name: V8.8 per-order bounded SQL template only, no column grant or query (synthetic)
+        run: node tools/verificar_comandas_cdsenhaped_readonly_plan_v88_offline.cjs
+      - name: V8.9 independent native item parity cannot attest historical print (synthetic)
+        run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
       - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
         run: node tools/verificar_revisao_turno_humano_v70.js
+      - name: V8.12 preview-only shift writer static safety gate (no PowerShell on Linux)
+        run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.14 exact pinned watcher path move review (no Windows state writes)
+        run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.16 cross-generation quiescence refusal (synthetic Linux)
+        run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.20 pinned supervisor safe startup preview (Linux synthetic)
+        run: node tools/verificar_supervisor_guard_v820_offline.cjs
+      - name: V8.22 dual guard prelaunch preview (Linux synthetic)
+        run: node tools/verificar_supervisor_prelaunch_v822_offline.cjs
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
@@ -140,6 +175,26 @@ jobs:
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Direct Epson renderer source-semantic rejection V7.1 (Issue 25)
         run: node tools/verificar_renderer_semantico_direto_v71.js
+      - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Linux)
+        run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Native Epson font A/B, emphasis, strike and CP850 V7.50 (offline, Linux)
+        run: node tools/verificar_fontes_nativas_v750_offline.js
+      - name: Source-verified V6.8 three-way native Epson font shadow adapter V7.52 (Linux)
+        run: node tools/verificar_integracao_nativa_tres_vias_v752.js
+      - name: Crash, concurrent replay and no-retry policy V7.54 (offline Linux)
+        run: node tools/verificar_idempotencia_recuperacao_v754.js
+      - name: Five-process synthetic journal crash and tamper V7.55 (Linux)
+        run: node tools/verificar_journal_sandbox_v755.js
+      - name: Three-way post-crash reconciliation cannot authorize print V7.56 (Linux)
+        run: node tools/verificar_reconciliation_v756_offline.js
+      - name: Independently trusted Ed25519 synthetic journal seal V7.57 (Linux)
+        run: node tools/verificar_signed_anchor_v757_offline.js
+      - name: Separate signed witness chain, rollback and untrusted context V7.58 (Linux)
+        run: node tools/verificar_external_witness_v758_offline.js
+      - name: Native-font V7.51 human approval and one-shot safety (static Linux)
+        run: node tools/verificar_piloto_fontes_v751_static.js
+      - name: RAW V7.48 approval and one-shot transport policy (static only)
+        run: node tools/verificar_raw_pilot_v748_static.js
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
         # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
         run: node tools/verificar_integridade_termica_v57.js
@@ -148,3 +203,165 @@ jobs:
         # Both remain hard failures; no continue-on-error, printer or spooler.
         if: ${{ !cancelled() }}
         run: node tools/verificar_matriz_escpos_v511.js
+
+
+  windows-thermal-preview:
+    name: Windows offline Figma and ESC/POS integrity (no service)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable PR snapshot
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked dependencies, no lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Compile source contracts and prepare dist for Node tests
+        run: npm run build
+      - name: Verify archived Figma SVG masters and thermal traces on Windows
+        run: node tools/verificar_desenho_comandas_v72.js
+      - name: Bind live four-field watcher identity (Windows CI)
+        run: node tools/verificar_identidade_pedido_v727.js
+      - name: Passive event audit contract (Windows synthetic fixture, no remote)
+        run: node tools/verificar_auditoria_eventos_v730.js
+      - name: Windows sidecar shift-and-V2 pin preflight V7.31 (synthetic only)
+        run: node tools/verificar_sidecar_preflight_windows_v731.js
+      - name: Adversarial 21-case iFood/Teknisa operational lunch simulation
+        run: node tools/verificar_riscos_almoco_v735_offline.js
+      - name: Windows Sandbox closed-loop config and host isolation V7.33 (static)
+        run: node tools/verificar_sandbox_comandas_v733.js
+      - name: Parse Windows Sandbox configuration and guest PowerShell syntax
+        shell: pwsh
+        run: |
+          [xml]$cfg = Get-Content -Raw -LiteralPath "runtime/windows/comandas_sandbox_observer_v733.wsb"
+          if ($cfg.Configuration.MappedFolders.MappedFolder.Count -ne 4) { throw 'SANDBOX_XML_MOUNT_COUNT_INVALID' }
+          $tokens = $null
+          $errors = $null
+          $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            "runtime/windows/comandas_sandbox_observe_v733.ps1", [ref]$tokens, [ref]$errors)
+          if ($errors.Count -ne 0) { throw 'SANDBOX_POWERSHELL_SYNTAX_INVALID' }
+      - name: Reconcile V2 consumer, V6.8, pinned Academy motor and three SVG receipts
+        run: node tools/verificar_cadeia_positiva_v722_offline.js
+      - name: Payment-note V8.0 and B5 preservation (offline, Windows)
+        run: node tools/verificar_nota_pagamento_v80_offline.js
+      - name: Static exact bag policy B1 B5 B8 B9 in ephemeral V2 motor (Windows)
+        run: node tools/verificar_sacolas_estaticas_v81_offline.js
+      - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Windows)
+        run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
+      - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
+        run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
+      - name: SQL principal and exact column-surface drift V8.5 (synthetic, no SQL)
+        run: node tools/verificar_comandas_sql_surface_drift_v85.cjs
+      - name: V8.7 SENHA per-item bridge collision guard (synthetic only)
+        run: node tools/verificar_comandas_senha_item_bridge_v87_offline.cjs
+      - name: V8.8 per-order bounded SQL template only, no column grant or query (synthetic)
+        run: node tools/verificar_comandas_cdsenhaped_readonly_plan_v88_offline.cjs
+      - name: V8.9 independent native item parity cannot attest historical print (synthetic)
+        run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
+      - name: V7.0/V7.4 shift upper-boundary exclusivity matches real Windows V2 (offline)
+        run: node tools/verificar_revisao_turno_humano_v70.js
+      - name: V8.12 preview-only PowerShell shift writer adversarial Windows cases
+        run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.14 exact pinned watcher path move review (Windows offline)
+        run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.16 cross-generation quiescence refusal (synthetic Windows)
+        run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.20 pinned supervisor safe startup preview (Windows synthetic)
+        run: node tools/verificar_supervisor_guard_v820_offline.cjs
+      - name: V8.22 dual guard prelaunch preview (Windows synthetic)
+        run: node tools/verificar_supervisor_prelaunch_v822_offline.cjs
+      - name: V8.17 harmless real Windows CIM old and staged orphan markers (ephemeral hosted runner)
+        shell: pwsh
+        run: |
+          ./tools/comandas_windows_live_cim_orphan_v817_sandbox.ps1
+      - name: V8.23 real host read-only preflight must HOLD without service (ephemeral Windows)
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw 'HOSTED_RUNNER_REQUIRED' }
+          $snapshot = ./tools/comandas_windows_cutover_readonly_v823.ps1 | ConvertFrom-Json
+          if ($snapshot.status -ne 'HOLD') { throw 'V823_NOT_FAIL_CLOSED' }
+          if ($snapshot.checks.service_present -ne $false) { throw 'V823_RUNNER_NOT_DISPOSABLE' }
+          if ($snapshot.checks.current_v2_shift_exists -ne $false -or $snapshot.checks.proposed_protected_shift_exists -ne $false) { throw 'V826_RUNNER_STATE_PATH_ISOLATION_FAILED' }
+          if (@($snapshot.reasons) -notcontains 'PROPOSED_PROTECTED_SHIFT_NOT_PREPARED') { throw 'V826_PROPOSED_PATH_MISSING_NOT_HELD' }
+          if ($snapshot.deployment_authorized -ne $false -or $snapshot.snapshot_is_atomic -ne $false) { throw 'V823_AUTHORIZATION_ERROR' }
+          if (@($snapshot.effects.PSObject.Properties | Where-Object { $_.Value -ne $false }).Count -ne 0) { throw 'V823_EFFECTS_CLAIM_ERROR' }
+          Write-Host 'V823_HOSTED_WINDOWS_NO_SERVICE=HOLD NO_AUTHORITY NO_OPERATIONAL_EFFECTS'
+          # sc.exe qfailure intentionally exits nonzero when no service exists.
+          # Asserted HOLD is the expected safety result, not a test failure.
+          # Clear the inherited native exit status ONLY after all assertions pass.
+          exit 0
+      - name: V8.25 disposable Windows actual pinned backup-byte restoration after crashes
+        shell: pwsh
+        run: |
+          $lines = @(./tools/comandas_windows_three_file_rollback_v824_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v824.ephemeral-windows-real-ntfs-rollback"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V825_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 8 -or
+              $proof.backup_bytes_used_for_restore -ne $true -or
+              $proof.unique_non_reconstructible_original_bytes_restored -ne $true -or
+              $proof.deployment_authorized -ne $false -or
+              $proof.full_supervisor_executed -ne $false) { throw 'V825_ROLLBACK_PROOF_INCOMPLETE' }
+          Write-Host $receipt[0]
+      - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
+        shell: pwsh
+        run: |
+          ./tools/comandas_windows_acl_real_tokens_v813_sandbox.ps1
+      - name: Reject malformed quantities on Windows
+        run: node tools/verificar_quantidades_termicas_v59.js
+      - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
+        run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Native Epson font A/B, emphasis, strike and CP850 V7.50 (offline, Windows)
+        run: node tools/verificar_fontes_nativas_v750_offline.js
+      - name: Source-verified V6.8 three-way native Epson font shadow adapter V7.52 (Windows)
+        run: node tools/verificar_integracao_nativa_tres_vias_v752.js
+      - name: Crash, concurrent replay and no-retry policy V7.54 (offline Windows)
+        run: node tools/verificar_idempotencia_recuperacao_v754.js
+      - name: Five-process synthetic journal crash and tamper V7.55 (Windows)
+        run: node tools/verificar_journal_sandbox_v755.js
+      - name: Three-way post-crash reconciliation cannot authorize print V7.56 (Windows)
+        run: node tools/verificar_reconciliation_v756_offline.js
+      - name: Independently trusted Ed25519 synthetic journal seal V7.57 (Windows)
+        run: node tools/verificar_signed_anchor_v757_offline.js
+      - name: Separate signed witness chain, rollback and untrusted context V7.58 (Windows)
+        run: node tools/verificar_external_witness_v758_offline.js
+      - name: Native-font V7.51 human approval and one-shot safety (static Windows)
+        run: node tools/verificar_piloto_fontes_v751_static.js
+      - name: Parse V7.51 physical-pilot script without running printer I/O
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_native_font_v751_pilot_once_hold.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V751_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V751_PARSE_PASS=1 NO_PRINT NO_SPOOLER_EFFECT"
+
+      - name: RAW V7.48 approval and one-shot transport policy (static only)
+        run: node tools/verificar_raw_pilot_v748_static.js
+      - name: Parse V7.47 offline PowerShell encoder without execution
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_escpos_graphics_fn112_v747_offline.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V747_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V747_SYNTAX_PASS=1 NO_PRINT NO_WINDOWS_DEVICE"
+      - name: Parse V7.48 RAW pilot without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_raw_fn112_v748_pilot_once_hold.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V748_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V748_SYNTAX_PASS=1 NO_PRINT NO_SPOOLER_WRITE"
+      - name: Verify Epson ESC/POS bytes on Windows
+        run: node tools/verificar_integridade_termica_v57.js
