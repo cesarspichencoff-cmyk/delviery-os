@@ -107,42 +107,17 @@ if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
   $checks.proposed_shift_dir_exists=Test-Path -LiteralPath $protectedShiftDir -PathType Container -ErrorAction Stop
   $checks.proposed_protected_shift_exists=Test-Path -LiteralPath $protectedShift -PathType Leaf -ErrorAction Stop
   $checks.protected_shift_exists=$checks.proposed_protected_shift_exists
-  # Inspect DACL ALLOW entries only. This is not a live effective-access
-  # check and never reads or alters the shift contents or permissions.
+  # Read-only DACL ALLOW entries do not attest effective token permissions.
   $modifyMask=[Security.AccessControl.FileSystemRights]::Modify
   if($checks.current_v2_shift_exists){
    try{
     $acl=Get-Acl -LiteralPath $currentShift -ErrorAction Stop
-    $allow=@($acl.Access|Where-Object{
-     ([string]$_.IdentityReference) -match '^NT SERVICE\\TataComandaReader  if($wp -ceq $old -and -not $checks.current_v2_shift_exists){
-   Hold 'CURRENT_V2_SHIFT_INPUT_MISSING'
-  }
-  if(-not $checks.proposed_protected_shift_exists -or -not $checks.proposed_shift_dir_exists){
-   Hold 'PROPOSED_PROTECTED_SHIFT_NOT_PREPARED'
-  }
- }catch{Hold 'SHIFT_PATHS_UNKNOWN'}
-}
-$effects=[ordered]@{services_changed=$false;processes_killed=$false
- config_written=$false;shift_written=$false;acl_changed=$false
- sql_queried=$false;spooler_used=$false;printer_used=$false}
-[pscustomobject]@{
- schema='deliveryos.comandas.v823.real-host-readonly-cutover-preflight'
- status=if($reasons.Count){'HOLD'}else{'REVIEW_ONLY_NOT_AUTHORIZED'}
- reasons=@($reasons|Sort-Object)
- checks=$checks
- human_approval_authenticated=$false
- world_custody_proven=$false
- snapshot_is_atomic=$false
- rollback_executed=$false
- supervisor_runtime_tested=$false
- deployment_authorized=$false
- effects=$effects
-}|ConvertTo-Json -Depth 7 -Compress
- -and
+    $matches=@($acl.Access|Where-Object{
+     ([string]$_.IdentityReference) -match '^NT SERVICE\\TataComandaReader$' -and
      [string]$_.AccessControlType -eq 'Allow' -and
      (($_.FileSystemRights -band $modifyMask) -eq $modifyMask)
     })
-    $checks.current_v2_service_modify_allow_ace=($allow.Count -gt 0)
+    $checks.current_v2_service_modify_allow_ace=($matches.Count -gt 0)
     if($wp -ceq $old -and $checks.current_v2_service_modify_allow_ace){
      Hold 'CURRENT_V2_SHIFT_DACL_SERVICE_MODIFY_ALLOW'
     }
@@ -151,36 +126,12 @@ $effects=[ordered]@{services_changed=$false;processes_killed=$false
   if($checks.proposed_protected_shift_exists){
    try{
     $acl=Get-Acl -LiteralPath $protectedShift -ErrorAction Stop
-    $allow=@($acl.Access|Where-Object{
-     ([string]$_.IdentityReference) -match '^NT SERVICE\\TataComandaReader  if($wp -ceq $old -and -not $checks.current_v2_shift_exists){
-   Hold 'CURRENT_V2_SHIFT_INPUT_MISSING'
-  }
-  if(-not $checks.proposed_protected_shift_exists -or -not $checks.proposed_shift_dir_exists){
-   Hold 'PROPOSED_PROTECTED_SHIFT_NOT_PREPARED'
-  }
- }catch{Hold 'SHIFT_PATHS_UNKNOWN'}
-}
-$effects=[ordered]@{services_changed=$false;processes_killed=$false
- config_written=$false;shift_written=$false;acl_changed=$false
- sql_queried=$false;spooler_used=$false;printer_used=$false}
-[pscustomobject]@{
- schema='deliveryos.comandas.v823.real-host-readonly-cutover-preflight'
- status=if($reasons.Count){'HOLD'}else{'REVIEW_ONLY_NOT_AUTHORIZED'}
- reasons=@($reasons|Sort-Object)
- checks=$checks
- human_approval_authenticated=$false
- world_custody_proven=$false
- snapshot_is_atomic=$false
- rollback_executed=$false
- supervisor_runtime_tested=$false
- deployment_authorized=$false
- effects=$effects
-}|ConvertTo-Json -Depth 7 -Compress
- -and
+    $matches=@($acl.Access|Where-Object{
+     ([string]$_.IdentityReference) -match '^NT SERVICE\\TataComandaReader$' -and
      [string]$_.AccessControlType -eq 'Allow' -and
      (($_.FileSystemRights -band $modifyMask) -eq $modifyMask)
     })
-    $checks.proposed_service_modify_allow_ace=($allow.Count -gt 0)
+    $checks.proposed_service_modify_allow_ace=($matches.Count -gt 0)
     if($checks.proposed_service_modify_allow_ace){
      Hold 'PROPOSED_SHIFT_DACL_SERVICE_MODIFY_ALLOW'
     }
