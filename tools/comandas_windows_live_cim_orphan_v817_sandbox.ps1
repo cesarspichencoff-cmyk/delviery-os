@@ -143,10 +143,48 @@ process.stdout.write(m.FUNCTION.join("\n")+"\n");
   if((Test-CutoverGenerationsQuiet) -cne 'ACTIVE'){
     throw 'V821_BOTH_LIVE_GENERATIONS_NOT_BLOCKED'
   }
+  # V8.27: execute the EXACT V8.22 prelaunch code against real, harmless
+  # Windows powershell.exe processes, not just a mocked CIM inventory.
+  # No supervisor or watcher code is started. A Stop-Fatal stub only throws.
+  $v827SnippetJs=@'
+const m=require("./tools/comandas_supervisor_prelaunch_v822_offline.cjs");
+if(m.INJECT.length!==6 ||
+  !m.INJECT.some(x=>x.includes('Stop-Fatal "CUTOVER_PRELAUNCH_NOT_QUIET"')))
+  process.exit(27);
+process.stdout.write(m.INJECT.join("\n")+"\n");
+'@
+  $v827SnippetLines=@(& node --eval $v827SnippetJs)
+  if($LASTEXITCODE -ne 0 -or $v827SnippetLines.Count -ne 6){
+    throw 'V827_PRELAUNCH_ORIGIN_NOT_PINNED'
+  }
+  $v827Snippet=($v827SnippetLines -join [Environment]::NewLine)
+  $v827Errors=$null
+  $v827Tokens=$null
+  $null=[Management.Automation.Language.Parser]::ParseInput(
+    $v827Snippet,[ref]$v827Tokens,[ref]$v827Errors)
+  if($v827Errors.Count -ne 0){throw 'V827_PRELAUNCH_SYNTAX_INVALID'}
+  $v827Guard=[scriptblock]::Create($v827Snippet)
+  function Invoke-V827Prelaunch {
+    function Stop-Fatal([string]$Reason){throw ('V827_SYNTHETIC_STOP:'+$Reason)}
+    try{
+      & $v827Guard
+      return 'ALLOW'
+    }catch{
+      if(([string]$_.Exception.Message) -ceq
+         'V827_SYNTHETIC_STOP:CUTOVER_PRELAUNCH_NOT_QUIET'){return 'BLOCK'}
+      throw 'V827_UNEXPECTED_PRELAUNCH_EXCEPTION'
+    }
+  }
+  if((Invoke-V827Prelaunch) -cne 'BLOCK'){
+    throw 'V827_BOTH_REAL_GENERATIONS_NOT_BLOCKED'
+  }
   if(-not $b.HasExited){$b.Kill();$null=$b.WaitForExit(8000)}
   if(-not $b.HasExited){throw 'V818_OWN_STAGED_PROCESS_NOT_TERMINATED'}
   if((Test-CutoverGenerationsQuiet) -cne 'ACTIVE'){
     throw 'V821_UNRECORDED_OLD_GENERATION_NOT_BLOCKED'
+  }
+  if((Invoke-V827Prelaunch) -cne 'BLOCK'){
+    throw 'V827_OLD_ORPHAN_PRELAUNCH_NOT_BLOCKED'
   }
   $oldOnly=Read-MarkedProcess $tagOld $a.Id
   $one=Probe-NodeGuard @((To-Record $oldOnly)) $true $false
@@ -158,6 +196,39 @@ process.stdout.write(m.FUNCTION.join("\n")+"\n");
   if((Test-CutoverGenerationsQuiet) -cne 'CLEAN'){
     throw 'V821_OWNED_PROCESSES_GONE_BUT_FUNCTION_NOT_CLEAN'
   }
+  if((Invoke-V827Prelaunch) -cne 'ALLOW'){
+    throw 'V827_CLEAN_PRELAUNCH_NOT_ACCEPTED'
+  }
+  # Real scheduling race: first scan was clean, then a BENIGN third process
+  # appears, marked with the old path only as command-line COMMENT.
+  if((Test-CutoverGenerationsQuiet) -cne 'CLEAN'){
+    throw 'V827_RACE_INITIAL_SCAN_NOT_CLEAN'
+  }
+  $tagRace='V827_RACE_'+$nonce
+  $raceChild=Start-TestProcess $tagRace $old
+  $raceSeen=$false
+  for($i=0;$i -lt 25;$i++){
+    Start-Sleep -Milliseconds 200
+    try{
+      $null=Read-MarkedProcess $tagRace $raceChild.Id
+      $raceSeen=$true
+      break
+    }catch{}
+  }
+  if(-not $raceSeen){throw 'V827_REAL_RACE_CHILD_NOT_VISIBLE'}
+  if((Invoke-V827Prelaunch) -cne 'BLOCK'){
+    throw 'V827_NEW_REAL_ORPHAN_NOT_STOPPED_AT_PRELAUNCH'
+  }
+  if(-not $raceChild.HasExited){$raceChild.Kill();$null=$raceChild.WaitForExit(8000)}
+  if(-not $raceChild.HasExited){throw 'V827_RACE_CHILD_NOT_REAPED'}
+  if((Invoke-V827Prelaunch) -cne 'ALLOW'){
+    throw 'V827_POST_RACE_CLEAN_NOT_ACCEPTED'
+  }
+  $v827Unknown=& {
+    function Get-CimInstance {throw 'V827_SIMULATED_ENUMERATION_DENIED'}
+    Invoke-V827Prelaunch
+  }
+  if($v827Unknown -cne 'BLOCK'){throw 'V827_UNKNOWN_INVENTORY_NOT_BLOCKED'}
   # Use dynamic scoping to replace CIM only within this isolated test scope.
   $v821Unknown=& {
     function Get-CimInstance {throw 'V821_SIMULATED_ENUMERATION_DENIED'}
@@ -264,6 +335,13 @@ console.log(JSON.stringify({schema:"deliveryos.comandas.v819.hosted-windows-pair
     v820_no_owned_generations_returns_clean=$true
     v820_injected_cim_failure_returns_unknown=$true
     v820_full_supervisor_executed=$false
+    v827_real_cim_prelaunch_gate_executed=$true
+    v827_two_real_generations_blocked=$true
+    v827_real_old_orphan_blocked=$true
+    v827_real_process_appearing_between_gates_blocked=$true
+    v827_clean_after_owned_child_exit=$true
+    v827_mocked_cim_failure_blocks_prelaunch=$true
+    v827_no_full_supervisor_execution=$true
     v815_pair_module_synthetic_checks=[int]$pairData.checks
     v815_real_supervisor_pair_activated=$false
     real_cim_old_and_staged_gates_hold=$true
@@ -274,7 +352,7 @@ console.log(JSON.stringify({schema:"deliveryos.comandas.v819.hosted-windows-pair
     schema='deliveryos.comandas.v817.windows-live-cim-orphan'
     status='PASS'
     execution_environment='GITHUB_HOSTED_EPHEMERAL_WINDOWS'
-    benign_sleep_processes_started=2
+    benign_sleep_processes_started=3
     old_generation_detected_by_combined_scan=$oldVisible
     staged_generation_detected_by_combined_scan=$newVisible
     new_only_scan_would_miss_old_generation=$oldNotVisibleToNewOnlyFilter
