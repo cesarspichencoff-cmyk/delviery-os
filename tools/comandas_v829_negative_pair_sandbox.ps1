@@ -19,14 +19,7 @@ $text=[IO.File]::ReadAllText($sourcePath,[Text.Encoding]::UTF8)
 $anchor='$root='+[char]39+'C:\ProgramData\TataComandaReader\state'+[char]39
 if($text.Split(@($anchor),[StringSplitOptions]::None).Count -ne 2){throw 'V829_SOURCE_ROOT_NOT_EXACTLY_ONE'}
 $adapted=$text.Replace($anchor,('$root='+[char]39+$folder+[char]39))
-# Instrument only the disposable synthetic root; original source remains exact
-# apart from root substitution and this catch/error-class annotation.
-$originalCatch="}catch{Hold 'READONLY_PAIR_INSPECTION_INCOMPLETE'}"
-if($adapted.Split(@($originalCatch),[StringSplitOptions]::None).Count -ne 2){
- throw 'V829_FIXTURE_CATCH_ANCHOR_CHANGED'
-}
-$debugCatch='}catch{Hold ("V829_FIXTURE_ERROR_"+$_.Exception.GetType().Name.ToUpperInvariant())}'
-$adapted=$adapted.Replace($originalCatch,$debugCatch)
+# Exact observer body preserved: ONLY the hard-gated fixture root is rewritten.
 if(-not $adapted.Contains("Hold 'V68_FIVE_INDEPENDENT_SOURCES_NOT_ATTESTED'")){
  throw 'V829_V68_GATE_MISSING'
 }
