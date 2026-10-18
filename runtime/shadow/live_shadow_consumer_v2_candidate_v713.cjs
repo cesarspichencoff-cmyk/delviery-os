@@ -15,15 +15,44 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-// BEGIN V710 LINEAGE 1 — same installed V2 consumer plus audited origin hashes
+// BEGIN V710 LINEAGE 1 — bind origin digests to the EXACT bytes actually loaded
+const vm = require("node:vm");
+const loadedRuleDigests = new Map();
+const jsonRuleNames = new Set([
+  "app-data.json", "product-identity-cache-v1.json",
+  "product-aliases-v1.json", "human-order-overrides-v1.json",
+  "routing.json", "printer-map.json", "non-production.json"
+]);
+function recordLoadedJsonRule(file, bytes, value) {
+  const absolute = path.resolve(file);
+  if (jsonRuleNames.has(path.basename(absolute)) &&
+      absolute === path.join(__dirname, path.basename(absolute))) {
+    loadedRuleDigests.set(absolute,
+      crypto.createHash("sha256").update(bytes).digest("hex"));
+  }
+  return value;
+}
 function sha256File(file) {
-  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  const digest = loadedRuleDigests.get(path.resolve(file));
+  if (!digest) throw Error("RULE_SOURCE_BYTES_NOT_LOADED");
+  return digest;
+}
+function loadMotorFromExactBytes(file) {
+  const bytes = fs.readFileSync(file);
+  // The pinned motor is a self-contained globalThis IIFE; execute the same
+  // captured UTF-8 bytes that are fingerprinted, without a second disk read.
+  vm.runInThisContext(bytes.toString("utf8"), {filename:file, timeout:1500});
+  if (typeof globalThis.TATAPackaging?.packComanda !== "function" ||
+      typeof globalThis.TATAPackaging?.kitVerdict !== "function")
+    throw Error("PACKAGING_MOTOR_EXPORTS_ABSENT");
+  loadedRuleDigests.set(path.resolve(file),
+    crypto.createHash("sha256").update(bytes).digest("hex"));
 }
 // END V710 LINEAGE 1
 
 
 const here = __dirname;
-require(path.join(here, "packaging-current.js"));
+loadMotorFromExactBytes(path.join(here, "packaging-current.js"));
 const P = globalThis.TATAPackaging;
 if (!P) throw new Error("PACKAGING_ENGINE_MISSING");
 
@@ -35,7 +64,7 @@ function readJson(p) {
   } else {
     text = buf.toString("utf8").replace(/^\uFEFF/, "");
   }
-  return JSON.parse(text);
+  return recordLoadedJsonRule(p, buf, JSON.parse(text));
 }
 function norm(s) {
   return String(s ?? "")
