@@ -275,6 +275,8 @@ jobs:
         run: node tools/verificar_supervisor_guard_v820_offline.cjs
       - name: V8.22 dual guard prelaunch preview (Windows synthetic)
         run: node tools/verificar_supervisor_prelaunch_v822_offline.cjs
+      - name: V8.26 execute V8.20/V8.22 fail-closed guard expressions using mocked Windows CIM
+        run: node tools/verificar_supervisor_guard_v826_windows.cjs
       - name: V8.17 harmless real Windows CIM old and staged orphan markers (ephemeral hosted runner)
         shell: pwsh
         run: |
