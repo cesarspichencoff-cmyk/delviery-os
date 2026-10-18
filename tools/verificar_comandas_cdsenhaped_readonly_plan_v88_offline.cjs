@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {createHash}=require('node:crypto');
-const {makePlan}=require('./comandas_cdsenhaped_readonly_plan_v88_offline.cjs');
+const {makePlan,resolveOrderDay}=require('./comandas_cdsenhaped_readonly_plan_v88_offline.cjs');
 const {assess}=require('./comandas_senha_item_bridge_v87_offline.cjs');
 const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,
  '../data/tata_reader_permission_manifest_v1.json'),'utf8'));
@@ -151,6 +151,59 @@ assert.equal(attempt.status,'HOLD');
 assert.equal(attempt.reason,'NATIVE_ITEM_SOURCE_ORDER_OR_REVISION_MISMATCH');
 assert.equal(attempt.order_print_identity_proven,false);
 assert.equal(attempt.physical_print_authorized,false);
+tests++;
+// V8.30: a prospective day is an explicitly scoped OFFLINE REVIEW,
+// never permission to read SQL, synthesize provenance or print.
+assert.equal(resolveOrderDay(),'2026-10-14');
+assert.equal(resolveOrderDay({order_day:'2026-10-18'}),'2026-10-18');
+for(const bad of [{order_day:'2026-02-30'},{order_day:'2026-10-18',current_grant:true},
+ {order_day:'tomorrow'}, {order_day:'2026-10-18T00:00'}, {}, null]){
+ assert.equal(resolveOrderDay(bad),null);
+ assert.equal(makePlan(fixture(),manifest,bad).reason,'REQUESTED_DAY_SCOPE_INVALID');
+ tests++;
+}
+const recent=fixture();
+recent.order.DTHRABERMESA='2026-10-18T12:52:00.0000000';
+const recentCore=Object.fromEntries(['CDFILIAL','CDLOJA','NRVENDAREST',
+ 'NRCOMANDA','NRCOMANDAEXT','IDORGCMDVENDA','IDSTCOMANDA',
+ 'DTHRABERMESA'].map(k=>[k,recent.order[k]]));
+recentCore.items=recent.order.items.map(item=>Object.fromEntries([
+ 'NRPRODCOMVEN','CDPRODUTO','CDARVPROD','QTPRODCOMVEN','IDSTPRCOMVEN'
+ ].map(k=>[k,item[k]])));
+recentCore.observation_rows=recent.order.observation_rows.map(x=>({...x}));
+recent.snapshot_hash=createHash('sha256').update(JSON.stringify(recentCore)).digest('hex');
+const recentBefore=JSON.stringify(recent),manifestBefore=JSON.stringify(manifest);
+const oldScope=makePlan(recent,manifest);
+assert.equal(oldScope.status,'HOLD');
+assert.equal(oldScope.reason,'SOURCE_SCOPE_INVALID');
+const scoped=makePlan(recent,manifest,{order_day:'2026-10-18'});
+assert.equal(scoped.status,'OFFLINE_SQL_TEMPLATE_REVIEW_HOLD');
+assert.equal(scoped.reason,'NEW_COLUMN_NOT_IN_LAST_PROVEN_GRANT');
+assert.equal(scoped.expected_order_day,'2026-10-18');
+assert.equal(scoped.explicit_review_day_scoped,true);
+assert.equal(scoped.date_scope_only_not_fresh_grant,true);
+assert.equal(scoped.sql_execution_allowed,false);
+assert.equal(scoped.sql_executed,false);
+assert.equal(scoped.physical_print_authorized,false);
+assert.equal(scoped.current_grant_proven,false);
+assert.equal(scoped.can_attest_historical_revision_from_this_sql,false);
+assert.deepEqual(scoped.missing_historic_grants,['ITCOMANDAVEN.CDSENHAPED']);
+assert.equal(scoped.row_limit_parameter_value,recent.order.items.length+1);
+assert.ok(!scoped.sql_template.includes('2026-10-18'));
+assert.ok(!scoped.sql_template.includes(recent.order.NRCOMANDA));
+assert.equal(JSON.stringify(recent),recentBefore);
+assert.equal(JSON.stringify(manifest),manifestBefore);
+tests++;
+const mismatch=makePlan(recent,manifest,{order_day:'2026-10-19'});
+assert.equal(mismatch.reason,'SOURCE_SCOPE_INVALID');
+assert.equal(mismatch.sql_template,null);
+tests++;
+const fakeNewGrant=structuredClone(manifest);
+fakeNewGrant.effective_columns.ITCOMANDAVEN.push('CDSENHAPED');
+const fakeNewGrantOutput=makePlan(recent,fakeNewGrant,{order_day:'2026-10-18'});
+assert.equal(fakeNewGrantOutput.reason,'HISTORIC_GRANT_NOT_CURRENT_SQL_PROOF');
+assert.equal(fakeNewGrantOutput.sql_execution_allowed,false);
+assert.equal(fakeNewGrantOutput.sql_identity_authenticated,false);
 tests++;
 console.log(JSON.stringify({status:'PASS',tests,
  query_plan_only:true,customer_data_used:false,source_is_fictional:true,
