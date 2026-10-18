@@ -154,11 +154,11 @@ try{
    const academyBefore=JSON.stringify(fixtures["app-data.json"]);
    const withMotorMutation=candidate.replace(
      'const P = globalThis.TATAPackaging;',
-     'fs.writeFileSync(path.join(here,"packaging-current.js"),"TAMPERED_MOTOR_AFTER_LOAD");\\nconst P = globalThis.TATAPackaging;'.replace('\\n','\\n'));
+     'fs.writeFileSync(path.join(here,"packaging-current.js"),"TAMPERED_MOTOR_AFTER_LOAD"); const P = globalThis.TATAPackaging;');
    assert.notEqual(withMotorMutation,candidate,"motor mutation hook missing");
    const withBothMutations=withMotorMutation.replace(
      'const academy = readJson(path.join(here, "app-data.json"));',
-     'const academy = readJson(path.join(here, "app-data.json"));\\nfs.writeFileSync(path.join(here,"app-data.json"),"TAMPERED_JSON_AFTER_LOAD");'.replace('\\n','\\n'));
+     'const academy = readJson(path.join(here, "app-data.json")); fs.writeFileSync(path.join(here,"app-data.json"),"TAMPERED_JSON_AFTER_LOAD");');
    assert.notEqual(withBothMutations,withMotorMutation,"JSON mutation hook missing");
    setup(folder,withBothMutations);
    const decision=run(folder);
