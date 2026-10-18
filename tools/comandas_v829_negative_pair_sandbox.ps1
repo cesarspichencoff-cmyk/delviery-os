@@ -19,6 +19,14 @@ $text=[IO.File]::ReadAllText($sourcePath,[Text.Encoding]::UTF8)
 $anchor='$root='+[char]39+'C:\ProgramData\TataComandaReader\state'+[char]39
 if($text.Split(@($anchor),[StringSplitOptions]::None).Count -ne 2){throw 'V829_SOURCE_ROOT_NOT_EXACTLY_ONE'}
 $adapted=$text.Replace($anchor,('$root='+[char]39+$folder+[char]39))
+# Instrument only the disposable synthetic root; original source remains exact
+# apart from root substitution and this catch/error-class annotation.
+$originalCatch="}catch{Hold 'READONLY_PAIR_INSPECTION_INCOMPLETE'}"
+if($adapted.Split(@($originalCatch),[StringSplitOptions]::None).Count -ne 2){
+ throw 'V829_FIXTURE_CATCH_ANCHOR_CHANGED'
+}
+$debugCatch='}catch{Hold ("V829_FIXTURE_ERROR_"+$_.Exception.GetType().Name.ToUpperInvariant())}'
+$adapted=$adapted.Replace($originalCatch,$debugCatch)
 if(-not $adapted.Contains("Hold 'V68_FIVE_INDEPENDENT_SOURCES_NOT_ATTESTED'")){
  throw 'V829_V68_GATE_MISSING'
 }
@@ -77,6 +85,15 @@ $null=New-Item -ItemType Directory -Path $folder -Force
 foreach($n in $names){$null=New-Item -ItemType Directory -Path (Join-Path $folder $n)}
 try{
  $null=Reset-Fixtures
+ [pscustomobject]@{
+  schema='deliveryos.comandas.v829.fixture-root-safety'
+  disposable_directory_exists=(Test-Path -LiteralPath $folder -PathType Container)
+  event_files=@(Get-ChildItem -LiteralPath (Join-Path $folder 'reader-events-v1') -File).Count
+  decision_files=@(Get-ChildItem -LiteralPath (Join-Path $folder 'reader-shadow-decisions-v1') -File).Count
+  envelope_files=@(Get-ChildItem -LiteralPath (Join-Path $folder 'reader-report-source-envelopes-v1') -File).Count
+  adapted_root_is_fixture=$adapted.Contains(('$root='+[char]39+$folder+[char]39))
+  fixture_only=$true
+ }|ConvertTo-Json -Compress|Write-Host
  $good=& $observer -SampleSize 2 -PairBudget 25 | ConvertFrom-Json
  [pscustomobject]@{
   schema='deliveryos.comandas.v829.fixture-safe-diagnostic'
