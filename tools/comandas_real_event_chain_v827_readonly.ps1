@@ -56,9 +56,9 @@ if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
  Hold 'WINDOWS_HOST_REQUIRED'
 }else{
  try{
-  $eventFiles=MostRecent $folders.event $SampleSize
-  $decFiles=MostRecent $folders.decision $PairBudget
-  $envFiles=MostRecent $folders.envelope $PairBudget
+  $eventFiles=@(MostRecent $folders.event $SampleSize)
+  $decFiles=@(MostRecent $folders.decision $PairBudget)
+  $envFiles=@(MostRecent $folders.envelope $PairBudget)
   $decObjects=@(foreach($f in $decFiles){
    try{Load-Bounded $f}catch{Hold 'DECISION_READ_UNKNOWN'}
   })
