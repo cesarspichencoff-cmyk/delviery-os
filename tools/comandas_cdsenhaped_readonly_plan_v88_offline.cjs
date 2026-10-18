@@ -43,15 +43,32 @@ function hold(reason,extra={}){
   effects:{database:false,files:false,service:false,spooler:false,printer:false},
   ...extra};
 }
-function makePlan(event,manifest){
+// V8.30 optional date-scoped preview. Legacy V8.8 defaults to 14 October.
+// Explicit event day permits planning ONLY, never live SQL or authorization.
+function resolveOrderDay(options){
+ if(options===undefined)return '2026-10-14';
+ if(!options||typeof options!=='object'||Array.isArray(options)||
+  Object.keys(options).some(k=>k!=='order_day')||
+  typeof options.order_day!=='string'||
+  !/^\d{4}-\d{2}-\d{2}$/.test(options.order_day))return null;
+ const day=options.order_day;
+ const ms=Date.parse(day+'T00:00:00Z');
+ if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==day)return null;
+ return day;
+}
+function makePlan(event,manifest,options){
  try{
+  const day=resolveOrderDay(options);
+  if(!day)return hold('REQUESTED_DAY_SCOPE_INVALID');
   const o=event?.order;
   if(event?.schema!=='deliveryos.tata-reader-stable-order-event.v1'||
    !o||o.CDFILIAL!=='0001'||o.CDLOJA!=='01'||
    !/^[0-9]{1,12}$/.test(o.NRVENDAREST||'')||
    !/^[0-9]{1,12}$/.test(o.NRCOMANDA||'')||
    !/^DLV_/.test(o.IDORGCMDVENDA||'')||
-   !/^2026-10-14T/.test(o.DTHRABERMESA||'')||
+   !((typeof o.DTHRABERMESA==='string')&&
+     o.DTHRABERMESA.startsWith(day+'T')&&
+     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(o.DTHRABERMESA))||
    event.order_key!==[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join('|')||
    !SHA.test(event.snapshot_hash||'')||
    o.observation_scan_complete!==true||!Array.isArray(o.observation_rows)||
@@ -113,7 +130,9 @@ function makePlan(event,manifest){
     sql_result_contains_watcher_order_key:false,
     can_attest_historical_revision_from_this_sql:false,
     sql_result_directly_satisfies_v87:false,
-    expected_order_day:'2026-10-14',
+    expected_order_day:day,
+    explicit_review_day_scoped:(options!==undefined),
+    date_scope_only_not_fresh_grant:true,
     // This numeric parameter is computed ONLY from validated watcher items.
     // Limit N+1 is an overflow sentinel: a newer/mutated order must not
     // silently truncate to N records and appear matching.
@@ -125,4 +144,4 @@ function makePlan(event,manifest){
     grant_claim_is_historic_not_fresh:true});
  }catch{return hold('SOURCE_INPUT_MALFORMED')}
 }
-module.exports={makePlan,SQL,REQUIRED};
+module.exports={makePlan,SQL,REQUIRED,resolveOrderDay};
