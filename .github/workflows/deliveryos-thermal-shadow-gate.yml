@@ -135,6 +135,8 @@ jobs:
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.14 exact pinned watcher path move review (no Windows state writes)
         run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.15 adversarial pinned watcher-supervisor pair and rollback (synthetic only)
+        run: node tools/verificar_comandas_watcher_supervisor_pair_v815_offline.cjs
       - name: V8.16 cross-generation quiescence refusal (synthetic Linux)
         run: node tools/verificar_cutover_quiescence_v816_offline.cjs
       - name: V8.20 pinned supervisor safe startup preview (Linux synthetic)
