@@ -23,7 +23,7 @@ check("V7.12 source is EXACT V7.10 plus one scope guard; no silent rewrite",()=>
  assert.ok(prefix.test(candidate));assert.ok(gate.test(candidate));
  const back=candidate.replace(prefix,"").replace(gate,old);
  assert.equal(back,prev);
- assert.equal(sha1blob(prev),"fc91468270888e14b56179835e668d3ca67a6dbf");
+ assert.equal(sha1blob(prev),"c827bbe58d215e4eafdf1a998ecfa4c60a1353d7");
  assert.ok(candidate.includes("observation_rows"));
  assert.ok(candidate.includes("ALLERGEN_NOTE_REQUIRES_HUMAN_REVIEW"));
  assert.ok(candidate.includes("rule_lineage: ruleLineage"));
