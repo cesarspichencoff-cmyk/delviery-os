@@ -78,6 +78,18 @@ foreach($n in $names){$null=New-Item -ItemType Directory -Path (Join-Path $folde
 try{
  $null=Reset-Fixtures
  $good=& $observer -SampleSize 2 -PairBudget 25 | ConvertFrom-Json
+ [pscustomobject]@{
+  schema='deliveryos.comandas.v829.fixture-safe-diagnostic'
+  fixture_only=$true
+  status=$good.status
+  sampled=$good.sampled_events
+  matched_decisions=$good.matched_decisions
+  matched_envelopes=$good.matched_envelopes
+  unique_triplets=$good.strictly_unique_triplets
+  ready=$good.pairs_ready
+  reason_codes=@($good.reason_codes)
+  no_ids_exported=$true
+ }|ConvertTo-Json -Depth 5 -Compress|Write-Host
  if($good.status -ne 'HOLD' -or $good.strictly_unique_triplets -ne 1 -or
     $good.matched_decisions -ne 1 -or $good.matched_envelopes -ne 1 -or
     $good.pairs_ready -ne 0 -or $good.independent_v68_proof_provided -ne $false){
