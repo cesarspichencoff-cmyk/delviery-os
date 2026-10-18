@@ -35,6 +35,9 @@ $report=[ordered]@{
  sample_requested=$SampleSize;pair_scan_budget=$PairBudget
  sampled_events=0;event_ready=0;event_blocked=0
  matched_decisions=0;matched_envelopes=0
+ valid_event_revisions=0;invalid_event_revisions=0;duplicate_event_revisions=0
+ duplicate_decision_revisions=0;duplicate_envelope_revisions=0
+ strictly_unique_triplets=0;embedded_revision_conflicts=0
  same_identity_revision_decisions=0;same_identity_revision_envelopes=0
  pairs_ready=0;with_observation_rows=0;total_item_rows=0
  blockers_event=[ordered]@{};blockers_decision=[ordered]@{}
@@ -64,10 +67,27 @@ if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
   })
   if($eventFiles.Count -eq 0){Hold 'NO_REAL_EVENTS'}
   $ageNow=(Get-Date).ToUniversalTime()
+  $seenRevision=@{}
   foreach($f in $eventFiles){
    $e=$null
    try{$e=Load-Bounded $f}catch{Hold 'EVENT_READ_UNKNOWN';continue}
    $report.sampled_events++
+   $orderKey=[string]$e.order_key
+   $revision=[string]$e.snapshot_hash
+   if($orderKey -cnotmatch '^[0-9]{4}\|[0-9]{2}\|[0-9]{1,12}\|[0-9]{1,12}$' -or
+      $revision -cnotmatch '^[0-9a-fA-F]{64}$'){
+    $report.invalid_event_revisions++
+    Hold 'EVENT_REVISION_IDENTITY_INVALID'
+    continue
+   }
+   $revisionKey=$orderKey+'|'+$revision.ToUpperInvariant()
+   if($seenRevision.ContainsKey($revisionKey)){
+    $report.duplicate_event_revisions++
+    Hold 'EVENT_REVISION_DUPLICATED_IN_SAMPLE'
+    continue
+   }
+   $seenRevision[$revisionKey]=$true
+   $report.valid_event_revisions++
    if($e.ready_for_downstream_shadow -ceq $true){$report.event_ready++}
    else{$report.event_blocked++}
    if($null -ne $e.order){
@@ -88,30 +108,62 @@ if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
     $_.identity.order_key -ceq $e.order_key -and
     $_.identity.snapshot_hash -ceq $e.snapshot_hash
    })
-   if($dec.Count -gt 0){
+   if($dec.Count -eq 1){
     $report.matched_decisions++
     $report.same_identity_revision_decisions++
     foreach($code in @(SafeCodes @($dec[0].blocking_reasons))){
      if(-not $report.blockers_decision.Contains($code)){$report.blockers_decision[$code]=0}
      $report.blockers_decision[$code]++
     }
+   }elseif($dec.Count -gt 1){
+    $report.duplicate_decision_revisions++
+    Hold 'DECISION_REVISION_NOT_UNIQUE'
    }else{Hold 'DECISION_PAIR_NOT_IN_BOUNDED_WINDOW'}
-   if($env.Count -gt 0){
+   if($env.Count -eq 1){
     $report.matched_envelopes++
     $report.same_identity_revision_envelopes++
+   }elseif($env.Count -gt 1){
+    $report.duplicate_envelope_revisions++
+    Hold 'ENVELOPE_REVISION_NOT_UNIQUE'
    }else{Hold 'REPORT_ENVELOPE_NOT_IN_BOUNDED_WINDOW'}
-   $ready=($dec.Count -gt 0 -and $dec[0].ready -ceq $true)
+   $embeddedConsistent=$false
+   if($dec.Count -eq 1 -and $env.Count -eq 1){
+    $source=$env[0].source_event
+    $embedded=$env[0].shadow_decision
+    if($source -and $embedded -and
+       $source.order_key -ceq $orderKey -and
+       $source.snapshot_hash -ceq $revision -and
+       $embedded.order_key -ceq $orderKey -and
+       $embedded.snapshot_hash -ceq $revision -and
+       -not [string]::IsNullOrWhiteSpace([string]$dec[0].fingerprint) -and
+       $embedded.fingerprint -ceq $dec[0].fingerprint -and
+       $embedded.ready -ceq $dec[0].ready -and
+       $source.ready_for_downstream_shadow -ceq $e.ready_for_downstream_shadow){
+     $embeddedConsistent=$true
+     $report.strictly_unique_triplets++
+    }else{
+     $report.embedded_revision_conflicts++
+     Hold 'EMBEDDED_EVENT_DECISION_ENVELOPE_CONFLICT'
+    }
+   }
+   $ready=$false
+   if($embeddedConsistent){
+    $ready=($e.ready_for_downstream_shadow -ceq $true -and $dec[0].ready -ceq $true)
+   }
    if($ready){$report.pairs_ready++}
    if($report.representative.Count -lt 5){
     $report.representative+=@([ordered]@{
      age_minutes=[math]::Round(($ageNow-$f.LastWriteTimeUtc).TotalMinutes,1)
      event_ready=($e.ready_for_downstream_shadow -ceq $true)
-     decision_same_revision=($dec.Count -gt 0)
+     decision_same_revision=($dec.Count -eq 1)
+     exactly_one_decision=($dec.Count -eq 1)
+     exactly_one_envelope=($env.Count -eq 1)
+     embedded_consistent=$embeddedConsistent
      decision_ready=$ready
-     envelope_same_revision=($env.Count -gt 0)
+     envelope_same_revision=($env.Count -eq 1)
      event_item_count=if($null -ne $e.order){@($e.order.items).Count}else{0}
      event_blockers=@(SafeCodes @($e.blockers))
-     decision_blockers=if($dec.Count){@(SafeCodes @($dec[0].blocking_reasons))}else{@()}
+     decision_blockers=if($dec.Count -eq 1){@(SafeCodes @($dec[0].blocking_reasons))}else{@()}
     })
    }
   }
@@ -120,6 +172,9 @@ if(-not [Environment]::OSVersion.Platform.ToString().Equals('Win32NT')){
 # Even a complete matched event-decision-report chain is NOT five
 # independent Delivery/Production/Plan/Identity/Item-observation sources.
 Hold 'V68_FIVE_INDEPENDENT_SOURCES_NOT_ATTESTED'
+if($report.strictly_unique_triplets -lt $report.sampled_events){
+ Hold 'UNIQUE_TRIPLET_COVERAGE_INCOMPLETE'
+}
 if($report.event_blocked -gt 0 -or $report.pairs_ready -lt $report.sampled_events){
  Hold 'ACTUAL_READER_PAIR_HAS_BLOCKED_ORDERS'
 }
