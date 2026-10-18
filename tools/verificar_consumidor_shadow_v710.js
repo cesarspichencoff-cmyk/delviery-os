@@ -22,6 +22,12 @@ function removeAddon(src,label){
 let original=candidate.replace(header,"");
 assert.ok(original.length<candidate.length,"candidate provenance marker missing");
 for(const i of [1,2,3])original=removeAddon(original,i);
+// V7.10 retains the original business rules; the candidate alone now binds
+// digests to loaded bytes, so reverse both loader substitutions for the baseline.
+original=original.replace('loadMotorFromExactBytes(path.join(here, "packaging-current.js"));',
+ 'require(path.join(here, "packaging-current.js"));');
+original=original.replace('return recordLoadedJsonRule(p, buf, JSON.parse(text));',
+ 'return JSON.parse(text);');
 // Lineage 3 was inserted immediately before an existing indented property.
 // Restoring the installed source requires its original newline; no golden edit.
 original=original.replace("  ...core,  effects: {","  ...core,\n  effects: {");
@@ -44,6 +50,9 @@ check("no network/printer and only existing optional shadow JSON output",()=>{
  assert.ok(!/\b(?:fetch|https?\.request|execSync|shell\.exec)\s*\(/.test(candidate));
  assert.ok(!/\b(?:print|spooler_write|odhen_write|database_write):\s*true\b/.test(candidate));
  assert.ok(candidate.includes("if (outPath) writeAtomicJson(outPath, result)"));
+ assert.ok(candidate.includes('vm.runInThisContext(bytes.toString("utf8")'));
+ assert.ok(candidate.includes("return recordLoadedJsonRule(p, buf, JSON.parse(text));"));
+ assert.ok(!candidate.includes('update(fs.readFileSync(file))'));
 });
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"tata-thermal-v710-"));
 const root=path.join(tmp,"baseline"),modern=path.join(tmp,"candidate");
@@ -136,6 +145,31 @@ try{
    }
   });
  }
+ // TOCTOU regression: modify TWO source files after the candidate has consumed
+ // their bytes but before the lineage object is assembled. Digests must still
+ // identify the original bytes used, never a second read of the altered files.
+ check("lineage digests bind to source bytes used despite later file mutations",()=>{
+   const folder=path.join(tmp,"mutation-candidate");
+   const motorBefore=fakeMotor;
+   const academyBefore=JSON.stringify(fixtures["app-data.json"]);
+   const withMotorMutation=candidate.replace(
+     'const P = globalThis.TATAPackaging;',
+     'fs.writeFileSync(path.join(here,"packaging-current.js"),"TAMPERED_MOTOR_AFTER_LOAD");\\nconst P = globalThis.TATAPackaging;'.replace('\\n','\\n'));
+   assert.notEqual(withMotorMutation,candidate,"motor mutation hook missing");
+   const withBothMutations=withMotorMutation.replace(
+     'const academy = readJson(path.join(here, "app-data.json"));',
+     'const academy = readJson(path.join(here, "app-data.json"));\\nfs.writeFileSync(path.join(here,"app-data.json"),"TAMPERED_JSON_AFTER_LOAD");'.replace('\\n','\\n'));
+   assert.notEqual(withBothMutations,withMotorMutation,"JSON mutation hook missing");
+   setup(folder,withBothMutations);
+   const decision=run(folder);
+   assert.equal(decision.rule_lineage.academy_rule_refs.length,2);
+   assert.equal(decision.rule_lineage.academy_rule_refs[0].split("#sha256=")[1],sha(motorBefore));
+   assert.equal(decision.rule_lineage.academy_rule_refs[1].split("#sha256=")[1],sha(academyBefore));
+   assert.notEqual(sha(fs.readFileSync(path.join(folder,"packaging-current.js"))),sha(motorBefore));
+   assert.notEqual(sha(fs.readFileSync(path.join(folder,"app-data.json"))),sha(academyBefore));
+   assert.equal(decision.ready,false);
+   assert.equal(decision.effects.print,false);
+ });
  check("no alias/override source may silently disappear from lineage",()=>{
   const c=fs.readFileSync(path.join(modern,"consumer.cjs"),"utf8");
   for(const name of ["product-aliases-v1.json","human-order-overrides-v1.json"])
