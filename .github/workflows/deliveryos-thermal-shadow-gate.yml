@@ -290,6 +290,24 @@ jobs:
               $sample.effects.files_written -ne $false -or
               $sample.effects.print -ne $false) { throw 'V827_FAIL_CLOSED_OR_PRIVACY_GATE_FAILED' }
           Write-Host 'V827_HOSTED_NO_REAL_READER_DATA=HOLD NO_PII NO_PRINT NO_AUTHORITY'
+      - name: V8.29 real observer rejects duplicate revisions and mismatched fingerprints on ephemeral Windows
+        shell: pwsh
+        run: |
+          $output = @(./tools/comandas_v829_negative_pair_sandbox.ps1)
+          $receipt = @($output | Where-Object { $_ -match '"schema":"deliveryos.comandas.v829.negative-unique-revisions-hosted"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V829_NO_RECEIPT' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 6 -or
+              $proof.invalid_and_duplicate_pairs_hold -ne $true -or
+              $proof.actual_observer_logic_exercised -ne $true -or
+              $proof.root_substituted_in_memory -ne $true -or
+              $proof.real_source_files_read -ne $false -or
+              $proof.sql_query -ne $false -or $proof.printer -ne $false -or
+              $proof.production_write -ne $false -or
+              $proof.deployment_authorized -ne $false) {
+            throw 'V829_NEGATIVE_INVARIANTS_NOT_PROVEN'
+          }
+          Write-Host $receipt[0]
       - name: V8.23 real host read-only preflight must HOLD without service (ephemeral Windows)
         shell: pwsh
         run: |
