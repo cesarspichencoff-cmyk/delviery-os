@@ -23,8 +23,11 @@ $report=[ordered]@{
  ledger_acl_read=$false
  ledger_inherits_acls=$null
  ledger_reader_explicit_write_allow=$null
+ ledger_reader_inherited_write_allow=$null
  ledger_reader_explicit_write_deny=$null
+ ledger_reader_inherited_write_deny=$null
  ledger_broad_principal_explicit_write_allow=$null
+ ledger_broad_principal_inherited_write_allow=$null
  ledger_reader_is_owner=$null
  reader_effective_token_membership_proven=$false
  custodian_effective_token_proven=$false
@@ -105,6 +108,7 @@ if(-not [string]::IsNullOrWhiteSpace($LedgerDirectory)){
       ([long][Security.AccessControl.FileSystemRights]::ChangePermissions) -bor
       ([long][Security.AccessControl.FileSystemRights]::TakeOwnership)
     $readerAllow=$false;$readerDeny=$false;$broadAllow=$false
+    $readerInheritedAllow=$false;$readerInheritedDeny=$false;$broadInheritedAllow=$false
     $broad=@('S-1-1-0','S-1-5-11','S-1-5-32-545')
     foreach($rule in $acl.Access){
      $sid=$null
@@ -116,19 +120,22 @@ if(-not [string]::IsNullOrWhiteSpace($LedgerDirectory)){
      if(-not $grantsWrite){continue}
      if($sid -eq $serviceSid -and $null -ne $serviceSid){
       if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow){
-       $readerAllow=$true
+       if($rule.IsInherited){$readerInheritedAllow=$true}else{$readerAllow=$true}
       }elseif($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Deny){
-       $readerDeny=$true
+       if($rule.IsInherited){$readerInheritedDeny=$true}else{$readerDeny=$true}
       }
      }
      if($sid -in $broad -and
         $rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow){
-      $broadAllow=$true
+      if($rule.IsInherited){$broadInheritedAllow=$true}else{$broadAllow=$true}
      }
     }
     $report.ledger_reader_explicit_write_allow=$readerAllow
+    $report.ledger_reader_inherited_write_allow=$readerInheritedAllow
     $report.ledger_reader_explicit_write_deny=$readerDeny
+    $report.ledger_reader_inherited_write_deny=$readerInheritedDeny
     $report.ledger_broad_principal_explicit_write_allow=$broadAllow
+    $report.ledger_broad_principal_inherited_write_allow=$broadInheritedAllow
     try{
      $owner=$acl.Owner
      $ownerSid=([Security.Principal.NTAccount]::new(
@@ -136,7 +143,8 @@ if(-not [string]::IsNullOrWhiteSpace($LedgerDirectory)){
      $report.ledger_reader_is_owner=(
        $null -ne $serviceSid -and $ownerSid -eq $serviceSid)
     }catch{$report.observations+=@('LEDGER_OWNER_SID_NOT_RESOLVED')}
-    if($readerAllow -or $broadAllow -or $report.ledger_reader_is_owner -eq $true){
+    if($readerAllow -or $readerInheritedAllow -or $broadAllow -or
+       $broadInheritedAllow -or $report.ledger_reader_is_owner -eq $true){
      $report.observations+=@('POTENTIAL_LEDGER_WRITE_EXPOSURE')
     }
     if($report.ledger_inherits_acls){
