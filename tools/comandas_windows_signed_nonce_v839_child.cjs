@@ -83,14 +83,18 @@ if(mode==='reader-before'){
  assert.equal(result.status,'HOLD');
  assert.equal(result.reason,'EXCLUSIVE_CREATE_FAILED');
  assertNoReceipt(signed.authorization_id);
+ const fixtureWriteDenied=isPermissionDenied(()=>fs.writeFileSync(manifest,'FAKE_TRUST'));
+ assert.equal(fixtureWriteDenied,true);
  const sibling=path.join(ledger,'v839-forged-sibling.json');
  const blocked=isPermissionDenied(()=>fs.writeFileSync(sibling,'FORGED',{flag:'wx'}));
  assert.equal(blocked,true);
  assert.equal(fs.existsSync(sibling),false);
  writeEvidence('reader-before',{reader_reserve_hold:true,
   reader_cannot_create_nonce:true,reader_cannot_forge_sibling:true,
-  no_production_authorization:true});
+  reader_cannot_forge_trust_fixture:true,no_production_authorization:true});
 }else if(mode==='custodian-negative'){
+ const fixtureWriteDenied=isPermissionDenied(()=>fs.writeFileSync(manifest,'FAKE_TRUST'));
+ assert.equal(fixtureWriteDenied,true);
  const unsignedWrong={...signed,to_sha256:sha('scope-tampered')};
  const tampered=reserve(root,unsignedWrong,trust);
  noProduction(tampered);
@@ -108,7 +112,7 @@ if(mode==='reader-before'){
  assertNoReceipt(signed.authorization_id);
  writeEvidence('custodian-negative',{tampered_signature_hold:true,
   expired_hold:true,revoked_hold:true,stale_revocation_hold:true,
-  no_unverified_reservation:true});
+  no_unverified_reservation:true,custodian_cannot_forge_trust_fixture:true});
 }else if(mode==='custodian-reserve'){
  const result=reserve(root,signed,trust);
  noProduction(result);
