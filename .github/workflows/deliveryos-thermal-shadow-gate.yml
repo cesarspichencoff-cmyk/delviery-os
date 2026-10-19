@@ -133,6 +133,8 @@ jobs:
         run: node tools/verificar_revisao_turno_humano_v70.js
       - name: V8.12 preview-only shift writer static safety gate (no PowerShell on Linux)
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.32 custody evidence policy rejects false authority (Linux synthetic)
+        run: node tools/verificar_shift_custody_policy_v832_offline.cjs
       - name: V8.14 exact pinned watcher path move review (no Windows state writes)
         run: node tools/verificar_watcher_shift_path_v814_offline.js
       - name: V8.15 adversarial pinned watcher-supervisor pair and rollback (synthetic only)
@@ -267,6 +269,29 @@ jobs:
         run: node tools/verificar_revisao_turno_humano_v70.js
       - name: V8.12 preview-only PowerShell shift writer adversarial Windows cases
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.32 custody evidence policy rejects false authority (Windows synthetic)
+        run: node tools/verificar_shift_custody_policy_v832_offline.cjs
+      - name: V8.32 custody read-only Windows observer parses and never claims approval
+        shell: pwsh
+        run: |
+          $errors = $null; $tokens = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_shift_custody_v832_readonly.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V832_OBSERVER_PARSE_ERROR' }
+          $obs = ./tools/comandas_shift_custody_v832_readonly.ps1 | ConvertFrom-Json
+          if ($obs.schema -ne 'deliveryos.comandas.v832.shift-custody-observation' -or
+              $obs.status -ne 'HOLD_READONLY_NO_AUTHORITY' -or
+              $obs.human_approval_authenticated -ne $false -or
+              $obs.protected_shift_reader_readonly_token_proven -ne $false -or
+              $obs.protected_shift_writer_separate_token_proven -ne $false -or
+              $obs.observation_read_only -ne $true -or
+              $obs.account_names_reported -ne $false -or
+              $obs.sids_reported -ne $false -or
+              $obs.turn_contents_read -ne $false -or
+              $obs.effect_file_written -ne $false -or
+              $obs.effect_acl_modified -ne $false -or
+              $obs.effect_sql -ne $false -or
+              $obs.effect_printer -ne $false) { throw 'V832_OBSERVER_EFFECT_OR_AUTHORITY_DRIFT' }
       - name: V8.14 exact pinned watcher path move review (Windows offline)
         run: node tools/verificar_watcher_shift_path_v814_offline.js
       - name: V8.16 cross-generation quiescence refusal (synthetic Windows)
