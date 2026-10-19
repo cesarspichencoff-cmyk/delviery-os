@@ -153,9 +153,14 @@ async function main(){
   check('6 actual simultaneous processes produce exactly ONE reservation',()=>{
    const winner=racing.filter(x=>x.exit===0&&
     x.json?.status==='SYNTHETIC_NONCE_RESERVED_REVIEW_ONLY');
-   const losers=racing.filter(x=>x.exit===75&&x.json?.reason==='NONCE_ALREADY_RESERVED');
+   // An observed contender may read a just-created, not-yet-flushed
+   // receipt; ambiguity must fail closed rather than become a flaky pass.
+   const losers=racing.filter(x=>x.exit===75&&
+    ['NONCE_ALREADY_RESERVED','EXISTING_RECEIPT_UNTRUSTED_OR_AMBIGUOUS']
+    .includes(x.json?.reason));
    assert.equal(winner.length,1,JSON.stringify(racing));
    assert.equal(losers.length,5,JSON.stringify(racing));
+   assert.equal(inspect(root,concurrent.signed).reason,'NONCE_ALREADY_RESERVED');
    for(const x of racing)noAction(x.json);
   });
   check('read-only inspection denies all subsequent use',()=>{
