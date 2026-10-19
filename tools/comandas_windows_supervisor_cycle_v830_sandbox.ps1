@@ -35,6 +35,7 @@ $record=Join-Path $Root "child.json"
 $watcher=Join-Path $Root "harmless-watcher.ps1"
 $marker=Join-Path $Root "watcher-starts.txt"
 $script:owned=$null
+$state=@{blocked=$null}
 $lock=$null
 function Stop-Fatal([string]$Code){
  Write-Output ('SUPERVISOR_SYNTHETIC_FATAL:'+ $Code)
@@ -132,6 +133,14 @@ function Wait-Record([int]$milliseconds){
  }
  return $false
 }
+function Wait-StartCount([int]$expected,[int]$milliseconds){
+ $sw=[Diagnostics.Stopwatch]::StartNew()
+ while($sw.ElapsedMilliseconds -lt $milliseconds){
+  if((Start-Count) -ge $expected){return $true}
+  Start-Sleep -Milliseconds 100
+ }
+ return $false
+}
 function Start-Count(){
  $p=Join-Path $root 'watcher-starts.txt'
  if(-not(Test-Path -LiteralPath $p -PathType Leaf)){return 0}
@@ -141,6 +150,7 @@ try{
  # Positive run, then competing instance must fail on exclusive NTFS lock.
  $a=Spawn 'NORMAL'
  if(-not(Wait-Record 7000)){throw 'FIRST_CHILD_RECORD_MISSING'}
+ if(-not(Wait-StartCount 1 4000)){throw 'FIRST_CHILD_NOT_STARTED'}
  if((Start-Count) -ne 1){throw 'FIRST_CHILD_NOT_SINGLE'}
  $b=Spawn 'NORMAL'
  if((Wait-Code $b 6000) -ne 75){throw 'SECOND_SUPERVISOR_NOT_LOCKED_OUT'}
@@ -154,6 +164,7 @@ try{
  $c=Spawn 'CRASH_AFTER_SPAWN'
  if(-not(Wait-Record 7000)){throw 'CRASH_CHILD_RECORD_MISSING'}
  if((Wait-Code $c 7000) -eq 0){throw 'CRASH_NOT_OBSERVED'}
+ if(-not(Wait-StartCount 2 4000)){throw 'CRASH_CHILD_START_NOT_OBSERVED'}
  if((Start-Count) -ne 2){throw 'CRASH_CHILD_NOT_STARTED_ONCE'}
  $d=Spawn 'NORMAL'
  if((Wait-Code $d 6000) -ne 79){throw 'LIVE_ORPHAN_NOT_BLOCKED'}
@@ -163,11 +174,13 @@ try{
  # Wait only for the test-owned child and then recover deterministically.
  $rec=Get-Content -LiteralPath (Join-Path $root 'child.json') -Raw |ConvertFrom-Json
  $pidToWait=[int]$rec.pid
- $ownedChild=Get-Process -Id $pidToWait -ErrorAction Stop
- $startDelta=[Math]::Abs(($ownedChild.StartTime.ToUniversalTime()-
-  ([datetime]::Parse([string]$rec.start_utc)).ToUniversalTime()).TotalSeconds)
- if($startDelta -gt 1){throw 'RECOVERY_CHILD_IDENTITY_DRIFT'}
- if(-not $ownedChild.WaitForExit(14000)){throw 'OWNED_CHILD_NOT_EXITED'}
+ $ownedChild=Get-Process -Id $pidToWait -ErrorAction SilentlyContinue
+ if($null -ne $ownedChild){
+  $startDelta=[Math]::Abs(($ownedChild.StartTime.ToUniversalTime()-
+   ([datetime]::Parse([string]$rec.start_utc)).ToUniversalTime()).TotalSeconds)
+  if($startDelta -gt 1){throw 'RECOVERY_CHILD_IDENTITY_DRIFT'}
+  if(-not $ownedChild.WaitForExit(14000)){throw 'OWNED_CHILD_NOT_EXITED'}
+ }
  $e=Spawn 'NORMAL'
  if((Wait-Code $e 18000) -ne 0){throw 'POST_CRASH_RECOVERY_FAILED'}
  if((Start-Count) -ne 3){throw 'POST_CRASH_CHILD_COUNT_WRONG'}
