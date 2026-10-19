@@ -247,7 +247,7 @@ async function main(){
   report.temp_root_removed=!fs.existsSync(root);
  }
  if(!complete||!report.temp_root_removed)throw Error('V837_PROOF_OR_CLEANUP_INCOMPLETE');
- assert.equal(report.checks,18,'V837_CASE_COUNT_DRIFT');
+ assert.equal(report.checks,19,'V837_CASE_COUNT_DRIFT');
  console.log(JSON.stringify(report));
 }
 if(process.argv[2]!=='child')main().catch(e=>{console.error(e.stack||String(e));process.exitCode=1});
