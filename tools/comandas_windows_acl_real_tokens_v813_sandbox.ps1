@@ -8,10 +8,28 @@ param(
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 function Guard-Root([string]$Root){
- if([string]::IsNullOrWhiteSpace($Root) -or
-   [IO.Path]::GetFileName($Root) -notmatch '^vertice_acl_v813_[a-f0-9]{12}$'){
-   throw 'TEMP_SANDBOX_REQUIRED'
+ # V8.33: child principals must repeat the full ephemeral-host invariant
+ # before any filesystem action. A plausible basename is NOT sufficient.
+ if(-not $IsWindows -or $env:GITHUB_ACTIONS -cne 'true' -or
+    $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+    [string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)){throw 'GITHUB_HOSTED_WINDOWS_ONLY'}
+ $runner=[IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\')+'\'
+ if(-not [IO.Directory]::Exists($runner) -or
+    [string]::IsNullOrWhiteSpace($Root)){throw 'RUNNER_TEMP_MISSING'}
+ $full=[IO.Path]::GetFullPath($Root)
+ if(-not $full.StartsWith($runner,[StringComparison]::OrdinalIgnoreCase) -or
+    [IO.Path]::GetFileName($full) -cnotmatch '^vertice_acl_v813_[a-f0-9]{12}$'){
+    throw 'TEMP_SANDBOX_REQUIRED'
  }
+ if($Role -ne 'Parent'){
+  foreach($p in @($full,(Join-Path $full 'approved'),(Join-Path $full 'runtime'))){
+   if(-not(Test-Path -LiteralPath $p -PathType Container) -or
+      ((Get-Item -LiteralPath $p -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){
+      throw 'TEMP_ROOT_REPARSE_OR_MISSING'
+   }
+  }
+ }
+}
 }
 function Rejected([scriptblock]$Action){
  try{ & $Action; return $false } catch {return $true}
@@ -41,9 +59,29 @@ if($Role -ne 'Parent'){
    }
    [IO.File]::WriteAllText((Join-Path $runtime 'reader.json'),($checks|ConvertTo-Json -Compress))
  }else{
-   [IO.File]::WriteAllText($shift,'{"shift":"synthetic_writer"}')
+   # V8.33: version-pinned synthetic writer under an independent ACTUAL token.
+   # No authenticated human approval is created by this fixture.
+   $initial='{"shift":"synthetic_initial"}'
+   $new='{"shift":"synthetic_writer"}'
+   if([IO.File]::ReadAllText($shift) -cne $initial){exit 93}
+   $tmp=Join-Path $approved 'shift.json.pending.v833'
+   $bak=Join-Path $approved 'shift.json.bak.v833'
+   $encoding=[Text.UTF8Encoding]::new($false)
+   $stream=[IO.File]::Open($tmp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+   try{
+    $bytes=$encoding.GetBytes($new)
+    $stream.Write($bytes,0,$bytes.Length)
+    $stream.Flush($true)
+   }finally{$stream.Dispose()}
+   if([IO.File]::ReadAllText($shift) -cne $initial){throw 'V833_STALE_TARGET'}
+   [IO.File]::Replace($tmp,$shift,$bak,$true)
+   if([IO.File]::ReadAllText($shift) -cne $new -or
+      [IO.File]::ReadAllText($bak) -cne $initial){throw 'V833_COMMIT_OR_BACKUP_MISMATCH'}
    [IO.File]::WriteAllText((Join-Path $runtime 'writer.json'),
-     ([ordered]@{separate_token=$true;changed_shift=([IO.File]::ReadAllText($shift) -ceq '{"shift":"synthetic_writer"}');human_authorization_proven=$false}|ConvertTo-Json -Compress))
+     ([ordered]@{separate_token=$true;changed_shift=$true;
+       before_bytes_backed_up=$true;repeat_must_refuse_exit_93=$true;
+       human_authorization_proven=$false;real_production_writer_authorized=$false
+     }|ConvertTo-Json -Compress))
  }
  exit 0
 }
@@ -92,13 +130,13 @@ try{
  $before=(Get-FileHash -LiteralPath $shift -Algorithm SHA256).Hash
  $self=$MyInvocation.MyCommand.Path
  $pwsh=(Get-Process -Id $PID).Path
- function Invoke-Probe([string]$TargetRole,[string]$User,[securestring]$Secret){
+ function Invoke-Probe([string]$TargetRole,[string]$User,[securestring]$Secret,[int]$ExpectedExit=0){
    $cred=[pscredential]::new(("$env:COMPUTERNAME\"+$User),$Secret)
    $params=@('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass',
      '-File',('"' + $self + '"'),'-Role',$TargetRole,
      '-SandboxRoot',('"' + $SandboxRoot + '"'),'-ReaderSid',$ReaderSid,'-WriterSid',$WriterSid) -join ' '
    $proc=Start-Process -FilePath $pwsh -ArgumentList $params -Credential $cred -Wait -PassThru
-   if($proc.ExitCode -ne 0){throw "CHILD_FAILED_$TargetRole"}
+   if($proc.ExitCode -ne $ExpectedExit){throw "CHILD_UNEXPECTED_EXIT_$TargetRole"}
  }
  Invoke-Probe 'Reader' $readerName $readerPassword
  $readerProof=Get-Content -LiteralPath (Join-Path $runtime 'reader.json') -Raw|ConvertFrom-Json
@@ -110,7 +148,21 @@ try{
  Invoke-Probe 'Writer' $writerName $writerPassword
  $writerProof=Get-Content -LiteralPath (Join-Path $runtime 'writer.json') -Raw|ConvertFrom-Json
  if(-not $writerProof.separate_token -or -not $writerProof.changed_shift -or
-    $writerProof.human_authorization_proven){throw 'WRITER_SEPARATION_NOT_PROVEN'}
+    -not $writerProof.before_bytes_backed_up -or
+    -not $writerProof.repeat_must_refuse_exit_93 -or
+    $writerProof.human_authorization_proven -or
+    $writerProof.real_production_writer_authorized){throw 'WRITER_SEPARATION_NOT_PROVEN'}
+ if([IO.File]::ReadAllText((Join-Path $approved.FullName 'shift.json.bak.v833')) -cne
+    '{"shift":"synthetic_initial"}'){throw 'V833_PINNED_BACKUP_NOT_PROVEN'}
+ if([IO.File]::ReadAllText($shift) -cne '{"shift":"synthetic_writer"}'){throw 'V833_CANDIDATE_NOT_COMMITTED'}
+ $committedSha=(Get-FileHash -LiteralPath $shift -Algorithm SHA256).Hash
+ Invoke-Probe 'Writer' $writerName $writerPassword 93
+ if((Get-FileHash -LiteralPath $shift -Algorithm SHA256).Hash -cne $committedSha){
+   throw 'V833_REPLAY_MUTATED_COMMITTED_SHIFT'
+ }
+ if(Test-Path -LiteralPath (Join-Path $approved.FullName 'shift.json.pending.v833') -PathType Leaf){
+   throw 'V833_REPLAY_LEFT_PENDING_FILE'
+ }
  [ordered]@{
    schema='deliveryos.windows-ntfs-real-token.v813'
    status='PASS'
@@ -119,6 +171,10 @@ try{
    reader_could_not_change_approved_shift=$true
    writer_executed_as_second_windows_principal=$true
    writer_changed_synthetic_shift=$true
+   v833_cas_writer_stale_replay_refused=$true
+   v833_predecessor_bytes_backed_up=$true
+   v833_writer_second_token_proven=$true
+   v833_child_temp_root_enforced=$true
    reader_checks=@($readerProof.PSObject.Properties).Count
    human_identity_or_approval_proven=$false
    production_effects=$false
