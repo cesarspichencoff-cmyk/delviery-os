@@ -374,6 +374,28 @@ jobs:
         shell: pwsh
         run: |
           ./tools/comandas_windows_acl_real_tokens_v813_sandbox.ps1
+      - name: V8.34 actual separate-token concurrent writer serialization on disposable Windows
+        shell: pwsh
+        timeout-minutes: 3
+        run: |
+          $lines = @(./tools/comandas_windows_concurrent_shift_v834_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v834.hosted-concurrent-writers"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V834_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.actual_distinct_windows_writer_tokens -ne $true -or
+              $proof.first_writer_held_lock_during_contention -ne $true -or
+              $proof.competing_writer_exit_94 -ne $true -or
+              $proof.stale_revision_exit_93 -ne $true -or
+              $proof.second_current_revision_committed -ne $true -or
+              $proof.predecessor_bytes_backed_up -ne $true -or
+              $proof.cooperative_writers_serialized -ne $true -or
+              $proof.arbitrary_writer_atomic_cas_proven -ne $false -or
+              $proof.crash_recovery_and_external_witness_proven -ne $false -or
+              $proof.human_identity_or_approval_proven -ne $false -or
+              $proof.disposable_runner_only -ne $true -or
+              $proof.production_effects -ne $false) { throw 'V834_PROOF_INCOMPLETE_OR_OVERCLAIMED' }
+          Write-Host $receipt[0]
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
