@@ -17,9 +17,10 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const status=(state,reason,extra={})=>Object.freeze({
  schema:RESULT,status:state,reason,...extra,
  independent_trust_proven:false,human_authenticated:false,
+ real_human_authentication_proven:false,
  clock_authority_proven:false,external_revocation_proven:false,
  power_failure_durability_proven:false,
- operational_shift_authorized:false,
+ operational_shift_authorized:false,shift_update_authorized:false,
  process_crash_persistence_only:true,production_effects:false,
  sql:false,printer:false,teknisa:false,service:false
 });
