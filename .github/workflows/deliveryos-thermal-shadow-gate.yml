@@ -404,6 +404,46 @@ jobs:
               $proof.disposable_runner_only -ne $true -or
               $proof.production_effects -ne $false) { throw 'V834_PROOF_INCOMPLETE_OR_OVERCLAIMED' }
           Write-Host $receipt[0]
+      - name: V8.38 actual Windows reader versus custodian protected nonce ACL (hosted CI only)
+        shell: pwsh
+        timeout-minutes: 3
+        run: |
+          $tokens = $null; $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_windows_nonce_acl_real_tokens_v838_sandbox.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V838_POWERSHELL_PARSE_FAILED' }
+          $lines = @(./tools/comandas_windows_nonce_acl_real_tokens_v838_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v838.actual-token-nonce-acl"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V838_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.reader_actual_windows_principal_distinct -ne $true -or
+              $proof.custodian_actual_windows_principal_distinct -ne $true -or
+              $proof.reader_denied_nonce_creation_when_absent -ne $true -or
+              $proof.reader_can_read_existing_receipt -ne $true -or
+              $proof.reader_cannot_write_receipt -ne $true -or
+              $proof.reader_cannot_delete_receipt -ne $true -or
+              $proof.reader_cannot_rename_receipt -ne $true -or
+              $proof.reader_cannot_forge_sibling_receipt -ne $true -or
+              $proof.custodian_created_receipt_once -ne $true -or
+              $proof.custodian_duplicate_create_new_refused -ne $true -or
+              $proof.receipt_sha_preserved_after_attack_and_replay -ne $true -or
+              $proof.reader_can_write_separate_runtime_evidence -ne $true -or
+              $proof.false_host_and_outside_temp_rejected -ne $true -or
+              $proof.signed_v836_authorization_verified_in_this_test -ne $false -or
+              $proof.real_human_custodian_authenticated -ne $false -or
+              $proof.production_service_token_tested -ne $false -or
+              $proof.independent_failure_domain_proven -ne $false -or
+              $proof.power_loss_durability_proven -ne $false -or
+              $proof.production_shift_authorized -ne $false -or
+              $proof.hosted_runner_only -ne $true -or
+              $proof.temp_root_removed -ne $true -or
+              $proof.temp_users_removed -ne $true -or
+              $proof.sql -ne $false -or $proof.teknisa -ne $false -or
+              $proof.printer -ne $false -or $proof.service -ne $false) {
+            throw 'V838_ACL_PROOF_INCOMPLETE_OR_AUTHORITY_OVERCLAIMED'
+          }
+          Write-Host $receipt[0]
       - name: V8.35 hard-crash shift journal and protected synthetic witness (hosted Windows only)
         shell: pwsh
         timeout-minutes: 4
