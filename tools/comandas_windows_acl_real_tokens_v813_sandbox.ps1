@@ -30,7 +30,6 @@ function Guard-Root([string]$Root){
   }
  }
 }
-}
 function Rejected([scriptblock]$Action){
  try{ & $Action; return $false } catch {return $true}
 }
