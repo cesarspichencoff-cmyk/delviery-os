@@ -35,11 +35,11 @@ function Guard-Sandbox([string]$Root){
 }
 function Sha([string]$File){(Get-FileHash -LiteralPath $File -Algorithm SHA256 -ErrorAction Stop).Hash}
 function FailClosed([string]$Reason){throw $Reason}
-Guard-Sandbox $SandboxRoot
-$approved=Join-Path $SandboxRoot 'approved'
-$runtime=Join-Path $SandboxRoot 'runtime'
-$shift=Join-Path $approved 'shift.json'
 if($Role -eq 'Writer'){
+ Guard-Sandbox $SandboxRoot
+ $approved=Join-Path $SandboxRoot 'approved'
+ $runtime=Join-Path $SandboxRoot 'runtime'
+ $shift=Join-Path $approved 'shift.json'
  $identity=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
  if([string]::IsNullOrWhiteSpace($ExpectedSid) -or
     $identity -cne $ExpectedSid){FailClosed 'V834_WRONG_ACTUAL_WINDOWS_TOKEN'}
@@ -83,6 +83,9 @@ if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrat
 $nonce=[Guid]::NewGuid().ToString('N')
 $SandboxRoot=Join-Path $env:RUNNER_TEMP ('vertice_lock_v834_'+$nonce.Substring(0,12))
 Guard-Sandbox $SandboxRoot
+$approved=Join-Path $SandboxRoot 'approved'
+$runtime=Join-Path $SandboxRoot 'runtime'
+$shift=Join-Path $approved 'shift.json'
 $accounts=[Collections.Generic.List[string]]::new()
 $processes=[Collections.Generic.List[Diagnostics.Process]]::new()
 $removedRoot=$false
