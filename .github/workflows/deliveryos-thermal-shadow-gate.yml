@@ -135,6 +135,8 @@ jobs:
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.36 signed shift-scoped authorization expiry revocation and replay (offline Linux)
         run: node tools/verificar_shift_authorization_v836_offline.cjs
+      - name: V8.37 exclusive nonce use under process race and hard crash (Linux hosted)
+        run: node tools/verificar_shift_nonce_v837_sandbox.cjs
       - name: V8.32 custody evidence policy rejects false authority (Linux synthetic)
         run: node tools/verificar_shift_custody_policy_v832_offline.cjs
       - name: V8.14 exact pinned watcher path move review (no Windows state writes)
@@ -273,6 +275,8 @@ jobs:
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.36 signed shift-scoped authorization expiry revocation and replay (offline Windows)
         run: node tools/verificar_shift_authorization_v836_offline.cjs
+      - name: V8.37 exclusive nonce use under process race and hard crash (Windows hosted)
+        run: node tools/verificar_shift_nonce_v837_sandbox.cjs
       - name: V8.32 custody evidence policy rejects false authority (Windows synthetic)
         run: node tools/verificar_shift_custody_policy_v832_offline.cjs
       - name: V8.32 custody read-only Windows observer parses and never claims approval
