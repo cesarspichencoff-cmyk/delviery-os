@@ -55,7 +55,17 @@ if($Role -eq 'Writer'){
   # Acquiring an exclusive real NTFS FileStream is the serialization gate.
   # Both comparing and replacing are performed WITHIN this lock scope.
   [IO.File]::WriteAllText((Join-Path $runtime ('held-'+$Tag+'.txt')),'LOCK_HELD')
-  if($HoldMilliseconds -gt 0){Start-Sleep -Milliseconds $HoldMilliseconds}
+  # Barrier, not a timing guess: hold real NTFS lock until parent has
+  # OBSERVED the contender's exit. This avoids credential-startup jitter.
+  if($HoldMilliseconds -gt 0){
+   $release=Join-Path $runtime ('release-'+$Tag+'.txt')
+   $wait=[Diagnostics.Stopwatch]::StartNew()
+   while(-not(Test-Path -LiteralPath $release -PathType Leaf) -and
+      $wait.ElapsedMilliseconds -lt 65000){Start-Sleep -Milliseconds 100}
+   if(-not(Test-Path -LiteralPath $release -PathType Leaf)){
+    FailClosed 'V834_PARENT_DID_NOT_RELEASE_BARRIER'
+   }
+  }
   $expected=if($ExpectedRevision -eq 0){'{"revision":0,"value":"initial"}'}else{
     '{"revision":1,"value":"writer_A"}'
   }
@@ -134,7 +144,7 @@ try{
   if(-not $Process.WaitForExit($Ms)){throw 'V834_CHILD_TIMEOUT'}
   return [int]$Process.ExitCode
  }
- $first=Start-Writer $userA $passA $sidA 'A' 0 6500
+ $first=Start-Writer $userA $passA $sidA 'A' 0 1
  $hold=Join-Path $runtime 'held-A.txt'
  $timer=[Diagnostics.Stopwatch]::StartNew()
  while(-not(Test-Path -LiteralPath $hold -PathType Leaf) -and $timer.ElapsedMilliseconds -lt 10000){
@@ -143,7 +153,9 @@ try{
  if(-not(Test-Path -LiteralPath $hold -PathType Leaf)){throw 'V834_FIRST_LOCK_NOT_OBSERVED'}
  if($first.HasExited){throw 'V834_FIRST_WRITER_NOT_CONCURRENT'}
  $second=Start-Writer $userB $passB $sidB 'B' 0 0
- if((Wait-Exit $second 10000) -ne 94){throw 'V834_CONTENDING_TOKEN_DID_NOT_REFUSE_LOCK'}
+ $contenderExit=Wait-Exit $second 35000
+ if($contenderExit -ne 94){throw ('V834_CONTENDING_TOKEN_EXIT_'+$contenderExit)}
+ [IO.File]::WriteAllText((Join-Path $runtime 'release-A.txt'),'RELEASE_AFTER_REFUSAL')
  if((Wait-Exit $first 18000) -ne 0){throw 'V834_FIRST_COMMIT_FAILED'}
  if([IO.File]::ReadAllText($shift) -cne '{"revision":1,"value":"writer_A"}'){
   throw 'V834_FIRST_REVISION_INVALID'
