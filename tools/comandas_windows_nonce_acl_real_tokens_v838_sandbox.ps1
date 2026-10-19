@@ -41,6 +41,11 @@ function Digest([string]$p){(Get-FileHash -LiteralPath $p -Algorithm SHA256 -Err
 function Denied([scriptblock]$op){
  try{& $op;$false}catch [UnauthorizedAccessException]{$true}
  catch [System.Security.SecurityException]{$true}
+ catch [IO.IOException]{
+  # Win32 ERROR_ACCESS_DENIED mapped to HRESULT 0x80070005.
+  # Never turn another IO failure into a claimed permission denial.
+  if($_.Exception.HResult -eq -2147024891){$true}else{throw}
+ }
 }
 function ReceiptBytes(){
  return '{"schema":"deliveryos.comandas.v837.synthetic-nonce-record","authorization_id":"v838_synthetic_auth_001","envelope_sha256":"'+
