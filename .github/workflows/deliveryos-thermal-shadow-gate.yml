@@ -404,6 +404,40 @@ jobs:
               $proof.disposable_runner_only -ne $true -or
               $proof.production_effects -ne $false) { throw 'V834_PROOF_INCOMPLETE_OR_OVERCLAIMED' }
           Write-Host $receipt[0]
+      - name: V8.40 real Windows read-only service SID and candidate ledger DACL inventory (hosted CI)
+        shell: pwsh
+        timeout-minutes: 3
+        run: |
+          $lines = @(./tools/comandas_windows_service_identity_v840_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v840.hosted-readonly-preflight-evidence"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V840_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.parse_ok -ne $true -or
+              $proof.source_mutation_commands_absent -ne $true -or
+              $proof.actual_windows_service_metadata_read -ne $true -or
+              $proof.existing_directory_acl_metadata_read -ne $true -or
+              $proof.absent_service_refused_as_attestation -ne $true -or
+              $proof.absent_protected_ledger_refused_as_attestation -ne $true -or
+              $proof.powershell_51_readonly_parity -ne $true -or
+              $proof.pwsh_7_readonly_parity -ne $true -or
+              $proof.service_state_and_pid_unchanged -ne $true -or
+              $proof.real_production_service_inspected -ne $false -or
+              $proof.actual_production_target_acl_inspected -ne $false -or
+              $proof.actual_service_token_claims_verified -ne $false -or
+              $proof.actual_custodian_identity_verified -ne $false -or
+              $proof.human_signer_verified -ne $false -or
+              $proof.production_shift_authorized -ne $false -or
+              $proof.persistent_files_written -ne $false -or
+              $proof.service_changed -ne $false -or
+              $proof.acl_changed -ne $false -or
+              $proof.printer_called -ne $false -or
+              $proof.sql_queried -ne $false -or
+              $proof.teknisa_contacted -ne $false -or
+              $proof.hosted_ephemeral_only -ne $true) {
+            throw 'V840_READONLY_SCOPE_OR_EVIDENCE_FAIL'
+          }
+          Write-Host $receipt[0]
       - name: V8.39 integrated signed nonce and Windows real-token separation (hosted CI only)
         shell: pwsh
         timeout-minutes: 4
