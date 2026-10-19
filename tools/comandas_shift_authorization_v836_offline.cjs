@@ -36,8 +36,10 @@ function payloadBytes(record){
   JSON.stringify(fields.map(k=>[k,record[k]])),'utf8');
 }
 function keyDigest(publicKey){
+ const key=publicKey instanceof crypto.KeyObject?publicKey:crypto.createPublicKey(publicKey);
+ if(key.type!=='public'||key.asymmetricKeyType!=='ed25519')throw Error('V836_ED25519_PUBLIC_KEY_REQUIRED');
  return crypto.createHash('sha256').update(
-  crypto.createPublicKey(publicKey).export({type:'spki',format:'der'})).digest('hex');
+  key.export({type:'spki',format:'der'})).digest('hex');
 }
 function evaluate(record,trust){
  const reasons=[];
