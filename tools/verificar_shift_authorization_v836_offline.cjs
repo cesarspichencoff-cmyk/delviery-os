@@ -131,6 +131,7 @@ check('pure verifier requires no filesystem',()=>{
  try{fs.readFileSync=()=>{throw Error('DISK_FORBIDDEN')};review(signed,trust)}
  finally{fs.readFileSync=read}
 });
+assert.equal(count,55,'V836_ADVERSARIAL_CASE_COUNT_DRIFT');
 console.log(JSON.stringify({
  schema:'deliveryos.comandas.v836.signed-shift-authorization-adversarial',
  status:'PASS',checks:count,keys_disposable_in_memory:true,
