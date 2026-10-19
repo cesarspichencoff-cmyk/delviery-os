@@ -58,7 +58,8 @@ if($Role -ne 'Parent'){
    }
    [IO.File]::WriteAllText((Join-Path $runtime 'reader.json'),($checks|ConvertTo-Json -Compress))
  }else{
-   # V8.33: version-pinned synthetic writer under an independent ACTUAL token.
+   # V8.33: compare-then-file-replace under a second Windows token.
+   # Sequential stale replay is rejected; concurrent atomic CAS NOT proven.
    # No authenticated human approval is created by this fixture.
    $initial='{"shift":"synthetic_initial"}'
    $new='{"shift":"synthetic_writer"}'
@@ -79,7 +80,7 @@ if($Role -ne 'Parent'){
    [IO.File]::WriteAllText((Join-Path $runtime 'writer.json'),
      ([ordered]@{separate_token=$true;changed_shift=$true;
        before_bytes_backed_up=$true;repeat_must_refuse_exit_93=$true;
-       human_authorization_proven=$false;real_production_writer_authorized=$false
+       human_authorization_proven=$false;true_concurrent_cas_proven=$false;real_production_writer_authorized=$false
      }|ConvertTo-Json -Compress))
  }
  exit 0
@@ -93,6 +94,14 @@ if(-not [IO.Directory]::Exists($runnerTemp)){throw 'RUNNER_TEMP_MISSING'}
 $nonce=[guid]::NewGuid().ToString('N')
 $SandboxRoot=Join-Path $runnerTemp ('vertice_acl_v813_'+$nonce.Substring(0,12))
 Guard-Root $SandboxRoot
+ # Negative boundary checks: never inspect or write the outside path.
+ $outside=Join-Path $env:USERPROFILE ('vertice_acl_v813_'+$nonce.Substring(0,12))
+ if(-not (Rejected { Guard-Root $outside })){throw 'V833_OUTSIDE_RUNNER_TEMP_ACCEPTED'}
+ $previousAction=$env:GITHUB_ACTIONS
+ try{
+   $env:GITHUB_ACTIONS='false'
+   if(-not (Rejected { Guard-Root $SandboxRoot })){throw 'V833_UNTRUSTED_RUNNER_ACCEPTED'}
+ }finally{$env:GITHUB_ACTIONS=$previousAction}
 $readerName='vr813'+$nonce.Substring(0,9)
 $writerName='vw813'+$nonce.Substring(0,9)
 $created=[Collections.Generic.List[string]]::new()
@@ -149,6 +158,7 @@ try{
  if(-not $writerProof.separate_token -or -not $writerProof.changed_shift -or
     -not $writerProof.before_bytes_backed_up -or
     -not $writerProof.repeat_must_refuse_exit_93 -or
+    $writerProof.true_concurrent_cas_proven -or
     $writerProof.human_authorization_proven -or
     $writerProof.real_production_writer_authorized){throw 'WRITER_SEPARATION_NOT_PROVEN'}
  if([IO.File]::ReadAllText((Join-Path $approved.FullName 'shift.json.bak.v833')) -cne
@@ -170,7 +180,8 @@ try{
    reader_could_not_change_approved_shift=$true
    writer_executed_as_second_windows_principal=$true
    writer_changed_synthetic_shift=$true
-   v833_cas_writer_stale_replay_refused=$true
+   v833_sequential_stale_replay_refused=$true
+   v833_atomic_compare_and_swap_proven=$false
    v833_predecessor_bytes_backed_up=$true
    v833_writer_second_token_proven=$true
    v833_child_temp_root_enforced=$true
