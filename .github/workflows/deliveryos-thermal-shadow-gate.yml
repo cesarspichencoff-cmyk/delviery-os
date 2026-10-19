@@ -396,6 +396,36 @@ jobs:
               $proof.disposable_runner_only -ne $true -or
               $proof.production_effects -ne $false) { throw 'V834_PROOF_INCOMPLETE_OR_OVERCLAIMED' }
           Write-Host $receipt[0]
+      - name: V8.35 hard-crash shift journal and protected synthetic witness (hosted Windows only)
+        shell: pwsh
+        timeout-minutes: 4
+        run: |
+          $tokens = $null; $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_windows_shift_crash_v835_sandbox.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V835_PARSER_ERRORS' }
+          $lines = @(./tools/comandas_windows_shift_crash_v835_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v835.hosted-shift-crash-evidence"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V835_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 6 -or
+              $proof.checks -ne 23 -or
+              $proof.hard_child_crashes_at_intent_stage_swap -ne $true -or
+              $proof.actual_windows_writer_witness_write_denied -ne $true -or
+              $proof.journal_pending_or_ambiguous_states_hold -ne $true -or
+              $proof.corrupt_predecessor_bytes_hold -ne $true -or
+              $proof.replay_after_crash_refused -ne $true -or
+              $proof.repeated_observation_read_only -ne $true -or
+              $proof.self_heal_or_auto_rollback_executed -ne $false -or
+              $proof.independent_human_witness_proven -ne $false -or
+              $proof.production_cutover_authorized -ne $false -or
+              $proof.hosted_ephemeral_only -ne $true -or
+              $proof.temp_root_removed -ne $true -or
+              $proof.temp_account_removed -ne $true -or
+              $proof.service_changed -ne $false -or
+              $proof.teknisa -ne $false -or $proof.sql -ne $false -or
+              $proof.printer -ne $false) { throw 'V835_PROOF_FAILURE_OR_OVERCLAIM' }
+          Write-Host $receipt[0]
       - name: Reject malformed quantities on Windows
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
