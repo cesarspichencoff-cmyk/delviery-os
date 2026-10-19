@@ -328,6 +328,10 @@ jobs:
           # Asserted HOLD is the expected safety result, not a test failure.
           # Clear the inherited native exit status ONLY after all assertions pass.
           exit 0
+      - name: V8.30 integrated hosted Windows one-child cycle, lock, crash and orphan recovery (synthetic)
+        shell: pwsh
+        timeout-minutes: 3
+        run: ./tools/comandas_windows_supervisor_cycle_v830_sandbox.ps1
       - name: V8.25 disposable Windows actual pinned backup-byte restoration after crashes
         shell: pwsh
         run: |
