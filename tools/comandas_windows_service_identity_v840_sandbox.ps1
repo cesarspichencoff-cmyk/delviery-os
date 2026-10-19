@@ -68,8 +68,7 @@ if($missing.ledger_directory_status -cne 'ABSENT_OR_NOT_DIRECTORY' -or
    $missing.production_shift_authorized -ne $false){
  throw 'V840_NONEXISTENT_LEDGER_FALSE_SUCCESS'
 }
-$ps51=@(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
- -File $file -ServiceName 'EventLog' -LedgerDirectory $env:RUNNER_TEMP)
+$ps51=@(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $file -ServiceName 'EventLog' -LedgerDirectory $env:RUNNER_TEMP)
 if($LASTEXITCODE -ne 0 -or $ps51.Count -ne 1){
  throw 'V840_POWERSHELL_51_EXECUTION_FAILED'
 }
