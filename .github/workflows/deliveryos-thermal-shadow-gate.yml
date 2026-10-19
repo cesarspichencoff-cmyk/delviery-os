@@ -404,6 +404,49 @@ jobs:
               $proof.disposable_runner_only -ne $true -or
               $proof.production_effects -ne $false) { throw 'V834_PROOF_INCOMPLETE_OR_OVERCLAIMED' }
           Write-Host $receipt[0]
+      - name: V8.39 integrated signed nonce and Windows real-token separation (hosted CI only)
+        shell: pwsh
+        timeout-minutes: 4
+        run: |
+          $tokens = $null; $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_windows_signed_nonce_integration_v839_sandbox.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V839_POWERSHELL_PARSER_FAILURE' }
+          node --check tools/comandas_windows_signed_nonce_v839_child.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'V839_NODE_PARSER_FAILURE' }
+          $lines = @(./tools/comandas_windows_signed_nonce_integration_v839_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v839.integrated-signed-nonce-acl"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V839_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.signer_private_key_written_to_disk -ne $false -or
+              $proof.signed_v836_verified_under_custodian_token -ne $true -or
+              $proof.signed_v836_invalid_expired_revoked_stale_all_hold -ne $true -or
+              $proof.v837_actual_module_created_once_under_custodian_token -ne $true -or
+              $proof.reader_actual_sid_distinct_from_custodian -ne $true -or
+              $proof.reader_cannot_reserve_before_authorization -ne $true -or
+              $proof.reader_cannot_forge_trust_fixture -ne $true -or
+              $proof.custodian_cannot_forge_trust_fixture -ne $true -or
+              $proof.reader_cannot_write_delete_rename_nonce -ne $true -or
+              $proof.reader_can_read_nonce_without_modifying -ne $true -or
+              $proof.both_tokens_cannot_replay_same_authorization -ne $true -or
+              $proof.receipt_and_fixture_sha_unchanged -ne $true -or
+              $proof.exactly_one_reserved_nonce_file -ne $true -or
+              $proof.all_readers_only_review_no_shift_activation -ne $true -or
+              $proof.local_test_fixture_only -ne $true -or
+              $proof.real_custodian_human_authenticated -ne $false -or
+              $proof.independent_time_and_revocation_proven -ne $false -or
+              $proof.independent_external_witness_proven -ne $false -or
+              $proof.production_reader_sid_proven -ne $false -or
+              $proof.power_loss_durability_proven -ne $false -or
+              $proof.actual_shift_updated -ne $false -or
+              $proof.production_effects -ne $false -or
+              $proof.teknisa_contacted -ne $false -or
+              $proof.sql -ne $false -or $proof.printer -ne $false -or
+              $proof.service -ne $false -or
+              $proof.temp_root_removed -ne $true -or
+              $proof.temp_accounts_removed -ne $true) { throw 'V839_INTEGRATED_PROOF_INCOMPLETE' }
+          Write-Host $receipt[0]
       - name: V8.38 actual Windows reader versus custodian protected nonce ACL (hosted CI only)
         shell: pwsh
         timeout-minutes: 3
