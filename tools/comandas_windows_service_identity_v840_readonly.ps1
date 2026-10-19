@@ -98,12 +98,12 @@ if(-not [string]::IsNullOrWhiteSpace($LedgerDirectory)){
     $acl=Get-Acl -LiteralPath $LedgerDirectory -ErrorAction Stop
     $report.ledger_acl_read=$true
     $report.ledger_inherits_acls=-not [bool]$acl.AreAccessRulesProtected
-    $writeMask=([long][IO.FileSystemRights]::Write) -bor
-      ([long][IO.FileSystemRights]::Modify) -bor
-      ([long][IO.FileSystemRights]::Delete) -bor
-      ([long][IO.FileSystemRights]::DeleteSubdirectoriesAndFiles) -bor
-      ([long][IO.FileSystemRights]::ChangePermissions) -bor
-      ([long][IO.FileSystemRights]::TakeOwnership)
+    $writeMask=([long][Security.AccessControl.FileSystemRights]::Write) -bor
+      ([long][Security.AccessControl.FileSystemRights]::Modify) -bor
+      ([long][Security.AccessControl.FileSystemRights]::Delete) -bor
+      ([long][Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles) -bor
+      ([long][Security.AccessControl.FileSystemRights]::ChangePermissions) -bor
+      ([long][Security.AccessControl.FileSystemRights]::TakeOwnership)
     $readerAllow=$false;$readerDeny=$false;$broadAllow=$false
     $broad=@('S-1-1-0','S-1-5-11','S-1-5-32-545')
     foreach($rule in $acl.Access){
