@@ -6,12 +6,13 @@
   "scope": "COMANDAS_THERMICAS_ONLY",
   "preferred_future_candidate": {
     "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
-    "git_blob_sha1": "f7f06fd4827d577bc3fc83bb2d04f9c17141bdc4",
+    "git_blob_sha1": "652aae75b3aac314cb0871913658785932e5370a",
     "code_ready_only": true,
     "installed": false,
     "print_authorized": false,
-    "previous_audited_blob_sha1": "0fe817bd07fd13a6df5cf19d4e01c5e28ae77c50",
-    "quantity_hardening": "V7.18_RAW_QUANTITY_MATCH_V68_REJECT_BEFORE_PACKAGING"
+    "previous_audited_blob_sha1": "f7f06fd4827d577bc3fc83bb2d04f9c17141bdc4",
+    "quantity_hardening": "V7.18_RAW_QUANTITY_MATCH_V68_REJECT_BEFORE_PACKAGING",
+    "upstream_source_blocker_hardening": "V8.44_PRESERVE_EVENT_AND_SERVICE_BLOCKERS_EVEN_READY_TRUE"
   },
   "deprecated_do_not_install": [
     {
@@ -35,7 +36,7 @@
   "requires_before_any_real_cutover": [
     "AUTHORIZED_SERVICE_IDENTITY_AND_PERMISSIONS",
     "EIGHT_REAL_RULE_FILES_PRECHECK_WITH_CANONICAL_ENGINE_SHA",
-    "CURRENT_HUMAN_SHIFT_APPROVAL_EFFECTIVE_FROM_TIMESTAMP",
+    "SOURCE_BOUND_ROUTING_TO_CORRECT_STATION_PROVEN_WITHOUT_SHIFT_APPROVAL",
     "ALL_CURRENT_SOURCE_REASONS_RESOLVED",
     "ORDER_EXACT_SNAPSHOT_OBSERVATIONS_JOIN",
     "PHYSICAL_BOX_BAG_KIT_FACTS_PROVEN",
