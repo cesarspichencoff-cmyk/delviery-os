@@ -262,7 +262,12 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     // Do not produce a fictitious item, box or kit from corrupted raw input.
     continue;
   }
-  const id = cacheByProduct.get(String(raw.CDPRODUTO));
+  // Every raw line needs its own original product identity.
+  if(typeof raw?.CDPRODUTO!=="string" || !raw.CDPRODUTO.trim()) {
+    blockers.push("PACKAGING_SOURCE_PRODUCT_ID_MISSING:" + String(index+1));
+    continue;
+  }
+  const id = cacheByProduct.get(raw.CDPRODUTO);
   const code = canonical(raw.CDARVPROD);
   if (!id) {
     blockers.push("IDENTITY_NOT_FOUND_" + raw.CDPRODUTO);
@@ -341,8 +346,13 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   const packagingClassification = classificationFromPackagingFactStrict(name, routes);  const routedToCombinados = routes.includes("00009") || routes.includes("00003");
 
   if (alias && String(alias.canonical_code || "").trim() === code) {
-    classification = alias.classification;
-    classificationSource = "HUMAN_CONFIRMED_NAME_ALIAS_2026_10_05";
+    // A human alias may exist but still require review; absence is NOT false.
+    if(alias.classification?.review_required === false) {
+      classification = alias.classification;
+      classificationSource = "HUMAN_CONFIRMED_NAME_ALIAS_2026_10_05";
+    } else blockers.push("ALIAS_CLASSIFICATION_UNREVIEWED_" + code);
+  } else if (alias) {
+    blockers.push("ALIAS_CANONICAL_IDENTITY_MISMATCH_" + code);
   } else if (isExec(n) && routedToCombinados) {
     classification = {
       family: "combinado",
@@ -361,7 +371,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     classificationSource = "ACADEMIA_OPERATIONAL_COMBO_BRIDGE_2026_10_07";
   } else {
     const exact = academyByName.get(n);
-    if (exact?.classification && !exact.classification.review_required) {
+    if (exact?.classification?.review_required === false) {
       classification = exact.classification;
       classificationSource = "ACADEMIA_EXACT_NAME";
     } else if (
@@ -370,7 +380,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       (sameSet(routes, ["00009"]) || sameSet(routes, ["00003"]))
     ) {
       const academyVariant = academyByName.get("sashimi tataki");
-      if (academyVariant?.classification && !academyVariant.classification.review_required) {
+      if (academyVariant?.classification?.review_required === false) {
         classification = academyVariant.classification;
         classificationSource = "ACADEMIA_EXACT_VARIANT_CANONICAL_ROUTE_2026_10_07";
       } else {
@@ -382,7 +392,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       sameSet(routes, ["00007"])
     ) {
       const academyVariant = academyByName.get("sprite 350ml");
-      if (academyVariant?.classification && !academyVariant.classification.review_required) {
+      if (academyVariant?.classification?.review_required === false) {
         classification = academyVariant.classification;
         classificationSource = "ACADEMIA_EXACT_VARIANT_CANONICAL_ROUTE_2026_10_07";
       } else {
@@ -400,8 +410,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
         review_required: false
       };
       classificationSource = "LIVE_EXACT_ALIAS_2026_10_05";
-    } else if ((!exact?.classification || exact.classification.review_required !== true)
-               && packagingClassification && routingStatus === "ROUTED") {
+    } else if (!exact && packagingClassification && routingStatus === "ROUTED") {
       classification = packagingClassification;
       classificationSource = "ACADEMIA_DOCUMENTED_CATEGORY_EXACT_NAME_AND_ROUTED_STATION_2026_10_07";
     } else if (routingStatus === "NO_OWN_PRODUCTION_TICKET") {
@@ -431,19 +440,49 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   };
   items.push(item);
 
-  if (classification) {
+  if (classification?.review_required === false &&
+      typeof classificationSource === "string" && !!classificationSource &&
+      !!name && typeof classification.family === "string" &&
+      !!classification.family.trim()) {
     packEntries.push({ product: { nome: name, classification }, quantity });
+  } else {
+    blockers.push("PACKAGING_INPUT_CLASSIFICATION_NOT_PROVEN:" + String(index+1));
   }
 }
 
 let packaging = null;
 let kits = null;
-// A partially valid order can NEVER yield apparently complete packaging/kits.
-if (packEntries.length && !blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:"))) {
+// V7.41: neither motor may receive a filtered subset of the original order.
+// Preserve original line order and distinguish two rows of the same product.
+const sourceRows = Array.isArray(event.order?.items) ? event.order.items : [];
+const lineIds = sourceRows.map(row => row?.NRPRODCOMVEN);
+const sourceLinesUnique = sourceRows.length > 0 &&
+  lineIds.every(v => typeof v === "string" && /^\d{1,6}$/.test(v)) &&
+  new Set(lineIds).size === lineIds.length;
+const packInputExact = sourceLinesUnique && sourceRows.length === items.length &&
+  items.length === packEntries.length &&
+  items.every((item,i) => {
+    const original = sourceRows[i];
+    const input = packEntries[i];
+    return item.item_index === i+1 &&
+      item.CDPRODUTO === original.CDPRODUTO &&
+      item.canonical_code === canonical(original.CDARVPROD) &&
+      item.quantity === validRawQuantityV718(original.QTPRODCOMVEN) &&
+      item.product_name === input.product.nome &&
+      item.classification === input.product.classification &&
+      item.classification?.review_required === false &&
+      typeof item.classification_source === "string" &&
+      !!item.classification_source &&
+      input.quantity === item.quantity;
+  });
+if (!sourceLinesUnique) blockers.push("PACKAGING_INPUT_SOURCE_LINE_IDS_UNPROVEN");
+if (packInputExact) {
   packaging = P.packComanda(packEntries);
   kits = P.kitVerdict(packEntries);
-} else if (blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:"))) {
-  blockers.push("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY");
+} else {
+  blockers.push("PACKAGING_SKIPPED_INCOMPLETE_OR_UNREVIEWED_ORDER");
+  if (blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:")))
+    blockers.push("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY");
 }
 
 // BEGIN V712 HUMAN OVERRIDE GATE — no future order may inherit a historical override
