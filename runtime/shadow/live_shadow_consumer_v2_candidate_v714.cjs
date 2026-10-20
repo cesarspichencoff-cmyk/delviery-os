@@ -322,7 +322,8 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       typeof p.printer_code !== "string" || !/^[0-9]{5}$/.test(p.printer_code) ||
       p.printer_code !== rc ||
       typeof p.printer_name !== "string" || !p.printer_name.trim() ||
-      typeof p.printer_ip !== "string" || !p.printer_ip.trim());
+      typeof p.printer_ip !== "string" || !p.printer_ip.trim() ||
+      p.printer_ip !== p.printer_ip.trim());
   })) blockers.push("PRINTER_TARGET_INCOMPLETE_" + code);
 
   let classification = null;
