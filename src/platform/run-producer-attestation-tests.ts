@@ -818,12 +818,22 @@ test("PA28 plano de registro recusa real, tipo desconhecido, validade ruim, chav
 test("PA29 nenhuma chave privada versionada (R11): chave de laboratório não vira autoridade", () => {
   const arquivos = execFileSync("git", ["ls-files", "src", "tools", "deploy", "config", "tests", "docs"], { encoding: "utf8" })
     .split("\n").filter((f) => /\.(ts|js|mjs|cjs|json|ya?ml|sql|md|env|txt|pem|key)$/.test(f));
+  // Forme os marcadores em tempo de execucao: se forem literais neste
+  // arquivo, a busca em git ls-files acusara o proprio detector.
+  // A varredura continua incluindo ESTE teste e todos os caminhos originais.
+  const pem = new RegExp(["-{5}", "BEGIN ", "(?:ENCRYPTED |RSA |EC |OPENSSH )?", "PRIVATE KEY", "-{5}"].join(""));
+  const prefixoEd25519 = ["MC4CAQAwBQYDK2Vw", "BCIEI"].join("");
+  assert.equal(pem.test(["-----", "BEGIN ", "PRIVATE KEY", "-----"].join("")), true);
+  assert.equal(pem.test(["-----", "BEGIN ", "ENCRYPTED PRIVATE KEY", "-----"].join("")), true);
+  assert.equal(pem.test(["-----", "BEGIN ", "OPENSSH PRIVATE KEY", "-----"].join("")), true);
+  assert.equal(prefixoEd25519.length, 21);
   const suspeitos: string[] = [];
   for (const f of arquivos) {
     let txt = "";
     try { txt = readFileSync(f, "utf8"); } catch { continue; }
-    // PKCS#8 Ed25519 em base64 começa sempre por este prefixo.
-    if (/-----BEGIN (ENCRYPTED )?PRIVATE KEY-----/.test(txt) || txt.includes("MC4CAQAwBQYDK2VwBCIEI")) suspeitos.push(f);
+    // PKCS#8 Ed25519 base64 e PEM: detecta segredo completo, nao a descricao
+    // em texto do detector; nenhum caminho e excluido por conveniencia.
+    if (pem.test(txt) || txt.includes(prefixoEd25519)) suspeitos.push(f);
   }
   assert.deepEqual(suspeitos, []);
 });

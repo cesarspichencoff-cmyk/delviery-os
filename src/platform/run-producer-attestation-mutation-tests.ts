@@ -90,9 +90,18 @@ function aplicar(edicoes: readonly Edicao[]): Aplicada[] {
         feitas.push({ arquivo: e.arquivo, original, hash: sha(original) });
       }
       const atual = readFileSync(caminho, "utf8");
-      const n = atual.split(e.de).length - 1;
+      // No Windows, fontes Git podem estar em CRLF; mutacoes foram declaradas
+      // com LF. Adaptar SOMENTE a ancora e a substituicao, sem reformatar o
+      // arquivo nem relaxar a contagem exata de uma ocorrencia.
+      const crlf = atual.includes("\r\n");
+      const normalizar = (valor: string) => crlf
+        ? valor.replace(/\r?\n/g, "\r\n")
+        : valor.replace(/\r\n/g, "\n");
+      const de = normalizar(e.de);
+      const para = normalizar(e.para);
+      const n = atual.split(de).length - 1;
       assert.equal(n, 1, `MUTACAO NAO APLICADA: âncora com ${n} ocorrência(s) em ${e.arquivo}: ${e.de.slice(0, 70)}`);
-      const novo = atual.replace(e.de, () => e.para);
+      const novo = atual.replace(de, () => para);
       assert.notEqual(novo, atual, `MUTACAO NAO APLICADA: a troca não mudou ${e.arquivo}`);
       writeFileSync(caminho, novo);
       assert.equal(readFileSync(caminho, "utf8"), novo, `MUTACAO NAO APLICADA: o disco não confirmou ${e.arquivo}`);
