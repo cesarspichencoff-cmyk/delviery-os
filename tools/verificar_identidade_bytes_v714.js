@@ -173,6 +173,64 @@ try{
     JSON.stringify(out.blocking_reasons));
   assert.equal(out.ready,false);assert.equal(out.effects.print,false);
  });
+ check("V8.45 physical route code collisions never silently pick an address",()=>{
+  const routingFile=path.join(folder,"routing.json");
+  const printerFile=path.join(folder,"printer-map.json");
+  const prevRouting=fs.readFileSync(routingFile),prevPrinters=fs.readFileSync(printerFile);
+  const printer=(code,label)=>({printer_code:code,printer_name:"SYNTHETIC_"+label,
+    printer_ip:"127.0.0."+label});
+  const a=printer("00009","1"),b=printer("00003","2");
+  const decide=(routes,mappings,service)=>{
+   fs.writeFileSync(routingFile,JSON.stringify({
+     schema:"deliveryos.odhen.product-routing.compact.v1",
+     products:{[productCode]:routes}}));
+   fs.writeFileSync(printerFile,JSON.stringify({
+     schema:"deliveryos.runtime-printer-map.v1",mappings}));
+   // Actual child process and exact same fake event shape as V7.14 tests.
+   const {event}=run([],[],"1.000",undefined,true);
+   event.ready_for_downstream_shadow=true;
+   event.blockers=[];
+   event.service_resolution={...event.service_resolution,service,blockers:[]};
+   const eventFile=path.join(folder,"event.json");
+   fs.writeFileSync(eventFile,JSON.stringify(event));
+   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),eventFile],
+     {encoding:"utf8",timeout:10000});
+   assert.equal(p.status,5,p.stderr);
+   assert.equal(p.stderr,"");
+   const result=JSON.parse(p.stdout);
+   assert.equal(result.ready,false);
+   assert.equal(result.effects.print,false);
+   assert.equal(result.effects.spooler_write,false);
+   return result;
+  };
+  const printerCodes=r=>r.items[0].targets.map(x=>x.printer_code);
+  const blockers=r=>r.blocking_reasons;
+  try{
+   const lunch=decide(["00009","00003"],[a,b],"LUNCH");
+   assert.deepEqual(printerCodes(lunch),["00009"]);
+   assert.ok(!blockers(lunch).some(x=>x.startsWith("PRINTER_CODE_AMBIGUOUS_")));
+   const dinner=decide(["00009","00003"],[a,b],"DINNER");
+   assert.deepEqual(printerCodes(dinner),["00003"]);
+   const unknown=decide(["00009","00003"],[a,b],null);
+   assert.ok(blockers(unknown).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
+   const duplicatedRoute=decide(["00009","00009"],[a],"LUNCH");
+   assert.ok(blockers(duplicatedRoute).includes("ROUTE_DUPLICATED_FOR_PRODUCT_"+productCode));
+   const duplicatedPrinter=decide(["00009"],[a,printer("00009","3")],"LUNCH");
+   assert.ok(blockers(duplicatedPrinter).includes("PRINTER_CODE_AMBIGUOUS_"+productCode));
+   assert.equal(duplicatedPrinter.items[0].targets[0].printer_ip,"127.0.0.1",
+     "first record remains only for audit; last entry must not replace it");
+   const sameDuplicate=decide(["00009"],[a,{...a}],"LUNCH");
+   assert.ok(blockers(sameDuplicate).includes("PRINTER_CODE_AMBIGUOUS_"+productCode));
+   const missing=decide(["00009","00003"],[a],"DINNER");
+   assert.ok(blockers(missing).includes("PRINTER_MAP_MISSING_"+productCode));
+   const unrelated=decide(["00009"],[a,b,{...b}],"LUNCH");
+   assert.ok(!blockers(unrelated).includes("PRINTER_CODE_AMBIGUOUS_"+productCode),
+     "unused duplicate code should not manufacture a failure for this item");
+  }finally{
+   fs.writeFileSync(routingFile,prevRouting);
+   fs.writeFileSync(printerFile,prevPrinters);
+  }
+ });
  check("V7.14 legacy exact-sequence override is blocked without snapshot binding",()=>{
   const r=run([baseOverride]);
   assert.ok(r.blocking_reasons.includes("HUMAN_ORDER_OVERRIDE_NOT_BOUND_TO_EXACT_SNAPSHOT"));
