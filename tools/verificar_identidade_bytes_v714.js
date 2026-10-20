@@ -173,7 +173,7 @@ try{
     JSON.stringify(out.blocking_reasons));
   assert.equal(out.ready,false);assert.equal(out.effects.print,false);
  });
- check("V8.45/V8.46 route collisions and incomplete printer endpoints fail closed",()=>{
+ check("V8.45/V8.46 logical printer identity versus physical endpoint boundary",()=>{
   const routingFile=path.join(folder,"routing.json");
   const printerFile=path.join(folder,"printer-map.json");
   const prevRouting=fs.readFileSync(routingFile),prevPrinters=fs.readFileSync(printerFile);
@@ -226,19 +226,22 @@ try{
    const unrelated=decide(["00009"],[a,b,{...b}],"LUNCH");
    assert.ok(!blockers(unrelated).includes("PRINTER_CODE_AMBIGUOUS_"+productCode),
      "unused duplicate code should not manufacture a failure for this item");
+   // Semantic receipt previews are allowed without a physical IP, but
+   // are NEVER print-authorized. Logical names/codes must remain complete.
    const addressCases=[
-    {name:"missing-ip",mapping:{printer_code:"00009",printer_name:"TEST"}},
-    {name:"blank-ip",mapping:{...a,printer_ip:"  "}},
-    {name:"spaced-ip",mapping:{...a,printer_ip:" 127.0.0.1 "}},
-    {name:"empty-name",mapping:{...a,printer_name:""}},
-    {name:"blank-name",mapping:{...a,printer_name:"   "}},
-    {name:"missing-name",mapping:{printer_code:"00009",printer_ip:"127.0.0.1"}},
+    {name:"missing-ip",mapping:{printer_code:"00009",printer_name:"TEST"},invalid:false},
+    {name:"blank-ip",mapping:{...a,printer_ip:"  "},invalid:false},
+    {name:"spaced-ip",mapping:{...a,printer_ip:" 127.0.0.1 "},invalid:false},
+    {name:"empty-name",mapping:{...a,printer_name:""},invalid:true},
+    {name:"blank-name",mapping:{...a,printer_name:"   "},invalid:true},
+    {name:"missing-name",mapping:{printer_code:"00009",printer_ip:"127.0.0.1"},invalid:true},
    ];
    for(const c of addressCases){
     const out=decide(["00009"],[c.mapping],"LUNCH");
-    assert.ok(blockers(out).includes("PRINTER_TARGET_INCOMPLETE_"+productCode),
-      c.name+" "+JSON.stringify(blockers(out)));
+    assert.equal(blockers(out).includes("PRINTER_TARGET_INCOMPLETE_"+productCode),
+      c.invalid,c.name+" "+JSON.stringify(blockers(out)));
     assert.equal(out.effects.print,false,c.name);
+    assert.equal(out.effects.spooler_write,false,c.name);
    }
    for(const address of ["127.0.0.1","sushi-printer.internal","::1"]){
     const out=decide(["00009"],[{...a,printer_ip:address}],"LUNCH");
