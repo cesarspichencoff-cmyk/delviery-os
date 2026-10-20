@@ -52,6 +52,8 @@ jobs:
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
+      - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
+        run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
       - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
         run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
       - name: Validate GP iFood passive Windows probe PowerShell syntax without running
@@ -258,6 +260,8 @@ jobs:
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
+      - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
+        run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
       - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
         run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
       - name: Validate GP iFood passive Windows probe PowerShell syntax without running
