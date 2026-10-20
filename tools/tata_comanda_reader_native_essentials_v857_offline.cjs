@@ -60,6 +60,12 @@ function validDate(v){
  !Number.isNaN(Date.parse(d+"T00:00:00Z"))&&
  new Date(d+"T00:00:00Z").toISOString().slice(0,10)===d?d:null;
 }
+function canonicalProductCode(value){
+ const v=clean(value).toUpperCase().replace(/\\./g,"");
+ if(!/^[A-Z0-9]{10}$/.test(v))return null;
+ return [v.slice(0,1),v.slice(1,3),v.slice(3,5),
+  v.slice(5,8),v.slice(8,10)].join(".");
+}
 function parsedQuantity(raw){
  if(typeof raw!=="string"||!/^0*[1-9]\d*(?:\.0+)?$/.test(raw))return null;
  const n=Number(raw);return Number.isSafeInteger(n)&&n>0?n:null;
@@ -83,7 +89,7 @@ function projectReaderEssentials(input){
  const key=[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join("|");
  if(!day||![o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].every(safe)||
    !/^\d{1,12}$/.test(clean(o.NRCOMANDAEXT))||
-   o.IDORGCMDVENDA!=="DLV_IFO"||e.order_key!==key||
+   o.IDORGCMDVENDA!=="DLV_IFO"||o.IDSTCOMANDA!=="A"||e.order_key!==key||
    d.order_key!==key||d.ifood_sequence!==o.NRCOMANDAEXT||
    d.teknisa_sequence!==o.NRCOMANDA||
    d.snapshot_hash!==e.snapshot_hash||!SHA.test(e.snapshot_hash))
@@ -132,6 +138,8 @@ function projectReaderEssentials(input){
    !safe(raw.CDPRODUTO)||!safe(x.product_name)||
    x.product_name.toUpperCase()==="A DEFINIR"||
    x.item_index!==i+1||raw.CDPRODUTO!==x.CDPRODUTO||
+   raw.IDSTPRCOMVEN!=="A"||
+   canonicalProductCode(raw.CDARVPROD)!==x.canonical_code||
    qty===null||qty!==x.quantity||!safe(x.canonical_code))
    return deny("ITEM_IDENTITY_NAME_OR_QUANTITY_MISMATCH");
   seen.add(raw.NRPRODCOMVEN);
