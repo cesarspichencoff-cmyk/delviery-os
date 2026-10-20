@@ -32,6 +32,13 @@ Não pressupor que o horário da comanda automaticamente determina `LUNCH`/`DINN
 - A suíte V8.42 de aprovação humana foi retirada do CI em Linux e Windows, e os dois módulos de testes criados exclusivamente para ela foram removidos da branch por estarem fora do escopo. Os testes V8.36–V8.41 e as demais barreiras de segurança permanecem; **não houve alteração no consumidor de comandas**, no Windows real ou na impressão.
 - Prioridade real: conferir origem dos dados da comanda, regras de roteamento físico e destino das impressoras, idempotência e as três vias; evitar mais código de autorização/turnos sem requisito comprovado.
 
+## V8.44 — conserto pontual em erros de entrada, sem nova lógica de turnos
+**Prova de código:** o candidato não instalado `runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs` só transportava `event.blockers` quando `ready_for_downstream_shadow` era falso. Assim, um evento contraditório com `ready=true` e falhas declaradas poderia produzir uma decisão que **omitisse o erro de origem**. A presença ou ausência de outras barreiras ainda podia bloquear a decisão; não afirmar que imprimiria.
+
+**Mudança mínima na mesma PR:** o candidato V714 agora transporta os bloqueadores de evento e serviço mesmo com `ready=true`; rejeita listas de bloqueadores ausentes/malformadas; mantém `UPSTREAM_EVENT_NOT_READY` quando necessário. O teste `tools/verificar_identidade_bytes_v714.js` foi ampliado com seis condições adversariais e uma condição consistente, usando pedidos sintéticos, sem efeito de impressão. A verificação já existente no Linux passou a ser exigida também em CI Windows.
+
+**Foco e limites:** nada de horários novos ou aprovação por turno; `DTHRABERMESA` é um campo de horário presente no envelope de exemplo do leitor, **não uma prova por si só de sua confiabilidade em todos os pedidos reais**. Os bloqueadores de `event.service_resolution` devem ser preservados até se provar o contrato de roteamento físico de sushi. V8.44 afeta apenas o consumidor SHADOW V714 não instalado. **CI do commit novo deve ser observado antes de alegar TEST_PASS.** Nenhum teste confirma física das três vias, nem autoriza merge/deploy.
+
 ## Teste de aceite futuro, só se houver mudança técnica necessária
 - Fluxo de uma comanda recebida para conferência e três vias com seus dados originais e horário já presente; não gerar autorização humana de turno nem recálculo desse horário.
 - Verificar em sandbox os caminhos que hoje dependem de estado de turno; testar se são requisitos reais, se podem impedir pedidos legítimos ou causar regressão.
