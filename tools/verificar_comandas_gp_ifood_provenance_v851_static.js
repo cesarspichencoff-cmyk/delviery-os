@@ -25,7 +25,7 @@ function check(s){
    /ifood_api\s*=\s*\$false/,
    /Get-CimInstance Win32_Process/,
    /Get-Printer/,
-   /Get-WinEvent/,
+   /Get-WinEvent -FilterHashtable/,
    /MaxEvents\s*=\s*7500/,
    /ConvertTo-Json/,
    /Param4 is job owner/,
