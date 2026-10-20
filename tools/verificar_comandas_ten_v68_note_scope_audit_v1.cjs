@@ -80,6 +80,33 @@ try{
   fs.unlinkSync(original[0].ep);
  }fs.renameSync(symlink,original[0].ep);
  eq(inspect(manifest,evDir,decDir).files_verified,20);
+ // Adversarial pair: both source files are deliberately re-hashed in a
+ // self-consistent manifest. File SHA and watcher snapshot remain valid,
+ // but the pair's declared order_key does not match native order identity.
+ // This must never be counted as one of ten original orders.
+ const originalEventBytes=fs.readFileSync(original[0].ep);
+ const originalDecisionBytes=fs.readFileSync(original[0].dp);
+ try{
+  const spoofEvent=JSON.parse(originalEventBytes),spoofDecision=JSON.parse(originalDecisionBytes);
+  spoofEvent.order_key='0001|01|OTHER_SALE|OTHER_ORDER';
+  spoofDecision.order_key=spoofEvent.order_key;
+  const eventBytes=Buffer.from(JSON.stringify(spoofEvent));
+  const decisionBytes=Buffer.from(JSON.stringify(spoofDecision));
+  fs.writeFileSync(original[0].ep,eventBytes);
+  fs.writeFileSync(original[0].dp,decisionBytes);
+  const consistentManifest=JSON.parse(JSON.stringify(manifest));
+  consistentManifest.ten_cases[0].event_file_sha256=sha(eventBytes);
+  consistentManifest.ten_cases[0].legacy_decision_file_sha256=sha(decisionBytes);
+  const reject=inspect(consistentManifest,evDir,decDir);
+  eq(reject.status,'HOLD');
+  eq(reject.files_verified,0);
+  eq(reject.source_text_emitted,false);
+  eq(reject.print_authorized,false);
+ }finally{
+  fs.writeFileSync(original[0].ep,originalEventBytes);
+  fs.writeFileSync(original[0].dp,originalDecisionBytes);
+ }
+ eq(inspect(manifest,evDir,decDir).files_verified,20);
  console.log(JSON.stringify({result:'PASS',checks,fictional_source_only:true,
   original_client_data:false,notes_printed:false,production_effects:false}));
 }finally{fs.rmSync(root,{recursive:true,force:true})}
