@@ -93,9 +93,12 @@ test("item allergy and SEM observation never silently removed",()=>{
  assert.ok(r.preview_lines.includes("  OBS: SEM CEBOLINHA"));
  assert.ok(r.preview_lines.includes("  OBS: ALERGIA A CAMARAO"));
 });
-test("general note visible for review, not silently discarded",()=>{
+test("general note requires review and never leaks into production preview",()=>{
  const r=audit(pair());
- assert.ok(r.preview_lines.includes("OBS GERAL / REVISAR: ENTREGA NA PORTARIA"));
+ assert.equal(r.essential.order_observations_review_required,true);
+ assert.ok(r.preview_lines.includes("OBS GERAL: REVISAR FORA DA COMANDA (NAO IMPRESSA)"));
+ assert.ok(!JSON.stringify(r.preview_lines).includes("ENTREGA NA PORTARIA"));
+ assert.ok(!JSON.stringify(r.essential).includes("ENTREGA NA PORTARIA"));
  assert.equal(r.ready_for_operational_print,false);
 });
 test("unknown packaging bags kits do not block preview",()=>{
