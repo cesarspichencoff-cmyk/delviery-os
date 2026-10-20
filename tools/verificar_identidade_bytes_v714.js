@@ -213,6 +213,26 @@ try{
    assert.deepEqual(printerCodes(dinner),["00003"]);
    const unknown=decide(["00009","00003"],[a,b],null);
    assert.ok(blockers(unknown).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
+   assert.deepEqual(printerCodes(unknown),[],
+     "missing service cannot project both exclusive sushi printers");
+   const malformed=decide(["00009","00003"],[a,b],"MIDDAY_GUESS");
+   assert.ok(blockers(malformed).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
+   assert.deepEqual(printerCodes(malformed),[],
+     "an invented service label cannot choose a sushi printer");
+   const c=printer("00006","3"),d=printer("00004","4");
+   const unknown2=decide(["00006","00004"],[c,d],null);
+   assert.ok(blockers(unknown2).includes("SERVICE_REQUIRED_SUSHI2_"+productCode));
+   assert.deepEqual(printerCodes(unknown2),[],
+     "second sushi pair must also withhold both candidates");
+   const known2l=decide(["00006","00004"],[c,d],"LUNCH");
+   const known2d=decide(["00006","00004"],[c,d],"DINNER");
+   assert.deepEqual(printerCodes(known2l),["00006"]);
+   assert.deepEqual(printerCodes(known2d),["00004"]);
+   const k=printer("00002","5");
+   const mixed=decide(["00002","00009","00003"],[k,a,b],null);
+   assert.ok(blockers(mixed).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
+   assert.deepEqual(printerCodes(mixed),["00002"],
+     "known independent kitchen route remains visible, but decision stays HOLD");
    const duplicatedRoute=decide(["00009","00009"],[a],"LUNCH");
    assert.ok(blockers(duplicatedRoute).includes("ROUTE_DUPLICATED_FOR_PRODUCT_"+productCode));
    const duplicatedPrinter=decide(["00009"],[a,printer("00009","3")],"LUNCH");
