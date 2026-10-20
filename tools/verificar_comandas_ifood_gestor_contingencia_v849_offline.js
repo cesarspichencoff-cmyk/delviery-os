@@ -71,6 +71,15 @@ test("short ID alone cannot prove full uuid",()=>{
  const b=clone(t);b.ifood_order_uuid=null;
  assert.ok(run(g,b).reasons.includes("SHORT_ID_IS_NOT_UNIQUE_ORDER_ID"));
 });
+test("no UUID on either side yields no enumerable short-number digest",()=>{
+ const a=clone(g),b=clone(t);a.order_uuid=null;b.ifood_order_uuid=null;
+ const r=run(a,b);assert.equal(r.order_digest,null);
+ assert.ok(r.reasons.includes("SHORT_ID_IS_NOT_UNIQUE_ORDER_ID"));
+});
+test("a single unpaired Gestor short ID never produces a digest",()=>{
+ const a=clone(g);a.order_uuid=null;
+ const r=run(a,null);assert.equal(r.order_digest,null);
+});
 test("Gestor uuid absent cannot prove full uuid",()=>{
  const b=clone(g);b.order_uuid=null;
  assert.ok(run(b,t).reasons.includes("FULL_IFOOD_UUID_JOIN_NOT_PROVEN"));
