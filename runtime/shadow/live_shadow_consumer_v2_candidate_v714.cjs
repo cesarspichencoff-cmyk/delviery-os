@@ -297,7 +297,19 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     else blockers.push("ROUTE_NOT_FOUND_" + code);
   }
 
-  const service = event.service_resolution?.service || null;
+  // Only render an exclusive sushi destination from a coherent upstream
+  // declaration. Neither a stale service token nor a contradictory ready flag
+  // is route evidence. This is structural validation, NOT authentication.
+  const declaredService = event.service_resolution;
+  const service = event.ready_for_downstream_shadow === true &&
+    Array.isArray(event.blockers) && event.blockers.length === 0 &&
+    Array.isArray(declaredService?.blockers) && declaredService.blockers.length === 0 &&
+    (declaredService.evidence === "HUMAN_CONFIRMED_RULE" ||
+      declaredService.evidence === "REAL_OBSERVED") &&
+    typeof declaredService.source_ref === "string" &&
+    !!declaredService.source_ref.trim() &&
+    (declaredService.service === "LUNCH" || declaredService.service === "DINNER")
+      ? declaredService.service : null;
   if (routes.includes("00009") && routes.includes("00003")) {
     if (service === "LUNCH") routes = routes.filter(x => x !== "00003");
     else if (service === "DINNER") routes = routes.filter(x => x !== "00009");
