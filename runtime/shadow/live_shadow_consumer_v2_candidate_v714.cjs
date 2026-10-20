@@ -313,6 +313,15 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       printer_ip: p.printer_ip
     }));
   if (routes.length !== targets.length) blockers.push("PRINTER_MAP_MISSING_" + code);
+  // V8.46 (shadow-only): a mapping row is not a usable destination merely
+  // because its code exists. Require exact code, name and a nonblank
+  // endpoint, without guessing whether the host uses IPv4, IPv6 or DNS.
+  if (targets.some((p, i) =>
+      typeof p.printer_code !== "string" || !/^\\d{5}$/.test(p.printer_code) ||
+      p.printer_code !== routes[i] ||
+      typeof p.printer_name !== "string" || !p.printer_name.trim() ||
+      typeof p.printer_ip !== "string" || !p.printer_ip.trim()))
+    blockers.push("PRINTER_TARGET_INCOMPLETE_" + code);
 
   let classification = null;
   let classificationSource = null;
