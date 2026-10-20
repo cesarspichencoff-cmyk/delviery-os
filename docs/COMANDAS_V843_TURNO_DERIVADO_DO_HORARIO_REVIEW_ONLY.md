@@ -26,6 +26,12 @@
 
 Não pressupor que o horário da comanda automaticamente determina `LUNCH`/`DINNER`: **não foi pedido**. Não estabelecer horários, validar turnos ou classificar pedidos em novos turnos como objetivo deste projeto, salvo requisito confirmado posteriormente.
 
+## Auditoria direcionada para reduzir retrabalho — 20/10/2026
+- A análise de `runtime/shadow/live_shadow_consumer_v2_candidate_v713.cjs` revelou que `event.service_resolution?.service` é consumido para decidir entre códigos de rota de sushi (`00009/00003` e `00006/00004`). Quando esse valor falta, o candidato adiciona os bloqueadores `SERVICE_REQUIRED_SUSHI1_*` ou `SERVICE_REQUIRED_SUSHI2_*`.
+- **Consequência:** a lógica de seleção de rota pode ter utilidade operacional real. Não remover nem inventar uma substituição até verificar se o dado necessário já chega com a comanda/evento e quais saídas físicas representa. O relato de César não autoriza supor que o campo `service_resolution` já vem preenchido: isso é uma questão de integração, não de horário de funcionamento.
+- A suíte V8.42 de aprovação humana foi retirada do CI em Linux e Windows, e os dois módulos de testes criados exclusivamente para ela foram removidos da branch por estarem fora do escopo. Os testes V8.36–V8.41 e as demais barreiras de segurança permanecem; **não houve alteração no consumidor de comandas**, no Windows real ou na impressão.
+- Prioridade real: conferir origem dos dados da comanda, regras de roteamento físico e destino das impressoras, idempotência e as três vias; evitar mais código de autorização/turnos sem requisito comprovado.
+
 ## Teste de aceite futuro, só se houver mudança técnica necessária
 - Fluxo de uma comanda recebida para conferência e três vias com seus dados originais e horário já presente; não gerar autorização humana de turno nem recálculo desse horário.
 - Verificar em sandbox os caminhos que hoje dependem de estado de turno; testar se são requisitos reais, se podem impedir pedidos legítimos ou causar regressão.
