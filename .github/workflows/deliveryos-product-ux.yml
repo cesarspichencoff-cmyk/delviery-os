@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020]
   workflow_dispatch:
 
 permissions:
@@ -48,6 +48,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
+      - name: produtor ficticio assinado -> consumidor real (LAB em memoria)
+        run: npx tsx tests/product/run-attested-feed-consumer-memory-lab-tests.ts
       - run: npm run -s build:platform
       - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
         run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
@@ -61,6 +63,8 @@ jobs:
         run: npx tsx tests/product/run-entregas-browser-tests.ts --evidencias "$RUNNER_TEMP/evidencias/navegador"
       - name: servidor + PostgreSQL real (filtro de unidade, somente leitura)
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
+      - name: piloto outbox -> plataforma -> Copiloto no mesmo PostgreSQL (LAB sintético)
+        run: npx tsx tests/product/run-pilot-copiloto-outbox-e2e-lab-tests.ts
       - name: falha do PostgreSQL nao revela IP, porta ou segredo no painel
         run: npx tsx tests/product/run-entregas-db-error-boundary-tests.ts
       # axe-core NAO e dependencia do repositorio (package.json intocado): versao
