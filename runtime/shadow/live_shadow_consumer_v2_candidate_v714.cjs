@@ -223,15 +223,24 @@ for (const row of observationRows) {
   observationBlockers.push("OBSERVATION_SCOPE_NOT_PROVEN:" + sourceField);
 }
 
+// V8.44: The upstream readiness bit is not allowed to hide source blockers.
+// This V7.14 fork is an UNINSTALLED shadow candidate: never authorizes print.
 const upstreamBlockers = [];
 if (event.ready_for_downstream_shadow !== true) {
-  const eventBlockers = Array.isArray(event.blockers) ? event.blockers : [];
-  if (eventBlockers.length) {
-    for (const blocker of eventBlockers) {
-      upstreamBlockers.push("UPSTREAM_" + String(blocker));
-    }
-  } else {
-    upstreamBlockers.push("UPSTREAM_EVENT_NOT_READY");
+  upstreamBlockers.push("UPSTREAM_EVENT_NOT_READY");
+}
+if (!Array.isArray(event.blockers)) {
+  upstreamBlockers.push("UPSTREAM_EVENT_BLOCKERS_MALFORMED");
+} else {
+  for (const blocker of event.blockers) {
+    upstreamBlockers.push("UPSTREAM_" + String(blocker));
+  }
+}
+if (!Array.isArray(event.service_resolution?.blockers)) {
+  upstreamBlockers.push("UPSTREAM_SERVICE_BLOCKERS_MALFORMED");
+} else {
+  for (const blocker of event.service_resolution.blockers) {
+    upstreamBlockers.push("UPSTREAM_SERVICE_" + String(blocker));
   }
 }
 const blockers = [...upstreamBlockers, ...observationBlockers];
