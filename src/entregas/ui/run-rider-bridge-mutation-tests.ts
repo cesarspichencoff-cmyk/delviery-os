@@ -37,6 +37,10 @@ let cegas = 0;
 const filtroBruto = process.env.RIDER_BRIDGE_MUTATION_IDS?.trim();
 const filtro = filtroBruto ? new Set(filtroBruto.split(",").map((id) => id.trim()).filter(Boolean)) : null;
 const mutantesExecutados = new Set<string>();
+const mutantesCatalogados = new Set<string>();
+const QUANTIDADE_ESPERADA = 21;
+
+if (filtro) console.log(`MODO PARCIAL: ${[...filtro].join(",") || "nenhum id valido"} (catalogo completo: ${QUANTIDADE_ESPERADA} mutantes)`);
 
 console.log("\n=== Q-018 — SUITE ADVERSARIAL DA CAPTURA PELA RIDER-MOBILE ===\n");
 
@@ -191,6 +195,8 @@ function aplicar(edicoes: readonly Edicao[]): Aplicada[] {
 }
 
 function mutacao(o: { id: string; propriedade: string; gate: Gate; edicoes: Edicao[]; assinatura: RegExp }): void {
+  if (mutantesCatalogados.has(o.id)) falhas.push(`id de mutacao duplicado: ${o.id}`);
+  mutantesCatalogados.add(o.id);
   if (filtro && !filtro.has(o.id)) return;
   mutantesExecutados.add(o.id);
   teste(`${o.id} — ${o.propriedade}`, () => {
@@ -462,6 +468,9 @@ mutacao({
 });
 
 /* ---- fecho ---- */
+if (mutantesCatalogados.size !== QUANTIDADE_ESPERADA) {
+  falhas.push(`catalogo incompleto: ${mutantesCatalogados.size}/${QUANTIDADE_ESPERADA} mutantes`);
+}
 if (filtro && (mutantesExecutados.size !== filtro.size || filtro.size === 0)) {
   falhas.push(`filtro invalido: ids nao encontrados: ${[...filtro].filter((id) => !mutantesExecutados.has(id)).join(",")}`);
 }
@@ -483,7 +492,7 @@ const total = passaram + falhas.length;
 console.log(`\n${passaram}/${total} · cegas: ${cegas}`);
 if (falhas.length || cegas) {
   for (const f of falhas) console.log(`  FALHA ${f.split("\n")[0]}`);
-  console.log("\nRIDER_BRIDGE_MUTATIONS_RED");
+  console.log(filtro ? "\nRIDER_BRIDGE_MUTATIONS_PARTIAL_RED" : "\nRIDER_BRIDGE_MUTATIONS_RED");
   process.exit(1);
 }
-console.log("\nRIDER_BRIDGE_MUTATIONS_GREEN");
+console.log(filtro ? "\nRIDER_BRIDGE_MUTATIONS_PARTIAL_GREEN" : "\nRIDER_BRIDGE_MUTATIONS_GREEN");

@@ -16,6 +16,7 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
+import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-entregas";
@@ -34,6 +35,22 @@ if (!URL_BASE) {
 const argEvid = process.argv.indexOf("--evidencias");
 const EVIDENCIAS = argEvid > 0 ? resolve(process.argv[argEvid + 1] ?? "") : "";
 const PORTA = 9700 + Math.floor(Math.random() * 200);
+
+async function portaLivre(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close();
+        reject(new Error("porta local indisponivel"));
+        return;
+      }
+      server.close(() => resolve(address.port));
+    });
+  });
+}
 
 let passaram = 0;
 const falhas: string[] = [];
@@ -491,8 +508,8 @@ void (async () => {
            VALUES ('it-http-new','ITAIM','trip','T-ITAIM-HTTP','trip_created','{}'::jsonb,now(),now(),'device','it-http-new-key','trip_created@1.0.0','simulated')`,
         );
         const imprint = await impressaoDoBanco(legado);
-        for (const [unit_id, idx] of [["ITAIM", 0], ["VILA-LAB", 1]] as const) {
-          const port = PORTA + 311 + idx;
+        for (const unit_id of ["ITAIM", "VILA-LAB"] as const) {
+          const port = await portaLivre();
           const token = "ab".repeat(32);
           const child = spawn("npx", ["tsx", "tools/product_system_server.ts"], {
             cwd: process.cwd(),
@@ -512,22 +529,29 @@ void (async () => {
             detached: true,
           });
           let stderr = "";
+          let stdout = "";
           child.stderr?.on("data", (c) => (stderr += String(c)));
-          child.stdout?.on("data", () => {});
+          child.stdout?.on("data", (c) => (stdout += String(c)));
           const get = (path: string, authorized = true) => fetch(`http://127.0.0.1:${port}${path}`, {
             headers: authorized ? { Authorization: `Bearer ${token}` } : {},
+            signal: AbortSignal.timeout(5000),
           });
           try {
             let ready = false;
-            const deadline = Date.now() + 25000;
+            let ultimoStatus: number | null = null;
+            let ultimoErro = "";
+            const deadline = Date.now() + 45000;
             while (Date.now() < deadline) {
-              if (child.exitCode !== null) throw Error("servidor de legado saiu: " + stderr.slice(-180));
+              if (child.exitCode !== null) throw Error("servidor de legado saiu: " + stderr.slice(-240));
               try {
-                if ((await get("/api/health", false)).status === 401) { ready = true; break; }
-              } catch {}
+                ultimoStatus = (await get("/api/health", false)).status;
+                if (ultimoStatus === 401) { ready = true; break; }
+              } catch (error) {
+                ultimoErro = error instanceof Error ? error.message : String(error);
+              }
               await new Promise((resolve) => setTimeout(resolve, 160));
             }
-            assert.equal(ready, true, "servidor de legado nao iniciou");
+            assert.equal(ready, true, `servidor de legado nao iniciou: status=${ultimoStatus} erro=${ultimoErro.slice(-140)} stdout=${stdout.slice(-240)} stderr=${stderr.slice(-240)}`);
             assert.equal((await get("/api/entregas", false)).status, 401);
             const other = unit_id === "ITAIM" ? "VILA-LAB" : "ITAIM";
             assert.equal((await get(`/api/entregas?unidade=${other}`)).status, 403);

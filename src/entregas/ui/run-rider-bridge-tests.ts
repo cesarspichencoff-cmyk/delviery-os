@@ -428,6 +428,8 @@ async function main(): Promise<void> {
           assert.deepEqual(await chamadasDe(page, "startTripCapture"), []);
         });
         await teste("B2b saída recusada pelo domínio nunca liga o GPS", async () => {
+          const estadoAnterior = await estadoDaViagem(p, "T-PONTE-1");
+          assert.ok(estadoAnterior && estadoAnterior !== "em_rota", "a viagem precisa existir antes da recusa");
           let recusas = 0;
           const rota = "**/api/command";
           await page.route(rota, async (route) => {
@@ -444,9 +446,14 @@ async function main(): Promise<void> {
           });
           try {
             await confirmarSaida(page);
+            await page.waitForFunction(
+              () => (document.getElementById("errorBox")?.textContent || "").includes("saida_recusada_no_teste"),
+              null,
+              { timeout: 5000 },
+            );
             await pausa(500);
             assert.equal(recusas, 1, "a recusa sintética precisa interceptar o comando real");
-            assert.notEqual(await estadoDaViagem(p, "T-PONTE-1"), "em_rota");
+            assert.equal(await estadoDaViagem(p, "T-PONTE-1"), estadoAnterior);
             assert.deepEqual(await chamadasDe(page, "startTripCapture"), []);
           } finally {
             await page.unroute(rota);
