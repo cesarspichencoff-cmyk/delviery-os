@@ -52,6 +52,19 @@ jobs:
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
+      - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
+        run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
+      - name: Validate GP iFood passive Windows probe PowerShell syntax without running
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_gp_ifood_print_provenance_v851_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_GP_IFOOD_V851_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_GP_IFOOD_V851_SYNTAX_PASS READONLY_SOURCE NO_EXECUTION'
       - name: Exact raw store-shop-order key integrity V7.27 (offline)
         run: node tools/verificar_identidade_pedido_v727.js
       - name: Passive real watcher-event audit privacy and integrity V7.30 (synthetic)
@@ -245,6 +258,19 @@ jobs:
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
+      - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
+        run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
+      - name: Validate GP iFood passive Windows probe PowerShell syntax without running
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_gp_ifood_print_provenance_v851_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_GP_IFOOD_V851_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_GP_IFOOD_V851_SYNTAX_PASS READONLY_SOURCE NO_EXECUTION'
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)
