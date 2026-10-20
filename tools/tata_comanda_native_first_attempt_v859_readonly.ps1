@@ -3,11 +3,27 @@
 # Only aggregate counts leave the host. Never echo identifiers or item/note texts.
 [CmdletBinding()]
 param([ValidateRange(1,25)][int]$SampleSize=20,
-      [ValidateRange(1,100)][int]$DecisionBudget=60)
+      [ValidateRange(1,100)][int]$DecisionBudget=60,
+      [string]$CiFixtureRoot='')
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $now=[DateTime]::UtcNow
 $root='C:\ProgramData\TataComandaReader\state'
+# Only GitHub-hosted synthetic tests can override the fixed production path.
+# The normal store probe has no CLI-selectable arbitrary filesystem root.
+if(-not [string]::IsNullOrWhiteSpace($CiFixtureRoot)){
+ if($env:GITHUB_ACTIONS -cne 'true' -or
+    [string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)){
+  throw 'CI_FIXTURE_OVERRIDE_NOT_ALLOWED'
+ }
+ $base=[IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd([IO.Path]::DirectorySeparatorChar)
+ $fixture=[IO.Path]::GetFullPath($CiFixtureRoot)
+ if(-not $fixture.StartsWith($base+[IO.Path]::DirectorySeparatorChar,
+    [StringComparison]::OrdinalIgnoreCase)){
+  throw 'CI_FIXTURE_OUTSIDE_RUNNER_TEMP'
+ }
+ $root=$fixture
+}
 $reasons=[Collections.Generic.List[string]]::new()
 function Flag([string]$reason) {
  if(-not $reasons.Contains($reason)){$reasons.Add($reason)}
