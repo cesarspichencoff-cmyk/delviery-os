@@ -173,6 +173,79 @@ try{
     JSON.stringify(out.blocking_reasons));
   assert.equal(out.ready,false);assert.equal(out.effects.print,false);
  });
+ check("V7.41 exact all-item packaging input and review authority",()=>{
+  const files=["packaging-current.js","product-aliases-v1.json",
+    "app-data.json","product-identity-cache-v1.json"];
+  const saved=Object.fromEntries(files.map(k=>[k,fs.readFileSync(path.join(folder,k))]));
+  const restore=()=>{for(const k of files)fs.writeFileSync(path.join(folder,k),saved[k]);};
+  const motorFile=path.join(folder,"packaging-current.js");
+  const aliasFile=path.join(folder,"product-aliases-v1.json");
+  const academyFile=path.join(folder,"app-data.json");
+  const cacheFile=path.join(folder,"product-identity-cache-v1.json");
+  const proofMotor='globalThis.TATAPackaging={FACT:"FACT",categoryOf:()=>({status:"FACT",category:"dupla_dyo"}),packComanda:es=>({has_unknown:true,test_qty:es.map(x=>x.quantity),bags:{size_status:"UNKNOWN",exact_bag_count_status:"UNKNOWN"}}),kitVerdict:es=>({status:"UNKNOWN",test_qty:es.map(x=>x.quantity)})};\n';
+  function event(){return run([],[],"1.000",undefined,true).event;}
+  function extra(e,changes={}){e.order.items.push({...e.order.items[0],
+    NRPRODCOMVEN:"000002",...changes});}
+  function execute(e){
+   fs.writeFileSync(path.join(folder,"event.json"),JSON.stringify(e));
+   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),
+     path.join(folder,"event.json")],{encoding:"utf8",timeout:10000});
+   assert.equal(p.status,5,p.stderr);assert.equal(p.stderr,"");
+   const got=JSON.parse(p.stdout);
+   assert.equal(got.ready,false);assert.equal(got.effects.print,false);
+   assert.equal(got.effects.spooler_write,false);
+   return got;
+  }
+  function alias(classification,canonicalCode=productCode){
+   fs.writeFileSync(aliasFile,JSON.stringify({
+    schema:"deliveryos.academia-live-product-aliases.v1",
+    aliases:[{live_name:"TESTE DUPLA",canonical_code:canonicalCode,classification}]}));
+  }
+  function held(label,change,configure=()=>{}){
+   restore();fs.writeFileSync(motorFile,proofMotor);
+   const e=event();configure();change(e);
+   const got=execute(e);
+   assert.equal(got.packaging,null,label);
+   assert.equal(got.kits,null,label);
+   assert.ok(got.blocking_reasons.includes("PACKAGING_SKIPPED_INCOMPLETE_OR_UNREVIEWED_ORDER"),
+     label+" "+JSON.stringify(got.blocking_reasons));
+  }
+  try{
+   restore();fs.writeFileSync(motorFile,proofMotor);
+   assert.deepEqual(execute(event()).packaging.test_qty,[1]);
+   const both=event();extra(both,{QTPRODCOMVEN:"3.000"});
+   const duplicateProduct=execute(both);
+   assert.equal(duplicateProduct.items.length,2);
+   assert.deepEqual(duplicateProduct.packaging.test_qty,[1,3]);
+   assert.deepEqual(duplicateProduct.kits.test_qty,[1,3]);
+   held("unknown second product",e=>extra(e,{CDPRODUTO:"UNKNOWN_ID"}));
+   held("missing CDPRODUTO",e=>extra(e,{CDPRODUTO:null}));
+   held("mismatched canonical code",e=>extra(e,{CDARVPROD:"1234567890"}));
+   held("invalid second quantity",e=>extra(e,{QTPRODCOMVEN:"1.5"}));
+   held("duplicate line identifier",e=>extra(e,{NRPRODCOMVEN:"000001"}));
+   held("missing line identifier",e=>extra(e,{NRPRODCOMVEN:null}));
+   held("empty order",e=>{e.order.items=[];});
+   held("unreviewed alias",e=>{},()=>alias({family:"dupla",station:"duplas",review_required:true}));
+   held("missing review flag",e=>{},()=>alias({family:"dupla",station:"duplas"}));
+   held("mismatched alias canonical code",e=>{},
+    ()=>alias({family:"dupla",station:"duplas",review_required:false},"9.99.99.999.99"));
+   const academyCase=review=>{
+    fs.writeFileSync(aliasFile,JSON.stringify({
+     schema:"deliveryos.academia-live-product-aliases.v1",aliases:[]}));
+    fs.writeFileSync(academyFile,JSON.stringify({products:[{
+     nome:"TESTE DUPLA",classification:review}]}));
+   };
+   held("missing Academy review flag",e=>{},
+    ()=>academyCase({family:"dupla",station:"duplas"}));
+   held("Academy review required",e=>{},
+    ()=>academyCase({family:"dupla",station:"duplas",review_required:true}));
+   held("source live name missing",e=>{},()=>{
+    fs.writeFileSync(cacheFile,JSON.stringify({
+     schema:"deliveryos.product-identity-cache.v1",
+     rows:[{CDPRODUTO:pCode,canonical:productCode,NMPRODUTO:""}]}));
+   });
+  }finally{restore();}
+ });
  check("V8.45/V8.46 logical printer identity versus physical endpoint boundary",()=>{
   const routingFile=path.join(folder,"routing.json");
   const printerFile=path.join(folder,"printer-map.json");
