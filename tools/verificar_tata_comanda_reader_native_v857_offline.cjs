@@ -56,6 +56,7 @@ function pair(){
    teknisa_order_id:"0000348850",tata_sequence:"007"}]};
  return {event,decision,sequence_state};
 }
+if(require.main===module){
 let n=0;
 function test(name,fn){fn();n++;console.log("PASS "+n+" "+name);}
 function audit(x){
@@ -262,3 +263,6 @@ test("missing source event pair",()=>{
 test("null input safe",()=>assert.equal(audit(null).status,"HOLD"));
 console.log("TATA_COMANDA_READER_NATIVE_V857="+n+"/"+n+
  " READER_V2_PAIR PERSISTED_TATA_ID EXACT_ITEMS_NOTES NO_PRINT NO_SQL NO_HOST");
+
+}
+module.exports={syntheticReaderPairV857:pair};
