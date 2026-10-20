@@ -32,6 +32,12 @@ const falhas: string[] = [];
 let passaram = 0;
 let cegas = 0;
 
+// Roda mutantes selecionados em lotes curtos sem alterar a semantica da suite completa.
+// Exemplos: RIDER_BRIDGE_MUTATION_IDS=MR6 ou MR7,MR8,MR9.
+const filtroBruto = process.env.RIDER_BRIDGE_MUTATION_IDS?.trim();
+const filtro = filtroBruto ? new Set(filtroBruto.split(",").map((id) => id.trim()).filter(Boolean)) : null;
+const mutantesExecutados = new Set<string>();
+
 console.log("\n=== Q-018 — SUITE ADVERSARIAL DA CAPTURA PELA RIDER-MOBILE ===\n");
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -185,6 +191,8 @@ function aplicar(edicoes: readonly Edicao[]): Aplicada[] {
 }
 
 function mutacao(o: { id: string; propriedade: string; gate: Gate; edicoes: Edicao[]; assinatura: RegExp }): void {
+  if (filtro && !filtro.has(o.id)) return;
+  mutantesExecutados.add(o.id);
   teste(`${o.id} — ${o.propriedade}`, () => {
     const feitas = aplicar(o.edicoes);
     console.log(`        aplicada · ${feitas.map((f) => `${f.arquivo.split("/").pop()} ${f.hash.slice(0, 8)}`).join(" · ")} · gate ${o.gate}`);
@@ -319,8 +327,8 @@ mutacao({
       para: '    if (!confirm("Confirmar saída da loja?")) return;\n    if (native) native.startTripCapture(t.trip_id);\n',
     },
   ],
-  // Clique prematuro duplica a chamada da viagem depois que o domínio também confirma.
-  assinatura: /T-PONTE-1[\s\S]*T-PONTE-1/,
+  // Comando recusado pelo dominio nao pode disparar captura nativa, nem uma vez.
+  assinatura: /XX {2}B2b saída recusada pelo domínio/,
 });
 mutacao({
   id: "MR10",
@@ -454,6 +462,9 @@ mutacao({
 });
 
 /* ---- fecho ---- */
+if (filtro && (mutantesExecutados.size !== filtro.size || filtro.size === 0)) {
+  falhas.push(`filtro invalido: ids nao encontrados: ${[...filtro].filter((id) => !mutantesExecutados.has(id)).join(",")}`);
+}
 try {
   // O último gate de servidor compilou código mutado: dist volta ao estado atual.
   const [bin, args] = comandoNpx(["tsc"]);

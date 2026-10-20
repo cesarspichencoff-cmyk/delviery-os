@@ -427,6 +427,31 @@ async function main(): Promise<void> {
           await pausa(800);
           assert.deepEqual(await chamadasDe(page, "startTripCapture"), []);
         });
+        await teste("B2b saída recusada pelo domínio nunca liga o GPS", async () => {
+          let recusas = 0;
+          const rota = "**/api/command";
+          await page.route(rota, async (route) => {
+            if (route.request().postData()?.includes('"ConfirmTripDeparture"')) {
+              recusas += 1;
+              await route.fulfill({
+                status: 409,
+                contentType: "application/json",
+                body: JSON.stringify({ result: { ok: false, error: "saida_recusada_no_teste" } }),
+              });
+            } else {
+              await route.continue();
+            }
+          });
+          try {
+            await confirmarSaida(page);
+            await pausa(500);
+            assert.equal(recusas, 1, "a recusa sintética precisa interceptar o comando real");
+            assert.notEqual(await estadoDaViagem(p, "T-PONTE-1"), "em_rota");
+            assert.deepEqual(await chamadasDe(page, "startTripCapture"), []);
+          } finally {
+            await page.unroute(rota);
+          }
+        });
         await teste("B3 saída confirmada pelo domínio -> startTripCapture da MESMA viagem, uma vez", async () => {
           await confirmarSaida(page);
           await esperarChamada(page, "startTripCapture");
