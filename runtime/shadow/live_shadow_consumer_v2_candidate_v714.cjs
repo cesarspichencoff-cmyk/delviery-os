@@ -173,7 +173,15 @@ if (printerMap.schema !== "deliveryos.runtime-printer-map.v1") throw new Error("
 const cacheByProduct = new Map(cache.rows.map(r => [String(r.CDPRODUTO), r]));
 const academyByName = new Map((academy.products || []).map(p => [norm(p.nome), p]));
 const aliasByName = new Map((aliases.aliases || []).map(a => [norm(a.live_name), a]));
-const printerByCode = new Map((printerMap.mappings || []).map(p => [String(p.printer_code), p]));
+// V8.45: A duplicated printer code is ambiguous, even if its last row has
+// a plausible address. Keep the first row for review; NEVER silently last-win.
+const printerByCode = new Map();
+const duplicatePrinterCodes = new Set();
+for (const p of (printerMap.mappings || [])) {
+  const rc = String(p?.printer_code ?? "");
+  if (printerByCode.has(rc)) duplicatePrinterCodes.add(rc);
+  else printerByCode.set(rc, p);
+}
 const observationRows = Array.isArray(event.order?.observation_rows)
   ? event.order.observation_rows
   : [];
@@ -268,6 +276,14 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   const name = String(id.NMPRODUTO || "").trim();
   const n = norm(name);
   let routes = Array.isArray(routing.products?.[code]) ? [...routing.products[code]] : [];
+  // Preserve the configured list for review; a repeated destination is not
+  // two independent production stations or permission to print twice.
+  if (new Set(routes).size !== routes.length)
+    blockers.push("ROUTE_DUPLICATED_FOR_PRODUCT_" + code);
+  for (const rc of routes) {
+    if (duplicatePrinterCodes.has(String(rc)))
+      blockers.push("PRINTER_CODE_AMBIGUOUS_" + code);
+  }
   const np = nonProduction.items?.[code] || null;
   let routingStatus = "ROUTED";
 
