@@ -6,13 +6,14 @@
   "scope": "COMANDAS_THERMICAS_ONLY",
   "preferred_future_candidate": {
     "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
-    "git_blob_sha1": "652aae75b3aac314cb0871913658785932e5370a",
+    "git_blob_sha1": "072d7f23cfcf6e55989782c08485925b8b2379e5",
     "code_ready_only": true,
     "installed": false,
     "print_authorized": false,
-    "previous_audited_blob_sha1": "f7f06fd4827d577bc3fc83bb2d04f9c17141bdc4",
+    "previous_audited_blob_sha1": "652aae75b3aac314cb0871913658785932e5370a",
     "quantity_hardening": "V7.18_RAW_QUANTITY_MATCH_V68_REJECT_BEFORE_PACKAGING",
-    "upstream_source_blocker_hardening": "V8.44_PRESERVE_EVENT_AND_SERVICE_BLOCKERS_EVEN_READY_TRUE"
+    "upstream_source_blocker_hardening": "V8.44_PRESERVE_EVENT_AND_SERVICE_BLOCKERS_EVEN_READY_TRUE",
+    "routing_destination_integrity": "V8.45_REJECT_DUPLICATE_ROUTE_OR_PRINTER_CODE"
   },
   "deprecated_do_not_install": [
     {
