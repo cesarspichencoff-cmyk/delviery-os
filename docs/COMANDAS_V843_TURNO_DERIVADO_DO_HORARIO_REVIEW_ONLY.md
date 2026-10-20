@@ -1,47 +1,45 @@
-# V8.43 — Operação por horário, sem aprovação diária de turno
+# V8.43 — Correção de escopo: horários já vêm na comanda
 
-**Status: CORREÇÃO DE REQUISITO / DESENHO PARA REVISÃO / HOLD. Não instalado.**
+**Estado: decisão de requisito registrada / revisão somente documental / implantação HOLD.**
 
-## Origem da correção
-Em 20/10/2026, César esclareceu a regra de negócio: **"o que muda a operação é o horário"**. A hipótese introduzida nas V8.32–V8.42 de que toda passagem ALMOÇO↔JANTAR exigiria autenticação/assinatura humana independente **não representa a intenção operacional**. Não inferir novos horários ou aprovação diária. Esta correção substitui essa hipótese funcional; não apaga evidências anteriores nem autoriza mudança no caixa.
+## Fonte operacional esclarecida por César — 20/10/2026
+1. "O que muda a operação é o horário".
+2. "Os horários vêm na comanda, não precisa se preocupar com isso".
 
-## Regra de negócio corrigida
-- **A operação é determinada automaticamente pelo horário do pedido**, comparado com as janelas publicadas da unidade, e não por um botão, uma aprovação de gerente por período ou um estado manual escrito a cada troca.
-- Uma eventual autorização humana deve existir para **alterar a configuração de horários ou executar uma exceção administrativa**, se a política real assim exigir; **não** para operar dentro de uma janela já configurada.
-- O conceito de turno em código deve ser tratado como **classificação temporal derivada** para cada pedido, não como comando operacional de cutover.
-- É necessário confirmar os horários efetivos e a fonte canônica dessas regras antes de configurar valores: **UNKNOWN**. Não usar horários exemplificativos como horários reais.
-- A fonte de tempo de cada pedido, sua confiabilidade e o fuso da unidade exigem prova. O simples relógio atual do computador não reclassifica pedidos anteriores.
+**Interpretação limitada e suficiente:** o DeliveryOS não precisa criar nem administrar um mecanismo de aprovação diária de almoço/jantar, nem deduzir turnos pelo relógio, nem construir uma tabela paralela de horários. A comanda já apresenta a informação de horário necessária no contexto operacional mencionado por César. **Não foi comprovado nesta etapa** qual campo/relógio é a fonte técnica desse dado, nem se todo caminho de ingestão o preserva; não inventar esses detalhes.
 
-## Descoberta técnica concreta
-`src/production/serviceShiftState.ts` define `LUNCH | DINNER` e exige `clock_inference_used: false`: o consumidor deliberadamente rejeita derivação do serviço pelo relógio e valida um estado explícito com `valid_from_local`/`valid_until_local`. O watcher Windows V2 segue regra equivalente de estado preexistente. Assim, **o código atual não implementa automaticamente a regra de negócio corrigida**. Não mudar uma flag para `true`: seria bypass de uma barreira anterior sem fonte de horários e sem paridade do watcher.
+## Corrige duas premissas sucessivas
+- **V8.42 — aprovação humana por mudança de turno:** requisito **rejeitado para a operação diária**; protocolo de assinatura, testemunha e nonce não deve ser incorporado como etapa necessária para a comanda.
+- **Primeira edição V8.43 — classificação automática por tabela de horários:** **também rejeitada como complexidade sem necessidade**. Não construir resolvedor `LUNCH/DINNER`, tabela de janelas, configuração de horários por unidade, lógica de fronteira de turno, autenticação de configuração de horários ou validação adicional de horários como novo pré-requisito sem uma necessidade operacional específica e comprovada.
+- A correção não equivale a apagar arquivos já versionados ou a declarar o código legado dispensável sem análise de dependências.
 
-Os relatórios anteriores V8.40/V8.41 sobre permissão do leitor sobre arquivos de estado/evidência permanecem observações válidas; sua conclusão sobre necessidade de aprovação humana a cada turno fica **supersedida como premissa de negócio**.
+## Comportamento esperado, sem funcionalidades inventadas
+- Processar e representar a comanda com fidelidade à informação efetivamente recebida, incluindo os horários que **já constam nela**, sem substituir por uma estimativa do relógio de processamento.
+- Evitar decisões de roteamento, retenção ou impressão **baseadas em autorização de turno** que César não solicitou. Não adicionar uma nova tarefa de aprovação à equipe.
+- Seguir o foco já contratado: ingestão correta, dados e quantidades de cada comanda, proteção contra duplicidade/ordem indevida, estabilidade, regras de produção/embalagem e as três vias de impressão — cada uma com as provas e autorizações necessárias.
+- A segurança permanece ligada aos efeitos reais: mudanças em serviços, ACL, SQL/fiscal, impressoras e implantação requerem as permissões operacionais específicas. Não confundir isso com uma autorização para trocar almoço por jantar.
 
-## Menor rota de implementação segura (não executada)
-1. **Descobrir a configuração de horários já existente**, por unidade, dia da semana e exceções (feriados, intervalos, fechamento), e confirmar que é a regra operacional pretendida. Não inventar horários de almoço/jantar.
-2. **Fonte do pedido**: preservar timestamp de abertura efetiva com origem e offset/fuso `America/Sao_Paulo` quando for aplicável à unidade; distinguir horário de recebimento, criação e processamento; definir regra para eventos atrasados. Nunca classificar pelo horário em que o watcher processou posteriormente o pedido.
-3. **Resolver puro**: dado (`timestamp` confiável do pedido, `unidade`, `versão da tabela de horários`), produzir `LUNCH`, `DINNER` ou `UNKNOWN` com justificativa. Janelas [início, fim), sem sobreposição; suportar meia-noite/data operacional apenas se a regra confirmada exigir; horários inválidos ou ambíguos não viram defaults silenciosos.
-4. **Auditar regras**: versão, quem/quando alterou a configuração, mecanismo de rollback e teste de regressão. Proteger edição administrativa das regras quando for relevante; não exigir aprovação humana a cada transição de horário.
-5. **Paridade e fallback**: comparar classificação pura com fixtures reproduzíveis e com o contrato do watcher; não alterar o watcher real antes de teste, compatibilidade, rollback e autorização de implantação. O estado explicitamente assinado V8.42 pode ser conservado como pesquisa histórica de exceção administrativa, sem bloquear a classificação diária.
-6. **Não afetar produção automaticamente**: frente a tabela não validada, timestamp sem origem ou conflito, marcar `UNKNOWN/HOLD` na NOVA rota em shadow; não afirmar que isso implica parar a operação existente. A decisão sobre comportamento de produção exige gate específico.
+## Consequência técnica — somente diagnóstico, não patch
+`src/production/serviceShiftState.ts` contém `LUNCH | DINNER`, exige `clock_inference_used === false` e valida estado explícito `valid_from_local`/`valid_until_local`; registros anteriores também indicam um watcher Windows V2 que consome esse estado. **Há potencial descompasso** entre uma dependência de estado de turno implementada no código e a operação descrita por César.
 
-## Testes necessários antes de instalar
-- Início inclusivo/fim exclusivo, todas as transições, fronteira de segundos/frações.
-- Dias da semana, fechamento, lacunas intencionais, sobreposições indevidas.
-- Janela que atravessa meia-noite, se realmente houver; data operacional correta.
-- Fuso e offsets, mudança de offset quando aplicável, timestamp de fonte vs processamento.
-- Pedido atrasado, pedido sem timestamp, horário alterado durante o dia, configurações versionadas.
-- Paridade Node/Windows, processo supervisor e leitor, rollback sem alteração de ordens passadas.
-- Cinco fontes independentes V6.8, teste físico das três vias Itaim e demais gates históricos de produção **continuam pendentes**.
+**Próximo trabalho útil**: examinar em revisão offline se essa dependência é realmente necessária ao fluxo de comandas ou se gera bloqueios artificiais; mapear quem a produz/consome, seus efeitos e regressões de remoção. Preservar tudo que já funciona. Não remover `HOLD` de outros riscos sem a prova correta, nem mudar `clock_inference_used` para contornar a verificação.
 
-## Disposição do V8.42
-**V8.42 = HISTÓRICO TÉCNICO / PREMISSA OPERACIONAL SUPERSEDIDA.** O revisor sintético e seus testes não demonstram a necessidade de aprovar trocas; podem ser reusados só se houver um requisito real de exceção administrativa. Não conectar o protocolo de aprovação ao ciclo diário nem exigir que César identifique um aprovador para cada almoço/jantar. Evitar novos investimentos nesse caminho antes da correção temporal.
+Não pressupor que o horário da comanda automaticamente determina `LUNCH`/`DINNER`: **não foi pedido**. Não estabelecer horários, validar turnos ou classificar pedidos em novos turnos como objetivo deste projeto, salvo requisito confirmado posteriormente.
 
-## Fronteira de autoridade e prova
-Este documento é uma correção de requisito e plano de implementação, não CODE_READY, TEST_PASS da nova rota, DEPLOYED ou WORLD_PROVEN. Não alterados: computador CAIXA_MOOCA, arquivos reais de turno, fiscal, SQL, pedidos, impressão, serviços, ACL, configurações operacionais, fornecedores. PR #107 segue DRAFT / UNMERGED / HOLD; nenhum custo novo.
+## Teste de aceite futuro, só se houver mudança técnica necessária
+- Fluxo de uma comanda recebida para conferência e três vias com seus dados originais e horário já presente; não gerar autorização humana de turno nem recálculo desse horário.
+- Verificar em sandbox os caminhos que hoje dependem de estado de turno; testar se são requisitos reais, se podem impedir pedidos legítimos ou causar regressão.
+- Preservar idempotência, ordem, integridade, recuperação e controles já úteis, separando isso de mecânicas de turno não solicitadas.
+- As cinco fontes independentes V6.8, testes físicos no Itaim, paridade Windows, testes SQL/fiscal pertinentes e autorização operacional permanecem pendentes na medida aplicável. Nenhum teste novo foi executado por esta revisão documental.
 
-### Rastreamento
-- `src/production/serviceShiftState.ts` — rejeita explicitamente clock inference.
-- `src/production/shiftHumanReviewV70.ts` — proposta humana explícita anterior, sem autorização real.
-- `docs/COMANDAS_V841_SEPARACAO_CUSTODIA_TURNO_REVIEW_ONLY.md` — evidências técnicas anteriores preservadas.
-- `docs/COMANDAS_V842_AUTORIZACAO_HUMANA_TESTEMUNHA_INDEPENDENTE_REVIEW_ONLY.md` — rota supersedida como regra diária.
+## Evidência e fronteira
+**Comprovado nesta etapa**: premissa informada por César, leitura dos arquivos existentes e correção documental na branch de revisão. **Não comprovado**: alterações de execução, integração de horário no fluxo real, aceite de impressão, passagem automática de turno, instalação ou resultado na CAIXA_MOOCA.
+
+PR #107 continua em DRAFT/HOLD, sem merge/deploy. Não tocar na CAIXA_MOOCA, ACL, arquivos de turno, serviços, SQL, fiscal, pedidos, impressão ou Teknisa com base nesta correção.
+
+## Rastreabilidade
+- `src/production/serviceShiftState.ts` — gate explícito de estado de serviço, que deverá ser reavaliado quanto à necessidade.
+- `docs/COMANDAS_V842_AUTORIZACAO_HUMANA_TESTEMUNHA_INDEPENDENTE_REVIEW_ONLY.md` — estudo técnico histórico não aplicável como requisito de aprovação diária.
+- `docs/COMANDAS_V841_SEPARACAO_CUSTODIA_TURNO_REVIEW_ONLY.md` — evidências de permissões prévias são preservadas como observações de segurança, não como justificativa de burocracia de turno.
+
+**Aprendizado operacional:** antes de acrescentar autorização, inferência temporal ou configuração paralela, verificar se o dado já está na comanda e se há um efeito real que justifique a nova função. Sem diferença operacional demonstrável, não construir.
