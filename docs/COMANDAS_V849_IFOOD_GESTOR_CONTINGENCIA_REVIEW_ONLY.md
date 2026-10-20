@@ -103,3 +103,36 @@ A comparação de nomes/observações exige igualdade literal normalizada; difer
 - Impressão nativa GP x impressão Teknisa em trabalhos específicos, segunda rota fisicamente independente, integridade por pedido e nenhuma duplicação: **UNKNOWN_NEEDS_RECONCILIATION**.
 
 **Plano V8.49 permanece DRAFT/HOLD e sem ativação adicional.** A correção diz respeito à premissa e prioridade: preservar o fluxo que já funciona e comprová-lo sem substituir configurações existentes.
+
+
+## V8.51 — auditoria reproduzível da Impressora GP, sem atribuição artificial (20/10/2026)
+
+### Prova no computador real, sem alterar a operação
+
+Investigação da **CAIXA_MOOCA** por consulta remota, leitura de metadados e execução em memória do script da PR, sem escrever arquivo, instalar driver, reconfigurar impressão, fazer login, consultar conteúdo de pedidos ou enviar bytes ao spooler.
+
+**Software instalado:** `Gestor de Pedidos.exe` 8.10.4.892 (seis processos) e `Impressora GP iFood.exe` 1.2.0.405 (três processos). Ambos instalados em `Program Files`; componentes Electron com executável e `resources/app.asar` próprios. Gestor mantém conexões 443; isso não prova entrega de evento nem impressão.
+
+**Fonte Windows correta, schema inspecionado:** `Microsoft-Windows-PrintService/Operational`, evento 307, `Event.UserData.DocumentPrinted.Param5` = fila Windows; `Param6` = porta; `Param4` = proprietário/conta, **não** fila. Todos os 368 trabalhos do dia 19/10 tiveram `Param5` compatível com as filas instaladas. O título (`Param2`) era genérico/único, sem discriminar aplicativo.
+
+**Distribuição em 19/10, 19–23h:** 368 eventos 307 distribuídos por **sete filas**, sendo seis com driver Epson e uma com driver Elgin. Contagem por fila (sem nome bruto): **114, 89, 68, 62, 22, 9 e 4** (soma 368). **98 eventos após 21:27:56**, hora em que iniciaram os processos GP ainda ativos no momento da consulta. **Não interpretar a diferença de horário como autoria de impressão**: os processos podem ter reiniciado e diversas aplicações podem compartilhar filas. **Não interpretar 368 eventos como 368 pedidos distintos ou papéis entregues**.
+
+**Aplicativos e logs existentes:**
+- `%APPDATA%\order-manager-printer\logs\main.log`: 49 linhas, última modificação 19/10 21:28:00; leitura agregada não identificou registro por pedido, confirmação de papel ou termos básicos de impressão. **Ausência de marcador não é prova de ausência de uso**, já que pode haver outro canal/formatos.
+- `%APPDATA%\Gestor de Pedidos\log.log`: aproximadamente 10.816 linhas, modificado em 20/10; leitura apenas por categorias agregadas, sem imprimir linhas/IDs/consumidores. O arquivo não forneceu prova de envio do GP, nem mapeamento iFood/Teknisa com UUID confiável.
+- `%APPDATA%\Gestor de Pedidos\local-storage.json` existe, mas inspeção por **nomes de chaves não expôs uma configuração explícita de impressão**; nenhuma credencial, token, cookie ou valor de configuração foi extraído ou publicado.
+- `Get-Printer` encontrou impressoras Epson e Elgin, além de outros drivers. Nenhuma fila utilizada tinha identificador explícito `iFood` no nome. **Isso não nega que o GP use uma fila de nome genérico.**
+
+**Nova auditoria permanente na PR:**
+- `tools/comandas_gp_ifood_print_provenance_v851_readonly.ps1`: leitor por **dia local delimitado** de eventos 307, metadados dos aplicativos/filas e última modificação do log GP. Nenhum conteúdo de documento, endereço, cliente, nome de usuário, URL, pedido, token, senha ou fila é exportado; filas são pseudonimizadas. A saída faz distinção explícita entre evento de impressão Windows e prova de origem iFood, que continua `false`. Nenhuma ação ou efeito permitido.
+- `tools/verificar_comandas_gp_ifood_provenance_v851_static.js`: proteção estática adversarial contra ler títulos/contas dos documentos, assumir autoria, alegar prova física, consultar API, imprimir, reconfigurar spooler ou escrever arquivos. Validação de sintaxe PowerShell e teste em memória no host constituem provas separadas.
+
+**Validação local real 20/10 às 10:10 (-03:00):** execução diretamente em memória do conteúdo versionado em GitHub retornou `print_event_log_status=READABLE_BOUNDED`, `print_event_count=368`, `queue_groups=7`, `gp_process_instances=3`, `gestor_process_instances=6`, `gp_program_version=1.2.0.405`, `gestor_program_version=8.10.4.892`, `print_source_attribution_proven=false`, `gp_auto_print_setting_proven=false`, `physical_paper_proven=false`, `order_join_proven=false`, **todos os efeitos falsos**. Nenhum ajuste operacional nem arquivo gravado.
+
+### Decisão técnica
+
+**A impressão via GP pode servir como redundância contra uma falha *da integração da Teknisa*, mas não equivale ainda a redundância comprovada contra falha do Windows, do spooler, da rede ou da impressora física.** Os dois aplicativos foram observados na **mesma CAIXA_MOOCA**, portanto essa máquina permanece um possível ponto de falha comum. Além disso, o código V8.49 não tem coletor autenticado de pedidos GP: só compara duas capturas já fornecidas e verificadas externamente.
+
+**Portão seguinte antes de habilitar automação:** prova de origem por pedido no canal iFood (identidade, itens, notas, status e revisão), vínculo auditável à identidade Teknisa, confirmação de configuração GP atualmente ativa por observação autorizada e teste de queda da Teknisa com captura/saída física supervisionada **mediante autorização distinta**. Não criar duas vias automáticas sem mecanismo de deduplicação durável, não imprimir etiquetas fiscais, não tratar log ID 307 como garantia de papel.
+
+**Estado:** PROVEN software presente e log 307 no host, `UNKNOWN` autoria GP por pedido; PR #107 DRAFT/HOLD, no merge/no deploy/no print.
