@@ -330,10 +330,10 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
     }
     if (current) addResourceLine(p, current, "BAG_KIT");
   }
-  if (!ticket.bags.length && ticket.warnings.some((x) => /BAG_SIZE|EXACT_BAG|PACKAGING_PLAN_MISSING/.test(x))) {
+  if (!ticket.bags.length && ticket.warnings.some((x) => /BAG_SIZE|BAG_COUNT|EXACT_BAG|PACKAGING_PLAN_MISSING|RESOURCE_UNKNOWN:.*BAG/.test(x))) {
     p.line("SACOLA: A DEFINIR", "BAG_UNKNOWN");
   }
-  if (!ticket.kits.length && ticket.warnings.some((x) => /KIT_PLAN_MISSING|KIT_ASSIGNMENT/.test(x))) {
+  if (!ticket.kits.length && ticket.warnings.some((x) => /KIT_PLAN_MISSING|KIT_ASSIGNMENT|KITS_NOT_FACT|RESOURCE_UNKNOWN:.*KIT/.test(x))) {
     p.line("KIT: A DEFINIR", "KIT_UNKNOWN");
   }
   printResourceGroups(p, "ACOMP", ticket.accompaniments);
