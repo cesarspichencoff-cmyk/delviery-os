@@ -42,15 +42,15 @@ O futuro vínculo precisa nascer de evidência confiável e verificável da orig
 - `.github/workflows/deliveryos-thermal-shadow-gate.yml` (Linux + Windows)
 
 Contrato de duas capturas **minimizadas**:
-- `gestor`: `deliveryos.ifood-gestor-observation.v1`; `store_id`, `order_uuid` (ou `null`, nunca inventado), `display_id`, `status`, `snapshot_complete`, `items[{name,quantity,observations[]}]` e afirmação opcional `paper_claimed`.
-- `teknisa`: `deliveryos.teknisa-order-observation.v1`; `store_id`, `order_key`, `ifood_order_uuid` (ou `null`), `ifood_display_id`, `snapshot_complete`, `items[]` e `paper_claimed`.
+- `gestor`: `deliveryos.ifood-gestor-observation.v1`; `store_id`, `order_uuid` (ou `null`, nunca inventado), `display_id`, `status`, `snapshot_complete`, `items[{name,quantity,observations[]}]`, `order_observations[]` e afirmação opcional `paper_claimed`.
+- `teknisa`: `deliveryos.teknisa-order-observation.v1`; `store_id`, `order_key`, `ifood_order_uuid` (ou `null`), `ifood_display_id`, `snapshot_complete`, `items[]`, `order_observations[]` e `paper_claimed`.
 
 **Nenhuma dessas afirmações JSON autentica origem real ou pessoa.** O comparador só devolve um hash de referência, códigos de motivo e alertas, sem nomes, observações, CPF, endereço, telefone, número bruto de pedido ou UUID em sua saída. O hash de pedido só é gerado a partir de UUID completo; se a única identidade for o ID curto, não se exporta nem mesmo seu hash enumerável. Receber captura **não** significa que o Gestor tenha sido consultado por este trabalho.
 
 Condições discriminadas, sempre `HOLD` ou `MATCH_CANDIDATE_HOLD`:
 - Gestor capturado e Teknisa não capturada → investigar possível lacuna de integração/atraso; **não** declarar pedido perdido;
 - Teknisa capturada e Gestor não capturado → investigar cobertura/canal iFood;
-- diferença de unidade, ID curto, UUID, itens, quantidades, observações ou status → **alerta crítico**, sem correção automática;
+- diferença de unidade, ID curto, UUID, itens, quantidades, observações por item, observações gerais de pedido ou status → **alerta crítico**, sem correção automática;
 - coincidência de ID curto, mas ausência de UUID completo de qualquer lado → `FULL_IFOOD_UUID_JOIN_NOT_PROVEN`;
 - coincidência de UUID + itens + observações → **candidato de conciliação**, não prova de origem autenticada nem autorização de papel;
 - afirmação de impressão em ambos os canais → risco de duplicidade física, exigir reconciliação; jamais reimprimir automaticamente;
