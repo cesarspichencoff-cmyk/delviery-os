@@ -34,8 +34,14 @@ const Q019_CAMINHOS = [
 ];
 
 function rodar(arquivo: string): { status: number | null; saida: string } {
-  const r = spawnSync("npx", ["tsx", arquivo], { encoding: "utf8", timeout: 300_000 });
-  return { status: r.status, saida: `${r.stdout ?? ""}${r.stderr ?? ""}` };
+  // Windows: npx e um .cmd; spawnSync("npx") sem shell devolve ENOENT e
+  // classifica dois gates como FAIL_NOVO mesmo sem executar nenhum deles.
+  // Shell nao e necessario: cmd.exe recebe apenas subcomandos fixos daqui.
+  const windows = process.platform === "win32";
+  const bin = windows ? "cmd.exe" : "npx";
+  const args = windows ? ["/d", "/c", "npx.cmd", "tsx", arquivo] : ["tsx", arquivo];
+  const r = spawnSync(bin, args, { encoding: "utf8", timeout: 300_000 });
+  return { status: r.status, saida: `${r.stdout ?? ""}${r.stderr ?? ""}${r.error ? "\nSPAWN_ERROR: " + r.error.message : ""}` };
 }
 
 const linhas: string[] = [];
