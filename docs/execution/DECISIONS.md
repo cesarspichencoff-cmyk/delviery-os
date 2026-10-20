@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-10-09"
+  atualizado_em: "2026-10-20"
   state_basis: 953a3fb
 ---
 
@@ -2082,3 +2082,26 @@ declarar a idade, continua mentindo entre recargas); calcular a idade com `Date.
 contra `lida_em` do servidor.
 
 **Custo aceito:** quem quer o estado atual precisa tocar em "Atualizar leitura".
+
+### D96 — Procedência do feed: o servidor atribui o modo depois de provar o produtor; recusa é quarentena por evento
+
+**Decisão.** O consumidor do feed público de Entregas só admite um registro assinado (`pa1`, Ed25519
+sobre os bytes transmitidos) por chave de `platform.producer_key`, para a unidade, o tipo e o modo da
+concessão. O modo gravado é o ATRIBUÍDO pela concessão; `real` não é concedível (CHECK da 0010) e o
+consumidor isola `real` mesmo com a fronteira desligada (decisão do César, 20/10/2026). Recusa
+permanente vira quarentena durável e avança o cursor, decidida uma vez por `(source_ref, envelope)`;
+indisponibilidade do registro não grava nem avança. Frescor é a vida da chave, não a hora do poll.
+Fronteira desligada por padrão (`DELIVERYOS_ENTREGAS_PRODUCER_ATTESTATION=off`).
+
+**Por que.** O lab de 16/10 provou que `source_mode`, `source` e `unit_id` são declarações. A outbox é
+durável: medir o frescor contra o poll mandaria para a quarentena todo o backlog legítimo depois de uma
+parada maior que a janela; travar o lote até alguém pôr em quarentena na mão pararia a ingestão por um
+único registro forjado.
+
+**Alternativas recusadas:** bloquear o lote inteiro até haver quarentena manual (lab de 20/10, cedo);
+assinar `JSON.stringify` re-serializado (não canônico, e o JSONB reordena); FK universal para
+`domain_event` (mataria os sinais independentes); falhar o comando de Entregas quando a assinatura
+não for possível (pararia a operação para proteger um consumo que já é fail-closed).
+
+**Custo aceito:** revogar uma chave quarentena o que ela assinou e ainda não foi consumido — rotação
+exige drenar antes de revogar. A tabela de admissão cresce com todo evento consumido.

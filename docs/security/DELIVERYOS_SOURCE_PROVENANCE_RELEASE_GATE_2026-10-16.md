@@ -66,3 +66,39 @@ O PASS **não prova** autenticação real de dispositivo/serviço, instalação 
 **Próximo passo seguro:** criar uma fronteira de verificação anterior ao consumidor e ensaiar ponta a ponta um feed inteiro **fictício**, inclusive mistura de eventos válidos e rejeitados, cursor/checkpoint, crash/replay e os dois caminhos domain_event e sinal independente, sem transportar uma assinatura já validada por meio de simples declaração no JSON. Somente depois avaliar a fonte real com autorização e evidência externa específica.
 
 **Gates mantidos:** G0 laboratório PASS; G1 BLOQUEADO; G2/G3 PARCIAIS; G4/G5 NÃO HOMOLOGADOS. PR #124 em DRAFT/HOLD, sem merge/deploy/gasto/modificação da loja.
+
+
+## Terceira etapa — fronteira instalada no runtime, desligada por padrão (20/10/2026)
+
+**Estado: IMPLEMENTADO E PROVADO EM MEMÓRIA E NO BINÁRIO DO PILOTO; PROVA POSTGRESQL NOT_RUN (aguarda CI); ORIGEM REAL CONTINUA NO_GO.**
+Branch `candidate/deliveryos-opus55-runtime-20261020`, base `216dc2c3`. Decisões do César em 20/10: fronteira + assinador (toca `src/entregas/`), `real` fechado sempre no source-ingest, prova PG no CI após revisão, papéis só no repositório.
+
+**O que existe agora no executável que opera** (`entregas-source-ingest`):
+- Formato `pa1` (`src/entregas/contracts/producer-attestation.ts`): Ed25519 sobre os **bytes transmitidos**, nunca re-serialização; prefixo, `aud` e `scope` próprios — um `pt1` de delegação (credencial do ATOR) nunca vale como atestação do PRODUTOR, e vice-versa.
+- Assinador no piloto (`src/entregas/pilot/producer-signing.ts`), num único ponto: o `outbox.enqueue` da UoW que `tools/entregas_pilot_server.ts` abre. Chave só por ambiente (três variáveis, todas ou nenhuma); parcial ou inválida recusa o boot (78). A atestação nunca derruba comando de Entregas: o que não puder ser assinado sai sem `pa1` e cai em quarentena.
+- Fronteira (`src/platform/ingest/fronteira-de-procedencia.ts`), antes do adapter, em ordem fixa: formato → chave do registro → **assinatura** → contrato → vida da chave → `iat` → evento válido → unidade → tipo → modo (`real` nunca) → igualdade com o registro da outbox → antirreplay. Três saídas: admitido (modo **atribuído pelo servidor**), quarentena (durável, avança o cursor), indisponível (não grava, não avança).
+- Migration `0010`: `platform.producer_key` (real **não concedível** por CHECK; revogação de mão única; sem DELETE/TRUNCATE), `platform.producer_admission` (append-only também contra TRUNCATE; uma decisão por `(source_ref, envelope_sha256)`; nonce e `event_id` únicos por produtor entre admitidos) e `entregas.public_outbox.attestation`.
+- Escritor atestado: admissão + fato + mensagem na **mesma** transação, entregando ao `PgTransactionalWriter` existente (intocado) um `tx` que já gravou a admissão.
+- `DELIVERYOS_ENTREGAS_PRODUCER_ATTESTATION=off|required`, padrão `off`; `required` faz preflight das tabelas/permissões e recusa o boot (78) sem elas.
+- Independente da flag: o consumidor **isola todo `real`** (`source_mode_real_sem_autoridade_de_mundo`). O validador e o adapter seguem aceitando `real` por desenho; a política mora no consumidor.
+- Ciclo de vida: `tools/entregas_producer_admin.ts` (plano → fingerprint → `--apply=YES --expect`), recusa `real`, chave pública repetida, tipo fora do catálogo, validade invertida ou acima de 400 dias.
+- Papéis (`deploy/sql/papeis_minimos.sql`, não aplicado em banco real): source-ingest lê o registro e só INSERE admissão; piloto, crítico e assíncrono não tocam nenhum dos dois.
+
+**Riscos que os labs anteriores não cobriam e que foram fechados:** assinatura sobre JSON não canônico; JSONB reordenando chaves; janela de ±90 s contra a hora do poll (uma parada do consumidor quarentenaria a outbox legítima); nonce só em memória; releitura após queda confundida com replay; lote inteiro travado por um evento; indisponibilidade tratada como quarentena; decisão de quarentena revertida por releitura depois de registrar a chave; tetos de token e coluna incoerentes; atestação capaz de derrubar comando operacional.
+
+**Medições (20/10/2026, Windows, Node 24.18.0):**
+
+| Gate | Resultado |
+|---|---|
+| `test:platform:procedencia` (módulos de produção, portas de banco em memória) | **32/32 PASS** |
+| `test:platform:procedencia:mutacoes` | **20 verificações = 1 controle + 19 mutações, 0 cegas**; alvos restaurados com SHA-256 idêntico |
+| `test:entregas:producer-signing-boot` (binário de `dist/`) | **4/4 PASS** |
+| Lab de fronteira (16/16) | **16/16 PASS**; ORIGEM-13/14 invertidos: o RISCO reproduzido na linha de base agora é FECHADO |
+| Labs 20/20 e 27/27 | inalterados, PASS |
+| `tests/product/run-producer-attestation-pg-copiloto-lab-tests.ts` | **NOT_RUN** — recusa (78) fora do PG do runner; typecheck limpo |
+| `test:platform` | 1 falha **idêntica** à linha de base (guarda de fronteira, delegação do piloto) |
+| governança / m1-bridge | 14 verdes / 40 verdes |
+
+**Não prova:** autenticação real de produtor; custódia, instalação ou rotação operacional de chave; transporte; aparelho físico; RLS por unidade (o consumidor é multiunidade; a unidade é imposta pela concessão); a prova transacional em PostgreSQL (até o CI rodar); o preflight do bin com `required`; qualquer fonte real. **GO para eventos reais continua NO_GO.**
+
+**Regra operacional nova:** revogar uma chave põe em quarentena tudo o que ela assinou e ainda não foi consumido. Para rotacionar: registrar o `key_id` novo, trocar a chave do piloto, **drenar** a outbox assinada pela antiga, e só então revogar.

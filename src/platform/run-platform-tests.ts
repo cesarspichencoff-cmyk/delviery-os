@@ -663,6 +663,18 @@ async function fronteiras(): Promise<void> {
     // A fundação continua sem depender do domínio. As exceções são adapters
     // explícitos, já decididos/provados, e cada par arquivo->import é fechado.
     const permitidos = new Map<string, ReadonlySet<string>>([
+      // Procedência do produtor (20/10/2026): só CONTRATOS de Entregas —
+      // formato `pa1`, tipos/validador do evento público e o catálogo.
+      // Nenhum domínio, nenhuma persistência, nenhum piloto.
+      ["/src/platform/admin/producer-admin.ts", new Set([
+        "../../entregas/contracts/events/catalog",
+        "../../entregas/contracts/producer-attestation",
+      ])],
+      ["/src/platform/ingest/fronteira-de-procedencia.ts", new Set([
+        "../../entregas/contracts/producer-attestation",
+        "../../entregas/contracts/events/types",
+        "../../entregas/contracts/events/validate",
+      ])],
       ["/src/platform/bin/entregas-source-ingest.ts", new Set([
         "../../entregas/integration/durable-event-feed",
       ])],
@@ -674,6 +686,7 @@ async function fronteiras(): Promise<void> {
       ])],
       ["/src/platform/runtime/entregas-live-consumer.ts", new Set([
         "../../entregas/contracts/EntregasEventFeed",
+        "../../entregas/contracts/events/types",
       ])],
       ["/src/platform/runtime/rota-localizacao-despacho.ts", new Set([
         "../../entregas/foundation/platform-read-assertion",

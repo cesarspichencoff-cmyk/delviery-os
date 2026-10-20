@@ -109,12 +109,16 @@ async function main(){
  const simulated=await tick("simulated",true,true);
  check(simulated.result.status==="worked"&&simulated.facts.length===1&&
    simulated.facts[0].source_mode==="simulated","consumer preserva modo simulated explicito");
+ // 20/10/2026: o RISCO reproduzido aqui (real declarado atravessava consumer
+ // e writer) foi FECHADO no consumer. O validador e o adapter seguem aceitando
+ // `real` por desenho (ORIGIN-7/8): a politica mora no consumer, nao no tradutor.
  const real=await tick("real",true,true);
- check(real.result.status==="worked"&&real.facts.length===1&&
-   real.facts[0].source_mode==="real"&&real.messages.length===1,
-   "RISCO: quando ativado em memoria, modo real declarado atravessa consumer e writer sem prova da fonte");
- check(real.checkpoint.checkpoint!==null,
-   "checkpoint registra evento validado estruturalmente, nao autenticidade de produtor");
+ check(real.result.status==="worked"&&real.facts.length===0&&real.messages.length===0&&
+   real.result.isolated===1,
+   "FECHADO: modo real declarado e isolado pelo consumer; nenhum fato nem mensagem gravados");
+ check(real.checkpoint.checkpoint!==null&&
+   real.checkpoint.last_isolation?.reason==="source_mode_real_sem_autoridade_de_mundo",
+   "checkpoint avanca com isolamento explicito; real nunca vira fato sem autoridade de mundo");
  const control=await tick("control",true,true);
  check(control.result.status==="worked"&&control.facts.length===1&&
    control.facts[0].source_mode==="control","consumer preserva modo control sem conversao a real");
@@ -122,6 +126,6 @@ async function main(){
  check(explicitDomain!==null&&explicitDomain.source_mode==="real",
    "builder do dominio segue atestacao recebida; nao faz verificacao independente");
  console.log("ENTREGAS_SOURCE_PROVENANCE_BOUNDARY_LAB: "+passes+"/"+passes+
-  " PASS (UNTRUSTED REAL CLAIM CONFIRMED, NO REAL SOURCE/INGEST/DEPLOY)");
+  " PASS (REAL CLAIM ISOLATED BY CONSUMER, NO REAL SOURCE/INGEST/DEPLOY)");
 }
 void main().catch(e=>{console.error(e);process.exitCode=1});

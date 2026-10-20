@@ -12,6 +12,10 @@ import { createPublicKey, type KeyObject } from "node:crypto";
 import { readFileSync, existsSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { join, extname, isAbsolute } from "node:path";
 import { loadPilotConfig, resolveBanner, findUserByToken } from "../src/entregas/pilot/pilot-config";
+import {
+  carregarAssinanteDeProdutor,
+  fonteComAtestacaoDeProdutor,
+} from "../src/entregas/pilot/producer-signing";
 import { createPilotLogger } from "../src/entregas/pilot/pilot-log";
 import { PilotApplicationFacade } from "../src/entregas/pilot/pilot-facade";
 import {
@@ -130,6 +134,18 @@ if (pilotDelegationKeyB64 || pilotDelegationKid) {
     console.error("[piloto] public key delegacao invalida: boot recusado");
     process.exit(78);
   }
+}
+/*
+ * Atestação do produtor do feed público. Opt-in por ambiente: ausente, a
+ * outbox sai como sempre saiu; configurada pela metade ou inválida, o boot é
+ * recusado aqui, antes de abrir porta ou storage. A chave nunca vai para log.
+ */
+let assinanteDeProdutor: ReturnType<typeof carregarAssinanteDeProdutor> = null;
+try {
+  assinanteDeProdutor = carregarAssinanteDeProdutor(process.env);
+} catch {
+  console.error("[piloto] chave de produtor do feed invalida: boot recusado");
+  process.exit(78);
 }
 // Plataforma configurada = GPS canônico ativo. Nesse modo nunca caímos de
 // volta silenciosamente para a memória do piloto.
@@ -1067,8 +1083,16 @@ async function startServer(): Promise<void> {
   facade = new PilotApplicationFacade(
     cfgResolved,
     log,
-    persistenceBackend.storage,
+    assinanteDeProdutor
+      ? fonteComAtestacaoDeProdutor(persistenceBackend.storage, assinanteDeProdutor)
+      : persistenceBackend.storage,
     persistenceBackend.ready_orders,
+  );
+  console.log(
+    "[piloto] atestacao do produtor do feed: " +
+      (assinanteDeProdutor
+        ? "SIM (" + assinanteDeProdutor.producer_id + "/" + assinanteDeProdutor.kid + ")"
+        : "NAO — outbox sem atestacao"),
   );
 
   server.listen(PORT, BIND, () => {

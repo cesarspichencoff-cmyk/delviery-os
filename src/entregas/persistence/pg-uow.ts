@@ -206,6 +206,8 @@ function rowToOutbox(row: SqlRow): OutboxRecord {
     last_attempt_at: iso(row.last_attempt_at),
     last_error: optText(row.last_error),
     published_at: iso(row.published_at),
+    // Coluna da 0010; antes dela a linha simplesmente não a traz.
+    ...(typeof row.attestation === "string" ? { attestation: row.attestation } : {}),
   };
 }
 
@@ -696,17 +698,32 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
       }
 
       for (const r of this.outboxWrites) {
+        const valores = [
+          r.outbox_id,this.unitId,r.event.event_id,r.event.idempotency_key,
+          JSON.stringify(r.event),r.status,r.attempts,r.created_at,
+          r.last_attempt_at ?? null,r.last_error ?? null,r.published_at ?? null,
+        ];
+        // A coluna `attestation` (0010) só é citada quando há atestação: o
+        // piloto sem chave continua gravando em banco anterior à 0010, e o
+        // piloto COM chave falha alto num banco sem ela — nunca grava sem.
+        if (typeof r.attestation === "string") {
+          await tx.query(
+            `INSERT INTO entregas.public_outbox
+              (outbox_id,unit_id,event_id,idempotency_key,event,status,attempts,
+               created_at,last_attempt_at,last_error,published_at,attestation)
+             VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12)
+             ON CONFLICT DO NOTHING`,
+            [...valores, r.attestation],
+          );
+          continue;
+        }
         await tx.query(
           `INSERT INTO entregas.public_outbox
             (outbox_id,unit_id,event_id,idempotency_key,event,status,attempts,
              created_at,last_attempt_at,last_error,published_at)
            VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11)
            ON CONFLICT DO NOTHING`,
-          [
-            r.outbox_id,this.unitId,r.event.event_id,r.event.idempotency_key,
-            JSON.stringify(r.event),r.status,r.attempts,r.created_at,
-            r.last_attempt_at ?? null,r.last_error ?? null,r.published_at ?? null,
-          ],
+          valores,
         );
       }
 

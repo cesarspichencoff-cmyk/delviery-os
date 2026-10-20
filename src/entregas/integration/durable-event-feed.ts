@@ -78,6 +78,59 @@ export class CommittedOutboxEntregasEventFeed implements EntregasEventFeed {
   }
 }
 
+/**
+ * Leitura com atestação, para a fronteira de procedência da plataforma.
+ *
+ * Mesmo snapshot, mesma ordem e mesmo cursor de `poll`; só acrescenta a
+ * atestação e a identidade do registro (`outbox_id`). Nada aqui verifica:
+ * quem consome decide.
+ */
+export interface ItemDoFeedAtestavel {
+  readonly source_ref: string;
+  readonly event: EntregasPublicEvent;
+  readonly attestation: string | null;
+}
+
+export class CommittedOutboxAttestableFeed extends CommittedOutboxEntregasEventFeed {
+  constructor(private readonly openRecords: OutboxReaderFactory) {
+    super(openRecords);
+  }
+
+  async pollAtestavel(
+    cursor: string | null,
+    limit = 50,
+  ): Promise<{ itens: ItemDoFeedAtestavel[]; next_cursor: string | null }> {
+    if (!Number.isInteger(limit) || limit <= 0) {
+      throw new Error("entregas_feed_limit_invalid");
+    }
+    const outbox = await this.openRecords();
+    const records = (await outbox.all()).map((r) => structuredClone(r));
+    let start = 0;
+    if (cursor !== null) {
+      const idx = records.findIndex((r) => r.event.event_id === cursor);
+      if (idx < 0) throw new EntregasFeedCursorNotFound(cursor);
+      start = idx + 1;
+    }
+    const itens = records.slice(start, start + limit).map((r) => ({
+      source_ref: r.outbox_id,
+      event: r.event,
+      attestation: typeof r.attestation === "string" ? r.attestation : null,
+    }));
+    return {
+      itens,
+      next_cursor: itens.length ? itens[itens.length - 1].event.event_id : cursor,
+    };
+  }
+}
+
+export function createFileEntregasAttestableFeed(
+  dataFile: string,
+): CommittedOutboxAttestableFeed {
+  return new CommittedOutboxAttestableFeed(
+    () => openFileUnitOfWork(dataFile).outbox,
+  );
+}
+
 export function createFileEntregasEventFeed(
   dataFile: string,
 ): EntregasEventFeed {

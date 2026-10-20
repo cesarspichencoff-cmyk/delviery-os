@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020]
   workflow_dispatch:
 
 permissions:
@@ -50,6 +50,14 @@ jobs:
       - run: npx tsc --noEmit
       - name: produtor ficticio assinado -> consumidor real (LAB em memoria)
         run: npx tsx tests/product/run-attested-feed-consumer-memory-lab-tests.ts
+      - name: fronteira de procedencia do produtor (modulos de producao, portas em memoria)
+        run: npx tsx src/platform/run-producer-attestation-tests.ts
+      - name: fronteira de procedencia — mutacoes (zero cegas)
+        run: npx tsx src/platform/run-producer-attestation-mutation-tests.ts
+      - name: piloto real (dist/) assina a outbox ou recusa subir
+        run: npx tsx src/entregas/pilot/run-producer-signing-boot-tests.ts
+      - name: real declarado e isolado pelo consumer (LAB de fronteira)
+        run: npx tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
       - run: npm run -s build:platform
       - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
         run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
@@ -65,6 +73,8 @@ jobs:
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
       - name: piloto outbox -> plataforma -> Copiloto no mesmo PostgreSQL (LAB sintético)
         run: npx tsx tests/product/run-pilot-copiloto-outbox-e2e-lab-tests.ts
+      - name: produtor assinado -> fronteira sob papel minimo -> plataforma -> Copiloto (LAB PG efemero)
+        run: npx tsx tests/product/run-producer-attestation-pg-copiloto-lab-tests.ts
       - name: falha do PostgreSQL nao revela IP, porta ou segredo no painel
         run: npx tsx tests/product/run-entregas-db-error-boundary-tests.ts
       # axe-core NAO e dependencia do repositorio (package.json intocado): versao

@@ -12,6 +12,13 @@ export type EntregasSourceIngestConfig =
       control_file: string;
       tick_ms: number;
       batch_size: number;
+      /**
+       * Fronteira de procedência do produtor. `off` (padrão) mantém o
+       * consumo sem atestação; `required` só admite registro assinado por
+       * chave do registro de produtores, e põe o resto em quarentena.
+       * Em nenhum dos dois este processo grava `real`.
+       */
+      producer_attestation: "off" | "required";
     };
 
 export class EntregasSourceIngestConfigError extends Error {
@@ -54,6 +61,18 @@ function positive(env: NodeJS.ProcessEnv, nome: string, padrao: number): number 
   return n;
 }
 
+function atestacao(env: NodeJS.ProcessEnv, nome: string): "off" | "required" {
+  const v = env[nome]?.trim();
+  if (!v || v === "off") return "off";
+  if (v === "required") return "required";
+  // Sem sinônimos e sem "talvez": um erro de digitação não pode virar off
+  // em silêncio quando a intenção era exigir.
+  throw new EntregasSourceIngestConfigError(
+    nome + " precisa ser off ou required",
+    nome,
+  );
+}
+
 export function loadEntregasSourceIngestConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): EntregasSourceIngestConfig {
@@ -67,5 +86,6 @@ export function loadEntregasSourceIngestConfig(
     control_file: required(env, "DELIVERYOS_ENTREGAS_KILL_SWITCH_FILE"),
     tick_ms: positive(env, "DELIVERYOS_ENTREGAS_SOURCE_TICK_MS", 1_000),
     batch_size: positive(env, "DELIVERYOS_ENTREGAS_SOURCE_BATCH_SIZE", 50),
+    producer_attestation: atestacao(env, "DELIVERYOS_ENTREGAS_PRODUCER_ATTESTATION"),
   };
 }

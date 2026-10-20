@@ -100,6 +100,14 @@ GRANT SELECT (idempotency_key) ON platform.event_log TO deliveryos_source_ingest
 GRANT INSERT ON platform.outbox TO deliveryos_source_ingest;
 -- ON CONFLICT (outbox_id) exige SELECT na coluna árbitra.
 GRANT SELECT (outbox_id) ON platform.outbox TO deliveryos_source_ingest;
+-- Procedência (0010). O registro de produtores é só LIDO: quem concede,
+-- rotaciona ou revoga é o dono, pela ferramenta administrativa — nunca o
+-- runtime, nunca o produtor. O livro de admissões é append-only também por
+-- privilégio: SELECT (decisão anterior, antirreplay) e INSERT, sem UPDATE,
+-- DELETE ou TRUNCATE; a trigger continua como segunda barreira.
+GRANT SELECT ON platform.producer_key TO deliveryos_source_ingest;
+GRANT SELECT, INSERT ON platform.producer_admission TO deliveryos_source_ingest;
+GRANT USAGE ON SEQUENCE platform.producer_admission_seq_seq TO deliveryos_source_ingest;
 
 -- ----------------------------------------------------- ENTREGAS PILOT
 -- Estado operacional do piloto multi-instância. Pode ler e alterar somente

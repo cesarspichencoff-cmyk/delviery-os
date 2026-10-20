@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-04"
+  atualizado_em: "2026-10-20"
   state_basis: cd8ed14
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -1562,3 +1562,23 @@ Provas:
 **Fronteira atual:** B7 passa de “sem contrato de identidade/autorização” para
 **CONTRACT_PREPARED / NOT_EXECUTABLE**. O blocker restante é conectar identidade humana real,
 executor de decisão e auditoria durável, e só então provar uma ação controlada fora de produção.
+
+## Procedência do feed (20/10/2026) — o que ficou aberto · ABERTO
+
+Detalhe: `docs/security/DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md`, terceira etapa; D96.
+
+- **Prova PostgreSQL NOT_RUN.** `tests/product/run-producer-attestation-pg-copiloto-lab-tests.ts` só roda
+  no PG próprio do runner (recusa 78 fora dele); este Windows não tem PostgreSQL nem Docker. Rodar exige
+  push do branch candidato, que depende de autorização específica do César.
+- **Preflight do bin com `required` não exercido** em processo real (precisa de PG).
+- **Pré-existente, não corrigido:** a guarda "platform só conhece Entregas pelas fronteiras autorizadas"
+  (`test:platform`) aborta no primeiro par fora da lista e assim **esconde dois**:
+  `src/platform/auth/pilot-delegation-issuer.ts` e `src/platform/runtime/rota-identidade-delegada-piloto.ts`,
+  ambos -> `../../entregas/pilot/delegated-authorization`. Decidir a fronteira da delegação não é desta missão.
+- **Pré-existente, não corrigido:** `tests/product/run-entregas-source-provenance-boundary-lab-tests.ts:80`
+  não passa no `tsc` (`origin:"app"` não é `DomainEvent.origin`). O CI roda o lab por `tsx`, que não checa tipo.
+- **Ambiente:** `tests/product/run-sem-fail-novo.ts` não mede nada no Windows (`spawnSync("npx")` = ENOENT);
+  os dois gates que ele classifica, rodados direto, ficaram verdes (m1-bridge 40, governança 14).
+- **Suspeita a reproduzir no PG do CI (lida em arquivo, não executada):** `deliveryos_critical` não tem
+  `SELECT` em `identity.actor`/`identity.unit`, que `PgPilotDelegationRegistry` consulta — sob o papel
+  mínimo, as rotas de delegação responderiam 503.

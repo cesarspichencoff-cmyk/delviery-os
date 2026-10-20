@@ -18,6 +18,7 @@
     "tools/entregas_pilot_server.ts",
     "tools/entregas_storage_cutover.ts",
     "tools/entregas_device_admin.ts",
+    "tools/entregas_producer_admin.ts",
     "tools/product_system_server.ts"
   ],
   "exclude": [

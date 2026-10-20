@@ -17,6 +17,13 @@ export interface OutboxRecord {
   last_attempt_at?: string;
   last_error?: string;
   published_at?: string;
+  /**
+   * Atestação `pa1` do produtor sobre `event` (contracts/producer-attestation).
+   * Ausente = produtor sem chave configurada; a fronteira da plataforma, quando
+   * ligada, põe o registro em quarentena. Nunca é prova por estar presente:
+   * só vale depois de verificada contra o registro de produtores.
+   */
+  attestation?: string;
 }
 
 /**
