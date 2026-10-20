@@ -64,3 +64,23 @@ PR #107 continua em DRAFT/HOLD, sem merge/deploy. Não tocar na CAIXA_MOOCA, ACL
 - `docs/COMANDAS_V841_SEPARACAO_CUSTODIA_TURNO_REVIEW_ONLY.md` — evidências de permissões prévias são preservadas como observações de segurança, não como justificativa de burocracia de turno.
 
 **Aprendizado operacional:** antes de acrescentar autorização, inferência temporal ou configuração paralela, verificar se o dado já está na comanda e se há um efeito real que justifique a nova função. Sem diferença operacional demonstrável, não construir.
+
+
+## V8.48 — a dupla de impressoras não é prova de alternância almoço/jantar (20/10/2026)
+
+**Correção de uma hipótese anterior:** o consumidor de revisão assumia que as duplas de código `00009/00003` e `00006/00004` eram impressoras *alternativas*, selecionadas por `LUNCH/DINNER`. A configuração oficial do produto comprova somente a presença dos dois destinos; não comprova que sejam mutuamente exclusivos ou qual deles imprimiria em determinado horário.
+
+**Nova evidência de código em máquina autorizada, somente leitura:** `C:\TEKNISA\odhenPOS\backend_74000\vendor\odhen\api\src\Service\ImpressaoPedido.php`, SHA-256 `BECAE373377F965C2DD2B8AB1DE9A904C71C6B820EB35980A894279C28670E52`.
+- Linhas 805–882: `indexaProdutosPorImpressora` constrói estruturas distintas `impressoraProducao` e `impressoraProducao2`.
+- Linhas 1046–1063: a segunda origem usa `B_NRSEQIMPRPROD2`, com inclusão independente de produtos.
+- Linhas 214–247: existem laços separados para `impressoraProducao` e `impressoraProducao2`, ambos capazes de chamar `montaPedido`, sujeitos aos seus próprios filtros de parâmetro de impressão.
+- Não há seleção `LUNCH/DINNER` nesse trecho. A evidência é **fonte encontrada no disco**, não prova de qual caminho foi executado por um pedido integrado, nem de que ambas as impressoras receberam papel. Outros consumidores ou configurações ainda podem importar.
+
+**Decisão prudente para o candidato SHADOW, NÃO instalado:**
+- Nunca escolher um dos dois destinos apenas porque `event.service_resolution.service` declara `LUNCH` ou `DINNER`, mesmo com a declaração estruturalmente coerente.
+- Quando o produto exigir uma dessas duplas, registrar `SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN_*` ou `SUSHI2_DUAL_PRODUCTION_ROLE_UNPROVEN_*` e não projetar nenhum dos dois destinos como selecionado. Rotas independentes e produtos de destino único continuam disponíveis só para diagnóstico; `ready=false` e nenhuma impressão.
+- **Não** converter essa descoberta em impressão nas duas impressoras: isso também requer prova de caminho executado, efeitos, ordem e prevenção de duplicidade.
+- **Não** remover a barreira global de estado de serviço do watcher instalado: o problema de ingestão e o roteamento do papel são duas fronteiras diferentes. O evento pode preservar fielmente `DTHRABERMESA` sem que isso prove qualquer mapeamento de impressora.
+- Testes de regressão usam pares sintéticos, `LUNCH`, `DINNER`, ausente, inventado, evidência contraditória, rotas únicas e cozinha independente. CI específico permanece pendente de observação após o commit.
+
+**Próximo teste discriminatório, sem efeitos:** localizar como o pedido iFood realmente entra no código de impressão Odhen (rotina invocada, relação dos campos A/B com os códigos de impressora, filtros aplicáveis), confrontar com a configuração oficial da loja e com uma revisão real; somente então definir os destinos lógicos permitidos. Até esse resultado, a hipótese `LUNCH -> BALCÃO` / `DINNER -> DELIVERY` está retirada do candidato de revisão.
