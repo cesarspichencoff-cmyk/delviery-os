@@ -36,7 +36,7 @@ check("V7.16 manifest provides no operational printer target nor deployment comm
 check("V7.16 every material cutover requirement remains OPEN",()=>{
  assert.equal(manifest.requires_before_any_real_cutover.length,8);
  assert.ok(manifest.requires_before_any_real_cutover.includes(
-  "CURRENT_HUMAN_SHIFT_APPROVAL_EFFECTIVE_FROM_TIMESTAMP"));
+  "SOURCE_BOUND_ROUTING_TO_CORRECT_STATION_PROVEN_WITHOUT_SHIFT_APPROVAL"));
  assert.ok(manifest.requires_before_any_real_cutover.includes(
   "ORDER_EXACT_SNAPSHOT_OBSERVATIONS_JOIN"));
  assert.ok(manifest.requires_before_any_real_cutover.includes(
