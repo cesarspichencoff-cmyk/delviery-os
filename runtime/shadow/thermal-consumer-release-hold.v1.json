@@ -6,7 +6,7 @@
   "scope": "COMANDAS_THERMICAS_ONLY",
   "preferred_future_candidate": {
     "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
-    "git_blob_sha1": "71558310d38889f95823c3fed0562fd99d42d161",
+    "git_blob_sha1": "1cb8742fb4dee34425f7f30010fda21c04102550",
     "code_ready_only": true,
     "installed": false,
     "print_authorized": false,
