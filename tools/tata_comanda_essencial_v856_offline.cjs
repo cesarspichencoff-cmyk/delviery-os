@@ -53,11 +53,14 @@ function projectTataComandaEssencial(input){
  // snapshot is not explicitly linked. Self-report is still NOT attestation.
  if(!safeText(g.capture_ref)||b.ifood_capture_ref!==g.capture_ref)
   return base("IFOOD_SOURCE_CAPTURE_REFERENCE_NOT_MATCHED");
- const items=match.comanda.items;
- if(!Array.isArray(items)||items.length===0||
-    items.some(x=>!safeText(x.name)||!Number.isSafeInteger(x.quantity)||
-      x.quantity<=0||!Array.isArray(x.notes)||
-      x.notes.some(n=>!safeText(n))))
+ const items=match.comanda.items.map(x=>({
+  ...x,notes:x.notes.filter(n=>clean(n).length>0)
+ }));
+ if(items.length===0||
+    items.some(x=>!safeText(x.name)||
+      x.name.toLocaleUpperCase("pt-BR")==="A DEFINIR"||
+      !Number.isSafeInteger(x.quantity)||x.quantity<=0||
+      !Array.isArray(x.notes)||x.notes.some(n=>!safeText(n))))
   return base("ESSENTIAL_ITEM_OR_OBSERVATION_INVALID");
  const optional={
   caixa:label(input.packaging,"caixa"),
