@@ -1,13 +1,18 @@
 /** M1B: browser evidence for the Home's source truth, not a production claim.
- * Requires the separate local demo preview on 127.0.0.1:5368. No external IO.
+ * Requires a verified localhost preview (M1B_URL; default 127.0.0.1:5368). No external IO.
  */
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright";
 
-const host = "http://127.0.0.1:5368";
+const host = process.env.M1B_URL || "http://127.0.0.1:5368";
+if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(host)) {
+  throw Error("M1B_REVIEW_REFUSED: only the developer localhost server is authorized");
+}
 const scenes = ["calmo", "ambiente", "foco", "degradado"];
 const sizes = [
   { w: 320, h: 720 }, { w: 375, h: 812 }, { w: 390, h: 844 },
@@ -20,6 +25,13 @@ async function main(): Promise<void> {
   };
   assert.equal(h.demo, true);
   assert.equal(h.leitura_do_servidor, false);
+  // Binds visual evidence to this exact checkout, never a stale branch server.
+  const css = await fetch(host + "/surfaces/home.css");
+  assert.equal(css.status, 200);
+  const fingerprint = (s: string) => createHash("sha256").update(s).digest("hex");
+  assert.equal(fingerprint(await css.text()),
+    fingerprint(readFileSync("src/product/ui/surfaces/home.css", "utf8")),
+    "preview CSS does not belong to the tested worktree");
   mkdirSync(dest, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   let passed = 0;
@@ -77,7 +89,9 @@ async function main(): Promise<void> {
   }
   writeFileSync(join(dest, "measurements.json"), JSON.stringify({
     classification: "DEMONSTRATION_ONLY_NOT_HUMAN_APPROVED",
-    passed, scenes, viewports: sizes, measures,
+    passed, host,
+    git_head_at_review: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+    scenes, viewports: sizes, measures,
   }, null, 2));
   console.log("M1B_HOME_SIMULATION_TRUTH: " + passed + "/" + passed +
     " PASS, screenshots and measurements " + dest + "; visual human acceptance pending");
