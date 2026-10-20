@@ -136,3 +136,16 @@ Investigação da **CAIXA_MOOCA** por consulta remota, leitura de metadados e ex
 **Portão seguinte antes de habilitar automação:** prova de origem por pedido no canal iFood (identidade, itens, notas, status e revisão), vínculo auditável à identidade Teknisa, confirmação de configuração GP atualmente ativa por observação autorizada e teste de queda da Teknisa com captura/saída física supervisionada **mediante autorização distinta**. Não criar duas vias automáticas sem mecanismo de deduplicação durável, não imprimir etiquetas fiscais, não tratar log ID 307 como garantia de papel.
 
 **Estado:** PROVEN software presente e log 307 no host, `UNKNOWN` autoria GP por pedido; PR #107 DRAFT/HOLD, no merge/no deploy/no print.
+
+
+## V8.52 — impedir comparação de capturas vencidas ou de horários diferentes
+
+**Falha de processo tratada:** o comparador V8.49 analisa duas observações minimizadas, mas não determina se as duas capturas foram obtidas no mesmo intervalo ou se refletem um estado recente. A inspeção READ-ONLY real da CAIXA_MOOCA em 20/10 às 10:41 (-03) releu 20 pares reais do TATÁ Reader: **20/20** mantinham evento→decisão→relatório com revisão única, mas **0/20** estavam autorizados a seguir; **20/20** tinham `SERVICE_STATE_DATE_MISMATCH_ORDER_DATE` e `SERVICE_STATE_EXPIRED_FOR_ORDER`. Em comparação, o último arquivo observado tinha aproximadamente **12 horas** de idade. Isso **não** prova que o Gestor iFood deixou de receber ou imprimir pedidos atuais, nem deve gerar uma tarefa humana diária de mudar o turno.
+
+**Correção isolada, sem alteração do V8.49:** `tools/comandas_ifood_capture_coherence_v852_offline.cjs` antecede a comparação lógica com um gate puro de cobertura temporal. O chamador apresenta duas descrições de captura, cada uma com `source`, `fetch_succeeded`, `window_complete`, `from`, `until`; um instante `evaluated_at` com timezone e um limite explícito `max_capture_age_seconds` selecionado apenas para diagnóstico. O limite **não é SLA operacional, relógio confiável ou exigência de aprovação de turno**.
+
+**Sempre HOLD** quando falta uma fonte, a captura falhou/incompleta, data/hora é impossível ou sem timezone, alguma captura é futura, janelas não se sobrepõem, dados excedem a idade declarada, UUID não foi provado, pedido cancelado ou há divergência de composição. Quando as capturas estão contemporâneas e o V8.49 encontra UUID, itens e observações coincidentes, o máximo é `TEMPORAL_MATCH_CANDIDATE_HOLD`. Dois JSONs afirmando cobertura completa **não provam acesso real/autenticidade do iFood ou da Teknisa**, nem provam que um pedido não existe no sistema.
+
+**Privacidade e segurança:** não exibe UUID, ID curto, itens, observações, dados de clientes ou chave de pedido. Nunca autoriza envio, impressão, spooler, confirmação/cancelamento iFood, SQL, sequência, serviço, deploy ou escrita; preserva `DRAFT/HOLD`. Casos adversariais abrangem capturas divergentes, antigas, futuras, inválidas, canceladas, ausentes, alegação de impressão dupla e falsos joins por número curto.
+
+**Próxima prova relevante:** obter capturas **realmente autenticadas por fonte**, completas, da mesma janela/atualização de pedido (UUID completo do iFood e correspondência ao pedido Teknisa). V8.52 não contém leitor GP nem integração API. A amostra antiga do TATÁ Reader não pode ser promovida a observação contemporânea.
