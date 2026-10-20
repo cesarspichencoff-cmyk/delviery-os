@@ -149,3 +149,22 @@ Investigação da **CAIXA_MOOCA** por consulta remota, leitura de metadados e ex
 **Privacidade e segurança:** não exibe UUID, ID curto, itens, observações, dados de clientes ou chave de pedido. Nunca autoriza envio, impressão, spooler, confirmação/cancelamento iFood, SQL, sequência, serviço, deploy ou escrita; preserva `DRAFT/HOLD`. Casos adversariais abrangem capturas divergentes, antigas, futuras, inválidas, canceladas, ausentes, alegação de impressão dupla e falsos joins por número curto.
 
 **Próxima prova relevante:** obter capturas **realmente autenticadas por fonte**, completas, da mesma janela/atualização de pedido (UUID completo do iFood e correspondência ao pedido Teknisa). V8.52 não contém leitor GP nem integração API. A amostra antiga do TATÁ Reader não pode ser promovida a observação contemporânea.
+
+
+## V8.53 — abertura do delivery com iFood já ativo, sem intervenção na loja (20/10/2026)
+
+**Contexto imediato confirmado por César:** o delivery abre agora e o iFood já está **ativado**. Portanto, a abertura não é oportunidade para alterar impressoras, reiniciar aplicativos, alternar impressão automática, provocar pedidos de teste, limpar filas ou deslocar a produção para o DeliveryOS. O funcionamento existente permanece sob operação humana da loja.
+
+**CAIXA_MOOCA, leitura inicial 20/10 às 10:59 (-03):** seis processos `Gestor de Pedidos`, três `Impressora GP iFood`, `Spooler=Running`, inicialização do GP atual registrada em 19/10 21:27:56 e do Gestor em 19/10 21:28:08. O último arquivo do TATÁ Reader observado era 19/10 22:42:29. Não se pode inferir indisponibilidade do iFood a partir do leitor TATÁ vencido.
+
+**Comprovante do artefato V8.53 diretamente no host, 20/10 às 11:00:11 (-03):** execução apenas em memória do script da própria PR, `tools/comandas_opening_pulse_v853_readonly.ps1`, confirmou `gp_processes=3`, `gestor_processes=6`, `spooler_status=Running`, `windows_print_log=ENABLED`, `windows_307_count=0` nos últimos 60 minutos, `reader_last_event_age_minutes=737.7`, `application_live_processes_proven=true`; `ifood_orders_received_proven=false`, `orders_missing_proven=false`, `gp_auto_print_setting_proven=false`, `paper_exited_proven=false`, `teknisa_parity_proven=false`, todos os efeitos falsos. **Zero eventos 307 antes do primeiro pedido não significa falha e não autoriza impressão/reinicialização**; eventos Windows 307 também não identificam o GP como aplicativo de origem.
+
+**Nova verificação repetível em revisão:** `tools/comandas_opening_pulse_v853_readonly.ps1`, com janela de 1 a 120 minutos e máximo de 2000 eventos. Lê somente processos, estado Spooler, metadados da existência/data do log GP, contagem de eventos 307 e a data do último arquivo TATÁ Reader. Não lê conteúdo de pedido, sessão, cookies, credenciais, logs brutos, documento impresso, fila por nome, SQL, número de pedido, dados de cliente nem rede. Retorna sempre separadas as provas: aplicativo ativo ≠ pedido recebido ≠ impressão atribuída ao GP ≠ papel físico.
+
+**Proteção de regressão:** `tools/verificar_comandas_opening_pulse_v853_static.js` exige marcadores de incerteza e efeitos falsos e bloqueia mutações para assumir perda de pedido, afirmar papel, ler conteúdo sensível ou efetuar mudanças de impressora/serviço/configuração. O workflow Linux e Windows exige checagem estática e parser PowerShell, sem executar o probe no CI.
+
+### Procedimento operacional de contingência durante a abertura
+
+Se houver divergência na chegada de pedidos, a equipe deve conferir **o pedido real no Gestor iFood já aberto**, depois buscar a entrada correspondente na Teknisa, preservando a data, a loja, o ID visível e itens/observações; um número curto igual, isolado, **não demonstra identidade canônica**. Se a comanda já saiu em papel, evitar reimpressão presumida. Só uma confirmação operacional humana de pedido e situação de produção permite decidir a ação de contingência existente da loja. O DeliveryOS em revisão só informa diagnóstico, **não comanda produção, confirma pedido ou dispara impressão**.
+
+**DRAFT/HOLD:** nenhum merge, deploy, impressão, reinicialização, instalação, mudança de processo, fila, SQL, fiscal/SEFAZ ou sequência foi autorizado ou realizado. A melhoria da revisão não prova o funcionamento fim a fim com pedidos novos; isso exige evidência dos pedidos reais depois da abertura.
