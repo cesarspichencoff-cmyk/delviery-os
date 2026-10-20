@@ -64,6 +64,12 @@ function inspect(manifest,eventDir,decisionDir){
       ev.snapshot_hash?.toLowerCase()!==snapshot||
       v1.snapshot_hash?.toLowerCase()!==snapshot||
       ev.order_key!==v1.order_key||
+      // A matching pair of documents with valid file hashes can still
+      // disagree with the order's native composite identity. Fail closed.
+      ev.order_key!==[
+       ev.order?.CDFILIAL,ev.order?.CDLOJA,
+       ev.order?.NRVENDAREST,ev.order?.NRCOMANDA
+      ].join('|')||
       watcherHash(ev)!==snapshot||!Array.isArray(ev.order?.observation_rows)||
       ev.order.observation_scan_complete!==true||
       ev.order.observation_rows.length!==c.observation_rows||
