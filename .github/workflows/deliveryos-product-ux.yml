@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020]
   workflow_dispatch:
 
 permissions:
@@ -88,6 +88,22 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           PRODUCT_UI_AXE="$RUNNER_TEMP/axe/package/axe.min.js" npx tsx tests/product/run-a11y-axe-tests.ts
       - run: npm run -s test:platform:product
+      - name: Home M1B - 24 cenas no Chromium da mesma revisao (somente demo)
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset DELIVERYOS_PG_URL DELIVERYOS_DATABASE_URL CONFERENCE_BRAIN_DATA_DIR TATA_READER_INSTALL_ROOT DELIVERYOS_PRODUCT_READ_UNIT
+          export PRODUCT_UI_PORT=5369
+          npx tsx tools/product_system_server.ts > "$RUNNER_TEMP/m1b-localhost.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl --silent --fail http://127.0.0.1:5369/api/health >/dev/null; then break; fi
+            sleep 0.5
+          done
+          M1B_URL=http://127.0.0.1:5369 npx tsx tests/product/run-m1b-home-visual-truth-tests.ts
+          mkdir -p "$RUNNER_TEMP/evidencias/m1b"
+          cp -r "$(node -p 'require("os").tmpdir()')/deliveryos-m1b-home-20261020/." "$RUNNER_TEMP/evidencias/m1b/"
       - run: npm run -s test:platform:queue-depth
       - run: npm run -s test:platform:home
       - run: npm run -s test:platform:organismo
