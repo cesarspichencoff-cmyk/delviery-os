@@ -6,13 +6,14 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-20",
-    "state_basis": "fb50b621cccb9aea5ab6762f11d4bdfb7b47ad09",
+    "state_basis": "990710189ab22b94a73192d495f4147ec1980b86",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
       "labs/"
     ],
     "_revalidacao_estrutural_2026_10_20": "Revalidacao LOCAL e LIMITADA da base estrutural G6b sobre fb50b62. git diff c03c5a4..fb50b62 nos tres troncos de observa encontrou APENAS src/product/ui/surfaces/home.css e home.js. A Home M1B foi verificada com 44 testes Home, 27 Organismo, 40 M1, 24 browser mobile/tablet/desktop, 5 mutacoes perceptuais e testes R5; os outros troncos observados nao mudaram desde c03c5a4. O restante deste STATE e retrato tecnico historico de 2026-10-15, NAO recertificado integralmente; nao autoriza producao, IdP, fonte real, Android fisico, migrations nem release.",
+    "_revalidacao_q020_q023_2026_10_20": "Base estrutural 9907101: git diff fb50b62..9907101 -- src/product/ src/perfil-delivery/ labs/ confirmou APENAS src/product/ui/app.js e src/product/ui/surfaces/entregas.js alterados. Alteracao limitada a rotulos de origem da fila B5 e leitura agregada Q-020 na Operacao Viva Preview. Provas no HEAD 9907101: Chromium 6/6, B5 render PASS, Product 52/52, M1 40/40, R5, TypeScript. Nenhum outro bloco historico do STATE e recertificado; nenhuma fonte real nem operacao de loja foi habilitada.",
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
   "atualizado_em": "2026-10-15",
