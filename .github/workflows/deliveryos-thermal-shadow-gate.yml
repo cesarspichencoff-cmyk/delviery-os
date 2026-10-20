@@ -34,6 +34,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Typecheck
         run: npm run typecheck
+      - name: Historical Teknisa 463-product and six-printer mapping integrity (Linux offline)
+        run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: Operational ticket semantic projection V4.5
         run: npm run verificar:tickets-operacionais-v45
       - name: Conference proven box grouping and finishing V6.2 (offline)
@@ -231,6 +233,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: Historical Teknisa 463-product and six-printer mapping integrity (Windows offline)
+        run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: V8.44 event readiness and source blockers cannot disagree (Windows synthetic)
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Verify archived Figma SVG masters and thermal traces on Windows
