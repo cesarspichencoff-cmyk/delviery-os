@@ -48,6 +48,19 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
+      # Contratos de aparelho e fila nao sao compilacao Kotlin nem prova fisica.
+      # Um so gate curto impede que o piloto ignore regressao offline no
+      # mesmo commit que valida PostgreSQL/Copiloto.
+      - name: Android/offline/piloto - contratos sinteticos sem aparelho
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx src/entregas/android/run-android-project-tests.ts
+          npx tsx src/entregas/android/run-device-api-tests.ts
+          npx tsx src/entregas/offline/run-offline-tests.ts
+          npx tsx src/entregas/offline/run-outbox-persistence-tests.ts
+          npx tsx src/entregas/pilot/run-source-mode-tests.ts
+          npx tsx src/entregas/pilot/run-pilot-gate-tests.ts
       - name: produtor ficticio assinado -> consumidor real (LAB em memoria)
         run: npx tsx tests/product/run-attested-feed-consumer-memory-lab-tests.ts
       - name: fronteira de procedencia do produtor (modulos de producao, portas em memoria)
