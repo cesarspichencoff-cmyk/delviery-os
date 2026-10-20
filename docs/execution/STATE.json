@@ -5,13 +5,14 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-15",
-    "state_basis": "c03c5a4e70b0100cdfd8c6227552f4277d7b9b5c",
+    "atualizado_em": "2026-10-20",
+    "state_basis": "fb50b621cccb9aea5ab6762f11d4bdfb7b47ad09",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
       "labs/"
     ],
+    "_revalidacao_estrutural_2026_10_20": "Revalidacao LOCAL e LIMITADA da base estrutural G6b sobre fb50b62. git diff c03c5a4..fb50b62 nos tres troncos de observa encontrou APENAS src/product/ui/surfaces/home.css e home.js. A Home M1B foi verificada com 44 testes Home, 27 Organismo, 40 M1, 24 browser mobile/tablet/desktop, 5 mutacoes perceptuais e testes R5; os outros troncos observados nao mudaram desde c03c5a4. O restante deste STATE e retrato tecnico historico de 2026-10-15, NAO recertificado integralmente; nao autoriza producao, IdP, fonte real, Android fisico, migrations nem release.",
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
   "atualizado_em": "2026-10-15",
