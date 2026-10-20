@@ -62,6 +62,18 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
+      - name: TATA Comanda first-attempt read-only host pulse V8.59 syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/tata_comanda_native_first_attempt_v859_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_PARSE_ERROR' }
+          Write-Output 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_SYNTAX_PASS'
+
       - name: Opening-time GP iFood read-only pulse static safety V8.53
         run: node tools/verificar_comandas_opening_pulse_v853_static.js
       - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
@@ -291,6 +303,20 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
+      - name: TATA Comanda first-attempt read-only host pulse V8.59 syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/tata_comanda_native_first_attempt_v859_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_PARSE_ERROR' }
+          Write-Output 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_SYNTAX_PASS'
+      - name: TATA Comanda first-attempt read-only Windows fixture V8.59
+        run: node tools/verificar_tata_comanda_native_first_attempt_v859_windows.cjs
+
       - name: Opening-time GP iFood read-only pulse static safety V8.53
         run: node tools/verificar_comandas_opening_pulse_v853_static.js
       - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
