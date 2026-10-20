@@ -173,7 +173,7 @@ try{
     JSON.stringify(out.blocking_reasons));
   assert.equal(out.ready,false);assert.equal(out.effects.print,false);
  });
- check("V8.45 physical route code collisions never silently pick an address",()=>{
+ check("V8.45/V8.46 route collisions and incomplete printer endpoints fail closed",()=>{
   const routingFile=path.join(folder,"routing.json");
   const printerFile=path.join(folder,"printer-map.json");
   const prevRouting=fs.readFileSync(routingFile),prevPrinters=fs.readFileSync(printerFile);
@@ -226,6 +226,31 @@ try{
    const unrelated=decide(["00009"],[a,b,{...b}],"LUNCH");
    assert.ok(!blockers(unrelated).includes("PRINTER_CODE_AMBIGUOUS_"+productCode),
      "unused duplicate code should not manufacture a failure for this item");
+   const addressCases=[
+    {name:"missing-ip",mapping:{printer_code:"00009",printer_name:"TEST"}},
+    {name:"blank-ip",mapping:{...a,printer_ip:"  "}},
+    {name:"spaced-ip",mapping:{...a,printer_ip:" 127.0.0.1 "}},
+    {name:"empty-name",mapping:{...a,printer_name:""}},
+    {name:"blank-name",mapping:{...a,printer_name:"   "}},
+    {name:"missing-name",mapping:{printer_code:"00009",printer_ip:"127.0.0.1"}},
+   ];
+   for(const c of addressCases){
+    const out=decide(["00009"],[c.mapping],"LUNCH");
+    assert.ok(blockers(out).includes("PRINTER_TARGET_INCOMPLETE_"+productCode),
+      c.name+" "+JSON.stringify(blockers(out)));
+    assert.equal(out.effects.print,false,c.name);
+   }
+   for(const address of ["127.0.0.1","sushi-printer.internal","::1"]){
+    const out=decide(["00009"],[{...a,printer_ip:address}],"LUNCH");
+    assert.ok(!blockers(out).includes("PRINTER_TARGET_INCOMPLETE_"+productCode),
+      "valid nonblank network address does not require inventing a new format");
+   }
+   const malformedCode=decide(["00009 "],[
+    {...a,printer_code:"00009 "}
+   ],"LUNCH");
+   assert.ok(blockers(malformedCode).includes("PRINTER_TARGET_INCOMPLETE_"+productCode));
+   // Missing record is a different root cause, not a fake malformed row.
+   assert.ok(!blockers(missing).includes("PRINTER_TARGET_INCOMPLETE_"+productCode));
   }finally{
    fs.writeFileSync(routingFile,prevRouting);
    fs.writeFileSync(printerFile,prevPrinters);
