@@ -16,9 +16,18 @@ const NO_EFFECTS=Object.freeze({
 const ISO=/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?(?:Z|[+-]\d\d:\d\d)$/;
 function instant(s){
  if(typeof s!=="string"||!ISO.test(s))return null;
- const ms=Date.parse(s);return Number.isFinite(ms)&&
-  new Date(ms).toISOString().slice(0,19)===
-  new Date(ms).toISOString().slice(0,19)?ms:null;
+ const ms=Date.parse(s);
+ if(!Number.isFinite(ms))return null;
+ const suffix=s.endsWith("Z")?"Z":s.slice(-6);
+ let offset=0;
+ if(suffix!=="Z"){
+  const hh=Number(suffix.slice(1,3)),mm=Number(suffix.slice(4,6));
+  if(hh>14||mm>59||(hh===14&&mm!==0))return null;
+  offset=(suffix[0]==="-"?-1:1)*(hh*60+mm);
+ }
+ // Reject impossible calendar dates silently normalized by Date.parse.
+ const local=new Date(ms+offset*60000).toISOString().slice(0,19);
+ return local===s.slice(0,19)?ms:null;
 }
 function freshEnvelope(e,which,now){
  if(!e||typeof e!=="object"||Array.isArray(e)||
@@ -70,8 +79,12 @@ function assessCaptureCoherence(input){
  });
  out.baseline_status=baseline.status;
  out.order_digest=baseline.order_digest;
- if((input.gestor&&!baseline.matched_full_uuid)||
-    (input.teknisa&&!baseline.matched_full_uuid)) {
+ if(!input.gestor||!input.teknisa){
+  return {...out,priority:baseline.priority,
+   reasons:["SOURCE_ORDER_NOT_PRESENT_IN_PROVIDED_CAPTURE_NOT_PROVEN_LOST",
+    ...baseline.reasons]};
+ }
+ if(!baseline.matched_full_uuid) {
    return {...out,priority:baseline.priority,reasons:[
     "CAPTURE_COHERENT_BUT_ORDER_UUID_JOIN_UNPROVEN",
     ...baseline.reasons
