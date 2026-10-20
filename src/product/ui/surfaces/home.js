@@ -112,7 +112,8 @@ function hora(iso) {
 
 function topo(vm) {
   const h = hora(vm.observado_em);
-  const vivo = vm.degradado ? "falha" : "vivo";
+  // A etiqueta da demonstracao nao pode afirmar telemetria operacional viva.
+  const vivo = vm.degradado ? "falha" : vm.demonstracao ? "simulado" : "vivo";
   return `<header class="org-topo">
     <span class="org-topo__marca">DeliveryOS</span>
     <span class="org-topo__casa">Tata</span>
@@ -121,7 +122,9 @@ function topo(vm) {
       <span class="org-topo__nota">${
         vm.degradado
           ? `leitura degradada${h ? ` · ultima leitura ${esc(h)}` : ""}`
-          : `ao vivo${h ? ` · leitura ${esc(h)}` : ""}`
+          : vm.demonstracao
+            ? `cenario simulado${h ? ` · horario da cena ${esc(h)}` : ""}`
+            : `ao vivo${h ? ` · leitura ${esc(h)}` : ""}`
       }</span>
     </span>
   </header>`;

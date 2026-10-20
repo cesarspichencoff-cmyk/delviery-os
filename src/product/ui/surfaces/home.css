@@ -259,6 +259,17 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   animation: none;
 }
 
+/* Demonstracao nao recebe pulso de fonte viva nem tinta de disponibilidade. */
+.org-topo__vida[data-estado="simulado"] .org-topo__ponto {
+  background: transparent;
+  border: 1px dashed var(--org-neutro-traco);
+  animation: none;
+}
+
+.org-topo__vida[data-estado="simulado"] .org-topo__nota {
+  color: var(--org-verde-texto-3);
+}
+
 /*
   ESTADO CRITICO VENCE MOVIMENTO — MOTION_SYSTEM §5.
 
@@ -2029,8 +2040,12 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
     font-size: 0.8rem;
   }
 
+  /* A palavra que comanda a operacao precisa ser a maior tambem no celular.
+     O piso anterior (1.55rem) deixava Calmo/Ambiente/Foco menor do que a
+     descricao de varias zonas. Tipografia editorial, sem mudar estado. */
   .org-legenda__frase {
-    font-size: 1.55rem;
+    font-size: clamp(2rem, 9vw, 2.55rem);
+    line-height: 1.12;
   }
 
   .org-sinal {
