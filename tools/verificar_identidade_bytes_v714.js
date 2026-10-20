@@ -125,6 +125,54 @@ try{
   assert.equal(result.effects.print,false);assert.equal(result.effects.spooler_write,false);
   return withPair?{event,decision:result}:result;
  }
+ check("V8.44 contradictory event readiness never erases upstream source blockers",()=>{
+  const cases=[
+   {title:"ready-with-event-failure",ready:true,eventErrors:["SOURCE_ORDER_DIVERGENCE"],
+    serviceErrors:[],expected:"UPSTREAM_SOURCE_ORDER_DIVERGENCE"},
+   {title:"ready-with-service-failure",ready:true,eventErrors:[],
+    serviceErrors:["SERVICE_STATE_EXPIRED_FOR_ORDER"],
+    expected:"UPSTREAM_SERVICE_SERVICE_STATE_EXPIRED_FOR_ORDER"},
+   {title:"ready-with-both-failures",ready:true,eventErrors:["EVENT_INTEGRITY_MISMATCH"],
+    serviceErrors:["WRONG_SERVICE_REVISION"],expected:"UPSTREAM_EVENT_INTEGRITY_MISMATCH",
+    second:"UPSTREAM_SERVICE_WRONG_SERVICE_REVISION"},
+   {title:"ready-with-malformed-event-blockers",ready:true,eventErrors:null,
+    serviceErrors:[],expected:"UPSTREAM_EVENT_BLOCKERS_MALFORMED"},
+   {title:"ready-with-malformed-service-blockers",ready:true,eventErrors:[],
+    serviceErrors:null,expected:"UPSTREAM_SERVICE_BLOCKERS_MALFORMED"},
+   {title:"not-ready-with-empty-blockers",ready:false,eventErrors:[],
+    serviceErrors:[],expected:"UPSTREAM_EVENT_NOT_READY"},
+  ];
+  for(const t of cases){
+   const {event}=run([],[],"1.000",undefined,true);
+   event.ready_for_downstream_shadow=t.ready;
+   event.blockers=t.eventErrors;
+   event.service_resolution.blockers=t.serviceErrors;
+   fs.writeFileSync(path.join(folder,"event.json"),JSON.stringify(event));
+   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),
+     path.join(folder,"event.json")],{encoding:"utf8",timeout:10000});
+   assert.equal(p.status,5,t.title+" "+p.stderr);
+   assert.equal(p.stderr,"",t.title);
+   const out=JSON.parse(p.stdout);
+   assert.equal(out.ready,false,t.title);
+   assert.ok(out.blocking_reasons.includes(t.expected),t.title+" "+out.blocking_reasons);
+   if(t.second)assert.ok(out.blocking_reasons.includes(t.second),t.title);
+   assert.equal(out.effects.print,false,t.title);
+   assert.equal(out.effects.spooler_write,false,t.title);
+  }
+  // No spurious upstream failures when readiness and both blocker lists agree.
+  const {event}=run([],[],"1.000",undefined,true);
+  event.ready_for_downstream_shadow=true;
+  event.blockers=[];
+  event.service_resolution.blockers=[];
+  fs.writeFileSync(path.join(folder,"event.json"),JSON.stringify(event));
+  const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),
+    path.join(folder,"event.json")],{encoding:"utf8",timeout:10000});
+  assert.equal(p.status,5,p.stderr); // packaging remains UNKNOWN; no release.
+  const out=JSON.parse(p.stdout);
+  assert.ok(!out.blocking_reasons.some(x=>x.startsWith("UPSTREAM_")),
+    JSON.stringify(out.blocking_reasons));
+  assert.equal(out.ready,false);assert.equal(out.effects.print,false);
+ });
  check("V7.14 legacy exact-sequence override is blocked without snapshot binding",()=>{
   const r=run([baseOverride]);
   assert.ok(r.blocking_reasons.includes("HUMAN_ORDER_OVERRIDE_NOT_BOUND_TO_EXACT_SNAPSHOT"));
