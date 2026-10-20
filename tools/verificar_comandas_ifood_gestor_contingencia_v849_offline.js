@@ -8,6 +8,7 @@ const g={
  schema:"deliveryos.ifood-gestor-observation.v1",
  store_id:"STORE_TEST",order_uuid:uuid,display_id:"4321",
  status:"CONFIRMED",snapshot_complete:true,paper_claimed:false,
+ order_observations:["ENTREGAR SEPARADO"],
  items:[
   {name:"COMBINADO TESTE",quantity:1,observations:["SEM CEBOLA"]},
   {name:"BEBIDA TESTE",quantity:2,observations:[]},
@@ -18,6 +19,7 @@ const t={
  schema:"deliveryos.teknisa-order-observation.v1",
  store_id:"STORE_TEST",ifood_order_uuid:uuid,ifood_display_id:"4321",
  order_key:"0001|01|000001|000001",snapshot_complete:true,paper_claimed:false,
+ order_observations:["ENTREGAR SEPARADO"],
  items:clone(g.items)
 };
 let count=0;
@@ -62,6 +64,16 @@ test("missing notes blocks",()=>{
  const b=clone(t);b.items[0].observations=[];
  const a=run(g,b);assert.equal(a.items_equal,true);
  assert.equal(a.observations_equal,false);
+});
+test("general order note difference is never ignored",()=>{
+ const b=clone(t);b.order_observations=["OUTRA NOTA DE PRODUCAO"];
+ const r=run(g,b);assert.equal(r.items_equal,true);
+ assert.equal(r.observations_equal,false);
+ assert.ok(r.reasons.includes("ITEM_NOTES_DIFFER_OR_SCOPE_UNPROVEN"));
+});
+test("missing source order-level notes field blocks as incomplete",()=>{
+ const b=clone(t);delete b.order_observations;
+ assert.deepEqual(run(g,b).reasons,["TEKNISA_SNAPSHOT_INVALID_OR_INCOMPLETE"]);
 });
 test("different notes scope blocks",()=>{
  const b=clone(t);b.items[0].observations=["COM MOLHO"];
