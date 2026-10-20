@@ -391,13 +391,21 @@ async function main(): Promise<void> {
       .replace(/\/\/[^\n]*/g, "");
     const api = readFileSync(join(raiz, "android/app/src/main/java/br/com/tata/entregas/sync/EntregasApi.kt"), "utf8")
       .replace(/\/\/[^\n]*/g, "");
+    const delegation = readFileSync(join(raiz, "android/app/src/main/java/br/com/tata/entregas/sync/PilotDelegation.kt"), "utf8")
+      .replace(/\/\/[^\n]*/g, "");
     assert.match(w, /val semCredencial = EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ null \}\)/);
     assert.match(w, /val api = EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ tokenAtual \}\)/);
     assert.match(w, /val piloto = EntregasApi\(BuildConfig\.ENTREGAS_BASE_URL, \{ null \}\)/);
     assert.match(w, /api\.sendPoints\(/, "GPS deve usar a plataforma");
     assert.doesNotMatch(w, /piloto\.sendPoints\(/, "GPS não pode ir ao piloto");
-    assert.match(w, /api\.requestPilotWriteToken\(localActor\)/,
-      "a plataforma deve emitir a delegação");
+    assert.match(w, /val localDevice = db\.deviceState\(\)\.get\(EntregasDatabase\.KEY_DEVICE_ID\)/,
+      "identidade do aparelho precisa vir do Room, nao da credencial recebida");
+    assert.match(w, /api\.requestPilotWriteToken\(localActor, localDevice\)/,
+      "delegacao deve exigir actor e device locais");
+    assert.match(api, /fun requestPilotWriteToken\(expectedActor: String\?, expectedDevice: String\?\)/,
+      "API da plataforma deve receber ambas as identidades");
+    assert.match(delegation, /expectedDevice\.isNullOrBlank\(\) \|\| expectedDevice != device/,
+      "credencial estrangeira ou identidade local ausente deve ser recusada");
     assert.match(api, /request\("\/api\/device\/pilot-delegation", "POST", JSONObject\(\)\)/,
       "a troca acontece somente no endpoint da plataforma");
     assert.match(w, /sendWithPilotDelegation\(/,
