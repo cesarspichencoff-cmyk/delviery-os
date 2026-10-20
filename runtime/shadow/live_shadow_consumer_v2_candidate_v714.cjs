@@ -296,12 +296,20 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   if (routes.includes("00009") && routes.includes("00003")) {
     if (service === "LUNCH") routes = routes.filter(x => x !== "00003");
     else if (service === "DINNER") routes = routes.filter(x => x !== "00009");
-    else blockers.push("SERVICE_REQUIRED_SUSHI1_" + code);
+    else {
+      blockers.push("SERVICE_REQUIRED_SUSHI1_" + code);
+      // No service evidence: never expose BOTH alternate sushi destinations.
+      routes = routes.filter(x => x !== "00009" && x !== "00003");
+    }
   }
   if (routes.includes("00006") && routes.includes("00004")) {
     if (service === "LUNCH") routes = routes.filter(x => x !== "00004");
     else if (service === "DINNER") routes = routes.filter(x => x !== "00006");
-    else blockers.push("SERVICE_REQUIRED_SUSHI2_" + code);
+    else {
+      blockers.push("SERVICE_REQUIRED_SUSHI2_" + code);
+      // Keep the logical preview safe; do not infer a clock-based shift.
+      routes = routes.filter(x => x !== "00006" && x !== "00004");
+    }
   }
 
   const targets = routes
