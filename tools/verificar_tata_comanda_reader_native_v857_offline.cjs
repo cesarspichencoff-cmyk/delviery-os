@@ -133,6 +133,27 @@ test("missing native sale ID rejected",()=>{
  const x=pair();x.event.order.NRVENDAREST="";
  assert.equal(audit(x).status,"HOLD");
 });
+test("cancelled native order status cannot become usable preview",()=>{
+ const x=pair();x.event.order.IDSTCOMANDA="C";
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.decision.snapshot_hash=x.event.snapshot_hash;
+ x.decision.fingerprint=decisionHash(x.decision);
+ assert.equal(audit(x).status,"HOLD");
+});
+test("inactive native item cannot be used in production",()=>{
+ const x=pair();x.event.order.items[0].IDSTPRCOMVEN="C";
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.decision.snapshot_hash=x.event.snapshot_hash;
+ x.decision.fingerprint=decisionHash(x.decision);
+ assert.equal(audit(x).status,"HOLD");
+});
+test("changed native product identity rejected even with recomputed hashes",()=>{
+ const x=pair();x.event.order.items[0].CDARVPROD="9300001000";
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.decision.snapshot_hash=x.event.snapshot_hash;
+ x.decision.fingerprint=decisionHash(x.decision);
+ assert.equal(audit(x).status,"HOLD");
+});
 test("missing TATA state rejected despite candidate 999",()=>{
  const x=pair();delete x.sequence_state;
  assert.equal(audit(x).status,"HOLD");
