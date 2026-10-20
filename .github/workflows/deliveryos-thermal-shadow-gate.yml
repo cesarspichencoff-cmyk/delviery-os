@@ -54,6 +54,19 @@ jobs:
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
       - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
+      - name: Opening-time GP iFood read-only pulse static safety V8.53
+        run: node tools/verificar_comandas_opening_pulse_v853_static.js
+      - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_opening_pulse_v853_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_OPENING_PULSE_V853_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_OPENING_PULSE_V853_SYNTAX_PASS NO_HOST_IO'
       - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
         run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
       - name: Validate GP iFood passive Windows probe PowerShell syntax without running
@@ -262,6 +275,19 @@ jobs:
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
       - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
+      - name: Opening-time GP iFood read-only pulse static safety V8.53
+        run: node tools/verificar_comandas_opening_pulse_v853_static.js
+      - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_opening_pulse_v853_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_OPENING_PULSE_V853_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_OPENING_PULSE_V853_SYNTAX_PASS NO_HOST_IO'
       - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
         run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
       - name: Validate GP iFood passive Windows probe PowerShell syntax without running
