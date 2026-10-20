@@ -297,36 +297,19 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     else blockers.push("ROUTE_NOT_FOUND_" + code);
   }
 
-  // Only render an exclusive sushi destination from a coherent upstream
-  // declaration. Neither a stale service token nor a contradictory ready flag
-  // is route evidence. This is structural validation, NOT authentication.
-  const declaredService = event.service_resolution;
-  const service = event.ready_for_downstream_shadow === true &&
-    Array.isArray(event.blockers) && event.blockers.length === 0 &&
-    Array.isArray(declaredService?.blockers) && declaredService.blockers.length === 0 &&
-    (declaredService.evidence === "HUMAN_CONFIRMED_RULE" ||
-      declaredService.evidence === "REAL_OBSERVED") &&
-    typeof declaredService.source_ref === "string" &&
-    !!declaredService.source_ref.trim() &&
-    (declaredService.service === "LUNCH" || declaredService.service === "DINNER")
-      ? declaredService.service : null;
+  // A pair in the official product map is NOT a verified LUNCH/DINNER
+  // switch. The observed Odhen ImpressaoPedido.php source has separate
+  // production and production2 flows; the actual runtime effect still
+  // requires proof. Until then neither station may be asserted as chosen.
+  // Keep other independent stations visible for diagnosis only; the entire
+  // decision remains held and has no printer/spooler effects.
   if (routes.includes("00009") && routes.includes("00003")) {
-    if (service === "LUNCH") routes = routes.filter(x => x !== "00003");
-    else if (service === "DINNER") routes = routes.filter(x => x !== "00009");
-    else {
-      blockers.push("SERVICE_REQUIRED_SUSHI1_" + code);
-      // No service evidence: never expose BOTH alternate sushi destinations.
-      routes = routes.filter(x => x !== "00009" && x !== "00003");
-    }
+    blockers.push("SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN_" + code);
+    routes = routes.filter(x => x !== "00009" && x !== "00003");
   }
   if (routes.includes("00006") && routes.includes("00004")) {
-    if (service === "LUNCH") routes = routes.filter(x => x !== "00004");
-    else if (service === "DINNER") routes = routes.filter(x => x !== "00006");
-    else {
-      blockers.push("SERVICE_REQUIRED_SUSHI2_" + code);
-      // Keep the logical preview safe; do not infer a clock-based shift.
-      routes = routes.filter(x => x !== "00006" && x !== "00004");
-    }
+    blockers.push("SUSHI2_DUAL_PRODUCTION_ROLE_UNPROVEN_" + code);
+    routes = routes.filter(x => x !== "00006" && x !== "00004");
   }
 
   const targets = routes
