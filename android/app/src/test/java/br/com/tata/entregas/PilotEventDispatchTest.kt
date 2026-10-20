@@ -38,6 +38,33 @@ class PilotEventDispatchTest {
         )
     }
 
+    @Test fun foreignDeviceDelegationNeverContactsPilotAndStopsRetries() {
+        var exchanges = 0
+        var sends = 0
+        val foreign = JSONObject().apply {
+            put("ok", true)
+            put("pilot_token", "pt1.cGF5bG9hZA.c2lnbmF0dXJl")
+            put("expires_in_s", 180)
+            put("actor_id", "LAB-RIDER")
+            put("unit_id", "LAB-UNIT")
+            put("device_id", "FOREIGN-DEVICE")
+            put("audience", "deliveryos-pilot-event-write")
+        }
+        val outcome = sendWithPilotDelegation(
+            exchangeAtPlatform = {
+                exchanges++
+                br.com.tata.entregas.sync.classifyPilotDelegation(
+                    ApiResult.Ok(foreign), "LAB-RIDER", "LAB-DEVICE",
+                )
+            },
+            sendToPilot = { sends++; ApiResult.Ok(JSONObject()) },
+        )
+        assertTrue(outcome.result is ApiResult.Rejected)
+        assertTrue(outcome.delegationDenied)
+        assertEquals(1, exchanges)
+        assertEquals(0, sends)
+    }
+
     @Test fun repeatedPilot401StopsAfterTwoSends() {
         var exchanges=0
         var sends=0

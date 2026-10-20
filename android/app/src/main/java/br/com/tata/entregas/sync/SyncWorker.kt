@@ -225,8 +225,11 @@ class SyncWorker(
             // platform endpoint and use the pilot-only result for this batch.
             // No pilot credential is persisted or exposed to WebView.
             val localActor = db.deviceState().get(EntregasDatabase.KEY_RIDER_ID)
+            // Nao basta o actor: a delegacao pt1 deve nomear ESTE device_id.
+            // Falta de identidade local recusa fail-closed antes de contatar o piloto.
+            val localDevice = db.deviceState().get(EntregasDatabase.KEY_DEVICE_ID)
             val dispatch = sendWithPilotDelegation(
-                exchangeAtPlatform = { api.requestPilotWriteToken(localActor) },
+                exchangeAtPlatform = { api.requestPilotWriteToken(localActor, localDevice) },
                 sendToPilot = { writeToken ->
                     EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { writeToken })
                         .sendEvents(payloads, correlationId)

@@ -69,7 +69,7 @@ class PilotDelegationHttpTest {
         LocalReceiver(response, platformBearer).use { platform ->
             LocalReceiver("""{"ok":true,"results":[{"event_id":"LAB-EVENT","ok":true}]}""", pilotBearer).use { pilot ->
                 val platformApi = EntregasApi(platform.baseUrl, { platformToken })
-                val delegated = platformApi.requestPilotWriteToken("LAB-RIDER")
+                val delegated = platformApi.requestPilotWriteToken("LAB-RIDER", "LAB-DEVICE")
                 assertTrue(delegated is ApiResult.Ok)
                 val pilotApi = EntregasApi(pilot.baseUrl, { (delegated as ApiResult.Ok).value })
                 val result = pilotApi.sendEvents(listOf(JSONObject().put("event_id", "LAB-EVENT")), "LAB")

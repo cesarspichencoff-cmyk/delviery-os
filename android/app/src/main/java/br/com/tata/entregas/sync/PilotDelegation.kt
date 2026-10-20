@@ -10,6 +10,7 @@ import org.json.JSONObject
 internal fun classifyPilotDelegation(
     result: ApiResult<JSONObject>,
     expectedActor: String?,
+    expectedDevice: String?,
 ): ApiResult<String> = when (result) {
     is ApiResult.Ok -> {
         val body = result.value
@@ -32,6 +33,8 @@ internal fun classifyPilotDelegation(
                 ApiResult.Retryable("resposta de delegacao invalida")
             expectedActor.isNullOrBlank() || expectedActor != actor ->
                 ApiResult.Rejected("ator da delegacao diverge da sessao local", 403)
+            expectedDevice.isNullOrBlank() || expectedDevice != device ->
+                ApiResult.Rejected("aparelho da delegacao diverge da identidade local", 403)
             else -> ApiResult.Ok(token)
         }
     }
