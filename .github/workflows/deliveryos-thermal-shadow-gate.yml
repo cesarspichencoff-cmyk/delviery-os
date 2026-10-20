@@ -54,6 +54,8 @@ jobs:
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
       - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
+      - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
+        run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
       - name: Opening-time GP iFood read-only pulse static safety V8.53
         run: node tools/verificar_comandas_opening_pulse_v853_static.js
       - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
@@ -275,6 +277,8 @@ jobs:
         run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
       - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
+      - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
+        run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
       - name: Opening-time GP iFood read-only pulse static safety V8.53
         run: node tools/verificar_comandas_opening_pulse_v853_static.js
       - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
