@@ -48,6 +48,53 @@ async function obter(caminho) {
   return r.json();
 }
 
+/**
+ * Q-020: somente apresentacao de DUAS leituras GET ja existentes, na
+ * Operacao Viva do Preview. Nao transforma auditoria antiga em telemetria
+ * atual, nao lista pedido, cliente ou payload; uma fonte falha isoladamente.
+ */
+async function blocoTataSomenteLeitura() {
+  const [historico, fontes] = await Promise.all([
+    obter("/api/historico").catch(() => null),
+    obter("/api/fontes").catch(() => null),
+  ]);
+  const h = historico?.tata_comanda;
+  const f = Array.isArray(fontes?.fontes)
+    ? fontes.fontes.find((x) => x?.id === "tata_comanda_reader")
+    : null;
+  const seguroH = h?.disponivel === true && h?.ao_vivo === false &&
+    h?.fonte === "tata_comanda_readonly_audit" &&
+    h?.privacidade?.customer_pii === false && h?.privacidade?.payload_bruto === false &&
+    /^\d{4}-\d{2}-\d{2}$/.test(h.data_operacional) &&
+    Number.isSafeInteger(h.pedidos) && h.pedidos >= 0;
+  const historicoTexto = seguroH
+    ? `Auditoria agregada de ${esc(h.data_operacional)}: ${esc(h.pedidos)} pedidos registrados. Isto NAO e o movimento atual da loja.`
+    : "Historico de pedidos indisponivel ou sem comprovacao agregada. Nao significa zero pedidos.";
+  const seguroF = f?.privacidade?.customer_pii === false &&
+    f?.privacidade?.identificador_de_pedido === false &&
+    f?.privacidade?.texto_bruto_de_erro === false &&
+    ["saudavel", "parcial", "stale", "indisponivel"].includes(f.estado);
+  const fonteTexto = seguroF
+    ? f.configurada === true
+      ? `Estado avaliado: ${esc(f.estado)}; verificacao em ${esc(f.avaliado_em)}. O relogio so e comparavel na maquina do leitor.`
+      : "Leitor nao configurado neste ambiente. Saude operacional nao observada."
+    : "Saude do leitor indisponivel. Nao foi possivel verificar seu progresso.";
+  const estadoFonte = seguroF && f.configurada === true ? f.estado : "indisponivel";
+  return `<section class="secao" data-q020="leitura-tata">
+    <h2 class="secao__titulo">Realidade TATA · somente leitura</h2>
+    <p class="secao__sub">Historico agregado e saude do leitor sao evidencias DIFERENTES. Nenhum comando, pedido individual ou diagnostico de producao e gerado aqui.</p>
+    <div class="grade" data-colunas="2">
+      <article class="cartao"><h3 class="cartao__nome">Pedidos historicos</h3>
+        <p class="campo__valor">${historicoTexto}</p>
+        ${selo({ estado: seguroH ? "parcial" : "indisponivel" })}
+      </article>
+      <article class="cartao"><h3 class="cartao__nome">Saude do leitor TATA</h3>
+        <p class="campo__valor">${fonteTexto}</p>
+        ${selo({ estado: estadoFonte })}
+      </article>
+    </div></section>`;
+}
+
 /* ------------------------------------------------------------------ *
  * Navegacao
  * ------------------------------------------------------------------ */
@@ -355,9 +402,12 @@ async function desenhar(rota, opcoes = {}) {
   alvo.innerHTML = skeleton(4);
   try {
     const vm = await obter(api);
+    // Q-020 e um bloco auxiliar: a fonte TATA nunca altera a VM, os estados
+    // operacionais nem a autoridade temporal da Operacao Viva.
+    const tata = rota === "/operacao-viva" ? await blocoTataSomenteLeitura() : "";
     // Uma resposta de rota/unidade anterior nao pode substituir o contexto atual.
     if (geracao !== estado.geracao) return;
-    alvo.innerHTML = s.tela(vm);
+    alvo.innerHTML = s.tela(vm) + tata;
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);

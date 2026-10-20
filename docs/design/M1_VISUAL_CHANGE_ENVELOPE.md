@@ -387,6 +387,34 @@ git checkout 2782b31 -- src/product/viewmodels/entregas-vm.ts src/product/ui/sur
 git rm src/product/ui/surfaces/entregas.css
 ```
 
+### Q-020 e Q-023 — autorização expressa de César em 20/10/2026 (Preview READ-ONLY)
+
+**Autoridade:** César aprovou explicitamente o encaminhamento de exibir a origem da fila como
+**não declarada** quando `source_mode` não existe (Q-023), e apresentar o histórico agregado
+TATÁ e a saúde de seu leitor **na Operação Viva, somente em Preview e somente leitura** (Q-020).
+Essa aprovação NÃO implica aceite visual final, fonte viva na Home ou instalação na CAIXA.
+
+**Limite por arquivo, sem alargar `AUTHORIZED_PATHS` ou revogar Q-019:**
+
+```
+src/product/ui/surfaces/entregas.js     READ_ONLY_REALITY_BLOCK_ONLY (Q-023, rotulo da fila)
+src/product/ui/app.js                   AUTHORIZED_PATHS (Q-020, GET para APIs existentes)
+tests/product/run-b5-freshness-render-smoke.ts  Q023_TEST_ONLY
+tests/product/run-q020-preview-readonly-tests.ts Q020_TEST_ONLY
+```
+
+O HTML de Operação Viva é composto no `app.js` como **bloco auxiliar** e não modifica
+`operacao-viva.js`, cujo conteúdo histórico Q-019 continua congelado por hash. As chamadas
+já existentes `/api/historico` e `/api/fontes` são GET, com erro isolado em cada fonte.
+O histórico exige `ao_vivo:false`, privacidade explícita e contagem validada; **nunca**
+vira leitura atual. Sem fonte/credencial, a UI declara indisponibilidade, não zero.
+A fila B5 pode medir contagens com procedência do relato sem declarar a origem dos itens.
+
+**Bloqueios intocados:** nenhuma mudança em leitor TATÁ, PostgreSQL, watcher, reconciliador,
+Academia, Comandas PR #107, permissões/SEFAZ/impressora ou contratos do Android. Não usar
+este registro como autorização de merge, deploy, cutover, edição de turno ou leitura
+operacional na CAIXA. Os gates M1/R5 e as proteções da Q-019 continuam aplicáveis.
+
 ### `FORBIDDEN_PATHS`
 
 ```

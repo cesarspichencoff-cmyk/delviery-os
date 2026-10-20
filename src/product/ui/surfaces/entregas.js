@@ -103,6 +103,7 @@ function celulaFilaOffline(a, x) {
   return `<span class="campo__valor"><strong>${esc(a.fila_offline.valor)}</strong> pendente(s) no ultimo relato</span>
     <br><span class="campo__valor--tecnico">${esc(pontos)} pontos · ${esc(eventos)} eventos</span>
     <br><span class="campo__rotulo">Ultimo relato do aparelho: ${em}</span>
+    <br><span class="campo__rotulo">Origem dos itens da fila: nao declarada (B5 mede quantidade, nao informa source_mode).</span>
     ${aviso}`;
 }
 

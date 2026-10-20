@@ -117,6 +117,8 @@ jobs:
             sleep 0.5
           done
           M1B_URL=http://127.0.0.1:5369 npx tsx tests/product/run-m1b-home-visual-truth-tests.ts
+          # Q-020: mesmas APIs GET de historico e fonte, SEM reader, PG ou operacao.
+          Q020_PREVIEW_URL=http://127.0.0.1:5369 npx tsx tests/product/run-q020-preview-readonly-tests.ts
           mkdir -p "$RUNNER_TEMP/evidencias/m1b"
           cp -r "$(node -p 'require("os").tmpdir()')/deliveryos-m1b-home-20261020/." "$RUNNER_TEMP/evidencias/m1b/"
       - run: npm run -s test:platform:queue-depth

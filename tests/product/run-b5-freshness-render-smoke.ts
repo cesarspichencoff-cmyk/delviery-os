@@ -48,6 +48,8 @@ const stale = tela("stale");
 const fresh = tela("fresh");
 assert.ok(stale.includes("Ultimo relato do aparelho:"), "O horario do relato sumiu");
 assert.ok(stale.includes("10</strong> pendente(s) no ultimo relato"), "Contagem historica sumiu");
+assert.ok(stale.includes("Origem dos itens da fila: nao declarada"), "B5 sem source_mode nao pode aparentar origem real");
+assert.ok(fresh.includes("Origem dos itens da fila: nao declarada"), "Uma medicao recente nao prova o modo dos itens pendentes");
 assert.ok(stale.includes("data-estado=\"stale\""), "Selo semantico stale nao foi renderizado");
 assert.ok(stale.includes("Relato com mais de 45 minutos"), "Aviso acessivel nao existe");
 assert.ok(!fresh.includes("Relato com mais de 45 minutos"), "Relato recente exibiu aviso antigo");
