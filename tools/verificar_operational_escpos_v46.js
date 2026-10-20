@@ -73,8 +73,8 @@ test("incomplete real order blocks printer-ready output rather than guessing",()
  assert.equal(missing.ready_for_offline_preview,false);
  assert.equal(missing.bytes.length,0);
  assert.ok(missing.blocking_reasons.includes("SOURCE_IDENTIFIERS_UNPROVEN"));
- assert.ok(missing.text_trace.includes("EMBALAGEM A CONFERIR"));
- assert.ok(missing.text_trace.includes("SACOLA: A CONFERIR"));
+ assert.ok(missing.text_trace.includes("CAIXA: A DEFINIR"));
+ assert.ok(missing.text_trace.includes("SACOLA: A DEFINIR"));
 });
 test("long item refuses one-line overflow with zero bytes",()=>{
  const copy=structuredClone(real.conference);
