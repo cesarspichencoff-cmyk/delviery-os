@@ -1,4 +1,6 @@
 # V8.42 — Autorização humana e testemunha independente por turno
+
+> **SUPERSEDIDO COMO REGRA DE NEGÓCIO EM V8.43 (20/10/2026).** César esclareceu que a operação muda automaticamente conforme o horário, não mediante aprovação humana de cada troca ALMOÇO↔JANTAR. Todo o protocolo abaixo fica como estudo técnico histórico para **eventual exceção administrativa futura, ainda não requerida**, e **não deve ser promovido a bloqueio do fluxo diário**. Consulte [V8.43 — Operação por horário](COMANDAS_V843_TURNO_DERIVADO_DO_HORARIO_REVIEW_ONLY.md). A proteção da operação real e o HOLD de implantação permanecem independentes desta correção.
 **Estado: REVISÃO DE ARQUITETURA / HOLD. NÃO INSTALADO. SEM APROVAÇÃO OPERACIONAL.**
 
 ## Base factual
