@@ -253,7 +253,7 @@ try{
   const printer=(code,label)=>({printer_code:code,printer_name:"SYNTHETIC_"+label,
     printer_ip:"127.0.0."+label});
   const a=printer("00009","1"),b=printer("00003","2");
-  const decide=(routes,mappings,service)=>{
+  const decide=(routes,mappings,service,mutateEvent=()=>{})=>{
    fs.writeFileSync(routingFile,JSON.stringify({
      schema:"deliveryos.odhen.product-routing.compact.v1",
      products:{[productCode]:routes}}));
@@ -264,6 +264,7 @@ try{
    event.ready_for_downstream_shadow=true;
    event.blockers=[];
    event.service_resolution={...event.service_resolution,service,blockers:[]};
+    mutateEvent(event);
    const eventFile=path.join(folder,"event.json");
    fs.writeFileSync(eventFile,JSON.stringify(event));
    const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),eventFile],
@@ -284,6 +285,36 @@ try{
    assert.ok(!blockers(lunch).some(x=>x.startsWith("PRINTER_CODE_AMBIGUOUS_")));
    const dinner=decide(["00009","00003"],[a,b],"DINNER");
    assert.deepEqual(printerCodes(dinner),["00003"]);
+   // V8.47: a present LUNCH/DINNER word alone is not route evidence.
+   // If an upstream service claim is contradictory, both alternate physical
+   // targets must be absent even from a nonprinting diagnostic preview.
+   const contradictory=[
+    {label:"expired service",mutate:e=>{
+     e.service_resolution.blockers=["SERVICE_STATE_EXPIRED_FOR_ORDER"];}},
+    {label:"malformed service blockers",mutate:e=>{
+     e.service_resolution.blockers=null;}},
+    {label:"event blockers despite ready bit",mutate:e=>{
+     e.blockers=["SERVICE_STATE_DATE_MISMATCH_ORDER_DATE"];}},
+    {label:"not ready despite unblocked service",mutate:e=>{
+     e.ready_for_downstream_shadow=false;}},
+    {label:"missing service source reference",mutate:e=>{
+     e.service_resolution.source_ref=null;}},
+    {label:"unproven service evidence",mutate:e=>{
+     e.service_resolution.evidence="UNKNOWN";}},
+   ];
+   for(const pair of [
+    {routes:["00009","00003"],printers:[a,b],label:"SUSHI1"},
+    {routes:["00006","00004"],printers:[
+      printer("00006","3"),printer("00004","4")],label:"SUSHI2"}
+   ])for(const c of contradictory){
+    const result=decide(pair.routes,pair.printers,"LUNCH",c.mutate);
+    assert.deepEqual(printerCodes(result),[],
+     pair.label+" "+c.label+" cannot project a chosen physical station");
+    assert.ok(blockers(result).includes(
+      "SERVICE_REQUIRED_"+pair.label+"_"+productCode));
+    assert.equal(result.effects.print,false);
+    assert.equal(result.effects.spooler_write,false);
+   }
    const unknown=decide(["00009","00003"],[a,b],null);
    assert.ok(blockers(unknown).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
    assert.deepEqual(printerCodes(unknown),[],
