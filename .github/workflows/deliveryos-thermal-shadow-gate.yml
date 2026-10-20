@@ -117,6 +117,10 @@ jobs:
         run: node tools/verificar_nota_pagamento_v80_offline.js
       - name: Static exact bag policy B1 B5 B8 B9 in ephemeral V2 motor (Linux)
         run: node tools/verificar_sacolas_estaticas_v81_offline.js
+      - name: Exact human bag-review source must not authorize print (Linux synthetic)
+        run: node tools/verificar_comandas_bag_human_proposal_v1.cjs
+      - name: Ten order-note source identity and privacy adversarial gate (Linux synthetic)
+        run: node tools/verificar_comandas_ten_v68_note_scope_audit_v1.cjs
       - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Linux)
         run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
       - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
@@ -265,6 +269,10 @@ jobs:
         run: node tools/verificar_nota_pagamento_v80_offline.js
       - name: Static exact bag policy B1 B5 B8 B9 in ephemeral V2 motor (Windows)
         run: node tools/verificar_sacolas_estaticas_v81_offline.js
+      - name: Exact human bag-review source must not authorize print (Windows synthetic)
+        run: node tools/verificar_comandas_bag_human_proposal_v1.cjs
+      - name: Ten order-note source identity and privacy adversarial gate (Windows synthetic)
+        run: node tools/verificar_comandas_ten_v68_note_scope_audit_v1.cjs
       - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Windows)
         run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
       - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
