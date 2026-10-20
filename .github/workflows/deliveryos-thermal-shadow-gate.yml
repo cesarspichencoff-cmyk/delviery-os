@@ -139,6 +139,8 @@ jobs:
         run: node tools/verificar_shift_nonce_v837_sandbox.cjs
       - name: V8.41 protected shift and nonce namespace segregation (Linux offline)
         run: node tools/verificar_custody_layout_v841_offline.cjs
+      - name: V8.42 untrusted human/external custody sequence review (Linux offline)
+        run: node tools/verificar_human_custody_protocol_v842_offline.cjs
       - name: V8.32 custody evidence policy rejects false authority (Linux synthetic)
         run: node tools/verificar_shift_custody_policy_v832_offline.cjs
       - name: V8.14 exact pinned watcher path move review (no Windows state writes)
@@ -281,6 +283,8 @@ jobs:
         run: node tools/verificar_shift_nonce_v837_sandbox.cjs
       - name: V8.41 protected shift and nonce namespace segregation (Windows offline)
         run: node tools/verificar_custody_layout_v841_offline.cjs
+      - name: V8.42 untrusted human/external custody sequence review (Windows offline)
+        run: node tools/verificar_human_custody_protocol_v842_offline.cjs
       - name: V8.32 custody evidence policy rejects false authority (Windows synthetic)
         run: node tools/verificar_shift_custody_policy_v832_offline.cjs
       - name: V8.32 custody read-only Windows observer parses and never claims approval
