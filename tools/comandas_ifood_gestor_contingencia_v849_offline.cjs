@@ -29,6 +29,10 @@ function validItems(items) {
    Array.isArray(row.observations)&&row.observations.length<=20&&
    row.observations.every(x=>typeof x==="string"&&x.length<=2000));
 }
+function validOrderObservations(notes) {
+ return Array.isArray(notes)&&notes.length<=30&&
+  notes.every(v=>typeof v==="string"&&v.length<=2000);
+}
 function compactItems(items) {
  // Exact row multiplicity is retained, including repeated names/quantities.
  // Sorting is only for side-by-side multiset comparison, never for production.
@@ -44,6 +48,7 @@ function validGestor(g) {
   (g.order_uuid===null||UUID.test(clean(g.order_uuid)))&&
   STATUS.has(g.status)&&
   g.snapshot_complete===true&&
+  validOrderObservations(g.order_observations)&&
   validItems(g.items);
 }
 function validTeknisa(t) {
@@ -53,6 +58,7 @@ function validTeknisa(t) {
   DISPLAY.test(clean(t.ifood_display_id))&&
   (t.ifood_order_uuid===null||UUID.test(clean(t.ifood_order_uuid)))&&
   t.snapshot_complete===true&&
+  validOrderObservations(t.order_observations)&&
   validItems(t.items);
 }
 function base() {
@@ -120,7 +126,9 @@ function assessGestorTeknisaContingency(input) {
   JSON.stringify([textNorm(row.name),row.quantity])).sort();
  r.items_equal=JSON.stringify(getItemKeys(g.items))===
   JSON.stringify(getItemKeys(t.items));
- r.observations_equal=JSON.stringify(left)===JSON.stringify(right);
+ r.observations_equal=JSON.stringify(left)===JSON.stringify(right)&&
+  JSON.stringify(g.order_observations.map(textNorm).sort())===
+  JSON.stringify(t.order_observations.map(textNorm).sort());
  if(!r.items_equal)
   return {...r,priority:"CRITICAL",reasons:["ITEMS_OR_QUANTITIES_DIFFER_REVIEW_SOURCE_MAPPINGS"]};
  if(!r.observations_equal)
