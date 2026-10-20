@@ -180,14 +180,14 @@ function projectReaderEssentials(input){
   for(const note of item.notes)
    lines.push("  OBS: "+note.toLocaleUpperCase("pt-BR"));
  }
- for(const note of orderNotes)
-  lines.push("OBS GERAL / REVISAR: "+note.value.toLocaleUpperCase("pt-BR"));
+ if(orderNotes.length)
+  lines.push("OBS GERAL: REVISAR FORA DA COMANDA (NAO IMPRESSA)");
  lines.push("CAIXA: "+pack.caixa,"SACOLA: "+pack.sacola,"KIT: "+pack.kit);
  const out=deny("READONLY_ESSENTIAL_PREVIEW_NOT_PRINT_AUTHORITY");
  return {...out,status:"SOURCE_NATIVE_ESSENTIAL_PREVIEW_HOLD",
   essential:{ifood_short_id:o.NRCOMANDAEXT,tata_sequence:tata,
    NRCOMANDA:o.NRCOMANDA,NRVENDAREST:o.NRVENDAREST,
-   items,order_observations:orderNotes.map(x=>x.value)},
+   items,order_observations_review_required:orderNotes.length>0},
   optional:pack,preview_lines:lines,
   pair_snapshot_integrity_checked:true,decision_fingerprint_checked:true,
   persisted_sequence_reused:true,ready_for_offline_preview:true};
