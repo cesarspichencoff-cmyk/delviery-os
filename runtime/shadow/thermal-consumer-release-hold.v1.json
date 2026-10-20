@@ -6,14 +6,15 @@
   "scope": "COMANDAS_THERMICAS_ONLY",
   "preferred_future_candidate": {
     "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
-    "git_blob_sha1": "072d7f23cfcf6e55989782c08485925b8b2379e5",
+    "git_blob_sha1": "ca4a7affa2ede2bdaa4dfb8105856beafabfefbb",
     "code_ready_only": true,
     "installed": false,
     "print_authorized": false,
-    "previous_audited_blob_sha1": "652aae75b3aac314cb0871913658785932e5370a",
+    "previous_audited_blob_sha1": "072d7f23cfcf6e55989782c08485925b8b2379e5",
     "quantity_hardening": "V7.18_RAW_QUANTITY_MATCH_V68_REJECT_BEFORE_PACKAGING",
     "upstream_source_blocker_hardening": "V8.44_PRESERVE_EVENT_AND_SERVICE_BLOCKERS_EVEN_READY_TRUE",
-    "routing_destination_integrity": "V8.45_REJECT_DUPLICATE_ROUTE_OR_PRINTER_CODE"
+    "routing_destination_integrity": "V8.45_REJECT_DUPLICATE_ROUTE_OR_PRINTER_CODE",
+    "printer_endpoint_integrity": "V8.46_SOURCE_BOUND_NONBLANK_UNPADDED_ENDPOINT_AND_NAME"
   },
   "deprecated_do_not_install": [
     {
