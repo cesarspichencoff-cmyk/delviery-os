@@ -280,61 +280,58 @@ try{
   const printerCodes=r=>r.items[0].targets.map(x=>x.printer_code);
   const blockers=r=>r.blocking_reasons;
   try{
-   const lunch=decide(["00009","00003"],[a,b],"LUNCH");
-   assert.deepEqual(printerCodes(lunch),["00009"]);
-   assert.ok(!blockers(lunch).some(x=>x.startsWith("PRINTER_CODE_AMBIGUOUS_")));
-   const dinner=decide(["00009","00003"],[a,b],"DINNER");
-   assert.deepEqual(printerCodes(dinner),["00003"]);
-   // V8.47: a present LUNCH/DINNER word alone is not route evidence.
-   // If an upstream service claim is contradictory, both alternate physical
-   // targets must be absent even from a nonprinting diagnostic preview.
-   const contradictory=[
-    {label:"expired service",mutate:e=>{
-     e.service_resolution.blockers=["SERVICE_STATE_EXPIRED_FOR_ORDER"];}},
-    {label:"malformed service blockers",mutate:e=>{
-     e.service_resolution.blockers=null;}},
-    {label:"event blockers despite ready bit",mutate:e=>{
-     e.blockers=["SERVICE_STATE_DATE_MISMATCH_ORDER_DATE"];}},
-    {label:"not ready despite unblocked service",mutate:e=>{
-     e.ready_for_downstream_shadow=false;}},
-    {label:"missing service source reference",mutate:e=>{
-     e.service_resolution.source_ref=null;}},
-    {label:"unproven service evidence",mutate:e=>{
-     e.service_resolution.evidence="UNKNOWN";}},
+   // V8.48: the Odhen source has separate production/production2
+   // paths. The two printer associations are NOT a proved LUNCH/DINNER
+   // switch; no synthetic service value can grant physical selection.
+   const a2=printer("00006","3"),b2=printer("00004","4");
+   const bothPairs=[
+    {routes:["00009","00003"],printers:[a,b],code:"SUSHI1"},
+    {routes:["00006","00004"],printers:[a2,b2],code:"SUSHI2"}
    ];
-   for(const pair of [
-    {routes:["00009","00003"],printers:[a,b],label:"SUSHI1"},
-    {routes:["00006","00004"],printers:[
-      printer("00006","3"),printer("00004","4")],label:"SUSHI2"}
-   ])for(const c of contradictory){
-    const result=decide(pair.routes,pair.printers,"LUNCH",c.mutate);
-    assert.deepEqual(printerCodes(result),[],
-     pair.label+" "+c.label+" cannot project a chosen physical station");
-    assert.ok(blockers(result).includes(
-      "SERVICE_REQUIRED_"+pair.label+"_"+productCode));
-    assert.equal(result.effects.print,false);
-    assert.equal(result.effects.spooler_write,false);
+   const altered=[
+    {label:"upstream blocker",mutate:e=>{e.blockers=["SOURCE_UNVERIFIED"];}},
+    {label:"stale service",mutate:e=>{
+      e.service_resolution.blockers=["SERVICE_STATE_EXPIRED_FOR_ORDER"];}},
+    {label:"malformed service blockers",mutate:e=>{
+      e.service_resolution.blockers=null;}},
+    {label:"ready false",mutate:e=>{e.ready_for_downstream_shadow=false;}},
+    {label:"missing source reference",mutate:e=>{
+      e.service_resolution.source_ref=null;}},
+    {label:"unproven evidence",mutate:e=>{
+      e.service_resolution.evidence="UNKNOWN";}}
+   ];
+   for(const pair of bothPairs) {
+    for(const service of ["LUNCH","DINNER",null,"MIDDAY_GUESS"]) {
+      const out=decide(pair.routes,pair.printers,service);
+      assert.deepEqual(printerCodes(out),[],
+        pair.code+" must not select destination for "+service);
+      assert.ok(blockers(out).includes(
+        pair.code+"_DUAL_PRODUCTION_ROLE_UNPROVEN_"+productCode));
+      assert.equal(out.effects.print,false);
+      assert.equal(out.effects.spooler_write,false);
+    }
+    for(const x of altered){
+      const out=decide(pair.routes,pair.printers,"LUNCH",x.mutate);
+      assert.deepEqual(printerCodes(out),[],
+       pair.code+" "+x.label+" cannot bypass unverified role");
+      assert.ok(blockers(out).includes(
+       pair.code+"_DUAL_PRODUCTION_ROLE_UNPROVEN_"+productCode));
+    }
    }
-   const unknown=decide(["00009","00003"],[a,b],null);
-   assert.ok(blockers(unknown).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
-   assert.deepEqual(printerCodes(unknown),[],
-     "missing service cannot project both exclusive sushi printers");
-   const malformed=decide(["00009","00003"],[a,b],"MIDDAY_GUESS");
-   assert.ok(blockers(malformed).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
-   assert.deepEqual(printerCodes(malformed),[],
-     "an invented service label cannot choose a sushi printer");
-   const c=printer("00006","3"),d=printer("00004","4");
-   const unknown2=decide(["00006","00004"],[c,d],null);
-   assert.ok(blockers(unknown2).includes("SERVICE_REQUIRED_SUSHI2_"+productCode));
-   assert.deepEqual(printerCodes(unknown2),[],
-     "second sushi pair must also withhold both candidates");
-   const known2l=decide(["00006","00004"],[c,d],"LUNCH");
-   const known2d=decide(["00006","00004"],[c,d],"DINNER");
-   assert.deepEqual(printerCodes(known2l),["00006"]);
-   assert.deepEqual(printerCodes(known2d),["00004"]);
+   // Existing one-destination mappings are unaffected and remain only
+   // diagnostics. This child process is always blocked and nonprinting.
+   for(const [route,p] of [["00009",a],["00003",b],
+      ["00006",a2],["00004",b2]]) {
+     for(const service of ["LUNCH","DINNER",null]) {
+      const one=decide([route],[p],service);
+      assert.deepEqual(printerCodes(one),[route]);
+      assert.ok(!blockers(one).some(x=>
+        x.includes("DUAL_PRODUCTION_ROLE_UNPROVEN")));
+     }
+   }
    const k=printer("00002","5");
    const mixed=decide(["00002","00009","00003"],[k,a,b],null);
-   assert.ok(blockers(mixed).includes("SERVICE_REQUIRED_SUSHI1_"+productCode));
+   assert.ok(blockers(mixed).includes("SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN_"+productCode));
    assert.deepEqual(printerCodes(mixed),["00002"],
      "known independent kitchen route remains visible, but decision stays HOLD");
    const duplicatedRoute=decide(["00009","00009"],[a],"LUNCH");
@@ -345,7 +342,7 @@ try{
      "first record remains only for audit; last entry must not replace it");
    const sameDuplicate=decide(["00009"],[a,{...a}],"LUNCH");
    assert.ok(blockers(sameDuplicate).includes("PRINTER_CODE_AMBIGUOUS_"+productCode));
-   const missing=decide(["00009","00003"],[a],"DINNER");
+   const missing=decide(["00003"],[a],"DINNER");
    assert.ok(blockers(missing).includes("PRINTER_MAP_MISSING_"+productCode));
    const unrelated=decide(["00009"],[a,b,{...b}],"LUNCH");
    assert.ok(!blockers(unrelated).includes("PRINTER_CODE_AMBIGUOUS_"+productCode),
