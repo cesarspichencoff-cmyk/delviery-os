@@ -269,7 +269,7 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
   }
   if (ticket.items_without_proven_box.length) {
     p.bold(true);
-    p.line("EMBALAGEM A CONFERIR", "PACKING_FALLBACK");
+    p.line("CAIXA: A DEFINIR", "PACKING_FALLBACK");
     p.bold(false);
     for (const item of ticket.items_without_proven_box) p.item(item);
   }
@@ -304,7 +304,7 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
   }
   if (ticket.items_without_proven_box.length) {
     p.bold(true);
-    p.line("EMBALAGEM A CONFERIR", "PACKING_FALLBACK");
+    p.line("CAIXA: A DEFINIR", "PACKING_FALLBACK");
     p.bold(false);
     for (const item of ticket.items_without_proven_box) p.item(item);
   }
@@ -331,10 +331,10 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
     if (current) addResourceLine(p, current, "BAG_KIT");
   }
   if (!ticket.bags.length && ticket.warnings.some((x) => /BAG_SIZE|EXACT_BAG|PACKAGING_PLAN_MISSING/.test(x))) {
-    p.line("SACOLA: A CONFERIR", "BAG_UNKNOWN");
+    p.line("SACOLA: A DEFINIR", "BAG_UNKNOWN");
   }
   if (!ticket.kits.length && ticket.warnings.some((x) => /KIT_PLAN_MISSING|KIT_ASSIGNMENT/.test(x))) {
-    p.line("KIT: A CONFERIR", "KIT_UNKNOWN");
+    p.line("KIT: A DEFINIR", "KIT_UNKNOWN");
   }
   printResourceGroups(p, "ACOMP", ticket.accompaniments);
   p.font("A");
