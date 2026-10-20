@@ -231,6 +231,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: V8.44 event readiness and source blockers cannot disagree (Windows synthetic)
+        run: node tools/verificar_identidade_bytes_v714.js
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)
