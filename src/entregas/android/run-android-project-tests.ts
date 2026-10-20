@@ -660,9 +660,12 @@ test("Q018 aceite com aparelho divergente é recusado ANTES de gravar", () => {
   const body = funBody(stripComments(read(MAIN_KT)), "recordTermAcknowledgement");
   const trava = body.indexOf('require(o.getString("device_id") == DeviceId.ensure(db))');
   const grava = body.indexOf("db.termAcks().insert(");
-  const rider = body.indexOf("KEY_RIDER_ID");
+  const riderWrite = /db\.deviceState\(\)\.put\([\s\S]*?KEY_RIDER_ID/.test(body);
   assert.ok(trava >= 0, "trava de aparelho ausente");
-  assert.ok(trava < grava && trava < rider, "a trava precisa vir antes de gravar o aceite e o motoboy");
+  assert.ok(trava < grava, "a trava precisa vir antes de gravar o aceite");
+  assert.equal(riderWrite, false, "aceite da WebView nao pode trocar a identidade autenticada do motoboy");
+  assert.doesNotMatch(body, /db\.deviceState\(\)\.(put|clear)\(/,
+    "aceite nao pode alterar nenhum estado autenticado do aparelho");
 });
 
 /* ------------------------------------------------------------------ *

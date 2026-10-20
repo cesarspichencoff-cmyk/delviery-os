@@ -16,7 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import br.com.tata.entregas.BuildConfig
 import br.com.tata.entregas.bridge.Bridge
 import br.com.tata.entregas.bridge.EntregasJsBridge
-import br.com.tata.entregas.data.DeviceStateEntity
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.TermAckEntity
 import br.com.tata.entregas.location.DeviceId
@@ -229,13 +228,8 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
                     syncState = "pending",
                 ),
             )
-            db.deviceState().put(
-                DeviceStateEntity(
-                    key = EntregasDatabase.KEY_RIDER_ID,
-                    value = o.getString("rider_id"),
-                    updatedAtMs = System.currentTimeMillis(),
-                ),
-            )
+            // O aceite registra a intenção, mas não autentica um motoboy.
+            // Apenas a sessão validada pela plataforma define KEY_RIDER_ID.
             o.getString("acknowledgement_id")
         }
         SyncScheduler.requestNow(this@MainActivity)
