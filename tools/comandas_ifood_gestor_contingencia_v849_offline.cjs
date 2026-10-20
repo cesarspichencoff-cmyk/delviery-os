@@ -80,9 +80,11 @@ function assessGestorTeknisaContingency(input) {
  if(g!==null&&!validGestor(g))return {...r,reasons:["GESTOR_SNAPSHOT_INVALID_OR_INCOMPLETE"]};
  if(t!==null&&!validTeknisa(t))return {...r,reasons:["TEKNISA_SNAPSHOT_INVALID_OR_INCOMPLETE"]};
  if(!g&&!t)return {...r,reasons:["BOTH_SOURCES_UNOBSERVED"]};
- const fingerprint=g?clean(g.order_uuid)||clean(g.display_id):
-    clean(t.ifood_order_uuid)||clean(t.ifood_display_id);
- r.order_digest=digest("v849:order-observation:"+fingerprint);
+ // Do not publish unsalted hashes of low-entropy short display IDs:
+ // those can be enumerated. A missing UUID yields no exported identifier.
+ const identityUuid=clean(g?.order_uuid)||clean(t?.ifood_order_uuid);
+ r.order_digest=UUID.test(identityUuid)?
+   digest("v849:order-observation:"+identityUuid.toLowerCase()):null;
  // Physical receipt is not certified by boolean, JSON, ack or spool evidence.
  r.gestor_paper_claim_observed=g?.paper_claimed===true;
  r.teknisa_paper_claim_observed=t?.paper_claimed===true;
@@ -113,10 +115,6 @@ function assessGestorTeknisaContingency(input) {
  if(g.status!=="CONFIRMED")
   return {...r,reasons:["IFOOD_ORDER_STATUS_NOT_READY_FOR_PREPARATION_REVIEW"]};
  const left=compactItems(g.items),right=compactItems(t.items);
- const countSame=left.length===right.length;
- r.items_equal=countSame&&
-  left.every((x,i)=>JSON.parse(x).slice(0,2).join("|")===
-   JSON.parse(right[i]).slice(0,2).join("|"));
  // Compare names and quantities independent of notes, preserving duplicates.
  const getItemKeys=items=>items.map(row=>
   JSON.stringify([textNorm(row.name),row.quantity])).sort();
