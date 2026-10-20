@@ -76,6 +76,17 @@ test("incomplete real order blocks printer-ready output rather than guessing",()
  assert.ok(missing.text_trace.includes("CAIXA: A DEFINIR"));
  assert.ok(missing.text_trace.includes("SACOLA: A DEFINIR"));
 });
+test("unproven kit is A DEFINIR, but a genuinely absent kit is not invented",()=>{
+ const noKit=structuredClone(real.conference);
+ noKit.kits=[];noKit.warnings=noKit.warnings.filter(x=>!x.includes("KIT"));
+ const noKitTrace=renderConferenceTicketProofV46(noKit).text_trace;
+ assert.ok(!noKitTrace.includes("KIT: A DEFINIR"));
+ const missingKit=structuredClone(noKit);
+ missingKit.warnings.push("RESOURCE_MOTOR:KITS_NOT_FACT");
+ const trace=renderConferenceTicketProofV46(missingKit).text_trace;
+ assert.ok(trace.includes("KIT: A DEFINIR"));
+ assert.equal(renderConferenceTicketProofV46(missingKit).ready_for_operational_print,false);
+});
 test("long item refuses one-line overflow with zero bytes",()=>{
  const copy=structuredClone(real.conference);
  copy.boxes[0].items[0].print_name="PRODUTO ".repeat(20);
