@@ -48,6 +48,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
+      # A API de aparelho e executada contra dist/tools/entregas_pilot_server.js:
+      # compilar ANTES do teste, sem duplicar o build no workflow.
+      - run: npm run -s build:platform
       # Contratos de aparelho e fila nao sao compilacao Kotlin nem prova fisica.
       # Um so gate curto impede que o piloto ignore regressao offline no
       # mesmo commit que valida PostgreSQL/Copiloto.
@@ -71,7 +74,6 @@ jobs:
         run: npx tsx src/entregas/pilot/run-producer-signing-boot-tests.ts
       - name: real declarado e isolado pelo consumer (LAB de fronteira)
         run: npx tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
-      - run: npm run -s build:platform
       - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
         run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
       - name: Seis celulas V3.3 sem pressão artificial e sem motoboy duplicado
