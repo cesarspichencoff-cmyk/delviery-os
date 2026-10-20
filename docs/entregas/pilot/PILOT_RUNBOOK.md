@@ -1,5 +1,7 @@
 # Runbook do piloto controlado — ENTREGAS
 
+> **AVISO DE VERSÃO — HISTÓRICO (piloto web por token/HTTP).** As instruções abaixo não validam identidade nativa, HTTPS ou sincronização Android da revisão atual; não utilizar para ativar um piloto. Fonte atual: [Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md). **DRAFT/HOLD e NO-GO operacional**.
+
 Linguagem prática para quem opera o dia a dia com o César acompanhando.
 
 ## Antes de começar

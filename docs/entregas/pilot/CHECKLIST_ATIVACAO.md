@@ -1,5 +1,7 @@
 # Checklist de ativação — TATÁ Entregas, unidade ITAIM
 
+> **ESTADO ATUAL:** este documento lista pré-condições administrativas, não aprova a etapa física. Consultar o [Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md), que inclui identidade, evento offline, recibo remoto e Copiloto. **Sem autorização de instalação, GPS, merge, deploy ou cutover.**
+
 > Tudo aqui é **fail-closed**: enquanto um item estiver em branco, o sistema
 > recusa em vez de assumir. Nada foi preenchido com dado inventado.
 >

@@ -1,5 +1,7 @@
 # Limitações conhecidas — piloto ENTREGAS
 
+> **ESCOPO HISTÓRICO (piloto web).** Este documento não é um diagnóstico atualizado das capacidades Android/Room/WorkManager e não libera GPS ou integração live. Para limites **comprovados e não comprovados** da revisão atual e portões físicos, ver [Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md).
+
 ## Persistência
 
 - **Single-instance** apenas. Dois processos no mesmo arquivo = corrupção/risco.  

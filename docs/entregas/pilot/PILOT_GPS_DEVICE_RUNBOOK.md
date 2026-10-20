@@ -1,5 +1,7 @@
 # Runbook — teste de GPS em aparelho real
 
+> **AVISO DE VERSÃO — HISTÓRICO.** Os cenários abaixo foram redigidos para captura pelo navegador e não comprovam o serviço nativo Android atual. **Não executar como checklist de homologação.** Use [Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md), ainda integralmente **PENDENTE de campo**.
+
 > Complementa `PILOT_RUNBOOK.md`. Cobre só o que o GPS acrescenta.
 > Autorização: `docs/entregas/cor-v1-0-3/ENTREGAS_V1_0_3_ADENDO_GPS_PILOTO.md`.
 

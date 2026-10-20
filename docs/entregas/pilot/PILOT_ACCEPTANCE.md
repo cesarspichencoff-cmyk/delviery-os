@@ -1,5 +1,7 @@
 # Critérios de aceite do gate — matriz 1–30
 
+> **MATRIZ HISTÓRICA — OK AQUI NÃO SIGNIFICA CAMPO APROVADO.** Esta tabela mistura testes de código, comportamento simulado e procedimentos documentados; não prova Android físico, consentimento, fonte real, offline ou aceite humano. O gate operacional vigente é [Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md); **NO-GO** até prova por ambiente.
+
 Legenda: **OK** evidência automatizada ou procedimento documentado · **PARCIAL** · **PENDENTE aparelho real** · **N/A**
 
 | # | Cenário | Status | Evidência |

@@ -1,5 +1,7 @@
 # Compilar e instalar o aplicativo Android
 
+> **AVISO DE FRESCOR E AUTORIZAÇÃO.** A tabela de SDK/ADB abaixo é um retrato antigo de outra etapa, não do Foxxy em 20/10/2026: Android SDK e ADB foram encontrados e 108 JUnit passaram, mas `adb devices -l` não mostrou aparelho conectado. **Compilar/ter ferramentas não autoriza instalar**. Antes de qualquer ensaio físico, seguir o [Gate de campo Android + Copiloto](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md), em **DRAFT/HOLD**.
+
 > **O JDK e o Gradle wrapper já estão prontos.** Falta o Android SDK, que
 > exige um aceite de licença — decisão sua, não minha. Depois disso, um
 > comando gera o APK.

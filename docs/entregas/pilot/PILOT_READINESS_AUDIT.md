@@ -1,5 +1,7 @@
 # Auditoria de prontidão — ENTREGAS piloto controlado
 
+> **ARQUIVO HISTÓRICO DE 20/07/2026.** Não é o estado de prontidão do Android/Copiloto em 20/10/2026. Para decisão atual, ver [Gate de campo Android + Copiloto](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md); **nenhum teste físico aprovado por esta auditoria**.
+
 | Campo | Valor |
 |---|---|
 | Data | 2026-07-20 |

@@ -1,5 +1,7 @@
 # Primeiro turno com GPS — o que fazer, nesta ordem
 
+> **AVISO DE SEGURANÇA — ROTEIRO HISTÓRICO, NÃO AUTORIZA PRIMEIRO TURNO.** A orientação de testar GPS em operação normal, usar navegador e fazer deslocamentos sem viagem não é o gate atual. **Não colocar motoboy, GPS ou pedido real em teste por este documento.** Começar pelo [Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md) e obter autorização explícita para cada efeito.
+
 > O primeiro turno de uso **é** o teste de campo. Não execute os 22 cenários
 > artificialmente antes: sete são obrigatórios antes da primeira saída, o
 > resto se observa enquanto a operação acontece.

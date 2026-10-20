@@ -1,5 +1,7 @@
 # Runbook do aparelho real — Android, unidade ITAIM
 
+> **AVISO DE VERSÃO — HISTÓRICO, NÃO UTILIZAR PARA INSTALAÇÃO OU GPS.** Este texto descreve um fallback de navegador e a ausência de container que não representam o candidato Android atual. Para qualquer preparação ou decisão de campo, consultar **[Gate de campo Android + Copiloto (20/10/2026)](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md)**. Permanece **DRAFT/HOLD; sem autorização de instalação**.
+
 > Complementa [PILOT_FIRST_SHIFT.md](PILOT_FIRST_SHIFT.md). Aquele diz o que
 > observar no turno; este diz como preparar o aparelho.
 
