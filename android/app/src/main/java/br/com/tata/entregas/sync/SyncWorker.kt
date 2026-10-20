@@ -13,11 +13,91 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import br.com.tata.entregas.BuildConfig
 import br.com.tata.entregas.data.EntregasDatabase
+import br.com.tata.entregas.data.GpsPointEntity
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 internal fun shouldRetryFast(runAttemptCount: Int): Boolean =
     runAttemptCount < SyncWorker.FAST_RETRY_RUNS - 1
+
+/** O que o lote de GPS deixa para o fim do `doWork`. */
+internal data class GpsBatchOutcome(
+    val retryable: Boolean = false,
+    val credentialRefused: Boolean = false,
+)
+
+/**
+ * Aplica à fila Room a resposta da plataforma para UM lote de GPS.
+ *
+ * Fora do `doWork` para o teste exercitar o Room real com a resposta HTTP já
+ * classificada, sem rede e sem `BuildConfig`. Nenhuma coordenada sai daqui.
+ */
+internal suspend fun applyGpsBatchResponse(
+    db: EntregasDatabase,
+    points: List<GpsPointEntity>,
+    response: ApiResult<JSONObject>,
+): GpsBatchOutcome {
+    val ids = points.map { it.pointId }
+    return when (val r = asPlatformDataResult(response)) {
+        is ApiResult.Ok -> {
+            val body = r.value
+            val array = body.optJSONArray("rejections")
+            val rejections = buildList {
+                if (array != null) {
+                    for (i in 0 until array.length()) {
+                        val item = array.optJSONObject(i) ?: continue
+                        add(
+                            GpsReceiptRejection(
+                                idempotencyKey = item.optString("idempotency_key"),
+                                reason = item.optString("motivo"),
+                            ),
+                        )
+                    }
+                }
+            }
+            val decision = decideGpsReceipt(
+                items = points.map { GpsReceiptItem(it.pointId, it.idempotencyKey) },
+                accepted = body.optInt("accepted", -1),
+                duplicate = if (body.has("duplicate")) {
+                    body.optInt("duplicate", -1)
+                } else {
+                    body.optInt("duplicados", -1)
+                },
+                rejected = body.optInt("rejected", -1),
+                rejections = rejections,
+            )
+            when (decision) {
+                is GpsReceiptDecision.Apply -> {
+                    if (decision.sentIds.isNotEmpty()) {
+                        db.gpsPoints().markSent(decision.sentIds)
+                    }
+                    decision.rejected.groupBy { it.reason }.forEach { (reason, rejectedPoints) ->
+                        db.gpsPoints().markRejected(
+                            rejectedPoints.map { it.pointId },
+                            "servidor_rejeitou: $reason",
+                        )
+                    }
+                    GpsBatchOutcome()
+                }
+                is GpsReceiptDecision.Invalid -> {
+                    db.gpsPoints().markFailed(ids, "recibo_invalido:${decision.reason}")
+                    GpsBatchOutcome(retryable = true)
+                }
+            }
+        }
+        is ApiResult.Retryable -> {
+            db.gpsPoints().markFailed(ids, r.reason)
+            GpsBatchOutcome(retryable = true)
+        }
+        is ApiResult.Unauthorized -> {
+            db.gpsPoints().markFailed(ids, r.reason)
+            GpsBatchOutcome(credentialRefused = true)
+        }
+        // O `.let` mantém a recusa terminal numa linha só, a forma que a guarda
+        // estrutural de `src/entregas/android` confere.
+        is ApiResult.Rejected -> db.gpsPoints().markRejected(ids, "servidor_rejeitou: ${r.reason}").let { GpsBatchOutcome() }
+    }
+}
 
 /**
  * Sincronização em lote.
@@ -28,6 +108,9 @@ internal fun shouldRetryFast(runAttemptCount: Int): Boolean =
  *    que volta ao lote na próxima tentativa;
  *  - recusa definitiva (4xx) não vira retentativa infinita — o item fica
  *    visível com o erro, para alguém olhar;
+ *  - 403 da autenticação do aparelho na plataforma é recusa de QUEM mandou,
+ *    não do lote: o lote fica na fila e o bootstrap decide (ver
+ *    [asPlatformDataResult]);
  *  - o lote é ordenado por `sequenceLocal`, então o servidor recebe na ordem
  *    em que o aparelho observou, mesmo que a rede tenha ido e voltado;
  *  - reenviar o mesmo lote é seguro: a chave de idempotência é a mesma.
@@ -198,7 +281,6 @@ class SyncWorker(
         // 3. Pontos de GPS.
         val points = db.gpsPoints().nextBatch(BATCH_SIZE)
         if (points.isNotEmpty()) {
-            val ids = points.map { it.pointId }
             val payloads = points.map { p ->
                 JSONObject().apply {
                     put("point_id", p.pointId)
@@ -220,69 +302,18 @@ class SyncWorker(
                     put("source", "device")
                 }
             }
-            when (val r = api.sendPoints(payloads, correlationId)) {
-                is ApiResult.Ok -> {
-                    val body = r.value
-                    val array = body.optJSONArray("rejections")
-                    val rejections = buildList {
-                        if (array != null) {
-                            for (i in 0 until array.length()) {
-                                val item = array.optJSONObject(i) ?: continue
-                                add(
-                                    GpsReceiptRejection(
-                                        idempotencyKey = item.optString("idempotency_key"),
-                                        reason = item.optString("motivo"),
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                    val decision = decideGpsReceipt(
-                        items = points.map { GpsReceiptItem(it.pointId, it.idempotencyKey) },
-                        accepted = body.optInt("accepted", -1),
-                        duplicate = if (body.has("duplicate")) {
-                            body.optInt("duplicate", -1)
-                        } else {
-                            body.optInt("duplicados", -1)
-                        },
-                        rejected = body.optInt("rejected", -1),
-                        rejections = rejections,
-                    )
-                    when (decision) {
-                        is GpsReceiptDecision.Apply -> {
-                            if (decision.sentIds.isNotEmpty()) {
-                                db.gpsPoints().markSent(decision.sentIds)
-                            }
-                            decision.rejected.groupBy { it.reason }.forEach { (reason, rejectedPoints) ->
-                                db.gpsPoints().markRejected(
-                                    rejectedPoints.map { it.pointId },
-                                    "servidor_rejeitou: $reason",
-                                )
-                            }
-                        }
-                        is GpsReceiptDecision.Invalid -> {
-                            db.gpsPoints().markFailed(ids, "recibo_invalido:${decision.reason}")
-                            retryable = true
-                        }
-                    }
-                }
-                is ApiResult.Retryable -> {
-                    db.gpsPoints().markFailed(ids, r.reason)
-                    retryable = true
-                }
-                is ApiResult.Unauthorized -> {
-                    db.gpsPoints().markFailed(ids, r.reason)
-                    credencialRecusada = true
-                }
-                is ApiResult.Rejected -> db.gpsPoints().markRejected(ids, "servidor_rejeitou: ${r.reason}")
-            }
+            val outcome = applyGpsBatchResponse(db, points, api.sendPoints(payloads, correlationId))
+            if (outcome.retryable) retryable = true
+            if (outcome.credentialRefused) credencialRecusada = true
         }
 
         // 4. B5 — somente contagens agregadas; sem coordenada, payload ou PII.
-        when (val r = api.sendQueueDepth(
+        // Um 403 de autorização aqui também é aviso de credencial: revogação
+        // descoberta pela fila leva ao bootstrap, que decide.
+        when (val r = asPlatformDataResult(api.sendQueueDepth(
             db.gpsPoints().pendingCount(),
             db.outbox().pendingCount(),
-        )) {
+        ))) {
             is ApiResult.Ok -> Unit
             is ApiResult.Retryable -> retryable = true
             is ApiResult.Unauthorized -> credencialRecusada = true

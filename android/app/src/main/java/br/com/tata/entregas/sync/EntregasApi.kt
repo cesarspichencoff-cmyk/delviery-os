@@ -27,8 +27,19 @@ sealed class ApiResult<out T> {
     data class Ok<T>(val value: T) : ApiResult<T>()
     /** Falha temporária: rede, timeout, 5xx. Vale retentar. */
     data class Retryable(val reason: String, val status: Int? = null) : ApiResult<Nothing>()
-    /** Recusa definitiva: 4xx. Retentar só repete o erro. */
-    data class Rejected(val reason: String, val status: Int) : ApiResult<Nothing>()
+    /**
+     * Recusa definitiva: 4xx. Retentar só repete o erro.
+     *
+     * `instruction` e `refusalClass` são o `instrucao` e a `classe` que a
+     * plataforma põe no corpo, quando põem. O código HTTP sozinho não separa
+     * "revogado, pare" de "unidade errada, renove" — ver [asPlatformDataResult].
+     */
+    data class Rejected(
+        val reason: String,
+        val status: Int,
+        val instruction: String? = null,
+        val refusalClass: String? = null,
+    ) : ApiResult<Nothing>()
 
     /**
      * Credencial ausente, invalida ou vencida.
@@ -71,9 +82,17 @@ internal fun interpretarRespostaHttp(status: Int, texto: String): ApiResult<JSON
                 runCatching { JSONObject(texto).optString("human", texto) }.getOrDefault(texto),
             ),
             status,
+            instruction = campoDeRecusa(texto, "instrucao"),
+            refusalClass = campoDeRecusa(texto, "classe"),
         )
         else -> ApiResult.Retryable("servidor respondeu $status", status)
     }
+
+/** Só um identificador curto; nada do corpo além disso é carregado adiante. */
+private fun campoDeRecusa(texto: String, campo: String): String? =
+    runCatching { JSONObject(texto).optString(campo, "") }
+        .getOrDefault("")
+        .takeIf { it.matches(Regex("[a-z_]{1,64}")) }
 
 class EntregasApi(
     private val baseUrl: String,
