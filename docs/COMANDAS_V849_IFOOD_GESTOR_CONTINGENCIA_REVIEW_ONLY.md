@@ -7,6 +7,8 @@
 **Impressão nativa do Gestor de Pedidos:** o iFood documenta que o Gestor pode imprimir pedidos automaticamente quando uma impressora não fiscal está configurada, e manualmente pelo ícone de impressora. Registra itens, observações e o identificador do pedido. Isso é uma possibilidade no produto, **não é prova** de que esteja ativa ou fisicamente funcional na unidade.
 
 - iFood para Parceiros, *Gestor de Pedidos* (atualizado em 07/07/2025): https://blog-parceiros.ifood.com.br/gestor-de-pedidos-ifood/comment-page-6/
+- iFood para Parceiros, *Aceite automático* (documentação da navegação): https://blog-parceiros.ifood.com.br/aceite-automatico/ — `Gestor > Ajustes > Impressão > Impressão automática de pedidos`. **Este documento não autoriza alterar esse ajuste**; o aceite automático é outra função, não confundir com impressão.
+
 - iFood para Parceiros, *Impressora para iFood* (17/02/2026): https://blog-parceiros.ifood.com.br/impressora-para-ifood/
 
 **Eventos e consulta por API:** são um canal técnico diferente, dependente de autorização, credenciais, aplicação homologada e política do iFood. A documentação oficial oferece webhook/polling, `GET /orders/{id}` e deduplicação por ID de evento; descreve webhook com entrega ao menos uma vez, sem garantia de ordem e janela limitada de retentativas. A API **não imprime automaticamente no Gestor** e um `ACK` ou confirmação HTTP não prova papel.
@@ -43,7 +45,7 @@ Contrato de duas capturas **minimizadas**:
 - `gestor`: `deliveryos.ifood-gestor-observation.v1`; `store_id`, `order_uuid` (ou `null`, nunca inventado), `display_id`, `status`, `snapshot_complete`, `items[{name,quantity,observations[]}]` e afirmação opcional `paper_claimed`.
 - `teknisa`: `deliveryos.teknisa-order-observation.v1`; `store_id`, `order_key`, `ifood_order_uuid` (ou `null`), `ifood_display_id`, `snapshot_complete`, `items[]` e `paper_claimed`.
 
-**Nenhuma dessas afirmações JSON autentica origem real ou pessoa.** O comparador só devolve um hash de referência, códigos de motivo e alertas, sem nomes, observações, CPF, endereço, telefone, número bruto de pedido ou UUID em sua saída. Receber captura **não** significa que o Gestor tenha sido consultado por este trabalho.
+**Nenhuma dessas afirmações JSON autentica origem real ou pessoa.** O comparador só devolve um hash de referência, códigos de motivo e alertas, sem nomes, observações, CPF, endereço, telefone, número bruto de pedido ou UUID em sua saída. O hash de pedido só é gerado a partir de UUID completo; se a única identidade for o ID curto, não se exporta nem mesmo seu hash enumerável. Receber captura **não** significa que o Gestor tenha sido consultado por este trabalho.
 
 Condições discriminadas, sempre `HOLD` ou `MATCH_CANDIDATE_HOLD`:
 - Gestor capturado e Teknisa não capturada → investigar possível lacuna de integração/atraso; **não** declarar pedido perdido;
