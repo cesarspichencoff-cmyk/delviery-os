@@ -50,6 +50,8 @@ jobs:
         run: node tools/verificar_release_hold_v716.js
       - name: Consumed-rule bytes and engine mutation guard V7.14 (offline only)
         run: node tools/verificar_identidade_bytes_v714.js
+      - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
+        run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
       - name: Exact raw store-shop-order key integrity V7.27 (offline)
         run: node tools/verificar_identidade_pedido_v727.js
       - name: Passive real watcher-event audit privacy and integrity V7.30 (synthetic)
@@ -241,6 +243,8 @@ jobs:
         run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: V8.44 event readiness and source blockers cannot disagree (Windows synthetic)
         run: node tools/verificar_identidade_bytes_v714.js
+      - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
+        run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)
