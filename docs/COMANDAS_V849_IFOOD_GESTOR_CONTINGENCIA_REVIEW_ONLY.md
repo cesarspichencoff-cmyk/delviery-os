@@ -79,3 +79,27 @@ A comparação de nomes/observações exige igualdade literal normalizada; difer
 - **HOLD:** sem imprimir, instalar, mudar Gestor/Teknisa/iFood, confirmar/cancelar/despachar pedidos, mexer em fiscal ou SEFAZ, fazer merge/deploy ou ativar API.
 
 **Objetivo operacional:** se a integração Teknisa falhar, o pedido continua sendo identificável pelo iFood e a equipe dispõe de uma rota de contingência verificável, sem fabricar provas nem duplicar produção.
+
+
+## V8.50 — correção de estado pelo operador e evidência live da CAIXA_MOOCA (20/10/2026)
+
+**Correção humana de César:** a impressão nativa do Gestor de Pedidos iFood **já estava ativada por muitos dias e continuava ativa ontem, 19/10**. Essa informação operacional vem de quem responde pela loja, portanto não deve ser substituída pela suposição de que o canal nunca foi ativado. É uma **declaração operacional de configuração/uso**, distinta de verificação de papel por pedido.
+
+**Prova técnica READ-ONLY, CAIXA_MOOCA, 20/10 às 09:39–09:40 -0300:**
+- `Get-Process` e `Win32_Process` identificaram **6 instâncias `Gestor de Pedidos.exe`** e **3 instâncias `Impressora GP iFood.exe`**. As três instâncias GP iniciaram às **21:27:56–21:27:59 de 19/10**; seis processos Gestor iniciaram às **21:28:08–21:31:40 de 19/10**. Continuavam em execução durante a consulta de 20/10.
+- Inspeção anterior de **13/10** já identificara 6 processos Gestor e 3 `Impressora GP iFood`, demonstrando presença do ecossistema em outra data; a amostra anterior de poucos segundos sem eventos não autoriza negar seu uso no restante dos dias.
+- `Microsoft-Windows-PrintService/Operational` na CAIXA_MOOCA estava **habilitado** e registrou **368 eventos ID 307** em **19/10** (139 às 19h, 92 às 20h, 90 às 21h, 46 às 22h, 1 às 23h), distribuídos por **duas filas de impressão** (365 e 3 eventos). **98 eventos ocorreram após 21:27:56**, instante mais antigo de abertura dos processos GP atualmente vivos.
+- A revisão segura das estruturas de `DocumentPrinted` omitiu títulos brutos e PII: todos os 368 títulos observados tinham 22 caracteres e nenhum continha marcador explícito `iFood`/`Gestor`/`GP`; os nomes das duas filas também não contêm marcador `iFood`/`Gestor`. Portanto, é **provada atividade de impressão no Windows naquele dia**, mas **não é provada a atribuição desses 368 trabalhos ao Gestor** nem a saída física de papel em seus equipamentos.
+- A consulta limitada à retenção atual do canal encontrou esses 368 eventos ID 307 em 19/10, **não prova ausência de impressões em outros dias**. O Gestor pode imprimir por outro caminho e as filas podem ter nomes genéricos.
+- Nenhuma configuração foi lida/escrita, nenhuma impressão solicitada, serviço reiniciado, spooler limpo, pedido real identificado ou login efetuado. Nenhum texto bruto de trabalho, item ou consumidor foi armazenado na evidência de revisão.
+
+### Ajuste no próximo gate
+
+**Não iniciar projeto de instalação/configuração do Gestor**: os dois aplicativos já estão presentes e rodando. A partir do sistema existente, descobrir de modo não destrutivo qual destino/driver/canal a `Impressora GP iFood` utiliza e se os pedidos do dia efetivamente produzem um evento auditável próprio. Aproveitar primeiro logs/telemetria históricos permitidos e a experiência de César, sem configurar duas impressões automáticas por acidente.
+
+- Estado do app no host às 09:40 do dia 20: **PROCESS_RUNNING_PROVEN**, com início em 19/10.
+- Configuração histórica de impressão contínua: **USER_REPORTED_OPERATIONAL_ACTIVE**. Não descartar; prova de interface/configuração preservada separadamente como ainda não carregada.
+- Atividade de spooler Windows em 19/10: **307_EVENT_PROVEN_FOR_TWO_UNATTRIBUTED_QUEUES**.
+- Impressão nativa GP x impressão Teknisa em trabalhos específicos, segunda rota fisicamente independente, integridade por pedido e nenhuma duplicação: **UNKNOWN_NEEDS_RECONCILIATION**.
+
+**Plano V8.49 permanece DRAFT/HOLD e sem ativação adicional.** A correção diz respeito à premissa e prioridade: preservar o fluxo que já funciona e comprová-lo sem substituir configurações existentes.
