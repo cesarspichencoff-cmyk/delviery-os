@@ -39,6 +39,14 @@ Não pressupor que o horário da comanda automaticamente determina `LUNCH`/`DINN
 
 **Foco e limites:** nada de horários novos ou aprovação por turno; `DTHRABERMESA` é um campo de horário presente no envelope de exemplo do leitor, **não uma prova por si só de sua confiabilidade em todos os pedidos reais**. Os bloqueadores de `event.service_resolution` devem ser preservados até se provar o contrato de roteamento físico de sushi. V8.44 afeta apenas o consumidor SHADOW V714 não instalado. **CI do commit novo deve ser observado antes de alegar TEST_PASS.** Nenhum teste confirma física das três vias, nem autoriza merge/deploy.
 
+## V8.46 — separar comanda legível de impressora fisicamente disponível (20/10/2026)
+
+**Diagnóstico por execução real de CI, não suposição:** a primeira tentativa de validar `printer_ip` como requisito de toda comanda derrubou o teste positivo V7.22 (V2 → V6.8 → três vias), porque as impressoras **sintéticas** do replay têm somente `printer_code` e `printer_name`, deliberadamente sem IP. A execução devolveu `BLOCKED` em `V68_PAIR_GATE`, prova de uma regressão de escopo do patch, não de falha na impressão real.
+
+**Correção mínima:** o candidato SHADOW V714 mantém os bloqueios V8.45 para rota duplicada e código de destino ambíguo; V8.46 passa a validar **somente o código de cinco dígitos e o nome não vazio** do destino lógico. A ausência de endereço de rede **não impede a geração sem efeitos físicos** das três vias em preview. No teste `verificar_identidade_bytes_v714.js`, cenários de IP ausente, vazio ou com espaços continuam `print=false/spooler_write=false`; código/nome inválido deve bloquear. Não há consulta de rede nem tentativa de validar impressora.
+
+**Fronteira para produção:** o endereço correto, estado de rede, mapeamento código→impressora física, sistema spooler, papel realmente entregue e três vias requerem **pré-validação física independente e autorização específica**; nunca converter uma prova semântica da comanda em autorização para transmitir bytes. Não introduzir aprovação diária de turno ou horários paralelos. Todos os testes CI deste commit ainda precisam da conclusão explícita antes de declarar V8.46 TEST_PASS.
+
 ## Teste de aceite futuro, só se houver mudança técnica necessária
 - Fluxo de uma comanda recebida para conferência e três vias com seus dados originais e horário já presente; não gerar autorização humana de turno nem recálculo desse horário.
 - Verificar em sandbox os caminhos que hoje dependem de estado de turno; testar se são requisitos reais, se podem impedir pedidos legítimos ou causar regressão.
