@@ -62,6 +62,8 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
+      - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
+        run: node tools/verificar_tata_comanda_archived_orders_v860_offline.cjs
       - name: TATA Comanda first-attempt read-only host pulse V8.59 syntax
         shell: pwsh
         run: |
@@ -303,6 +305,8 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
+      - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
+        run: node tools/verificar_tata_comanda_archived_orders_v860_offline.cjs
       - name: TATA Comanda first-attempt read-only host pulse V8.59 syntax
         shell: pwsh
         run: |
