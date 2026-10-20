@@ -9,7 +9,7 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const {checkEvent,RULES,NO_EFFECTS}=require("./auditar_eventos_watcher_v730_readonly.js");
 const EXPECTED_MOTOR_SHA256="1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
-const EXPECTED_CONSUMER_GIT_BLOB="072d7f23cfcf6e55989782c08485925b8b2379e5";
+const EXPECTED_CONSUMER_GIT_BLOB="ca4a7affa2ede2bdaa4dfb8105856beafabfefbb";
 const CANDIDATE="live_shadow_consumer_v2_candidate_v714.cjs";
 const EVENT_FILENAME=/^[0-9]{10}_[a-f0-9]{64}\.json$/i;
 const clean=s=>typeof s==="string"?s:"";
