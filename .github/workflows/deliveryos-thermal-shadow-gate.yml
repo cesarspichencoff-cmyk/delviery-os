@@ -60,6 +60,8 @@ jobs:
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
+      - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
+        run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
       - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
@@ -303,6 +305,8 @@ jobs:
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
+      - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
+        run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
       - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
