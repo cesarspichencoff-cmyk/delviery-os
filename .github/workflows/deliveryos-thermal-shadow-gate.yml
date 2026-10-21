@@ -332,6 +332,8 @@ jobs:
           Write-Output 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_SYNTAX_PASS'
       - name: TATA Comanda first-attempt read-only Windows fixture V8.59
         run: node tools/verificar_tata_comanda_native_first_attempt_v859_windows.cjs
+      - name: TATA Comanda independent V8.57 and V8.59 convergence V8.60 (Windows synthetic)
+        run: node tools/verificar_validacao_convergente_v860_windows.cjs
 
       - name: Opening-time GP iFood read-only pulse static safety V8.53
         run: node tools/verificar_comandas_opening_pulse_v853_static.js
