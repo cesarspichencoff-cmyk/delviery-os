@@ -53,6 +53,8 @@ try{
   assert.equal(o.scanned_events,1);
   assert.equal(o.unique_event_decision_pairs,1);
   assert.equal(o.basic_essential_content_candidates,1);
+  assert.equal(o.note_parity_verified_candidates,1);
+  assert.equal(o.note_parity_conflicts,0);
   assert.equal(o.paired_with_persisted_tata_sequence,1,
    JSON.stringify({sequence_state_status:o.sequence_state_status,
     bindings:o.sequence_bindings_total,
@@ -86,6 +88,51 @@ try{
   const y=pair();y.decision.items[0].quantity=888;write(y);
   const o=run();assert.equal(o.basic_essential_content_candidates,0);
   assert.equal(o.incomplete_essential_content,1);
+ });
+ test("lost item instruction fails read-only candidate without exporting notes",()=>{
+  const y=pair();y.decision.items[0].observations=[];write(y);
+  const o=run();
+  assert.equal(o.basic_essential_content_candidates,0);
+  assert.equal(o.note_parity_conflicts,1);
+  assert.equal(o.paired_with_persisted_tata_sequence,0);
+  assert.ok(o.blocking_codes.includes("ITEM_OR_ORDER_OBSERVATION_PARITY_FAILED"));
+ });
+ test("changed allergy text fails even while pair keys are unchanged",()=>{
+  const y=pair();y.decision.items[0].observations[1].value="TEXTO SINTETICO DIFERENTE";
+  write(y);const o=run();
+  assert.equal(o.note_parity_conflicts,1);
+  assert.equal(o.basic_essential_content_candidates,0);
+ });
+ test("general note dropped from decision prevents essential candidate",()=>{
+  const y=pair();y.decision.order_observations=[];write(y);
+  const o=run();assert.equal(o.note_parity_conflicts,1);
+  assert.equal(o.basic_essential_content_candidates,0);
+ });
+ test("extra source note is never silently omitted",()=>{
+  const y=pair();y.event.order.observation_rows.push({
+   source_field:"DSOBSPEDDIGCMD",value:"SEGUNDA OBSERVACAO SINTETICA",
+   scope_hint:"item",join_proven:true,item_index:0,CDPRODUTO:"0000001111",
+  });
+  write(y);const o=run();assert.equal(o.note_parity_conflicts,1);
+  assert.equal(o.basic_essential_content_candidates,0);
+ });
+ test("unproven source-note join blocks even if projected text matches",()=>{
+  const y=pair();y.event.order.observation_rows[0].join_proven=false;
+  write(y);const o=run();assert.equal(o.note_parity_conflicts,1);
+  assert.equal(o.basic_essential_content_candidates,0);
+ });
+ test("duplicate extra decision note fails no-note-invention guarantee",()=>{
+  const y=pair();y.decision.items[0].observations.push({
+   source_field:"TXPRODCOMVEN",value:"OBSERVACAO EXTRA SINTETICA",
+  });
+  write(y);const o=run();assert.equal(o.note_parity_conflicts,1);
+  assert.equal(o.basic_essential_content_candidates,0);
+ });
+ test("note order permutation retains content parity",()=>{
+  const y=pair();y.decision.items[0].observations.reverse();write(y);
+  const o=run();assert.equal(o.note_parity_verified_candidates,1);
+  assert.equal(o.note_parity_conflicts,0);
+  assert.equal(o.basic_essential_content_candidates,1);
  });
  test("missing decision shows unpaired, not lost iFood order",()=>{
   const y=pair();write(y);fs.rmSync(dfile);
