@@ -181,7 +181,7 @@ try{
   }
   $bound=[string]$own[0].tata_sequence
   if($bound -cnotmatch '^\d{3}$' -or [int]$bound -eq 0 -or
-     @($entries|Where-Object{$_ -ne $own[0] -and
+     @($entries|Where-Object{$_.teknisa_order_id -cne $o.NRCOMANDA -and
       $_.tata_sequence -ceq $bound}).Count -gt 0){
    $out.sequence_scope_collisions++;continue
   }
