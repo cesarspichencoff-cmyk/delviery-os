@@ -14,14 +14,15 @@ const EFFECTS=Object.freeze({
  fiscal:false,sefaz:false,service:false,deploy:false
 });
 const SHA=/^[a-f0-9]{64}$/i;
+const {presentMotorPackaging}=require("./tata_comanda_motor_summary_v861_offline.cjs");
 const clean=x=>typeof x==="string"?x.trim():"";
 const safe=x=>typeof x==="string"&&x.length>0&&x.length<=2000&&
  x===x.trim()&&!/[\x00-\x08\x0b-\x1f\x7f]/.test(x);
 const digest=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
-const unknown="A DEFINIR";
+
 function deny(reason){
  return {schema:SCHEMA,status:"HOLD",reason,essential:null,preview_lines:[],
-  optional:{caixa:unknown,sacola:unknown,kit:unknown},
+  optional:{caixa:null,sacola:null,kit:null},
   pair_snapshot_integrity_checked:false,decision_fingerprint_checked:false,
   persisted_sequence_reused:false,order_source_authenticated:false,
   ifood_gp_independently_observed:false,packaging_ready:false,
@@ -69,13 +70,6 @@ function canonicalProductCode(value){
 function parsedQuantity(raw){
  if(typeof raw!=="string"||!/^0*[1-9]\d*(?:\.0+)?$/.test(raw))return null;
  const n=Number(raw);return Number.isSafeInteger(n)&&n>0?n:null;
-}
-function optional(o,k){
- const x=o?.[k];
- if(x?.status==="PROVEN"&&safe(x.label)&&x.label!=="A DEFINIR")
-  return x.label;
- if(x?.status==="NONE")return "NAO SE APLICA";
- return unknown;
 }
 function projectReaderEssentials(input){
  if(!input||typeof input!=="object")return deny("INPUT_INVALID");
@@ -147,7 +141,7 @@ function projectReaderEssentials(input){
   if(!Array.isArray(x.observations)||
      !same(expected,x.observations.map(z=>({source_field:z?.source_field,value:z?.value}))))
    return deny("ITEM_OBSERVATION_SOURCE_MISMATCH");
-  items.push({name:x.product_name,quantity:qty,
+  items.push({name:x.product_name,code:x.canonical_code,quantity:qty,
    notes:expected.map(z=>z.value)});
  }
  // shadow_candidate from the consumer is not a persisted assignment.
@@ -167,11 +161,17 @@ function projectReaderEssentials(input){
      b.teknisa_order_id===o.NRCOMANDA)))
   return deny("TATA_SEQUENCE_NOT_UNIQUELY_PERSISTED_FOR_ORDER_DAY");
  const tata=matching[0].tata_sequence;
- const pack={
-  caixa:optional(input.packaging,"caixa"),
-  sacola:optional(input.packaging,"sacola"),
-  kit:optional(input.packaging,"kit")
- };
+ // The optional presentation is downstream of the V6.3 bridge, never
+ // supplied through unverified labels or defaulted without a motor call.
+ const motor=presentMotorPackaging(items,input.packaging_motor);
+ if(motor.status==="BLOCKED")return deny("PACKAGING_MOTOR_BRIDGE_BLOCKED");
+ const pack=motor.optional;
+ const review=input.order_note_disposition;
+ const reviewed=orderNotes.length>0&&review?.order_key===key&&
+  review.snapshot_hash===e.snapshot_hash&&review.decision_fingerprint===d.fingerprint&&
+  review.note_sha256===digest(orderNotes)&&safe(review.reviewer_ref)&&
+  ["PRODUCTION","NON_PRODUCTION"].includes(review.disposition);
+ const orderNotesPending=orderNotes.length>0&&!reviewed;
  const lines=["TATA COMANDA - PREVIA / SEM IMPRESSAO",
   "IFOOD "+o.NRCOMANDAEXT+" | TATA "+tata,
   "TEKNISA "+o.NRCOMANDA,"PRODUTOS"];
@@ -180,16 +180,23 @@ function projectReaderEssentials(input){
   for(const note of item.notes)
    lines.push("  OBS: "+note.toLocaleUpperCase("pt-BR"));
  }
- if(orderNotes.length)
-  lines.push("OBS GERAL: REVISAR FORA DA COMANDA (NAO IMPRESSA)");
- lines.push("CAIXA: "+pack.caixa,"SACOLA: "+pack.sacola,"KIT: "+pack.kit);
+ if(orderNotesPending)
+  lines.push("OBS GERAL: CLASSIFICACAO PENDENTE - NAO IMPRIMIR");
+ else if(reviewed&&review.disposition==="PRODUCTION")
+  for(const note of orderNotes)lines.push("OBS GERAL: "+note.value.toLocaleUpperCase("pt-BR"));
+ for(const [key,value] of Object.entries(pack))
+  if(value!==null)lines.push(key.toLocaleUpperCase("pt-BR")+": "+value);
  const out=deny("READONLY_ESSENTIAL_PREVIEW_NOT_PRINT_AUTHORITY");
  return {...out,status:"SOURCE_NATIVE_ESSENTIAL_PREVIEW_HOLD",
   essential:{ifood_short_id:o.NRCOMANDAEXT,tata_sequence:tata,
    NRCOMANDA:o.NRCOMANDA,NRVENDAREST:o.NRVENDAREST,
-   items,order_observations_review_required:orderNotes.length>0},
+   items,order_observations_review_required:orderNotesPending,
+   order_observations_disposition_claim_only:reviewed?review.disposition:null},
   optional:pack,preview_lines:lines,
+  motor_packaging_status:motor.status,
+  motor_file_authenticated_here:false,
   pair_snapshot_integrity_checked:true,decision_fingerprint_checked:true,
-  persisted_sequence_reused:true,ready_for_offline_preview:true};
+  persisted_sequence_reused:true,packaging_ready:motor.has_verified_motor_output,
+  ready_for_offline_preview:true};
 }
 module.exports={projectReaderEssentials,SCHEMA,EFFECTS,snapshotHash,decisionHash};
