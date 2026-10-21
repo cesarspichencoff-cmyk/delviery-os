@@ -52,6 +52,8 @@ export interface PackagingContractResultV1 {
  packaging:BridgeDecisionV63["packaging"];
  kits:BridgeDecisionV63["kits"];
  reader_pair_authenticated:false;
+ snapshot_hash_independently_recomputed:false;
+ observations_authenticated:false;
  source_code_crosswalk_authenticated:false;
  ready_for_operational_print:false;
  effects:{
@@ -74,6 +76,55 @@ const hash=(b:Buffer)=>createHash("sha256").update(b).digest("hex");
 const blob=(b:Buffer)=>createHash("sha1")
  .update("blob "+b.length+"\0").update(b).digest("hex");
 
+/** Public structural preflight. Passing never authenticates a live order. */
+export function validatePackagingContractRequestV1(request:PackagingContractRequestV1):string[] {
+ const issues=new Set<string>();
+ if(!request||typeof request.order_key!=="string"||!ORDER.test(request.order_key)||
+    typeof request.snapshot_hash!=="string"||!SHA.test(request.snapshot_hash))
+  issues.add("ORDER_REVISION_IDENTITY_INVALID");
+ if(!Array.isArray(request?.lines)||request.lines.length<1||request.lines.length>200){
+  issues.add("SOURCE_LINES_INVALID");return [...issues].sort();
+ }
+ const ids=new Set<string>(),codeToProduct=new Map<string,string>();
+ const identities=new Set<string>();
+ let total=0;
+ for(const line of request.lines){
+  if(!line||typeof line!=="object"||
+     typeof line.source_line_id!=="string"||!ID.test(line.source_line_id)||
+     ids.has(line.source_line_id)){
+   issues.add("SOURCE_LINE_ID_INVALID_OR_DUPLICATE");continue;
+  }
+  ids.add(line.source_line_id);
+  if(typeof line.source_product_code!=="string"||!ID.test(line.source_product_code)||
+     typeof line.academy_product_id!=="string"||!ID.test(line.academy_product_id)||
+     typeof line.product_name!=="string"||!norm(line.product_name)){
+   issues.add("SOURCE_PRODUCT_IDENTITY_INCOMPLETE");continue;
+  }
+  const prior=codeToProduct.get(line.source_product_code);
+  if(prior!==undefined&&prior!==line.academy_product_id)
+   issues.add("SOURCE_CODE_CATALOG_MAPPING_CONFLICT");
+  codeToProduct.set(line.source_product_code,line.academy_product_id);
+  if(typeof line.quantity_raw!=="string"||!QUANTITY.test(line.quantity_raw)){
+   issues.add("SOURCE_QUANTITY_INVALID");continue;
+  }
+  const q=Number(line.quantity_raw);
+  if(!Number.isSafeInteger(q)||q<1||q>9999){
+   issues.add("SOURCE_QUANTITY_OUT_OF_BOUNDS");continue;
+  }
+  total+=q;if(total>9999)issues.add("ORDER_QUANTITY_OUT_OF_BOUNDS");
+  const key=norm(line.product_name)+"|"+q;
+  if(identities.has(key))issues.add("MOTOR_GROUP_SOURCE_MEMBERSHIP_AMBIGUOUS");
+  identities.add(key);
+  if(!Array.isArray(line.observations)||line.observations.length>30||
+     !line.observations.every(x=>typeof x==="string"&&x.length<=2000))
+   issues.add("SOURCE_OBSERVATIONS_INVALID");
+  if(line.packaging_role!==undefined&&
+     !["CLOSED_COMBO","OTHER","UNKNOWN"].includes(line.packaging_role))
+   issues.add("SOURCE_PACKAGING_ROLE_INVALID");
+ }
+ return [...issues].sort();
+}
+
 type CatalogRow={
  id?:unknown;nome?:unknown;
  classification?:{family?:unknown;station?:unknown;
@@ -84,7 +135,7 @@ type CatalogRow={
 export function evaluatePackagingContractV1(
  request:PackagingContractRequestV1, catalogBytes:Buffer, motorBytes:Buffer,
 ):PackagingContractResultV1 {
- const issues=new Set<string>();
+ const issues=new Set<string>(validatePackagingContractRequestV1(request));
  const denied=():PackagingContractResultV1=>({
   schema:CONTRACT_VERSION_V1,status:"HOLD",
   blockers:[...issues].sort(),
@@ -93,6 +144,8 @@ export function evaluatePackagingContractV1(
   motor_sha256:null,catalog_git_blob_sha1:null,
   group_membership:[],packaging:null,kits:null,
   reader_pair_authenticated:false,
+  snapshot_hash_independently_recomputed:false,
+  observations_authenticated:false,
   source_code_crosswalk_authenticated:false,
   ready_for_operational_print:false,effects:EFFECTS,
  });
@@ -254,7 +307,8 @@ export function evaluatePackagingContractV1(
   motor_sha256:PACKAGING_SOURCE_SHA256_V78,
   catalog_git_blob_sha1:CATALOG_GIT_BLOB_V1,
   group_membership:groups,packaging:bridge.packaging,kits:bridge.kits,
-  reader_pair_authenticated:false,source_code_crosswalk_authenticated:false,
+  reader_pair_authenticated:false,snapshot_hash_independently_recomputed:false,
+  observations_authenticated:false,source_code_crosswalk_authenticated:false,
   ready_for_operational_print:false,effects:EFFECTS,
  };
 }
