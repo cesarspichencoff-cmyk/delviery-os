@@ -21,11 +21,12 @@ if(args[0]==="--worker"){
   status:result.status,authorize_print:result.authorize_print
  })+"\n");
 }
-if(args[0]==="--lock-and-crash"){
+else if(args[0]==="--lock-and-crash"){
  assert.equal(args.length,2);fs.mkdirSync(path.join(args[1],".attempt-lock"));
  process.exit(47);
 }
-if(args.length!==0)throw Error("INVALID_TEST_MODE");
+else{
+ if(args.length!==0)throw Error("INVALID_TEST_MODE");
 const root=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v755-"));
 const root2=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v755-"));
 const root3=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v755-"));
@@ -114,3 +115,4 @@ const test=(label,fn)=>{fn();checks++;process.stdout.write("PASS "+checks+" "+la
  // Test cleanup never runs in service/operational directories.
  for(const dir of [root,root2,root3])fs.rmSync(dir,{recursive:true,force:true});
 }})().catch(e=>{console.error(e);process.exitCode=1});
+}
