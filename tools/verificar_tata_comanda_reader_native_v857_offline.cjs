@@ -138,13 +138,18 @@ test("uninvoked motor never generates fallback or invented packing fields",()=>{
  for(const k of ["caixa","sacola","kit"])assert.equal(r.optional[k],null);
  assert.ok(!r.preview_lines.some(s=>/^(CAIXA|SACOLA|KIT):/.test(s)));
 });
-test("synthetic motor interface uses existing V6.3 bridge for boxes bags kits",()=>{
+test("forged engine object with valid-looking blob label cannot be trusted",()=>{
  const r=audit(withMotor(pair()));
- assert.equal(r.packaging_ready,true);
- assert.equal(r.motor_file_authenticated_here,false);
- assert.equal(r.optional.caixa,"1 X CX 750");
- assert.equal(r.optional.sacola,"1 X SACOLA P");
- assert.equal(r.optional.kit,"1 X Kit p/1");
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"PACKAGING_MOTOR_BRIDGE_BLOCKED");
+ assert.equal(r.packaging_ready,false);
+});
+test("wrong motor bytes reject even with exact source blob label",()=>{
+ const x=withMotor(pair());
+ x.packaging_motor.motor_bytes=Buffer.from("NOT_THE_ACADEMY_MOTOR".repeat(8));
+ const r=audit(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"PACKAGING_MOTOR_BRIDGE_BLOCKED");
 });
 test("unverified caller packaging labels never override motor omission",()=>{
  const x=pair();x.packaging={caixa:{status:"PROVEN",label:"999"}};
