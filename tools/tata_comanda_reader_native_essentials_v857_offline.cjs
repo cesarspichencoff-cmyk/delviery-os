@@ -171,7 +171,10 @@ function projectReaderEssentials(input){
   review.snapshot_hash===e.snapshot_hash&&review.decision_fingerprint===d.fingerprint&&
   review.note_sha256===digest(orderNotes)&&safe(review.reviewer_ref)&&
   ["PRODUCTION","NON_PRODUCTION"].includes(review.disposition);
- const orderNotesPending=orderNotes.length>0&&!reviewed;
+ // Revision matching is NOT independent review authority: an arbitrary
+ // reviewer_ref or self-reported classification cannot silently drop a
+ // preparation/allergy instruction or release raw private note content.
+ const orderNotesPending=orderNotes.length>0;
  const lines=["TATA COMANDA - PREVIA / SEM IMPRESSAO",
   "IFOOD "+o.NRCOMANDAEXT+" | TATA "+tata,
   "TEKNISA "+o.NRCOMANDA,"PRODUTOS"];
@@ -182,8 +185,6 @@ function projectReaderEssentials(input){
  }
  if(orderNotesPending)
   lines.push("OBS GERAL: CLASSIFICACAO PENDENTE - NAO IMPRIMIR");
- else if(reviewed&&review.disposition==="PRODUCTION")
-  for(const note of orderNotes)lines.push("OBS GERAL: "+note.value.toLocaleUpperCase("pt-BR"));
  for(const [key,value] of Object.entries(pack))
   if(value!==null)lines.push(key.toLocaleUpperCase("pt-BR")+": "+value);
  const out=deny("READONLY_ESSENTIAL_PREVIEW_NOT_PRINT_AUTHORITY");
