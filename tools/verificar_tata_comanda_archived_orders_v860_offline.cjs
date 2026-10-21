@@ -60,12 +60,12 @@ test("hypothetical TATA 001 always disclosed as synthetic not live",()=>{
   assert.ok(c.preview_lines_hypothetical.some(x=>x.includes("TATA 001")));
  }
 });
-test("unknown packing defaults to A DEFINIR only",()=>{
+test("historical synthetic replay never guesses packaging without motor",()=>{
  for(const id of ["9092","9627","8332"]){
-  const l=find(id).preview_lines_hypothetical;
-  for(const key of ["CAIXA","SACOLA","KIT"])
-   assert.ok(l.includes(key+": A DEFINIR"));
-  assert.ok(!l.some(x=>/^\\d+ X A DEFINIR/.test(x)));
+  const c=find(id),lines=c.preview_lines_hypothetical;
+  assert.equal(c.packaging_motor_not_evaluated_in_historical_reconstruction,true);
+  assert.ok(!lines.some(line=>/^(CAIXA|SACOLA|KIT):/.test(line)));
+  assert.ok(lines.some(line=>line.includes("IFOOD "+id)));
  }
 });
 test("archived 9627 has only evidence of absent item observations",()=>{
