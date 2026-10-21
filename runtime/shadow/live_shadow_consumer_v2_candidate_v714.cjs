@@ -35,7 +35,13 @@ function sha256File(file) {
 
 const here = __dirname;
 const motorPathV714 = path.join(here, "packaging-current.js");
+// Exact approved Academy motor bytes, checked BEFORE the first executable load.
+// The read-before/read-after equality below only proves no change during load.
+const CANONICAL_MOTOR_SHA256_V714 =
+  "1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
 const motorDigestBeforeV714 = sha256File(motorPathV714);
+if(motorDigestBeforeV714!==CANONICAL_MOTOR_SHA256_V714)
+  throw new Error("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC");
 require(motorPathV714);
 const motorDigestAfterV714 = sha256File(motorPathV714);
 if(motorDigestBeforeV714!==motorDigestAfterV714)
