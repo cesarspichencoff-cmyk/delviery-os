@@ -42,6 +42,8 @@ jobs:
         run: node tools/verificar_agrupamento_conferencia_v62.js
       - name: Current packaging motor bridge V6.3 (offline, source-pinned)
         run: node tools/verificar_ponte_embalagem_v63.js
+      - name: Pinned Academy headless packaging contract V1 (Linux, fake bytes denied)
+        run: node tools/verificar_contrato_embalagem_v1_offline.cjs
       - name: Three-way physical box and resource coherence V6.4 (offline)
         run: node tools/verificar_coerencia_tres_vias_v64.js
       - name: Reconciled reader ingress and pinned Unified Kit Core V6.6 (offline)
@@ -291,6 +293,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: Pinned Academy headless packaging contract V1 (Windows, fake bytes denied)
+        run: node tools/verificar_contrato_embalagem_v1_offline.cjs
       - name: Historical Teknisa 463-product and six-printer mapping integrity (Windows offline)
         run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: V8.44 event readiness and source blockers cannot disagree (Windows synthetic)
