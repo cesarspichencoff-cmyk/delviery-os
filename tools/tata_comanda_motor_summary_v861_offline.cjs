@@ -2,11 +2,11 @@
 /**
  * TATA Comanda review-only presentation adapter for the EXISTING V6.3
  * packaging bridge. NEVER infer a motor result from its absence.
- * The caller must load and byte-pin the actual Academy motor separately;
- * this function does not authenticate an injected JavaScript object.
+ * Exact motor bytes must be supplied from a separately authorized source.
+ * Caller-supplied SHA labels/functions never grant provenance.
  */
 const EMPTY=Object.freeze({caixa:null,sacola:null,kit:null});
-const UNKNOWN="A DEFINIR";
+const {inspectPinnedMotorBytes}=require("./tata_comanda_pinned_motor_loader_v862_offline.cjs");
 const sortedSummary=values=>[...values.entries()]
  .sort((a,b)=>a[0].localeCompare(b[0],"pt-BR"))
  .map(([name,count])=>count+" X "+name).join(" | ");
@@ -19,20 +19,21 @@ function presentMotorPackaging(items,ctx) {
  const none=(status,reasons=[])=>({status,optional:{...EMPTY},
   reasons,has_verified_motor_output:false,motor_file_authenticated_here:false});
  if(ctx==null)return none("NOT_EVALUATED",["PACKAGING_MOTOR_NOT_INVOKED"]);
- if(typeof ctx!=="object"||!Array.isArray(ctx.entries)||
-    typeof ctx.motor?.packComanda!=="function"||
-    typeof ctx.motor?.kitVerdict!=="function")
+ if(typeof ctx!=="object"||!Array.isArray(ctx.entries))
   return none("BLOCKED",["MOTOR_CALL_CONTEXT_INVALID"]);
+ const pinned=inspectPinnedMotorBytes(ctx.motor_bytes);
+ if(pinned.status!=="PINNED_EXACT_BYTES")
+  return none("BLOCKED",[pinned.reason]);
  try {
   const {bridgeCurrentPackagingV63,PACKAGING_SOURCE_BLOB_V63}=
    require("../dist/src/production/currentPackagingBridgeV63.js");
-  if(ctx.blob_sha!==PACKAGING_SOURCE_BLOB_V63)
-   return none("BLOCKED",["PACKAGING_MOTOR_SOURCE_DRIFT"]);
+  if(!pinned.blob_sha_verified||!pinned.sha256_verified)
+   return none("BLOCKED",["PACKAGING_MOTOR_NOT_AUTHENTICATED"]);
   const sources=items.map((x,i)=>({item_index:i,
    product_code:String(x.code??""),product_name:x.name,
    quantity:x.quantity,observations:x.notes??[],
    packaging_role:ctx.packaging_roles?.[i]??"OTHER"}));
-  const r=bridgeCurrentPackagingV63(sources,ctx.entries,ctx.motor,ctx.blob_sha);
+  const r=bridgeCurrentPackagingV63(sources,ctx.entries,pinned.motor,PACKAGING_SOURCE_BLOB_V63);
   if(r.status!=="VERIFIED_INPUT"||!r.packaging||!r.kits)
    return none("BLOCKED",r.reasons);
   const boxes=[];
@@ -52,9 +53,9 @@ function presentMotorPackaging(items,ctx) {
    kit:kits.length?kits.map(k=>k.quantidade+" X "+k.kit).join(" | "):"NAO SE APLICA"
   };
   return {status:"VERIFIED_INPUT",optional,reasons:[],
-   has_verified_motor_output:true,motor_file_authenticated_here:false};
+   has_verified_motor_output:true,motor_file_authenticated_here:true};
  } catch {
   return none("BLOCKED",["MOTOR_BRIDGE_EXECUTION_FAILED"]);
  }
 }
-module.exports={presentMotorPackaging,UNKNOWN};
+module.exports={presentMotorPackaging};
