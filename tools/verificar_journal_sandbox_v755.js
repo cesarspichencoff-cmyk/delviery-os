@@ -69,8 +69,22 @@ const test=(label,fn)=>{fn();checks++;process.stdout.write("PASS "+checks+" "+la
   const child=spawn(process.execPath,[__filename,"--worker",root3],{stdio:["ignore","pipe","pipe"]});
   let out="",err="";
   child.stdout.on("data",d=>out+=d);child.stderr.on("data",d=>err+=d);
-  child.on("exit",status=>status===0?resolve(JSON.parse(out.trim())):reject(Error(err||out)));
-  child.on("error",reject);
+  // `exit` can precede stdout/stderr pipe closure on Windows. Parse only
+  // on `close` after both streams are drained; never invent a HOLD result
+  // from partial or missing worker output.
+  child.once("close",(status,signal)=>{
+   if(status!==0)return reject(Error(
+    "V755_WORKER_EXIT_"+status+"_"+String(signal||"NO_SIGNAL")+
+    " "+String(err||out).slice(0,320)));
+   let parsed;
+   try{parsed=JSON.parse(out.trim());}
+   catch{return reject(Error("V755_WORKER_OUTPUT_INCOMPLETE_OR_INVALID"));}
+   if(!parsed||!["SYNTHETIC_JOURNAL_COMMIT_OBSERVED","HOLD"].includes(parsed.status)||
+      parsed.authorize_print!==false)
+    return reject(Error("V755_WORKER_UNEXPECTED_RESULT"));
+   resolve(parsed);
+  });
+  child.once("error",reject);
  }));
  const results=await Promise.all(jobs);
  test("five independent processes result in one reservation max",()=>{
