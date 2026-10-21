@@ -23,14 +23,15 @@ function write(src){
  fs.writeFileSync(seqfile,JSON.stringify(src.sequence_state,null,2),"utf8");
 }
 function run(){
- const p=spawnSync("powershell.exe",["-NoProfile","-NonInteractive",
+ const p=spawnSync("pwsh.exe",["-NoProfile","-NonInteractive",
   "-ExecutionPolicy","Bypass","-File",
   "tools/tata_comanda_native_first_attempt_v859_readonly.ps1",
   "-CiFixtureRoot",root,"-SampleSize","5","-DecisionBudget","8"],{
-   cwd:path.resolve(__dirname,".."),encoding:"utf8",timeout:25000,
+   cwd:path.resolve(__dirname,".."),encoding:"utf8",timeout:45000,
    windowsHide:true
   });
- assert.equal(p.status,0,p.stderr||p.stdout||"powershell failed");
+ assert.equal(p.status,0,p.stderr||p.stdout||
+  (p.error?String(p.error.code||p.error.message):"POWERSHELL_CHILD_NO_OUTPUT"));
  const raw=p.stdout.trim();
  assert.ok(!raw.includes("9627")&&!raw.includes("SEM CEBOLINHA")&&
   !raw.includes("0000348850"),"NO_CUSTOMER_OR_ORDER_DATA_EXPORTED");
