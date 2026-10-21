@@ -13,7 +13,7 @@ function inspectPinnedMotorBytes(value){
  if(!Buffer.isBuffer(value)||value.length<64||value.length>1024*1024)
   return deny("PINNED_MOTOR_BYTES_REQUIRED");
  const blob=crypto.createHash("sha1")
-  .update(Buffer.from("blob "+value.length+"\\0")).update(value).digest("hex");
+  .update(Buffer.from("blob "+value.length+"\0")).update(value).digest("hex");
  const digest=crypto.createHash("sha256").update(value).digest("hex");
  if(blob!==PACKAGING_SOURCE_BLOB_V63||digest!==PACKAGING_SOURCE_SHA256_V78)
   return deny("PACKAGING_MOTOR_BYTES_DRIFT");
