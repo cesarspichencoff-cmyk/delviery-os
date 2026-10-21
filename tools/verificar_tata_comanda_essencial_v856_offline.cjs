@@ -50,18 +50,39 @@ test("essential preview iFood sequence full product quantity notes present",()=>
  assert.ok(r.preview_lines.includes("1 X TEMAKI SALMAO"));
  assert.ok(r.preview_lines.includes("  OBS: ALERGIA A CAMARAO"));
 });
-test("unknown only optional box bag kit",()=>{
- const r=check(fixture);for(const k of ["caixa","sacola","kit"])
-  assert.equal(r.optional[k],"A DEFINIR");
- assert.ok(!r.preview_lines.some(x=>/^IFOOD A DEFINIR|^\d+ X A DEFINIR|TATA A DEFINIR/.test(x)));
+test("uninvoked motor omits optional fields but keeps essentials",()=>{
+ const r=check(fixture);
+ for(const k of ["caixa","sacola","kit"])assert.equal(r.optional[k],null);
+ assert.equal(r.packaging_ready,false);
+ assert.ok(!r.preview_lines.some(line=>/^(CAIXA|SACOLA|KIT):/.test(line)));
+ assert.ok(r.preview_lines.some(line=>line.includes("IFOOD 9627 | TATA 001")));
 });
-test("proven optional box retains label and unknown bag stays unknown",()=>{
- const x=copy(fixture);x.packaging={caixa:{status:"PROVEN",label:"750"},sacola:{status:"UNKNOWN"}};
- const r=check(x);assert.equal(r.optional.caixa,"750");assert.equal(r.optional.sacola,"A DEFINIR");
+test("unverified optional labels do not override an uninvoked motor",()=>{
+ const x=copy(fixture);x.packaging={caixa:{status:"PROVEN",label:"750"}};
+ assert.equal(check(x).optional.caixa,null);
 });
-test("proven absence of kit not invented",()=>{
- const x=copy(fixture);x.packaging={kit:{status:"NONE"}};
- assert.equal(check(x).optional.kit,"NAO SE APLICA");
+test("synthetic V6.3 motor bridge resolves box bag and kit together",()=>{
+ const x=copy(fixture),items=x.ifood.items;
+ x.packaging_motor={
+  blob_sha:"3167c309f02a0ad5a84fb43043b8866e3bee873c",
+  entries:items.map((v,i)=>({source_item_index:i,quantity:v.quantity,
+   station_proof:"CURRENT_MOTOR_PROVEN",
+   product:{nome:v.name,classification:{station:"sushi"}}})),
+  motor:{
+   packComanda:entries=>({groups:[{kind:"faixa",station:"sushi",
+    box:"750",boxes:1,status:"PROVEN_CURRENT_HUMAN_RULE",
+    products:entries.map(e=>({name:e.product.nome,quantity:e.quantity}))}],
+    has_unknown:false,total_items:entries.reduce((n,e)=>n+e.quantity,0),
+    bags:{size:"P",status:"PROVEN_OPERATIONAL_DOCUMENT",
+     size_status:"FACT",exact_bag_count:1,exact_bag_count_status:"FACT"}}),
+   kitVerdict:()=>({status:"FACT",kits:[{kit:"Kit p/1",quantidade:1}]})
+  }
+ };
+ const r=check(x);
+ assert.equal(r.packaging_ready,true);
+ assert.equal(r.optional.caixa,"1 X CX 750");
+ assert.equal(r.optional.sacola,"1 X SACOLA P");
+ assert.equal(r.optional.kit,"1 X Kit p/1");
 });
 test("invalid empty iFood identifier blocks",()=>{
  const x=copy(fixture);x.ifood.short_id="";assert.equal(check(x).status,"HOLD");
