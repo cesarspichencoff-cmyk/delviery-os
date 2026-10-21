@@ -5,7 +5,7 @@
 ## Contrato da primeira entrega — decisão operacional de César
 **Nunca A DEFINIR:** **iFood (número curto visível)**, **sequência TATÁ (3 dígitos já vinculados ao pedido)**, **produto completo** e **quantidade exata**, mantendo **observações do pedido/item** sem apagar instruções como SEM/COM e alergias.
 
-**Pode A DEFINIR, se não houver evidência:** **caixa, sacola e kit**. Não inventar tamanho, número, distribuição de produtos ou kit. Comprovadamente não aplicável = `NAO SE APLICA`. Embalagem incompleta **não deve impedir exibir** os dados essenciais do pedido na prévia.
+**A DEFINIR apenas após tentativa válida do motor:** **caixa, sacola e kit** somente se a execução do motor canônico aprovado sobre a mesma revisão for inconclusiva para o campo específico. Sem executar/autenticar o motor, **não mostrar embalagem e não apresentar `A DEFINIR` como se fosse resultado de cálculo**. Não inventar tamanho, número, distribuição de produtos ou kit. Comprovadamente não aplicável = `NAO SE APLICA`. A prévia *de conteúdo essencial* pode continuar, explicitamente incompleta e sem autoridade de impressão.
 
 **Fiscal separado:** presença/ausência de NFC-e Teknisa não é requisito para ler uma comanda de produção/conferência; não reproduzir, imprimir, alterar, cancelar ou emitir documentos fiscais.
 
@@ -39,3 +39,11 @@ Integrar o adaptador ao fluxo read-only de pedido real do **TATÁ Comanda** no m
 **Decisão econômica:** quando a CAIXA_MOOCA estiver disponível, primeiro consultar *apenas em leitura*, num comando único, se (1) há evento e decisão V2 da mesma revisão; (2) número iFood, produtos e quantidades estão íntegros; (3) há binding real no estado. Se (3) não existe, **não testar impressão**, primeiro propor o uso governado do binder atômico existente em janela segura; não introduzir novo serviço ou nova sequência paralela. Caso o estado exista mas com colisão, parar e preservar o arquivo original. O GP iFood ativo não deve ser alterado.
 
 **A fronteira de sucesso:** nenhum CI, hash próprio ou prova antiga garante 100% a alimentação real do leitor, persistência idempotente no host e saída física. Prova final só depois de teste assistido no dispositivo/ambiente correto. Preservar DRAFT/HOLD.
+
+## Checkpoint posterior — prova da origem do motor e observações (20/10/2026)
+
+O adaptador de embalagem da prévia só aceita **bytes em memória** do motor da Academia, com os dois pins exigidos pela ponte V6.3: Git blob `3167c309f02a0ad5a84fb43043b8866e3bee873c` e SHA-256 `1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e`. Objeto JavaScript fornecido por chamador, rótulo de SHA ou conjunto de labels `PROVEN` não bastam. O carregador V8.62 é **local/in-memory**, não faz download, não contém código da Academia e não deve receber dados reais em CI pública. O motor autêntico ainda precisa ser carregado no ambiente autorizado sobre uma revisão real do pedido. O CI público cobre recusa adversarial e os gates da ponte; **não executa a prova positiva usando o código privado da Academia**.
+
+Observação geral `DSOBSCOMANDA` mantém a classificação **pendente** na prévia mesmo que um chamador apresente `reviewer_ref`/classificação da mesma revisão. Isso evita que autoafirmação seja confundida com autoridade humana: alegação é registrada como tal, mas não oculta nem libera notas de preparo/alergia. A disposição efetiva exige a fonte/autoridade de classificação já aprovada, ligada à mesma revisão; até essa ligação existir, nota geral real não sai no texto de impressão. Observações de item permanecem intactas.
+
+**Prova ainda necessária para 10/10:** um Reader V2 vivo de mesmo snapshot com itens/notas e binding TATÁ persistido; execução do motor autenticado e da ponte em entrada classificada/vigente; revisão responsável das notas gerais; turno/ACL autorizados; três vias Epson Itaim e prevenção de duplicação com GP iFood, recuperação e rollback verificados em papel, sob autorização específica. Nenhuma parte deste checkpoint aprova merge, deploy, serviço, SQL, fiscal, spooler, sequência ou impressão.
