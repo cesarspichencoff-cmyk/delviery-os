@@ -79,10 +79,17 @@ test("synthetic V6.3 motor bridge resolves box bag and kit together",()=>{
   }
  };
  const r=check(x);
- assert.equal(r.packaging_ready,true);
- assert.equal(r.optional.caixa,"1 X CX 750");
- assert.equal(r.optional.sacola,"1 X SACOLA P");
- assert.equal(r.optional.kit,"1 X Kit p/1");
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"PACKAGING_MOTOR_BRIDGE_BLOCKED");
+ assert.equal(r.packaging_ready,undefined);
+});
+test("spoofed motor with exact-looking SHA and fake bytes is refused",()=>{
+ const x=copy(fixture);
+ x.packaging_motor={entries:[],blob_sha:"3167c309f02a0ad5a84fb43043b8866e3bee873c",
+ motor_bytes:Buffer.from("FORGED_MOTOR_BYTES".repeat(8))};
+ const r=check(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"PACKAGING_MOTOR_BRIDGE_BLOCKED");
 });
 test("invalid empty iFood identifier blocks",()=>{
  const x=copy(fixture);x.ifood.short_id="";assert.equal(check(x).status,"HOLD");
