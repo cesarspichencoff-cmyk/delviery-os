@@ -196,6 +196,8 @@ check("one source item removed from decision blocked",()=>{
 });
 check("no source items blocked",()=>{
  const p=base();p.event.order.items=[];p.decision.items=[];
+ p.event.order.observation_rows=p.event.order.observation_rows
+  .filter(row=>row.scope_hint==="order");
  enforce(p,"SOURCE_ITEM_COVERAGE_INVALID");
 });
 check("unpersisted TATA sequence never replaced by shadow candidate",()=>{
