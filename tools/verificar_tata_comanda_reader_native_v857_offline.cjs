@@ -165,19 +165,23 @@ test("unreviewed general instruction allergy cannot be removed",()=>{
  assert.equal(r.essential.order_observations_review_required,true);
  assert.ok(r.preview_lines.some(s=>s.includes("CLASSIFICACAO PENDENTE")));
 });
-test("same-revision production note appears in separate section",()=>{
+test("self-reported production note claim cannot publish raw sensitive text",()=>{
  const x=pair();x.event.order.observation_rows[2].value="SEM MOLHO";
  x.decision.order_observations[0].value="SEM MOLHO";
  x.event.snapshot_hash=snapshotHash(x.event.order);
  x.decision.snapshot_hash=x.event.snapshot_hash;
  x.decision.fingerprint=decisionHash(x.decision);
  const r=audit(review(x,"PRODUCTION"));
- assert.equal(r.essential.order_observations_review_required,false);
- assert.ok(r.preview_lines.includes("OBS GERAL: SEM MOLHO"));
+ assert.equal(r.essential.order_observations_review_required,true);
+ assert.equal(r.essential.order_observations_disposition_claim_only,"PRODUCTION");
+ assert.ok(!JSON.stringify(r.preview_lines).includes("SEM MOLHO"));
+ assert.ok(r.preview_lines.includes("OBS GERAL: CLASSIFICACAO PENDENTE - NAO IMPRIMIR"));
 });
-test("explicitly reviewed non-production note excluded from preview",()=>{
+test("untrusted non-production classification cannot clear pending review",()=>{
  const r=audit(review(pair(),"NON_PRODUCTION"));
- assert.equal(r.essential.order_observations_review_required,false);
+ assert.equal(r.essential.order_observations_review_required,true);
+ assert.equal(r.essential.order_observations_disposition_claim_only,"NON_PRODUCTION");
+ assert.ok(r.preview_lines.includes("OBS GERAL: CLASSIFICACAO PENDENTE - NAO IMPRIMIR"));
  assert.ok(!JSON.stringify(r.preview_lines).includes("ENTREGA NA PORTARIA"));
 });
 test("stale general-note review cannot silence current snapshot",()=>{
