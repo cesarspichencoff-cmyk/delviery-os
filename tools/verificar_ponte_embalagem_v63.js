@@ -26,6 +26,20 @@ run("two families in one proven physical box",()=>{
  assert.equal(d.packaging.groups[0].products.length,2);
  assert.equal(d.ready_for_automatic_operational_print,false);
 });
+run("motor-proven sealed 650 category is preserved, not flattened",()=>{
+ const m=output();m.groups[0].kind="documentada";
+ m.groups[0].category="selada_650";m.groups[0].box="650";
+ const r=bridge(sources,entries,motor(m));
+ assert.equal(r.status,"VERIFIED_INPUT",JSON.stringify(r.reasons));
+ assert.equal(r.packaging.groups[0].category,"selada_650");
+ assert.equal(r.packaging.groups[0].box,"650");
+});
+run("numeric 650 without proven sealed category must stay generic",()=>{
+ const m=output();m.groups[0].box="650";delete m.groups[0].category;
+ const r=bridge(sources,entries,motor(m));
+ assert.equal(r.status,"VERIFIED_INPUT",JSON.stringify(r.reasons));
+ assert.equal(r.packaging.groups[0].category,null);
+});
 run("source revision drift blocked",()=>assert.ok(bridge(sources,entries,motor(),"stale").reasons.includes("PACKAGING_MOTOR_SOURCE_DRIFT")));
 run("different current station blocks",()=>{
  const e=entries.map((x,i)=>i?{...x,product:{...x.product,classification:{station:"sushi"}}}:x);
