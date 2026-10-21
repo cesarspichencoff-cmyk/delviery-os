@@ -3,7 +3,8 @@
 const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path");
 const {
- evaluatePackagingContractV1,CONTRACT_VERSION_V1,CATALOG_GIT_BLOB_V1
+ evaluatePackagingContractV1,validatePackagingContractRequestV1,
+ CONTRACT_VERSION_V1,CATALOG_GIT_BLOB_V1
 }=require("../dist/src/production/packagingContractV1.js");
 const {PACKAGING_SOURCE_SHA256_V78}=require(
  "../dist/src/production/currentPackagingBridgeV63.js");
@@ -26,6 +27,8 @@ function held(r,reason){
  assert.equal(r.packaging,null);assert.equal(r.kits,null);
  assert.deepEqual(r.group_membership,[]);
  assert.equal(r.reader_pair_authenticated,false);
+ assert.equal(r.snapshot_hash_independently_recomputed,false);
+ assert.equal(r.observations_authenticated,false);
  assert.equal(r.source_code_crosswalk_authenticated,false);
  assert.equal(r.ready_for_operational_print,false);
  assert.ok(Object.values(r.effects).every(v=>v===false));
@@ -56,6 +59,57 @@ check("empty order is not processed",()=>{
 check("large order is rejected before executing motor",()=>{
  held(evaluatePackagingContractV1({...request,lines:Array(201).fill(request.lines[0])},
   badCatalog,badMotor),"SOURCE_LINES_INVALID");
+});
+check("pure preflight accepts a structurally sound fictional order only",()=>{
+ assert.deepEqual(validatePackagingContractRequestV1(request),[]);
+});
+check("fractional and zero quantity rejected before private engine load",()=>{
+ for(const quantity_raw of ["0","0.000","1.5","-2","NaN","1e3",""]){
+  const input={...request,lines:[{...request.lines[0],quantity_raw}]};
+  assert.ok(validatePackagingContractRequestV1(input).includes("SOURCE_QUANTITY_INVALID"),
+   quantity_raw);
+  held(evaluatePackagingContractV1(input,badCatalog,badMotor),"SOURCE_QUANTITY_INVALID");
+ }
+ assert.equal(globalThis[canary],undefined);
+});
+check("source code cannot map to two different Academy IDs in one order",()=>{
+ const input={...request,lines:[request.lines[0],
+  {...request.lines[0],source_line_id:"000002",
+   academy_product_id:"another_product",product_name:"ANOTHER PRODUCT"}]};
+ assert.ok(validatePackagingContractRequestV1(input)
+  .includes("SOURCE_CODE_CATALOG_MAPPING_CONFLICT"));
+ held(evaluatePackagingContractV1(input,badCatalog,badMotor),
+  "SOURCE_CODE_CATALOG_MAPPING_CONFLICT");
+});
+check("duplicate source-line identifier rejected even with changed name",()=>{
+ const input={...request,lines:[request.lines[0],
+  {...request.lines[0],source_product_code:"FAKE02",
+   academy_product_id:"another_product",product_name:"ANOTHER PRODUCT"}]};
+ held(evaluatePackagingContractV1(input,badCatalog,badMotor),
+ "SOURCE_LINE_ID_INVALID_OR_DUPLICATE");
+});
+check("duplicate same-name and quantity remains HOLD, no guessed membership",()=>{
+ const input={...request,lines:[request.lines[0],
+  {...request.lines[0],source_line_id:"000002"}]};
+ held(evaluatePackagingContractV1(input,badCatalog,badMotor),
+  "MOTOR_GROUP_SOURCE_MEMBERSHIP_AMBIGUOUS");
+});
+check("unrecognized CLOSED_COMBO impersonation is rejected before engine",()=>{
+ const input={...request,lines:[{...request.lines[0],packaging_role:"AUTO_APPROVED"}]};
+ held(evaluatePackagingContractV1(input,badCatalog,badMotor),
+  "SOURCE_PACKAGING_ROLE_INVALID");
+});
+check("oversized quantity sum and missing observations are denied",()=>{
+ const input={...request,lines:[
+  {...request.lines[0],quantity_raw:"9999"},
+  {...request.lines[0],source_line_id:"000002",source_product_code:"FAKE02",
+   academy_product_id:"another_product",product_name:"ANOTHER PRODUCT",
+   quantity_raw:"1",observations:null}]};
+ const reasons=validatePackagingContractRequestV1(input);
+ assert.ok(reasons.includes("ORDER_QUANTITY_OUT_OF_BOUNDS"));
+ assert.ok(reasons.includes("SOURCE_OBSERVATIONS_INVALID"));
+ held(evaluatePackagingContractV1(input,badCatalog,badMotor),
+  "ORDER_QUANTITY_OUT_OF_BOUNDS");
 });
 check("source, catalog and motor are not mutated",()=>{
  const before=JSON.stringify(request),ca=Buffer.from(badCatalog),mo=Buffer.from(badMotor);
