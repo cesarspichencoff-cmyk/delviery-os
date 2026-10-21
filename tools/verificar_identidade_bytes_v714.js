@@ -77,7 +77,7 @@ try{
   const original=fs.readFileSync(stagedMotor);
   const fake='throw new Error("MOTOR_EXECUTED_INSTEAD_OF_BLOCKED");';
   assert.ok(candidate.indexOf("if(motorDigestBeforeV714!==CANONICAL_MOTOR_SHA256_V714)")<
-   candidate.indexOf("require(motorPathV714)"));
+   candidate.indexOf("runInThisContext(motorBytesV714.toString"));
   assert.ok(candidate.includes(CANONICAL_MOTOR_PIN_V714));
   try{
    fs.writeFileSync(stagedMotor,fake);
