@@ -33,8 +33,7 @@ function Json-Bounded([IO.FileInfo]$file){
   throw 'JSON_BYTES_LIMIT'
  }
  $raw=[IO.File]::ReadAllText($file.FullName,[Text.Encoding]::UTF8)
- # PS7.5+ otherwise auto-coerces ISO date strings, hiding the original
- # operational-day text used to locate an existing TATA sequence binding.
+ # Preserve raw ISO timestamps in PowerShell versions that support DateKind.
  if((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')){
   return ($raw | ConvertFrom-Json -DateKind String -ErrorAction Stop)
  }
@@ -175,45 +174,12 @@ try{
   $o=$e.order
   $sourceDate=$o.DTHRABERMESA
   if($sourceDate -is [datetime]){
-   # Compatibility with older ConvertFrom-Json implementations.
    $day=$sourceDate.ToString('yyyy-MM-dd',
     [Globalization.CultureInfo]::InvariantCulture)
   }elseif($sourceDate -is [string] -and $sourceDate.Length -ge 10){
    $day=$sourceDate.Substring(0,10)
   }else{continue}
-  if($day -cnotmatch '^\d{4}-\d{2}-\d{2}
-  $scope='STORE:'+([string]$o.CDFILIAL)+'|DATE:'+$day
-  $entries=@($sequence.bindings|Where-Object{$null -ne $_ -and
-    $_.scope_id -ceq $scope})
-  $own=@($entries|Where-Object{$_.teknisa_order_id -ceq $o.NRCOMANDA})
-  if($own.Count -ne 1){
-   $out.content_valid_but_sequence_missing++;continue
-  }
-  $bound=[string]$own[0].tata_sequence
-  if($bound -cnotmatch '^\d{3}$' -or [int]$bound -eq 0 -or
-     @($entries|Where-Object{$_.teknisa_order_id -cne $o.NRCOMANDA -and
-      $_.tata_sequence -ceq $bound}).Count -gt 0){
-   $out.sequence_scope_collisions++;continue
-  }
-  $out.paired_with_persisted_tata_sequence++
- }
- if($out.scanned_events -eq 0){Flag 'NO_READABLE_EVENTS'}
- if($out.basic_essential_content_candidates -eq 0){
-  Flag 'NO_BASIC_ESSENTIAL_CANDIDATE_IN_SAMPLE'
- }
- if($out.content_valid_but_sequence_missing -gt 0){
-  Flag 'EXISTING_TATA_BINDING_MISSING_FOR_SOME_ORDERS'
- }
- if($out.sequence_scope_collisions -gt 0){Flag 'SEQUENCE_COLLISION_IN_SAMPLE'}
- if($out.last_event_age_minutes -gt 60){Flag 'LATEST_READER_EVENT_STALE'}
- $out.status='READONLY_DIAGNOSTIC_ONLY'
-}catch{
- Flag 'READONLY_INSPECTION_UNAVAILABLE'
- $out.status='INSPECTION_INCOMPLETE'
-}
-$out.blocking_codes=@($reasons|Sort-Object)
-[pscustomobject]$out|ConvertTo-Json -Depth 6 -Compress
-){continue}
+  if($day -cnotmatch '^\d{4}-\d{2}-\d{2}$'){continue}
   $scope='STORE:'+([string]$o.CDFILIAL)+'|DATE:'+$day
   $entries=@($sequence.bindings|Where-Object{$null -ne $_ -and
     $_.scope_id -ceq $scope})
