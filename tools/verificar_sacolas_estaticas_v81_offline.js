@@ -65,6 +65,11 @@ const overlay=[
  '})();'
 ].join('\n');
 const wrapped=Buffer.concat([motor,Buffer.from('\n'+overlay+'\n')]);
+// V8.1's overlay is explicitly SYNTHETIC and must never be granted the
+// approved SHA in production. Re-pin only the disposable lab consumer copy;
+// the checked-in V7.14 candidate and approved engine remain unchanged.
+assert.equal(future.split(PACKAGING_SOURCE_SHA256_V78).length,2);
+const labFuture=Buffer.from(future.replace(PACKAGING_SOURCE_SHA256_V78,sha(wrapped)));
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'tata-exact-bags-v81-'));
 const keys=Object.keys(defs),idFor=Object.fromEntries(keys.map((k,i)=>[k,'T'+String(i).padStart(4,'0')]));
 const combo=new Set(['EXEC','KIDS','ESPECIAL_1P']);
@@ -135,7 +140,7 @@ function invoke(dir,event){
 }
 try{
  assert.ok(process.platform==='linux'||(process.platform==='win32'&&process.env.CI==='true'));
- create(oldDir,consumer,motor);create(newDir,Buffer.from(future),wrapped);
+ create(oldDir,consumer,motor);create(newDir,labFuture,wrapped);
  let positive=0,negative=0,unknownRemoved=0,remainsBlocked=0;
  const remainingReasons=new Map();
  for(const [id,parts]of cases){
