@@ -8,6 +8,7 @@
 const {crosswalk}=require("./comandas_cruzamento_simples_v855_offline.cjs");
 const SCHEMA="tata.comanda.essential.v856.review-only";
 const UNKNOWN="A DEFINIR";
+const {presentMotorPackaging}=require("./tata_comanda_motor_summary_v861_offline.cjs");
 const EFFECTS=Object.freeze({print:false,reprint:false,spooler:false,
  sequence_allocate:false,sequence_write:false,ack:false,api:false,
  database:false,fiscal:false,sefaz:false,service:false,deploy:false});
@@ -22,15 +23,8 @@ function base(reason) {
   source_attestation_proven:false,actual_print_proven:false,
   ready_for_offline_preview:false,ready_for_operational_print:false,
   origin:"V855_REVIEW_CANDIDATE_PLUS_EXISTING_SEQUENCE_CLAIM",
-  essential:null,optional:{caixa:UNKNOWN,sacola:UNKNOWN,kit:UNKNOWN},
+  essential:null,optional:{caixa:null,sacola:null,kit:null},
   preview_lines:[],bytes:[],effects:EFFECTS};
-}
-function label(optional,key){
- const claim=optional?.[key];
- if(!claim||typeof claim!=="object")return UNKNOWN;
- if(claim.status==="NONE")return "NAO SE APLICA";
- if(claim.status==="PROVEN"&&safeText(claim.label))return clean(claim.label);
- return UNKNOWN;
 }
 function projectTataComandaEssencial(input){
  if(!input||typeof input!=="object"||Array.isArray(input))
@@ -62,11 +56,9 @@ function projectTataComandaEssencial(input){
       !Number.isSafeInteger(x.quantity)||x.quantity<=0||
       !Array.isArray(x.notes)||x.notes.some(n=>!safeText(n))))
   return base("ESSENTIAL_ITEM_OR_OBSERVATION_INVALID");
- const optional={
-  caixa:label(input.packaging,"caixa"),
-  sacola:label(input.packaging,"sacola"),
-  kit:label(input.packaging,"kit")
- };
+ const motor=presentMotorPackaging(items,input.packaging_motor);
+ if(motor.status==="BLOCKED")return base("PACKAGING_MOTOR_BRIDGE_BLOCKED");
+ const optional=motor.optional;
  const lines=[
   "TATA COMANDA - PREVIA SEM IMPRESSAO",
   "IFOOD "+g.short_id+" | TATA "+b.tata_sequence,
@@ -78,14 +70,16 @@ function projectTataComandaEssencial(input){
   for(const note of x.notes)
    lines.push("  OBS: "+note.toLocaleUpperCase("pt-BR"));
  }
- lines.push("CAIXA: "+optional.caixa);
- lines.push("SACOLA: "+optional.sacola);
- lines.push("KIT: "+optional.kit);
+ for(const [key,value] of Object.entries(optional))
+  if(value!==null)lines.push(key.toLocaleUpperCase("pt-BR")+": "+value);
  return {...base("ESSENTIAL_CONTENT_COMPLETE_NOT_PRINT_AUTHORITY"),
   status:"ESSENTIAL_PREVIEW_READY_HOLD",
   essential_fields_present:true,
   existing_sequence_identity_claim_matched:true,
   ready_for_offline_preview:true,
+  packaging_ready:motor.has_verified_motor_output,
+  motor_packaging_status:motor.status,
+  motor_file_authenticated_here:false,
   essential:{
    ifood_short_id:g.short_id,tata_sequence:b.tata_sequence,
    NRCOMANDA:match.native_reference.NRCOMANDA,
