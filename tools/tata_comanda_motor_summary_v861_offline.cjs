@@ -15,6 +15,8 @@ const aggregate=arr=>{
  for(const x of arr)m.set(x,(m.get(x)||0)+1);
  return sortedSummary(m);
 };
+const formatMotorBoxLabel=group=>
+ group.category==="selada_650"&&group.box==="650"?"650 SELADA":group.box;
 function presentMotorPackaging(items,ctx) {
  const none=(status,reasons=[])=>({status,optional:{...EMPTY},
   reasons,has_verified_motor_output:false,motor_file_authenticated_here:false});
@@ -43,8 +45,7 @@ function presentMotorPackaging(items,ctx) {
     return none("BLOCKED",["GROUP_BOX_LABEL_INVALID"]);
    // The canonical engine differentiates 650 SELADA from a generic 650.
    // Never infer a sealed box solely from its numeric size.
-   const label=group.category==="selada_650"&&group.box==="650"
-    ?"650 SELADA":group.box;
+   const label=formatMotorBoxLabel(group);
    for(let i=0;i<group.boxes;i++)boxes.push("CX "+label);
   }
   const bags=r.packaging.bags.group_sizes;
@@ -62,5 +63,4 @@ function presentMotorPackaging(items,ctx) {
   return none("BLOCKED",["MOTOR_BRIDGE_EXECUTION_FAILED"]);
  }
 }
-module.exports={presentMotorPackaging,formatMotorBoxLabel:(group)=>
- group.category==="selada_650"&&group.box==="650"?"650 SELADA":group.box};
+module.exports={presentMotorPackaging,formatMotorBoxLabel};
