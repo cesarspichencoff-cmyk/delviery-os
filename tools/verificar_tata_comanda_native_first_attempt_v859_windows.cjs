@@ -53,7 +53,12 @@ try{
   assert.equal(o.scanned_events,1);
   assert.equal(o.unique_event_decision_pairs,1);
   assert.equal(o.basic_essential_content_candidates,1);
-  assert.equal(o.paired_with_persisted_tata_sequence,1);
+  assert.equal(o.paired_with_persisted_tata_sequence,1,
+   JSON.stringify({sequence_state_status:o.sequence_state_status,
+    bindings:o.sequence_bindings_total,
+    content_valid_but_sequence_missing:o.content_valid_but_sequence_missing,
+    sequence_scope_collisions:o.sequence_scope_collisions,
+    blocking_codes:o.blocking_codes}));
   assert.equal(o.sequence_bindings_total,1);
   assert.equal(o.content_valid_but_sequence_missing,0);
  });
