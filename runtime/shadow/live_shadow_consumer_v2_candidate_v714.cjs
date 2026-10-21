@@ -39,10 +39,15 @@ const motorPathV714 = path.join(here, "packaging-current.js");
 // The read-before/read-after equality below only proves no change during load.
 const CANONICAL_MOTOR_SHA256_V714 =
   "1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
-const motorDigestBeforeV714 = sha256File(motorPathV714);
+// Read once: only these exact authenticated bytes may be executed. A second
+// filesystem read by require() would create a check-to-execute swap window.
+const motorBytesV714 = fs.readFileSync(motorPathV714);
+const motorDigestBeforeV714 =
+  crypto.createHash("sha256").update(motorBytesV714).digest("hex");
 if(motorDigestBeforeV714!==CANONICAL_MOTOR_SHA256_V714)
   throw new Error("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC");
-require(motorPathV714);
+require("node:vm").runInThisContext(motorBytesV714.toString("utf8"),
+  {filename:motorPathV714,timeout:1500});
 const motorDigestAfterV714 = sha256File(motorPathV714);
 if(motorDigestBeforeV714!==motorDigestAfterV714)
   throw new Error("PACKAGING_ENGINE_CHANGED_DURING_LOAD");
