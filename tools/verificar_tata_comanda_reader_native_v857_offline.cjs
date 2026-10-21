@@ -3,6 +3,36 @@ const assert=require("node:assert/strict");
 const {projectReaderEssentials,snapshotHash,decisionHash,SCHEMA,EFFECTS}=
  require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
 const copy=x=>JSON.parse(JSON.stringify(x));
+const {createHash}=require("node:crypto");
+const blob="3167c309f02a0ad5a84fb43043b8866e3bee873c";
+function withMotor(x){
+ const items=x.decision.items;
+ x.packaging_motor={
+  blob_sha:blob,
+  entries:items.map((v,i)=>({source_item_index:i,quantity:v.quantity,
+   station_proof:"CURRENT_MOTOR_PROVEN",
+   product:{nome:v.product_name,classification:{station:"sushi"}}})),
+  motor:{
+   packComanda:entries=>({groups:[{kind:"faixa",station:"sushi",
+    box:"750",boxes:1,status:"PROVEN_CURRENT_HUMAN_RULE",
+    products:entries.map(e=>({name:e.product.nome,quantity:e.quantity}))}],
+    has_unknown:false,total_items:entries.reduce((n,e)=>n+e.quantity,0),
+    bags:{size:"P",status:"PROVEN_OPERATIONAL_DOCUMENT",
+     size_status:"FACT",exact_bag_count:1,exact_bag_count_status:"FACT"}}),
+   kitVerdict:()=>({status:"FACT",kits:[{kit:"Kit p/1",quantidade:1}]})
+  }
+ };
+ return x;
+}
+function review(x,disposition){
+ const notes=x.decision.order_observations;
+ x.order_note_disposition={order_key:x.event.order_key,
+  snapshot_hash:x.event.snapshot_hash,
+  decision_fingerprint:x.decision.fingerprint,
+  note_sha256:createHash("sha256").update(JSON.stringify(notes)).digest("hex"),
+  reviewer_ref:"REVIEW_FIXTURE_ONLY",disposition};
+ return x;
+}
 function pair(){
  const order={
   CDFILIAL:"0001",CDLOJA:"01",NRVENDAREST:"0000349281",
@@ -94,24 +124,66 @@ test("item allergy and SEM observation never silently removed",()=>{
  assert.ok(r.preview_lines.includes("  OBS: SEM CEBOLINHA"));
  assert.ok(r.preview_lines.includes("  OBS: ALERGIA A CAMARAO"));
 });
-test("general note requires review and never leaks into production preview",()=>{
+test("unclassified general note is explicitly pending, never silently dropped",()=>{
  const r=audit(pair());
  assert.equal(r.essential.order_observations_review_required,true);
- assert.ok(r.preview_lines.includes("OBS GERAL: REVISAR FORA DA COMANDA (NAO IMPRESSA)"));
+ assert.ok(r.preview_lines.includes("OBS GERAL: CLASSIFICACAO PENDENTE - NAO IMPRIMIR"));
  assert.ok(!JSON.stringify(r.preview_lines).includes("ENTREGA NA PORTARIA"));
  assert.ok(!JSON.stringify(r.essential).includes("ENTREGA NA PORTARIA"));
  assert.equal(r.ready_for_operational_print,false);
 });
-test("unknown packaging bags kits do not block preview",()=>{
+test("uninvoked motor never generates fallback or invented packing fields",()=>{
  const r=audit(pair());assert.equal(r.ready_for_offline_preview,true);
- for(const k of ["caixa","sacola","kit"])assert.equal(r.optional[k],"A DEFINIR");
+ assert.equal(r.packaging_ready,false);assert.equal(r.motor_packaging_status,"NOT_EVALUATED");
+ for(const k of ["caixa","sacola","kit"])assert.equal(r.optional[k],null);
+ assert.ok(!r.preview_lines.some(s=>/^(CAIXA|SACOLA|KIT):/.test(s)));
 });
-test("proved optional data preserved but no guessed bag",()=>{
- const x=pair();x.packaging={caixa:{status:"PROVEN",label:"750"},
-  kit:{status:"NONE"}};
- const r=audit(x);assert.equal(r.optional.caixa,"750");
- assert.equal(r.optional.kit,"NAO SE APLICA");
- assert.equal(r.optional.sacola,"A DEFINIR");
+test("synthetic motor interface uses existing V6.3 bridge for boxes bags kits",()=>{
+ const r=audit(withMotor(pair()));
+ assert.equal(r.packaging_ready,true);
+ assert.equal(r.motor_file_authenticated_here,false);
+ assert.equal(r.optional.caixa,"1 X CX 750");
+ assert.equal(r.optional.sacola,"1 X SACOLA P");
+ assert.equal(r.optional.kit,"1 X Kit p/1");
+});
+test("unverified caller packaging labels never override motor omission",()=>{
+ const x=pair();x.packaging={caixa:{status:"PROVEN",label:"999"}};
+ const r=audit(x);assert.equal(r.optional.caixa,null);
+});
+test("unreviewed general instruction allergy cannot be removed",()=>{
+ const x=pair();x.event.order.observation_rows[2].value="ALERGIA A AMENDOIM";
+ x.decision.order_observations[0].value="ALERGIA A AMENDOIM";
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.decision.snapshot_hash=x.event.snapshot_hash;
+ x.decision.fingerprint=decisionHash(x.decision);
+ const r=audit(x);
+ assert.equal(r.essential.order_observations_review_required,true);
+ assert.ok(r.preview_lines.some(s=>s.includes("CLASSIFICACAO PENDENTE")));
+});
+test("same-revision production note appears in separate section",()=>{
+ const x=pair();x.event.order.observation_rows[2].value="SEM MOLHO";
+ x.decision.order_observations[0].value="SEM MOLHO";
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.decision.snapshot_hash=x.event.snapshot_hash;
+ x.decision.fingerprint=decisionHash(x.decision);
+ const r=audit(review(x,"PRODUCTION"));
+ assert.equal(r.essential.order_observations_review_required,false);
+ assert.ok(r.preview_lines.includes("OBS GERAL: SEM MOLHO"));
+});
+test("explicitly reviewed non-production note excluded from preview",()=>{
+ const r=audit(review(pair(),"NON_PRODUCTION"));
+ assert.equal(r.essential.order_observations_review_required,false);
+ assert.ok(!JSON.stringify(r.preview_lines).includes("ENTREGA NA PORTARIA"));
+});
+test("stale general-note review cannot silence current snapshot",()=>{
+ const x=review(pair(),"NON_PRODUCTION");
+ x.order_note_disposition.decision_fingerprint="a".repeat(64);
+ const r=audit(x);assert.equal(r.essential.order_observations_review_required,true);
+});
+test("motor pin mismatch never becomes optional A DEFINIR",()=>{
+ const x=withMotor(pair());x.packaging_motor.blob_sha="wrong";
+ const r=audit(x);assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"PACKAGING_MOTOR_BRIDGE_BLOCKED");
 });
 test("legacy old three-part order key rejected",()=>{
  const x=pair();x.event.order_key="0001|01|0000348850";
