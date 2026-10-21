@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const path=require("node:path"),os=require("node:os"),crypto=require("node:crypto");
-const {spawnSync}=require("node:child_process");
+const {spawnSync:spawnNative}=require("node:child_process");
 // Reuse the existing V6.8 gate, not a second validator.
 const {verifyLiveReaderPairV68}=require("../dist/src/production/stableReaderShadowPairV68.js");
 const sourcePath=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
@@ -41,6 +41,23 @@ const temp=fs.mkdtempSync(path.join(os.tmpdir(),"thermal-v714-"));
 const folder=path.join(temp,"candidate");
 const pCode="99001",productCode="9.10.05.072.00",order_key="0001|01|0000000001",revision="a".repeat(64);
 const fakeMotor='globalThis.TATAPackaging={FACT:"FACT",categoryOf:()=>({status:"FACT",category:"dupla_dyo"}),packComanda:()=>({has_unknown:false,bags:{size:"P",size_status:"UNKNOWN",exact_bag_count_status:"UNKNOWN"}}),kitVerdict:()=>({status:"UNKNOWN",kits:[]})};\n';
+// The checked-in candidate keeps the immutable canonical SHA256. Tests of
+// unrelated consumer behavior run a disposable copy pinned to the fake motor
+// currently staged in the temp folder; this never weakens the real candidate.
+const CANONICAL_MOTOR_PIN_V714 =
+ "1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
+const stagedConsumer=path.join(folder,"consumer.cjs");
+const stagedMotor=path.join(folder,"packaging-current.js");
+function spawnSync(command,args,options){
+ if(command===process.execPath&&Array.isArray(args)&&
+    (args[0]===stagedConsumer||args[2]===stagedConsumer)){
+  const fakePin=sha256(fs.readFileSync(stagedMotor));
+  assert.ok(candidate.includes(CANONICAL_MOTOR_PIN_V714));
+  const staged=candidate.replace(CANONICAL_MOTOR_PIN_V714,fakePin);
+  fs.writeFileSync(stagedConsumer,staged);
+ }
+ return spawnNative(command,args,options);
+}
 const baseOverride={
  teknisa_sequence:"0000000001",ifood_sequence:"1001",
  bags:[{size:"M",quantity:1}],kits:[{kit:"Kit Kids",quantidade:1}],
@@ -56,6 +73,23 @@ try{
  fs.mkdirSync(folder,{recursive:true});
  fs.writeFileSync(path.join(folder,"consumer.cjs"),candidate);
  fs.writeFileSync(path.join(folder,"packaging-current.js"),fakeMotor);
+ check("V7.14 pinned candidate refuses foreign motor BEFORE evaluating it",()=>{
+  const original=fs.readFileSync(stagedMotor);
+  const fake='throw new Error("MOTOR_EXECUTED_INSTEAD_OF_BLOCKED");';
+  assert.ok(candidate.indexOf("if(motorDigestBeforeV714!==CANONICAL_MOTOR_SHA256_V714)")<
+   candidate.indexOf("require(motorPathV714)"));
+  assert.ok(candidate.includes(CANONICAL_MOTOR_PIN_V714));
+  try{
+   fs.writeFileSync(stagedMotor,fake);
+   fs.writeFileSync(stagedConsumer,candidate); // original unmodified runtime
+   const p=spawnNative(process.execPath,[stagedConsumer],
+    {encoding:"utf8",timeout:10000});
+   assert.notEqual(p.status,0);
+   assert.ok(p.stderr.includes("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"),p.stderr);
+   assert.ok(!p.stderr.includes("MOTOR_EXECUTED_INSTEAD_OF_BLOCKED"));
+   assert.equal(p.stdout,"");
+  }finally{fs.writeFileSync(stagedMotor,original);}
+ });
  const docs={
   "app-data.json":{products:[]},
   "product-identity-cache-v1.json":{schema:"deliveryos.product-identity-cache.v1",
