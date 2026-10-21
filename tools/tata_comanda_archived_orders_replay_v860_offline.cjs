@@ -176,9 +176,10 @@ function simulateOne(entry){
  assert.equal(preview.essential.items.length,items.length);
  assert.deepEqual(preview.essential.items.map(z=>z.quantity),items.map(z=>z.quantity));
  assert.ok(preview.preview_lines.some(s=>s.includes("IFOOD "+o.NRCOMANDAEXT)));
- assert.equal(preview.optional.caixa,UNKNOWN);
- assert.equal(preview.optional.sacola,UNKNOWN);
- assert.equal(preview.optional.kit,UNKNOWN);
+ assert.equal(preview.optional.caixa,null);
+ assert.equal(preview.optional.sacola,null);
+ assert.equal(preview.optional.kit,null);
+ assert.equal(preview.motor_packaging_status,"NOT_EVALUATED");
  return {ifood:o.NRCOMANDAEXT,day,product_lines:items.length,
   quantity_sum:items.reduce((s,x)=>s+x.quantity,0),
   historical_content:"ARCHIVED_CONTENT_RECONCILED",
@@ -191,6 +192,7 @@ function simulateOne(entry){
   synthetic_binding_for_preview_only:"001",
   without_binding:"AUTHORIZED_ATOMIC_BIND_REQUIRED",
   reconstructed_test_result:"ESSENTIAL_PREVIEW_PASS_SYNTHETIC_RECONSTRUCTION",
+  packaging_motor_not_evaluated_in_historical_reconstruction:true,
   preview_lines_hypothetical:preview.preview_lines,
   operational_print_ready:false};
 }
