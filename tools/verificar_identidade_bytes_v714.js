@@ -685,6 +685,10 @@ try{
   // blocked fictional fixture. The V7.21 gate rejects its fake executable
   // module BEFORE spawn, so this scenario must stop at SOURCE_PREFLIGHT.
   run([],[],"1.000",undefined,true);
+  // The fixture consumer is normally re-pinned to a fake test motor. The
+  // standalone gate must receive the immutable reviewed consumer unchanged;
+  // otherwise it correctly rejects consumer identity before checking motor.
+  fs.writeFileSync(stagedConsumer,candidate);
   fs.writeFileSync(path.join(folder,"proof.json"),"{}");
   const motorPath=path.join(folder,"packaging-current.js");
   const original=fs.readFileSync(motorPath);
