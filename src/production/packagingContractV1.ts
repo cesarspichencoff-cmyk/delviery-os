@@ -70,6 +70,9 @@ const norm=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
  .trim().replace(/\s+/g," ").toUpperCase();
 const QUANTITY=/^(?:0*[1-9][0-9]*)(?:\.0+)?$/;
 const ID=/^[A-Za-z0-9_-]{1,64}$/;
+/** Historical Teknisa routing has dotted alphanumeric codes; this proves
+ * source-code syntax only, not an authenticated current MOOCA crosswalk. */
+const SOURCE_CODE=/^(?:[A-Za-z0-9_-]{1,64}|[0-9]\.[0-9]{2}\.[0-9]{2}\.[0-9A-Z]{3}\.[0-9]{2})$/;
 const SHA=/^[a-f0-9]{64}$/i;
 const ORDER=/^[0-9]{4}\|[0-9]{2}\|[0-9]{1,12}\|[0-9]{1,12}$/;
 const hash=(b:Buffer)=>createHash("sha256").update(b).digest("hex");
@@ -95,7 +98,7 @@ export function validatePackagingContractRequestV1(request:PackagingContractRequ
    issues.add("SOURCE_LINE_ID_INVALID_OR_DUPLICATE");continue;
   }
   ids.add(line.source_line_id);
-  if(typeof line.source_product_code!=="string"||!ID.test(line.source_product_code)||
+  if(typeof line.source_product_code!=="string"||!SOURCE_CODE.test(line.source_product_code)||
      typeof line.academy_product_id!=="string"||!ID.test(line.academy_product_id)||
      typeof line.product_name!=="string"||!norm(line.product_name)){
    issues.add("SOURCE_PRODUCT_IDENTITY_INCOMPLETE");continue;
@@ -190,7 +193,7 @@ export function evaluatePackagingContractV1(
   }
   indexes.add(line.source_line_id);
   if(typeof line.source_product_code!=="string"||
-     !ID.test(line.source_product_code)||
+     !SOURCE_CODE.test(line.source_product_code)||
      typeof line.academy_product_id!=="string"||
      !ID.test(line.academy_product_id)||
      typeof line.product_name!=="string"||!norm(line.product_name)){
