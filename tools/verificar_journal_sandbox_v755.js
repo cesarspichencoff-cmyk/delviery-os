@@ -13,8 +13,13 @@ const args=process.argv.slice(2);
 if(args[0]==="--worker"){
  assert.equal(args.length,2);
  const result=reserveDurablyInSyntheticSandbox(args[1],raw,0);
- process.stdout.write(JSON.stringify({status:result.status,authorize_print:result.authorize_print})+"\n");
- process.exit(result.status==="SYNTHETIC_JOURNAL_COMMIT_OBSERVED"||result.status==="HOLD"?0:5);
+ // Avoid immediate process.exit() while stdout is buffered to a pipe
+ // (especially on hosted Windows). Let Node flush the complete JSON line.
+ process.exitCode=result.status==="SYNTHETIC_JOURNAL_COMMIT_OBSERVED"||
+  result.status==="HOLD"?0:5;
+ process.stdout.write(JSON.stringify({
+  status:result.status,authorize_print:result.authorize_print
+ })+"\n");
 }
 if(args[0]==="--lock-and-crash"){
  assert.equal(args.length,2);fs.mkdirSync(path.join(args[1],".attempt-lock"));
