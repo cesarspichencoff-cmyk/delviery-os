@@ -62,4 +62,5 @@ function presentMotorPackaging(items,ctx) {
   return none("BLOCKED",["MOTOR_BRIDGE_EXECUTION_FAILED"]);
  }
 }
-module.exports={presentMotorPackaging};
+module.exports={presentMotorPackaging,formatMotorBoxLabel:(group)=>
+ group.category==="selada_650"&&group.box==="650"?"650 SELADA":group.box};
