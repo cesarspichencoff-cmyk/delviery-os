@@ -111,6 +111,37 @@ check("oversized quantity sum and missing observations are denied",()=>{
  held(evaluatePackagingContractV1(input,badCatalog,badMotor),
   "ORDER_QUANTITY_OUT_OF_BOUNDS");
 });
+check("all 463 historical ITAIM Teknisa codes pass syntax without asserting Mooca identity",()=>{
+ const d=JSON.parse(fs.readFileSync(path.join(__dirname,
+  "../data/odhen_product_routing_compact_v1.json"),"utf8"));
+ assert.equal(d.store,"0001 - TATA ITAIM");
+ const codes=Object.keys(d.products);
+ assert.equal(codes.length,463);
+ for(const source_product_code of codes){
+  const r={...request,lines:[{...request.lines[0],source_product_code}]};
+  assert.deepEqual(validatePackagingContractRequestV1(r),[],
+   "rejects historical source format "+source_product_code);
+ }
+});
+check("forged, truncated and arbitrary dotted source codes are denied",()=>{
+ for(const source_product_code of [
+   "",".","9.05.05.080","9.05.05.080.00.EXE",
+   "9.05.05.0/0.00","9.05.05.080.00\n","9.05.05.08?.00",
+   "9.05.05.080.00;print",
+ ]){
+  const r={...request,lines:[{...request.lines[0],source_product_code}]};
+  held(evaluatePackagingContractV1(r,badCatalog,badMotor),
+   "SOURCE_PRODUCT_IDENTITY_INCOMPLETE");
+ }
+});
+check("dotted Teknisa code mapping conflicts still fail closed",()=>{
+ const a={...request.lines[0],source_product_code:"9.05.05.080.00"};
+ const b={...a,source_line_id:"000002",
+  academy_product_id:"another_product",product_name:"ANOTHER PRODUCT"};
+ const r={...request,lines:[a,b]};
+ held(evaluatePackagingContractV1(r,badCatalog,badMotor),
+  "SOURCE_CODE_CATALOG_MAPPING_CONFLICT");
+});
 check("source, catalog and motor are not mutated",()=>{
  const before=JSON.stringify(request),ca=Buffer.from(badCatalog),mo=Buffer.from(badMotor);
  evaluatePackagingContractV1(request,badCatalog,badMotor);
