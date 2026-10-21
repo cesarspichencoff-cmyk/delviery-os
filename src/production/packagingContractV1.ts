@@ -301,12 +301,23 @@ export function evaluatePackagingContractV1(
  if(seen.size!==sourceLineIds.length)
   issues.add("GROUP_SOURCE_LINE_BINDING_INCOMPLETE");
  if(issues.size)return denied();
+ // Convert foreign VM-realm arrays/objects to native Node data before use by
+ // other modules. Cross-realm arrays can fail deep equality even if identical.
+ let portablePackaging:NonNullable<BridgeDecisionV63["packaging"]>;
+ let portableKits:NonNullable<BridgeDecisionV63["kits"]>;
+ try{
+  portablePackaging=structuredClone(bridge.packaging);
+  portableKits=structuredClone(bridge.kits);
+ }catch{
+  issues.add("MOTOR_RESULT_NOT_PORTABLE");
+  return denied();
+ }
  return {
   schema:CONTRACT_VERSION_V1,status:"OFFLINE_CONTRACT_VERIFIED",blockers:[],
   order_key:request.order_key,snapshot_hash:request.snapshot_hash,
   motor_sha256:PACKAGING_SOURCE_SHA256_V78,
   catalog_git_blob_sha1:CATALOG_GIT_BLOB_V1,
-  group_membership:groups,packaging:bridge.packaging,kits:bridge.kits,
+  group_membership:groups,packaging:portablePackaging,kits:portableKits,
   reader_pair_authenticated:false,snapshot_hash_independently_recomputed:false,
   observations_authenticated:false,source_code_crosswalk_authenticated:false,
   ready_for_operational_print:false,effects:EFFECTS,
