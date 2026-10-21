@@ -41,7 +41,11 @@ function presentMotorPackaging(items,ctx) {
    if(group.kind==="sem_caixa")continue;
    if(!Number.isSafeInteger(group.boxes)||group.boxes<1||!group.box)
     return none("BLOCKED",["GROUP_BOX_LABEL_INVALID"]);
-   for(let i=0;i<group.boxes;i++)boxes.push("CX "+group.box);
+   // The canonical engine differentiates 650 SELADA from a generic 650.
+   // Never infer a sealed box solely from its numeric size.
+   const label=group.category==="selada_650"&&group.box==="650"
+    ?"650 SELADA":group.box;
+   for(let i=0;i<group.boxes;i++)boxes.push("CX "+label);
   }
   const bags=r.packaging.bags.group_sizes;
   if(!Array.isArray(bags)||bags.length!==r.packaging.bags.exact_bag_count)
