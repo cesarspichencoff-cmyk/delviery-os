@@ -227,6 +227,9 @@ export function evaluatePackagingContractV1(
  const seen=new Set<string>(),groups:ContractGroupV1[]=[];
  for(const [index,group] of bridge.packaging.groups.entries()){
   const ids:string[]=[];
+  if(!Array.isArray(group.products)||!group.products.length){
+   issues.add("GROUP_SOURCE_LINE_BINDING_INCOMPLETE");continue;
+  }
   for(const product of group.products){
    const matches=sources.filter(s=>norm(s.product_name)===norm(product.name)&&
     s.quantity===product.quantity);
