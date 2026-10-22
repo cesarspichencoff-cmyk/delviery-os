@@ -66,6 +66,8 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda iFood versus Teknisa lifecycle V8.64 (synthetic 219 probes)
         run: node tools/verificar_cruzamento_ifood_teknisa_v864_offline.cjs
+      - name: TATA Comanda temporal iFood Teknisa crossing V8.65 (Linux synthetic)
+        run: node tools/verificar_linha_tempo_ifood_teknisa_v865_offline.cjs
       - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
         run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
@@ -338,6 +340,8 @@ jobs:
         run: node tools/verificar_validacao_convergente_v860_windows.cjs
       - name: TATA Comanda iFood versus Teknisa lifecycle V8.64 (Windows synthetic)
         run: node tools/verificar_cruzamento_ifood_teknisa_v864_offline.cjs
+      - name: TATA Comanda temporal iFood Teknisa crossing V8.65 (Windows synthetic)
+        run: node tools/verificar_linha_tempo_ifood_teknisa_v865_offline.cjs
 
       - name: Opening-time GP iFood read-only pulse static safety V8.53
         run: node tools/verificar_comandas_opening_pulse_v853_static.js
