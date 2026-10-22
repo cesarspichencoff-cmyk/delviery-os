@@ -183,6 +183,23 @@ function recover(events,pairs,opts={},prior=fresh()){
   if(!d)deny(k,"READER_V857_INTEGRITY_HOLD");
   if(d&&!holds.has(k))candidates.set(k,d);
  }
+ // PRE-FLIGHT ALL verified Reader sequence claims, including held/canceled
+ // orders. Otherwise the first order in backlog may win the in-memory CAS,
+ // while the equally plausible second order is blocked: an order-dependent
+ // false preference. Quarantine every conflicting claim BEFORE proposals.
+ // The V7.54 ledger still independently protects already-reserved attempts.
+ const sequenceClaims=new Map();
+ for(const [k,p] of pairByKey){
+  const claims=descriptors(p);
+  if(!claims)continue;
+  const identity=JSON.stringify([claims[0].scope_id,claims[0].tata_sequence]);
+  if(!sequenceClaims.has(identity))sequenceClaims.set(identity,new Set());
+  sequenceClaims.get(identity).add(k);
+ }
+ for(const owners of sequenceClaims.values()){
+  if(owners.size<2)continue;
+  for(const k of owners)deny(k,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION");
+ }
  // No native pair can be treated as safely current if it wasn't in backlog.
  for(const k of pairByKey.keys())
   if(!groups.has(k))deny(k,"UNACCOUNTED_NATIVE_ORDER");
@@ -368,8 +385,54 @@ test("bounded replay refuses a 129-event backlog",()=>{
 });
 test("distinct same-day orders cannot claim same TATA number",()=>{
  const p=pair(1);p.sequence_state.bindings[0].tata_sequence="007";
- const r=recover([a,evt(p,"b1")],[A,p]);
- held(r,"TATA_SEQUENCE_COLLISION_BETWEEN_ORDERS",p.event.order_key);
+ const r=verify(recover([a,evt(p,"b1")],[A,p]));
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",a.order_key);
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",p.event.order_key);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,0);
+});
+test("reversed arrivals quarantine BOTH claimants, not merely later order",()=>{
+ const p=pair(1);p.sequence_state.bindings[0].tata_sequence="007";
+ const r=verify(recover([evt(p,"b1"),a],[p,A]));
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",a.order_key);
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",p.event.order_key);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,0);
+});
+test("third unrelated order may be proposed while BOTH collisions stay held",()=>{
+ const p=pair(1);p.sequence_state.bindings[0].tata_sequence="007";
+ const r=verify(recover([c,a,evt(p,"b1")],[C,A,p]));
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",a.order_key);
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",p.event.order_key);
+ assert.deepEqual(r.proposed,[c.order_key]);
+ assert.equal(r.ledger.entries.length,3);
+});
+test("canceled sequence claimant still blocks other order same-day",()=>{
+ const p=pair(1);p.sequence_state.bindings[0].tata_sequence="007";
+ const canceled=evt(A,"a2",2,"CANCELED");
+ const r=verify(recover([a,canceled,evt(p,"b1")],[A,p]));
+ held(r,"CANCELED_DURING_OUTAGE",a.order_key);
+ held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",p.event.order_key);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,0);
+});
+test("same three-digit sequence on different verified day is not collision",()=>{
+ const p=pair(3,1,"2026-10-21");
+ p.sequence_state.bindings[0].tata_sequence="007";
+ const r=verify(recover([a,evt(p,"d1")],[A,p]));
+ assert.equal(r.status,"SIMULATED_REVIEW_ONLY");
+ assert.equal(r.proposed.length,2);
+ assert.equal(r.ledger.entries.length,6);
+});
+test("three-way same-day sequence collision quarantines all three",()=>{
+ const p=pair(1),q=pair(2);
+ p.sequence_state.bindings[0].tata_sequence="007";
+ q.sequence_state.bindings[0].tata_sequence="007";
+ const r=verify(recover([evt(q,"c1"),a,evt(p,"b1")],[q,A,p]));
+ for(const k of [a.order_key,p.event.order_key,q.event.order_key])
+  held(r,"TATA_SEQUENCE_CROSS_ORDER_CLAIM_COLLISION",k);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,0);
 });
 test("replayed backlog order permutation never changes result",()=>{
  const r=baseline(),rev=recover([c,b,a],[C,B,A]);
@@ -422,7 +485,7 @@ for(let i=0;i<512;i++){
  fuzz++;
 }
 assert.equal(fuzz,512);
-assert.equal(named,36);
+assert.equal(named,41);
 console.log("TATA_IFOOD_TEKNISA_OUTAGE_RECOVERY_V867="+named+"/"+named+
  " NAMED PERMUTATIONS="+perm+"/"+perm+
  " MUTATIONS="+fuzz+"/"+fuzz+
