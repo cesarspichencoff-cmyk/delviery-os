@@ -197,7 +197,7 @@ function test(label,fn){fn();named++;console.log("PASS OUTAGE_V867 "+named+" "+l
 const A=pair(0),B=pair(1),C=pair(2);
 const a=evt(A,"a1"),b=evt(B,"b1"),c=evt(C,"c1");
 const baseline=()=>recover([a,b,c],[A,B,C]);
-const held=(r,code,key)=>{verify(r);assert.equal(r.status==="PARTIAL_HOLD");
+const held=(r,code,key)=>{verify(r);assert.equal(r.status,"PARTIAL_HOLD");
  assert.ok(r.held.some(x=>(!key||x.key===key)&&x.reasons.includes(code)),
   JSON.stringify(r.held));};
 const allHold=r=>{verify(r);assert.equal(r.proposed.length,0);assert.equal(r.ledger.entries.length,0);};
