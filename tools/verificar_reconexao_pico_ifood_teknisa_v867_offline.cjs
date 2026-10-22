@@ -327,6 +327,43 @@ test("cross-order event ID reuse is symmetric under inverted arrivals",()=>{
  assert.deepEqual(r.proposed,[]);
  assert.equal(r.ledger.entries.length,0);
 });
+test("three-way event ID collision quarantines all owners in every arrival order",()=>{
+ const e0=a,e1={...b,event_id:a.event_id},e2={...c,event_id:a.event_id};
+ const all=[e0,e1,e2],allPairs=[A,B,C];
+ const six=[
+  [0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]
+ ];
+ for(const order of six){
+  const r=verify(recover(order.map(i=>all[i]),
+   order.map(i=>allPairs[i])));
+  for(const key of [a.order_key,b.order_key,c.order_key])
+   held(r,"CROSS_ORDER_EVENT_ID_COLLISION",key);
+  assert.deepEqual(r.proposed,[]);
+  assert.equal(r.ledger.entries.length,0);
+ }
+});
+test("unrelated fourth order stays review-only amid triple-event collision",()=>{
+ const d=pair(3),dEvent=evt(d,"d1");
+ const r=verify(recover([c,{...b,event_id:a.event_id},
+  {...c,event_id:a.event_id},a,dEvent],[A,B,C,d]));
+ for(const key of [a.order_key,b.order_key,c.order_key])
+  held(r,"CROSS_ORDER_EVENT_ID_COLLISION",key);
+ assert.deepEqual(r.proposed,[dEvent.order_key]);
+ assert.equal(r.ledger.entries.length,3);
+});
+test("prior uncertain reservation never reprinted during cross-order collision",()=>{
+ const first=recover([a],[A]),entry=first.ledger.entries[0];
+ let state=observe(first.ledger,entry.key,entry.reservation_id,
+  first.ledger.revision,{kind:"TIMEOUT_OR_CRASH"});
+ assert.equal(state.status,"OBSERVATION_PROPOSAL_ONLY");
+ state=state.next_state;
+ const r=verify(recover([a,{...b,event_id:a.event_id}],[A,B],{},state));
+ held(r,"CROSS_ORDER_EVENT_ID_COLLISION",a.order_key);
+ held(r,"CROSS_ORDER_EVENT_ID_COLLISION",b.order_key);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,3);
+ assert.equal(r.ledger.entries[0].state,STATES.UNKNOWN);
+});
 test("same claimed full UUID for different native orders blocked",()=>{
  const e={...b,uuid_claim:a.uuid_claim};
  const r=recover([a,e],[A,B]);
@@ -485,7 +522,7 @@ for(let i=0;i<512;i++){
  fuzz++;
 }
 assert.equal(fuzz,512);
-assert.equal(named,41);
+assert.equal(named,44);
 console.log("TATA_IFOOD_TEKNISA_OUTAGE_RECOVERY_V867="+named+"/"+named+
  " NAMED PERMUTATIONS="+perm+"/"+perm+
  " MUTATIONS="+fuzz+"/"+fuzz+
