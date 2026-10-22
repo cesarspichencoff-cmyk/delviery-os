@@ -127,9 +127,15 @@ function recover(events,pairs,opts={},prior=fresh()){
   }
   const old=seen.get(e.event_id);
   if(old){
-   deny(e.order_key,old===JSON.stringify(e)?
+   deny(e.order_key,old.payload===JSON.stringify(e)?
     "REDELIVERED_EVENT":"EVENT_ID_PAYLOAD_COLLISION");
-  }else seen.set(e.event_id,JSON.stringify(e));
+   // A repeated provider event ID across distinct native orders compromises
+   // BOTH associations, regardless of delivery order. Never favor the first.
+   if(old.order_key!==e.order_key){
+    deny(old.order_key,"CROSS_ORDER_EVENT_ID_COLLISION");
+    deny(e.order_key,"CROSS_ORDER_EVENT_ID_COLLISION");
+   }
+  }else seen.set(e.event_id,{order_key:e.order_key,payload:JSON.stringify(e)});
   if(!groups.has(e.order_key))groups.set(e.order_key,[]);
   groups.get(e.order_key).push(e);
   if(uuidOwners.has(e.uuid_claim)&&uuidOwners.get(e.uuid_claim)!==e.order_key){
@@ -288,6 +294,22 @@ test("iFood short ID collision between two Teknisa orders blocked",()=>{
  const r=recover([a,evt(q,"q1")],[A,q]);
  held(r,"SHORT_ID_AMBIGUOUS",a.order_key);
 });
+test("cross-order event ID reuse quarantines BOTH native orders",()=>{
+ const e={...b,event_id:a.event_id};
+ const r=verify(recover([a,e],[A,B]));
+ held(r,"CROSS_ORDER_EVENT_ID_COLLISION",a.order_key);
+ held(r,"CROSS_ORDER_EVENT_ID_COLLISION",b.order_key);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,0);
+});
+test("cross-order event ID reuse is symmetric under inverted arrivals",()=>{
+ const e={...b,event_id:a.event_id};
+ const r=verify(recover([e,a],[B,A]));
+ held(r,"CROSS_ORDER_EVENT_ID_COLLISION",a.order_key);
+ held(r,"CROSS_ORDER_EVENT_ID_COLLISION",b.order_key);
+ assert.deepEqual(r.proposed,[]);
+ assert.equal(r.ledger.entries.length,0);
+});
 test("same claimed full UUID for different native orders blocked",()=>{
  const e={...b,uuid_claim:a.uuid_claim};
  const r=recover([a,e],[A,B]);
@@ -400,7 +422,7 @@ for(let i=0;i<512;i++){
  fuzz++;
 }
 assert.equal(fuzz,512);
-assert.equal(named,34);
+assert.equal(named,36);
 console.log("TATA_IFOOD_TEKNISA_OUTAGE_RECOVERY_V867="+named+"/"+named+
  " NAMED PERMUTATIONS="+perm+"/"+perm+
  " MUTATIONS="+fuzz+"/"+fuzz+
