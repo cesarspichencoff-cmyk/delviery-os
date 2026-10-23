@@ -62,6 +62,7 @@ jobs:
           set -uo pipefail
           failed=0
           for test_path in \
+            src/entregas/persistence/run-memory-uow-rollback-isolation-tests.ts \
             src/entregas/persistence/run-inbound-fingerprint-normalization-tests.ts \
             src/entregas/operational/run-inbound-replay-tests.ts \
             src/entregas/operational/run-inbound-command-id-collision-tests.ts \
