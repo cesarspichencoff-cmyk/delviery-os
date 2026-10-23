@@ -273,7 +273,7 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
     p.bold(false);
     for (const item of ticket.items_without_proven_box) p.item(item);
   }
-  p.ending(ticket.identifiers.tata);
+  p.ending(ticket.identifiers?.tata ?? null);
   return p.result("PRODUCAO:" + ticket.station);
 }
 
@@ -374,7 +374,7 @@ function threeViewCoherenceReasonsV871(source:OperationalTicketsResultV45):strin
     if(!fingerprint||fingerprints.has(fingerprint))
       reasons.add("PRODUCTION_FINGERPRINT_NOT_UNIQUE");
     fingerprints.add(fingerprint);
-    if(!identifiers||
+    if(!identifiers||!ticket.identifiers||
       ticket.identifiers.ifood!==identifiers.ifood||
       ticket.identifiers.teknisa!==identifiers.teknisa||
       ticket.identifiers.tata!==identifiers.tata||

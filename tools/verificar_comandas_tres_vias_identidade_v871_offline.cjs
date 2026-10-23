@@ -87,6 +87,9 @@ mustBlock("duplicate print-intent fingerprint",
 mustBlock("missing conference identity",
  s=>{s.conference.identifiers=null},
  "CONFERENCE_IDENTIFIERS_MISSING");
+mustBlock("missing identity on one production via",
+ s=>{s.production[0].identifiers=null},
+ "THREE_VIEW_ORDER_IDENTIFIERS_MISMATCH");
 mustBlock("missing production views even if source claims ready",
  s=>{s.production=[]},
  "PRODUCTION_VIEWS_MISSING");
