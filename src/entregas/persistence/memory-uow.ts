@@ -82,8 +82,8 @@ export class MemoryUnitOfWork implements UnitOfWork {
           throw new ConcurrencyError("Trip version conflict");
         }
         self.staged.trips.set(record.trip.trip_id, {
-          trip: record.trip,
-          deliveries: record.deliveries,
+          trip: structuredClone(record.trip),
+          deliveries: structuredClone(record.deliveries),
           version: (cur?.version ?? 0) + 1,
         });
       },
@@ -100,7 +100,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
         if (expected !== null && (cur?.version ?? 0) !== expected) {
           throw new ConcurrencyError("Handoff version conflict");
         }
-        self.staged.handoffs.set(handoff.handoff_id, { handoff, version });
+        self.staged.handoffs.set(handoff.handoff_id, { handoff: structuredClone(handoff), version });
       },
     };
     this.occurrences = {
@@ -115,7 +115,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
         if (expected !== null && cur && cur.version !== expected) {
           throw new ConcurrencyError("Occurrence version conflict");
         }
-        self.staged.occurrences.set(occ.occurrence_id, occ);
+        self.staged.occurrences.set(occ.occurrence_id, structuredClone(occ));
       },
     };
     this.riders = {
@@ -130,12 +130,12 @@ export class MemoryUnitOfWork implements UnitOfWork {
         if (expected !== null && cur && cur.version !== expected) {
           throw new ConcurrencyError("Rider version conflict");
         }
-        self.staged.riders.set(state.rider_id, state);
+        self.staged.riders.set(state.rider_id, structuredClone(state));
       },
     };
     this.events = {
       async append(ev) {
-        self.staged.events.push(...ev);
+        self.staged.events.push(...ev.map((event) => structuredClone(event)));
       },
       async listByObject(t, id) {
         return self.staged.events.filter(
@@ -159,7 +159,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
         }
         const v = validatePublicEvent(record.event);
         if (!v.ok) throw new Error("invalid public event");
-        self.staged.outbox.push({ ...record });
+        self.staged.outbox.push(structuredClone(record));
         return { duplicate: false };
       },
       async listPending() {
@@ -203,16 +203,16 @@ export class MemoryUnitOfWork implements UnitOfWork {
 
   private resetStage(): void {
     this.staged = {
-      trips: new Map(this._trips),
-      handoffs: new Map(this._handoffs),
-      occurrences: new Map(this._occurrences),
-      riders: new Map(this._riders),
-      events: [...this._events],
-      receipts: new Map(this._inboundReceipts),
-      outbox: this._outbox.map((r) => ({
-        ...r,
-        event: { ...r.event, payload: { ...r.event.payload } },
-      })),
+      // O estado staged pode ser mutado por repositorios e reducers.
+      // NUNCA compartilhar objetos nested com o snapshot ja commitado:
+      // rollback deve restaurar inclusive entregas, eventos e ocorrencias.
+      trips: new Map([...this._trips].map(([id, rec]) => [id, structuredClone(rec)])),
+      handoffs: new Map([...this._handoffs].map(([id, rec]) => [id, structuredClone(rec)])),
+      occurrences: new Map([...this._occurrences].map(([id, occ]) => [id, structuredClone(occ)])),
+      riders: new Map([...this._riders].map(([id, rider]) => [id, structuredClone(rider)])),
+      events: this._events.map((event) => structuredClone(event)),
+      receipts: new Map([...this._inboundReceipts].map(([id, rec]) => [id, structuredClone(rec)])),
+      outbox: this._outbox.map((rec) => structuredClone(rec)),
     };
     this.finished = false;
   }
@@ -237,16 +237,13 @@ export class MemoryUnitOfWork implements UnitOfWork {
   /** Nova UoW lendo estado commitado (reinício em memória) */
   newUnit(): MemoryUnitOfWork {
     const u = new MemoryUnitOfWork();
-    u._trips = new Map(this._trips);
-    u._handoffs = new Map(this._handoffs);
-    u._occurrences = new Map(this._occurrences);
-    u._riders = new Map(this._riders);
-    u._events = [...this._events];
-    u._inboundReceipts = new Map(this._inboundReceipts);
-    u._outbox = this._outbox.map((r) => ({
-      ...r,
-      event: { ...r.event, payload: { ...r.event.payload } },
-    }));
+    u._trips = new Map([...this._trips].map(([id, rec]) => [id, structuredClone(rec)]));
+    u._handoffs = new Map([...this._handoffs].map(([id, rec]) => [id, structuredClone(rec)]));
+    u._occurrences = new Map([...this._occurrences].map(([id, occ]) => [id, structuredClone(occ)]));
+    u._riders = new Map([...this._riders].map(([id, rider]) => [id, structuredClone(rider)]));
+    u._events = this._events.map((event) => structuredClone(event));
+    u._inboundReceipts = new Map([...this._inboundReceipts].map(([id, rec]) => [id, structuredClone(rec)]));
+    u._outbox = this._outbox.map((rec) => structuredClone(rec));
     u.resetStage();
     return u;
   }
