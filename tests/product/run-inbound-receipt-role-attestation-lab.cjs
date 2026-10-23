@@ -115,6 +115,28 @@ try {
   ok(db,"REVOKE INSERT ON entregas.inbound_receipt FROM "+role+";","revoke insert");
   ok(db,sql,"reapply");
   passed("reaplicacao idempotente sem permitir acesso compartilhado");
+  // ACLs can leak via PUBLIC, role membership, or individual columns.
+  ok(db,"GRANT SELECT ON entregas.inbound_receipt TO PUBLIC;","PUBLIC SELECT injected");
+  denied(db,sql,"papel multiunidade nao recebe privilegios","PUBLIC SELECT leaked");
+  passed("guarda identifica SELECT herdado de PUBLIC");
+  ok(db,"REVOKE SELECT ON entregas.inbound_receipt FROM PUBLIC;","PUBLIC SELECT revoked");
+  ok(db,"GRANT INSERT ON entregas.inbound_receipt TO PUBLIC;","PUBLIC INSERT injected");
+  denied(db,sql,"papel multiunidade nao recebe privilegios","PUBLIC INSERT leaked");
+  passed("guarda identifica INSERT herdado de PUBLIC");
+  ok(db,"REVOKE INSERT ON entregas.inbound_receipt FROM PUBLIC;","PUBLIC INSERT revoked");
+  ok(db,"GRANT SELECT(event_id) ON entregas.inbound_receipt TO "+role+";","column SELECT injected");
+  denied(db,sql,"papel multiunidade nao recebe privilegios","column SELECT leaked");
+  passed("guarda identifica SELECT concedido somente por coluna");
+  ok(db,"REVOKE SELECT(event_id) ON entregas.inbound_receipt FROM "+role+";","column SELECT revoked");
+  const inherited="deliveryos_receipt_inherited_lab";
+  ok("postgres","CREATE ROLE "+inherited+" NOLOGIN; GRANT "+inherited+" TO "+role+";","role inherited");
+  ok(db,"GRANT SELECT ON entregas.inbound_receipt TO "+inherited+";","inherited SELECT injected");
+  denied(db,sql,"papel multiunidade nao recebe privilegios","inherited SELECT leaked");
+  passed("guarda identifica SELECT herdado por membership");
+  ok(db,"REVOKE SELECT ON entregas.inbound_receipt FROM "+inherited+";","inherited SELECT revoked");
+  ok("postgres","REVOKE "+inherited+" FROM "+role+"; DROP ROLE "+inherited+";","cleanup inherited role");
+  ok(db,sql,"reapply after PUBLIC/column/role revocations");
+  passed("guarda reexecutada apos todas revogacoes adversariais");
   const itaim="deliveryos_receipt_itaim";
   const vila="deliveryos_receipt_vila";
   ok("postgres","CREATE ROLE "+itaim+" LOGIN NOSUPERUSER NOBYPASSRLS;"+
