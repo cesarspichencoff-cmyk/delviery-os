@@ -15,7 +15,7 @@
 
 | Dono | Contrato e saída | Limite obrigatório |
 | --- | --- | --- |
-| iFood/Gestor/GP + Teknisa/Retail | Provas **independentes** de origem, revisão e recibos de emissão, quando acessíveis | ID curto não é UUID autenticado; processo vivo/aceite do spooler não é papel |
+| iFood/Gestor/GP + Teknisa/Retail | Observar e correlacionar fluxos já existentes mediante prova passiva independente e autorização cabível | **Não solicitar/API ou credenciais do iFood**, decisão César 12/10; ID curto não autentica UUID, spooler não prova papel |
 | Watcher Windows / Reader | Um par evento/decisão da **mesma revisão**, com chave `CDFILIAL\|CDLOJA\|NRVENDAREST\|NRCOMANDA`, hashes, quantidades e observações completas | `ready` do legado e snapshot autorreferido não provam SQL, turno ou autorização |
 | Consumidor V2 **candidato V7.14** | Decisão gerada dos bytes de entrada e regras efetivamente consumidas, motor por SHA canônico pré-execução | `runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs`: candidato pinado, **NÃO INSTALADO** |
 | V6.8 `stableReaderShadowPairV68.ts` | Paridade, identidade, bloqueios e proveniência independente (delivery/produção/plano/produtos/notas) | Event+decision ou envelope reconstituído por si só nunca equivalem a fonte independente |
@@ -27,7 +27,7 @@
 | TATÁ OS | Correlacionar identidade/fatos físicos quando existirem | Custódia fiscal, sanitária e estoque têm autorização própria; não bloqueiam primeira fatia |
 | Humano + Epson | Aceite óptico e operacional do piloto autorizado; plano de retorno | Nada de instalação, spooler, impressora, fiscal/SEFAZ, cutover ou merge sem autorização específica |
 
-A **primeira fatia vertical** deve usar um pedido recente autêntico e a mesma revisão em todos os componentes, gerando três saídas **virtuais**, com zero efeitos físicos. Não duplicar coletor, reconciliador, motor de caixas ou renderer.
+A **primeira fatia vertical** deve usar um pedido recente autêntico e a mesma revisão em todos os componentes, gerando três saídas **virtuais**, com zero efeitos físicos. A [decisão V7.37 (PR #104)](https://github.com/cesarspichencoff-cmyk/delviery-os/blob/375fed7b9f93366c1453cf5870e0d92901e8f187/docs/COMANDAS_PRINT_STREAM_ONLY_V737_20261012.md) exige reaproveitar o fluxo GP/Teknisa existente **sem exigir API/credenciais iFood**. Observar impressão não autoriza instalar monitor de porta, capturar conteúdo, modificar spooler ou consultar API; se a fonte independente não for observável sem efeito, registrar UNKNOWN. Não duplicar coletor, reconciliador, motor de caixas ou renderer.
 
 ## 3. Encadeamento canônico de verificação
 
@@ -61,6 +61,25 @@ A **primeira fatia vertical** deve usar um pedido recente autêntico e a mesma r
 5. **PR #97** é documentação de divergência de versões da Academia; não é motor adicional para executar.
 6. **TATÁ OS PR #22** é outra missão; compartilhar identidades/contratos quando justificado, sem exigir seu merge nem copiar autoridade de custódia para impressão.
 7. Outros caminhos históricos que não passaram por revisão nesta rodada permanecem **UNKNOWN**, não automaticamente obsoletos.
+
+### 5.1 Inventário de preservação — todos os 25 caminhos exclusivos no diff #104
+
+A PR #104 contém **25 caminhos modificados que não aparecem como modificados na lista de diffs da PR #107**. Consultei o conteúdo no HEAD de ambas: **nove estão presentes na #107 com o mesmo Git blob**; **16 estão ausentes do HEAD #107, mas preservados na PR #104**. Não confundir “ausente da PR principal” com “perdido”.
+
+**Os nove já preservados bit a bit:** `docs/COMANDAS_VALIDACAO_OPERACIONAL_V728_HOLD_20261012.md`; `tools/auditar_servico_windows_v723_readonly.ps1`; `tools/auditar_topologia_windows_v729_readonly.ps1`; `tools/fixtures/canonical-packaging-v63-pinned.js`; `tools/validar_observacao_windows_v723.js`; `tools/validar_topologia_windows_v729.js`; `tools/verificar_auditoria_servico_windows_v723.js`; `tools/verificar_fd_source_v725_offline.js`; `tools/verificar_topologia_windows_v729.js`.
+
+**Dezesseis ainda separados, classificados por destino:**
+
+| Fonte na #104 | Conduta nesta integração |
+| --- | --- |
+| `docs/COMANDAS_PRINT_STREAM_ONLY_V737_20261012.md` | **PRESERVAR DECISÃO HUMANA**. César decidiu em 12/10 aproveitar impressão iFood/GP e Teknisa já existente, sem API/credenciais iFood. Documentos genéricos e evento 307 não identificam emissor/pedido. |
+| `runtime/shadow/itaim-reader-binding-candidate-v735.json`; `runtime/shadow/itaim-service-hours-unbound-v734.json`; `src/production/itaimReaderServiceReviewV735.ts`; `src/production/storeServiceWindowsV733.ts`; `tools/verificar_itaim_horarios_v734.js`; `tools/verificar_janelas_servico_v733.js`; `tools/verificar_servico_evento_itaim_v735.js` | **REVISAR SEM INSTALAR**. Guardam vínculo/hora Itaim, mas são candidatos/históricos; não comprovam turno atual nem destino de impressora; reconciliar com V8.48/V8.59. |
+| `tools/auditar_spool_formato_v738_readonly.ps1`; `tools/verificar_spool_passivo_v738.js` | **PRESERVAR PARA INVESTIGAÇÃO ESPECÍFICA**. Probe de prefixo de .SPL read-only, não autentica origem sozinho; analisar privacidade/necessidade antes de qualquer uso. |
+| `tools/gerar_vias_reader_v730_shadow.js`; `tools/verificar_v730_windows_ci.js` | **COMPARAR FUNCIONALMENTE** com V7.20/V7.31/V8.57–V8.62. Pode conter prova one-shot útil, mas pré-condições mais antigas não substituem o gate atual e não devem ser copiadas em bloco. |
+| `tools/preparar_turno_prospectivo_v731.js`; `tools/verificar_v731_turno_prospectivo_ci.js` | **REVISAR CONTRATO**. Preparação isolada do watcher histórico, não autoriza criar turno ou alterar serviço real. |
+| `tools/piloto_fisico_tres_vias_caixa_v740.ps1`; `tools/verificar_piloto_fisico_v740.js` | **ARQUIVAR / NÃO REEXECUTAR**. Piloto com efeito físico atrelado a **13/10/2026**; está vencido e uma tentativa anterior pode ter marcador de uso único. |
+
+**Conclusão de integridade:** nenhum dos 16 deve ser apagado ou merged por conveniência. O objetivo é classificar o efeito funcional (KEEP / SUPERSEDED / BLOCKED / INTEGRATE) e portar somente deltas necessários sob testes atuais, sem reviver rota errada de impressora por turno ou script de impressão vencido.
 
 ## 6. O que o CI prova e o que NÃO prova
 
