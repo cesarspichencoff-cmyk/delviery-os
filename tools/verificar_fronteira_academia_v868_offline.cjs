@@ -13,8 +13,8 @@ const {inspectPinnedMotorBytes}=
  require("./tata_comanda_pinned_motor_loader_v862_offline.cjs");
 
 const LEGACY_BLOB="3167c309f02a0ad5a84fb43043b8866e3bee873c";
-const PROPOSED_COMMIT="a53369bf5db54b06712806c7df53f22140ba6de0";
-const PROPOSED_BLOB="cc573bf9a10c71011a6a1403ad7d2ba1725df66f";
+const PROPOSED_COMMIT="cd6129f54fa8f039375eede577257759a16d1ca4";
+const PROPOSED_BLOB="e4c99ff737e4c48e6a1b8df2df57dedaccb81bbc";
 const SOURCE_REF="human:cesar:2026-10-07:1-combinado-kids-alone-sacola-m";
 const NO_EFFECTS=Object.freeze({print:false,spooler:false,sql:false,
  service:false,sequence:false,install:false,deploy:false,network:false});
