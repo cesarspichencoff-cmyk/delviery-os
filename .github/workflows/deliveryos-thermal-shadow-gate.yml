@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: cesarspichencoff-cmyk/tata-academia
-          ref: a53369bf5db54b06712806c7df53f22140ba6de0
+          ref: cd6129f54fa8f039375eede577257759a16d1ca4
           path: _academy_review_v868
           persist-credentials: false
       - name: Academy candidate versus pinned DeliveryOS motor V8.68 (review-only)
