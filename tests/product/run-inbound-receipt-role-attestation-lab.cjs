@@ -50,6 +50,23 @@ function denied(db,input,reason,name) {
   assert.notEqual(r.status,0,name+": aceito indevidamente");
   assert.ok(String(r.stderr).includes(reason),name+": motivo: "+String(r.stderr).slice(0,360));
 }
+// Login efetivo da role (mesma conexao de banco que a credencial teria).
+// O cluster descartavel usa trust apenas em socket privado do runner; nao
+// comprova autenticacao de credenciais operacionais reais.
+function execAs(db,role,input) {
+  return spawnSync(psqlBin, ["-X","-q","-v","ON_ERROR_STOP=1","-d",db,"-At"],
+    {input,encoding:"utf8",env:{...env,PGUSER:role},timeout:15000});
+}
+function okAs(db,role,input,name) {
+  const r=execAs(db,role,input);
+  assert.equal(r.status,0,name+": "+String(r.stderr).slice(0,360));
+  return r.stdout.trim();
+}
+function deniedAs(db,role,input,reason,name) {
+  const r=execAs(db,role,input);
+  assert.notEqual(r.status,0,name+": aceito indevidamente");
+  assert.ok(String(r.stderr).includes(reason),name+": motivo: "+String(r.stderr).slice(0,360));
+}
 const db="lab_receipt_"+randomBytes(5).toString("hex");
 const role="deliveryos_entregas_pilot";
 let madeRole=false,madeDB=false,pass=0;
@@ -82,10 +99,10 @@ try {
     "has_table_privilege('"+role+"','entregas.inbound_receipt','TRUNCATE');","shared privileges");
   assert.equal(sharedRights,"f|f|f|f|f");
   passed("papel compartilhado sem SELECT INSERT UPDATE DELETE TRUNCATE");
-  denied(db,"SET ROLE "+role+"; SELECT count(*) FROM entregas.inbound_receipt;",
+  deniedAs(db,role,"SELECT count(*) FROM entregas.inbound_receipt;",
     "permission denied","shared read");
   passed("leitura compartilhada nao autorizada");
-  denied(db,"SET ROLE "+role+"; INSERT INTO entregas.inbound_receipt VALUES ('ITAIM','x','x','x');",
+  deniedAs(db,role,"INSERT INTO entregas.inbound_receipt VALUES ('ITAIM','x','x','x');",
     "permission denied","shared insert");
   passed("escrita compartilhada nao autorizada");
   ok(db,"GRANT SELECT ON entregas.inbound_receipt TO "+role+";","inject select");
@@ -109,29 +126,29 @@ try {
     "CREATE POLICY receipt_vila_policy ON entregas.inbound_receipt FOR ALL TO "+vila+
     " USING (unit_id = 'VILA-LAB') WITH CHECK (unit_id = 'VILA-LAB');","fixture policies");
   passed("roles distintas e policies fixas sem GUC");
-  const rowsI=ok(db,"SET ROLE "+itaim+"; SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;",
+  const rowsI=okAs(db,itaim,"SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;",
     "ITAIM read");
   assert.equal(rowsI,"ITAIM");
   passed("ITAIM le apenas seu recibo");
-  const rowsV=ok(db,"SET ROLE "+vila+"; SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;",
+  const rowsV=okAs(db,vila,"SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;",
     "VILA read");
   assert.equal(rowsV,"VILA-LAB");
   passed("VILA le apenas seu recibo");
-  const spoof=ok(db,"SET ROLE "+itaim+"; SET deliveryos.unit_scope = 'VILA-LAB';"+
+  const spoof=okAs(db,itaim,"SET deliveryos.unit_scope = 'VILA-LAB';"+
     "SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;","spoof GUC");
   assert.equal(spoof,"ITAIM");
   passed("GUC falsa nao troca unidade");
-  denied(db,"SET ROLE "+itaim+"; SET ROLE "+vila+";","permission denied","SET ROLE cruzado");
+  deniedAs(db,itaim,"SET ROLE "+vila+";","permission denied","SET ROLE cruzado");
   passed("role de ITAIM nao assume role VILA");
-  denied(db,"SET ROLE "+itaim+"; INSERT INTO entregas.inbound_receipt "+
+  deniedAs(db,itaim,"INSERT INTO entregas.inbound_receipt "+
     "VALUES ('VILA-LAB','e-ileg','c-ileg','k-ileg');","row-level security","cross-unit insert");
   passed("INSERT na outra unidade recusado por RLS");
-  ok(db,"SET ROLE "+itaim+"; INSERT INTO entregas.inbound_receipt "+
+  okAs(db,itaim,"INSERT INTO entregas.inbound_receipt "+
     "VALUES ('ITAIM','e-ok','c-ok','k-ok');","valid insert ITAIM");
-  const after=ok(db,"SET ROLE "+itaim+"; SELECT count(*) FROM entregas.inbound_receipt;","valid read");
+  const after=okAs(db,itaim,"SELECT count(*) FROM entregas.inbound_receipt;","valid read");
   assert.equal(after,"2");
   passed("INSERT na propria unidade e leitura restrita funcionam");
-  denied(db,"SET ROLE "+itaim+"; UPDATE entregas.inbound_receipt SET command_id='x';",
+  deniedAs(db,itaim,"UPDATE entregas.inbound_receipt SET command_id='x';",
     "permission denied","unit update");
   passed("roles de unidade nao podem alterar recibos");
   ok(db,"ALTER TABLE entregas.inbound_receipt NO FORCE ROW LEVEL SECURITY;","remove force");
