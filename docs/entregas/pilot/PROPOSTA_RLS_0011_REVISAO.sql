@@ -2,8 +2,10 @@
 -- NAO E MIGRATION, NAO INSTALAR, NAO EXECUTAR EM BANCO OPERACIONAL.
 -- O arquivo SQL 0011 ORIGINAL permanece separado no Foxxy e NAO esta aqui.
 -- Precondicoes: tabela original ja existe, roles distintas previamente criadas
--- sem credenciais neste script, cluster PostgreSQL efemero e sessao explicitamente
--- armada por SET deliveryos.review_rls_lab = 'approved_ephemeral_lab'.
+-- sem credenciais neste script, banco temporario nomeado lab_review_rls_<hex10>,
+-- socket Unix privado (sem TCP) e sessao explicitamente armada por
+-- SET deliveryos.review_rls_lab = 'approved_ephemeral_lab'.
+-- A flag de sessao sozinha nao confirma que o banco e descartavel.
 -- Dados de unidades abaixo sao apenas para prova: ITAIM e PINHEIROS.
 -- O servico real ainda NAO seleciona estas roles por sessao autenticada.
 BEGIN;
@@ -13,6 +15,13 @@ BEGIN
   IF current_setting('deliveryos.review_rls_lab', true)
      IS DISTINCT FROM 'approved_ephemeral_lab' THEN
     RAISE EXCEPTION 'REVIEW_ONLY: exige sessao de laboratorio explicita';
+  END IF;
+  -- O cliente pode definir a flag. Validar o destino independentemente.
+  IF current_database() !~ '^lab_review_rls_[a-f0-9]{10}$' THEN
+    RAISE EXCEPTION 'REVIEW_ONLY: exige banco efemero lab_review_rls_hex10';
+  END IF;
+  IF inet_server_addr() IS NOT NULL THEN
+    RAISE EXCEPTION 'REVIEW_ONLY: exige conexao por socket local';
   END IF;
   IF to_regclass('entregas.inbound_receipt') IS NULL THEN
     RAISE EXCEPTION 'REVIEW_ONLY: SQL 0011 original precisa estar aplicada';
