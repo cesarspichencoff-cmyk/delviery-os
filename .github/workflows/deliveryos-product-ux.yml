@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020, review/deliveryos-v1-role-convergence-20261022]
   workflow_dispatch:
 
 permissions:
@@ -45,6 +45,8 @@ jobs:
           "$pg_bin/pg_isready" -h "$pg_sock" -p 55434 -U "$USER" -d postgres
           echo "DELIVERYOS_PG_URL=postgresql://$USER@localhost:55434/postgres?host=$pg_sock" >> "$GITHUB_ENV"
           echo "DELIVERYOS_PG_DATA=$pg_data" >> "$GITHUB_ENV"
+      - name: Papel de recibos em PG efemero (somente fixture, sem migration 0011)
+        run: node tests/product/run-inbound-receipt-role-attestation-lab.cjs
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
