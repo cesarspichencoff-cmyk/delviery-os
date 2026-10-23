@@ -93,10 +93,35 @@ test("unknown result cannot self-declare paper from event text",()=>{
   {kind:"PAPER_CONFIRMED",evidence_type:"SYNTHETIC_USER_FLAG",
    evidence_ref:"evidence:abcdefgh"}).status,"HOLD");
 });
+test("unbound photo or another reservation must not become paper evidence",()=>{
+ const bad=[
+  {kind:"PAPER_CONFIRMED",evidence_type:"EXTERNAL_HUMAN_PHOTO",
+   evidence_ref:"evidence:fictitiousphoto123"},
+  {kind:"PAPER_CONFIRMED",evidence_type:"EXTERNAL_HUMAN_PHOTO",
+   evidence_ref:"evidence:fictitiousphoto123",
+   reservation_id:sha("other-attempt"),payload_sha256:d.descriptors[0].payload_sha256,
+   source_sha256:d.descriptors[0].source_sha256},
+  {kind:"PAPER_CONFIRMED",evidence_type:"EXTERNAL_HUMAN_PHOTO",
+   evidence_ref:"evidence:fictitiousphoto123",
+   reservation_id:a.reservation_id,payload_sha256:sha("other-paper-bytes"),
+   source_sha256:d.descriptors[0].source_sha256},
+  {kind:"PAPER_CONFIRMED",evidence_type:"EXTERNAL_HUMAN_PHOTO",
+   evidence_ref:"evidence:fictitiousphoto123",
+   reservation_id:a.reservation_id,payload_sha256:d.descriptors[0].payload_sha256,
+   source_sha256:sha("other-source-event")}
+ ];
+ for(const claim of bad){
+  const result=observe(state,d.descriptors[0].key,a.reservation_id,3,claim);
+  assert.equal(result.status,"HOLD");
+  assert.equal(result.authorize_print,false);
+ }
+});
 test("external evidence is recorded as an unverified assertion, never print permit",()=>{
  const r=observe(state,d.descriptors[0].key,a.reservation_id,3,
   {kind:"PAPER_CONFIRMED",evidence_type:"EXTERNAL_HUMAN_PHOTO",
-   evidence_ref:"evidence:fictitiousphoto123"});
+   evidence_ref:"evidence:fictitiousphoto123",
+   reservation_id:a.reservation_id,payload_sha256:d.descriptors[0].payload_sha256,
+   source_sha256:d.descriptors[0].source_sha256});
  assert.equal(r.next_state.entries[0].state,STATES.PAPER);
  assert.equal(r.authorize_print,false);state=r.next_state;
  assert.equal(resumeDecision(state,d.descriptors[0]).status,"HOLD");

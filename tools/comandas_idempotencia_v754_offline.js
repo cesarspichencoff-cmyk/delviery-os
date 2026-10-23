@@ -155,7 +155,10 @@ function observe(state,key,reservationId,expectedRevision,observation){
    [STATES.RESERVED,STATES.ACCEPTED,STATES.UNKNOWN].includes(old.state)&&
    observation.evidence_type==="EXTERNAL_HUMAN_PHOTO"&&
    typeof observation.evidence_ref==="string"&&
-   /^evidence:[a-zA-Z0-9_-]{8,96}$/.test(observation.evidence_ref))
+   /^evidence:[a-zA-Z0-9_-]{8,96}$/.test(observation.evidence_ref)&&
+   observation.reservation_id===old.reservation_id&&
+   observation.payload_sha256===old.payload_sha256&&
+   observation.source_sha256===old.source_sha256)
   next=STATES.PAPER;
  else return reject("OBSERVATION_NOT_PROVEN_OR_STATE_IMPOSSIBLE");
  const next_state={schema:SCHEMA,revision:state.revision+1,

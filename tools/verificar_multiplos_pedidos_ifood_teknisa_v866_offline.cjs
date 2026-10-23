@@ -231,7 +231,9 @@ check("even external photo reference is a claim not world proof",()=>{
  const state=book(fresh(),ad[0]),entry=state.entries[0];
  const r=observe(state,entry.key,entry.reservation_id,state.revision,
   {kind:"PAPER_CONFIRMED",evidence_type:"EXTERNAL_HUMAN_PHOTO",
-   evidence_ref:"evidence:synthetic123"});
+   evidence_ref:"evidence:synthetic123",
+    reservation_id:entry.reservation_id,payload_sha256:entry.payload_sha256,
+    source_sha256:entry.source_sha256});
  zero(r);assert.equal(r.next_state.entries[0].state,STATES.PAPER);
  assert.equal(r.authorize_print,false);
 });
