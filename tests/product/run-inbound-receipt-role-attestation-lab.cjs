@@ -29,7 +29,8 @@ assert.ok(roleSQL.includes("GRANT SELECT, INSERT ON platform.producer_admission 
 assert.ok(migration0010.includes("ARRAY['simulated','control']::TEXT[]"),"0010: proibicao de real perdida");
 assert.ok(sql.includes("c.relrowsecurity") && sql.includes("c.relforcerowsecurity"),"RLS/FORCE faltando");
 assert.ok(sql.includes("rolbypassrls") && sql.includes("has_any_column_privilege"),"guarda de privilegios faltando");
-assert.equal((sql.match(/GRANT SELECT, INSERT ON entregas.inbound_receipt/g)||[]).length,1);
+assert.equal((sql.match(/GRANT SELECT, INSERT ON entregas.inbound_receipt/g)||[]).length,0);
+assert.ok(sql.includes("'SELECT'") && sql.includes("'INSERT'"),"shared role grant policy must cover read and write");
 const env = {...process.env,
   PGHOST:socket, PGPORT:"55434", PGUSER:decodeURIComponent(url.username),
   PGDATABASE:"postgres", PGPASSWORD:""};
@@ -64,40 +65,82 @@ try {
     "INSERT INTO entregas.inbound_receipt VALUES "+
     "('ITAIM','evt-i','cmd-i','key-i'),('VILA-LAB','evt-v','cmd-v','key-v');"+
     "GRANT USAGE ON SCHEMA entregas TO deliveryos_entregas_pilot;","fixture");
-  passed("cluster e fixture de duas unidades criados");
+  passed("cluster e fixture com duas unidades sinteticas");
   denied(db,sql,"RLS e FORCE RLS obrigatorios","sem RLS");
-  passed("sem RLS bloqueia grant");
-  ok(db,"ALTER TABLE entregas.inbound_receipt ENABLE ROW LEVEL SECURITY;","RLS on");
-  denied(db,sql,"RLS e FORCE RLS obrigatorios","RLS sem FORCE");
-  passed("RLS sem FORCE nao basta");
-  ok(db,"ALTER TABLE entregas.inbound_receipt FORCE ROW LEVEL SECURITY;","RLS force");
-  ok(db,sql,"grant");
-  passed("GRANT condicionado a RLS e FORCE");
-  const rights=ok(db,"SELECT has_table_privilege('"+role+"','entregas.inbound_receipt','SELECT'),"+
+  passed("sem RLS a guarda recusa");
+  ok(db,"ALTER TABLE entregas.inbound_receipt ENABLE ROW LEVEL SECURITY;","rls enable");
+  denied(db,sql,"RLS e FORCE RLS obrigatorios","sem force");
+  passed("somente RLS nao basta");
+  ok(db,"ALTER TABLE entregas.inbound_receipt FORCE ROW LEVEL SECURITY;","rls force");
+  ok(db,sql,"shared-role guard");
+  passed("RLS FORCE sem grants para papel compartilhado");
+  const sharedRights=ok(db,
+    "SELECT has_table_privilege('"+role+"','entregas.inbound_receipt','SELECT'),"+
     "has_table_privilege('"+role+"','entregas.inbound_receipt','INSERT'),"+
     "has_table_privilege('"+role+"','entregas.inbound_receipt','UPDATE'),"+
     "has_table_privilege('"+role+"','entregas.inbound_receipt','DELETE'),"+
-    "has_table_privilege('"+role+"','entregas.inbound_receipt','TRUNCATE');","privs");
-  assert.equal(rights,"t|t|f|f|f");
-  passed("apenas SELECT e INSERT para o papel restrito");
-  const count=ok(db,"SET ROLE "+role+"; SELECT count(*) FROM entregas.inbound_receipt;","RLS SELECT");
-  assert.equal(count,"0");
-  passed("sem policy SELECT nao expoe linhas da outra unidade");
-  denied(db,"SET ROLE "+role+"; INSERT INTO entregas.inbound_receipt VALUES ('ITAIM','evt-x','cmd-x','key-x');",
-     "row-level security","RLS INSERT");
-  passed("sem policy INSERT falha mesmo com grant");
-  ok(db,"GRANT UPDATE(unit_id) ON entregas.inbound_receipt TO "+role+";","inject");
-  denied(db,sql,"privilegio perigoso","UPDATE(column)");
-  passed("UPDATE por coluna bloqueia reaplicacao");
-  ok(db,"REVOKE UPDATE(unit_id) ON entregas.inbound_receipt FROM "+role+";","revoke");
+    "has_table_privilege('"+role+"','entregas.inbound_receipt','TRUNCATE');","shared privileges");
+  assert.equal(sharedRights,"f|f|f|f|f");
+  passed("papel compartilhado sem SELECT INSERT UPDATE DELETE TRUNCATE");
+  denied(db,"SET ROLE "+role+"; SELECT count(*) FROM entregas.inbound_receipt;",
+    "permission denied","shared read");
+  passed("leitura compartilhada nao autorizada");
+  denied(db,"SET ROLE "+role+"; INSERT INTO entregas.inbound_receipt VALUES ('ITAIM','x','x','x');",
+    "permission denied","shared insert");
+  passed("escrita compartilhada nao autorizada");
+  ok(db,"GRANT SELECT ON entregas.inbound_receipt TO "+role+";","inject select");
+  denied(db,sql,"papel multiunidade nao recebe privilegios","select leaked");
+  passed("guarda detecta SELECT amplo introduzido depois");
+  ok(db,"REVOKE SELECT ON entregas.inbound_receipt FROM "+role+";","revoke select");
+  ok(db,"GRANT INSERT ON entregas.inbound_receipt TO "+role+";","inject insert");
+  denied(db,sql,"papel multiunidade nao recebe privilegios","insert leaked");
+  passed("guarda detecta INSERT amplo introduzido depois");
+  ok(db,"REVOKE INSERT ON entregas.inbound_receipt FROM "+role+";","revoke insert");
   ok(db,sql,"reapply");
-  passed("reaplicacao idempotente na fixture");
-  ok(db,"ALTER TABLE entregas.inbound_receipt NO FORCE ROW LEVEL SECURITY;","NO FORCE");
-  denied(db,sql,"RLS e FORCE RLS obrigatorios","policy drift");
-  passed("deriva no FORCE provoca recusa");
+  passed("reaplicacao idempotente sem permitir acesso compartilhado");
+  const itaim="deliveryos_receipt_itaim";
+  const vila="deliveryos_receipt_vila";
+  ok("postgres","CREATE ROLE "+itaim+" LOGIN NOSUPERUSER NOBYPASSRLS;"+
+    "CREATE ROLE "+vila+" LOGIN NOSUPERUSER NOBYPASSRLS;","per-unit roles");
+  ok(db,"GRANT USAGE ON SCHEMA entregas TO "+itaim+","+vila+";"+
+    "GRANT SELECT,INSERT ON entregas.inbound_receipt TO "+itaim+","+vila+";"+
+    "CREATE POLICY receipt_itaim_policy ON entregas.inbound_receipt FOR ALL TO "+itaim+
+    " USING (unit_id = 'ITAIM') WITH CHECK (unit_id = 'ITAIM');"+
+    "CREATE POLICY receipt_vila_policy ON entregas.inbound_receipt FOR ALL TO "+vila+
+    " USING (unit_id = 'VILA-LAB') WITH CHECK (unit_id = 'VILA-LAB');","fixture policies");
+  passed("roles distintas e policies fixas sem GUC");
+  const rowsI=ok(db,"SET ROLE "+itaim+"; SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;",
+    "ITAIM read");
+  assert.equal(rowsI,"ITAIM");
+  passed("ITAIM le apenas seu recibo");
+  const rowsV=ok(db,"SET ROLE "+vila+"; SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;",
+    "VILA read");
+  assert.equal(rowsV,"VILA-LAB");
+  passed("VILA le apenas seu recibo");
+  const spoof=ok(db,"SET ROLE "+itaim+"; SET deliveryos.unit_scope = 'VILA-LAB';"+
+    "SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt;","spoof GUC");
+  assert.equal(spoof,"ITAIM");
+  passed("GUC falsa nao troca unidade");
+  denied(db,"SET ROLE "+itaim+"; SET ROLE "+vila+";","permission denied","SET ROLE cruzado");
+  passed("role de ITAIM nao assume role VILA");
+  denied(db,"SET ROLE "+itaim+"; INSERT INTO entregas.inbound_receipt "+
+    "VALUES ('VILA-LAB','e-ileg','c-ileg','k-ileg');","row-level security","cross-unit insert");
+  passed("INSERT na outra unidade recusado por RLS");
+  ok(db,"SET ROLE "+itaim+"; INSERT INTO entregas.inbound_receipt "+
+    "VALUES ('ITAIM','e-ok','c-ok','k-ok');","valid insert ITAIM");
+  const after=ok(db,"SET ROLE "+itaim+"; SELECT count(*) FROM entregas.inbound_receipt;","valid read");
+  assert.equal(after,"2");
+  passed("INSERT na propria unidade e leitura restrita funcionam");
+  denied(db,"SET ROLE "+itaim+"; UPDATE entregas.inbound_receipt SET command_id='x';",
+    "permission denied","unit update");
+  passed("roles de unidade nao podem alterar recibos");
+  ok(db,"ALTER TABLE entregas.inbound_receipt NO FORCE ROW LEVEL SECURITY;","remove force");
+  denied(db,sql,"RLS e FORCE RLS obrigatorios","drift RLS");
+  passed("deriva FORCE ainda e bloqueada");
   console.log("ROLE_RECEIPT_PG16_FIXTURE="+pass+"/"+pass+" PASS");
-  console.log("NAO EXECUTOU 0011, NAO PROVOU RLS MULTIUNIDADE, DRAFT/HOLD/NO_GO");
+  console.log("0011 NAO EXECUTADA; isolamento provado SO nas roles de fixture; DRAFT/HOLD/NO_GO");
 } finally {
   if(madeDB) execSQL("postgres","DROP DATABASE IF EXISTS "+db+" WITH (FORCE);");
+  execSQL("postgres","DROP ROLE IF EXISTS deliveryos_receipt_itaim,deliveryos_receipt_vila;");
   if(madeRole) execSQL("postgres","DROP ROLE IF EXISTS "+role+";");
 }
