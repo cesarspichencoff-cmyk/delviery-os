@@ -356,6 +356,34 @@ function vetoSemanticBytesV71(
     bytes:[],byte_count:0,ready_for_operational_print:false};
 }
 
+/** V8.71: all virtual vias must carry the SAME projected order identifiers.
+ * This is coherence of one OFFLINE projection, not independent SQL provenance
+ * or operational authorization. A disagreement vetoes ALL preview bytes.
+ */
+function threeViewCoherenceReasonsV871(source:OperationalTicketsResultV45):string[] {
+  const reasons=new Set<string>();
+  const identifiers=source.conference?.identifiers;
+  if(!identifiers) reasons.add("CONFERENCE_IDENTIFIERS_MISSING");
+  if(source.production.length===0) reasons.add("PRODUCTION_VIEWS_MISSING");
+  const stations=new Set<string>(),fingerprints=new Set<string>();
+  for(const ticket of source.production){
+    const station=String(ticket.station??"").trim().toUpperCase();
+    if(!station||stations.has(station)) reasons.add("PRODUCTION_STATION_NOT_UNIQUE");
+    stations.add(station);
+    const fingerprint=String(ticket.fingerprint??"").trim();
+    if(!fingerprint||fingerprints.has(fingerprint))
+      reasons.add("PRODUCTION_FINGERPRINT_NOT_UNIQUE");
+    fingerprints.add(fingerprint);
+    if(!identifiers||
+      ticket.identifiers.ifood!==identifiers.ifood||
+      ticket.identifiers.teknisa!==identifiers.teknisa||
+      ticket.identifiers.tata!==identifiers.tata||
+      ticket.identifiers.hour!==identifiers.hour)
+      reasons.add("THREE_VIEW_ORDER_IDENTIFIERS_MISMATCH");
+  }
+  return [...reasons].sort();
+}
+
 export function renderOperationalTicketsProofV46(source: OperationalTicketsResultV45): {
   production: TicketEscPosProofV46[];
   conference: TicketEscPosProofV46;
@@ -363,13 +391,19 @@ export function renderOperationalTicketsProofV46(source: OperationalTicketsResul
 } {
   const production=source.production.map(renderProductionTicketProofV46);
   const conference=renderConferenceTicketProofV46(source.conference);
-  const globalDenied=source.ready_for_semantic_preview !== true ||
+  const sourceDenied=source.ready_for_semantic_preview !== true ||
     !Array.isArray(source.blocking_reasons) || source.blocking_reasons.length>0;
-  if (globalDenied) return {
-    production:production.map(p=>vetoSemanticBytesV71(p,"GLOBAL_SOURCE_SEMANTIC_BLOCKED")),
-    conference:vetoSemanticBytesV71(conference,"GLOBAL_SOURCE_SEMANTIC_BLOCKED"),
-    effects:{print:false,spooler_write:false,odhen_write:false,cut:false},
-  };
+  const crossViewReasons=sourceDenied?[]:threeViewCoherenceReasonsV871(source);
+  if(sourceDenied||crossViewReasons.length>0){
+    const reasons=sourceDenied?["GLOBAL_SOURCE_SEMANTIC_BLOCKED"]:crossViewReasons;
+    const veto=(proof:TicketEscPosProofV46)=>reasons.reduce(
+      (state,reason)=>vetoSemanticBytesV71(state,reason),proof);
+    return {
+      production:production.map(veto),
+      conference:veto(conference),
+      effects:{print:false,spooler_write:false,odhen_write:false,cut:false},
+    };
+  }
   return {production,conference,
     effects:{print:false,spooler_write:false,odhen_write:false,cut:false}};
 }

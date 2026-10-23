@@ -303,6 +303,11 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: Three-view identity, archived tickets and Epson bytes V8.71 (offline; no print)
+        run: |
+          node tools/verificar_real_order_tickets_v46.js
+          node tools/verificar_operational_escpos_v46.js
+          node tools/verificar_comandas_tres_vias_identidade_v871_offline.cjs
       - name: Pinned Academy headless packaging contract V1 (Windows, fake bytes denied)
         run: |
           node --check tools/verificar_contrato_embalagem_v1_private_replay.cjs
