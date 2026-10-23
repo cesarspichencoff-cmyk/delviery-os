@@ -171,7 +171,7 @@ function descriptorsFromProof(manifest,event,context){
     manifest.native_font_candidate?.effects?.spooler_write!==false||
     !Array.isArray(manifest.outputs)||!Array.isArray(manifest.native_font_candidate.outputs)||
     manifest.outputs.length!==manifest.native_font_candidate.outputs.length||
-    manifest.outputs.length<2||!DIGEST.test(manifest.origin?.event_sha256)||
+    manifest.outputs.length!==3||!DIGEST.test(manifest.origin?.event_sha256)||
     !event||event.schema!=="deliveryos.tata-reader-stable-order-event.v1"||
     typeof event.order_key!=="string"||!event.order||
     ["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA"].some(k=>
@@ -181,17 +181,28 @@ function descriptorsFromProof(manifest,event,context){
     !context)return {status:"HOLD",reasons:["THREE_VIEW_SOURCE_NOT_VERIFIED"],descriptors:[]};
  if(manifest.origin.event_sha256.toLowerCase()!==context.event_file_sha256?.toLowerCase())
   return {status:"HOLD",reasons:["EVENT_SOURCE_HASH_NOT_BOUND"],descriptors:[]};
- const out=[];
+ const out=[],productionStations=new Set();
  for(let i=0;i<manifest.outputs.length;i++){
   const svg=manifest.outputs[i],native=manifest.native_font_candidate.outputs[i];
-  if(svg.boxes!==native.boxes||svg.product_lines!==native.product_lines||
+  if(svg.kind!==native.kind||svg.station!==native.station||
+     svg.boxes!==native.boxes||svg.product_lines!==native.product_lines||
+     !Number.isSafeInteger(svg.boxes)||svg.boxes<0||
+     !Number.isSafeInteger(svg.product_lines)||svg.product_lines<0||
+     !DIGEST.test(svg.svg_sha256)||!DIGEST.test(native.design_svg_sha256)||
      !DIGEST.test(native.native_bytes_sha256)||
      svg.svg_sha256!==native.design_svg_sha256||
      !["PRODUCAO","CONFERENCIA"].includes(native.kind)||
-     typeof native.station!=="string"||native.station.length===0||
+     typeof native.station!=="string"||!native.station.trim()||
      !Number.isSafeInteger(native.native_byte_count)||native.native_byte_count<=0||
      native.full_text_preserved!==true)
    return {status:"HOLD",reasons:["NATIVE_VIEW_DRIFT"],descriptors:[]};
+  if(native.kind==="PRODUCAO"){
+   const stationKey=native.station.trim().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"").toUpperCase();
+   if(productionStations.has(stationKey))
+    return {status:"HOLD",reasons:["DUPLICATE_PRODUCTION_STATION"],descriptors:[]};
+   productionStations.add(stationKey);
+  }
   const entry=normalize({scope_id:context.scope_id,
    scope_evidence:context.scope_evidence,order_key:event.order_key,
    kind:native.kind,station:native.station,slot:i,

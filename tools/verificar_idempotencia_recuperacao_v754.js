@@ -186,6 +186,41 @@ test("all unverified three-way manifest variants blocked",()=>{
   assert.equal(descriptorsFromProof(invalid,event,ctx).status,"HOLD");
  }
 });
+test("exactly two production and one conference descriptor are required",()=>{
+ const missing=structuredClone(manifest);
+ missing.outputs.shift();missing.native_font_candidate.outputs.shift();
+ assert.equal(descriptorsFromProof(missing,event,ctx).status,"HOLD");
+ const extra=structuredClone(manifest);
+ const addedSvg={...extra.outputs[0],station:"TERCEIRA_PRACA"};
+ const addedNative={...extra.native_font_candidate.outputs[0],station:"TERCEIRA_PRACA"};
+ extra.outputs.splice(2,0,addedSvg);
+ extra.native_font_candidate.outputs.splice(2,0,addedNative);
+ assert.equal(descriptorsFromProof(extra,event,ctx).status,"HOLD");
+});
+test("duplicate station or mismatch between design and native print is rejected",()=>{
+ const duplicate=structuredClone(manifest);
+ duplicate.outputs[1].station=duplicate.outputs[0].station;
+ duplicate.native_font_candidate.outputs[1].station=duplicate.native_font_candidate.outputs[0].station;
+ assert.equal(descriptorsFromProof(duplicate,event,ctx).status,"HOLD");
+ const wrongStation=structuredClone(manifest);
+ wrongStation.outputs[0].station="SUSHI";
+ assert.equal(descriptorsFromProof(wrongStation,event,ctx).status,"HOLD");
+ const wrongKind=structuredClone(manifest);
+ wrongKind.outputs[0].kind="CONFERENCIA";
+ assert.equal(descriptorsFromProof(wrongKind,event,ctx).status,"HOLD");
+ const blankStation=structuredClone(manifest);
+ blankStation.outputs[0].station="   ";
+ blankStation.native_font_candidate.outputs[0].station="   ";
+ assert.equal(descriptorsFromProof(blankStation,event,ctx).status,"HOLD");
+ const noDesignDigest=structuredClone(manifest);
+ delete noDesignDigest.outputs[0].svg_sha256;
+ delete noDesignDigest.native_font_candidate.outputs[0].design_svg_sha256;
+ assert.equal(descriptorsFromProof(noDesignDigest,event,ctx).status,"HOLD");
+ const absentCounts=structuredClone(manifest);
+ delete absentCounts.outputs[0].boxes;
+ delete absentCounts.native_font_candidate.outputs[0].boxes;
+ assert.equal(descriptorsFromProof(absentCounts,event,ctx).status,"HOLD");
+});
 test("event identity four parts is exact and revision bound",()=>{
  const wrong=structuredClone(event);wrong.order.NRCOMANDA="OTHER";
  assert.equal(descriptorsFromProof(manifest,wrong,ctx).status,"HOLD");

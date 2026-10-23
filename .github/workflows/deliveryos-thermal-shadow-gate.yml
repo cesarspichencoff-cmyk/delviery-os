@@ -308,6 +308,8 @@ jobs:
           node tools/verificar_real_order_tickets_v46.js
           node tools/verificar_operational_escpos_v46.js
           node tools/verificar_comandas_tres_vias_identidade_v871_offline.cjs
+      - name: V8.72 native receipt manifest three-view contract (offline, zero effects)
+        run: node tools/verificar_manifesto_nativo_idempotencia_v872_offline.cjs
       - name: Pinned Academy headless packaging contract V1 (Windows, fake bytes denied)
         run: |
           node --check tools/verificar_contrato_embalagem_v1_private_replay.cjs
