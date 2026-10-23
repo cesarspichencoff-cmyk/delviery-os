@@ -57,6 +57,29 @@ jobs:
       # A API de aparelho e executada contra dist/tools/entregas_pilot_server.js:
       # compilar ANTES do teste, sem duplicar o build no workflow.
       - run: npm run -s build:platform
+      - name: Recibos duraveis - regressao sintetica do nucleo original
+        shell: bash
+        run: |
+          set -uo pipefail
+          failed=0
+          for test_path in \
+            src/entregas/persistence/run-inbound-fingerprint-normalization-tests.ts \
+            src/entregas/operational/run-inbound-replay-tests.ts \
+            src/entregas/operational/run-inbound-command-id-collision-tests.ts \
+            src/entregas/operational/run-inbound-commit-uncertainty-tests.ts \
+            src/entregas/operational/run-inbound-stage-isolation-tests.ts \
+            src/entregas/operational/run-rejected-receipt-lifecycle-tests.ts \
+            src/entregas/operational/run-shared-uow-cross-instance-tests.ts \
+            src/entregas/persistence/run-inbound-receipt-tests.ts \
+            src/entregas/pilot/run-cutover-inbound-receipts-tests.ts
+          do
+            echo "=== $test_path ==="
+            npx tsx "$test_path" || failed=$((failed+1))
+          done
+          if [[ "$failed" -ne 0 ]]; then
+            echo "::error::$failed testes de recibos falharam"
+            exit 1
+          fi
       # Os gates sao processos independentes: um RED HTTP nao pode pular
       # a regressao de offline, fonte e piloto. Um gate final FORCA falha.
       - name: Android - contrato estrutural sintetico (sem aparelho)
