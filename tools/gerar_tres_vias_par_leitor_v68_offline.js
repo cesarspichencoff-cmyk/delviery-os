@@ -95,7 +95,10 @@ function run(args=process.argv.slice(2)){
   const filename=String(i+1).padStart(2,"0")+"-"+p.kind.toLowerCase()+
    "-"+String(p.station).toLowerCase().replace(/[^a-z0-9]+/g,"-")+".svg";
   fs.writeFileSync(path.join(dir,filename),p.svg);
-  return {filename,boxes:p.boxes,product_lines:p.items,svg_sha256:sha(Buffer.from(p.svg)),
+  // Preserve exactly the projected view identity that generated this SVG.
+  // V8.72 compares it against independently generated native Epson metadata.
+  return {filename,kind:p.kind,station:p.station,
+   boxes:p.boxes,product_lines:p.items,svg_sha256:sha(Buffer.from(p.svg)),
    escpos_trace_sha256:sha(Buffer.from(rendered[i].text_trace))};
  });
  const manifest={schema:"deliveryos.stable-reader-shadow-v68.proof",

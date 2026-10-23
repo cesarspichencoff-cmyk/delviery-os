@@ -182,6 +182,12 @@ try{
  assert.equal(got.native_font_candidate.effects.spooler_write,false);
  assert.equal(got.native_font_candidate.outputs.length,got.outputs.length,
   "source-pinned native candidate missing or multiplying ticket");
+ assert.deepEqual(got.outputs.map(o=>o.kind),
+  got.native_font_candidate.outputs.map(o=>o.kind),
+  "SVG view type must match native Epson source");
+ assert.deepEqual(got.outputs.map(o=>o.station),
+  got.native_font_candidate.outputs.map(o=>o.station),
+  "SVG station must match native Epson source");
  assert.deepEqual(got.native_font_candidate.outputs.map(o=>o.kind),
   ["PRODUCAO","PRODUCAO","CONFERENCIA"]);
  assert.ok(got.native_font_candidate.outputs.every(o=>o.full_text_preserved&&
