@@ -120,6 +120,22 @@ test("one TATA sequence cannot silently be shared by two different orders",()=>{
  assert.equal(reserve(state,other,6).reasons[0],
   "TATA_SEQUENCE_COLLISION_BETWEEN_ORDERS");
 });
+test("history erased with nonzero revision is HOLD, not a fresh printing opportunity",()=>{
+ const truncated=structuredClone(state);truncated.entries=[];
+ assert.equal(truncated.revision,6);
+ assert.equal(validLedger(truncated),false);
+ assert.equal(reserve(truncated,d.descriptors[0],6).status,"HOLD");
+ assert.equal(resumeDecision(truncated,d.descriptors[0]).status,"HOLD");
+});
+test("missing first reservation or reordered timestamps are not a valid ledger",()=>{
+ const missingFirst=structuredClone(state);missingFirst.entries.shift();
+ assert.equal(validLedger(missingFirst),false);
+ const reordered=structuredClone(state);reordered.entries.reverse();
+ assert.equal(validLedger(reordered),false);
+ const reusedRevision=structuredClone(state);
+ reusedRevision.entries[1].reserved_revision=reusedRevision.entries[0].reserved_revision;
+ assert.equal(validLedger(reusedRevision),false);
+});
 test("tampered ledger with two printer routes for one logical receipt is rejected",()=>{
  const corrupted=structuredClone(state);
  const changed=normalize({...d.descriptors[0],station:"ANOTHER_STATION"});

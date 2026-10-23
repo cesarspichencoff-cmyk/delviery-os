@@ -25,6 +25,10 @@ function fresh(){return {schema:SCHEMA,revision:0,entries:[]};}
 function validLedger(s){
  if(!s||s.schema!==SCHEMA||!Number.isSafeInteger(s.revision)||s.revision<0||
    !Array.isArray(s.entries)||s.entries.length>10000)return false;
+ // Reservation-only history cannot have a nonzero revision and zero entries.
+ // This checks structure; independent durable tamper evidence is STILL required.
+ if(s.entries.length===0)return s.revision===0;
+ let previousReservationRevision=0;
  const seen=new Set(),logicalViews=new Map(),sequenceOwners=new Map();
  for(const e of s.entries){
   if(!e||typeof e.key!=="string"||!DIGEST.test(e.key)||seen.has(e.key)||
@@ -38,6 +42,11 @@ function validLedger(s){
      check.payload_sha256!==e.payload_sha256||
      e.reservation_id!==sha("v754:reservation:"+e.key+":"+e.payload_sha256)||
      e.reserved_revision> s.revision)return false;
+  // A reservation starts at revision 1. Later reservations advance strictly;
+  // observation-only revisions may create gaps, but never rewind or duplicate.
+  if((previousReservationRevision===0&&e.reserved_revision!==1)||
+      e.reserved_revision<=previousReservationRevision)return false;
+  previousReservationRevision=e.reserved_revision;
   const viewId=JSON.stringify([e.scope_id,e.order_key,e.kind,e.slot]);
   const previousDestination=logicalViews.get(viewId);
   if(previousDestination!==undefined&&previousDestination!==e.key)return false;
