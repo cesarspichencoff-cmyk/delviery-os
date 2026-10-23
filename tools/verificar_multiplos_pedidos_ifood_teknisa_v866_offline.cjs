@@ -200,14 +200,20 @@ check("reboot AFTER reservation cannot cause reprint",()=>{
 check("spool accepted alone remains physical paper UNKNOWN",()=>{
  const state=book(fresh(),ad[0]),first=state.entries[0];
  const r=observe(state,first.key,first.reservation_id,state.revision,
-  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED"});
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+   external_job_id:"synthetic-job-0001",
+   reservation_id:state.entries[0].reservation_id,
+   payload_sha256:state.entries[0].payload_sha256});
  zero(r);assert.equal(r.next_state.entries[0].state,STATES.ACCEPTED);
  blocked(r.next_state,ad[0],"ALREADY_ATTEMPTED_NO_AUTOMATIC_RETRY");
 });
 check("timeout after spool accepts leaves UNKNOWN never retry",()=>{
  let state=book(fresh(),ad[0]),entry=state.entries[0];
  let r=observe(state,entry.key,entry.reservation_id,state.revision,
-  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED"});
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+   external_job_id:"synthetic-job-0001",
+   reservation_id:state.entries[0].reservation_id,
+   payload_sha256:state.entries[0].payload_sha256});
  state=r.next_state;
  r=observe(state,entry.key,entry.reservation_id,state.revision,
   {kind:"TIMEOUT_OR_CRASH"});
