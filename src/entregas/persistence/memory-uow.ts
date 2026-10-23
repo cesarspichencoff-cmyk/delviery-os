@@ -7,8 +7,10 @@ import type {
   OutboxRepository,
   TripRecord,
   UnitOfWork,
+  InboundReceiptRepository,
 } from "./ports";
 import { ConcurrencyError } from "./ports";
+import { InboundReceiptConflictError, InboundReceiptCommandIdCollisionError, type DurableInboundReceipt } from "./inbound-receipt";
 import type { Handoff, DomainEvent } from "../foundation/types";
 import type { Occurrence } from "../operational/occurrence";
 import type { RiderOperationalState } from "../operational/rider-state";
@@ -22,6 +24,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
   private _riders = new Map<string, RiderOperationalState>();
   private _events: DomainEvent[] = [];
   private _outbox: OutboxRecord[] = [];
+  private _inboundReceipts = new Map<string, DurableInboundReceipt>();
   private staged!: {
     trips: Map<string, TripRecord>;
     handoffs: Map<string, { handoff: Handoff; version: number }>;
@@ -29,6 +32,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
     riders: Map<string, RiderOperationalState>;
     events: DomainEvent[];
     outbox: OutboxRecord[];
+    receipts: Map<string, DurableInboundReceipt>;
   };
   private finished = false;
 
@@ -38,10 +42,33 @@ export class MemoryUnitOfWork implements UnitOfWork {
   readonly riders: RiderStateRepository;
   readonly events: EventStore;
   readonly outbox: OutboxRepository;
+  readonly inboundReceipts: InboundReceiptRepository;
 
   constructor() {
     this.resetStage();
     const self = this;
+    this.inboundReceipts = {
+      hasStaged: () => [...self.staged.receipts.keys()]
+        .some((id) => !self._inboundReceipts.has(id)),
+      async find(id, key, commandId) {
+        // Sem ACK para staged: so ler o estado ja confirmado.
+        return [...self._inboundReceipts.values()]
+          .filter((r) => r.event_id === id || r.idempotency_key === key ||
+            (commandId !== undefined && r.command_id === commandId))
+          .map((r) => structuredClone(r));
+      },
+      stage(r) {
+        if ([...self.staged.receipts.values()].some((p) =>
+          p.event_id === r.event_id || p.idempotency_key === r.idempotency_key)) {
+          throw new InboundReceiptConflictError();
+        }
+        if ([...self.staged.receipts.values()].some((p) =>
+          p.command_id === r.command_id)) {
+          throw new InboundReceiptCommandIdCollisionError();
+        }
+        self.staged.receipts.set(r.event_id, structuredClone(r));
+      },
+    };
     this.trips = {
       async get(id) {
         return self.staged.trips.get(id) ?? null;
@@ -162,6 +189,18 @@ export class MemoryUnitOfWork implements UnitOfWork {
     };
   }
 
+  hasPendingWrites(): boolean {
+    const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
+    const snapshot = (map: Map<string,unknown>) => [...map.entries()];
+    return changed(snapshot(this.staged.trips),snapshot(this._trips)) ||
+      changed(snapshot(this.staged.handoffs),snapshot(this._handoffs)) ||
+      changed(snapshot(this.staged.occurrences),snapshot(this._occurrences)) ||
+      changed(snapshot(this.staged.riders),snapshot(this._riders)) ||
+      changed(this.staged.events,this._events) ||
+      changed(this.staged.outbox,this._outbox) ||
+      changed(snapshot(this.staged.receipts),snapshot(this._inboundReceipts));
+  }
+
   private resetStage(): void {
     this.staged = {
       trips: new Map(this._trips),
@@ -169,6 +208,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
       occurrences: new Map(this._occurrences),
       riders: new Map(this._riders),
       events: [...this._events],
+      receipts: new Map(this._inboundReceipts),
       outbox: this._outbox.map((r) => ({
         ...r,
         event: { ...r.event, payload: { ...r.event.payload } },
@@ -185,6 +225,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
     this._riders = this.staged.riders;
     this._events = this.staged.events;
     this._outbox = this.staged.outbox;
+    this._inboundReceipts = this.staged.receipts;
     // permite sequência de commands na mesma sessão de app
     this.resetStage();
   }
@@ -201,6 +242,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
     u._occurrences = new Map(this._occurrences);
     u._riders = new Map(this._riders);
     u._events = [...this._events];
+    u._inboundReceipts = new Map(this._inboundReceipts);
     u._outbox = this._outbox.map((r) => ({
       ...r,
       event: { ...r.event, payload: { ...r.event.payload } },

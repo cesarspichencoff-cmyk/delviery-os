@@ -29,6 +29,7 @@ import {
 import { DomainError, type Delivery, type Handoff } from "../foundation/types";
 import { domainEventToPublic } from "../integration/public-event-builder";
 import type { UnitOfWork } from "../persistence/ports";
+import { canonicalInboundFingerprint, classifyInboundReceipt, InboundReceiptConflictError, InboundReceiptCommandIdCollisionError, type DurableInboundReceipt } from "../persistence/inbound-receipt";
 import { assertCan, requireActor, MANUAL_CLOSE_ROLES, type ActorContext } from "./auth";
 import type { Command } from "./commands";
 import {
@@ -56,7 +57,14 @@ export interface AppResult {
   rider?: RiderOperationalState;
 }
 
+// A chave da fila e o repositorio de recibos, o mesmo objeto compartilhado
+// pelas UoWs decoradas. Diferentes wrappers da mesma UoW nao podem executar
+// comandos simultaneamente sobre o mesmo stage. Isto NAO e lock multi-processo.
+const executionTailByReceiptStore = new WeakMap<object, Promise<void>>();
+
 export class EntregasApplicationService {
+  private quarantinedStage = false;
+
   constructor(
     private readonly uow: UnitOfWork,
     private readonly policy: PilotPolicy = createPilotPolicy(),
@@ -66,9 +74,116 @@ export class EntregasApplicationService {
     private readonly publicSourceMode?: EntregasSourceMode,
   ) {}
 
-  async execute(cmd: Command): Promise<AppResult> {
+  async execute(cmd: Command, receipt?: DurableInboundReceipt): Promise<AppResult> {
+    // Captura snapshot antes da primeira espera: o chamador nao pode mudar
+    // o pedido apos fingerprint e antes do I/O da transacao.
+    let commandSnapshot: Command;
+    let receiptSnapshot: DurableInboundReceipt | undefined;
     try {
+      commandSnapshot = structuredClone(cmd);
+      receiptSnapshot = receipt === undefined ? undefined : structuredClone(receipt);
+    } catch {
+      return { ok:false, code:"INVALID_COMMAND",
+        error:"Comando nao pode ser convertido em snapshot seguro" };
+    }
+    const sharedStageKey = this.uow.inboundReceipts;
+    const predecessor = executionTailByReceiptStore.get(sharedStageKey) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => { release = resolve; });
+    executionTailByReceiptStore.set(sharedStageKey, current);
+    await predecessor;
+    try {
+      return await this.executeSerial(commandSnapshot, receiptSnapshot);
+    } finally {
+      release();
+      if (executionTailByReceiptStore.get(sharedStageKey) === current) {
+        executionTailByReceiptStore.delete(sharedStageKey);
+      }
+    }
+  }
+
+  private async executeSerial(cmd: Command, receipt?: DurableInboundReceipt): Promise<AppResult> {
+    try {
+      if (this.quarantinedStage) {
+        return { ok:false, code:"STAGE_QUARANTINED",
+          error:"Instancia bloqueada ate recuperacao controlada do armazenamento" };
+      }
+      if (this.uow.inboundReceipts.hasStaged() || this.uow.hasPendingWrites()) {
+        // Nao sabemos quem detem o stage: rollback aqui destruiria
+        // escrita de outro componente. Bloquear a instancia, NAO limpar.
+        this.quarantinedStage = true;
+        return { ok:false, code:"STAGE_DIRTY",
+          error:"Recibo pendente nao pertence ao comando atual: suspender instancia" };
+      }
       requireActor(cmd.actor);
+      if (receipt) {
+        // O estágio do recibo acontece DENTRO do turno serializado,
+        // e só depois de reconciliar identidade e comando. O chamador
+        // deve prover actor/unidade de sessão verificada, nunca de JSON.
+        const valid =
+          receipt.actor_id === cmd.actor.actor_id &&
+          receipt.actor_role === cmd.actor.role &&
+          receipt.unit_id === cmd.unit_id &&
+          receipt.command_id === cmd.command_id &&
+          receipt.command_type === cmd.type &&
+          receipt.outcome === "applied" &&
+          receipt.event_id.length > 0 &&
+          receipt.idempotency_key.length > 0 &&
+          /^[0-9a-f]{64}$/.test(receipt.fingerprint) &&
+          (cmd.idempotency_key === undefined ||
+            receipt.idempotency_key === cmd.idempotency_key);
+        if (!valid) {
+          await this.uow.rollback();
+          return { ok:false, code:"RECEIPT_BINDING",
+            error:"Recibo de evento nao corresponde ao comando autenticado" };
+        }
+        // Um hash hexadecimal qualquer nao e prova do conteudo. A hash
+        // esperada precisa vir do comando recebido mais identidade do
+        // contexto do servidor. device_id ainda requer atestacao no caller.
+        let expected: string;
+        try {
+          expected = canonicalInboundFingerprint({
+            event_id: receipt.event_id,
+            idempotency_key: receipt.idempotency_key,
+            command: cmd as unknown as Record<string,unknown>,
+            unit_id: cmd.unit_id,
+            actor_id: cmd.actor.actor_id,
+            actor_role: cmd.actor.role,
+            device_id: receipt.device_id,
+          });
+        } catch {
+          await this.uow.rollback();
+          return { ok:false, code:"RECEIPT_FINGERPRINT",
+            error:"Conteudo do evento nao pode ser validado" };
+        }
+        if (receipt.fingerprint !== expected) {
+          await this.uow.rollback();
+          return { ok:false, code:"RECEIPT_FINGERPRINT",
+            error:"Recibo nao corresponde ao conteudo do comando" };
+        }
+        // Consultar SOMENTE recibos confirmados, sob o mesmo turno da
+        // instancia do servico. Nao repetir o dominio num replay legitimo.
+        // O indice unico continua arbitrando corridas entre instancias.
+        const found = await this.uow.inboundReceipts.find(
+          receipt.event_id, receipt.idempotency_key, receipt.command_id);
+        const state = classifyInboundReceipt(found,receipt);
+        if (state === "collision") {
+          return { ok:false, code:"RECEIPT_COLLISION",
+            error:"Evento ou chave reutilizados para outro comando" };
+        }
+        if (state === "replay") {
+          if (found[0]?.outcome !== "applied") {
+            return { ok:false, code:"RECEIPT_REJECTED_REVIEW",
+              error:"Recibo confirmado exige verificacao do desfecho" };
+          }
+          return { ok:true, code:"REPLAY_APPLIED" };
+        }
+        this.uow.inboundReceipts.stage(receipt);
+      }
+      // Mesmo resultados de recusa sem excecao precisam liberar o stage.
+      // Isto impede que o proximo command de uma UoW compartilhada
+      // persista um recibo falsamente marcado como aplicado.
+      const result = await (async (): Promise<AppResult> => {
       switch (cmd.type) {
         case "CreateTrip":
           return await this.createTrip(cmd);
@@ -113,11 +228,49 @@ export class EntregasApplicationService {
         default:
           return { ok: false, error: "Unknown command", code: "UNKNOWN" };
       }
+      })();
+      if (!result.ok) await this.uow.rollback();
+      return result;
     } catch (e) {
       await this.uow.rollback().catch(() => undefined);
+      if (e instanceof InboundReceiptCommandIdCollisionError) {
+        return {ok:false,code:"RECEIPT_COLLISION",
+          error:"command_id ja pertence a outro evento confirmado"};
+      }
+      // Uma resposta de COMMIT pode se perder depois de a transacao ja
+      // estar persistida. O ACK depende de prova de recibo confirmado,
+      // nunca de inferencia sobre a excecao ou de stage local.
+      if (receipt && !(e instanceof DomainError) &&
+          !(e instanceof Error && e.name === "AuthError")) {
+        try {
+          const persisted = await this.uow.inboundReceipts.find(
+            receipt.event_id,receipt.idempotency_key,receipt.command_id);
+          const classification = classifyInboundReceipt(persisted,receipt);
+          if (classification === "collision") {
+            return { ok:false,code:"RECEIPT_COLLISION",
+              error:"Recibo confirmado pertence a outro evento ou comando" };
+          }
+          if (classification === "replay") {
+            if (persisted[0]?.outcome === "applied") {
+              return {ok:true,code:"REPLAY_APPLIED"};
+            }
+            return {ok:false,code:"RECEIPT_REJECTED_REVIEW",
+              error:"Recibo confirmado tem desfecho nao aplicavel" };
+          }
+        } catch {
+          // Banco/consulta indisponivel: falta evidencia de COMMIT.
+          // Nunca transformar falha de leitura em ACK ou rejeicao final.
+        }
+        if (!(e instanceof InboundReceiptConflictError)) {
+          return {ok:false,code:"COMMIT_UNCONFIRMED_RETRY",
+            error:"Resultado transacional incerto; reenviar o mesmo evento sem alterar a chave" };
+        }
+      }
       const msg = e instanceof Error ? e.message : String(e);
       const code =
-        e instanceof DomainError
+        e instanceof InboundReceiptConflictError
+          ? "RECEIPT_CONFLICT_RECHECK"
+          : e instanceof DomainError
           ? e.code
           : e instanceof Error && e.name === "AuthError"
             ? "AUTH"
@@ -330,8 +483,12 @@ export class EntregasApplicationService {
       : applyArrivalReported(d, args.occurred_at);
 
     // Repetição do mesmo fato não vira segundo evento no log.
+    // Mesmo sem mudança do domínio, o recibo staged de entrada precisa
+    // de commit ANTES do retorno ok:true; caso contrário não há prova
+    // durável para um retry depois da perda da resposta HTTP.
     if (updated === d) {
       const same: TripAggregate = { trip: rec.trip, deliveries: map };
+      await this.uow.commit();
       return { ok: true, trip: same };
     }
 

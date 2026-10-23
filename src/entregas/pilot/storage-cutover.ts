@@ -60,6 +60,7 @@ export class PilotStorageCutoverError extends Error {
   constructor(
     readonly code:
       | "SOURCE_INVALID"
+      | "SOURCE_UNSUPPORTED"
       | "SOURCE_CHANGED"
       | "TARGET_NOT_EMPTY"
       | "TARGET_NOT_READY"
@@ -309,6 +310,44 @@ export async function readFilePilotStorageSnapshot(args: {
 }): Promise<PilotStorageSnapshot> {
   const beforeData = fileHash(args.data_file);
   const beforeReady = fileHash(args.ready_file);
+
+  // O snapshot/cutover atual NAO carrega inbound_receipts. Se ja houver
+  // recibos de entrada confirmados, importar as outras colecoes sem eles
+  // permitiria reexecutar comandos no primeiro retry apos o cutover.
+  // Bloqueio explicito ate existir schema PG + importacao + prova de paridade.
+  if (existsSync(args.data_file)) {
+    const source = JSON.parse(readFileSync(args.data_file, "utf8")) as unknown;
+    if (!source || typeof source !== "object" || Array.isArray(source)) {
+      throw new PilotStorageCutoverError("SOURCE_INVALID", "origem nao e objeto JSON valido");
+    }
+    const data = source as Record<string, unknown>;
+    const version = data.receipt_schema_version;
+    if (version !== undefined && version !== 1) {
+      throw new PilotStorageCutoverError(
+        "SOURCE_UNSUPPORTED", "versao de recibos de entrada ainda nao suportada",
+      );
+    }
+    const hasReceipts = Object.prototype.hasOwnProperty.call(data, "inbound_receipts");
+    if (version === 1 && !hasReceipts) {
+      throw new PilotStorageCutoverError(
+        "SOURCE_INVALID", "schema v1 exige mapa de recibos de entrada; nao apagar campo",
+      );
+    }
+    if (hasReceipts) {
+      const receipts = data.inbound_receipts;
+      if (!receipts || typeof receipts !== "object" || Array.isArray(receipts)) {
+        throw new PilotStorageCutoverError(
+          "SOURCE_INVALID", "mapa de recibos de entrada malformado",
+        );
+      }
+      if (Object.keys(receipts).length > 0) {
+        throw new PilotStorageCutoverError(
+          "SOURCE_UNSUPPORTED",
+          "cutover bloqueado: recibos de entrada nao migrados para PostgreSQL; preservar origem",
+        );
+      }
+    }
+  }
 
   const uow = openFileUnitOfWork(args.data_file);
   const readyOrders: PilotReadyOrder[] = existsSync(args.ready_file)
