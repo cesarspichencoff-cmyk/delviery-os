@@ -101,4 +101,36 @@ class EventReceiptTest {
         assertTrue(!reason.contains("BBBBCCCC"))
         assertTrue(reason.length <= 240)
     }
+
+    /**
+     * O COMMIT pode ter ocorrido mesmo que a resposta tenha sido perdida.
+     * Recusa retryable nao pode virar markRejected terminal no Room.
+     * INVALID conserva TODO o lote; APPLY so e seguro sem sent/rejected neste caso.
+     */
+    @Test fun commitIncertoRetryableNuncaERecusaDefinitiva() {
+        val result = decideEventReceipt(items.take(1), response(
+            """{"event_id":"e1","ok":false,"retryable":true,"code":"COMMIT_UNCONFIRMED_RETRY","error":"rever_recibo"}""",
+        ))
+        if (result is EventReceiptDecision.Apply) {
+            assertTrue("commit incerto nao foi confirmado", result.sentIds.isEmpty())
+            assertTrue("retryable nao pode ser marcado rejeitado", result.rejected.isEmpty())
+        } else {
+            assertTrue(result is EventReceiptDecision.Invalid)
+        }
+    }
+
+    /** Uma recusa retryable em lote misto nao pode ser descartada. */
+    @Test fun loteMistoComRetryablePreservaEventoPendente() {
+        val result = decideEventReceipt(items, response(
+            """{"event_id":"e1","ok":true}""",
+            """{"event_id":"e2","ok":false,"retryable":true,"code":"RECEIPT_CONFLICT_RECHECK"}""",
+            """{"event_id":"e3","ok":true}""",
+        ))
+        if (result is EventReceiptDecision.Apply) {
+            assertEquals(listOf("e1", "e3"), result.sentIds)
+            assertTrue("e2 retryable nao e rejeicao terminal", result.rejected.isEmpty())
+        } else {
+            assertTrue(result is EventReceiptDecision.Invalid)
+        }
+    }
 }
