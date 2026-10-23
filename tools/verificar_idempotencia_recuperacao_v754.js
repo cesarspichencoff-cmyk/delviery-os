@@ -53,9 +53,29 @@ test("crash after durable reservation persists HOLD on replay",()=>{
  assert.equal(resumeDecision(reboot,d.descriptors[0]).authorize_print,false);
  assert.equal(reserve(reboot,d.descriptors[0],1).status,"HOLD");
 });
+test("spooler claim without job identity or reservation payload binding is HOLD",()=>{
+ const claims=[
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED"},
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+   external_job_id:"synthetic-job-0001",reservation_id:a.reservation_id},
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+   external_job_id:"synthetic-job-0001",reservation_id:a.reservation_id,
+   payload_sha256:sha("wrong payload")},
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+   external_job_id:"synthetic-job-0001",reservation_id:sha("wrong reservation"),
+   payload_sha256:d.descriptors[0].payload_sha256}
+ ];
+ for(const observation of claims){
+  const failed=observe(state,d.descriptors[0].key,a.reservation_id,1,observation);
+  assert.equal(failed.status,"HOLD");
+  assert.equal(failed.authorize_print,false);
+ }
+});
 test("simulated accept is still physical uncertainty and no automatic retry",()=>{
  const r=observe(state,d.descriptors[0].key,a.reservation_id,1,
-  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED"});
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+  external_job_id:"synthetic-job-0001",reservation_id:a.reservation_id,
+  payload_sha256:d.descriptors[0].payload_sha256});
  assert.equal(r.status,"OBSERVATION_PROPOSAL_ONLY");
  assert.equal(r.next_state.entries[0].state,STATES.ACCEPTED);
  assert.equal(r.authorize_print,false);

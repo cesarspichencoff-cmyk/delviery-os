@@ -139,8 +139,14 @@ function observe(state,key,reservationId,expectedRevision,observation){
  if(!observation||typeof observation!=="object"||Array.isArray(observation))
   return reject("UNKNOWN_OBSERVATION");
  let next;
+ // This remains an unverified OBSERVATION CLAIM, never physical evidence.
+ // A bare string marker cannot bind a spool job to the attempted bytes.
  if(observation.kind==="SPOOL_ACCEPTED"&&old.state===STATES.RESERVED &&
-     observation.transport_evidence==="EXTERNAL_JOB_ID_OBSERVED")
+     observation.transport_evidence==="EXTERNAL_JOB_ID_OBSERVED"&&
+     typeof observation.external_job_id==="string"&&
+     /^[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/.test(observation.external_job_id)&&
+     observation.reservation_id===old.reservation_id&&
+     observation.payload_sha256===old.payload_sha256)
   next=STATES.ACCEPTED;
  else if(observation.kind==="TIMEOUT_OR_CRASH"&&
    [STATES.RESERVED,STATES.ACCEPTED].includes(old.state))
