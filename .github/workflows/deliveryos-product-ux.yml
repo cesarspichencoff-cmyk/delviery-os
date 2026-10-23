@@ -49,6 +49,8 @@ jobs:
         run: node tests/product/run-official-migrations-role-composition-lab.cjs
       - name: Papel de recibos em PG efemero (somente fixture, sem migration 0011)
         run: node tests/product/run-inbound-receipt-role-attestation-lab.cjs
+      - name: Proposta RLS por unidade (PG efemero, sem migration 0011)
+        run: node tests/product/run-review-receipt-rls-composition-lab.cjs
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
