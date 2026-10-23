@@ -82,7 +82,7 @@ try{
  yes(db,"INSERT INTO entregas.inbound_receipt VALUES('ITAIM','e2','c2','k2')","own INSERT",itaim);
  assert.equal(yes(db,"SELECT count(*) FROM entregas.inbound_receipt","own SELECT",itaim),"2");
  passed("own-unit INSERT accepted");
- assert.equal(yes(db,"SET deliveryos.unit_scope='PINHEIROS'; SELECT string_agg(unit_id,',') FROM entregas.inbound_receipt","GUC fake",itaim),"ITAIM");
+ assert.equal(yes(db,"SET deliveryos.unit_scope='PINHEIROS'; SELECT string_agg(DISTINCT unit_id,',') FROM entregas.inbound_receipt","GUC fake",itaim),"ITAIM");
  no(db,"SET ROLE "+pin,"permission denied","cross-role SET ROLE",itaim);
  passed("GUC spoof and SET ROLE do not escape unit");
  no(db,"UPDATE entregas.inbound_receipt SET event_id='x'","permission denied","UPDATE",itaim);
