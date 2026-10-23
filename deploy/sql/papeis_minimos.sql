@@ -128,3 +128,28 @@ GRANT SELECT, INSERT, DELETE ON entregas.ready_order TO deliveryos_entregas_pilo
 -- seq de domain_event/public_outbox são IDENTITY.
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA entregas TO deliveryos_entregas_pilot;
 
+-- Recibos de entrada: migration 0011 permanece separada/nao promovida.
+-- A composicao reaplica este script mesmo enquanto a tabela nao existir.
+-- Nao alterar migration, HTTP nem dados de producao neste gate.
+DO $entregas_receipt_role$
+BEGIN
+  IF to_regclass('entregas.inbound_receipt') IS NOT NULL THEN
+    -- Recusar autoridade de mutacao preexistente (inclusive por coluna).
+    -- Nunca corrigir configuracao perigosa silenciosamente.
+    IF has_any_column_privilege('deliveryos_entregas_pilot',
+                               'entregas.inbound_receipt', 'UPDATE')
+       OR has_any_column_privilege('deliveryos_entregas_pilot',
+                                   'entregas.inbound_receipt', 'REFERENCES')
+       OR has_table_privilege('deliveryos_entregas_pilot',
+                              'entregas.inbound_receipt', 'DELETE')
+       OR has_table_privilege('deliveryos_entregas_pilot',
+                              'entregas.inbound_receipt', 'TRUNCATE')
+       OR has_table_privilege('deliveryos_entregas_pilot',
+                              'entregas.inbound_receipt', 'TRIGGER') THEN
+      RAISE EXCEPTION 'deliveryos_entregas_pilot: privilegio indevido sobre recibos';
+    END IF;
+    -- Preflight da UoW usa SELECT nas tres chaves e INSERT atomico do recibo.
+    EXECUTE 'GRANT SELECT, INSERT ON entregas.inbound_receipt TO deliveryos_entregas_pilot';
+  END IF;
+END
+$entregas_receipt_role$;
