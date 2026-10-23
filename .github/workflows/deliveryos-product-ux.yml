@@ -55,15 +55,18 @@ jobs:
       # A API de aparelho e executada contra dist/tools/entregas_pilot_server.js:
       # compilar ANTES do teste, sem duplicar o build no workflow.
       - run: npm run -s build:platform
-      # Contratos de aparelho e fila nao sao compilacao Kotlin nem prova fisica.
-      # Um so gate curto impede que o piloto ignore regressao offline no
-      # mesmo commit que valida PostgreSQL/Copiloto.
-      - name: Android/offline/piloto - contratos sinteticos sem aparelho
+      # Os gates sao processos independentes: um RED HTTP nao pode pular
+      # a regressao de offline, fonte e piloto. Um gate final FORCA falha.
+      - name: Android - contrato estrutural sintetico (sem aparelho)
+        run: npx tsx src/entregas/android/run-android-project-tests.ts
+      - name: HTTP do aparelho - idempotencia e replay (P0)
+        id: http_device_gate
+        continue-on-error: true
+        run: npx tsx src/entregas/android/run-device-api-tests.ts
+      - name: Offline e piloto - regressao independente (sem aparelho)
         shell: bash
         run: |
           set -euo pipefail
-          npx tsx src/entregas/android/run-android-project-tests.ts
-          npx tsx src/entregas/android/run-device-api-tests.ts
           npx tsx src/entregas/offline/run-offline-tests.ts
           npx tsx src/entregas/offline/run-outbox-persistence-tests.ts
           npx tsx src/entregas/pilot/run-source-mode-tests.ts
@@ -135,6 +138,14 @@ jobs:
       - run: npm run -s test:platform:cadeia
       - name: guardas de governanca, sem FAIL_NOVO
         run: npx tsx tests/product/run-sem-fail-novo.ts
+      # continue-on-error acima evita mascarar a cobertura das demais suites.
+      # Esse passo torna o veredito final invariavelmente RED se HTTP nao passou.
+      - name: P0 - impedir verde falso quando HTTP idempotencia falha
+        if: ${{ always() && steps.http_device_gate.outcome != 'success' }}
+        shell: bash
+        run: |
+          echo "::error::HTTP idempotencia/replay nao passou; PR DRAFT/HOLD/NO_GO"
+          exit 1
       - name: Encerrar PostgreSQL descartavel
         if: always()
         shell: bash
