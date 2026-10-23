@@ -345,10 +345,18 @@ console.log("\n=== Pilot gate tests ===\n");
       assert.match(sidecar, /^[0-9a-f]{64}  .+\n$/);
       assert.equal(sidecar.endsWith(`  ${basename(b.path)}\n`), true);
     }
-    // corromper store e restaurar
+    // Recuperacao de JSON ilegivel agora exige procedimento assistido.
+    const validStoreBeforeCorruption = readFileSync(store, "utf8");
     writeFileSync(store, "{broken", "utf8");
     const list = listBackups(bdir);
     assert.ok(list.length >= 1);
+    const blocked = restoreBackup(join(bdir, list[0]), store, bdir, log);
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.error, "estado_atual_corrompido_recuperacao_assistida");
+    assert.equal(readFileSync(store, "utf8"), "{broken", "bloqueio nao pode alterar arquivo corrompido");
+    // Em laboratorio, a origem foi reposta por procedimento isolado e
+    // controlado; o restore normal continua aceito com estado atual valido.
+    writeFileSync(store, validStoreBeforeCorruption, "utf8");
     const r = restoreBackup(join(bdir, list[0]), store, bdir, log);
     assert.equal(r.ok, true, r.error);
     const data = JSON.parse(readFileSync(store, "utf8"));
@@ -404,6 +412,10 @@ console.log("\n=== Pilot gate tests ===\n");
     writeFileSync(b.path, snapshot, "utf8");
     writeFileSync(sidecar, b.sha256, "utf8");
     writeFileSync(store, "{broken", "utf8");
+    r = restoreBackup(b.path, store, bdir, log);
+    assert.equal(r.ok, false);
+    assert.equal(r.error, "estado_atual_corrompido_recuperacao_assistida");
+    writeFileSync(store, initial, "utf8");
     r = restoreBackup(b.path, store, bdir, log);
     assert.equal(r.ok, true, r.error);
     assert.ok(JSON.parse(readFileSync(store, "utf8")).trips);
