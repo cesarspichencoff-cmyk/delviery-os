@@ -45,6 +45,8 @@ jobs:
           "$pg_bin/pg_isready" -h "$pg_sock" -p 55434 -U "$USER" -d postgres
           echo "DELIVERYOS_PG_URL=postgresql://$USER@localhost:55434/postgres?host=$pg_sock" >> "$GITHUB_ENV"
           echo "DELIVERYOS_PG_DATA=$pg_data" >> "$GITHUB_ENV"
+      - name: SQL 0001-0010 reais + papeis oficiais no PG efemero
+        run: node tests/product/run-official-migrations-role-composition-lab.cjs
       - name: Papel de recibos em PG efemero (somente fixture, sem migration 0011)
         run: node tests/product/run-inbound-receipt-role-attestation-lab.cjs
       - run: npm ci --no-audit --no-fund
