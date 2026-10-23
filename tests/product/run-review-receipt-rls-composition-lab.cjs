@@ -60,6 +60,11 @@ try{
  no(db,sql,"REVIEW_ONLY: exige sessao","unarmed SQL rejected");
  assert.equal(yes(db,"SELECT relrowsecurity FROM pg_class WHERE oid='entregas.inbound_receipt'::regclass","no side effects"),"f");
  passed("unarmed proposal rejects without modifying RLS");
+ // The session flag alone is untrusted: a named non-lab database must fail
+ // even when the same exact flag is supplied.
+ no("postgres",arm+sql,"REVIEW_ONLY: exige banco efemero",
+    "lab flag on non-lab database rejected");
+ passed("armable GUC alone does not authorize an operational database");
  yes(db,arm+sql,"review-only policy first application");
  passed("versioned review SQL applied only with lab flag");
  yes(db,arm+sql,"review-only policy second application");
