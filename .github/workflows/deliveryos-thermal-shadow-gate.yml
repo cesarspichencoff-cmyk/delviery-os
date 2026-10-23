@@ -34,6 +34,10 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Typecheck
         run: npm run typecheck
+      - name: V8.76 printer metadata monitor bounded/no-effects static (Linux)
+        run: |
+          node tools/verificar_imp_printer_metadata_monitor_static.js
+          V876_STATIC_ONLY=1 node tools/verificar_imp_monitor_limitado_v876_windows.cjs
       - name: Historical Teknisa 463-product and six-printer mapping integrity (Linux offline)
         run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: Operational ticket semantic projection V4.5
@@ -384,6 +388,10 @@ jobs:
           )
           if ($errors.Count -ne 0) { throw 'COMANDAS_GP_IFOOD_V851_SYNTAX_INVALID' }
           Write-Output 'COMANDAS_GP_IFOOD_V851_SYNTAX_PASS READONLY_SOURCE NO_EXECUTION'
+      - name: V8.76 bounded printer metadata monitor on disposable Windows fixture
+        run: |
+          node tools/verificar_imp_printer_metadata_monitor_static.js
+          node tools/verificar_imp_monitor_limitado_v876_windows.cjs
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)
