@@ -1,0 +1,7 @@
+{
+  "schema": "deliveryos.kitchen-dependency-rules.v1",
+  "coverage": "PARTIAL",
+  "coverage_proof": "UNPROVEN",
+  "rules": [],
+  "note": "Intentional safe baseline. Do not mark COMPLETE or add yields until Cesar confirms the operational item-to-HOT/EBITEN/SHISO mapping."
+}
