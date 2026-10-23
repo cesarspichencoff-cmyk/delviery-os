@@ -136,3 +136,37 @@ GRANT SELECT, INSERT, DELETE ON entregas.ready_order TO deliveryos_entregas_pilo
 -- seq de domain_event/public_outbox são IDENTITY.
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA entregas TO deliveryos_entregas_pilot;
 
+
+-- Recibos de entrada (proposta 0011): so conceder se a tabela ja existe
+-- e RLS/FORCE RLS estiverem ativos. Nao cria, move ou aplica a 0011.
+-- RLS ativo nao prova que as policies sao seguras por unidade: HOLD ate teste.
+DO $entregas_receipt_role$
+DECLARE
+  receipt_oid oid;
+  rls_enabled boolean;
+  rls_forced boolean;
+BEGIN
+  receipt_oid := to_regclass('entregas.inbound_receipt');
+  IF receipt_oid IS NOT NULL THEN
+    SELECT c.relrowsecurity,c.relforcerowsecurity
+      INTO rls_enabled,rls_forced FROM pg_class AS c
+      WHERE c.oid=receipt_oid;
+    IF NOT COALESCE(rls_enabled,false) OR NOT COALESCE(rls_forced,false) THEN
+      RAISE EXCEPTION 'inbound_receipt: RLS e FORCE RLS obrigatorios antes de GRANT';
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_roles
+               WHERE rolname='deliveryos_entregas_pilot'
+                 AND (rolsuper OR rolbypassrls)) THEN
+      RAISE EXCEPTION 'inbound_receipt: papel piloto com BYPASSRLS/SUPERUSER';
+    END IF;
+    IF has_any_column_privilege('deliveryos_entregas_pilot','entregas.inbound_receipt','UPDATE')
+       OR has_any_column_privilege('deliveryos_entregas_pilot','entregas.inbound_receipt','REFERENCES')
+       OR has_table_privilege('deliveryos_entregas_pilot','entregas.inbound_receipt','DELETE')
+       OR has_table_privilege('deliveryos_entregas_pilot','entregas.inbound_receipt','TRUNCATE')
+       OR has_table_privilege('deliveryos_entregas_pilot','entregas.inbound_receipt','TRIGGER') THEN
+      RAISE EXCEPTION 'inbound_receipt: privilegio perigoso preexistente';
+    END IF;
+    EXECUTE 'GRANT SELECT, INSERT ON entregas.inbound_receipt TO deliveryos_entregas_pilot';
+  END IF;
+END
+$entregas_receipt_role$;
