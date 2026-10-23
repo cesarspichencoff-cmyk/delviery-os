@@ -394,7 +394,9 @@ test("crash after initial simulated reservation rejects replay",()=>{
 test("accepted spool then timeout stays UNKNOWN and cannot retry",()=>{
  const first=recover([a],[A]),entry=first.ledger.entries[0];
  let x=observe(first.ledger,entry.key,entry.reservation_id,first.ledger.revision,
-  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED"});
+  {kind:"SPOOL_ACCEPTED",transport_evidence:"EXTERNAL_JOB_ID_OBSERVED",
+    external_job_id:"synthetic-job-0003",
+    reservation_id:entry.reservation_id,payload_sha256:entry.payload_sha256});
  assert.equal(x.status,"OBSERVATION_PROPOSAL_ONLY");
  x=observe(x.next_state,entry.key,entry.reservation_id,x.next_state.revision,
   {kind:"TIMEOUT_OR_CRASH"});
