@@ -62,7 +62,8 @@ try {
     "unit_id text NOT NULL,event_id text NOT NULL,command_id text NOT NULL,"+
     "idempotency_key text NOT NULL, PRIMARY KEY(unit_id,event_id));"+
     "INSERT INTO entregas.inbound_receipt VALUES "+
-    "('ITAIM','evt-i','cmd-i','key-i'),('VILA-LAB','evt-v','cmd-v','key-v');","fixture");
+    "('ITAIM','evt-i','cmd-i','key-i'),('VILA-LAB','evt-v','cmd-v','key-v');"+
+    "GRANT USAGE ON SCHEMA entregas TO deliveryos_entregas_pilot;","fixture");
   passed("cluster e fixture de duas unidades criados");
   denied(db,sql,"RLS e FORCE RLS obrigatorios","sem RLS");
   passed("sem RLS bloqueia grant");
