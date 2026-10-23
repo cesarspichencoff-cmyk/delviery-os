@@ -148,6 +148,9 @@ jobs:
         run: |
           echo "::error::HTTP idempotencia/replay nao passou; PR DRAFT/HOLD/NO_GO"
           exit 1
+      - name: P0 - nucleo real de recibos presente no mesmo HEAD do CI
+        if: always()
+        run: node tests/product/run-inbound-receipt-integration-presence-gate.cjs
       - name: Encerrar PostgreSQL descartavel
         if: always()
         shell: bash
