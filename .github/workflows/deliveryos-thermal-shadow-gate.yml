@@ -74,20 +74,6 @@ jobs:
         run: node tools/verificar_reconexao_pico_ifood_teknisa_v867_offline.cjs
       - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
         run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
-      - name: Checkout proposed Academy motor in isolated CI snapshot (no promotion)
-        uses: actions/checkout@v4
-        with:
-          repository: cesarspichencoff-cmyk/tata-academia
-          ref: cd6129f54fa8f039375eede577257759a16d1ca4
-          path: _academy_review_v868
-          persist-credentials: false
-      - name: Academy candidate versus pinned DeliveryOS motor V8.68 (review-only)
-        run: node tools/verificar_fronteira_academia_v868_offline.cjs _academy_review_v868/lib/packaging-current.js
-      - name: Academy own exact-case and malformed-input regressions V8.68 (isolated)
-        working-directory: _academy_review_v868
-        run: |
-          node tests/thermal-kids-tataki-regression.mjs
-          node tests/malformed-order-entries-regression.mjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
         run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
       - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
