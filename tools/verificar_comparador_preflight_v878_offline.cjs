@@ -58,6 +58,38 @@ ok("same wrong physical destination in both snapshots must HOLD",()=>{
  assert.ok(verdict.reasons.includes("BASELINE_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));
  assert.equal(verdict.authorizes_print,false);
 });
+ok("matching LPT alias must not hide contradictory physical IP",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b]){
+  x.expected[0].configured_port_alias="LOCAL_PORT_00002";
+  x.windows_queues[0].port.printer_host_address="198.51.100.99";
+ }
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));
+ assert.equal(verdict.authorizes_print,false);
+});
+ok("alias-only LPT port without physical IP is comparison only",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b]){
+  x.expected[0].configured_port_alias="LOCAL_PORT_00002";
+  x.windows_queues[0].port.printer_host_address="";
+  x.windows_queues[0].port.port_number=null;
+  x.windows_queues[0].port.snmp_enabled=null;
+ }
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"STRUCTURAL_MATCH_ONLY");
+ assert.equal(verdict.authorizes_install,false);
+ assert.equal(verdict.authorizes_print,false);
+});
+ok("blank physical IP without configured alias must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.windows_queues[0].port.printer_host_address="";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));
+});
 ok("same cross-wired queue in both snapshots must HOLD",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
  for(const x of [a,b]){
