@@ -378,7 +378,11 @@ export class PilotApplicationFacade {
           outcome: "applied", code: null, recorded_at: new Date().toISOString(),
         };
       }
-      const result = await service.execute(validated, receipt);
+      // Comando legado continua no servico da fachada, sem recibo artificial.
+      // A rota HTTP usa a UoW exclusiva e um recibo atomico por evento.
+      const result = inbound
+        ? await service.execute(validated, receipt)
+        : await this.svc.execute(validated);
       if (inbound) this.reloadStore();
       if (!result.ok) {
         this.last_error = result.error ?? "rejeitado";
