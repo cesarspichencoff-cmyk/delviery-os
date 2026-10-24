@@ -61,7 +61,9 @@ function parseReport(report,issues,side){
    issues.add(side+"_QUEUE_METADATA_INCOMPLETE");
   if(obj(row.port)&&canon(row.port.name)!==canon(row.port_name))
    issues.add(side+"_QUEUE_PORT_INCONSISTENT");
-  if(!obj(row.cim)||typeof row.cim.work_offline!=="boolean")
+  if(!obj(row.cim)||typeof row.cim.work_offline!=="boolean"||
+      !safeText(row.cim.detected_error_state)||
+      !safeText(row.cim.extended_printer_status))
    issues.add(side+"_CIM_STATUS_UNKNOWN");
   else if(row.cim.work_offline)
    issues.add(side+"_OFFLINE_PRINTER_REPORTED");
