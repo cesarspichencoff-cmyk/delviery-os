@@ -79,7 +79,10 @@ function parseReport(report,issues,side){
       !/^(?:3|4|5|10|12|13|14|15|17|18)$/.test(extended))
     issues.add(side+"_CIM_UNHEALTHY_OR_UNRECOGNIZED");
   }
-  if(/UNKNOWN|OFFLINE|ERROR|PAUSED|PAPER\s*OUT|NOT\s*AVAILABLE/.test(canon(row.printer_status)))
+  // Fail closed: Windows printer statuses outside this small known-healthy
+  // set are not evidence of a usable printer, even if both reports agree.
+  // E.g. PaperJam, OutOfPaper, DoorOpen, NoToner and Degraded must HOLD.
+  if(!/^(?:NORMAL|IDLE|READY|PRINTING|PROCESSING|BUSY|WARMING\s*UP)$/.test(canon(row.printer_status)))
    issues.add(side+"_PRINTER_STATUS_UNHEALTHY");
   if(row.configuration&&Object.hasOwn(row.configuration,"error"))
    issues.add(side+"_PRINT_CONFIGURATION_UNREADABLE");
