@@ -1,0 +1,36 @@
+<Configuration>
+  <!-- V7.33: CAIXA_MOOCA-only, on-demand. NO AUTOSTART on physical host. -->
+  <vGPU>Disable</vGPU>
+  <Networking>Disable</Networking>
+  <ClipboardRedirection>Disable</ClipboardRedirection>
+  <PrinterRedirection>Disable</PrinterRedirection>
+  <AudioInput>Disable</AudioInput>
+  <VideoInput>Disable</VideoInput>
+  <ProtectedClient>Enable</ProtectedClient>
+  <MemoryInMB>4096</MemoryInMB>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\ProgramData\TataComandaReader\state</HostFolder>
+      <SandboxFolder>C:\TataStateRO</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\ProgramData\TataComandaReader\shadow</HostFolder>
+      <SandboxFolder>C:\TataShadowRO</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\ProgramData\TataComandaReader\comandas-sandbox-v733</HostFolder>
+      <SandboxFolder>C:\ComandasBundleRO</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\Program Files\nodejs</HostFolder>
+      <SandboxFolder>C:\NodeRO</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\ComandasBundleRO\comandas_sandbox_observe_v733.ps1</Command>
+  </LogonCommand>
+</Configuration>

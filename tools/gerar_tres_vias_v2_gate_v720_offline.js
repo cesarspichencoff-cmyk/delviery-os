@@ -52,8 +52,11 @@ const SOURCE_MAX_BYTES=1024*1024;
 function readBound(file){
  let fd;
  try{
-  fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|
-   fs.constants.O_NONBLOCK);
+  if(process.platform==="win32"&&fs.lstatSync(file).isSymbolicLink())
+   throw Error("SOURCE_SYMLINK_NOT_ALLOWED");
+  const flags=fs.constants.O_RDONLY|(process.platform==="linux"?
+   fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK:0);
+  fd=fs.openSync(file,flags);
   const before=fs.fstatSync(fd,{bigint:true});
   if(!before.isFile()||before.size>BigInt(SOURCE_MAX_BYTES)||before.size<0n)
    throw Error("SOURCE_FILE_BUDGET_EXCEEDED");
@@ -100,18 +103,20 @@ function lineageMatchesPinnedSources(decision,sources){
   ORIGINS.every(([label,name],i)=>Buffer.isBuffer(sources.get(name))&&
    actual[i]===label+"#sha256="+sha(sources.get(name)));
 }
-// V7.27: bind event key to its three raw SQL order identifiers.
+// V7.30: bind the actual four-part Windows watcher key to all raw identifiers.
 // A matching event/decision pair alone cannot authenticate a forged key.
 function exactOrderIdentity(event){
  const order=event?.order;
  if(!event||!order||event.schema!=="deliveryos.tata-reader-stable-order-event.v1")
   return false;
- const fields=["CDFILIAL","CDLOJA","NRCOMANDA"];
+ // Actual CAIXA_MOOCA watcher snapshot (13/10): filial, loja,
+ // NRVENDAREST and NRCOMANDA are all mandatory identity components.
+ const fields=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA"];
  if(fields.some(k=>typeof order[k]!=="string"||!order[k].length||
     order[k].length>96||/[|\r\n]/.test(order[k])))
   return false;
  return typeof event.order_key==="string"&&
-  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRCOMANDA].join("|");
+  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRVENDAREST,order.NRCOMANDA].join("|");
 }
 function withoutNodePreloads(environment){
  const copy={...environment};
@@ -130,10 +135,16 @@ function blocked(reasons,stage="V68_PAIR_GATE"){
 }
 function run(argv=process.argv.slice(2)){
  const args=parseArgs(argv);
- // Hard offline boundary: a Windows process would resolve the V2 hardcoded
- // sequence path against live ProgramData, which is never acceptable here.
- if(process.platform!=="linux")
-  return blocked(["LINUX_ISOLATED_FIXTURE_REQUIRED"],"ISOLATION");
+ // Windows replay is permitted ONLY inside a disposable GitHub pull-request
+ // runner, never as a Windows service hook. The source-pinned consumer is
+ // copied and its one absolute sequence path is redirected to temp fixtures.
+ const windowsCI=process.platform==="win32"&&
+   process.env.GITHUB_ACTIONS==="true"&&process.env.CI==="true"&&
+   process.env.RUNNER_OS==="Windows"&&
+   process.env.GITHUB_EVENT_NAME==="pull_request"&&
+   process.env.GITHUB_REPOSITORY==="cesarspichencoff-cmyk/delviery-os";
+ if(process.platform!=="linux"&&!windowsCI)
+  return blocked(["ISOLATED_CI_REQUIRED"],"ISOLATION");
  const hold=JSON.parse(readBound(MANIFEST).toString("utf8"));
  if(hold.status!=="DRAFT_HOLD_NOT_INSTALLED"||
     hold.preferred_future_candidate?.installed!==false||
@@ -181,7 +192,19 @@ function run(argv=process.argv.slice(2)){
   const isolatedDir=path.join(dir,"consumer");
   fs.mkdirSync(isolatedDir);
   const isolatedConsumer=path.join(isolatedDir,"consumer.cjs");
-  fs.writeFileSync(isolatedConsumer,code,{flag:"wx"});
+  // Preserve original consumer bytes/source pin. On Windows CI only, make
+  // a narrowly scoped, audited copy which reads the synthetic local sequence.
+  // The original V7.14 candidate and its Git blob are never modified.
+  let execCode=code;
+  if(windowsCI){
+   const needle=String.raw`const seqPath = "C:\\ProgramData\\TataComandaReader\\state\\tata-sequence-state.json";`;
+   const replacement='const seqPath = require("node:path").join(__dirname,"..","sequence.json");';
+   const src=code.toString("utf8");
+   if(src.split(needle).length!==2)
+    return blocked(["WINDOWS_SEQUENCE_PATH_ADAPTER_NOT_EXACT"],"ISOLATION");
+   execCode=Buffer.from(src.replace(needle,replacement),"utf8");
+  }
+  fs.writeFileSync(isolatedConsumer,execCode,{flag:"wx"});
   for(const [name,bytes] of ruleSources)
    fs.writeFileSync(path.join(isolatedDir,name),bytes,{flag:"wx"});
   fs.writeFileSync(proofPath,proofSource,{flag:"wx"});
@@ -190,7 +213,8 @@ function run(argv=process.argv.slice(2)){
   // On Linux the *Windows-formatted* hardcoded path is a relative filename.
   // Only inside this disposable sandbox, provide the explicitly supplied
   // synthetic sequence file. No real Windows disk or TATÁ sequence is read.
-  const sequenceFilename=String.raw`C:\ProgramData\TataComandaReader\state\tata-sequence-state.json`;
+  const sequenceFilename=windowsCI?"sequence.json":
+   String.raw`C:\ProgramData\TataComandaReader\state\tata-sequence-state.json`;
   fs.writeFileSync(path.join(dir,sequenceFilename),seqBytes,{flag:"wx"});
   // Prevent NODE_OPTIONS --require / --import and NODE_PATH from
   // preloading unrelated executable JavaScript outside the pinned entry.
@@ -218,7 +242,7 @@ function run(argv=process.argv.slice(2)){
   const snapshotsIntact=sha(readBound(eventPath))===sha(source)&&
     sha(readBound(args["--event"]))===sha(source)&&
     sha(readBound(args["--consumer"]))===sha(code)&&
-    sha(readBound(isolatedConsumer))===sha(code)&&
+    sha(readBound(isolatedConsumer))===sha(execCode)&&
     sha(readBound(motorPath))===sha(motorSource)&&
     sha(readBound(args["--sequence-fixture"]))===sha(seqBytes)&&
     sha(readBound(path.join(dir,sequenceFilename)))===sha(seqBytes)&&

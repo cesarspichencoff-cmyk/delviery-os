@@ -8,6 +8,7 @@ on:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
       - feat/thermal-v63-packaging-bridge-shadow-20261010
+      - validation/thermal-v714-raw-quantity-fail-closed-20261011
 
 permissions:
   contents: read
@@ -33,12 +34,24 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Typecheck
         run: npm run typecheck
+      - name: V8.76 printer metadata monitor bounded/no-effects static (Linux)
+        run: |
+          node tools/verificar_imp_printer_metadata_monitor_static.js
+          V876_STATIC_ONLY=1 node tools/verificar_imp_monitor_limitado_v876_windows.cjs
+      - name: V8.78 printer topology comparison with no operational effects (Linux)
+        run: node tools/verificar_comparador_preflight_v878_offline.cjs
+      - name: Historical Teknisa 463-product and six-printer mapping integrity (Linux offline)
+        run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: Operational ticket semantic projection V4.5
         run: npm run verificar:tickets-operacionais-v45
       - name: Conference proven box grouping and finishing V6.2 (offline)
         run: node tools/verificar_agrupamento_conferencia_v62.js
       - name: Current packaging motor bridge V6.3 (offline, source-pinned)
         run: node tools/verificar_ponte_embalagem_v63.js
+      - name: Pinned Academy headless packaging contract V1 (Linux, fake bytes denied)
+        run: |
+          node --check tools/verificar_contrato_embalagem_v1_private_replay.cjs
+          node tools/verificar_contrato_embalagem_v1_offline.cjs
       - name: Three-way physical box and resource coherence V6.4 (offline)
         run: node tools/verificar_coerencia_tres_vias_v64.js
       - name: Reconciled reader ingress and pinned Unified Kit Core V6.6 (offline)
@@ -47,8 +60,78 @@ jobs:
         run: node tools/verificar_release_hold_v716.js
       - name: Consumed-rule bytes and engine mutation guard V7.14 (offline only)
         run: node tools/verificar_identidade_bytes_v714.js
+      - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
+        run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
+      - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
+        run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
+      - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
+        run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
+      - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
+        run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
+      - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
+        run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
+      - name: TATA Comanda iFood versus Teknisa lifecycle V8.64 (synthetic 219 probes)
+        run: node tools/verificar_cruzamento_ifood_teknisa_v864_offline.cjs
+      - name: TATA Comanda temporal iFood Teknisa crossing V8.65 (Linux synthetic)
+        run: node tools/verificar_linha_tempo_ifood_teknisa_v865_offline.cjs
+      - name: TATA Comanda multi-order concurrent iFood and Teknisa V8.66 (Linux synthetic)
+        run: node tools/verificar_multiplos_pedidos_ifood_teknisa_v866_offline.cjs
+      - name: TATA Comanda reconnection outage backlog V8.67 (Linux synthetic)
+        run: node tools/verificar_reconexao_pico_ifood_teknisa_v867_offline.cjs
+      - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
+        run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
+      - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
+        run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
+      - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
+        run: node tools/verificar_tata_comanda_archived_orders_v860_offline.cjs
+      - name: TATA Comanda first-attempt read-only host pulse V8.59 syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/tata_comanda_native_first_attempt_v859_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_PARSE_ERROR' }
+          Write-Output 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_SYNTAX_PASS'
+
+      - name: Opening-time GP iFood read-only pulse static safety V8.53
+        run: node tools/verificar_comandas_opening_pulse_v853_static.js
+      - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_opening_pulse_v853_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_OPENING_PULSE_V853_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_OPENING_PULSE_V853_SYNTAX_PASS NO_HOST_IO'
+      - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
+        run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
+      - name: Validate GP iFood passive Windows probe PowerShell syntax without running
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_gp_ifood_print_provenance_v851_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_GP_IFOOD_V851_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_GP_IFOOD_V851_SYNTAX_PASS READONLY_SOURCE NO_EXECUTION'
       - name: Exact raw store-shop-order key integrity V7.27 (offline)
         run: node tools/verificar_identidade_pedido_v727.js
+      - name: Passive real watcher-event audit privacy and integrity V7.30 (synthetic)
+        run: node tools/verificar_auditoria_eventos_v730.js
+      - name: Windows sidecar shift-and-V2 pin preflight V7.31 (synthetic only)
+        run: node tools/verificar_sidecar_preflight_windows_v731.js
+      - name: Adversarial 21-case iFood/Teknisa operational lunch simulation
+        run: node tools/verificar_riscos_almoco_v735_offline.js
+      - name: Windows Sandbox closed-loop config and host isolation V7.33 (static)
+        run: node tools/verificar_sandbox_comandas_v733.js
       - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
@@ -102,10 +185,50 @@ jobs:
         run: node tools/verificar_consumidor_shadow_v710.js
       - name: Stable Windows reader event/decision pairing V6.8 (offline)
         run: node tools/verificar_par_evento_leitor_v68.js
+      - name: Payment-note policy V8.0 strict opt-in and item-note preservation (synthetic offline)
+        run: node tools/verificar_nota_pagamento_v80_offline.js
+      - name: Static exact bag policy B1 B5 B8 B9 in ephemeral V2 motor (Linux)
+        run: node tools/verificar_sacolas_estaticas_v81_offline.js
+      - name: Exact human bag-review source must not authorize print (Linux synthetic)
+        run: node tools/verificar_comandas_bag_human_proposal_v1.cjs
+      - name: Ten order-note source identity and privacy adversarial gate (Linux synthetic)
+        run: node tools/verificar_comandas_ten_v68_note_scope_audit_v1.cjs
+      - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Linux)
+        run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
+      - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
+        run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
+      - name: SQL principal and exact column-surface drift V8.5 (synthetic, no SQL)
+        run: node tools/verificar_comandas_sql_surface_drift_v85.cjs
+      - name: V8.7 SENHA per-item bridge collision guard (synthetic only)
+        run: node tools/verificar_comandas_senha_item_bridge_v87_offline.cjs
+      - name: V8.8 per-order bounded SQL template only, no column grant or query (synthetic)
+        run: node tools/verificar_comandas_cdsenhaped_readonly_plan_v88_offline.cjs
+      - name: V8.9 independent native item parity cannot attest historical print (synthetic)
+        run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
       - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
         run: node tools/verificar_revisao_turno_humano_v70.js
+      - name: V8.12 preview-only shift writer static safety gate (no PowerShell on Linux)
+        run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.36 signed shift-scoped authorization expiry revocation and replay (offline Linux)
+        run: node tools/verificar_shift_authorization_v836_offline.cjs
+      - name: V8.37 exclusive nonce use under process race and hard crash (Linux hosted)
+        run: node tools/verificar_shift_nonce_v837_sandbox.cjs
+      - name: V8.41 protected shift and nonce namespace segregation (Linux offline)
+        run: node tools/verificar_custody_layout_v841_offline.cjs
+      - name: V8.32 custody evidence policy rejects false authority (Linux synthetic)
+        run: node tools/verificar_shift_custody_policy_v832_offline.cjs
+      - name: V8.14 exact pinned watcher path move review (no Windows state writes)
+        run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.15 adversarial pinned watcher-supervisor pair and rollback (synthetic only)
+        run: node tools/verificar_comandas_watcher_supervisor_pair_v815_offline.cjs
+      - name: V8.16 cross-generation quiescence refusal (synthetic Linux)
+        run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.20 pinned supervisor safe startup preview (Linux synthetic)
+        run: node tools/verificar_supervisor_guard_v820_offline.cjs
+      - name: V8.22 dual guard prelaunch preview (Linux synthetic)
+        run: node tools/verificar_supervisor_prelaunch_v822_offline.cjs
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
@@ -140,6 +263,26 @@ jobs:
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Direct Epson renderer source-semantic rejection V7.1 (Issue 25)
         run: node tools/verificar_renderer_semantico_direto_v71.js
+      - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Linux)
+        run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Native Epson font A/B, emphasis, strike and CP850 V7.50 (offline, Linux)
+        run: node tools/verificar_fontes_nativas_v750_offline.js
+      - name: Source-verified V6.8 three-way native Epson font shadow adapter V7.52 (Linux)
+        run: node tools/verificar_integracao_nativa_tres_vias_v752.js
+      - name: Crash, concurrent replay and no-retry policy V7.54 (offline Linux)
+        run: node tools/verificar_idempotencia_recuperacao_v754.js
+      - name: Five-process synthetic journal crash and tamper V7.55 (Linux)
+        run: node tools/verificar_journal_sandbox_v755.js
+      - name: Three-way post-crash reconciliation cannot authorize print V7.56 (Linux)
+        run: node tools/verificar_reconciliation_v756_offline.js
+      - name: Independently trusted Ed25519 synthetic journal seal V7.57 (Linux)
+        run: node tools/verificar_signed_anchor_v757_offline.js
+      - name: Separate signed witness chain, rollback and untrusted context V7.58 (Linux)
+        run: node tools/verificar_external_witness_v758_offline.js
+      - name: Native-font V7.51 human approval and one-shot safety (static Linux)
+        run: node tools/verificar_piloto_fontes_v751_static.js
+      - name: RAW V7.48 approval and one-shot transport policy (static only)
+        run: node tools/verificar_raw_pilot_v748_static.js
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
         # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
         run: node tools/verificar_integridade_termica_v57.js
@@ -148,3 +291,491 @@ jobs:
         # Both remain hard failures; no continue-on-error, printer or spooler.
         if: ${{ !cancelled() }}
         run: node tools/verificar_matriz_escpos_v511.js
+
+
+  windows-thermal-preview:
+    name: Windows offline Figma and ESC/POS integrity (no service)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable PR snapshot
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked dependencies, no lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Compile source contracts and prepare dist for Node tests
+        run: npm run build
+      - name: Three-view identity, archived tickets and Epson bytes V8.71 (offline; no print)
+        run: |
+          node tools/verificar_real_order_tickets_v46.js
+          node tools/verificar_operational_escpos_v46.js
+          node tools/verificar_comandas_tres_vias_identidade_v871_offline.cjs
+      - name: V8.72 native receipt manifest three-view contract (offline, zero effects)
+        run: node tools/verificar_manifesto_nativo_idempotencia_v872_offline.cjs
+      - name: Pinned Academy headless packaging contract V1 (Windows, fake bytes denied)
+        run: |
+          node --check tools/verificar_contrato_embalagem_v1_private_replay.cjs
+          node tools/verificar_contrato_embalagem_v1_offline.cjs
+      - name: Historical Teknisa 463-product and six-printer mapping integrity (Windows offline)
+        run: node tools/verificar_odhen_product_routing_config_v1.js
+      - name: V8.44 event readiness and source blockers cannot disagree (Windows synthetic)
+        run: node tools/verificar_identidade_bytes_v714.js
+      - name: Independent iFood Gestor x Teknisa discrepancy and no-print contingency V8.49
+        run: node tools/verificar_comandas_ifood_gestor_contingencia_v849_offline.js
+      - name: iFood Gestor x Teknisa capture freshness, time-window and absence guard V8.52 (offline)
+        run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
+      - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
+        run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
+      - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
+        run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
+      - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
+        run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
+      - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
+        run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
+      - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
+        run: node tools/verificar_tata_comanda_sequence_preflight_v858_offline.cjs
+      - name: TATA Comanda replay all 8 archived real order references V8.60 (offline)
+        run: node tools/verificar_tata_comanda_archived_orders_v860_offline.cjs
+      - name: TATA Comanda first-attempt read-only host pulse V8.59 syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/tata_comanda_native_first_attempt_v859_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_PARSE_ERROR' }
+          Write-Output 'TATA_COMANDA_NATIVE_FIRST_ATTEMPT_V859_SYNTAX_PASS'
+      - name: TATA Comanda first-attempt read-only Windows fixture V8.59
+        run: node tools/verificar_tata_comanda_native_first_attempt_v859_windows.cjs
+      - name: TATA Comanda independent V8.57 and V8.59 convergence V8.60 (Windows synthetic)
+        run: node tools/verificar_validacao_convergente_v860_windows.cjs
+      - name: TATA Comanda iFood versus Teknisa lifecycle V8.64 (Windows synthetic)
+        run: node tools/verificar_cruzamento_ifood_teknisa_v864_offline.cjs
+      - name: TATA Comanda temporal iFood Teknisa crossing V8.65 (Windows synthetic)
+        run: node tools/verificar_linha_tempo_ifood_teknisa_v865_offline.cjs
+      - name: TATA Comanda multi-order concurrent iFood and Teknisa V8.66 (Windows synthetic)
+        run: node tools/verificar_multiplos_pedidos_ifood_teknisa_v866_offline.cjs
+      - name: TATA Comanda reconnection outage backlog V8.67 (Windows synthetic)
+        run: node tools/verificar_reconexao_pico_ifood_teknisa_v867_offline.cjs
+
+      - name: Opening-time GP iFood read-only pulse static safety V8.53
+        run: node tools/verificar_comandas_opening_pulse_v853_static.js
+      - name: Parse V8.53 live opening PowerShell read-only probe without host I/O
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_opening_pulse_v853_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_OPENING_PULSE_V853_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_OPENING_PULSE_V853_SYNTAX_PASS NO_HOST_IO'
+      - name: GP iFood provenance V8.51 offline static no-effect and privacy contract
+        run: node tools/verificar_comandas_gp_ifood_provenance_v851_static.js
+      - name: Validate GP iFood passive Windows probe PowerShell syntax without running
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_gp_ifood_print_provenance_v851_readonly.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'COMANDAS_GP_IFOOD_V851_SYNTAX_INVALID' }
+          Write-Output 'COMANDAS_GP_IFOOD_V851_SYNTAX_PASS READONLY_SOURCE NO_EXECUTION'
+      - name: V8.76 bounded printer metadata monitor on disposable Windows fixture
+        run: |
+          node tools/verificar_imp_printer_metadata_monitor_static.js
+          node tools/verificar_imp_monitor_limitado_v876_windows.cjs
+      - name: V8.78 printer topology comparison with no operational effects (Windows)
+        run: node tools/verificar_comparador_preflight_v878_offline.cjs
+      - name: Verify archived Figma SVG masters and thermal traces on Windows
+        run: node tools/verificar_desenho_comandas_v72.js
+      - name: Bind live four-field watcher identity (Windows CI)
+        run: node tools/verificar_identidade_pedido_v727.js
+      - name: Passive event audit contract (Windows synthetic fixture, no remote)
+        run: node tools/verificar_auditoria_eventos_v730.js
+      - name: Windows sidecar shift-and-V2 pin preflight V7.31 (synthetic only)
+        run: node tools/verificar_sidecar_preflight_windows_v731.js
+      - name: Adversarial 21-case iFood/Teknisa operational lunch simulation
+        run: node tools/verificar_riscos_almoco_v735_offline.js
+      - name: Windows Sandbox closed-loop config and host isolation V7.33 (static)
+        run: node tools/verificar_sandbox_comandas_v733.js
+      - name: Parse Windows Sandbox configuration and guest PowerShell syntax
+        shell: pwsh
+        run: |
+          [xml]$cfg = Get-Content -Raw -LiteralPath "runtime/windows/comandas_sandbox_observer_v733.wsb"
+          if ($cfg.Configuration.MappedFolders.MappedFolder.Count -ne 4) { throw 'SANDBOX_XML_MOUNT_COUNT_INVALID' }
+          $tokens = $null
+          $errors = $null
+          $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            "runtime/windows/comandas_sandbox_observe_v733.ps1", [ref]$tokens, [ref]$errors)
+          if ($errors.Count -ne 0) { throw 'SANDBOX_POWERSHELL_SYNTAX_INVALID' }
+      - name: Reconcile V2 consumer, V6.8, pinned Academy motor and three SVG receipts
+        run: node tools/verificar_cadeia_positiva_v722_offline.js
+      - name: Payment-note V8.0 and B5 preservation (offline, Windows)
+        run: node tools/verificar_nota_pagamento_v80_offline.js
+      - name: Static exact bag policy B1 B5 B8 B9 in ephemeral V2 motor (Windows)
+        run: node tools/verificar_sacolas_estaticas_v81_offline.js
+      - name: Exact human bag-review source must not authorize print (Windows synthetic)
+        run: node tools/verificar_comandas_bag_human_proposal_v1.cjs
+      - name: Ten order-note source identity and privacy adversarial gate (Windows synthetic)
+        run: node tools/verificar_comandas_ten_v68_note_scope_audit_v1.cjs
+      - name: V8.2 native reader envelope is NOT independent V6.8 source proof (Windows)
+        run: node tools/verificar_comandas_v68_envelope_boundary_v82.cjs
+      - name: V8.4 exact payment-note policy CLI plumbing and proof-source guard (synthetic)
+        run: node tools/verificar_v68_payment_optin_cli_v84_offline.js
+      - name: SQL principal and exact column-surface drift V8.5 (synthetic, no SQL)
+        run: node tools/verificar_comandas_sql_surface_drift_v85.cjs
+      - name: V8.7 SENHA per-item bridge collision guard (synthetic only)
+        run: node tools/verificar_comandas_senha_item_bridge_v87_offline.cjs
+      - name: V8.8 per-order bounded SQL template only, no column grant or query (synthetic)
+        run: node tools/verificar_comandas_cdsenhaped_readonly_plan_v88_offline.cjs
+      - name: V8.9 independent native item parity cannot attest historical print (synthetic)
+        run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
+      - name: V7.0/V7.4 shift upper-boundary exclusivity matches real Windows V2 (offline)
+        run: node tools/verificar_revisao_turno_humano_v70.js
+      - name: V8.12 preview-only PowerShell shift writer adversarial Windows cases
+        run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
+      - name: V8.36 signed shift-scoped authorization expiry revocation and replay (offline Windows)
+        run: node tools/verificar_shift_authorization_v836_offline.cjs
+      - name: V8.37 exclusive nonce use under process race and hard crash (Windows hosted)
+        run: node tools/verificar_shift_nonce_v837_sandbox.cjs
+      - name: V8.41 protected shift and nonce namespace segregation (Windows offline)
+        run: node tools/verificar_custody_layout_v841_offline.cjs
+      - name: V8.32 custody evidence policy rejects false authority (Windows synthetic)
+        run: node tools/verificar_shift_custody_policy_v832_offline.cjs
+      - name: V8.32 custody read-only Windows observer parses and never claims approval
+        shell: pwsh
+        run: |
+          $errors = $null; $tokens = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_shift_custody_v832_readonly.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V832_OBSERVER_PARSE_ERROR' }
+          $obs = ./tools/comandas_shift_custody_v832_readonly.ps1 | ConvertFrom-Json
+          if ($obs.schema -ne 'deliveryos.comandas.v832.shift-custody-observation' -or
+              $obs.status -ne 'HOLD_READONLY_NO_AUTHORITY' -or
+              $obs.human_approval_authenticated -ne $false -or
+              $obs.protected_shift_reader_readonly_token_proven -ne $false -or
+              $obs.protected_shift_writer_separate_token_proven -ne $false -or
+              $obs.observation_read_only -ne $true -or
+              $obs.account_names_reported -ne $false -or
+              $obs.sids_reported -ne $false -or
+              $obs.turn_contents_read -ne $false -or
+              $obs.effect_file_written -ne $false -or
+              $obs.effect_acl_modified -ne $false -or
+              $obs.effect_sql -ne $false -or
+              $obs.effect_printer -ne $false) { throw 'V832_OBSERVER_EFFECT_OR_AUTHORITY_DRIFT' }
+      - name: V8.14 exact pinned watcher path move review (Windows offline)
+        run: node tools/verificar_watcher_shift_path_v814_offline.js
+      - name: V8.16 cross-generation quiescence refusal (synthetic Windows)
+        run: node tools/verificar_cutover_quiescence_v816_offline.cjs
+      - name: V8.20 pinned supervisor safe startup preview (Windows synthetic)
+        run: node tools/verificar_supervisor_guard_v820_offline.cjs
+      - name: V8.22 dual guard prelaunch preview (Windows synthetic)
+        run: node tools/verificar_supervisor_prelaunch_v822_offline.cjs
+      - name: V8.26 execute V8.20/V8.22 fail-closed guard expressions using mocked Windows CIM
+        run: node tools/verificar_supervisor_guard_v826_windows.cjs
+      - name: V8.17 harmless real Windows CIM old and staged orphan markers (ephemeral hosted runner)
+        shell: pwsh
+        run: |
+          ./tools/comandas_windows_live_cim_orphan_v817_sandbox.ps1
+      - name: V8.27 privacy-limited real order pairing observer must HOLD without host data
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw 'V827_EPHEMERAL_RUNNER_ONLY' }
+          $sample = ./tools/comandas_real_event_chain_v827_readonly.ps1 -SampleSize 1 -PairBudget 25 | ConvertFrom-Json
+          if ($sample.status -ne 'HOLD' -or $sample.sampled_events -ne 0 -or
+              @($sample.reason_codes) -notcontains 'READONLY_PAIR_INSPECTION_INCOMPLETE' -or
+              $sample.independent_v68_proof_provided -ne $false -or
+              $sample.privacy.order_key_exported -ne $false -or
+              $sample.privacy.raw_observation_text_exported -ne $false -or
+              $sample.effects.files_written -ne $false -or
+              $sample.effects.print -ne $false) { throw 'V827_FAIL_CLOSED_OR_PRIVACY_GATE_FAILED' }
+          Write-Host 'V827_HOSTED_NO_REAL_READER_DATA=HOLD NO_PII NO_PRINT NO_AUTHORITY'
+      - name: V8.29 real observer rejects duplicate revisions and mismatched fingerprints on ephemeral Windows
+        shell: pwsh
+        run: |
+          $output = @(./tools/comandas_v829_negative_pair_sandbox.ps1)
+          $receipt = @($output | Where-Object { $_ -match '"schema":"deliveryos.comandas.v829.negative-unique-revisions-hosted"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V829_NO_RECEIPT' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 6 -or
+              $proof.invalid_and_duplicate_pairs_hold -ne $true -or
+              $proof.actual_observer_logic_exercised -ne $true -or
+              $proof.root_substituted_in_memory -ne $true -or
+              $proof.real_source_files_read -ne $false -or
+              $proof.sql_query -ne $false -or $proof.printer -ne $false -or
+              $proof.production_write -ne $false -or
+              $proof.deployment_authorized -ne $false) {
+            throw 'V829_NEGATIVE_INVARIANTS_NOT_PROVEN'
+          }
+          Write-Host $receipt[0]
+      - name: V8.23 real host read-only preflight must HOLD without service (ephemeral Windows)
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw 'HOSTED_RUNNER_REQUIRED' }
+          $snapshot = ./tools/comandas_windows_cutover_readonly_v823.ps1 | ConvertFrom-Json
+          if ($snapshot.status -ne 'HOLD') { throw 'V823_NOT_FAIL_CLOSED' }
+          if ($snapshot.checks.service_present -ne $false) { throw 'V823_RUNNER_NOT_DISPOSABLE' }
+          if ($snapshot.checks.current_v2_shift_exists -ne $false -or $snapshot.checks.proposed_protected_shift_exists -ne $false) { throw 'V826_RUNNER_STATE_PATH_ISOLATION_FAILED' }
+          if (@($snapshot.reasons) -notcontains 'PROPOSED_PROTECTED_SHIFT_NOT_PREPARED') { throw 'V826_PROPOSED_PATH_MISSING_NOT_HELD' }
+          if ($snapshot.deployment_authorized -ne $false -or $snapshot.snapshot_is_atomic -ne $false) { throw 'V823_AUTHORIZATION_ERROR' }
+          if (@($snapshot.effects.PSObject.Properties | Where-Object { $_.Value -ne $false }).Count -ne 0) { throw 'V823_EFFECTS_CLAIM_ERROR' }
+          Write-Host 'V823_HOSTED_WINDOWS_NO_SERVICE=HOLD NO_AUTHORITY NO_OPERATIONAL_EFFECTS'
+          # sc.exe qfailure intentionally exits nonzero when no service exists.
+          # Asserted HOLD is the expected safety result, not a test failure.
+          # Clear the inherited native exit status ONLY after all assertions pass.
+          exit 0
+      - name: V8.30 integrated hosted Windows one-child cycle, lock, crash and orphan recovery (synthetic)
+        shell: pwsh
+        timeout-minutes: 3
+        run: ./tools/comandas_windows_supervisor_cycle_v830_sandbox.ps1
+      - name: V8.25 disposable Windows actual pinned backup-byte restoration after crashes
+        shell: pwsh
+        run: |
+          $lines = @(./tools/comandas_windows_three_file_rollback_v824_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v824.ephemeral-windows-real-ntfs-rollback"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V825_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 8 -or
+              $proof.backup_bytes_used_for_restore -ne $true -or
+              $proof.unique_non_reconstructible_original_bytes_restored -ne $true -or
+              $proof.deployment_authorized -ne $false -or
+              $proof.full_supervisor_executed -ne $false) { throw 'V825_ROLLBACK_PROOF_INCOMPLETE' }
+          Write-Host $receipt[0]
+      - name: V8.13 disposable hosted Windows real-token NTFS isolation (no operational host)
+        shell: pwsh
+        run: |
+          ./tools/comandas_windows_acl_real_tokens_v813_sandbox.ps1
+      - name: V8.34 actual separate-token concurrent writer serialization on disposable Windows
+        shell: pwsh
+        timeout-minutes: 3
+        run: |
+          $lines = @(./tools/comandas_windows_concurrent_shift_v834_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v834.hosted-concurrent-writers"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V834_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.actual_distinct_windows_writer_tokens -ne $true -or
+              $proof.first_writer_held_lock_during_contention -ne $true -or
+              $proof.competing_writer_exit_94 -ne $true -or
+              $proof.stale_revision_exit_93 -ne $true -or
+              $proof.second_current_revision_committed -ne $true -or
+              $proof.predecessor_bytes_backed_up -ne $true -or
+              $proof.cooperative_writers_serialized -ne $true -or
+              $proof.arbitrary_writer_atomic_cas_proven -ne $false -or
+              $proof.crash_recovery_and_external_witness_proven -ne $false -or
+              $proof.human_identity_or_approval_proven -ne $false -or
+              $proof.disposable_runner_only -ne $true -or
+              $proof.production_effects -ne $false) { throw 'V834_PROOF_INCOMPLETE_OR_OVERCLAIMED' }
+          Write-Host $receipt[0]
+      - name: V8.40 real Windows read-only service SID and candidate ledger DACL inventory (hosted CI)
+        shell: pwsh
+        timeout-minutes: 3
+        run: |
+          $lines = @(./tools/comandas_windows_service_identity_v840_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v840.hosted-readonly-preflight-evidence"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V840_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.parse_ok -ne $true -or
+              $proof.source_mutation_commands_absent -ne $true -or
+              $proof.actual_windows_service_metadata_read -ne $true -or
+              $proof.existing_directory_acl_metadata_read -ne $true -or
+              $proof.absent_service_refused_as_attestation -ne $true -or
+              $proof.absent_protected_ledger_refused_as_attestation -ne $true -or
+              $proof.powershell_51_readonly_parity -ne $true -or
+              $proof.pwsh_7_readonly_parity -ne $true -or
+              $proof.service_state_and_pid_unchanged -ne $true -or
+              $proof.real_production_service_inspected -ne $false -or
+              $proof.actual_production_target_acl_inspected -ne $false -or
+              $proof.actual_service_token_claims_verified -ne $false -or
+              $proof.actual_custodian_identity_verified -ne $false -or
+              $proof.human_signer_verified -ne $false -or
+              $proof.production_shift_authorized -ne $false -or
+              $proof.persistent_files_written -ne $false -or
+              $proof.service_changed -ne $false -or
+              $proof.acl_changed -ne $false -or
+              $proof.printer_called -ne $false -or
+              $proof.sql_queried -ne $false -or
+              $proof.teknisa_contacted -ne $false -or
+              $proof.hosted_ephemeral_only -ne $true) {
+            throw 'V840_READONLY_SCOPE_OR_EVIDENCE_FAIL'
+          }
+          Write-Host $receipt[0]
+      - name: V8.39 integrated signed nonce and Windows real-token separation (hosted CI only)
+        shell: pwsh
+        timeout-minutes: 4
+        run: |
+          $tokens = $null; $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_windows_signed_nonce_integration_v839_sandbox.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V839_POWERSHELL_PARSER_FAILURE' }
+          node --check tools/comandas_windows_signed_nonce_v839_child.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'V839_NODE_PARSER_FAILURE' }
+          $lines = @(./tools/comandas_windows_signed_nonce_integration_v839_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v839.integrated-signed-nonce-acl"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V839_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.signer_private_key_written_to_disk -ne $false -or
+              $proof.signed_v836_verified_under_custodian_token -ne $true -or
+              $proof.signed_v836_invalid_expired_revoked_stale_all_hold -ne $true -or
+              $proof.v837_actual_module_created_once_under_custodian_token -ne $true -or
+              $proof.reader_actual_sid_distinct_from_custodian -ne $true -or
+              $proof.reader_cannot_reserve_before_authorization -ne $true -or
+              $proof.reader_cannot_forge_trust_fixture -ne $true -or
+              $proof.custodian_cannot_forge_trust_fixture -ne $true -or
+              $proof.reader_cannot_write_delete_rename_nonce -ne $true -or
+              $proof.reader_can_read_nonce_without_modifying -ne $true -or
+              $proof.both_tokens_cannot_replay_same_authorization -ne $true -or
+              $proof.receipt_and_fixture_sha_unchanged -ne $true -or
+              $proof.exactly_one_reserved_nonce_file -ne $true -or
+              $proof.all_readers_only_review_no_shift_activation -ne $true -or
+              $proof.local_test_fixture_only -ne $true -or
+              $proof.real_custodian_human_authenticated -ne $false -or
+              $proof.independent_time_and_revocation_proven -ne $false -or
+              $proof.independent_external_witness_proven -ne $false -or
+              $proof.production_reader_sid_proven -ne $false -or
+              $proof.power_loss_durability_proven -ne $false -or
+              $proof.actual_shift_updated -ne $false -or
+              $proof.production_effects -ne $false -or
+              $proof.teknisa_contacted -ne $false -or
+              $proof.sql -ne $false -or $proof.printer -ne $false -or
+              $proof.service -ne $false -or
+              $proof.temp_root_removed -ne $true -or
+              $proof.temp_accounts_removed -ne $true) { throw 'V839_INTEGRATED_PROOF_INCOMPLETE' }
+          Write-Host $receipt[0]
+      - name: V8.38 actual Windows reader versus custodian protected nonce ACL (hosted CI only)
+        shell: pwsh
+        timeout-minutes: 3
+        run: |
+          $tokens = $null; $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_windows_nonce_acl_real_tokens_v838_sandbox.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V838_POWERSHELL_PARSE_FAILED' }
+          $lines = @(./tools/comandas_windows_nonce_acl_real_tokens_v838_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v838.actual-token-nonce-acl"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V838_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or
+              $proof.reader_actual_windows_principal_distinct -ne $true -or
+              $proof.custodian_actual_windows_principal_distinct -ne $true -or
+              $proof.reader_denied_nonce_creation_when_absent -ne $true -or
+              $proof.reader_can_read_existing_receipt -ne $true -or
+              $proof.reader_cannot_write_receipt -ne $true -or
+              $proof.reader_cannot_delete_receipt -ne $true -or
+              $proof.reader_cannot_rename_receipt -ne $true -or
+              $proof.reader_cannot_forge_sibling_receipt -ne $true -or
+              $proof.custodian_created_receipt_once -ne $true -or
+              $proof.custodian_duplicate_create_new_refused -ne $true -or
+              $proof.receipt_sha_preserved_after_attack_and_replay -ne $true -or
+              $proof.reader_can_write_separate_runtime_evidence -ne $true -or
+              $proof.false_host_and_outside_temp_rejected -ne $true -or
+              $proof.signed_v836_authorization_verified_in_this_test -ne $false -or
+              $proof.real_human_custodian_authenticated -ne $false -or
+              $proof.production_service_token_tested -ne $false -or
+              $proof.independent_failure_domain_proven -ne $false -or
+              $proof.power_loss_durability_proven -ne $false -or
+              $proof.production_shift_authorized -ne $false -or
+              $proof.hosted_runner_only -ne $true -or
+              $proof.temp_root_removed -ne $true -or
+              $proof.temp_users_removed -ne $true -or
+              $proof.sql -ne $false -or $proof.teknisa -ne $false -or
+              $proof.printer -ne $false -or $proof.service -ne $false) {
+            throw 'V838_ACL_PROOF_INCOMPLETE_OR_AUTHORITY_OVERCLAIMED'
+          }
+          Write-Host $receipt[0]
+      - name: V8.35 hard-crash shift journal and protected synthetic witness (hosted Windows only)
+        shell: pwsh
+        timeout-minutes: 4
+        run: |
+          $tokens = $null; $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_windows_shift_crash_v835_sandbox.ps1', [ref]$tokens, [ref]$errors)
+          if (@($errors).Count -ne 0) { throw 'V835_PARSER_ERRORS' }
+          $lines = @(./tools/comandas_windows_shift_crash_v835_sandbox.ps1)
+          $receipt = @($lines | Where-Object { $_ -match '"schema":"deliveryos.comandas.v835.hosted-shift-crash-evidence"' } | Select-Object -Last 1)
+          if ($receipt.Count -ne 1) { throw 'V835_RECEIPT_MISSING' }
+          $proof = $receipt[0] | ConvertFrom-Json
+          if ($proof.status -ne 'PASS' -or $proof.cases -ne 6 -or
+              $proof.checks -ne 23 -or
+              $proof.hard_child_crashes_at_intent_stage_swap -ne $true -or
+              $proof.actual_windows_writer_witness_write_denied -ne $true -or
+              $proof.journal_pending_or_ambiguous_states_hold -ne $true -or
+              $proof.corrupt_predecessor_bytes_hold -ne $true -or
+              $proof.replay_after_crash_refused -ne $true -or
+              $proof.repeated_observation_read_only -ne $true -or
+              $proof.self_heal_or_auto_rollback_executed -ne $false -or
+              $proof.independent_human_witness_proven -ne $false -or
+              $proof.production_cutover_authorized -ne $false -or
+              $proof.hosted_ephemeral_only -ne $true -or
+              $proof.temp_root_removed -ne $true -or
+              $proof.temp_account_removed -ne $true -or
+              $proof.service_changed -ne $false -or
+              $proof.teknisa -ne $false -or $proof.sql -ne $false -or
+              $proof.printer -ne $false) { throw 'V835_PROOF_FAILURE_OR_OVERCLAIM' }
+          Write-Host $receipt[0]
+      - name: Reject malformed quantities on Windows
+        run: node tools/verificar_quantidades_termicas_v59.js
+      - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
+        run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Native Epson font A/B, emphasis, strike and CP850 V7.50 (offline, Windows)
+        run: node tools/verificar_fontes_nativas_v750_offline.js
+      - name: Source-verified V6.8 three-way native Epson font shadow adapter V7.52 (Windows)
+        run: node tools/verificar_integracao_nativa_tres_vias_v752.js
+      - name: Crash, concurrent replay and no-retry policy V7.54 (offline Windows)
+        run: node tools/verificar_idempotencia_recuperacao_v754.js
+      - name: Five-process synthetic journal crash and tamper V7.55 (Windows)
+        run: node tools/verificar_journal_sandbox_v755.js
+      - name: Three-way post-crash reconciliation cannot authorize print V7.56 (Windows)
+        run: node tools/verificar_reconciliation_v756_offline.js
+      - name: Independently trusted Ed25519 synthetic journal seal V7.57 (Windows)
+        run: node tools/verificar_signed_anchor_v757_offline.js
+      - name: Separate signed witness chain, rollback and untrusted context V7.58 (Windows)
+        run: node tools/verificar_external_witness_v758_offline.js
+      - name: Native-font V7.51 human approval and one-shot safety (static Windows)
+        run: node tools/verificar_piloto_fontes_v751_static.js
+      - name: Parse V7.51 physical-pilot script without running printer I/O
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_native_font_v751_pilot_once_hold.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V751_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V751_PARSE_PASS=1 NO_PRINT NO_SPOOLER_EFFECT"
+
+      - name: RAW V7.48 approval and one-shot transport policy (static only)
+        run: node tools/verificar_raw_pilot_v748_static.js
+      - name: Parse V7.47 offline PowerShell encoder without execution
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_escpos_graphics_fn112_v747_offline.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V747_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V747_SYNTAX_PASS=1 NO_PRINT NO_WINDOWS_DEVICE"
+      - name: Parse V7.48 RAW pilot without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/comandas_raw_fn112_v748_pilot_once_hold.ps1",
+            [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw "V748_POWERSHELL_SYNTAX_INVALID" }
+          Write-Output "V748_SYNTAX_PASS=1 NO_PRINT NO_SPOOLER_WRITE"
+      - name: Verify Epson ESC/POS bytes on Windows
+        run: node tools/verificar_integridade_termica_v57.js

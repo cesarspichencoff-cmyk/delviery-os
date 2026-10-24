@@ -9,6 +9,7 @@ export interface ProductionServiceShiftState {
   evidence: ProductionShiftEvidence;
   source_ref: string;
   clock_inference_used: false;
+  valid_from_local: string;
   valid_until_local: string;
   updated_at: string;
 }
@@ -28,9 +29,26 @@ function clean(value: unknown): string {
 }
 
 function validOperationalDate(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(value + "T12:00:00.000Z");
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+/** A clock-local timestamp, optionally with up to seven fractional ticks.
+ * Reject offsets and extra suffixes instead of silently truncating them. */
+function exactLocalTicks(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const m = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,7}))?$/.exec(value);
+  if (!m || !validOperationalDate(m[1].slice(0, 10))) return null;
+  const [hour, minute, second] = m[1].slice(11).split(":").map(Number);
+  if (hour > 23 || minute > 59 || second > 59) return null;
+  return m[1] + "." + (m[2] || "").padEnd(7, "0");
+}
+
+/** Structural, fail-closed source consistency only. A self-declared evidence
+ * field does NOT authenticate a human or authorize state writes or printing.
+ * Alignment with the installed Windows V2 watcher is required for any future
+ * separately approved operational activation. */
 export function resolveProductionServiceShiftState(
   state: unknown,
   expected: { store_id: string; operational_date: string; order_opened_at: string },
@@ -47,18 +65,25 @@ export function resolveProductionServiceShiftState(
   if (!expectedStore) blocking.add("SERVICE_STATE_EXPECTED_STORE_REQUIRED");
   if (!validOperationalDate(expectedDate)) blocking.add("SERVICE_STATE_EXPECTED_OPERATIONAL_DATE_INVALID");
 
-  const orderOpenedAt = clean(expected.order_opened_at).slice(0,19);
-  const validUntilLocal = clean(raw.valid_until_local);
-  const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
-  if (!localDateTimePattern.test(orderOpenedAt)) blocking.add("SERVICE_STATE_ORDER_OPENED_AT_INVALID");
-  if (!localDateTimePattern.test(validUntilLocal)) blocking.add("SERVICE_STATE_VALID_UNTIL_REQUIRED");
-  if (
-    localDateTimePattern.test(orderOpenedAt) &&
-    localDateTimePattern.test(validUntilLocal) &&
-    orderOpenedAt > validUntilLocal
-  ) {
+  const orderOpenedAt = exactLocalTicks(expected.order_opened_at);
+  const validFrom = exactLocalTicks(raw.valid_from_local);
+  const validUntil = exactLocalTicks(raw.valid_until_local);
+  if (!orderOpenedAt) blocking.add("SERVICE_STATE_ORDER_OPENED_AT_INVALID");
+  if (!validFrom) blocking.add("SERVICE_STATE_VALID_FROM_REQUIRED");
+  if (!validUntil) blocking.add("SERVICE_STATE_VALID_UNTIL_REQUIRED");
+  if (orderOpenedAt && validFrom && orderOpenedAt < validFrom)
+    blocking.add("SERVICE_STATE_NOT_YET_ACTIVE_FOR_ORDER");
+  // The installed Windows V2 watcher rejects equality at the end boundary.
+  if (orderOpenedAt && validUntil && orderOpenedAt >= validUntil)
     blocking.add("SERVICE_STATE_EXPIRED_FOR_ORDER");
-  }
+  if (orderOpenedAt && validOperationalDate(expectedDate) &&
+      orderOpenedAt.slice(0, 10) !== expectedDate)
+    blocking.add("SERVICE_STATE_ORDER_OPENED_DATE_MISMATCH");
+  if (validFrom && validUntil &&
+      (validFrom >= validUntil ||
+       validFrom.slice(0, 10) !== clean(raw.operational_date) ||
+       validUntil.slice(0, 10) !== clean(raw.operational_date)))
+    blocking.add("SERVICE_STATE_WINDOW_INVALID");
 
   if (clean(raw.store_id) !== expectedStore) blocking.add("SERVICE_STATE_STORE_MISMATCH");
   if (clean(raw.operational_date) !== expectedDate) blocking.add("SERVICE_STATE_OPERATIONAL_DATE_MISMATCH");

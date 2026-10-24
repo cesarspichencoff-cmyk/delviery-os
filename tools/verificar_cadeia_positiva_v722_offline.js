@@ -10,6 +10,18 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),os=require("nod
 const {PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
 const {blob}=require("./gerar_tres_vias_par_leitor_v68_offline.js");
+const {fresh,reserve,resumeDecision,descriptorsFromProof}=
+ require("./comandas_idempotencia_v754_offline.js");
+const {reserveDurablyInSyntheticSandbox,snapshot}=
+ require("./comandas_journal_v755_sandbox.js");
+const {verifySignedSyntheticCheckpoint,keyFingerprint,messageFor}=
+ require("./comandas_signed_anchor_v757_offline.js");
+const {verifySyntheticWitnessAgainstJournal,genesisHash,recordHash,SCHEMA:WITNESS_SCHEMA}=
+ require("./comandas_external_witness_v758_offline.js");
+const {planConditionalWitnessCommit,reconcileSimulatedProviderResult}=
+ require("./comandas_external_cas_v759_offline.js");
+const {auditExpectedThreeViews}=
+ require("./comandas_reconciliation_v756_offline.js");
 const sha=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
 const SOURCE=path.join(__dirname,"fixtures/canonical-packaging-v63-pinned.js");
 const CONSUMER=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
@@ -17,7 +29,12 @@ const GATE=path.join(__dirname,"gerar_tres_vias_v2_gate_v720_offline.js");
 const ENGINE=fs.readFileSync(SOURCE);
 assert.equal(blob(ENGINE),PACKAGING_SOURCE_BLOB_V63,"canonical motor blob mismatch");
 assert.equal(sha(ENGINE),PACKAGING_SOURCE_SHA256_V78,"canonical motor SHA-256 mismatch");
-assert.equal(process.platform,"linux","proof must not inspect Windows ProgramData");
+// The V7.20 entrypoint strictly gates Windows execution to ephemeral CI and
+// redirects the candidate's single real Windows sequence path to a fixture.
+assert.ok(process.platform==="linux"||
+ (process.platform==="win32"&&process.env.GITHUB_ACTIONS==="true"&&
+  process.env.CI==="true"&&process.env.RUNNER_OS==="Windows"),
+ "replay requires Linux sandbox or ephemeral Windows CI");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v722-positive-"));
 const consumerDir=path.join(temp,"consumer");
 const textJson=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n");
@@ -65,7 +82,7 @@ function createSource(){
  const service={service:"LUNCH",evidence:"HUMAN_CONFIRMED_RULE",
   source_ref:"fixture:fictional-service-only",blockers:[]};
  const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
-  order_key:"0001|01|0000000001",snapshot_hash:hash,
+  order_key:"0001|01|0000000001|0000000001",snapshot_hash:hash,
   ready_for_downstream_shadow:true,blockers:[],service_resolution:service,order};
  textJson(path.join(temp,"event.json"),event);
  textJson(path.join(temp,"sequence.json"),
@@ -155,10 +172,166 @@ try{
  assert.equal(got.effects.print,false);
  assert.equal(got.effects.spooler_write,false);
  assert.equal(got.outputs.length,3,"two production and one conference, no dropped ticket");
+ // V7.53: This is the ACTUAL source-pinned V2 subprocess -> V6.8 ->
+ // both station tickets + conference, not merely the archived offline sample.
+ assert.ok(got.native_font_candidate,"native-font candidate field absent from chain");
+ assert.equal(got.native_font_candidate.status,"NATIVE_FONT_V752_SEMANTIC_PROOF_ONLY",
+  "native bridge must not silently HOLD in an otherwise accepted V2 pipeline");
+ assert.equal(got.native_font_candidate.ready_for_operational_print,false);
+ assert.equal(got.native_font_candidate.effects.print,false);
+ assert.equal(got.native_font_candidate.effects.spooler_write,false);
+ assert.equal(got.native_font_candidate.outputs.length,got.outputs.length,
+  "source-pinned native candidate missing or multiplying ticket");
+ assert.deepEqual(got.outputs.map(o=>o.kind),
+  got.native_font_candidate.outputs.map(o=>o.kind),
+  "SVG view type must match native Epson source");
+ assert.deepEqual(got.outputs.map(o=>o.station),
+  got.native_font_candidate.outputs.map(o=>o.station),
+  "SVG station must match native Epson source");
+ assert.deepEqual(got.native_font_candidate.outputs.map(o=>o.kind),
+  ["PRODUCAO","PRODUCAO","CONFERENCIA"]);
+ assert.ok(got.native_font_candidate.outputs.every(o=>o.full_text_preserved&&
+  o.unrepresentable_replaced===false&&/^[a-f0-9]{64}$/.test(o.native_bytes_sha256)&&
+  o.native_byte_count>0&&!Object.hasOwn(o,"bytes")));
+
  assert.equal(new Set(got.outputs.map(x=>x.filename)).size,3);
  assert.ok(got.outputs.every(o=>/^[0-9a-f]{64}$/.test(o.svg_sha256)));
  assert.equal(got.origin.event_sha256,sha(fs.readFileSync(path.join(temp,"event.json"))));
  assert.equal(got.origin.motor_blob_sha,PACKAGING_SOURCE_BLOB_V63);
+ // V7.54: FULL pinned candidate V2 -> V6.8 -> THREE native view identities.
+ // Only simulate reservation proposals; no print dispatch or durable state.
+ const plan=descriptorsFromProof(got,event,{
+  scope_id:"STORE:SIMULATED|DATE:2026-10-11",
+  scope_evidence:"SYNTHETIC_SCOPE_ONLY",tata_sequence:"001",
+  event_file_sha256:sha(fs.readFileSync(path.join(temp,"event.json")))
+ });
+ assert.equal(plan.status,"OFFLINE_DESCRIPTORS_ONLY",
+  "source-bound synthetic print intents must be unique per verified view");
+ assert.equal(plan.authorize_print,false);
+ assert.equal(plan.descriptors.length,3);
+ let ledger=fresh();
+ for(const descriptor of plan.descriptors){
+  const proposal=reserve(ledger,descriptor,ledger.revision);
+  assert.equal(proposal.status,"RESERVATION_PROPOSAL_ONLY");
+  assert.equal(proposal.authorize_print,false);
+  ledger=proposal.next_state; // IN MEMORY ONLY; this is NOT durable CAS
+ }
+ assert.equal(ledger.entries.length,3);
+ for(const descriptor of plan.descriptors){
+  assert.equal(resumeDecision(JSON.parse(JSON.stringify(ledger)),descriptor).status,"HOLD");
+  assert.equal(reserve(ledger,descriptor,ledger.revision).status,"HOLD");
+ }
+ // V7.56: the same ACTUAL pinned V2->V6.8 proof must fail safely if only
+ // the first of its three native receipt attempts was journaled at a crash.
+ const lab=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v755-"));
+ try{
+  let commit=reserveDurablyInSyntheticSandbox(lab,plan.descriptors[0],0);
+  assert.equal(commit.status,"SYNTHETIC_JOURNAL_COMMIT_OBSERVED");
+  let audit=auditExpectedThreeViews(lab,plan.descriptors);
+  assert.equal(audit.status,"MANUAL_RECONCILIATION_REQUIRED");
+  assert.equal(audit.recorded_attempts,1);
+  assert.equal(audit.missing_attempt_records,2);
+  assert.equal(audit.print_authorized,false);
+  for(let i=1;i<3;i++){
+   commit=reserveDurablyInSyntheticSandbox(lab,plan.descriptors[i],i);
+   assert.equal(commit.status,"SYNTHETIC_JOURNAL_COMMIT_OBSERVED");
+  }
+  audit=auditExpectedThreeViews(lab,plan.descriptors);
+  assert.equal(audit.recorded_attempts,3);
+  assert.equal(audit.missing_attempt_records,0);
+  assert.equal(audit.no_automatic_retry,true);
+  assert.equal(audit.exact_once_physical_proven,false);
+  assert.equal(audit.effects.print,false);
+  // V7.57: only the source-pinned three-view lab journal is signed by a
+  // throwaway CI key. The signer NEVER exists in a production module.
+  // This demonstrates verification semantics, NOT independent key custody.
+  const current=snapshot(lab);
+  assert.equal(current.status,"SYNTHETIC_SNAPSHOT_ONLY");
+  assert.equal(current.revision,3);
+  const pair=crypto.generateKeyPairSync("ed25519");
+  const unsigned={schema:"deliveryos.signed-journal-anchor.v757.offline",
+   journal_instance_id:"test:v2v68_threeview_001",
+   revision:current.revision,
+   journal_head_sha256:current.journal_head_sha256};
+  const signed={...unsigned,signature_base64:crypto.sign(null,
+   messageFor(unsigned),pair.privateKey).toString("base64")};
+  const trusted={authority:"EPHEMERAL_CI_TEST_CONTEXT_ONLY",
+   journal_instance_id:unsigned.journal_instance_id,
+   minimum_revision:current.revision,
+   required_head_sha256:current.journal_head_sha256,
+   public_key_spki_pem:pair.publicKey.export({format:"pem",type:"spki"}).toString(),
+   public_key_sha256:keyFingerprint(pair.publicKey)};
+  const sealed=verifySignedSyntheticCheckpoint(lab,signed,trusted);
+  assert.equal(sealed.status,
+   "SIGNED_SYNTHETIC_CHECKPOINT_MATCH_NOT_PRODUCTION_PROOF");
+  assert.equal(sealed.authorize_print,false);
+  assert.equal(sealed.operational_external_anchor_proven,false);
+  assert.equal(verifySignedSyntheticCheckpoint(lab,signed,
+   {...trusted,required_head_sha256:sha("different")}).status,"ANCHOR_HOLD");
+  // V7.58: assemble THREE signed checkpoints from the ACTUAL source-pinned
+  // V2->V6.8 test journal and separately pin the final witness digest.
+  // Both signer and trusted context are TEST PROCESS memory only.
+  const wid="test:v2v68_witness_001";
+  const witness={schema:WITNESS_SCHEMA,witness_instance_id:wid,records:[]};
+  let prior=genesisHash(wid);
+  for(let rev=1;rev<=3;rev++){
+   const fname="state-"+String(rev).padStart(6,"0")+".json";
+   const head=sha(fs.readFileSync(path.join(lab,fname)));
+   const entry={schema:"deliveryos.signed-journal-anchor.v757.offline",
+    journal_instance_id:unsigned.journal_instance_id,
+    revision:rev,journal_head_sha256:head};
+   const signedEntry={...entry,signature_base64:crypto.sign(null,
+    messageFor(entry),pair.privateKey).toString("base64")};
+   const digest=recordHash(wid,prior,signedEntry);
+   witness.records.push({previous_sha256:prior,checkpoint:signedEntry,
+    record_sha256:digest});
+   prior=digest;
+  }
+  const witnessTrust={
+   authority:"EPHEMERAL_CI_TEST_CONTEXT_ONLY",
+   journal_instance_id:unsigned.journal_instance_id,witness_instance_id:wid,
+   public_key_spki_pem:trusted.public_key_spki_pem,
+   public_key_sha256:trusted.public_key_sha256,
+   pinned_witness_revision:3,pinned_witness_head_sha256:prior,
+   required_latest_journal_head_sha256:current.journal_head_sha256
+  };
+  const proof758=verifySyntheticWitnessAgainstJournal(lab,witness,witnessTrust);
+  assert.equal(proof758.status,
+   "SYNTHETIC_OUT_OF_BAND_WITNESS_MATCH_NOT_PRODUCTION_PROOF");
+  assert.equal(proof758.authorize_print,false);
+  assert.equal(proof758.independent_failure_domain_proven,false);
+  assert.equal(verifySyntheticWitnessAgainstJournal(lab,witness,
+   {...witnessTrust,pinned_witness_head_sha256:sha("untrusted")}).status,
+   "WITNESS_HOLD");
+  // V7.59: only conditional append of the third SOURCE-PINNED ticket may
+  // be proposed from an independently pinned 2-record witness. No provider,
+  // printer, or service receives any byte during this entire exercise.
+  const previousWitness={...witness,records:witness.records.slice(0,2)};
+  const previousTrust={...witnessTrust,
+   pinned_witness_revision:2,
+   pinned_witness_head_sha256:witness.records[1].record_sha256,
+   required_latest_journal_head_sha256:
+    witness.records[1].checkpoint.journal_head_sha256
+  };
+  const cas=planConditionalWitnessCommit(previousWitness,previousTrust,
+   witness,witnessTrust);
+  assert.equal(cas.status,"OFFLINE_CONDITIONAL_APPEND_PROPOSAL_ONLY");
+  assert.equal(cas.expected_revision,2);
+  assert.equal(cas.proposed_revision,3);
+  assert.equal(cas.authorize_print,false);
+  assert.equal(reconcileSimulatedProviderResult(cas,witness,witnessTrust,
+   null).status,"CAS_WITNESS_HOLD","provider outage cannot authorize print");
+  const fakeReadback={kind:"SIMULATED_PROVIDER_READBACK",
+   witness,trusted:witnessTrust,provider_request_id:cas.request_id,
+   observed_revision:cas.proposed_revision,
+   observed_head_sha256:cas.proposed_head_sha256};
+  const readback=reconcileSimulatedProviderResult(cas,witness,witnessTrust,
+   fakeReadback);
+  assert.equal(readback.status,
+   "SYNTHETIC_CAS_READBACK_MATCH_NOT_PROVIDER_PROOF");
+  assert.equal(readback.remote_atomic_commit_proven,false);
+  assert.equal(readback.authorize_print,false);
+ }finally{fs.rmSync(lab,{recursive:true,force:true});}
  const manifest=JSON.parse(fs.readFileSync(path.join(got.proof_dir,"manifest.json"),"utf8"));
  assert.deepEqual(manifest.outputs,got.outputs);
  for(const o of got.outputs){

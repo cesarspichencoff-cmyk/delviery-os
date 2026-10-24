@@ -142,6 +142,7 @@ export function bridgeCurrentPackagingV63(
     if(matched.length>1&&matched.some(s=>s.packaging_role==="CLOSED_COMBO"))
       issues.add("CLOSED_COMBO_MIXED_WITH_EXTRAS");
     groups.push({box:group.box,boxes:group.boxes,status:group.status,
+      category:group.category??null,
       products:group.products.map(x=>({name:x.name,quantity:x.quantity}))});
   }
   if(accounted.size!==sources.length)issues.add("NOT_ALL_SOURCE_ITEMS_ACCOUNTED_FOR");

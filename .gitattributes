@@ -1,0 +1,5 @@
+# Identity-bound source files must retain the exact Git blob bytes on Windows.
+# CRLF conversion invalidates canonical packaging and V2 consumer SHA pins.
+tools/fixtures/canonical-packaging-v63-pinned.js -text
+runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs -text
+runtime/shadow/human-validations-cesar-20261014.review.json -text

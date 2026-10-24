@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const path=require("node:path"),os=require("node:os"),crypto=require("node:crypto");
-const {spawnSync}=require("node:child_process");
+const {spawnSync:spawnNative}=require("node:child_process");
 // Reuse the existing V6.8 gate, not a second validator.
 const {verifyLiveReaderPairV68}=require("../dist/src/production/stableReaderShadowPairV68.js");
 const sourcePath=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
@@ -41,6 +41,23 @@ const temp=fs.mkdtempSync(path.join(os.tmpdir(),"thermal-v714-"));
 const folder=path.join(temp,"candidate");
 const pCode="99001",productCode="9.10.05.072.00",order_key="0001|01|0000000001",revision="a".repeat(64);
 const fakeMotor='globalThis.TATAPackaging={FACT:"FACT",categoryOf:()=>({status:"FACT",category:"dupla_dyo"}),packComanda:()=>({has_unknown:false,bags:{size:"P",size_status:"UNKNOWN",exact_bag_count_status:"UNKNOWN"}}),kitVerdict:()=>({status:"UNKNOWN",kits:[]})};\n';
+// The checked-in candidate keeps the immutable canonical SHA256. Tests of
+// unrelated consumer behavior run a disposable copy pinned to the fake motor
+// currently staged in the temp folder; this never weakens the real candidate.
+const CANONICAL_MOTOR_PIN_V714 =
+ "1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
+const stagedConsumer=path.join(folder,"consumer.cjs");
+const stagedMotor=path.join(folder,"packaging-current.js");
+function spawnSync(command,args,options){
+ if(command===process.execPath&&Array.isArray(args)&&
+    (args[0]===stagedConsumer||args[2]===stagedConsumer)){
+  const fakePin=sha256(fs.readFileSync(stagedMotor));
+  assert.ok(candidate.includes(CANONICAL_MOTOR_PIN_V714));
+  const staged=candidate.replace(CANONICAL_MOTOR_PIN_V714,fakePin);
+  fs.writeFileSync(stagedConsumer,staged);
+ }
+ return spawnNative(command,args,options);
+}
 const baseOverride={
  teknisa_sequence:"0000000001",ifood_sequence:"1001",
  bags:[{size:"M",quantity:1}],kits:[{kit:"Kit Kids",quantidade:1}],
@@ -56,6 +73,23 @@ try{
  fs.mkdirSync(folder,{recursive:true});
  fs.writeFileSync(path.join(folder,"consumer.cjs"),candidate);
  fs.writeFileSync(path.join(folder,"packaging-current.js"),fakeMotor);
+ check("V7.14 pinned candidate refuses foreign motor BEFORE evaluating it",()=>{
+  const original=fs.readFileSync(stagedMotor);
+  const fake='throw new Error("MOTOR_EXECUTED_INSTEAD_OF_BLOCKED");';
+  assert.ok(candidate.indexOf("if(motorDigestBeforeV714!==CANONICAL_MOTOR_SHA256_V714)")<
+   candidate.indexOf("runInThisContext(motorBytesV714.toString"));
+  assert.ok(candidate.includes(CANONICAL_MOTOR_PIN_V714));
+  try{
+   fs.writeFileSync(stagedMotor,fake);
+   fs.writeFileSync(stagedConsumer,candidate); // original unmodified runtime
+   const p=spawnNative(process.execPath,[stagedConsumer],
+    {encoding:"utf8",timeout:10000});
+   assert.notEqual(p.status,0);
+   assert.ok(p.stderr.includes("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"),p.stderr);
+   assert.ok(!p.stderr.includes("MOTOR_EXECUTED_INSTEAD_OF_BLOCKED"));
+   assert.equal(p.stdout,"");
+  }finally{fs.writeFileSync(stagedMotor,original);}
+ });
  const docs={
   "app-data.json":{products:[]},
   "product-identity-cache-v1.json":{schema:"deliveryos.product-identity-cache.v1",
@@ -125,6 +159,261 @@ try{
   assert.equal(result.effects.print,false);assert.equal(result.effects.spooler_write,false);
   return withPair?{event,decision:result}:result;
  }
+ check("V8.44 contradictory event readiness never erases upstream source blockers",()=>{
+  const cases=[
+   {title:"ready-with-event-failure",ready:true,eventErrors:["SOURCE_ORDER_DIVERGENCE"],
+    serviceErrors:[],expected:"UPSTREAM_SOURCE_ORDER_DIVERGENCE"},
+   {title:"ready-with-service-failure",ready:true,eventErrors:[],
+    serviceErrors:["SERVICE_STATE_EXPIRED_FOR_ORDER"],
+    expected:"UPSTREAM_SERVICE_SERVICE_STATE_EXPIRED_FOR_ORDER"},
+   {title:"ready-with-both-failures",ready:true,eventErrors:["EVENT_INTEGRITY_MISMATCH"],
+    serviceErrors:["WRONG_SERVICE_REVISION"],expected:"UPSTREAM_EVENT_INTEGRITY_MISMATCH",
+    second:"UPSTREAM_SERVICE_WRONG_SERVICE_REVISION"},
+   {title:"ready-with-malformed-event-blockers",ready:true,eventErrors:null,
+    serviceErrors:[],expected:"UPSTREAM_EVENT_BLOCKERS_MALFORMED"},
+   {title:"ready-with-malformed-service-blockers",ready:true,eventErrors:[],
+    serviceErrors:null,expected:"UPSTREAM_SERVICE_BLOCKERS_MALFORMED"},
+   {title:"not-ready-with-empty-blockers",ready:false,eventErrors:[],
+    serviceErrors:[],expected:"UPSTREAM_EVENT_NOT_READY"},
+  ];
+  for(const t of cases){
+   const {event}=run([],[],"1.000",undefined,true);
+   event.ready_for_downstream_shadow=t.ready;
+   event.blockers=t.eventErrors;
+   event.service_resolution.blockers=t.serviceErrors;
+   fs.writeFileSync(path.join(folder,"event.json"),JSON.stringify(event));
+   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),
+     path.join(folder,"event.json")],{encoding:"utf8",timeout:10000});
+   assert.equal(p.status,5,t.title+" "+p.stderr);
+   assert.equal(p.stderr,"",t.title);
+   const out=JSON.parse(p.stdout);
+   assert.equal(out.ready,false,t.title);
+   assert.ok(out.blocking_reasons.includes(t.expected),t.title+" "+out.blocking_reasons);
+   if(t.second)assert.ok(out.blocking_reasons.includes(t.second),t.title);
+   assert.equal(out.effects.print,false,t.title);
+   assert.equal(out.effects.spooler_write,false,t.title);
+  }
+  // No spurious upstream failures when readiness and both blocker lists agree.
+  const {event}=run([],[],"1.000",undefined,true);
+  event.ready_for_downstream_shadow=true;
+  event.blockers=[];
+  event.service_resolution.blockers=[];
+  fs.writeFileSync(path.join(folder,"event.json"),JSON.stringify(event));
+  const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),
+    path.join(folder,"event.json")],{encoding:"utf8",timeout:10000});
+  assert.equal(p.status,5,p.stderr); // packaging remains UNKNOWN; no release.
+  const out=JSON.parse(p.stdout);
+  assert.ok(!out.blocking_reasons.some(x=>x.startsWith("UPSTREAM_")),
+    JSON.stringify(out.blocking_reasons));
+  assert.equal(out.ready,false);assert.equal(out.effects.print,false);
+ });
+ check("V7.41 exact all-item packaging input and review authority",()=>{
+  const files=["packaging-current.js","product-aliases-v1.json",
+    "app-data.json","product-identity-cache-v1.json"];
+  const saved=Object.fromEntries(files.map(k=>[k,fs.readFileSync(path.join(folder,k))]));
+  const restore=()=>{for(const k of files)fs.writeFileSync(path.join(folder,k),saved[k]);};
+  const motorFile=path.join(folder,"packaging-current.js");
+  const aliasFile=path.join(folder,"product-aliases-v1.json");
+  const academyFile=path.join(folder,"app-data.json");
+  const cacheFile=path.join(folder,"product-identity-cache-v1.json");
+  const proofMotor='globalThis.TATAPackaging={FACT:"FACT",categoryOf:()=>({status:"FACT",category:"dupla_dyo"}),packComanda:es=>({has_unknown:true,test_qty:es.map(x=>x.quantity),bags:{size_status:"UNKNOWN",exact_bag_count_status:"UNKNOWN"}}),kitVerdict:es=>({status:"UNKNOWN",test_qty:es.map(x=>x.quantity)})};\n';
+  function event(){return run([],[],"1.000",undefined,true).event;}
+  function extra(e,changes={}){e.order.items.push({...e.order.items[0],
+    NRPRODCOMVEN:"000002",...changes});}
+  function execute(e){
+   fs.writeFileSync(path.join(folder,"event.json"),JSON.stringify(e));
+   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),
+     path.join(folder,"event.json")],{encoding:"utf8",timeout:10000});
+   assert.equal(p.status,5,p.stderr);assert.equal(p.stderr,"");
+   const got=JSON.parse(p.stdout);
+   assert.equal(got.ready,false);assert.equal(got.effects.print,false);
+   assert.equal(got.effects.spooler_write,false);
+   return got;
+  }
+  function alias(classification,canonicalCode=productCode){
+   fs.writeFileSync(aliasFile,JSON.stringify({
+    schema:"deliveryos.academia-live-product-aliases.v1",
+    aliases:[{live_name:"TESTE DUPLA",canonical_code:canonicalCode,classification}]}));
+  }
+  function held(label,change,configure=()=>{}){
+   restore();fs.writeFileSync(motorFile,proofMotor);
+   const e=event();configure();change(e);
+   const got=execute(e);
+   assert.equal(got.packaging,null,label);
+   assert.equal(got.kits,null,label);
+   assert.ok(got.blocking_reasons.includes("PACKAGING_SKIPPED_INCOMPLETE_OR_UNREVIEWED_ORDER"),
+     label+" "+JSON.stringify(got.blocking_reasons));
+  }
+  try{
+   restore();fs.writeFileSync(motorFile,proofMotor);
+   assert.deepEqual(execute(event()).packaging.test_qty,[1]);
+   const both=event();extra(both,{QTPRODCOMVEN:"3.000"});
+   const duplicateProduct=execute(both);
+   assert.equal(duplicateProduct.items.length,2);
+   assert.deepEqual(duplicateProduct.packaging.test_qty,[1,3]);
+   assert.deepEqual(duplicateProduct.kits.test_qty,[1,3]);
+   held("unknown second product",e=>extra(e,{CDPRODUTO:"UNKNOWN_ID"}));
+   held("missing CDPRODUTO",e=>extra(e,{CDPRODUTO:null}));
+   held("mismatched canonical code",e=>extra(e,{CDARVPROD:"1234567890"}));
+   held("invalid second quantity",e=>extra(e,{QTPRODCOMVEN:"1.5"}));
+   held("duplicate line identifier",e=>extra(e,{NRPRODCOMVEN:"000001"}));
+   held("missing line identifier",e=>extra(e,{NRPRODCOMVEN:null}));
+   held("empty order",e=>{e.order.items=[];});
+   held("unreviewed alias",e=>{},()=>alias({family:"dupla",station:"duplas",review_required:true}));
+   held("missing review flag",e=>{},()=>alias({family:"dupla",station:"duplas"}));
+   held("mismatched alias canonical code",e=>{},
+    ()=>alias({family:"dupla",station:"duplas",review_required:false},"9.99.99.999.99"));
+   const academyCase=review=>{
+    fs.writeFileSync(aliasFile,JSON.stringify({
+     schema:"deliveryos.academia-live-product-aliases.v1",aliases:[]}));
+    fs.writeFileSync(academyFile,JSON.stringify({products:[{
+     nome:"TESTE DUPLA",classification:review}]}));
+   };
+   held("missing Academy review flag",e=>{},
+    ()=>academyCase({family:"dupla",station:"duplas"}));
+   held("Academy review required",e=>{},
+    ()=>academyCase({family:"dupla",station:"duplas",review_required:true}));
+   held("source live name missing",e=>{},()=>{
+    fs.writeFileSync(cacheFile,JSON.stringify({
+     schema:"deliveryos.product-identity-cache.v1",
+     rows:[{CDPRODUTO:pCode,canonical:productCode,NMPRODUTO:""}]}));
+   });
+  }finally{restore();}
+ });
+ check("V8.45/V8.46 logical printer identity versus physical endpoint boundary",()=>{
+  const routingFile=path.join(folder,"routing.json");
+  const printerFile=path.join(folder,"printer-map.json");
+  const prevRouting=fs.readFileSync(routingFile),prevPrinters=fs.readFileSync(printerFile);
+  const printer=(code,label)=>({printer_code:code,printer_name:"SYNTHETIC_"+label,
+    printer_ip:"127.0.0."+label});
+  const a=printer("00009","1"),b=printer("00003","2");
+  const decide=(routes,mappings,service,mutateEvent=()=>{})=>{
+   fs.writeFileSync(routingFile,JSON.stringify({
+     schema:"deliveryos.odhen.product-routing.compact.v1",
+     products:{[productCode]:routes}}));
+   fs.writeFileSync(printerFile,JSON.stringify({
+     schema:"deliveryos.runtime-printer-map.v1",mappings}));
+   // Actual child process and exact same fake event shape as V7.14 tests.
+   const {event}=run([],[],"1.000",undefined,true);
+   event.ready_for_downstream_shadow=true;
+   event.blockers=[];
+   event.service_resolution={...event.service_resolution,service,blockers:[]};
+    mutateEvent(event);
+   const eventFile=path.join(folder,"event.json");
+   fs.writeFileSync(eventFile,JSON.stringify(event));
+   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),eventFile],
+     {encoding:"utf8",timeout:10000});
+   assert.equal(p.status,5,p.stderr);
+   assert.equal(p.stderr,"");
+   const result=JSON.parse(p.stdout);
+   assert.equal(result.ready,false);
+   assert.equal(result.effects.print,false);
+   assert.equal(result.effects.spooler_write,false);
+   return result;
+  };
+  const printerCodes=r=>r.items[0].targets.map(x=>x.printer_code);
+  const blockers=r=>r.blocking_reasons;
+  try{
+   // V8.48: the Odhen source has separate production/production2
+   // paths. The two printer associations are NOT a proved LUNCH/DINNER
+   // switch; no synthetic service value can grant physical selection.
+   const a2=printer("00006","3"),b2=printer("00004","4");
+   const bothPairs=[
+    {routes:["00009","00003"],printers:[a,b],code:"SUSHI1"},
+    {routes:["00006","00004"],printers:[a2,b2],code:"SUSHI2"}
+   ];
+   const altered=[
+    {label:"upstream blocker",mutate:e=>{e.blockers=["SOURCE_UNVERIFIED"];}},
+    {label:"stale service",mutate:e=>{
+      e.service_resolution.blockers=["SERVICE_STATE_EXPIRED_FOR_ORDER"];}},
+    {label:"malformed service blockers",mutate:e=>{
+      e.service_resolution.blockers=null;}},
+    {label:"ready false",mutate:e=>{e.ready_for_downstream_shadow=false;}},
+    {label:"missing source reference",mutate:e=>{
+      e.service_resolution.source_ref=null;}},
+    {label:"unproven evidence",mutate:e=>{
+      e.service_resolution.evidence="UNKNOWN";}}
+   ];
+   for(const pair of bothPairs) {
+    for(const service of ["LUNCH","DINNER",null,"MIDDAY_GUESS"]) {
+      const out=decide(pair.routes,pair.printers,service);
+      assert.deepEqual(printerCodes(out),[],
+        pair.code+" must not select destination for "+service);
+      assert.ok(blockers(out).includes(
+        pair.code+"_DUAL_PRODUCTION_ROLE_UNPROVEN_"+productCode));
+      assert.equal(out.effects.print,false);
+      assert.equal(out.effects.spooler_write,false);
+    }
+    for(const x of altered){
+      const out=decide(pair.routes,pair.printers,"LUNCH",x.mutate);
+      assert.deepEqual(printerCodes(out),[],
+       pair.code+" "+x.label+" cannot bypass unverified role");
+      assert.ok(blockers(out).includes(
+       pair.code+"_DUAL_PRODUCTION_ROLE_UNPROVEN_"+productCode));
+    }
+   }
+   // Existing one-destination mappings are unaffected and remain only
+   // diagnostics. This child process is always blocked and nonprinting.
+   for(const [route,p] of [["00009",a],["00003",b],
+      ["00006",a2],["00004",b2]]) {
+     for(const service of ["LUNCH","DINNER",null]) {
+      const one=decide([route],[p],service);
+      assert.deepEqual(printerCodes(one),[route]);
+      assert.ok(!blockers(one).some(x=>
+        x.includes("DUAL_PRODUCTION_ROLE_UNPROVEN")));
+     }
+   }
+   const k=printer("00002","5");
+   const mixed=decide(["00002","00009","00003"],[k,a,b],null);
+   assert.ok(blockers(mixed).includes("SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN_"+productCode));
+   assert.deepEqual(printerCodes(mixed),["00002"],
+     "known independent kitchen route remains visible, but decision stays HOLD");
+   const duplicatedRoute=decide(["00009","00009"],[a],"LUNCH");
+   assert.ok(blockers(duplicatedRoute).includes("ROUTE_DUPLICATED_FOR_PRODUCT_"+productCode));
+   const duplicatedPrinter=decide(["00009"],[a,printer("00009","3")],"LUNCH");
+   assert.ok(blockers(duplicatedPrinter).includes("PRINTER_CODE_AMBIGUOUS_"+productCode));
+   assert.equal(duplicatedPrinter.items[0].targets[0].printer_ip,"127.0.0.1",
+     "first record remains only for audit; last entry must not replace it");
+   const sameDuplicate=decide(["00009"],[a,{...a}],"LUNCH");
+   assert.ok(blockers(sameDuplicate).includes("PRINTER_CODE_AMBIGUOUS_"+productCode));
+   const missing=decide(["00003"],[a],"DINNER");
+   assert.ok(blockers(missing).includes("PRINTER_MAP_MISSING_"+productCode));
+   const unrelated=decide(["00009"],[a,b,{...b}],"LUNCH");
+   assert.ok(!blockers(unrelated).includes("PRINTER_CODE_AMBIGUOUS_"+productCode),
+     "unused duplicate code should not manufacture a failure for this item");
+   // Semantic receipt previews are allowed without a physical IP, but
+   // are NEVER print-authorized. Logical names/codes must remain complete.
+   const addressCases=[
+    {name:"missing-ip",mapping:{printer_code:"00009",printer_name:"TEST"},invalid:false},
+    {name:"blank-ip",mapping:{...a,printer_ip:"  "},invalid:false},
+    {name:"spaced-ip",mapping:{...a,printer_ip:" 127.0.0.1 "},invalid:false},
+    {name:"empty-name",mapping:{...a,printer_name:""},invalid:true},
+    {name:"blank-name",mapping:{...a,printer_name:"   "},invalid:true},
+    {name:"missing-name",mapping:{printer_code:"00009",printer_ip:"127.0.0.1"},invalid:true},
+   ];
+   for(const c of addressCases){
+    const out=decide(["00009"],[c.mapping],"LUNCH");
+    assert.equal(blockers(out).includes("PRINTER_TARGET_INCOMPLETE_"+productCode),
+      c.invalid,c.name+" "+JSON.stringify(blockers(out)));
+    assert.equal(out.effects.print,false,c.name);
+    assert.equal(out.effects.spooler_write,false,c.name);
+   }
+   for(const address of ["127.0.0.1","sushi-printer.internal","::1"]){
+    const out=decide(["00009"],[{...a,printer_ip:address}],"LUNCH");
+    assert.ok(!blockers(out).includes("PRINTER_TARGET_INCOMPLETE_"+productCode),
+      "valid nonblank network address does not require inventing a new format");
+   }
+   const malformedCode=decide(["00009 "],[
+    {...a,printer_code:"00009 "}
+   ],"LUNCH");
+   assert.ok(blockers(malformedCode).includes("PRINTER_TARGET_INCOMPLETE_"+productCode));
+   // Missing record is a different root cause, not a fake malformed row.
+   assert.ok(!blockers(missing).includes("PRINTER_TARGET_INCOMPLETE_"+productCode));
+  }finally{
+   fs.writeFileSync(routingFile,prevRouting);
+   fs.writeFileSync(printerFile,prevPrinters);
+  }
+ });
  check("V7.14 legacy exact-sequence override is blocked without snapshot binding",()=>{
   const r=run([baseOverride]);
   assert.ok(r.blocking_reasons.includes("HUMAN_ORDER_OVERRIDE_NOT_BOUND_TO_EXACT_SNAPSHOT"));
@@ -396,6 +685,10 @@ try{
   // blocked fictional fixture. The V7.21 gate rejects its fake executable
   // module BEFORE spawn, so this scenario must stop at SOURCE_PREFLIGHT.
   run([],[],"1.000",undefined,true);
+  // The fixture consumer is normally re-pinned to a fake test motor. The
+  // standalone gate must receive the immutable reviewed consumer unchanged;
+  // otherwise it correctly rejects consumer identity before checking motor.
+  fs.writeFileSync(stagedConsumer,candidate);
   fs.writeFileSync(path.join(folder,"proof.json"),"{}");
   const motorPath=path.join(folder,"packaging-current.js");
   const original=fs.readFileSync(motorPath);

@@ -53,6 +53,8 @@ export interface PackagingGroupInput {
   box: string | null;
   boxes: number | null;
   status: string;
+  /** Exact motor category, preserved for display; not an inferred box rule. */
+  category?: string | null;
   /** A motor-proven zero-box product is not an unknown packaging box. */
   kind?: "sem_caixa";
   products?: Array<{ name: string; quantity: number }>;

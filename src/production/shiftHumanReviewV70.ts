@@ -123,8 +123,9 @@ export function reviewHumanShiftRenewalV70(
  * supplied order-opened timestamp; it never translates a request to installed
  * shift-state v2 or upgrades source/event identity to trusted.
  *
- * The fractional part matters at the end boundary: 15:00:00.0000001 is AFTER
- * a declared 15:00:00 boundary, even though substring(0,19) is equal.
+ * The end is EXCLUSIVE, matching the installed Windows V2 watcher:
+ * 15:00:00.0000000 and later are outside a valid_until_local=15:00:00 window.
+ * Fractional ticks cannot be discarded when checking the boundary.
  */
 export interface ShiftOrderWindowInputV74 {
   store_id:string;
@@ -196,7 +197,7 @@ export function assessReviewedShiftOrderWindowV74(
    issues.add("SHIFT_WINDOW_ORDER_DATE_MISMATCH");
  if(opened&&start&&opened<start)
    issues.add("SHIFT_WINDOW_ORDER_PRECEDES_HUMAN_CONFIRMATION");
- if(opened&&end&&opened>end)
+ if(opened&&end&&opened>=end)
    issues.add("SHIFT_WINDOW_ORDER_AFTER_VALID_UNTIL");
  // Never interpret an incomplete or spoofed proposal as deployment authority.
  return {status:issues.size?"BLOCKED":"WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED",

@@ -89,7 +89,7 @@ check("unknown loose items remain separate and no invented box",()=>{
  assert.equal(svg.boxes,0);
  assert.ok(svg.svg.includes("EMBALAGEM A CONFERIR"));
  assert.ok(!svg.svg.includes("1 CAIXA |"));
- assert.ok(esc.text_trace.includes("EMBALAGEM A CONFERIR"));
+ assert.ok(esc.text_trace.includes("CAIXA: A DEFINIR"));
  assert.ok(!esc.text_trace.includes("1 CAIXA |"));
 });
 check("mandatory finalization appears once and before TATA sequence",()=>{

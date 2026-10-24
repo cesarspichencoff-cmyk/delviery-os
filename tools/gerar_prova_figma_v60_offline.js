@@ -180,13 +180,22 @@ function makeProduction(ticket) {
   const r=new Receipt("PRODUCAO",ticket.identifiers,name);
   let physicalNumber=0;
   for(const box of ticket.boxes) {
-    const repetitions=box.physical_box_count||1;
-    if(!isPositiveInt(repetitions))r.blockers.push("INVALID_PHYSICAL_BOX_COUNT");
+    // Only an ABSENT count defaults to one. Zero, null, NaN, fractional
+    // or coerced strings must never silently become a physical box.
+    const repetitions=box.physical_box_count===undefined?1:box.physical_box_count;
+    const validCount=isPositiveInt(repetitions);
+    if(!validCount)r.blockers.push("INVALID_PHYSICAL_BOX_COUNT");
     // Expand repeated CLOSED_COMBO only if each physical box is proven.
-    const split=repetitions>1 && box.items.length===1 &&
+    const split=validCount && repetitions>1 && box.items.length===1 &&
       box.items[0].quantity===repetitions && box.status==="PROVEN";
     if(repetitions>1&&!split)r.blockers.push("PER_BOX_DISTRIBUTION_NOT_PROVEN");
-    for(let i=0;i<(split?repetitions:1);i++) {
+    // Resource bound for SVG preview ONLY, not a business quantity limit.
+    // A very large proven count requires separate visual review.
+    const MAX_PREVIEW_EXPANSION=256;
+    if(split&&repetitions>MAX_PREVIEW_EXPANSION)
+      r.blockers.push("PHYSICAL_BOX_PREVIEW_REQUIRES_REVIEW");
+    const expand=split&&repetitions<=MAX_PREVIEW_EXPANSION;
+    for(let i=0;i<(expand?repetitions:1);i++) {
       physicalNumber++;
       r.box(box.model||"A CONFERIR","C"+physicalNumber,
         split?[{...box.items[0],quantity:1}]:box.items,
@@ -199,7 +208,8 @@ function makeProduction(ticket) {
 function makeConference(ticket) {
   const r=new Receipt("CONFERENCIA",ticket.identifiers,"CONFERÊNCIA");
   for(const box of ticket.boxes) {
-    if(box.status!=="PROVEN" || (box.physical_box_count??1)!==1 ||
+    if(box.status!=="PROVEN" ||
+       (box.physical_box_count===undefined?1:box.physical_box_count)!==1 ||
        !Array.isArray(box.items) || box.items.length===0)
       r.blockers.push("CONFERENCE_BOX_MEMBERSHIP_NOT_PROVEN:"+box.position);
     r.box(box.model||"A CONFERIR",box.position,box.items||[]);
