@@ -737,6 +737,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/events/batch" && req.method === "POST") {
       let eventActor: ActorContext | null = actor;
+      let attestedDeviceId: string | null = null;
       // Delegation is accepted only in the Authorization header (never query).
       const delegatedHeader = typeof req.headers.authorization === "string"
         ? /^Bearer\s+(pt1\.[^\s]+)$/i.exec(req.headers.authorization)?.[1]
@@ -751,13 +752,28 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           ok:false,code:auth.reason,retryable:auth.status===503,
         });
         eventActor = {actor_id:auth.claims.actor_id,role:auth.claims.role};
+        attestedDeviceId = auth.claims.device_id;
       }
       if (!eventActor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as {
-        events?: Array<{ event_id: string; command: Record<string, unknown> }>;
+        events?: Array<{
+          event_id: string;
+          idempotency_key?: string;
+          command: Record<string, unknown>;
+        }>;
       };
-      const results: Array<{ event_id: string; ok: boolean; error?: string }> = [];
-      for (const ev of body.events ?? []) {
+      if (!Array.isArray(body.events) || body.events.length > 100)
+        return reply(400,{ok:false,code:"INVALID_EVENTS_BATCH"});
+      const results: Array<{
+        event_id:string;ok:boolean;error?:string;code?:string;retryable?:boolean;
+      }> = [];
+      for (const ev of body.events) {
+        if (!ev || typeof ev !== "object" || !ev.command ||
+            typeof ev.command !== "object" || Array.isArray(ev.command)) {
+          results.push({event_id:typeof ev?.event_id==="string"?ev.event_id:"",
+            ok:false,code:"INVALID_EVENT",retryable:false});
+          continue;
+        }
         // O aparelho propoe; o dominio dispoe. Nenhuma regra e reavaliada aqui.
         const cmd = { ...ev.command } as Record<string, unknown>;
         if (typeof cmd.courier_actor_id === "string") {
@@ -766,8 +782,20 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         if (typeof cmd.rider_id === "string") {
           cmd.rider_id = asInternalRiderActorId(cmd.rider_id);
         }
-        const r = await facade.executeAs(eventActor, cmd as never);
-        results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
+        // Compatibilidade de envelopes legados sem chave explicita:
+        // event_id e identidade estavel. Nunca criar UUID a cada tentativa.
+        const key = typeof ev.idempotency_key==="string" && ev.idempotency_key.trim()
+          ? ev.idempotency_key
+          : typeof cmd.idempotency_key==="string" && cmd.idempotency_key.trim()
+            ? cmd.idempotency_key : ev.event_id;
+        const r = await facade.executeAs(eventActor, cmd as never, {
+          event_id:ev.event_id,idempotency_key:key,device_id:attestedDeviceId,
+        });
+        results.push({
+          event_id:ev.event_id,ok:r.ok,
+          error:r.ok?undefined:r.error,
+          code:r.code,retryable:r.retryable ?? false,
+        });
       }
       return reply(200, { ok: true, results });
     }

@@ -256,6 +256,17 @@ class SyncWorker(
                                     "dominio_recusou: $reason",
                                 )
                             }
+                            // Um COMMIT de resultado incerto nao prova recusa
+                            // terminal. Mantem a mesma identidade no Room.
+                            if (decision.retryable.isNotEmpty()) {
+                                decision.retryable.groupBy { it.reason }.forEach { (reason, pending) ->
+                                    db.outbox().markFailed(
+                                        pending.map { it.eventId },
+                                        "recibo_recuperavel: $reason",
+                                    )
+                                }
+                                retryable = true
+                            }
                         }
                         is EventReceiptDecision.Invalid -> {
                             db.outbox().markFailed(ids, "recibo_invalido:${decision.reason}")

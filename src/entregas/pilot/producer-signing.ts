@@ -109,7 +109,9 @@ export function uowComAtestacao(uow: UnitOfWork, assinante: AssinanteDeProdutor)
     get occurrences() { return uow.occurrences; },
     get riders() { return uow.riders; },
     get events() { return uow.events; },
+    get inboundReceipts() { return uow.inboundReceipts; },
     outbox,
+    hasPendingWrites: () => uow.hasPendingWrites(),
     commit: () => uow.commit(),
     rollback: () => uow.rollback(),
   };

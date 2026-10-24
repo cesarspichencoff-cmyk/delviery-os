@@ -625,26 +625,28 @@ async function suiteCommandBatchAuthority(): Promise<void> {
   await startServer({ captureEnabled: true, term: syntheticTerm() });
   const tripId = "trip-batch-authority-1";
   const deliveryId = "delivery-batch-authority-1";
+  // Reusar exatamente a mesma mensagem, inclusive timestamp e corpo.
+  // Alterar um unico byte nao seria um teste fiel de replay.
+  const firstEvent = {
+    event_id: "evt-batch-create-1",
+    idempotency_key: "idem-batch-create-1",
+    command: {
+      type: "CreateTrip",
+      command_id: "cmd-batch-create-1",
+      occurred_at: new Date().toISOString(),
+      unit_id: "PINHEIROS",
+      trip_id: tripId,
+      courier_actor_id: "rid-1",
+      deliveries: [{ delivery_id: deliveryId, order_ref: "P-BATCH-AUTH-1" }],
+      actor: { actor_id: "admin-falso", role: "gerente" },
+    },
+  };
 
   await test("/api/events/batch atravessa ApplicationService e persiste trip_created", async () => {
     const r = await api("/api/events/batch", {
       method: "POST",
       token: OPS_TOKEN,
-      body: {
-        events: [{
-          event_id: "evt-batch-create-1",
-          command: {
-            type: "CreateTrip",
-            command_id: "cmd-batch-create-1",
-            occurred_at: new Date().toISOString(),
-            unit_id: "PINHEIROS",
-            trip_id: tripId,
-            courier_actor_id: "rid-1",
-            deliveries: [{ delivery_id: deliveryId, order_ref: "P-BATCH-AUTH-1" }],
-            actor: { actor_id: "admin-falso", role: "gerente" },
-          },
-        }],
-      },
+      body: { events: [firstEvent] },
     });
     assert.equal(r.status, 200);
     const results = r.json.results as Array<{ ok: boolean }>;
@@ -659,6 +661,48 @@ async function suiteCommandBatchAuthority(): Promise<void> {
     const timeline = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
     const entries = timeline.json.timeline as Array<Record<string, unknown>>;
     assert.ok(entries.some((x) => x.event_type === "trip_created"), "trip_created não chegou ao event log");
+  });
+
+  // Gate adversarial novo: reprovar enquanto replay fiel virar recusa.
+  // A plataforma/Android retenta em perda de resposta; repetir o mesmo
+  // event_id e command_id deve receber recibo positivo SEM reexecutar dominio.
+  await test("Q idempotencia: replay do mesmo event_id recebe recibo positivo e sem duplicar", async () => {
+    const payload = { events: [firstEvent] };
+    const timelineBefore = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), {token: OPS_TOKEN});
+    const beforeCount = (timelineBefore.json.timeline as unknown[]).length;
+    const r = await api("/api/events/batch", { method: "POST", token: OPS_TOKEN, body: payload });
+    assert.equal(r.status, 200);
+    const result = (r.json.results as Array<{event_id:string;ok:boolean;error?:string}>)[0];
+    assert.equal(result?.event_id, payload.events[0].event_id);
+    assert.equal(result?.ok, true, "mesmo event_id nao pode virar rejeicao permanente ao perder resposta HTTP");
+    const timelineAfter = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), {token: OPS_TOKEN});
+    assert.equal((timelineAfter.json.timeline as unknown[]).length, beforeCount, "replay nao pode duplicar dominio");
+  });
+
+  await test("Q idempotencia: colisao event_id com comando diferente nao pode alterar dominio", async () => {
+    const alteredTripId = "trip-batch-replayed-id-altered-command";
+    const replay = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN,
+      body: {
+        events: [{
+          event_id: "evt-batch-create-1",
+          idempotency_key: "idem-batch-create-1",
+          command: {
+            type: "CreateTrip", command_id: "cmd-forged-reuse-event-id",
+            occurred_at: "2026-10-20T00:00:00Z", unit_id: "ITAIM",
+            trip_id: alteredTripId, courier_actor_id: "rid-1",
+            deliveries: [{ delivery_id: "delivery-forged-reuse", order_ref: "P-FORGED-REUSE" }],
+          },
+        }],
+      },
+    });
+    const receipt = (replay.json.results as Array<{event_id: string;ok: boolean}>)[0];
+    assert.equal(receipt?.ok, false, "event_id ja recebido nao pode aceitar outro payload");
+    const snapshot = await api("/api/snapshot", {token: OPS_TOKEN});
+    assert.equal(
+      (snapshot.json.trips as Array<{trip_id: string}>).some((x) => x.trip_id === alteredTripId),
+      false, "colisao event_id aplicou comando diferente",
+    );
   });
 
   await test("/api/events/batch não permite operador se declarar gerente", async () => {
@@ -733,6 +777,47 @@ async function suiteCommandBatchAuthority(): Promise<void> {
     assert.equal(snap.json.unit_id, "ITAIM");
   });
 
+  await stopServer();
+}
+
+/**
+ * Adversarial restart: o mesmo comando ja commitado nao pode reexecutar
+ * dominio mesmo apos perda da memoria do processo (commandIds).
+ */
+async function suiteReplayAfterRestart(): Promise<void> {
+  await startServer({ captureEnabled: true, term: syntheticTerm() });
+  const trip = "trip-restart-idempotency-synthetic";
+  const event = {
+    event_id: "evt-restart-idempotency-synthetic",
+    idempotency_key: "idem-restart-idempotency-synthetic",
+    command: {
+      type: "CreateTrip", command_id: "cmd-restart-idempotency-synthetic",
+      occurred_at: "2026-10-20T12:00:00Z", unit_id: "ITAIM",
+      trip_id: trip, courier_actor_id: "rid-1",
+      deliveries: [{ delivery_id: "delivery-restart-synthetic", order_ref: "ORDER-RESTART-SYNTHETIC" }],
+    },
+  };
+  const payload = { events: [event] };
+  const first = await api("/api/events/batch", {
+    method: "POST", token: OPS_TOKEN, body: payload,
+  });
+  assert.equal(first.status, 200);
+  assert.equal((first.json.results as Array<{ok: boolean}>)[0]?.ok, true);
+  const before = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(trip), { token: OPS_TOKEN });
+  const countBefore = (before.json.timeline as unknown[]).length;
+  await stopServer();
+  await startServer({ captureEnabled: true, term: syntheticTerm() });
+  await test("Q idempotencia: reboot + replay nao reaplica nem perde recibo", async () => {
+    const replay = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN, body: payload,
+    });
+    assert.equal(replay.status, 200);
+    assert.equal((replay.json.results as Array<{ok: boolean}>)[0]?.ok, true,
+      "replay fiel apos reinicio deveria recuperar comprovante positivo");
+    const after = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(trip), { token: OPS_TOKEN });
+    assert.equal((after.json.timeline as unknown[]).length, countBefore,
+      "replay apos restart duplicou eventos no dominio");
+  });
   await stopServer();
 }
 
@@ -961,6 +1046,7 @@ async function main(): Promise<void> {
     await suiteTermoLiberado();
     await suiteViagemReal();
     await suiteCommandBatchAuthority();
+    await suiteReplayAfterRestart();
     await suiteRiderMobile();
     await suiteHttps();
   } finally {
