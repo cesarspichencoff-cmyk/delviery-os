@@ -126,6 +126,30 @@ ok("missing shared metadata from both reports cannot compare as stable",()=>{
  assert.equal(verdict.status,"HOLD");
  assert.ok(verdict.reasons.includes("BASELINE_QUEUE_METADATA_INCOMPLETE"));
 });
+ok("same no-paper CIM error in both snapshots must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.windows_queues[0].cim.detected_error_state="4";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_CIM_UNHEALTHY_OR_UNRECOGNIZED"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_CIM_UNHEALTHY_OR_UNRECOGNIZED"));
+});
+ok("same jammed CIM error in both snapshots must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.windows_queues[0].cim.detected_error_state="8";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_CIM_UNHEALTHY_OR_UNRECOGNIZED"));
+});
+ok("same offline extended CIM status in both snapshots must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.windows_queues[0].cim.extended_printer_status="7";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_CIM_UNHEALTHY_OR_UNRECOGNIZED"));
+});
+mustHold("CIM detected error after baseline",b=>b.windows_queues[0].cim.detected_error_state="4","FOLLOWUP_CIM_UNHEALTHY_OR_UNRECOGNIZED");
+mustHold("unrecognized CIM extended status after baseline",b=>b.windows_queues[0].cim.extended_printer_status="999","FOLLOWUP_CIM_UNHEALTHY_OR_UNRECOGNIZED");
 ok("missing CIM error state in both snapshots cannot compare as stable",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
  delete a.windows_queues[0].cim.detected_error_state;
