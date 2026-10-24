@@ -126,6 +126,20 @@ ok("missing shared metadata from both reports cannot compare as stable",()=>{
  assert.equal(verdict.status,"HOLD");
  assert.ok(verdict.reasons.includes("BASELINE_QUEUE_METADATA_INCOMPLETE"));
 });
+// Identical unhealthy statuses must fail closed: equality is not health.
+for(const status of ["PaperJam","OutOfPaper","DoorOpen","NoToner",
+                     "Degraded","UnrecognizedFutureStatus"]){
+ ok("same "+status+" in both snapshots must HOLD",()=>{
+  const a=structuredClone(base),b=structuredClone(follow);
+  a.windows_queues[0].printer_status=status;
+  b.windows_queues[0].printer_status=status;
+  const verdict=assessPair(a,b);
+  assert.equal(verdict.status,"HOLD");
+  assert.ok(verdict.reasons.includes("BASELINE_PRINTER_STATUS_UNHEALTHY"));
+  assert.ok(verdict.reasons.includes("FOLLOWUP_PRINTER_STATUS_UNHEALTHY"));
+  assert.equal(verdict.authorizes_print,false);
+ });
+}
 ok("same no-paper CIM error in both snapshots must HOLD",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
  for(const x of [a,b])x.windows_queues[0].cim.detected_error_state="4";
