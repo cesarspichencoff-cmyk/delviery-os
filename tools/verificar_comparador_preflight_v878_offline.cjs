@@ -126,6 +126,24 @@ ok("missing shared metadata from both reports cannot compare as stable",()=>{
  assert.equal(verdict.status,"HOLD");
  assert.ok(verdict.reasons.includes("BASELINE_QUEUE_METADATA_INCOMPLETE"));
 });
+ok("missing CIM error state in both snapshots cannot compare as stable",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ delete a.windows_queues[0].cim.detected_error_state;
+ delete b.windows_queues[0].cim.detected_error_state;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_CIM_STATUS_UNKNOWN"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_CIM_STATUS_UNKNOWN"));
+});
+ok("missing CIM extended status in both snapshots cannot compare as stable",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ delete a.windows_queues[0].cim.extended_printer_status;
+ delete b.windows_queues[0].cim.extended_printer_status;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_CIM_STATUS_UNKNOWN"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_CIM_STATUS_UNKNOWN"));
+});
 ok("missing native port identifier cannot compare as stable",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
  delete a.windows_queues[0].port.port_number;
