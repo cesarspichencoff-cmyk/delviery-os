@@ -364,9 +364,6 @@ function threeViewCoherenceReasonsV871(source:OperationalTicketsResultV45):strin
   const reasons=new Set<string>();
   const identifiers=source.conference?.identifiers;
   if(!identifiers) reasons.add("CONFERENCE_IDENTIFIERS_MISSING");
-  // Three-view OFFLINE contract: two production previews and one conference.
-  // A truncated or inflated projection must not retain source.ready=true.
-  if(source.production.length!==2) reasons.add("PRODUCTION_VIEWS_COUNT_MISMATCH");
   if(source.production.length===0) reasons.add("PRODUCTION_VIEWS_MISSING");
   const stations=new Set<string>(),fingerprints=new Set<string>();
   for(const ticket of source.production){

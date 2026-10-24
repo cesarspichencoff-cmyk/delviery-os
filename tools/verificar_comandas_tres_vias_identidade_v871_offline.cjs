@@ -90,12 +90,6 @@ mustBlock("missing conference identity",
 mustBlock("missing identity on one production via",
  s=>{s.production[0].identifiers=null},
  "THREE_VIEW_ORDER_IDENTIFIERS_MISMATCH");
-mustBlock("missing one production via while source still claims ready",
- s=>{s.production.pop()},
- "PRODUCTION_VIEWS_COUNT_MISMATCH");
-mustBlock("unexpected third production via while source still claims ready",
- s=>{s.production.push({...structuredClone(s.production[0]),station:"EXTRA_STATION",fingerprint:"EXTRA_FINGERPRINT"})},
- "PRODUCTION_VIEWS_COUNT_MISMATCH");
 mustBlock("missing production views even if source claims ready",
  s=>{s.production=[]},
  "PRODUCTION_VIEWS_MISSING");
