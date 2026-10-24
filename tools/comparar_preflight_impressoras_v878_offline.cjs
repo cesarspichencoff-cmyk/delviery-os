@@ -43,8 +43,19 @@ function parseReport(report,issues,side){
   issues.add(side+"_EXPECTED_ROUTING_SET_INCOMPLETE");
  if(queues)for(const row of queues.values()){
   if(!safeText(row.driver_name)||!safeText(row.port_name)||
+      typeof row.shared!=="boolean"||typeof row.share_name!=="string"||
+      typeof row.published!=="boolean"||
       !obj(row.port)||!safeText(row.port.name)||
-      !obj(row.configuration)||typeof row.configuration.paper_size!=="string"||
+      typeof row.port.printer_host_address!=="string"||
+      !Object.hasOwn(row.port,"port_number")||
+      !(row.port.port_number===null||
+        Number.isSafeInteger(row.port.port_number)&&row.port.port_number>0)||
+      !Object.hasOwn(row.port,"snmp_enabled")||
+      !(row.port.snmp_enabled===null||
+        typeof row.port.snmp_enabled==="boolean")||
+      !obj(row.configuration)||!safeText(row.configuration.paper_size)||
+      typeof row.configuration.color!=="boolean"||
+      !safeText(row.configuration.duplexing_mode)||
       !Number.isSafeInteger(row.job_count)||row.job_count<0||
       !safeText(row.printer_status))
    issues.add(side+"_QUEUE_METADATA_INCOMPLETE");
@@ -59,6 +70,9 @@ function parseReport(report,issues,side){
   if(row.configuration&&Object.hasOwn(row.configuration,"error"))
    issues.add(side+"_PRINT_CONFIGURATION_UNREADABLE");
  }
+ // Check EACH inventory against its expected physical destination, not only
+ // before-vs-after equality. Two equally misrouted snapshots are still HOLD.
+ const queueOwners=new Map();
  if(expected)for(const row of expected.values()){
   if(!safeText(row.configured_name)||!safeText(row.configured_ip)||
       !Array.isArray(row.matching_windows_queues)||
@@ -69,9 +83,21 @@ function parseReport(report,issues,side){
   else if(queues&&!queues.has(canon(row.matching_windows_queues[0])))
    issues.add(side+"_ROUTE_QUEUE_NOT_IN_INVENTORY");
   else if(queues&&Array.isArray(row.matching_windows_ports)){
-   const mapped=queues.get(canon(row.matching_windows_queues[0]));
+   const queueKey=canon(row.matching_windows_queues[0]);
+   const mapped=queues.get(queueKey);
    if(mapped&&!row.matching_windows_ports.some(p=>canon(p)===canon(mapped.port_name)))
     issues.add(side+"_ROUTE_PORT_NOT_BOUND_TO_QUEUE");
+   if(mapped){
+    const byIp=safeText(row.configured_ip)&&
+      canon(mapped.port?.printer_host_address)===canon(row.configured_ip);
+    const byAlias=safeText(row.configured_port_alias)&&
+      canon(mapped.port_name)===canon(row.configured_port_alias);
+    if(!byIp&&!byAlias)
+      issues.add(side+"_ROUTE_PHYSICAL_DESTINATION_MISMATCH");
+    if(queueOwners.has(queueKey))
+      issues.add(side+"_ROUTE_QUEUE_REUSED_ACROSS_CODES");
+    queueOwners.set(queueKey,row.printer_code);
+   }
   }
  }
  return {stamp,queues,expected,host:canon(report.computer_name)};

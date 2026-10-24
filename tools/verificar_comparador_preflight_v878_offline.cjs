@@ -50,6 +50,51 @@ ok("stable synthetic topology is comparison only, never GO",()=>{
   "physical_print_proven","authorizes_install","authorizes_print"])
   assert.equal(x[k],false);
 });
+ok("same wrong physical destination in both snapshots must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.windows_queues[0].port.printer_host_address="198.51.100.99";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));
+ assert.equal(verdict.authorizes_print,false);
+});
+ok("same cross-wired queue in both snapshots must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b]){
+  x.expected[0].matching_windows_queues=["FAKE_PRINT_00003"];
+  x.expected[0].matching_windows_ports=["LOCAL_PORT_00003"];
+ }
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));
+ assert.equal(verdict.authorizes_install,false);
+});
+ok("two routes reusing one queue in both snapshots must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b]){
+  x.expected[1].matching_windows_queues=["FAKE_PRINT_00002"];
+  x.expected[1].matching_windows_ports=["LOCAL_PORT_00002"];
+ }
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_QUEUE_REUSED_ACROSS_CODES"));
+});
+ok("missing shared metadata from both reports cannot compare as stable",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ delete a.windows_queues[0].shared;
+ delete b.windows_queues[0].shared;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_QUEUE_METADATA_INCOMPLETE"));
+});
+ok("missing native port identifier cannot compare as stable",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ delete a.windows_queues[0].port.port_number;
+ delete b.windows_queues[0].port.port_number;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_QUEUE_METADATA_INCOMPLETE"));
+});
 mustHold("queue deleted",b=>b.windows_queues.pop(),"QUEUE_SET_CHANGED");
 mustHold("new queue",b=>b.windows_queues.push({
  ...b.windows_queues[0],printer_name:"UNEXPECTED_FAKE"}),"QUEUE_SET_CHANGED");
