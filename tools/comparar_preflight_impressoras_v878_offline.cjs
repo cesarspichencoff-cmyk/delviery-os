@@ -65,8 +65,20 @@ function parseReport(report,issues,side){
       !safeText(row.cim.detected_error_state)||
       !safeText(row.cim.extended_printer_status))
    issues.add(side+"_CIM_STATUS_UNKNOWN");
-  else if(row.cim.work_offline)
-   issues.add(side+"_OFFLINE_PRINTER_REPORTED");
+  else {
+   if(row.cim.work_offline)
+    issues.add(side+"_OFFLINE_PRINTER_REPORTED");
+   // Win32_Printer CIM enumerations: 3+ DetectedErrorState means a
+   // reported fault (paper/toner/door/jam/etc). ExtendedPrinterStatus
+   // 6/7/8/9/11/16 are stopped/offline/paused/error/unavailable/deleting.
+   // Fail closed on unrecognized values; status equality alone is not health.
+   // 0/1 error-state values remain inconclusive, never operational proof.
+   const detected=String(row.cim.detected_error_state).trim();
+   const extended=String(row.cim.extended_printer_status).trim();
+   if(!/^(?:0|1|2)$/.test(detected)||
+      !/^(?:3|4|5|10|12|13|14|15|17|18)$/.test(extended))
+    issues.add(side+"_CIM_UNHEALTHY_OR_UNRECOGNIZED");
+  }
   if(/UNKNOWN|OFFLINE|ERROR|PAUSED|PAPER\s*OUT|NOT\s*AVAILABLE/.test(canon(row.printer_status)))
    issues.add(side+"_PRINTER_STATUS_UNHEALTHY");
   if(row.configuration&&Object.hasOwn(row.configuration,"error"))
