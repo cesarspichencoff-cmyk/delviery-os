@@ -51,6 +51,8 @@ export interface AppResult {
   ok: boolean;
   error?: string;
   code?: string;
+  /** Nao marcar rejeicao terminal quando o COMMIT/recibo for incerto. */
+  retryable?: boolean;
   trip?: TripAggregate;
   handoff?: Handoff;
   occurrence?: Occurrence;
@@ -262,7 +264,7 @@ export class EntregasApplicationService {
           // Nunca transformar falha de leitura em ACK ou rejeicao final.
         }
         if (!(e instanceof InboundReceiptConflictError)) {
-          return {ok:false,code:"COMMIT_UNCONFIRMED_RETRY",
+          return {ok:false,code:"COMMIT_UNCONFIRMED_RETRY",retryable:true,
             error:"Resultado transacional incerto; reenviar o mesmo evento sem alterar a chave" };
         }
       }
@@ -277,7 +279,8 @@ export class EntregasApplicationService {
             : e instanceof Error && e.name === "ConcurrencyError"
               ? "CONCURRENCY"
               : "ERROR";
-      return { ok: false, error: msg, code };
+      return { ok: false, error: msg, code,
+        retryable: code === "RECEIPT_CONFLICT_RECHECK" ? true : undefined };
     }
   }
 

@@ -47,6 +47,7 @@ async function main(){
   const resultAfter=await new EntregasApplicationService(wrap(after,"after")).execute(cmd,receipt);
   assert.equal(resultAfter.ok,true,"recibo COMMITADO prova evento aplicado");
   assert.equal(resultAfter.code,"REPLAY_APPLIED");
+  assert.notEqual(resultAfter.retryable,true,"ACK comprovado nao e retryable");
   assert.equal((await after.inboundReceipts.find(receipt.event_id,receipt.idempotency_key)).length,1);
   assert.equal((await after.events.listAll()).length>0,true);
   console.log("OK lost COMMIT response AFTER atomic store commit: ACK from confirmed receipt");
@@ -55,6 +56,7 @@ async function main(){
   const resultBefore=await new EntregasApplicationService(wrap(before,"before")).execute(cmd,receipt);
   assert.equal(resultBefore.ok,false,"sem recibo confirmado nao pode produzir ACK");
   assert.equal(resultBefore.code,"COMMIT_UNCONFIRMED_RETRY");
+  assert.equal(resultBefore.retryable,true,"incerteza antes de commit deve permanecer pendente");
   assert.equal((await before.inboundReceipts.find(receipt.event_id,receipt.idempotency_key)).length,0);
   assert.equal((await before.events.listAll()).length,0);
   console.log("OK lost COMMIT response BEFORE commit: retry, never final reject");
@@ -76,6 +78,7 @@ async function main(){
   const cannotConfirm=await new EntregasApplicationService(unsafeRead).execute(cmd,receipt);
   assert.equal(cannotConfirm.ok,false);
   assert.equal(cannotConfirm.code,"COMMIT_UNCONFIRMED_RETRY");
+  assert.equal(cannotConfirm.retryable,true,"recibo incomprovavel nao e rejeicao terminal");
   assert.equal((await inaccessible.inboundReceipts.find(receipt.event_id,receipt.idempotency_key)).length,1);
   console.log("OK committed but reread unavailable: retry, no unproven ACK");
 
@@ -101,6 +104,7 @@ async function main(){
       wrap(openFileUnitOfWork(absent),"before")).execute(cmd,receipt);
     assert.equal(failed.ok,false);
     assert.equal(failed.code,"COMMIT_UNCONFIRMED_RETRY");
+    assert.equal(failed.retryable,true,"falha de arquivo antes de commit e recuperavel");
     assert.equal((await openFileUnitOfWork(absent).inboundReceipts.find(
       receipt.event_id,receipt.idempotency_key)).length,0);
     console.log("OK file: failure before commit leaves no durable ACK");
