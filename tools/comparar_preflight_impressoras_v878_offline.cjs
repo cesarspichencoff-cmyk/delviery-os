@@ -130,7 +130,7 @@ function assessPair(before,after){
      if(canon(left.port?.name)!==canon(right.port?.name)||
         canon(left.port?.printer_host_address)!==canon(right.port?.printer_host_address)||
         left.port?.port_number!==right.port?.port_number||
-        canon(left.port?.snmp_enabled)!==canon(right.port?.snmp_enabled)||
+        left.port?.snmp_enabled!==right.port?.snmp_enabled||
         canon(left.configuration?.paper_size)!==canon(right.configuration?.paper_size)||
         canon(left.configuration?.color)!==canon(right.configuration?.color)||
         canon(left.configuration?.duplexing_mode)!==canon(right.configuration?.duplexing_mode)||
