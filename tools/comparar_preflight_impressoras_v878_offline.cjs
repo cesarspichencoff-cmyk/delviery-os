@@ -54,7 +54,7 @@ function parseReport(report,issues,side){
    issues.add(side+"_CIM_STATUS_UNKNOWN");
   else if(row.cim.work_offline)
    issues.add(side+"_OFFLINE_PRINTER_REPORTED");
-  if(/OFFLINE|ERROR|PAUSED|PAPER\s*OUT|NOT\s*AVAILABLE/.test(canon(row.printer_status)))
+  if(/UNKNOWN|OFFLINE|ERROR|PAUSED|PAPER\s*OUT|NOT\s*AVAILABLE/.test(canon(row.printer_status)))
    issues.add(side+"_PRINTER_STATUS_UNHEALTHY");
   if(row.configuration&&Object.hasOwn(row.configuration,"error"))
    issues.add(side+"_PRINT_CONFIGURATION_UNREADABLE");
@@ -86,7 +86,7 @@ function assessPair(before,after){
   if(!(b.stamp>a.stamp&&b.stamp-a.stamp<=15*60*1000))
    issues.add("TIME_WINDOW_INVALID");
   for(const [kind,first,second,keys] of [
-   ["QUEUE",a.queues,b.queues,["driver_name","port_name","printer_status"]],
+   ["QUEUE",a.queues,b.queues,["driver_name","port_name","printer_status","shared","share_name","published"]],
    ["ROUTE",a.expected,b.expected,["configured_name","configured_ip","configured_port_alias"]]
   ]){
    if(!first||!second)continue;
@@ -101,7 +101,13 @@ function assessPair(before,after){
      if(canon(left.port?.name)!==canon(right.port?.name)||
         canon(left.port?.printer_host_address)!==canon(right.port?.printer_host_address)||
         left.port?.port_number!==right.port?.port_number||
-        canon(left.configuration?.paper_size)!==canon(right.configuration?.paper_size))
+        canon(left.port?.snmp_enabled)!==canon(right.port?.snmp_enabled)||
+        canon(left.configuration?.paper_size)!==canon(right.configuration?.paper_size)||
+        canon(left.configuration?.color)!==canon(right.configuration?.color)||
+        canon(left.configuration?.duplexing_mode)!==canon(right.configuration?.duplexing_mode)||
+        canon(left.cim?.work_offline)!==canon(right.cim?.work_offline)||
+        canon(left.cim?.detected_error_state)!==canon(right.cim?.detected_error_state)||
+        canon(left.cim?.extended_printer_status)!==canon(right.cim?.extended_printer_status))
       issues.add("QUEUE_PORT_OR_CONFIGURATION_CHANGED");
      if(right.job_count>left.job_count)
       issues.add("QUEUE_BACKLOG_INCREASED_CAUSE_UNKNOWN");

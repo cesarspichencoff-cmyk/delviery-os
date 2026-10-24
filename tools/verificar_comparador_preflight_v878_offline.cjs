@@ -8,10 +8,12 @@ const codes=["00002","00003","00004","00006","00007","00009"];
 function report(time="2026-10-23T19:00:00.000Z"){
  const q=codes.map((code,i)=>({
   printer_name:"FAKE_PRINT_"+code,driver_name:"TEST_FAKE_DRIVER",
+  shared:false,share_name:"",published:false,
   port_name:"LOCAL_PORT_"+code,printer_status:"Normal",job_count:0,
   port:{name:"LOCAL_PORT_"+code,printer_host_address:"192.0.2."+(i+1),
-   port_number:9100},
-  configuration:{paper_size:"80mm"},cim:{work_offline:false}
+   port_number:9100,snmp_enabled:false},
+  configuration:{paper_size:"80mm",color:false,duplexing_mode:"OneSided"},
+  cim:{work_offline:false,detected_error_state:"0",extended_printer_status:"3"}
  }));
  return {schema:"deliveryos.production-printer-preflight-readonly.v1",
   captured_at:time,computer_name:"SYNTHETIC_WINDOWS_TEST",
@@ -52,6 +54,14 @@ mustHold("queue deleted",b=>b.windows_queues.pop(),"QUEUE_SET_CHANGED");
 mustHold("new queue",b=>b.windows_queues.push({
  ...b.windows_queues[0],printer_name:"UNEXPECTED_FAKE"}),"QUEUE_SET_CHANGED");
 mustHold("driver drift",b=>b.windows_queues[0].driver_name="DRIVER_V2","QUEUE_METADATA_CHANGED");
+mustHold("shared mode changed",b=>b.windows_queues[0].shared=true,"QUEUE_METADATA_CHANGED");
+mustHold("share label changed",b=>b.windows_queues[0].share_name="SHARE_NEW","QUEUE_METADATA_CHANGED");
+mustHold("publishing setting changed",b=>b.windows_queues[0].published=true,"QUEUE_METADATA_CHANGED");
+mustHold("SNMP setting changed",b=>b.windows_queues[0].port.snmp_enabled=true,"QUEUE_PORT_OR_CONFIGURATION_CHANGED");
+mustHold("driver color setting changed",b=>b.windows_queues[0].configuration.color=true,"QUEUE_PORT_OR_CONFIGURATION_CHANGED");
+mustHold("duplex setting changed",b=>b.windows_queues[0].configuration.duplexing_mode="TwoSided","QUEUE_PORT_OR_CONFIGURATION_CHANGED");
+mustHold("CIM error state changed",b=>b.windows_queues[0].cim.detected_error_state="4","QUEUE_PORT_OR_CONFIGURATION_CHANGED");
+mustHold("unknown status is not proof of health",b=>b.windows_queues[0].printer_status="Unknown","FOLLOWUP_PRINTER_STATUS_UNHEALTHY");
 mustHold("port name drift",b=>b.windows_queues[0].port_name="OTHER_PORT","QUEUE_METADATA_CHANGED");
 mustHold("network port destination drift",b=>b.windows_queues[0].port.printer_host_address="192.0.2.200","QUEUE_PORT_OR_CONFIGURATION_CHANGED");
 mustHold("port number drift",b=>b.windows_queues[0].port.port_number=9101,"QUEUE_PORT_OR_CONFIGURATION_CHANGED");
