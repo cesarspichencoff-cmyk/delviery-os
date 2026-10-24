@@ -90,7 +90,10 @@ function parseReport(report,issues,side){
    if(mapped){
     const byIp=safeText(row.configured_ip)&&
       canon(mapped.port?.printer_host_address)===canon(row.configured_ip);
-    const byAlias=safeText(row.configured_port_alias)&&
+    // A named LPT alias is fallback only when the port has no host address.
+    // Never let an alias override an explicit, contradictory physical IP.
+    const byAlias=!safeText(mapped.port?.printer_host_address)&&
+      safeText(row.configured_port_alias)&&
       canon(mapped.port_name)===canon(row.configured_port_alias);
     if(!byIp&&!byAlias)
       issues.add(side+"_ROUTE_PHYSICAL_DESTINATION_MISMATCH");
