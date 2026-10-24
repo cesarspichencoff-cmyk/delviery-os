@@ -42,6 +42,13 @@ function mustHold(name,change,reason){
   assert.ok(!JSON.stringify(a).includes("FAKE_PRINT_"));
  });
 }
+ok("SNMP false-to-null drift must HOLD",()=>{
+ const b=structuredClone(follow);
+ b.windows_queues[0].port.snmp_enabled=null;
+ const verdict=assessPair(base,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("QUEUE_PORT_OR_CONFIGURATION_CHANGED"));
+});
 ok("stable synthetic topology is comparison only, never GO",()=>{
  const x=assessPair(base,follow);
  assert.equal(x.status,"STRUCTURAL_MATCH_ONLY");
