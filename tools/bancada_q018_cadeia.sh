@@ -81,10 +81,10 @@ esperar http://127.0.0.1:18080/ready 60; checa $? "crítico pronto (simulated)"
 grep -q "simulated" "$T/critico.log"; checa $? "o boot do crítico declara o modo simulated"
 # Ato humano de laboratório: autorizar o aparelho (FIELD-GATE §2.5).
 psql "$BASE/$DB" -qAt >/dev/null <<SQL
-INSERT INTO identity.unit (unit_id, display_name) VALUES ('unit-emulator-lab','Bancada Q-018');
-INSERT INTO identity.actor (actor_id, unit_id, role, label) VALUES ('rider-emulator-lab','unit-emulator-lab','motoboy_interno','bancada');
+INSERT INTO identity.unit (unit_id, display_name) VALUES ('ITAIM','Bancada Q-018 - SIMULADA');
+INSERT INTO identity.actor (actor_id, unit_id, role, label) VALUES ('rider-emulator-lab','ITAIM','motoboy_interno','bancada');
 INSERT INTO identity.device (device_id, unit_id, actor_id, label, secret_hash, secret_bound_at)
-VALUES ('$DEV','unit-emulator-lab','rider-emulator-lab','bancada Q-018','$PROOF',now());
+VALUES ('$DEV','ITAIM','rider-emulator-lab','bancada Q-018','$PROOF',now());
 SQL
 [ "$(q "SELECT (secret_hash = '$PROOF' AND secret_bound_at IS NOT NULL AND last_session_at IS NULL) FROM identity.device WHERE device_id='$DEV'")" = t ]
 checa $? "antes: aparelho autorizado e pre-vinculado pelo humano, sem sessão"
@@ -98,10 +98,11 @@ echo "== TLS de bancada e o piloto de LABORATÓRIO"
 sobe socat OPENSSL-LISTEN:8080,bind=127.0.0.1,reuseaddr,fork,cert="$T/srv.pem",key="$T/srv.key",verify=0 TCP:127.0.0.1:18080
 mkdir -p "$T/piloto"
 printf '{"gps_capture_enabled": true, "offline_queue_enabled": true}\n' > "$T/flags.json"
+printf '{"unit_id":"ITAIM"}\n' > "$T/unidade-sem-coordenadas.json"
 ENTREGAS_HTTPS=1 ENTREGAS_TLS_CERT="$T/srv.pem" ENTREGAS_TLS_KEY="$T/srv.key" ENTREGAS_UI_PORT=5193 \
 ENTREGAS_PILOT_CONFIG=config/entregas-pilot.example.json ENTREGAS_DATA_DIR="$T/piloto" \
 ENTREGAS_LABORATORIO=1 ENTREGAS_TERM_CONFIG="$R/tools/bancada_termo_sintetico.json" \
-ENTREGAS_GPS_FLAGS_CONFIG="$T/flags.json" ENTREGAS_UNIT_CONFIG="$T/sem-unidade.json" \
+ENTREGAS_GPS_FLAGS_CONFIG="$T/flags.json" ENTREGAS_UNIT_CONFIG="$T/unidade-sem-coordenadas.json" \
   sobe node dist/tools/entregas_pilot_server.js > "$T/piloto.log" 2>&1
 sobe socat TCP-LISTEN:8080,bind=10.0.2.2,reuseaddr,fork TCP:127.0.0.1:8080
 sobe socat TCP-LISTEN:5193,bind=10.0.2.2,reuseaddr,fork TCP:127.0.0.1:5193
@@ -122,7 +123,7 @@ import json, sys
 linhas = [json.loads(l) for l in open(sys.argv[1]) if l.strip()]
 ok = (len(linhas) == 1 and linhas[0]["status"] == "accepted" and linhas[0]["rider_id"] == "rid-1"
       and linhas[0]["device_id"] == sys.argv[2] and linhas[0]["term_hash"] == sys.argv[3]
-      and linhas[0]["unit_id"] == "LABORATORIO")
+      and linhas[0]["unit_id"] == "ITAIM")
 print(("  ok  " if ok else "  XX  ") + f"term-acks.jsonl: {len(linhas)} registro, accepted, rid-1, este aparelho, hash do termo sintético")
 sys.exit(0 if ok else 1)
 PY

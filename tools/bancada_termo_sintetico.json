@@ -2,7 +2,7 @@
   "_aviso": "SEM VALOR LEGAL — APENAS TESTE SIMULADO. Fixture da bancada do emulador (Q-018), autorizada pelo César em 2026-09-26 só para laboratório. Não é o termo do piloto, não vai para config/, não preenche o checklist legal (docs/entregas/pilot/CHECKLIST_ATIVACAO.md §A). O piloto recusa subir com este arquivo fora de laboratório declarado (ENTREGAS_LABORATORIO=1) e local. Os prazos de retenção abaixo são valores de laboratório, não política.",
   "version": "0.0.0-laboratorio",
   "material_version": "laboratorio-1",
-  "unit_id": "LABORATORIO",
+  "unit_id": "ITAIM",
   "title": "TERMO DE LOCALIZAÇÃO — SEM VALOR LEGAL — APENAS TESTE SIMULADO",
   "body": "SEM VALOR LEGAL — APENAS TESTE SIMULADO. Este texto existe só para exercitar, na bancada do emulador, o caminho do termo: a tela, o aceite feito pelo próprio motoboy na interface, o registro no servidor e a cópia no aplicativo. Ele não informa como a localização é usada de verdade e não vale como ciência nem como autorização de ninguém.",
   "effective_date": "SEM VALOR LEGAL — APENAS TESTE SIMULADO",

@@ -14,7 +14,7 @@ import { hashDoSegredo } from "../../platform/auth/device-session";
 
 const ROOT = process.cwd();
 const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
-const UNIT = "unit-piloto-1";
+const UNIT = "ITAIM";
 const ACTOR = "rid-canonical-pg";
 const TRIP = "trip-canonical-pg";
 const READ_SECRET = "fixture-canonical-pg-read-".padEnd(48, "x");

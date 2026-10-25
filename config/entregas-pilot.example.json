@@ -1,7 +1,7 @@
 {
   "mode": "pilot",
-  "unit_id": "unit-piloto-1",
-  "unit_name": "UNIDADE PILOTO",
+  "unit_id": "ITAIM",
+  "unit_name": "TATÁ Itaim",
   "timezone": "America/Sao_Paulo",
   "port": 5193,
   "bind": "0.0.0.0",

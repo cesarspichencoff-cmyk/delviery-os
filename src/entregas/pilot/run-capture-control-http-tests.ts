@@ -13,7 +13,8 @@ const ADMIN = "CHANGE_ME_ADMIN_TOKEN";
 const DEVICE_BEARER = "device-token-q019";
 const DEVICE_TERMINAL_BEARER = "device-token-q019-terminal";
 const DEVICE_GENERIC_403_BEARER = "device-token-q019-generic-403";
-const PILOT_UNIT = "unit-piloto-1";
+const DEVICE_OTHER_UNIT_BEARER = "device-token-other-synthetic-unit";
+const PILOT_UNIT = "ITAIM";
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -30,6 +31,13 @@ async function startIdentity(): Promise<{ base: string; server: Server }> {
   const port = await freePort();
   const server = createHttpServer((req, res) => {
     if (req.url === "/api/device/identity" && req.method === "GET") {
+      if (req.headers.authorization === `Bearer ${DEVICE_OTHER_UNIT_BEARER}`) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({
+          ok: true, device_id: "dev-other-synthetic", unit_id: "UNIT_FICTICIA_NEGADA", actor_id: "rid-1",
+        }));
+        return;
+      }
       if (req.headers.authorization === `Bearer ${DEVICE_TERMINAL_BEARER}`) {
         res.writeHead(403, { "content-type": "application/json" });
         res.end(JSON.stringify({ instrucao: "parar_e_avisar", humano: "revogado" }));
@@ -190,6 +198,16 @@ async function main() {
     assert.equal(on.status, 200);
     assert.equal(on.body.capture, true);
 
+    // A identidade atestada ainda deve pertencer ao alvo fixo do aplicativo.
+    // Mesmo uma viagem inexistente nao pode ser consultada antes dessa guarda.
+    for (const tripId of [trip, "TRIP-FICTICIA-AUSENTE"]) {
+      const otherUnit = await capture(pilot.base, tripId, DEVICE_OTHER_UNIT_BEARER);
+      assert.equal(otherUnit.status, 200);
+      assert.equal(otherUnit.body.capture, false);
+      assert.equal(otherUnit.body.reason, "device_unit_not_allowed");
+      assert.equal(otherUnit.body.trip_id, tripId);
+    }
+
     const generic403 = await capture(pilot.base, trip, DEVICE_GENERIC_403_BEARER);
     assert.equal(generic403.status, 503);
     assert.equal(generic403.body.unknown, true);
@@ -211,7 +229,7 @@ async function main() {
     assert.equal(off.body.capture, false);
     assert.equal(off.body.reason, "trip_not_active");
 
-    console.log("CAPTURE_CONTROL_HTTP: 6/6 PASS");
+    console.log("CAPTURE_CONTROL_HTTP: 8/8 PASS");
   } finally {
     try {
       if (pilot.proc.pid) {

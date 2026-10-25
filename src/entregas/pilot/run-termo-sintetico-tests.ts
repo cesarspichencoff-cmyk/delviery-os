@@ -61,13 +61,17 @@ interface Execucao {
 async function subir(opcoes: { termo: string | null; env: Record<string, string>; servidor?: string }): Promise<Execucao> {
   const dir = mkdtempSync(join(tmpdir(), "termo-sintetico-"));
   const porta = await portaLivre();
+  // Arquivo declarado precisa existir. Sem coordenadas, geofence permanece
+  // indisponivel; a fixture continua sem qualquer localizacao real.
+  const unitPath = join(dir, "unidade-sem-coordenadas.json");
+  writeFileSync(unitPath, JSON.stringify({ unit_id: "ITAIM" }), "utf8");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ENTREGAS_PILOT_CONFIG: join(RAIZ, "config", "entregas-pilot.example.json"),
     ENTREGAS_UI_PORT: String(porta),
     ENTREGAS_DATA_DIR: join(dir, "dados"),
     ENTREGAS_TERM_CONFIG: opcoes.termo ?? join(dir, "sem-termo.json"),
-    ENTREGAS_UNIT_CONFIG: join(dir, "sem-unidade.json"),
+    ENTREGAS_UNIT_CONFIG: unitPath,
     ENTREGAS_GPS_FLAGS_CONFIG: join(dir, "sem-flags.json"),
     ENTREGAS_HTTPS: "",
     ...opcoes.env,

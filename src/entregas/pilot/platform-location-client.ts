@@ -72,7 +72,24 @@ export async function fetchCanonicalTripGps(
       signal: controller.signal,
     });
     const body = (await r.json().catch(() => ({}))) as Record<string, unknown>;
-    if (r.status === 200) return { ok: true, body };
+    if (r.status === 200) {
+      // HTTP 200 nao atesta que a resposta pertence a consulta assinada.
+      // Nenhum corpo fora de escopo pode chegar a projecao ou a interface.
+      if (!body || typeof body !== "object" || Array.isArray(body) ||
+          body.unit_id !== o.unitId || body.trip_id !== o.tripId ||
+          (o.scope === "route" && (!Array.isArray(body.points) || body.points.some(
+            (point: unknown) => !point || typeof point !== "object" ||
+              (point as Record<string, unknown>).trip_id !== o.tripId,
+          )))) {
+        return {
+          ok: false,
+          status: 503,
+          kind: "unavailable",
+          human: "A localização canônica retornou identificação inconsistente.",
+        };
+      }
+      return { ok: true, body };
+    }
     if (r.status === 401 || r.status === 403) {
       return {
         ok: false,

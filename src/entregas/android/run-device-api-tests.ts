@@ -69,6 +69,8 @@ function syntheticTerm(over: Partial<LocationTerm> = {}): LocationTerm {
 function writeConfigs(opts: { captureEnabled: boolean; term: LocationTerm | null }): void {
   const cfgDir = join(workdir, "config");
   mkdirSync(cfgDir, { recursive: true });
+  // Configuracao explicita de ITAIM, sem coordenadas/geofence de campo.
+  writeFileSync(join(cfgDir, "entregas-unit-itaim.json"), JSON.stringify({ unit_id: "ITAIM" }));
   writeFileSync(
     join(workdir, "pilot.json"),
     JSON.stringify({

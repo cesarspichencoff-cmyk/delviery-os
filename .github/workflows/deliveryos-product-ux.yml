@@ -56,6 +56,26 @@ jobs:
       # A API de aparelho e executada contra dist/tools/entregas_pilot_server.js:
       # compilar ANTES do teste, sem duplicar o build no workflow.
       - run: npm run -s build:platform
+      - name: ITAIM-only - recusar boot para unidade/config incorreta
+        run: npx tsx src/entregas/pilot/run-itaim-boot-tests.ts
+      - name: ITAIM-only - identidade, GPS e regressao do termo no HTTP real
+        id: itaim_http_gate
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          node dist/src/entregas/pilot/run-canonical-dispatch-http-tests.js
+          node dist/src/entregas/pilot/run-capture-control-http-tests.js
+          node dist/src/entregas/pilot/run-termo-sintetico-tests.js
+      - name: ITAIM-only - despacho e cluster PostgreSQL descartavel
+        id: itaim_pg_gate
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DELIVERYOS_PG_URL"
+          node dist/src/entregas/pilot/run-canonical-dispatch-postgres-tests.js
+          node dist/src/entregas/pilot/run-postgres-server-cluster-tests.js
       - name: Recibos duraveis - regressao sintetica do nucleo original
         shell: bash
         run: |
@@ -172,6 +192,12 @@ jobs:
         shell: bash
         run: |
           echo "::error::HTTP idempotencia/replay nao passou; PR DRAFT/HOLD/NO_GO"
+          exit 1
+      - name: P0 - exigir os gates ITAIM-only no mesmo HEAD
+        if: ${{ always() && (steps.itaim_http_gate.outcome != 'success' || steps.itaim_pg_gate.outcome != 'success') }}
+        shell: bash
+        run: |
+          echo "::error::Gate ITAIM-only HTTP/PG nao passou; PR DRAFT/HOLD/NO_GO"
           exit 1
       - name: P0 - nucleo real de recibos presente no mesmo HEAD do CI
         if: always()

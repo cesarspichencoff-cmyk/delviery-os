@@ -51,7 +51,7 @@ import {
   AcknowledgementStore,
   type AckStorage,
 } from "../src/entregas/consent/acknowledgement";
-import { loadUnitConfig, type UnitConfig } from "../src/entregas/gps/unit-config";
+import { PILOT_UNIT_ID, loadUnitConfig, type UnitConfig } from "../src/entregas/gps/unit-config";
 import { buildOperationalTrack, buildRawTrack } from "../src/entregas/gps/track-projection";
 import {
   buildTripTimeline,
@@ -71,6 +71,56 @@ import { classifyQuality } from "../src/entregas/gps/validate";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
+
+// Contrato inalterável do aplicativo implantável: esta instância é somente ITAIM.
+// Validar antes de criar diretório, gravar dados ou abrir conexão/porta.
+if (cfg.unit_id !== PILOT_UNIT_ID) {
+  throw new Error("ITAIM_ONLY_UNIT_MISMATCH: unidade do piloto inválida");
+}
+const declaredUnit = process.env.ENTREGAS_UNIT_ID;
+if (declaredUnit !== undefined && declaredUnit !== PILOT_UNIT_ID) {
+  throw new Error("ITAIM_ONLY_ENV_MISMATCH: ENTREGAS_UNIT_ID deve ser ITAIM");
+}
+
+// Configuração de geofence ausente é permitida (recurso indisponível);
+// arquivo explícito ausente, JSON inválido ou outra unidade são fatais.
+const configuredUnitPath = process.env.ENTREGAS_UNIT_CONFIG || "config/entregas-unit-itaim.json";
+const unitConfigPath = isAbsolute(configuredUnitPath)
+  ? configuredUnitPath : join(process.cwd(), configuredUnitPath);
+let bootUnitRaw: Partial<UnitConfig> | null = null;
+if (!existsSync(unitConfigPath) && process.env.ENTREGAS_UNIT_CONFIG !== undefined) {
+  throw new Error("ITAIM_ONLY_UNIT_CONFIG_MISSING: arquivo de unidade declarado não existe");
+}
+if (existsSync(unitConfigPath)) {
+  try {
+    bootUnitRaw = JSON.parse(readFileSync(unitConfigPath, "utf8")) as Partial<UnitConfig>;
+  } catch {
+    throw new Error("ITAIM_ONLY_UNIT_CONFIG_INVALID: JSON inválido ou ilegível");
+  }
+  if (bootUnitRaw?.unit_id !== PILOT_UNIT_ID) {
+    throw new Error("ITAIM_ONLY_UNIT_CONFIG_MISMATCH: GPS configurado para unidade diferente");
+  }
+}
+// Termo de localização não pode trocar o alvo do aplicativo.
+// Ausência do arquivo de termo é permitida (texto-base NÃO publicável).
+const configuredTermPath = process.env.ENTREGAS_TERM_CONFIG || "config/entregas-term.json";
+const termConfigPath = isAbsolute(configuredTermPath)
+  ? configuredTermPath : join(process.cwd(), configuredTermPath);
+let bootTermOverride: Partial<LocationTerm> | null = null;
+if (existsSync(termConfigPath)) {
+  try {
+    const candidate: unknown = JSON.parse(readFileSync(termConfigPath, "utf8"));
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+      throw new Error("termo não é objeto");
+    }
+    bootTermOverride = candidate as Partial<LocationTerm>;
+  } catch {
+    throw new Error("ITAIM_ONLY_TERM_CONFIG_INVALID: termo não é JSON objeto válido");
+  }
+  if (bootTermOverride.unit_id !== undefined && bootTermOverride.unit_id !== PILOT_UNIT_ID) {
+    throw new Error("ITAIM_ONLY_TERM_UNIT_MISMATCH: termo de unidade não autorizada");
+  }
+}
 /* Diretório de dados: o ambiente manda, e em modo remoto é obrigatório.
    Caminho absoluto é usado como está — é assim que o volume é montado. */
 const rawDataDir = process.env.ENTREGAS_DATA_DIR?.trim() || cfg.data_dir;
@@ -182,14 +232,9 @@ function readJsonIfPresent<T>(file: string): T | null {
   }
 }
 
-const unitRaw = readJsonIfPresent<Partial<UnitConfig>>(
-  process.env.ENTREGAS_UNIT_CONFIG || "config/entregas-unit-itaim.json",
-);
-const unitConfig = loadUnitConfig(unitRaw);
+const unitConfig = loadUnitConfig(bootUnitRaw);
 
-const termOverride = readJsonIfPresent<Partial<LocationTerm>>(
-  process.env.ENTREGAS_TERM_CONFIG || "config/entregas-term.json",
-);
+const termOverride = bootTermOverride;
 /* Sem o arquivo do responsável, o termo continua o modelo — não publicável. */
 const activeTerm: LocationTerm = { ...TERM_ITAIM_V1, ...(termOverride ?? {}) };
 
@@ -292,14 +337,14 @@ function canonicalObservationAsPoint(
   };
 }
 
-function canonicalRoutePoints(raw: unknown): GPSPoint[] {
+function canonicalRoutePoints(raw: unknown, tripId: string): GPSPoint[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((item): GPSPoint[] => {
     if (!item || typeof item !== "object") return [];
     const p = item as Record<string, unknown>;
     const accuracy = typeof p.accuracy_m === "number" ? p.accuracy_m : NaN;
     if (
-      typeof p.trip_id !== "string" ||
+      p.trip_id !== tripId ||
       typeof p.device_id !== "string" ||
       typeof p.latitude !== "number" ||
       typeof p.longitude !== "number" ||
@@ -584,6 +629,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           ok: false,
           unknown: true,
           human: "Não foi possível confirmar a viagem agora.",
+        });
+      }
+
+      if (identidade.identity.unit_id !== PILOT_UNIT_ID) {
+        return reply(200, {
+          ok: true,
+          capture: false,
+          trip_id: tripId,
+          reason: "device_unit_not_allowed",
+          checked_at: new Date().toISOString(),
         });
       }
 
@@ -932,7 +987,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
             human: canonical.human,
           });
         }
-        points = canonicalRoutePoints(canonical.body.points);
+        points = canonicalRoutePoints(canonical.body.points, tripId);
         const declaredCount =
           typeof canonical.body.point_count === "number" ? canonical.body.point_count : -1;
         if (declaredCount !== points.length) {
