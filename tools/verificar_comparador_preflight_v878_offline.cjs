@@ -49,6 +49,38 @@ ok("SNMP false-to-null drift must HOLD",()=>{
  assert.equal(verdict.status,"HOLD");
  assert.ok(verdict.reasons.includes("QUEUE_PORT_OR_CONFIGURATION_CHANGED"));
 });
+ok("identical nonzero printer backlog is not an all-clear",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ a.windows_queues[0].job_count=4;
+ b.windows_queues[0].job_count=4;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_QUEUE_BACKLOG_PRESENT_UNRESOLVED"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_QUEUE_BACKLOG_PRESENT_UNRESOLVED"));
+});
+ok("ambiguous candidate ports in both reports are HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ a.expected[0].matching_windows_ports.push("OTHER_POSSIBLE_PORT");
+ b.expected[0].matching_windows_ports.push("OTHER_POSSIBLE_PORT");
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_MULTIPLE_PORT_CANDIDATES"));
+});
+ok("contradictory TCP result with probe disabled must HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.expected[0].tcp_9100_probe={port:9100,tcp_test_succeeded:true};
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_TCP_PROBE_RESULT_CONTRADICTS_FLAG"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_TCP_PROBE_RESULT_CONTRADICTS_FLAG"));
+});
+ok("falling but not empty printer backlog remains HOLD",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ a.windows_queues[0].job_count=4;b.windows_queues[0].job_count=1;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("FOLLOWUP_QUEUE_BACKLOG_PRESENT_UNRESOLVED"));
+});
 ok("stable synthetic topology is comparison only, never GO",()=>{
  const x=assessPair(base,follow);
  assert.equal(x.status,"STRUCTURAL_MATCH_ONLY");

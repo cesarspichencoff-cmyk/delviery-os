@@ -59,6 +59,10 @@ function parseReport(report,issues,side){
       !Number.isSafeInteger(row.job_count)||row.job_count<0||
       !safeText(row.printer_status))
    issues.add(side+"_QUEUE_METADATA_INCOMPLETE");
+  // An unchanged queued job may still be stalled. No silent all-clear while
+  // any workload remains pending in either observation.
+  if(Number.isSafeInteger(row.job_count)&&row.job_count>0)
+   issues.add(side+"_QUEUE_BACKLOG_PRESENT_UNRESOLVED");
   if(obj(row.port)&&canon(row.port.name)!==canon(row.port_name))
    issues.add(side+"_QUEUE_PORT_INCONSISTENT");
   if(!obj(row.cim)||typeof row.cim.work_offline!=="boolean"||
@@ -91,12 +95,18 @@ function parseReport(report,issues,side){
  // before-vs-after equality. Two equally misrouted snapshots are still HOLD.
  const queueOwners=new Map();
  if(expected)for(const row of expected.values()){
+  // The source preflight always returns null when TCP probing is disabled.
+  // A populated probe result contradicts the declared no-network boundary.
+  if(!Object.hasOwn(row,"tcp_9100_probe")||row.tcp_9100_probe!==null)
+   issues.add(side+"_TCP_PROBE_RESULT_CONTRADICTS_FLAG");
   if(!safeText(row.configured_name)||!safeText(row.configured_ip)||
       !Array.isArray(row.matching_windows_queues)||
       row.matching_windows_queues.length!==1||
       !Array.isArray(row.matching_windows_ports)||
       row.matching_windows_ports.length<1)
    issues.add(side+"_ROUTE_UNRESOLVED");
+  else if(row.matching_windows_ports.length!==1)
+   issues.add(side+"_ROUTE_MULTIPLE_PORT_CANDIDATES");
   else if(queues&&!queues.has(canon(row.matching_windows_queues[0])))
    issues.add(side+"_ROUTE_QUEUE_NOT_IN_INVENTORY");
   else if(queues&&Array.isArray(row.matching_windows_ports)){

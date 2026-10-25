@@ -9,6 +9,8 @@
 
 O comparador exige seis rotas de impressão esperadas, inventário válido e a mesma máquina em duas observações separadas por até 15 minutos. Detecta remoção ou inclusão de filas, mudanças de driver/porta/endereço, configurações da impressora, compartilhamento e publicação, indisponibilidade, aumento de trabalhos pendentes e vínculos inconsistentes entre rotas e filas. Rejeita relatórios que declarem sondagem TCP, escrita ou impressão.
 
+O comparador mantém **HOLD** se qualquer fila tiver trabalhos pendentes (`job_count > 0`) em uma das observações, mesmo quando a quantidade não aumenta ou está diminuindo: filas não vazias ainda não provam escoamento normal. Também bloqueia uma rota com mais de uma porta candidata e relatórios que aleguem `probe_tcp_9100_requested=false` enquanto tragam resultado preenchido de sondagem TCP. Esses sinais são motivos de investigação, **não prova de que as Comandas causaram a condição**.
+
 **`STRUCTURAL_MATCH_ONLY` não significa `SAFE`, `GO` nem prova de impressão.** Mesmo sem diferenças, o sistema continua informando `authorizes_install=false`, `authorizes_print=false` e `absence_of_interference_proven=false`. Dados fornecidos não substituem atestação independente de origem ou leitura de desempenho do host.
 
 ## Quando o computador CAIXA_MOOCA estiver acessível
