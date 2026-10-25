@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -11,6 +11,7 @@ import {
   KEY_DEVICE_SECRET,
 } from "../../platform/aparelho-logico";
 import { hashDoSegredo } from "../../platform/auth/device-session";
+import { stopTestProcess } from "./test-process-shutdown";
 
 const ROOT = process.cwd();
 const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
@@ -107,15 +108,7 @@ async function startPilot(platformBase: string, secret: string): Promise<Proc> {
 
 async function stop(p: Proc | null): Promise<void> {
   if (!p) return;
-  try {
-    if (p.child.pid) {
-      if (process.platform === "win32") {
-        execFileSync("taskkill", ["/PID", String(p.child.pid), "/T", "/F"], { stdio: "ignore" });
-      } else {
-        process.kill(-p.child.pid, "SIGTERM");
-      }
-    }
-  } catch { /* já saiu */ }
+  await stopTestProcess(p.child);
   if (p.dir) rmSync(p.dir, { recursive: true, force: true });
 }
 

@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer as createHttpServer, type Server } from "node:http";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { verifyPlatformReadAssertion } from "../foundation/platform-read-assertion";
+import { stopTestProcess } from "./test-process-shutdown";
 
 const ROOT = process.cwd();
 const OPS = "CHANGE_ME_OPS_TOKEN";
@@ -160,19 +161,7 @@ async function get(base: string, path: string, token = OPS) {
 }
 
 async function stopPilot(p: Pilot) {
-  const stopped = p.proc.exitCode !== null || p.proc.signalCode !== null
-    ? Promise.resolve()
-    : new Promise<void>((resolve) => p.proc.once("exit", () => resolve()));
-  try {
-    if (p.proc.pid) {
-      if (process.platform === "win32") {
-        execFileSync("taskkill", ["/PID", String(p.proc.pid), "/T", "/F"], { stdio: "ignore" });
-      } else {
-        process.kill(-p.proc.pid, "SIGTERM");
-      }
-    }
-  } catch { /* já saiu */ }
-  await stopped;
+  await stopTestProcess(p.proc);
   rmSync(p.dir, { recursive: true, force: true });
 }
 

@@ -53,3 +53,13 @@ Após autorização para envio, revalidar o HEAD remoto da PR #126, enviar os co
 
 A PR permanece DRAFT/HOLD. Sem merge, deploy, migração operacional, impressão, integração real, acesso a outras unidades ou novo gasto.
 
+## Atualização após autorização de envio
+
+César autorizou o envio e o CI em 25/10/2026. Os três commits foram transportados para a PR #126 sem forçar a branch. Os identificadores mudaram, e as três árvores Git permaneceram idênticas; o mapeamento está em `github-transfer.json`. A PR segue DRAFT/HOLD, sem merge ou deploy.
+
+O Android passou no run 40231510082: **16 suítes JUnit, 110 testes, zero falhas e zero erros**. Isso fecha a prova JVM/Kotlin correspondente; não prova APK ou aparelho físico.
+
+O produto reprovou no run 40231510077. As asserções HTTP e as seis do despacho PostgreSQL passaram, mas dois testes apagavam seus diretórios antes da saída dos servidores. A finalização ainda gravava backups e gerou ENOTEMPTY. O cluster não executou, e o teste de termo também ficou impedido pela falha anterior. A indicação intermediária de sucesso das etapas com continue-on-error não foi aceita como prova após leitura dos logs.
+
+A correção usa um único encerramento de processos de teste que espera o evento exit antes da limpeza. O teste novo reproduz uma escrita final atrasada; o controle mutante que retorna antes do exit é recusado. A data lifecycle do MISSION_LEDGER foi atualizada para a edição real de 25/10, e o registro novo passou a usar a chave mission_id. Nenhuma guarda foi desabilitada ou relaxada. Localmente: build, HTTP GPS 15/15, captura 8/8, teste de encerramento e governança 14/14 aprovados. O novo CI permanece obrigatório, inclusive para o cluster PostgreSQL.
+

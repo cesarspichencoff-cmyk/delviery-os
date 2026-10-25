@@ -3,9 +3,9 @@
   "project_id": "project.deliveryos",
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
-  "active_ref": "work/itaim-only-20261025",
-  "checkpoint_type": "ITAIM_ONLY_IMPLEMENTED_LOCAL_TEST_PASS_REMOTE_GATES_OPEN",
-  "state_basis_head": "37331b33f92b2d8b7457ce479ac6978a9a72e71b",
+  "active_ref": "review/deliveryos-v1-role-convergence-20261022",
+  "checkpoint_type": "REVIEW_CI_PARTIAL_FIXES_PENDING_RETEST",
+  "state_basis_head": "fdae88a677163dc4e7f4d19ab251227808b0adb5",
   "verified_state_refs": [
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
     "docs/execution/evidencias/itaim-only-2026-10-25/results.json",
@@ -16,18 +16,23 @@
     "Exact v3.2 generator applied, then GPS response scope and device identity guards implemented.",
     "Full build passes. Final run: 27 suites PASS with exit zero plus completion markers; 2 PostgreSQL suites explicitly SKIPPED.",
     "Synthetic term runner incomplete-exit-zero reproduced; corrected final runner completes all 10 cases.",
-    "Remote PR #126 still DRAFT/HOLD at 07b5bb0; no push, merge or deploy."
+    "Cesar explicitly authorized sending the review commits and running CI on 2026-10-25 (reply: Sim).",
+    "Remote transport preserved all three Git trees exactly; original review head was fast-forwarded, never forced.",
+    "Android run 40231510082 succeeded at fdae88a: 16 JUnit suites, 110 tests, zero failures/errors.",
+    "Product run 40231510077 failed: cleanup races after successful HTTP/PG assertions and stale mission-ledger lifecycle date. Cluster and term step were not reached in that run.",
+    "Local correction: shared shutdown helper waits for exit before deletion; positive delayed-write test passes and early-return mutant fails. Governance passes 14 guards after lifecycle date reconciliation."
   ],
-  "next_action": "Obtain scoped push authorization under CLAUDE.md section 9; revalidate PR #126 head, send local commits without force, then execute CI on that revision. Keep DRAFT/HOLD until PostgreSQL, Kotlin/Android and remaining operational gates are proven.",
+  "next_action": "Send the bounded cleanup-test and lifecycle metadata fixes to PR #126 under existing authorization, then verify the new commit CI. Keep DRAFT/HOLD. No merge, deploy or operational effects.",
   "unknowns": [
-    "Remote CI has not run on the local commits.",
-    "PostgreSQL canonical dispatch and shared-server cluster tests not executed; no lab cluster could start in this execution environment.",
-    "Gradle dependency download unavailable; Kotlin/JUnit, APK, physical Android, Q018 full chain and field GPS unproven.",
+    "Product CI on the next review commit is pending.",
+    "The cluster test did not run in the first CI because canonical dispatch cleanup failed; retry on the corrected test lifecycle.",
+    "APK, physical Android, Q018 full chain and field GPS remain unproven.",
     "Real-source readiness, operational consent, backup and human pilot acceptance are not established by this change."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
-    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
+    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY",
+    "review_branch_updates": "EXPLICITLY_AUTHORIZED_BY_CESAR_2026_10_25_SIM; code/test/checkpoint updates within Itaim-only scope and CI; no production authority"
   },
   "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
   "session_policy": {
@@ -40,7 +45,7 @@
       "Session rollover never expands authority."
     ]
   },
-  "active_ref_location": "LOCAL_ONLY_NOT_PUSHED",
+  "active_ref_location": "GITHUB_REVIEW_BRANCH",
   "source_basis_base_head": "07b5bb098f970b039c0fe387c33fdfb6a85b6682",
   "prior_checkpoint": {
     "source_ref": "main",
@@ -52,5 +57,16 @@
       "Parser/engine convergence remains unproven unless newer evidence supersedes this checkpoint."
     ],
     "next_action": "Revalidate main/head and continue from the current source-truth gaps: durable raw-source recovery, parser/event-log/8-praca convergence or behavioral-equivalence proof, and historical WhatsApp-count reconciliation. Do not refactor proven behavior merely for architectural aesthetics."
-  }
+  },
+  "review_transport": {
+    "tested_local_code": "37331b33f92b2d8b7457ce479ac6978a9a72e71b",
+    "equivalent_remote_code": "ae294958c9931269b8a4d7410f3895e71a1a6a76",
+    "review_head_at_first_ci": "fdae88a677163dc4e7f4d19ab251227808b0adb5",
+    "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
+  },
+  "pending_delta_after_basis": [
+    "Test-process exit synchronization for HTTP and PostgreSQL test cleanup",
+    "Regression against delayed shutdown writes and an early-return mutant",
+    "Mission-ledger lifecycle date and record key correction; governance guards unchanged"
+  ]
 }

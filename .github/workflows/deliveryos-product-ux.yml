@@ -58,6 +58,8 @@ jobs:
       - run: npm run -s build:platform
       - name: ITAIM-only - recusar boot para unidade/config incorreta
         run: npx tsx src/entregas/pilot/run-itaim-boot-tests.ts
+      - name: Processos de teste - concluir escrita de encerramento antes da limpeza
+        run: node dist/src/entregas/pilot/run-test-process-shutdown-tests.js
       - name: ITAIM-only - identidade, GPS e regressao do termo no HTTP real
         id: itaim_http_gate
         continue-on-error: true
