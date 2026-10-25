@@ -370,11 +370,7 @@ export class PilotApplicationFacade {
           fingerprint: canonicalInboundFingerprint({
             event_id: inbound.event_id,
             idempotency_key: inbound.idempotency_key,
-            // O recibo identifica o comando ORIGINAL sob autoridade da
-            // sessao. Nao incluir enriquecimento mutavel da fila readyOrders:
-            // apos um commit, a fila pode ser consumida e o mesmo reenvio
-            // precisa conservar o fingerprint do primeiro envio.
-            command: full as unknown as Record<string, unknown>,
+            command: validated as unknown as Record<string, unknown>,
             unit_id: this.cfg.unit_id,
             actor_id: actor.actor_id, actor_role: actor.role,
             device_id: inbound.device_id,
