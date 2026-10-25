@@ -5,10 +5,11 @@
 ## Correção real
 
 A V8.85 chamava sua lista de limites de `effects`, mas não registrava que o
-observador executa processo, cria um job efêmero, lê a identidade local, o
-relógio e a configuração do canal. Isso podia produzir um falso negativo na
-auditoria: ausência de efeito operacional não significa ausência absoluta de
-atividade no host.
+observador executava processo/job efêmero e lia a configuração do canal. A
+V8.86 acrescenta leituras de relógio, nome local e token para vínculo e
+frescor; essas novas atividades também precisam ser declaradas. O modelo
+anterior podia produzir um falso negativo na auditoria: ausência de efeito
+operacional não significa ausência absoluta de atividade no host.
 
 A V8.86 corrige a taxonomia. O relatório declara como verdadeiros os acessos
 observacionais necessários e mantém falsos, separadamente, impressão, fila,
