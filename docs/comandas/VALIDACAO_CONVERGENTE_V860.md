@@ -28,6 +28,8 @@
 
 **Evidência de tentativa V8.80:** uma declaração de rejeição antes da criação do job só permite classificar `PROVEN_NO_EFFECT_FAILURE` quando não existe job e não existe nenhum status de job. Qualquer contradição (`rejeitado` + job existente, ou status sem job) e qualquer status de job/impressora não reconhecido resulta em `EFFECT_UNKNOWN_REQUIRES_RECONCILIATION`, bloqueia avanço fiscal e proíbe retry automático. O classificador é lógica offline: ele não coleta o spooler e não torna a origem da observação independente por si só.
 
+**Testemunha de tentativa V8.82:** o contrato assinado vincula loja, hash do pedido/reserva/conteúdo/origem, intenção, tentativa, rota, coletor, emissor, revisão, nonce e janela temporal. O coletor deve ser diferente do emissor e a classificação V8.80 é recalculada a partir dos fatos assinados. Mesmo com assinatura e vínculos válidos, o resultado é somente `SIGNED_SOURCE_SEPARATION_MATCH_RECONCILIATION_ONLY`: custódia independente, domínio de falha separado, papel físico e ausência de efeito continuam não provados; impressão, reimpressão, avanço fiscal e retry automático permanecem bloqueados. Ver `PRINT_ATTEMPT_WITNESS_V882_REVIEW_ONLY.md`.
+
 ## Próximo passo seguro quando o host reaparecer
 
 Executar exclusivamente inspeção passiva V8.59, sem CLI de fixture (parâmetro CiFixtureRoot só em runner GitHub). Inspecionar arquivos e versão do Reader V2, correspondência do evento/decisão, completude de observações e estado da sequência. A saída deve trazer contagens e códigos de bloqueio — não copiar nomes de clientes, notas, IDs ou hashes para discussão pública. Reconciliar catalogação e proveniência em fonte atual antes de afirmar que G2/G3 foram satisfeitos. Se host inacessível, registrar UNKNOWN.
