@@ -77,6 +77,12 @@ Uma futura adaptação live exige autorização própria e deve provar primeiro 
 identidade do coletor, leitura mínima, ausência de documento/usuário na saída,
 separação do emissor e comportamento fail-closed quando a fonte desaparece.
 
+A V8.84 fecha o próximo recorte de arquitetura: acesso direto à fila Windows
+não é aceito como estritamente read-only porque os direitos de leitura da
+impressora incluem capacidade básica de impressão. A única rota ainda elegível
+para revisão é um canal PrintService/Operational já habilitado, sem acesso live
+ou autoridade nesta PR. Ver `PRINT_SOURCE_ACCESS_V884_REVIEW_ONLY.md`.
+
 O mapa pinado nesta PR continua sendo `0001 - TATA ITAIM`. Nada nesta versão
 prova a topologia da `CAIXA_MOOCA`.
 

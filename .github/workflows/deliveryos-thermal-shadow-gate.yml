@@ -48,6 +48,8 @@ jobs:
         run: node tools/verificar_print_attempt_witness_v882.js
       - name: V8.83 print-attempt source collector preview static safety (Linux)
         run: node tools/verificar_print_attempt_source_collector_v883_static.js
+      - name: V8.84 print-source identity, privacy and coexistence boundary (Linux offline)
+        run: node tools/verificar_print_source_access_v884_offline.cjs
       - name: Historical Teknisa 463-product and six-printer mapping integrity (Linux offline)
         run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: Operational ticket semantic projection V4.5
@@ -414,6 +416,8 @@ jobs:
         run: |
           node tools/verificar_print_attempt_source_collector_v883_static.js
           node tools/verificar_print_attempt_source_collector_v883_windows.cjs
+      - name: V8.84 print-source identity, privacy and coexistence boundary (Windows offline)
+        run: node tools/verificar_print_source_access_v884_offline.cjs
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)

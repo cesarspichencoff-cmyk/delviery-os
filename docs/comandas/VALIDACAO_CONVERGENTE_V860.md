@@ -32,6 +32,8 @@
 
 **Preview do coletor V8.83:** o normalizador PowerShell roda apenas sobre fixture sintética contida no `RUNNER_TEMP` do GitHub Actions Windows. Ele não possui modo live nem APIs de spooler, impressora, serviço, CIM, event log, rede ou assinatura. A saída sanitizada é um candidato V8.82 não assinado; identidade efetiva, separação de processo, custódia, papel e ausência de efeito permanecem falsas. Ver `PRINT_ATTEMPT_SOURCE_COLLECTOR_V883_REVIEW_ONLY.md`.
 
+**Fronteira de acesso V8.84:** uma fila Windows não é tratada como fonte estritamente read-only porque `PRINTER_READ/WRITE/EXECUTE` incluem `PRINTER_ACCESS_USE`, que também permite operações básicas de impressão. A rota direta ao spooler fica bloqueada. Somente uma proposta offline para leitura limitada de um canal PrintService/Operational já habilitado pode avançar a revisão, ainda sem provar SID/token/ACL reais, vínculo não sensível da tentativa, coexistência GP/Teknisa, papel físico ou autoridade operacional. Ver `PRINT_SOURCE_ACCESS_V884_REVIEW_ONLY.md`.
+
 ## Próximo passo seguro quando o host reaparecer
 
 Executar exclusivamente inspeção passiva V8.59, sem CLI de fixture (parâmetro CiFixtureRoot só em runner GitHub). Inspecionar arquivos e versão do Reader V2, correspondência do evento/decisão, completude de observações e estado da sequência. A saída deve trazer contagens e códigos de bloqueio — não copiar nomes de clientes, notas, IDs ou hashes para discussão pública. Reconciliar catalogação e proveniência em fonte atual antes de afirmar que G2/G3 foram satisfeitos. Se host inacessível, registrar UNKNOWN.
