@@ -679,6 +679,62 @@ async function suiteCommandBatchAuthority(): Promise<void> {
     assert.equal((timelineAfter.json.timeline as unknown[]).length, beforeCount, "replay nao pode duplicar dominio");
   });
 
+  await test("Q isolamento: outro ator nao recebe ACK de recibo confirmado", async () => {
+    const before = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
+    const beforeCount = (before.json.timeline as unknown[]).length;
+    const response = await api("/api/events/batch", {
+      method: "POST", token: RIDER_TOKEN, body: { events: [firstEvent] },
+    });
+    const row = (response.json.results as Array<{event_id:string;ok:boolean;code?:string}>)[0];
+    assert.equal(response.status, 200);
+    assert.equal(row?.event_id, firstEvent.event_id);
+    assert.equal(row?.ok, false, "outro ator nao pode reutilizar o ACK");
+    assert.equal(row?.code, "RECEIPT_COLLISION");
+    const after = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
+    assert.equal((after.json.timeline as unknown[]).length, beforeCount, "outro ator alterou o dominio");
+  });
+
+  await test("Q isolamento: mesma chave HTTP com novo event_id nao recebe ACK", async () => {
+    const forgedTrip = "trip-batch-duplicate-key-forged";
+    const second = {
+      event_id: "evt-batch-second-key-forged",
+      idempotency_key: firstEvent.idempotency_key,
+      command: { ...firstEvent.command,
+        command_id: "cmd-batch-second-key-forged",
+        trip_id: forgedTrip,
+      },
+    };
+    const response = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN, body: { events: [second] },
+    });
+    const row = (response.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(response.status, 200);
+    assert.equal(row?.ok, false, "mesma chave nao autoriza outro event_id");
+    assert.equal(row?.code, "RECEIPT_COLLISION");
+    const snapshot = await api("/api/snapshot", { token: OPS_TOKEN });
+    assert.equal((snapshot.json.trips as Array<{trip_id:string}>).some(x => x.trip_id === forgedTrip), false);
+  });
+
+  await test("Q isolamento: command_id confirmado nao autoriza segundo evento", async () => {
+    const forgedTrip = "trip-batch-command-id-forged";
+    const second = {
+      event_id: "evt-batch-second-command-forged",
+      idempotency_key: "idem-batch-second-command-forged",
+      command: { ...firstEvent.command,
+        trip_id: forgedTrip,
+      },
+    };
+    const response = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN, body: { events: [second] },
+    });
+    const row = (response.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(response.status, 200);
+    assert.equal(row?.ok, false, "command_id ja aplicado nao pode ser reusado");
+    assert.equal(row?.code, "RECEIPT_COLLISION");
+    const snapshot = await api("/api/snapshot", { token: OPS_TOKEN });
+    assert.equal((snapshot.json.trips as Array<{trip_id:string}>).some(x => x.trip_id === forgedTrip), false);
+  });
+
   await test("Q idempotencia: colisao event_id com comando diferente nao pode alterar dominio", async () => {
     const alteredTripId = "trip-batch-replayed-id-altered-command";
     const replay = await api("/api/events/batch", {
