@@ -112,6 +112,11 @@ $expectedRows = foreach ($e in $expected) {
 
 $result = [ordered]@{
   schema = "deliveryos.production-printer-preflight-readonly.v1"
+  routing_contract = [ordered]@{
+    store = "0001 - TATA ITAIM"
+    source = "data/runtime_printer_map_v1.json"
+    source_sha256 = "f37dae40779c5a205a26ceb289cd748d1c7747c1947c278f534a2dcc2f296f4c"
+  }
   captured_at = (Get-Date).ToString("o")
   computer_name = $env:COMPUTERNAME
   probe_tcp_9100_requested = [bool]$ProbeTcp9100

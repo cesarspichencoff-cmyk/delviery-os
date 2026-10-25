@@ -7,6 +7,19 @@
 const fs=require("node:fs"),path=require("node:path");
 const SCHEMA="deliveryos.production-printer-preflight-readonly.v1";
 const REQUIRED_CODES=["00002","00003","00004","00006","00007","00009"];
+const ROUTING_CONTRACT=Object.freeze({
+ store:"0001 - TATA ITAIM",
+ source:"data/runtime_printer_map_v1.json",
+ source_sha256:"f37dae40779c5a205a26ceb289cd748d1c7747c1947c278f534a2dcc2f296f4c"
+});
+const EXPECTED_ROUTES=new Map([
+ ["00002",{name:"COZINHA",ip:"192.168.0.116",alias:"LPT3"}],
+ ["00003",{name:"DELIVERY SUSHI 1",ip:"192.168.0.153",alias:null}],
+ ["00004",{name:"DELIVERY SUSHI 2",ip:"192.168.0.4",alias:null}],
+ ["00006",{name:"BALCAOSUSHI2",ip:"192.168.0.110",alias:"LPT5"}],
+ ["00007",{name:"BAR",ip:"192.168.0.232",alias:"LPT6"}],
+ ["00009",{name:"BALCAOSUSHI1",ip:"192.168.0.142",alias:"LPT4"}]
+]);
 const falseEffects=["print_attempted","spooler_job_created",
  "printer_configuration_changed","network_payload_sent_to_printer"];
 const canon=x=>String(x||"").normalize("NFD")
@@ -33,6 +46,11 @@ function parseReport(report,issues,side){
    !obj(report.effect_boundary)||
    falseEffects.some(k=>report.effect_boundary[k]!==false))
   issues.add(side+"_EFFECTS_OR_NETWORK_PROBE");
+ if(!obj(report.routing_contract)||
+    report.routing_contract.store!==ROUTING_CONTRACT.store||
+    report.routing_contract.source!==ROUTING_CONTRACT.source||
+    report.routing_contract.source_sha256!==ROUTING_CONTRACT.source_sha256)
+  issues.add(side+"_ROUTING_CONTRACT_IDENTITY_MISMATCH");
  if(!safeText(report.computer_name))issues.add(side+"_HOST");
  const stamp=Date.parse(report.captured_at);
  if(!Number.isFinite(stamp))issues.add(side+"_TIME");
@@ -95,6 +113,11 @@ function parseReport(report,issues,side){
  // before-vs-after equality. Two equally misrouted snapshots are still HOLD.
  const queueOwners=new Map();
  if(expected)for(const row of expected.values()){
+  const pinned=EXPECTED_ROUTES.get(String(row.printer_code));
+  if(!pinned||canon(row.configured_name)!==canon(pinned.name)||
+     canon(row.configured_ip)!==canon(pinned.ip)||
+     canon(row.configured_port_alias)!==canon(pinned.alias))
+   issues.add(side+"_ROUTE_CONTRACT_MISMATCH");
   // The source preflight always returns null when TCP probing is disabled.
   // A populated probe result contradicts the declared no-network boundary.
   if(!Object.hasOwn(row,"tcp_9100_probe")||row.tcp_9100_probe!==null)

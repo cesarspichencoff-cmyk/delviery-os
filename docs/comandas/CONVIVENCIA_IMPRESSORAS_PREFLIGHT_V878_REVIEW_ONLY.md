@@ -9,14 +9,16 @@
 
 O comparador exige seis rotas de impressão esperadas, inventário válido e a mesma máquina em duas observações separadas por até 15 minutos. Detecta remoção ou inclusão de filas, mudanças de driver/porta/endereço, configurações da impressora, compartilhamento e publicação, indisponibilidade, aumento de trabalhos pendentes e vínculos inconsistentes entre rotas e filas. Rejeita relatórios que declarem sondagem TCP, escrita ou impressão.
 
+As seis rotas são verificadas contra os bytes Git exatos de `data/runtime_printer_map_v1.json`, SHA-256 `f37dae40779c5a205a26ceb289cd748d1c7747c1947c278f534a2dcc2f296f4c`, identificados no próprio relatório como **`0001 - TATA ITAIM`**. Alterar de forma idêntica o nome, IP ou alias esperado nos dois relatórios continua sendo adulteração e resulta em `HOLD`. Esse contrato **não prova a topologia da CAIXA_MOOCA** e não deve ser extrapolado para outra loja.
+
 O comparador mantém **HOLD** se qualquer fila tiver trabalhos pendentes (`job_count > 0`) em uma das observações, mesmo quando a quantidade não aumenta ou está diminuindo: filas não vazias ainda não provam escoamento normal. Também bloqueia uma rota com mais de uma porta candidata e relatórios que aleguem `probe_tcp_9100_requested=false` enquanto tragam resultado preenchido de sondagem TCP. Esses sinais são motivos de investigação, **não prova de que as Comandas causaram a condição**.
 
 **`STRUCTURAL_MATCH_ONLY` não significa `SAFE`, `GO` nem prova de impressão.** Mesmo sem diferenças, o sistema continua informando `authorizes_install=false`, `authorizes_print=false` e `absence_of_interference_proven=false`. Dados fornecidos não substituem atestação independente de origem ou leitura de desempenho do host.
 
-## Quando o computador CAIXA_MOOCA estiver acessível
+## Antes de qualquer inspeção em computador operacional
 
 1. Revalidar autorização humana **específica para inspeção passiva**, identidade do dispositivo e horário adequado. Sem essa autorização: não executar nada no caixa.
-2. Primeiro verificar, em leitura, quais filas/portas/serviços do GP/Teknisa existem e o consumo atual de CPU/RAM. Se a carga estiver alta, suspender a avaliação.
+2. Confirmar que a loja e o mapa vigente são exatamente os do contrato pinado. O mapa atual é ITAIM; para CAIXA_MOOCA, a correspondência permanece `UNKNOWN` até existir fonte atual própria. Depois, verificar em leitura quais filas/portas/serviços do GP/Teknisa existem e o consumo atual de CPU/RAM. Se a carga estiver alta, suspender a avaliação.
 3. **Não executar automaticamente** `production_printer_preflight_readonly.ps1` no caixa: esse script grava um arquivo de evidência por padrão. Também não habilitar `-ProbeTcp9100`, que faz contato de rede. Qualquer coleta e gravação exigem revisão separada do efeito e consentimento adequado.
 4. Somente com dois relatórios já disponíveis e autorizados, comparar **fora do caixa** usando:
    `node tools/comparar_preflight_impressoras_v878_offline.cjs <relatorio-antes.json> <relatorio-depois.json>`

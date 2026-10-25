@@ -5,24 +5,35 @@ const fs=require("node:fs"),os=require("node:os"),path=require("node:path");
 const {spawnSync}=require("node:child_process");
 const {assessPair}=require("./comparar_preflight_impressoras_v878_offline.cjs");
 const codes=["00002","00003","00004","00006","00007","00009"];
+const routes=[
+ {name:"COZINHA",ip:"192.168.0.116",alias:"LPT3"},
+ {name:"DELIVERY SUSHI 1",ip:"192.168.0.153",alias:null},
+ {name:"DELIVERY SUSHI 2",ip:"192.168.0.4",alias:null},
+ {name:"BALCAOSUSHI2",ip:"192.168.0.110",alias:"LPT5"},
+ {name:"BAR",ip:"192.168.0.232",alias:"LPT6"},
+ {name:"BALCAOSUSHI1",ip:"192.168.0.142",alias:"LPT4"},
+];
 function report(time="2026-10-23T19:00:00.000Z"){
  const q=codes.map((code,i)=>({
   printer_name:"FAKE_PRINT_"+code,driver_name:"TEST_FAKE_DRIVER",
   shared:false,share_name:"",published:false,
   port_name:"LOCAL_PORT_"+code,printer_status:"Normal",job_count:0,
-  port:{name:"LOCAL_PORT_"+code,printer_host_address:"192.0.2."+(i+1),
+  port:{name:"LOCAL_PORT_"+code,printer_host_address:routes[i].ip,
    port_number:9100,snmp_enabled:false},
   configuration:{paper_size:"80mm",color:false,duplexing_mode:"OneSided"},
   cim:{work_offline:false,detected_error_state:"0",extended_printer_status:"3"}
  }));
  return {schema:"deliveryos.production-printer-preflight-readonly.v1",
+  routing_contract:{store:"0001 - TATA ITAIM",
+   source:"data/runtime_printer_map_v1.json",
+   source_sha256:"f37dae40779c5a205a26ceb289cd748d1c7747c1947c278f534a2dcc2f296f4c"},
   captured_at:time,computer_name:"SYNTHETIC_WINDOWS_TEST",
   probe_tcp_9100_requested:false,
   effect_boundary:{print_attempted:false,spooler_job_created:false,
    printer_configuration_changed:false,network_payload_sent_to_printer:false},
   expected:codes.map((code,i)=>({
-   printer_code:code,configured_name:"FAKE_PRINT_"+code,
-   configured_ip:"192.0.2."+(i+1),configured_port_alias:null,
+   printer_code:code,configured_name:routes[i].name,
+   configured_ip:routes[i].ip,configured_port_alias:routes[i].alias,
    matching_windows_ports:["LOCAL_PORT_"+code],
    matching_windows_queues:["FAKE_PRINT_"+code],tcp_9100_probe:null
   })),
@@ -81,6 +92,39 @@ ok("falling but not empty printer backlog remains HOLD",()=>{
  assert.equal(verdict.status,"HOLD");
  assert.ok(verdict.reasons.includes("FOLLOWUP_QUEUE_BACKLOG_PRESENT_UNRESOLVED"));
 });
+ok("same forged route IP in both reports cannot replace pinned contract",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b]){
+  x.expected[0].configured_ip="198.51.100.77";
+  x.windows_queues[0].port.printer_host_address="198.51.100.77";
+ }
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_CONTRACT_MISMATCH"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_ROUTE_CONTRACT_MISMATCH"));
+});
+ok("same forged route name in both reports cannot replace pinned contract",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.expected[0].configured_name="FORGED_ROUTE_NAME";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTE_CONTRACT_MISMATCH"));
+});
+ok("missing routing contract identity cannot compare as stable",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ delete a.routing_contract;delete b.routing_contract;
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTING_CONTRACT_IDENTITY_MISMATCH"));
+ assert.ok(verdict.reasons.includes("FOLLOWUP_ROUTING_CONTRACT_IDENTITY_MISMATCH"));
+});
+ok("different store contract cannot be treated as ITAIM evidence",()=>{
+ const a=structuredClone(base),b=structuredClone(follow);
+ for(const x of [a,b])x.routing_contract.store="UNKNOWN_OTHER_STORE";
+ const verdict=assessPair(a,b);
+ assert.equal(verdict.status,"HOLD");
+ assert.ok(verdict.reasons.includes("BASELINE_ROUTING_CONTRACT_IDENTITY_MISMATCH"));
+});
 ok("stable synthetic topology is comparison only, never GO",()=>{
  const x=assessPair(base,follow);
  assert.equal(x.status,"STRUCTURAL_MATCH_ONLY");
@@ -100,7 +144,9 @@ ok("same wrong physical destination in both snapshots must HOLD",()=>{
 ok("matching LPT alias must not hide contradictory physical IP",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
  for(const x of [a,b]){
-  x.expected[0].configured_port_alias="LOCAL_PORT_00002";
+  x.expected[0].matching_windows_ports=["LPT3"];
+  x.windows_queues[0].port_name="LPT3";
+  x.windows_queues[0].port.name="LPT3";
   x.windows_queues[0].port.printer_host_address="198.51.100.99";
  }
  const verdict=assessPair(a,b);
@@ -112,7 +158,9 @@ ok("matching LPT alias must not hide contradictory physical IP",()=>{
 ok("alias-only LPT port without physical IP is comparison only",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
  for(const x of [a,b]){
-  x.expected[0].configured_port_alias="LOCAL_PORT_00002";
+  x.expected[0].matching_windows_ports=["LPT3"];
+  x.windows_queues[0].port_name="LPT3";
+  x.windows_queues[0].port.name="LPT3";
   x.windows_queues[0].port.printer_host_address="";
   x.windows_queues[0].port.port_number=null;
   x.windows_queues[0].port.snmp_enabled=null;
@@ -124,7 +172,7 @@ ok("alias-only LPT port without physical IP is comparison only",()=>{
 });
 ok("blank physical IP without configured alias must HOLD",()=>{
  const a=structuredClone(base),b=structuredClone(follow);
- for(const x of [a,b])x.windows_queues[0].port.printer_host_address="";
+ for(const x of [a,b])x.windows_queues[1].port.printer_host_address="";
  const verdict=assessPair(a,b);
  assert.equal(verdict.status,"HOLD");
  assert.ok(verdict.reasons.includes("BASELINE_ROUTE_PHYSICAL_DESTINATION_MISMATCH"));

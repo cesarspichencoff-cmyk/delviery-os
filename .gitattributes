@@ -3,3 +3,4 @@
 tools/fixtures/canonical-packaging-v63-pinned.js -text
 runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs -text
 runtime/shadow/human-validations-cesar-20261014.review.json -text
+data/runtime_printer_map_v1.json -text

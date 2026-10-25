@@ -39,7 +39,11 @@ jobs:
           node tools/verificar_imp_printer_metadata_monitor_static.js
           V876_STATIC_ONLY=1 node tools/verificar_imp_monitor_limitado_v876_windows.cjs
       - name: V8.78 printer topology comparison with no operational effects (Linux)
-        run: node tools/verificar_comparador_preflight_v878_offline.cjs
+        run: |
+          node tools/verificar_production_printer_preflight_static_v1.js
+          node tools/verificar_comparador_preflight_v878_offline.cjs
+      - name: V8.80 contradictory print-attempt evidence never permits retry (Linux offline)
+        run: npm run verificar:windows-spooler-evidence
       - name: Historical Teknisa 463-product and six-printer mapping integrity (Linux offline)
         run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: Operational ticket semantic projection V4.5
@@ -395,7 +399,11 @@ jobs:
           node tools/verificar_imp_printer_metadata_monitor_static.js
           node tools/verificar_imp_monitor_limitado_v876_windows.cjs
       - name: V8.78 printer topology comparison with no operational effects (Windows)
-        run: node tools/verificar_comparador_preflight_v878_offline.cjs
+        run: |
+          node tools/verificar_production_printer_preflight_static_v1.js
+          node tools/verificar_comparador_preflight_v878_offline.cjs
+      - name: V8.80 contradictory print-attempt evidence never permits retry (Windows offline)
+        run: node tools/verificar_windows_spooler_evidence_v1.js
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)
