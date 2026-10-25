@@ -30,6 +30,8 @@
 
 **Testemunha de tentativa V8.82:** o contrato assinado vincula loja, hash do pedido/reserva/conteúdo/origem, intenção, tentativa, rota, coletor, emissor, revisão, nonce e janela temporal. O coletor deve ser diferente do emissor e a classificação V8.80 é recalculada a partir dos fatos assinados. Mesmo com assinatura e vínculos válidos, o resultado é somente `SIGNED_SOURCE_SEPARATION_MATCH_RECONCILIATION_ONLY`: custódia independente, domínio de falha separado, papel físico e ausência de efeito continuam não provados; impressão, reimpressão, avanço fiscal e retry automático permanecem bloqueados. Ver `PRINT_ATTEMPT_WITNESS_V882_REVIEW_ONLY.md`.
 
+**Preview do coletor V8.83:** o normalizador PowerShell roda apenas sobre fixture sintética contida no `RUNNER_TEMP` do GitHub Actions Windows. Ele não possui modo live nem APIs de spooler, impressora, serviço, CIM, event log, rede ou assinatura. A saída sanitizada é um candidato V8.82 não assinado; identidade efetiva, separação de processo, custódia, papel e ausência de efeito permanecem falsas. Ver `PRINT_ATTEMPT_SOURCE_COLLECTOR_V883_REVIEW_ONLY.md`.
+
 ## Próximo passo seguro quando o host reaparecer
 
 Executar exclusivamente inspeção passiva V8.59, sem CLI de fixture (parâmetro CiFixtureRoot só em runner GitHub). Inspecionar arquivos e versão do Reader V2, correspondência do evento/decisão, completude de observações e estado da sequência. A saída deve trazer contagens e códigos de bloqueio — não copiar nomes de clientes, notas, IDs ou hashes para discussão pública. Reconciliar catalogação e proveniência em fonte atual antes de afirmar que G2/G3 foram satisfeitos. Se host inacessível, registrar UNKNOWN.
