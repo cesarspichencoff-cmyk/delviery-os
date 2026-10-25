@@ -146,7 +146,7 @@ foreach($job in @($source.jobs)){
   if($jobId -lt 1 -or $jobId -gt 999999999 -or $mask -lt 0 -or
      $mask -gt [int]::MaxValue){throw 'V883_JOB_VALUE_INVALID'}
   if(-not $seenJobIds.Add($jobId)){throw 'V883_DUPLICATE_JOB_ID'}
-  $safeJobs.Add([ordered]@{job_id=$jobId;status_mask=$mask})
+  $safeJobs.Add([pscustomobject][ordered]@{job_id=$jobId;status_mask=$mask})
 }
 $matching=@($safeJobs|Where-Object{$_.job_id -eq $expectedJobId})
 

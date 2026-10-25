@@ -29,6 +29,7 @@ function safe(script) {
     /\$source\.jobs -isnot \[array\]/,
     /Collections\.Generic\.HashSet\[int64\]/,
     /\$seenJobIds\.Add\(\$jobId\)/,
+    /\[pscustomobject\]\[ordered\]@\{job_id=/,
     /UNRECOGNIZED_PRINTER_STATUS/,
     /UNRECOGNIZED_DETECTED_ERROR_STATE/,
     /source_channel='WINDOWS_SPOOLER_READONLY'/,
