@@ -370,7 +370,7 @@ export class PilotApplicationFacade {
           fingerprint: canonicalInboundFingerprint({
             event_id: inbound.event_id,
             idempotency_key: inbound.idempotency_key,
-            command: validated as unknown as Record<string, unknown>,
+            command: full as unknown as Record<string, unknown>,
             unit_id: this.cfg.unit_id,
             actor_id: actor.actor_id, actor_role: actor.role,
             device_id: inbound.device_id,
@@ -381,7 +381,7 @@ export class PilotApplicationFacade {
       // Comando legado continua no servico da fachada, sem recibo artificial.
       // A rota HTTP usa a UoW exclusiva e um recibo atomico por evento.
       const result = inbound
-        ? await service.execute(validated, receipt)
+        ? await service.execute(validated, receipt, full)
         : await this.svc.execute(validated);
       if (inbound) this.reloadStore();
       if (!result.ok) {

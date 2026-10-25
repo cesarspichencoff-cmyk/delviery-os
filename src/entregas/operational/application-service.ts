@@ -76,14 +76,16 @@ export class EntregasApplicationService {
     private readonly publicSourceMode?: EntregasSourceMode,
   ) {}
 
-  async execute(cmd: Command, receipt?: DurableInboundReceipt): Promise<AppResult> {
+  async execute(cmd: Command, receipt?: DurableInboundReceipt, receivedCommand?: Command): Promise<AppResult> {
     // Captura snapshot antes da primeira espera: o chamador nao pode mudar
     // o pedido apos fingerprint e antes do I/O da transacao.
     let commandSnapshot: Command;
     let receiptSnapshot: DurableInboundReceipt | undefined;
+    let receivedSnapshot: Command | undefined;
     try {
       commandSnapshot = structuredClone(cmd);
       receiptSnapshot = receipt === undefined ? undefined : structuredClone(receipt);
+      receivedSnapshot = receivedCommand === undefined ? undefined : structuredClone(receivedCommand);
     } catch {
       return { ok:false, code:"INVALID_COMMAND",
         error:"Comando nao pode ser convertido em snapshot seguro" };
@@ -95,7 +97,7 @@ export class EntregasApplicationService {
     executionTailByReceiptStore.set(sharedStageKey, current);
     await predecessor;
     try {
-      return await this.executeSerial(commandSnapshot, receiptSnapshot);
+      return await this.executeSerial(commandSnapshot, receiptSnapshot, receivedSnapshot);
     } finally {
       release();
       if (executionTailByReceiptStore.get(sharedStageKey) === current) {
@@ -104,7 +106,7 @@ export class EntregasApplicationService {
     }
   }
 
-  private async executeSerial(cmd: Command, receipt?: DurableInboundReceipt): Promise<AppResult> {
+  private async executeSerial(cmd: Command, receipt?: DurableInboundReceipt, received?: Command): Promise<AppResult> {
     try {
       if (this.quarantinedStage) {
         return { ok:false, code:"STAGE_QUARANTINED",
@@ -139,20 +141,48 @@ export class EntregasApplicationService {
           return { ok:false, code:"RECEIPT_BINDING",
             error:"Recibo de evento nao corresponde ao comando autenticado" };
         }
-        // Um hash hexadecimal qualquer nao e prova do conteudo. A hash
-        // esperada precisa vir do comando recebido mais identidade do
-        // contexto do servidor. device_id ainda requer atestacao no caller.
+        // A identidade do evento pertence ao comando recebido com actor/unidade
+        // da sessao. A fila de pedidos prontos pode adicionar channel depois;
+        // esse enriquecimento nao pode redefinir o fingerprint no replay.
+        const fingerprintFor = (command: Command) => canonicalInboundFingerprint({
+          event_id: receipt.event_id,
+          idempotency_key: receipt.idempotency_key,
+          command: command as unknown as Record<string,unknown>,
+          unit_id: cmd.unit_id,
+          actor_id: cmd.actor.actor_id,
+          actor_role: cmd.actor.role,
+          device_id: receipt.device_id,
+        });
         let expected: string;
         try {
-          expected = canonicalInboundFingerprint({
-            event_id: receipt.event_id,
-            idempotency_key: receipt.idempotency_key,
-            command: cmd as unknown as Record<string,unknown>,
-            unit_id: cmd.unit_id,
-            actor_id: cmd.actor.actor_id,
-            actor_role: cmd.actor.role,
-            device_id: receipt.device_id,
-          });
+          expected = fingerprintFor(received ?? cmd);
+          if (received) {
+            // A unica divergencia tolerada entre entrada e comando executado
+            // e channel validado na ready-order, quando omitido na entrada.
+            // Outras alteracoes, inclusive payload/actor/unidade, falham fechado.
+            const comparable = structuredClone(cmd);
+            if (received.type === "CreateTrip" && comparable.type === "CreateTrip" &&
+                Array.isArray(received.deliveries) &&
+                received.deliveries.length === comparable.deliveries.length) {
+              for (let i = 0; i < comparable.deliveries.length; i++) {
+                if (received.deliveries[i].channel === undefined &&
+                    (comparable.deliveries[i].channel === "proprio" ||
+                     comparable.deliveries[i].channel === "app")) {
+                  comparable.deliveries[i].channel = undefined;
+                }
+              }
+            } else if (received.type === "AddDeliveryToTrip" &&
+                       comparable.type === "AddDeliveryToTrip" &&
+                       received.channel === undefined &&
+                       (comparable.channel === "proprio" || comparable.channel === "app")) {
+              comparable.channel = undefined;
+            }
+            if (fingerprintFor(comparable) !== expected) {
+              await this.uow.rollback();
+              return { ok:false, code:"RECEIPT_BINDING",
+                error:"Comando executado difere do evento autenticado" };
+            }
+          }
         } catch {
           await this.uow.rollback();
           return { ok:false, code:"RECEIPT_FINGERPRINT",
