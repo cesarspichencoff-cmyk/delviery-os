@@ -52,6 +52,8 @@ jobs:
         run: node tools/verificar_print_source_access_v884_offline.cjs
       - name: V8.85 PrintService metadata observer static safety (Linux)
         run: node tools/verificar_printservice_metadata_v885_static.cjs
+      - name: V8.86 target-bound PrintService metadata static safety (Linux)
+        run: node tools/verificar_printservice_metadata_v886_static.cjs
       - name: Historical Teknisa 463-product and six-printer mapping integrity (Linux offline)
         run: node tools/verificar_odhen_product_routing_config_v1.js
       - name: Operational ticket semantic projection V4.5
@@ -424,6 +426,18 @@ jobs:
         run: |
           node tools/verificar_printservice_metadata_v885_static.cjs
           node tools/verificar_printservice_metadata_v885_windows.cjs
+      - name: V8.86 target-bound PrintService metadata syntax and static safety (Windows, no host read)
+        shell: pwsh
+        run: |
+          node tools/verificar_printservice_metadata_v886_static.cjs
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'tools/comandas_printservice_metadata_v886_target_windows.ps1',
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { throw 'PRINTSERVICE_METADATA_V886_PARSE_ERROR' }
+          Write-Output 'PRINTSERVICE_METADATA_V886_SYNTAX_PASS NO_HOST_READ'
       - name: Verify archived Figma SVG masters and thermal traces on Windows
         run: node tools/verificar_desenho_comandas_v72.js
       - name: Bind live four-field watcher identity (Windows CI)

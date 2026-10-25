@@ -2,6 +2,14 @@
 
 **Estado: DRAFT / HOLD / runner Windows descartável / nenhum evento lido.**
 
+> **Correção posterior V8.86:** o campo histórico `effects` desta versão
+> cobria efeitos operacionais protegidos, mas omitia as atividades do próprio
+> observador (processo/job e leitura de configuração). A V8.86 também declara
+> separadamente suas novas leituras de relógio, host e token.
+> Portanto, `NO_EFFECTS` não deve ser lido como ausência absoluta de atividade
+> no host. A taxonomia explícita e corrigida está em
+> `PRINTSERVICE_METADATA_V886_TARGET_BOUND_REVIEW_ONLY.md`.
+
 ## Objetivo
 
 A V8.85 prova o menor passo executável depois da fronteira V8.84: consultar

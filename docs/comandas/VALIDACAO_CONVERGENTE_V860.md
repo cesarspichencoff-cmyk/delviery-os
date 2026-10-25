@@ -36,9 +36,11 @@
 
 **Metadados efêmeros V8.85:** o próximo recorte consulta somente `Get-WinEvent -ListLog` no runner Windows hospedado e descartável do GitHub Actions, com canal exato, job limitado a dez segundos e saída sem SDDL/SID/host/usuário. Nenhum registro ou evento 307 é lido. Mesmo canal presente/habilitado e hash de descritor mantêm `HOLD`: o runner não prova ACL, token, host operacional, GP/Teknisa, tentativa ou papel. Ver `PRINTSERVICE_METADATA_V885_EPHEMERAL_REVIEW_ONLY.md`.
 
+**Alvo operacional V8.86:** o candidato seguinte exige nome local exato `CAIXA_MOOCA`, desafio de frescor e recibo externo do mesmo dispositivo. Ele corrige a taxonomia de efeitos da V8.85: processo/job, relógio, identidade/token e tentativa de leitura da configuração são atividades observacionais declaradas, enquanto registros, evento 307, spooler, impressão, GP/Teknisa, arquivos da aplicação, serviços, fiscal e sequência permanecem proibidos. A execução real segue `NOT_RUN` enquanto o conector oferecer apenas `Foxxy`. Ver `PRINTSERVICE_METADATA_V886_TARGET_BOUND_REVIEW_ONLY.md`.
+
 ## Próximo passo seguro quando o host reaparecer
 
-Executar exclusivamente inspeção passiva V8.59, sem CLI de fixture (parâmetro CiFixtureRoot só em runner GitHub). Inspecionar arquivos e versão do Reader V2, correspondência do evento/decisão, completude de observações e estado da sequência. A saída deve trazer contagens e códigos de bloqueio — não copiar nomes de clientes, notas, IDs ou hashes para discussão pública. Reconciliar catalogação e proveniência em fonte atual antes de afirmar que G2/G3 foram satisfeitos. Se host inacessível, registrar UNKNOWN.
+Para a frente de impressão, executar primeiro e exclusivamente a inspeção de metadados V8.86, somente quando o conector identificar diretamente `CAIXA_MOOCA`; parar em `HOLD` sem ler registros. A inspeção V8.59 do Reader é uma frente separada, sem autorização implícita nesta etapa: se vier a ser executada, deve permanecer sem CLI de fixture (parâmetro `CiFixtureRoot` só em runner GitHub), limitar a saída a contagens e códigos de bloqueio e não copiar nomes de clientes, notas, IDs ou hashes para discussão pública. Se o host não estiver diretamente acessível, registrar `UNKNOWN`/`NOT_RUN`.
 
 ## Autorização específica antes do piloto
 
