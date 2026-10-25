@@ -1,0 +1,13 @@
+AssertionError [ERR_ASSERTION]: location: aceitar resposta unit rompe o escopo
+
+200 !== 503
+
+    at main (/workspace/scratch/88da465b2ddd/delivery-os/dist/src/entregas/pilot/run-canonical-dispatch-http-tests.js:199:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 200,
+  expected: 503,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

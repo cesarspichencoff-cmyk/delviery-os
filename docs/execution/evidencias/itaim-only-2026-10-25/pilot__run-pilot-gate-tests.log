@@ -1,0 +1,58 @@
+
+=== Pilot gate tests ===
+
+  OK  banner de piloto sem DEMO
+[2026-10-25T20:26:43.027Z] WARN session_rejected: Token inválido. Peça um acesso ao responsável pelo piloto.
+[2026-10-25T20:26:43.027Z] INFO session_login: Ops entrou no piloto.
+  OK  login por token; rejeita token inválido
+[2026-10-25T20:26:43.028Z] WARN auth_failed: É preciso entrar com seu acesso antes de agir.
+  OK  command sem sessão é recusado
+[2026-10-25T20:26:43.033Z] INFO command_ok: Ação CreateTrip concluída.
+[2026-10-25T20:26:43.033Z] WARN command_failed: Papel motoboy_interno não autorizado para trip_close_manual
+[2026-10-25T20:26:43.033Z] WARN auth_failed: É preciso entrar com seu acesso antes de agir.
+[2026-10-25T20:26:43.035Z] INFO command_ok: Ação ConfirmTripDeparture concluída.
+  OK  ator explicitamente atestado prevalece sobre sessao mutavel da facade
+[2026-10-25T20:26:43.035Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.037Z] INFO command_ok: Ação CreateTrip concluída.
+[2026-10-25T20:26:43.037Z] INFO session_login: Rider entrou no piloto.
+[2026-10-25T20:26:43.038Z] INFO command_ok: Ação ConfirmTripDeparture concluída.
+[2026-10-25T20:26:43.038Z] INFO session_login: Ops entrou no piloto.
+  OK  fluxo viagem + persistência + reinício UoW
+[2026-10-25T20:26:43.039Z] INFO session_login: Ops entrou no piloto.
+  OK  fila marcada iFood nao pode virar Trip mesmo com canal omitido
+[2026-10-25T20:26:43.040Z] INFO session_login: Ops entrou no piloto.
+  OK  fila com origem desconhecida tambem recusa Trip
+[2026-10-25T20:26:43.041Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.043Z] INFO command_ok: Ação CreateTrip concluída.
+  OK  fila app proprio carimba canal apesar de navegador omitir
+[2026-10-25T20:26:43.043Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.045Z] INFO command_ok: Ação CreateTrip concluída.
+  OK  AddDelivery rejeita canal externo guardado na fila
+[2026-10-25T20:26:43.045Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.047Z] INFO command_ok: Ação CreateTrip concluída.
+[2026-10-25T20:26:43.047Z] WARN conflict: Esta ação já foi registrada. Não envie de novo.
+  OK  command_id duplicado bloqueado
+[2026-10-25T20:26:43.048Z] INFO session_login: Rider entrou no piloto.
+[2026-10-25T20:26:43.048Z] WARN command_failed: Papel motoboy_interno não autorizado para handoff
+  OK  papel motoboy não faz handoff
+[2026-10-25T20:26:43.049Z] INFO backup_done: Backup concluído.
+[2026-10-25T20:26:43.050Z] INFO backup_done: Backup concluído.
+[2026-10-25T20:26:43.051Z] INFO restore_done: Restauração concluída. Reinicie o servidor do piloto.
+  OK  backup + validação + restore
+[2026-10-25T20:26:43.052Z] INFO backup_done: Backup concluído.
+[2026-10-25T20:26:43.052Z] ERROR restore_failed: Restauração cancelada: integridade do backup não comprovada. checksum ausente
+[2026-10-25T20:26:43.053Z] ERROR restore_failed: Restauração cancelada: checksum do backup divergente. checksum divergente
+[2026-10-25T20:26:43.054Z] INFO backup_done: Backup concluído.
+[2026-10-25T20:26:43.055Z] INFO restore_done: Restauração concluída. Reinicie o servidor do piloto.
+  OK  restore file recusa sidecar ausente/divergente e aceita sidecar legado válido
+[2026-10-25T20:26:43.056Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.057Z] INFO command_ok: Ação StartHandoff concluída.
+[2026-10-25T20:26:43.059Z] INFO command_ok: Ação ConfirmHandoff concluída.
+[2026-10-25T20:26:43.060Z] WARN command_failed: Handoff já terminal: repassado
+[2026-10-25T20:26:43.060Z] WARN duplicate_ifood_release: Handoff já terminal: repassado
+  OK  handoff iFood completo sem trip
+[2026-10-25T20:26:43.060Z] INFO session_login: Ops entrou no piloto.
+  OK  snapshot banner piloto
+
+=== 15 pilot gate tests OK ===
+

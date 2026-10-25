@@ -1,0 +1,12 @@
+
+=== Entregas outbox persistence tests ===
+
+  OK  outbox sobrevive ao reinício do processo (FileUnitOfWork)
+  OK  enqueue é idempotente por event_id mesmo após reinício
+  OK  markPublished persiste e o item sai de pending
+  OK  markFailed preserva o evento e registra o erro (nunca perde)
+  OK  rollback não deixa o evento no disco (sem perda nem fantasma)
+  OK  arquivo persistido NÃO contém coordenada de GPS neste fluxo
+
+=== 6 outbox persistence tests OK ===
+

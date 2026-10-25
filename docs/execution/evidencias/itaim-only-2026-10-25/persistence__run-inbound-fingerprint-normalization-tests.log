@@ -1,0 +1,7 @@
+OK omissao de propriedade opcional undefined tem hash identico
+OK troca de ordem de chaves nao altera o hash
+OK payload realmente diferente troca o hash
+OK undefined em array falha fechado
+OK ciclo no payload falha fechado
+OK numero nao-finito falha fechado
+INBOUND_FINGERPRINT_NORMALIZATION: 6/6 OK (PURO)

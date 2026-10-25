@@ -1,0 +1,15 @@
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'trip_not_bound_to_device'
+- 'device_unit_not_allowed'
+
+    at main (/workspace/scratch/88da465b2ddd/delivery-os/dist/src/entregas/pilot/run-capture-control-http-tests.js:198:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'trip_not_bound_to_device',
+  expected: 'device_unit_not_allowed',
+  operator: 'strictEqual',
+  diff: 'simple'
+}

@@ -1,0 +1,6 @@
+OK input entregue a save nao altera snapshot confirmado
+OK rollback remove mutacao nested de entrega
+OK rollback remove mutacao nested do agregado
+OK duas UoWs nao compartilham referencias mutaveis
+OK eventos confirmados nao mudam via alias ou rollback
+MEMORY_UOW_COMMITTED_ISOLATION=5/5 PASS

@@ -1,0 +1,23 @@
+
+=== Entregas offline queue tests (COR §17) ===
+
+  OK  evento gravado durante queda de rede sobrevive na fila
+  OK  reinício do app: fila é reconstruída do storage (não vive em memória)
+  OK  occurred_at original NUNCA é sobrescrito pelo horário de sincronização
+  OK  sequence_local preserva a ordem local mesmo com occurred_at fora de ordem
+  OK  mesmo event_id não cria segundo item (idempotência local)
+  OK  mesma idempotency_key com event_id diferente também é duplicata
+  OK  lote reenviado (duplicate do servidor) conta como sucesso, não erro
+  OK  sincronização PARCIAL: aceito sai da fila, o resto permanece
+  OK  conflito fica VISÍVEL para reconciliação, nunca é apagado
+  OK  recuperação após queda no meio do envio: sending volta a pending
+  OK  clock skew grande marca clock_trust=suspect (COR §17.2.6)
+  OK  occurred_at no futuro além da tolerância também é suspect
+  OK  falha de transporte agenda retry com backoff crescente
+  OK  excesso de tentativas vira dead_letter VISÍVEL, nunca descarte silencioso
+  OK  storage corrompido não trava o app nem apaga o arquivo original
+  OK  purgeSynced remove só o que já foi confirmado
+  OK  device_id pseudonimizado acompanha todo item
+
+=== 17 offline queue tests OK ===
+

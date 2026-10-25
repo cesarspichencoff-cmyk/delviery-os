@@ -1,0 +1,4 @@
+copiar_migrations: 10 migration(s) para dist/
+copiar_conference_brain: 26 módulo(s) para dist/src/conference-brain/
+copiar_contratos: 1 contrato(s) para dist/docs/contracts/
+carimbar_build: 77 fonte(s) · 2d4f1ddb3aec · commit 37331b33f9 → dist/build-stamp.json

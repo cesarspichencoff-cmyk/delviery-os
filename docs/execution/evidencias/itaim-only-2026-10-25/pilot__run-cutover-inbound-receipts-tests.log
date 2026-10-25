@@ -1,0 +1,8 @@
+OK fonte nova com mapa de recibos vazio continua legivel
+OK recibo aplicado impede exportar snapshot que o descartaria
+OK mapa de recibos ambiguo falha fechado
+OK schema v1 sem campo de recibos nao pode fingir ser legado
+OK raiz nula nao vira snapshot vazio
+OK versao futura desconhecida nao e tratada como legado
+OK arquivo legado sem campo de recibos segue legivel
+CUTOVER_INBOUND_RECEIPTS: 7/7 OK

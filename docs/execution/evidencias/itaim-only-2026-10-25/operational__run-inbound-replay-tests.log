@@ -1,0 +1,3 @@
+OK memoria replay e colisao sem efeitos duplicados
+OK arquivo replay e colisao sem efeitos duplicados
+INBOUND_REPLAY: 4/4 OK (2x replay, 2x colisao; SEM API/PG REAL)

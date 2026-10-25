@@ -1,0 +1,4 @@
+ok porta exige leitura transacional e filtra unidade + viagem + modo
+ok payload GPS corrompido falha fechado em vez de sumir silenciosamente
+ok ausência é zero medido, não posição inventada
+LOCALIZACAO_CANONICA_GREEN 3/3

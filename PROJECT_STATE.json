@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.4",
+  "project_id": "project.deliveryos",
+  "project": "DeliveryOS",
+  "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
+  "active_ref": "work/itaim-only-20261025",
+  "checkpoint_type": "ITAIM_ONLY_IMPLEMENTED_LOCAL_TEST_PASS_REMOTE_GATES_OPEN",
+  "state_basis_head": "37331b33f92b2d8b7457ce479ac6978a9a72e71b",
+  "verified_state_refs": [
+    "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
+    "docs/execution/evidencias/itaim-only-2026-10-25/results.json",
+    "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json"
+  ],
+  "verified_state": [
+    "Complete source checkout: 1876/1876 blobs present.",
+    "Exact v3.2 generator applied, then GPS response scope and device identity guards implemented.",
+    "Full build passes. Final run: 27 suites PASS with exit zero plus completion markers; 2 PostgreSQL suites explicitly SKIPPED.",
+    "Synthetic term runner incomplete-exit-zero reproduced; corrected final runner completes all 10 cases.",
+    "Remote PR #126 still DRAFT/HOLD at 07b5bb0; no push, merge or deploy."
+  ],
+  "next_action": "Obtain scoped push authorization under CLAUDE.md section 9; revalidate PR #126 head, send local commits without force, then execute CI on that revision. Keep DRAFT/HOLD until PostgreSQL, Kotlin/Android and remaining operational gates are proven.",
+  "unknowns": [
+    "Remote CI has not run on the local commits.",
+    "PostgreSQL canonical dispatch and shared-server cluster tests not executed; no lab cluster could start in this execution environment.",
+    "Gradle dependency download unavailable; Kotlin/JUnit, APK, physical Android, Q018 full chain and field GPS unproven.",
+    "Real-source readiness, operational consent, backup and human pilot acceptance are not established by this change."
+  ],
+  "authority": {
+    "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
+    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
+  },
+  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
+  "session_policy": {
+    "default": "KEEP_SAME_SESSION_WHILE_HEALTHY",
+    "compact_when": "Context burden rises but execution remains reliable; rebuild working context from durable project state plus only the current unpersisted delta.",
+    "rollover_when": "The session materially degrades, repeated state repair is needed, or the next long/tool-heavy phase is safer from a fresh session after checkpointing.",
+    "new_session_instruction": "Open a new conversation in the same project and say: Continue DeliveryOS.",
+    "limits": [
+      "Conversation history is not project state.",
+      "Session rollover never expands authority."
+    ]
+  },
+  "active_ref_location": "LOCAL_ONLY_NOT_PUSHED",
+  "source_basis_base_head": "07b5bb098f970b039c0fe387c33fdfb6a85b6682",
+  "prior_checkpoint": {
+    "source_ref": "main",
+    "state_basis_head": "a441bc7e9ed209ca965be549dbbd0cd787867bd5",
+    "active_ref": "main",
+    "unknowns": [
+      "Any work not persisted after state_basis_head is UNKNOWN.",
+      "Durable integrity-checkable backup of original raw iFood/WhatsApp packages is not proven by this checkpoint.",
+      "Parser/engine convergence remains unproven unless newer evidence supersedes this checkpoint."
+    ],
+    "next_action": "Revalidate main/head and continue from the current source-truth gaps: durable raw-source recovery, parser/event-log/8-praca convergence or behavioral-equivalence proof, and historical WhatsApp-count reconciliation. Do not refactor proven behavior merely for architectural aesthetics."
+  }
+}

@@ -1,0 +1,18 @@
+
+=== PILOT SOURCE MODE — EXPLICITO E FAIL-CLOSED ===
+
+[2026-10-25T20:26:43.142Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.146Z] INFO command_ok: Ação CreateTrip concluída.
+  ok  SM1 simulated explicito chega à outbox durável
+[2026-10-25T20:26:43.147Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.149Z] INFO command_ok: Ação CreateTrip concluída.
+  ok  SM2 ausência continua UNKNOWN e nunca vira real
+  ok  SM3 real e control são aceitos somente se explícitos
+  ok  SM4 grafia/valor inválido falha no boot
+[2026-10-25T20:26:43.151Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.153Z] INFO command_ok: Ação CreateTrip concluída.
+[2026-10-25T20:26:43.153Z] INFO session_login: Ops entrou no piloto.
+[2026-10-25T20:26:43.154Z] INFO command_ok: Ação AddDeliveryToTrip concluída.
+  ok  SM5 reloadStore preserva a configuração explícita
+
+PILOT_SOURCE_MODE: 5/5 PASS

@@ -1,0 +1,3 @@
+OK direct shared UoW cross-instance
+OK two wrappers shared UoW cross-instance
+SHARED_UOW_CROSS_INSTANCE: 2/2 OK (MEMORY SYNTHETIC)

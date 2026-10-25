@@ -1,0 +1,8 @@
+{
+  "workflow_yaml_parsed": true,
+  "http_gate_keeps_later_checks": true,
+  "pg_gate_keeps_later_checks": true,
+  "final_gate_demands_both": true,
+  "q018_shell_syntax": true,
+  "git_diff_check": true
+}
