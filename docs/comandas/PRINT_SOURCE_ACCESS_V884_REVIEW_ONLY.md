@@ -105,3 +105,7 @@ provar em metadados:
 READ OR WRITE / NO EVENT LOG READ OR CHANGE / NO GP OR TEKNISA ACCESS / NO
 FISCAL OR SEFAZ CHANGE / NO SERVICE OR SEQUENCE CHANGE / NO CASH REGISTER
 ACCESS.**
+
+A V8.85 testa apenas a leitura de configuração `-ListLog` em runner Windows
+hospedado e descartável, sem registros de eventos e sem modo operacional. Ver
+`PRINTSERVICE_METADATA_V885_EPHEMERAL_REVIEW_ONLY.md`.

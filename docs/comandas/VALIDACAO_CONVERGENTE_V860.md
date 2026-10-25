@@ -34,6 +34,8 @@
 
 **Fronteira de acesso V8.84:** uma fila Windows não é tratada como fonte estritamente read-only porque `PRINTER_READ/WRITE/EXECUTE` incluem `PRINTER_ACCESS_USE`, que também permite operações básicas de impressão. A rota direta ao spooler fica bloqueada. Somente uma proposta offline para leitura limitada de um canal PrintService/Operational já habilitado pode avançar a revisão, ainda sem provar SID/token/ACL reais, vínculo não sensível da tentativa, coexistência GP/Teknisa, papel físico ou autoridade operacional. Ver `PRINT_SOURCE_ACCESS_V884_REVIEW_ONLY.md`.
 
+**Metadados efêmeros V8.85:** o próximo recorte consulta somente `Get-WinEvent -ListLog` no runner Windows hospedado e descartável do GitHub Actions, com canal exato, job limitado a dez segundos e saída sem SDDL/SID/host/usuário. Nenhum registro ou evento 307 é lido. Mesmo canal presente/habilitado e hash de descritor mantêm `HOLD`: o runner não prova ACL, token, host operacional, GP/Teknisa, tentativa ou papel. Ver `PRINTSERVICE_METADATA_V885_EPHEMERAL_REVIEW_ONLY.md`.
+
 ## Próximo passo seguro quando o host reaparecer
 
 Executar exclusivamente inspeção passiva V8.59, sem CLI de fixture (parâmetro CiFixtureRoot só em runner GitHub). Inspecionar arquivos e versão do Reader V2, correspondência do evento/decisão, completude de observações e estado da sequência. A saída deve trazer contagens e códigos de bloqueio — não copiar nomes de clientes, notas, IDs ou hashes para discussão pública. Reconciliar catalogação e proveniência em fonte atual antes de afirmar que G2/G3 foram satisfeitos. Se host inacessível, registrar UNKNOWN.
