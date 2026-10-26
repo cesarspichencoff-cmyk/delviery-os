@@ -17,6 +17,21 @@ function empty(status,reason){
    effects:{sql_read:false,sql_write:false,network:false,
      printer:false,spooler:false,sequence_write:false}};
 }
+function strictObservedAt(raw){
+ // Date.parse rolls invalid calendar days forward; order/revision ordering
+ // must not be inferred from a normalized imaginary observation instant.
+ const p=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/.exec(raw);
+ if(!p)return null;
+ const y=Number(p[1]),m=Number(p[2]),d=Number(p[3]);
+ const leap=y%4===0&&(y%100!==0||y%400===0);
+ const lengths=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+ if(y<1||m<1||m>12||d<1||d>lengths[m-1]||
+  Number(p[4])>23||Number(p[5])>59||Number(p[6])>59)return null;
+ if(p[7]!=="Z"&&
+  (Number(p[7].slice(1,3))>23||Number(p[7].slice(4,6))>59))return null;
+ const n=Date.parse(raw);
+ return Number.isFinite(n)?n:null;
+}
 function analyzeNativeLifecycle(data){
  const result=empty("HOLD");
  if(!Array.isArray(data)||!data.length)return empty("HOLD","INPUT_EMPTY_OR_INVALID");
@@ -33,8 +48,8 @@ function analyzeNativeLifecycle(data){
      typeof row.observed_at!=="string"||
      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(row.observed_at)
   )return empty("HOLD","ROW_SCHEMA_INVALID");
-  const time=Date.parse(row.observed_at);
-  if(!Number.isFinite(time))return empty("HOLD","ROW_TIMESTAMP_INVALID");
+  const time=strictObservedAt(row.observed_at);
+  if(time===null)return empty("HOLD","ROW_TIMESTAMP_INVALID");
   const hash=row.snapshot_hash.toLowerCase(),key=row.order_key;
   const fingerprint=key+"|"+hash;
   const old=revisions.get(fingerprint);
