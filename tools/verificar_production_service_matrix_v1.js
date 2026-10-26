@@ -153,6 +153,7 @@ const validState={
   evidence:"HUMAN_CONFIRMED_RULE",
   source_ref:"human:test:lunch",
   clock_inference_used:false,
+  valid_from_local:"2026-10-05T11:00:00",
   valid_until_local:"2026-10-05T18:00:00",
   updated_at:"2026-10-05T13:10:00-03:00"
 };
@@ -185,3 +186,28 @@ assert.equal(legacyResolution.ready,false);
 assert.ok(legacyResolution.blocking_reasons.includes("SERVICE_STATE_SCHEMA_MISMATCH"));
 
 console.log("service-state-validity-v2: ok valid/expired/legacy");
+
+const shiftCases=[
+  ["legacy writer missing valid_from", {valid_from_local:undefined}, "2026-10-05T17:00:00.0000000", "SERVICE_STATE_VALID_FROM_REQUIRED"],
+  ["before window", {}, "2026-10-05T10:59:59.9999999", "SERVICE_STATE_NOT_YET_ACTIVE_FOR_ORDER"],
+  ["exclusive upper boundary", {}, "2026-10-05T18:00:00.0000000", "SERVICE_STATE_EXPIRED_FOR_ORDER"],
+  ["previous day cannot borrow today's shift", {}, "2026-10-04T23:59:59", "SERVICE_STATE_NOT_YET_ACTIVE_FOR_ORDER"],
+  ["source provenance required", {source_ref:""}, "2026-10-05T12:00:00", "SERVICE_STATE_SOURCE_REF_REQUIRED"],
+  ["clock guessing forbidden", {clock_inference_used:true}, "2026-10-05T12:00:00", "SERVICE_STATE_CLOCK_INFERENCE_FORBIDDEN"],
+  ["wrong store must not authorize", {store_id:"0002"}, "2026-10-05T12:00:00", "SERVICE_STATE_STORE_MISMATCH"],
+  ["reversed interval", {valid_until_local:"2026-10-05T10:00:00"}, "2026-10-05T12:00:00", "SERVICE_STATE_WINDOW_INVALID"]
+];
+for(const [label,delta,opened,expectedBlocker] of shiftCases){
+ const candidate={...validState,...delta};
+ const verdict=resolveProductionServiceShiftState(candidate,{
+  store_id:"0001",operational_date:"2026-10-05",order_opened_at:opened
+ });
+ assert.equal(verdict.ready,false,label);
+ assert.ok(verdict.blocking_reasons.includes(expectedBlocker),label+": "+verdict.blocking_reasons.join(","));
+ assert.equal(verdict.service_resolution.service,null,label);
+}
+const before=resolveProductionServiceShiftState(validState,{
+ store_id:"0001",operational_date:"2026-10-05",order_opened_at:"2026-10-05T11:00:00"
+});
+assert.equal(before.ready,true,"inclusive start boundary");
+console.log("service-state-writer-reader-contract: PASS positives=2 negatives="+shiftCases.length);
