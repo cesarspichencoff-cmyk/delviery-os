@@ -1,9 +1,15 @@
 param(
   [string]$OdhenPerifericosRoot = "C:\TEKNISA\odhen-perifericos",
-  [int]$PollMs = 1000
+  [ValidateRange(1000, 60000)]
+  [int]$PollMs = 2000,
+  [ValidateRange(1, 30)]
+  [int]$SampleCount = 2
 )
 
 $ErrorActionPreference = "Stop"
+if (([long]$PollMs * [long]$SampleCount) -gt 120000) {
+  throw "MONITOR_TIME_BUDGET_EXCEEDED"
+}
 
 # METADATA ONLY.
 # Watches only filename, Length, LastWriteTimeUtc and CreationTimeUtc for today's
@@ -21,7 +27,12 @@ $state = @{}
 
 function Snapshot {
   param([string]$Dir, [string]$Prefix)
-  $rows = Get-ChildItem -LiteralPath $Dir -File -Filter ($Prefix + "*.txt") -ErrorAction SilentlyContinue
+  if (-not (Test-Path -LiteralPath $Dir -PathType Container)) {
+    throw "MONITOR_SOURCE_DISAPPEARED"
+  }
+  # Never map partial/unreadable inventory to an empty healthy print log.
+  $rows = @(Get-ChildItem -LiteralPath $Dir -File -Filter ($Prefix + "*.txt") -ErrorAction Stop)
+  if ($rows.Count -gt 128) { throw "MONITOR_FILE_LIMIT_EXCEEDED" }
   $out = @{}
   foreach ($row in $rows) {
     $out[$row.Name] = [pscustomobject]@{
@@ -34,6 +45,10 @@ function Snapshot {
 }
 
 $state = Snapshot -Dir $logDir -Prefix $prefix
+if ($state.Count -eq 0) {
+  Write-Output "HOLD MONITOR_NO_BASELINE_FILES"
+  exit 2
+}
 Write-Output ("INICIO " + (Get-Date -Format "HH:mm:ss.fff") + " FILES=" + $state.Count)
 
 foreach ($name in ($state.Keys | Sort-Object)) {
@@ -41,7 +56,7 @@ foreach ($name in ($state.Keys | Sort-Object)) {
   Write-Output ("BASE " + $name + " LENGTH=" + $v.Length)
 }
 
-while ($true) {
+for ($sample = 0; $sample -lt $SampleCount; $sample++) {
   Start-Sleep -Milliseconds $PollMs
   $now = Snapshot -Dir $logDir -Prefix $prefix
 
@@ -69,3 +84,6 @@ while ($true) {
 
   $state = $now
 }
+
+Write-Output ("FIM SAMPLES=" + $SampleCount)
+Write-Output "OBSERVATION_ONLY_NOT_PRINT_SAFETY_PROVEN"

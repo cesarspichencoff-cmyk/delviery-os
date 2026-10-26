@@ -1,0 +1,229 @@
+"use strict";
+/**
+ * Offline-only comparison of TWO archived/fixture reports produced by
+ * production_printer_preflight_readonly.ps1. No Windows/print/SQL/network calls.
+ * This is NOT proof that installing Comandas is safe for GP/Teknisa.
+ */
+const fs=require("node:fs"),path=require("node:path");
+const SCHEMA="deliveryos.production-printer-preflight-readonly.v1";
+const REQUIRED_CODES=["00002","00003","00004","00006","00007","00009"];
+const ROUTING_CONTRACT=Object.freeze({
+ store:"0001 - TATA ITAIM",
+ source:"data/runtime_printer_map_v1.json",
+ source_sha256:"f37dae40779c5a205a26ceb289cd748d1c7747c1947c278f534a2dcc2f296f4c"
+});
+const EXPECTED_ROUTES=new Map([
+ ["00002",{name:"COZINHA",ip:"192.168.0.116",alias:"LPT3"}],
+ ["00003",{name:"DELIVERY SUSHI 1",ip:"192.168.0.153",alias:null}],
+ ["00004",{name:"DELIVERY SUSHI 2",ip:"192.168.0.4",alias:null}],
+ ["00006",{name:"BALCAOSUSHI2",ip:"192.168.0.110",alias:"LPT5"}],
+ ["00007",{name:"BAR",ip:"192.168.0.232",alias:"LPT6"}],
+ ["00009",{name:"BALCAOSUSHI1",ip:"192.168.0.142",alias:"LPT4"}]
+]);
+const falseEffects=["print_attempted","spooler_job_created",
+ "printer_configuration_changed","network_payload_sent_to_printer"];
+const canon=x=>String(x||"").normalize("NFD")
+ .replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
+const safeText=x=>typeof x==="string"&&x.trim().length>0&&x.length<=256;
+const obj=x=>!!x&&typeof x==="object"&&!Array.isArray(x);
+function uniqueEntries(rows,key,issues,reason,max){
+ if(!Array.isArray(rows)||rows.length<1||rows.length>max){
+  issues.add(reason+"_COUNT");return null;
+ }
+ const m=new Map();
+ for(const row of rows){
+  const k=obj(row)?canon(row[key]):"";
+  if(!k||m.has(k)){issues.add(reason+"_KEY");continue;}
+  m.set(k,row);
+ }
+ return m;
+}
+function parseReport(report,issues,side){
+ if(!obj(report)||report.schema!==SCHEMA){
+  issues.add(side+"_SCHEMA");return null;
+ }
+ if(report.probe_tcp_9100_requested!==false||
+   !obj(report.effect_boundary)||
+   falseEffects.some(k=>report.effect_boundary[k]!==false))
+  issues.add(side+"_EFFECTS_OR_NETWORK_PROBE");
+ if(!obj(report.routing_contract)||
+    report.routing_contract.store!==ROUTING_CONTRACT.store||
+    report.routing_contract.source!==ROUTING_CONTRACT.source||
+    report.routing_contract.source_sha256!==ROUTING_CONTRACT.source_sha256)
+  issues.add(side+"_ROUTING_CONTRACT_IDENTITY_MISMATCH");
+ if(!safeText(report.computer_name))issues.add(side+"_HOST");
+ const stamp=Date.parse(report.captured_at);
+ if(!Number.isFinite(stamp))issues.add(side+"_TIME");
+ const queues=uniqueEntries(report.windows_queues,"printer_name",issues,side+"_QUEUES",80);
+ const expected=uniqueEntries(report.expected,"printer_code",issues,side+"_ROUTES",12);
+ if(expected&&(expected.size!==REQUIRED_CODES.length||
+    REQUIRED_CODES.some(code=>!expected.has(code))))
+  issues.add(side+"_EXPECTED_ROUTING_SET_INCOMPLETE");
+ if(queues)for(const row of queues.values()){
+  if(!safeText(row.driver_name)||!safeText(row.port_name)||
+      typeof row.shared!=="boolean"||typeof row.share_name!=="string"||
+      typeof row.published!=="boolean"||
+      !obj(row.port)||!safeText(row.port.name)||
+      typeof row.port.printer_host_address!=="string"||
+      !Object.hasOwn(row.port,"port_number")||
+      !(row.port.port_number===null||
+        Number.isSafeInteger(row.port.port_number)&&row.port.port_number>0)||
+      !Object.hasOwn(row.port,"snmp_enabled")||
+      !(row.port.snmp_enabled===null||
+        typeof row.port.snmp_enabled==="boolean")||
+      !obj(row.configuration)||!safeText(row.configuration.paper_size)||
+      typeof row.configuration.color!=="boolean"||
+      !safeText(row.configuration.duplexing_mode)||
+      !Number.isSafeInteger(row.job_count)||row.job_count<0||
+      !safeText(row.printer_status))
+   issues.add(side+"_QUEUE_METADATA_INCOMPLETE");
+  // An unchanged queued job may still be stalled. No silent all-clear while
+  // any workload remains pending in either observation.
+  if(Number.isSafeInteger(row.job_count)&&row.job_count>0)
+   issues.add(side+"_QUEUE_BACKLOG_PRESENT_UNRESOLVED");
+  if(obj(row.port)&&canon(row.port.name)!==canon(row.port_name))
+   issues.add(side+"_QUEUE_PORT_INCONSISTENT");
+  if(!obj(row.cim)||typeof row.cim.work_offline!=="boolean"||
+      !safeText(row.cim.detected_error_state)||
+      !safeText(row.cim.extended_printer_status))
+   issues.add(side+"_CIM_STATUS_UNKNOWN");
+  else {
+   if(row.cim.work_offline)
+    issues.add(side+"_OFFLINE_PRINTER_REPORTED");
+   // Win32_Printer CIM enumerations: 3+ DetectedErrorState means a
+   // reported fault (paper/toner/door/jam/etc). ExtendedPrinterStatus
+   // 6/7/8/9/11/16 are stopped/offline/paused/error/unavailable/deleting.
+   // Fail closed on unrecognized values; status equality alone is not health.
+   // 0/1 error-state values remain inconclusive, never operational proof.
+   const detected=String(row.cim.detected_error_state).trim();
+   const extended=String(row.cim.extended_printer_status).trim();
+   if(!/^(?:0|1|2)$/.test(detected)||
+      !/^(?:3|4|5|10|12|13|14|15|17|18)$/.test(extended))
+    issues.add(side+"_CIM_UNHEALTHY_OR_UNRECOGNIZED");
+  }
+  // Fail closed: Windows printer statuses outside this small known-healthy
+  // set are not evidence of a usable printer, even if both reports agree.
+  // E.g. PaperJam, OutOfPaper, DoorOpen, NoToner and Degraded must HOLD.
+  if(!/^(?:NORMAL|IDLE|READY|PRINTING|PROCESSING|BUSY|WARMING\s*UP)$/.test(canon(row.printer_status)))
+   issues.add(side+"_PRINTER_STATUS_UNHEALTHY");
+  if(row.configuration&&Object.hasOwn(row.configuration,"error"))
+   issues.add(side+"_PRINT_CONFIGURATION_UNREADABLE");
+ }
+ // Check EACH inventory against its expected physical destination, not only
+ // before-vs-after equality. Two equally misrouted snapshots are still HOLD.
+ const queueOwners=new Map();
+ if(expected)for(const row of expected.values()){
+  const pinned=EXPECTED_ROUTES.get(String(row.printer_code));
+  if(!pinned||canon(row.configured_name)!==canon(pinned.name)||
+     canon(row.configured_ip)!==canon(pinned.ip)||
+     canon(row.configured_port_alias)!==canon(pinned.alias))
+   issues.add(side+"_ROUTE_CONTRACT_MISMATCH");
+  // The source preflight always returns null when TCP probing is disabled.
+  // A populated probe result contradicts the declared no-network boundary.
+  if(!Object.hasOwn(row,"tcp_9100_probe")||row.tcp_9100_probe!==null)
+   issues.add(side+"_TCP_PROBE_RESULT_CONTRADICTS_FLAG");
+  if(!safeText(row.configured_name)||!safeText(row.configured_ip)||
+      !Array.isArray(row.matching_windows_queues)||
+      row.matching_windows_queues.length!==1||
+      !Array.isArray(row.matching_windows_ports)||
+      row.matching_windows_ports.length<1)
+   issues.add(side+"_ROUTE_UNRESOLVED");
+  else if(row.matching_windows_ports.length!==1)
+   issues.add(side+"_ROUTE_MULTIPLE_PORT_CANDIDATES");
+  else if(queues&&!queues.has(canon(row.matching_windows_queues[0])))
+   issues.add(side+"_ROUTE_QUEUE_NOT_IN_INVENTORY");
+  else if(queues&&Array.isArray(row.matching_windows_ports)){
+   const queueKey=canon(row.matching_windows_queues[0]);
+   const mapped=queues.get(queueKey);
+   if(mapped&&!row.matching_windows_ports.some(p=>canon(p)===canon(mapped.port_name)))
+    issues.add(side+"_ROUTE_PORT_NOT_BOUND_TO_QUEUE");
+   if(mapped){
+    const byIp=safeText(row.configured_ip)&&
+      canon(mapped.port?.printer_host_address)===canon(row.configured_ip);
+    // A named LPT alias is fallback only when the port has no host address.
+    // Never let an alias override an explicit, contradictory physical IP.
+    const byAlias=!safeText(mapped.port?.printer_host_address)&&
+      safeText(row.configured_port_alias)&&
+      canon(mapped.port_name)===canon(row.configured_port_alias);
+    if(!byIp&&!byAlias)
+      issues.add(side+"_ROUTE_PHYSICAL_DESTINATION_MISMATCH");
+    if(queueOwners.has(queueKey))
+      issues.add(side+"_ROUTE_QUEUE_REUSED_ACROSS_CODES");
+    queueOwners.set(queueKey,row.printer_code);
+   }
+  }
+ }
+ return {stamp,queues,expected,host:canon(report.computer_name)};
+}
+const ordered=x=>Array.isArray(x)?x.map(canon).sort().join("|"):"UNKNOWN";
+function assessPair(before,after){
+ const issues=new Set();
+ const a=parseReport(before,issues,"BASELINE");
+ const b=parseReport(after,issues,"FOLLOWUP");
+ if(a&&b){
+  if(a.host!==b.host)issues.add("DIFFERENT_COMPUTER");
+  if(!(b.stamp>a.stamp&&b.stamp-a.stamp<=15*60*1000))
+   issues.add("TIME_WINDOW_INVALID");
+  for(const [kind,first,second,keys] of [
+   ["QUEUE",a.queues,b.queues,["driver_name","port_name","printer_status","shared","share_name","published"]],
+   ["ROUTE",a.expected,b.expected,["configured_name","configured_ip","configured_port_alias"]]
+  ]){
+   if(!first||!second)continue;
+   if(first.size!==second.size||
+       [...first.keys()].some(key=>!second.has(key)))
+    issues.add(kind+"_SET_CHANGED");
+   for(const [key,left] of first.entries()){
+    const right=second.get(key);if(!right)continue;
+    if(keys.some(field=>canon(left[field])!==canon(right[field])))
+     issues.add(kind+"_METADATA_CHANGED");
+    if(kind==="QUEUE"){
+     if(canon(left.port?.name)!==canon(right.port?.name)||
+        canon(left.port?.printer_host_address)!==canon(right.port?.printer_host_address)||
+        left.port?.port_number!==right.port?.port_number||
+        left.port?.snmp_enabled!==right.port?.snmp_enabled||
+        canon(left.configuration?.paper_size)!==canon(right.configuration?.paper_size)||
+        canon(left.configuration?.color)!==canon(right.configuration?.color)||
+        canon(left.configuration?.duplexing_mode)!==canon(right.configuration?.duplexing_mode)||
+        canon(left.cim?.work_offline)!==canon(right.cim?.work_offline)||
+        canon(left.cim?.detected_error_state)!==canon(right.cim?.detected_error_state)||
+        canon(left.cim?.extended_printer_status)!==canon(right.cim?.extended_printer_status))
+      issues.add("QUEUE_PORT_OR_CONFIGURATION_CHANGED");
+     if(right.job_count>left.job_count)
+      issues.add("QUEUE_BACKLOG_INCREASED_CAUSE_UNKNOWN");
+    }else if(
+     ordered(left.matching_windows_queues)!==ordered(right.matching_windows_queues)||
+     ordered(left.matching_windows_ports)!==ordered(right.matching_windows_ports))
+      issues.add("ROUTE_BINDING_CHANGED");
+   }
+  }
+ }
+ return {schema:"deliveryos.print-coexistence-diff.v1",
+  status:issues.size?"HOLD":"STRUCTURAL_MATCH_ONLY",
+  reasons:[...issues].sort(),
+  observed_host_proven:false,absence_of_interference_proven:false,
+  physical_print_proven:false,authorizes_install:false,
+  authorizes_print:false,effects:{print:false,spooler_write:false,
+   printer_configuration_change:false,network:false}};
+}
+function safeRead(file){
+ const name=path.resolve(file),st=fs.lstatSync(name);
+ if(!st.isFile()||st.isSymbolicLink()||st.size>256*1024)
+  throw Error("INPUT_NOT_BOUNDED_REGULAR_FILE");
+ return JSON.parse(fs.readFileSync(name,"utf8").replace(/^\uFEFF/,""));
+}
+if(require.main===module){
+ let result;
+ try{
+  if(process.argv.length!==4)throw Error("EXPECTED_TWO_REPORT_FILES");
+  result=assessPair(safeRead(process.argv[2]),safeRead(process.argv[3]));
+ }catch{
+  result={schema:"deliveryos.print-coexistence-diff.v1",status:"HOLD",
+   reasons:["REPORT_UNREADABLE_OR_FORMAT_INVALID"],
+   observed_host_proven:false,absence_of_interference_proven:false,
+   physical_print_proven:false,authorizes_install:false,
+   authorizes_print:false};
+ }
+ console.log(JSON.stringify(result));
+ if(result.status==="HOLD")process.exitCode=2;
+}
+module.exports={assessPair};

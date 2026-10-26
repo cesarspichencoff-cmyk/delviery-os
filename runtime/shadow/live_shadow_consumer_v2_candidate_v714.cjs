@@ -35,8 +35,19 @@ function sha256File(file) {
 
 const here = __dirname;
 const motorPathV714 = path.join(here, "packaging-current.js");
-const motorDigestBeforeV714 = sha256File(motorPathV714);
-require(motorPathV714);
+// Exact approved Academy motor bytes, checked BEFORE the first executable load.
+// The read-before/read-after equality below only proves no change during load.
+const CANONICAL_MOTOR_SHA256_V714 =
+  "1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
+// Read once: only these exact authenticated bytes may be executed. A second
+// filesystem read by require() would create a check-to-execute swap window.
+const motorBytesV714 = fs.readFileSync(motorPathV714);
+const motorDigestBeforeV714 =
+  crypto.createHash("sha256").update(motorBytesV714).digest("hex");
+if(motorDigestBeforeV714!==CANONICAL_MOTOR_SHA256_V714)
+  throw new Error("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC");
+require("node:vm").runInThisContext(motorBytesV714.toString("utf8"),
+  {filename:motorPathV714,timeout:1500});
 const motorDigestAfterV714 = sha256File(motorPathV714);
 if(motorDigestBeforeV714!==motorDigestAfterV714)
   throw new Error("PACKAGING_ENGINE_CHANGED_DURING_LOAD");
@@ -173,7 +184,15 @@ if (printerMap.schema !== "deliveryos.runtime-printer-map.v1") throw new Error("
 const cacheByProduct = new Map(cache.rows.map(r => [String(r.CDPRODUTO), r]));
 const academyByName = new Map((academy.products || []).map(p => [norm(p.nome), p]));
 const aliasByName = new Map((aliases.aliases || []).map(a => [norm(a.live_name), a]));
-const printerByCode = new Map((printerMap.mappings || []).map(p => [String(p.printer_code), p]));
+// V8.45: A duplicated printer code is ambiguous, even if its last row has
+// a plausible address. Keep the first row for review; NEVER silently last-win.
+const printerByCode = new Map();
+const duplicatePrinterCodes = new Set();
+for (const p of (printerMap.mappings || [])) {
+  const rc = String(p?.printer_code ?? "");
+  if (printerByCode.has(rc)) duplicatePrinterCodes.add(rc);
+  else printerByCode.set(rc, p);
+}
 const observationRows = Array.isArray(event.order?.observation_rows)
   ? event.order.observation_rows
   : [];
@@ -223,15 +242,24 @@ for (const row of observationRows) {
   observationBlockers.push("OBSERVATION_SCOPE_NOT_PROVEN:" + sourceField);
 }
 
+// V8.44: The upstream readiness bit is not allowed to hide source blockers.
+// This V7.14 fork is an UNINSTALLED shadow candidate: never authorizes print.
 const upstreamBlockers = [];
 if (event.ready_for_downstream_shadow !== true) {
-  const eventBlockers = Array.isArray(event.blockers) ? event.blockers : [];
-  if (eventBlockers.length) {
-    for (const blocker of eventBlockers) {
-      upstreamBlockers.push("UPSTREAM_" + String(blocker));
-    }
-  } else {
-    upstreamBlockers.push("UPSTREAM_EVENT_NOT_READY");
+  upstreamBlockers.push("UPSTREAM_EVENT_NOT_READY");
+}
+if (!Array.isArray(event.blockers)) {
+  upstreamBlockers.push("UPSTREAM_EVENT_BLOCKERS_MALFORMED");
+} else {
+  for (const blocker of event.blockers) {
+    upstreamBlockers.push("UPSTREAM_" + String(blocker));
+  }
+}
+if (!Array.isArray(event.service_resolution?.blockers)) {
+  upstreamBlockers.push("UPSTREAM_SERVICE_BLOCKERS_MALFORMED");
+} else {
+  for (const blocker of event.service_resolution.blockers) {
+    upstreamBlockers.push("UPSTREAM_SERVICE_" + String(blocker));
   }
 }
 const blockers = [...upstreamBlockers, ...observationBlockers];
@@ -245,7 +273,12 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     // Do not produce a fictitious item, box or kit from corrupted raw input.
     continue;
   }
-  const id = cacheByProduct.get(String(raw.CDPRODUTO));
+  // Every raw line needs its own original product identity.
+  if(typeof raw?.CDPRODUTO!=="string" || !raw.CDPRODUTO.trim()) {
+    blockers.push("PACKAGING_SOURCE_PRODUCT_ID_MISSING:" + String(index+1));
+    continue;
+  }
+  const id = cacheByProduct.get(raw.CDPRODUTO);
   const code = canonical(raw.CDARVPROD);
   if (!id) {
     blockers.push("IDENTITY_NOT_FOUND_" + raw.CDPRODUTO);
@@ -259,6 +292,14 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   const name = String(id.NMPRODUTO || "").trim();
   const n = norm(name);
   let routes = Array.isArray(routing.products?.[code]) ? [...routing.products[code]] : [];
+  // Preserve the configured list for review; a repeated destination is not
+  // two independent production stations or permission to print twice.
+  if (new Set(routes).size !== routes.length)
+    blockers.push("ROUTE_DUPLICATED_FOR_PRODUCT_" + code);
+  for (const rc of routes) {
+    if (duplicatePrinterCodes.has(String(rc)))
+      blockers.push("PRINTER_CODE_AMBIGUOUS_" + code);
+  }
   const np = nonProduction.items?.[code] || null;
   let routingStatus = "ROUTED";
 
@@ -267,16 +308,19 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     else blockers.push("ROUTE_NOT_FOUND_" + code);
   }
 
-  const service = event.service_resolution?.service || null;
+  // A pair in the official product map is NOT a verified LUNCH/DINNER
+  // switch. The observed Odhen ImpressaoPedido.php source has separate
+  // production and production2 flows; the actual runtime effect still
+  // requires proof. Until then neither station may be asserted as chosen.
+  // Keep other independent stations visible for diagnosis only; the entire
+  // decision remains held and has no printer/spooler effects.
   if (routes.includes("00009") && routes.includes("00003")) {
-    if (service === "LUNCH") routes = routes.filter(x => x !== "00003");
-    else if (service === "DINNER") routes = routes.filter(x => x !== "00009");
-    else blockers.push("SERVICE_REQUIRED_SUSHI1_" + code);
+    blockers.push("SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN_" + code);
+    routes = routes.filter(x => x !== "00009" && x !== "00003");
   }
   if (routes.includes("00006") && routes.includes("00004")) {
-    if (service === "LUNCH") routes = routes.filter(x => x !== "00004");
-    else if (service === "DINNER") routes = routes.filter(x => x !== "00006");
-    else blockers.push("SERVICE_REQUIRED_SUSHI2_" + code);
+    blockers.push("SUSHI2_DUAL_PRODUCTION_ROLE_UNPROVEN_" + code);
+    routes = routes.filter(x => x !== "00006" && x !== "00004");
   }
 
   const targets = routes
@@ -288,6 +332,16 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       printer_ip: p.printer_ip
     }));
   if (routes.length !== targets.length) blockers.push("PRINTER_MAP_MISSING_" + code);
+  // V8.46: verify the LOGICAL station identifier in shadow.
+  // Offline receipt previews deliberately use fictitious printers without IP.
+  // Endpoint availability/identity belongs to the separate physical preflight.
+  if (routes.some(rc => {
+    const p = printerByCode.get(rc);
+    return !!p && (
+      typeof p.printer_code !== "string" || !/^[0-9]{5}$/.test(p.printer_code) ||
+      p.printer_code !== rc ||
+      typeof p.printer_name !== "string" || !p.printer_name.trim());
+  })) blockers.push("PRINTER_TARGET_INCOMPLETE_" + code);
 
   let classification = null;
   let classificationSource = null;
@@ -298,8 +352,13 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   const packagingClassification = classificationFromPackagingFactStrict(name, routes);  const routedToCombinados = routes.includes("00009") || routes.includes("00003");
 
   if (alias && String(alias.canonical_code || "").trim() === code) {
-    classification = alias.classification;
-    classificationSource = "HUMAN_CONFIRMED_NAME_ALIAS_2026_10_05";
+    // A human alias may exist but still require review; absence is NOT false.
+    if(alias.classification?.review_required === false) {
+      classification = alias.classification;
+      classificationSource = "HUMAN_CONFIRMED_NAME_ALIAS_2026_10_05";
+    } else blockers.push("ALIAS_CLASSIFICATION_UNREVIEWED_" + code);
+  } else if (alias) {
+    blockers.push("ALIAS_CANONICAL_IDENTITY_MISMATCH_" + code);
   } else if (isExec(n) && routedToCombinados) {
     classification = {
       family: "combinado",
@@ -318,7 +377,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     classificationSource = "ACADEMIA_OPERATIONAL_COMBO_BRIDGE_2026_10_07";
   } else {
     const exact = academyByName.get(n);
-    if (exact?.classification && !exact.classification.review_required) {
+    if (exact?.classification?.review_required === false) {
       classification = exact.classification;
       classificationSource = "ACADEMIA_EXACT_NAME";
     } else if (
@@ -327,7 +386,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       (sameSet(routes, ["00009"]) || sameSet(routes, ["00003"]))
     ) {
       const academyVariant = academyByName.get("sashimi tataki");
-      if (academyVariant?.classification && !academyVariant.classification.review_required) {
+      if (academyVariant?.classification?.review_required === false) {
         classification = academyVariant.classification;
         classificationSource = "ACADEMIA_EXACT_VARIANT_CANONICAL_ROUTE_2026_10_07";
       } else {
@@ -339,7 +398,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       sameSet(routes, ["00007"])
     ) {
       const academyVariant = academyByName.get("sprite 350ml");
-      if (academyVariant?.classification && !academyVariant.classification.review_required) {
+      if (academyVariant?.classification?.review_required === false) {
         classification = academyVariant.classification;
         classificationSource = "ACADEMIA_EXACT_VARIANT_CANONICAL_ROUTE_2026_10_07";
       } else {
@@ -357,8 +416,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
         review_required: false
       };
       classificationSource = "LIVE_EXACT_ALIAS_2026_10_05";
-    } else if ((!exact?.classification || exact.classification.review_required !== true)
-               && packagingClassification && routingStatus === "ROUTED") {
+    } else if (!exact && packagingClassification && routingStatus === "ROUTED") {
       classification = packagingClassification;
       classificationSource = "ACADEMIA_DOCUMENTED_CATEGORY_EXACT_NAME_AND_ROUTED_STATION_2026_10_07";
     } else if (routingStatus === "NO_OWN_PRODUCTION_TICKET") {
@@ -388,19 +446,49 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   };
   items.push(item);
 
-  if (classification) {
+  if (classification?.review_required === false &&
+      typeof classificationSource === "string" && !!classificationSource &&
+      !!name && typeof classification.family === "string" &&
+      !!classification.family.trim()) {
     packEntries.push({ product: { nome: name, classification }, quantity });
+  } else {
+    blockers.push("PACKAGING_INPUT_CLASSIFICATION_NOT_PROVEN:" + String(index+1));
   }
 }
 
 let packaging = null;
 let kits = null;
-// A partially valid order can NEVER yield apparently complete packaging/kits.
-if (packEntries.length && !blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:"))) {
+// V7.41: neither motor may receive a filtered subset of the original order.
+// Preserve original line order and distinguish two rows of the same product.
+const sourceRows = Array.isArray(event.order?.items) ? event.order.items : [];
+const lineIds = sourceRows.map(row => row?.NRPRODCOMVEN);
+const sourceLinesUnique = sourceRows.length > 0 &&
+  lineIds.every(v => typeof v === "string" && /^\d{1,6}$/.test(v)) &&
+  new Set(lineIds).size === lineIds.length;
+const packInputExact = sourceLinesUnique && sourceRows.length === items.length &&
+  items.length === packEntries.length &&
+  items.every((item,i) => {
+    const original = sourceRows[i];
+    const input = packEntries[i];
+    return item.item_index === i+1 &&
+      item.CDPRODUTO === original.CDPRODUTO &&
+      item.canonical_code === canonical(original.CDARVPROD) &&
+      item.quantity === validRawQuantityV718(original.QTPRODCOMVEN) &&
+      item.product_name === input.product.nome &&
+      item.classification === input.product.classification &&
+      item.classification?.review_required === false &&
+      typeof item.classification_source === "string" &&
+      !!item.classification_source &&
+      input.quantity === item.quantity;
+  });
+if (!sourceLinesUnique) blockers.push("PACKAGING_INPUT_SOURCE_LINE_IDS_UNPROVEN");
+if (packInputExact) {
   packaging = P.packComanda(packEntries);
   kits = P.kitVerdict(packEntries);
-} else if (blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:"))) {
-  blockers.push("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY");
+} else {
+  blockers.push("PACKAGING_SKIPPED_INCOMPLETE_OR_UNREVIEWED_ORDER");
+  if (blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:")))
+    blockers.push("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY");
 }
 
 // BEGIN V712 HUMAN OVERRIDE GATE — no future order may inherit a historical override

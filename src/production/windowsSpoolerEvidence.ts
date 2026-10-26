@@ -64,6 +64,39 @@ const JOB_FAULTS = new Set<WindowsPrintJobStatus>([
   "USER_INTERVENTION",
 ]);
 
+const KNOWN_JOB_STATUSES = new Set<WindowsPrintJobStatus>([
+  "PAUSED",
+  "ERROR",
+  "DELETING",
+  "SPOOLING",
+  "PRINTING",
+  "OFFLINE",
+  "PAPER_OUT",
+  "PRINTED",
+  "DELETED",
+  "BLOCKED",
+  "USER_INTERVENTION",
+  "RESTARTED",
+  "COMPLETE",
+  "RETAINED",
+]);
+
+const KNOWN_PRINTER_STATUSES = new Set<WindowsPrinterStatus>([
+  "PAUSED",
+  "PAPER_JAM",
+  "PAPER_OUT",
+  "PAPER_PROBLEM",
+  "OFFLINE",
+  "NOT_AVAILABLE",
+  "USER_INTERVENTION",
+  "DOOR_OPEN",
+  "SERVER_UNKNOWN",
+  "BUSY",
+  "PRINTING",
+  "PROCESSING",
+  "WAITING",
+]);
+
 const QUEUE_FAULTS = new Set<WindowsPrinterStatus>([
   "PAPER_JAM",
   "PAPER_OUT",
@@ -95,6 +128,46 @@ export function classifyWindowsSpoolerObservation(
   const jobStatuses = uniqSorted(observation.job_statuses);
   const printerStatuses = uniqSorted(observation.printer_statuses);
   const blocking = new Set<string>();
+
+  // A caller declaration cannot erase contrary spooler evidence. These
+  // contradictions must be reconciled before this observation can justify a
+  // retry or fiscal progress.
+  if (observation.submission_rejected_before_job_creation && observation.job_exists) {
+    blocking.add("OBSERVATION_CONTRADICTION:REJECTED_BEFORE_CREATION_WITH_JOB");
+  }
+  if (!observation.job_exists && jobStatuses.length > 0) {
+    blocking.add("OBSERVATION_CONTRADICTION:STATUS_WITHOUT_JOB");
+  }
+  for (const status of jobStatuses) {
+    if (!KNOWN_JOB_STATUSES.has(status)) {
+      blocking.add(`JOB_STATUS_UNRECOGNIZED:${status}`);
+    }
+  }
+  for (const status of printerStatuses) {
+    if (!KNOWN_PRINTER_STATUSES.has(status)) {
+      blocking.add(`PRINTER_STATUS_UNRECOGNIZED:${status}`);
+    }
+  }
+
+  if (blocking.size > 0) {
+    return {
+      schema: "deliveryos.windows-spooler-evidence.v1",
+      evidence: "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION",
+      fiscal_dispatch_ready: false,
+      blocking_reasons: [...blocking].sort(),
+      observed_facts: {
+        job_exists: observation.job_exists,
+        job_statuses: jobStatuses,
+        printer_statuses: printerStatuses,
+      },
+      policy: {
+        complete_is_not_printed: true,
+        printed_is_not_physical_confirmation: true,
+        queue_fault_blocks_fiscal_progress: true,
+        missing_job_without_pre_effect_rejection_is_ambiguous: true,
+      },
+    };
+  }
 
   if (
     observation.submission_rejected_before_job_creation &&
