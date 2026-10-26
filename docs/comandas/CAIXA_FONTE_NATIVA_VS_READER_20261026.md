@@ -20,6 +20,8 @@ As **cinco emissões mais recentes** de `state/reader-events-v1` eram de 25/10, 
 - **5/5** correspondências exatas da coleção de observações reconstruída da fonte (`source_field`, conteúdo textual, escopo, `item_index`, `CDPRODUTO` e ligação); as cinco tinham pelo menos uma observação e `observation_scan_complete=true`;
 - **0/5** estavam `ready_for_downstream_shadow=true`.
 
+**Controle de revisões/duplicidade:** as cinco emissões mais recentes abrangem **três pedidos distintos e cinco snapshots distintos** (cinco hashes). Uma segunda seleção das cinco revisões mais recentes com notas de item abrangeu **dois pedidos distintos e cinco snapshots distintos**, com **5/5 correspondências exatas** entre a coleção de observações por pedido/item no SQL e os eventos (`source_field`, texto, `item_index`, `CDPRODUTO`, escopo). Na amostra de 80 eventos mais recentes, 27 tinham notas de item e 76 tinham notas gerais; isso é distribuição de **revisões**, não quantidade de pedidos únicos. Nunca reportar `5/5` como cinco pedidos independentes.
+
 Essa prova autentica a fidelidade dos dados do Reader **à mesma fonte SQL nativa**, NÃO a origem do Gestor iFood por evidência independente, nem snapshots completos de outros pedidos/revisões. Valores individuais, observações, PII e IDs não foram gravados ou exibidos.
 
 ## Estado da fonte independente Gestor
