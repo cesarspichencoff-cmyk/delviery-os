@@ -11,8 +11,18 @@ const EFFECTS=Object.freeze({database_read:false,database_write:false,
 const uuidRegex=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const shortRegex=/^[0-9]{4}$/;
 function captureInstant(raw){
- if(typeof raw!=="string"||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw))return null;
+ // Date.parse accepts impossible dates like 2026-02-31 and silently rolls
+ // them into March. Such normalization must not become capture evidence.
+ if(typeof raw!=="string")return null;
+ const parts=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/.exec(raw);
+ if(!parts)return null;
+ const year=Number(parts[1]),month=Number(parts[2]),day=Number(parts[3]);
+ const leap=year%4===0&&(year%100!==0||year%400===0);
+ const days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+ if(year<1||month<1||month>12||day<1||day>days[month-1]||
+   Number(parts[4])>23||Number(parts[5])>59||Number(parts[6])>59)return null;
+ if(parts[7]!=="Z"&&
+    (Number(parts[7].slice(1,3))>23||Number(parts[7].slice(4,6))>59))return null;
  const date=Date.parse(raw);
  return Number.isFinite(date)?date:null;
 }
@@ -57,7 +67,8 @@ function reconcilePresence(input){
  const tNative=captureInstant(native_captured_at);
  if(tIfood===null||tNative===null)return fail("SOURCE_CAPTURE_TIMESTAMPS_REQUIRED");
  result.source_capture_times_present=true;
- result.source_capture_skew_minutes=Math.round(Math.abs(tIfood-tNative)/60000);
+ const captureSkewMs=Math.abs(tIfood-tNative);
+ result.source_capture_skew_minutes=Math.round(captureSkewMs/60000*1000)/1000;
  result.counts.ifood_rows=ifood.length;result.counts.native_rows=native.length;
  if(!ifood.length||!native.length)return fail("EMPTY_SOURCE_BATCH");
  if(ifood.length>20000||native.length>20000)return fail("INPUT_BUDGET_EXCEEDED");
@@ -96,7 +107,7 @@ function reconcilePresence(input){
  result.native_matched_status_codes=tally(matched,"status_code");
  result.native_unmatched_status_codes=tally(onlyNative,"status_code");
  result.reasons.push("SHORT_ID_DAY_STORE_CANDIDATE_ONLY");
- if(result.source_capture_skew_minutes>15)
+ if(captureSkewMs>15*60000)
   result.reasons.push("SOURCE_CAPTURE_WINDOWS_NOT_CONTEMPORANEOUS");
  // Even equal captured_at values do not prove a frozen database revision.
  if(onlyIfood.length)result.reasons.push("IFOOD_ORDER_NOT_IN_NATIVE_SCOPE");
