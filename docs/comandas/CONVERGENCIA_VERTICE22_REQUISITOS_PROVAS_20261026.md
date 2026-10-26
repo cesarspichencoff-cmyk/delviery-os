@@ -34,3 +34,22 @@ Conforme `docs/TATA_COMANDA_ESSENCIAL_V856_REVIEW_ONLY.md`:
 - CI de PR #107/#127 ou Academia #50, mesmo verde, **não** prova instalação nem papel.
 
 **Fronteira:** `TEST_PASS` isolado; `LIVE_SOURCE_JOIN=UNKNOWN`; `SEQUENCE_BINDING=NOT_PRESENT`; `DEPLOYED_V2=NOT_PROVEN`; `PHYSICAL_PRINT=NOT_PROVEN`; `HUMAN_ACCEPTED=NOT_YET`. Nenhuma alteração na CAIXA_MOOCA efetuada nesta etapa.
+
+## Atualização final de verificações (26/10/2026)
+
+**Status lido passivamente em CAIXA_MOOCA:** arquivo heartbeat modificado em 26/10 10:27:23 UTC, `RUNNING`, `consecutive_failures=0`; arquivo de status consumidor modificado 10:27:19 UTC, `ready_count=0`, `blocked_count=2047`, `last_error=null`. Serviço vivo NÃO significa candidato pronto. Projetor com última modificação 26/10 02:15:21 UTC, `failed_revisions=0` no arquivo consultado. Não houve reclassificação, leitura de pedido individual ou escrita durante esta inspeção.
+
+**Fontes de classificação (leitura passiva):** cache local de 554 produtos, 14/14 códigos da amostra com identidade exata singular; 3 aliases na configuração, 0/14 códigos cobertos; 13/14 têm rota histórica no arquivo de 463 códigos, Cookie Pistache não tem. Três arquivos/SHAs e limites em `docs/comandas/ORIGEM_CLASSIFICACAO_CAIXA_MOOCA_READONLY_20261026.md`. Esses dados de 05/10 NÃO substituem catálogo vigente, nem autorizam impressão.
+
+**Testes extras:** `tools/verificar_identidade_bytes_v714.js` em Linux/WSL temporário, 36/36 PASS. `verificar_cadeia_positiva_v722_offline.js` 27/27 PASS. O primeiro testa falha fechada contra drift e adulteração; o segundo prova renderização virtual de dados fictícios, não prints na loja.
+
+**Lacuna de CI desta PR:** `deliveryos-thermal-shadow-gate.yml` lista como bases de `pull_request` quatro branches históricos, **não** `fix/comandas-figma-box-count-guard-20261013`, base atual da PR #127; nenhuma execução de Actions associada ao HEAD `bbdfb6a1...` havia sido encontrada na auditoria. Assim, o simples fato de adicionar novo teste ao YAML no HEAD desta PR não comprova que a ação tenha sido executada. Não transformar zero runs em PASS. Autorizar execução hospedada/saldo incluído de maneira controlada antes de promoção, ou manter o teste local como evidência de menor nível.
+
+### Portões ainda não satisfeitos
+1. Pedido real: fonte iFood e Teknisa independentes com mesma unidade/dia/identidade e composição, além de observações íntegras (não apenas envelopes derivados).
+2. Sequência TATÁ: identidade persistida e não duplicável vinculada à mesma revisão; arquivo observado na CAIXA_MOOCA `bindings=[]`, `next_value=1`.
+3. Categoria/praça: correspondência versionada, atual e comprovada entre origem nativa, motor aprovado e decisão; 14 códigos ainda sem autorização de promoção; dual A/B continua sem papel comprovado.
+4. Implantação reversível: prova de supervisão, exclusividade de geração, integridade das oito fontes e rollback em Windows descartável; aprovação específica antes da troca de serviço.
+5. Efeito físico: três vias Epson legíveis, sem duplicar produção já impressa pelo Gestor iFood, fiscal segregado, conferência e aceite operacional humano em janela segura.
+
+**Veredito adversarial:** offline `TEST_PASS` para recortes relevantes; `WORLD_PROVEN=false`; `PHYSICAL_ACCEPTED=false`; portanto **ainda não 10/10**. Não exigir nova aprovação diária de turno, pois contraria César V8.43 e não é requisito material.
