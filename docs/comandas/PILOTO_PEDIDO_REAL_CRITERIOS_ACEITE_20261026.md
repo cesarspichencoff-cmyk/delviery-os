@@ -2,7 +2,7 @@
 **26/10/2026 | DRAFT / HOLD | sem instalação, impressão ou escrita em produção**
 
 ## Objetivo de aceite
-Um único pedido **real e legitimamente observado** no Itaim percorre: identidade independente Gestor iFood/Teknisa → mesmo snapshot/revisão V2 → conferência V6.8 → classificação vigente do motor canônico Academia com origem validada → sequência TATÁ persistida e não duplicada → duas vias de produção e uma de conferência, distintas e legíveis, **sem repetir o que o Gestor iFood já imprime**. Documento fiscal permanece isolado.
+Um único pedido **real e legitimamente observado** no Itaim percorre: identidade independente Gestor iFood/Teknisa → mesmo snapshot/revisão V2 → conferência V6.8 → classificação vigente do motor canônico Academia com origem validada → sequência TATÁ persistida e não duplicada → duas vias de produção e uma de conferência, distintas e legíveis, **sem imprimir duas vezes o mesmo conteúdo se algum outro emissor estiver ativo**. Documento fiscal permanece isolado.
 
 ## Fase 0 — pré-voo sem efeitos (executável antes de autorizar piloto)
 1. Confirmar `CAIXA_MOOCA` real, saúde do leitor, versão e hashes dos arquivos e supervisor, sem tocar na aplicação de caixa.
@@ -10,7 +10,7 @@ Um único pedido **real e legitimamente observado** no Itaim percorre: identidad
 3. Comprovar chave composta, revisão, itens, quantidades, observações item por item, cancelamentos e alergênicos. O número curto iFood sozinho não é chave forte.
 4. Comprovar motor Academia em versão aceita, correspondência código↔nome↔classificação↔praça para os itens do pedido; discrepância/sem prova = `A DEFINIR` apenas em caixa/sacola/kit depois de efetiva avaliação, nunca em item/quantidade/iFood/seq TATÁ.
 5. Determinar origem autorizativa da sequência 3 dígitos; até 26/10 a fonte observada tinha `bindings=0`. Testar idempotência/casos negativos exclusivamente em cópia, sem criar `001` na operação.
-6. Provar destino lógico e papel das impressoras A/B por evidência nativa independente; `LUNCH/DINNER` não decide automaticamente. O posto de caixa já tem impressão do Gestor iFood: não duplicar.
+6. Provar destino lógico e papel das impressoras A/B por evidência nativa independente; `LUNCH/DINNER` não decide automaticamente. **César confirmou: em 25/10 a saída de comandas do Gestor iFood estava DESATIVADA; impressão simultânea em dias anteriores foi contingência de erro, não rotina.** Antes de ativar qualquer saída, verificar quem realmente imprime no dia do piloto; não inventar uma segunda via nem pressupor que o Gestor esteja imprimindo.
 7. CI ou replay isolado sobre commit exato, rollback, exclusividade de processos V1 supervisor / V2 leitor, atomicidade/restart, consentimento para qualquer alteração.
 
 ## Fase 1 — autorização humana específica e estreita
@@ -18,6 +18,9 @@ Só depois de Fase 0 aprovada, apresentar identificação da unidade, dispositiv
 
 ## Fase 2 — observação/aceite físico (não autorizado)
 Em janela acordada, uma única tentativa por identidade de pedido e por via, com teste anti-reimpressão e recibo externo quando aplicável. Sem paper/output independentemente observável: `NOT_WORLD_PROVEN`. Se houver duplicação de vias, divergência de sequência, erro de observação, falha do leitor, reclassificação arbitrária, destino ambíguo, estado de rollback sem prova ou outra condição inesperada: `STOP/HOLD`; preservar evidências e não dar retry automático. Evidência óptica e aceite humano da operação são obrigatórios antes de marcar `PHYSICAL_ACCEPTED`.
+
+## Atualização de origem independente e impressão, 26/10
+O relatório individual do iFood oferece 314 pedidos, 311 códigos curtos coincidentes com a Teknisa DLV_IFO no mesmo dia, 3 apenas iFood, 6 apenas Teknisa. Essa fonte NÃO inclui composição de itens; ligação UUID completo↔nativo permanece aberta. Referência: `docs/comandas/CONCILIACAO_IFOOD_TEKNISA_20261025_CORRECAO_HUMANA.md`. Não pedir repetidamente planilha com itens como se a exportação permitisse essa granularidade.
 
 ## Status atual
 - Leitor: `RUNNING` observado no host.
