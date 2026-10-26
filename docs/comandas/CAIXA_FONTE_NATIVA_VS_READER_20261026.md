@@ -29,6 +29,8 @@ Processos `Gestor de Pedidos` e `Impressora GP iFood` observados em execução; 
 
 O log próprio `C:\Users\Tata\AppData\Roaming\Gestor de Pedidos\log.log` foi verificado para **contagem de sinais textuais apenas**: ~150 KB, 1.791 linhas, modificado em 26/10, sem ocorrências de `orderId`, `displayId`, `shortCode` ou UUID estruturado. Não forneceu identificador para ligação exata. Outro diagnóstico `gestor-linx-app/logs/main.log` tinha 1.159 bytes, última alteração em junho, sem chaves/UUID de pedido; não serve à amostra de outubro. Nenhum log bruto foi reproduzido.
 
+**Tentativa de contra-rota sem efeitos:** seis processos `Gestor de Pedidos` estavam ativos, mas nenhum expôs `MainWindowHandle` na sessão de execução remota (`windowed=0`); portanto não havia uma janela acessível para inspeção passiva do número de pedido por automação de acessibilidade. Nenhum clique, foco, captura de tela ou leitura da UI foi realizado. **Não repetir essa via na sessão remota atual sem mudança real de superfície.**
+
 A integração separada `ifood-analytics-d1-status.json` estava em `BLOCKED_MISSING_AUTH_CONFIG`, sem qualquer snapshot na pasta prevista, desde inspeção anterior. **Não ativar API, criar sessão ou pedir credenciais**: César já havia definido a rota sem dependência de API/credenciais iFood. Pastas de `IndexedDB`, `Local Storage`, `Network`, `Session Storage`, `Cache`, `Preferences` não foram inspecionadas, pois podem conter credenciais/sessões e não constituem exportação autorizada de pedidos. Também não foram tocados spooler, filas ou impressoras.
 
 ## Critérios remanescentes antes de 10/10
