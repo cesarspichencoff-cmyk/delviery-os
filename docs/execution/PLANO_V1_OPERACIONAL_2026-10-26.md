@@ -17,6 +17,14 @@ Objetivo: conectar a operação de Entregas do Itaim, o aplicativo Android e o c
 
 O histórico técnico não deve ser refeito por conveniência. Os 110 testes JVM e provas PostgreSQL existentes são base de regressão; não substituem observação em aparelho físico. Os scripts de preparação do host não representam um instalador operacional homologado.
 
+## Pedidos da operação: requisito explícito
+
+César confirmou que o copiloto deve evoluir para ler os pedidos, aproveitando o motor TATÁ quando útil. Esta frente passa a ser uma entrega central, junto com identidade, persistência e Android; não fica limitada à projeção de viagens ou a uma demonstração da tela.
+
+Primeiro incremento implementado: `runtime/reporting/copiloto_tata_orders_v1.cjs` reutiliza o motor existente `tata_comanda_order_truth_v1.cjs`, preserva unidade e modo de origem, seleciona revisões pelo horário da fonte e sinaliza conflitos. A saída operacional minimizada inclui referências, itens, quantidades e KDS com sua semântica original; não publica recebimentos, dados de cliente ou coordenadas. Não infere prontidão, entrega, tempo de produção ou vínculo com viagem/GPS. Nove cenários sintéticos passam; etapa adicionada ao CI do produto. Não há nova leitura SQL nem publicação dessa camada na tela atual.
+
+Na inspeção somente de serviço e metadados do host, `TataComandaReader` estava Running e o arquivo de checkpoint teve gravação recente. O status do host observado tinha data antiga. Nenhum payload de pedido, segredo ou configuração do leitor foi extraído; serviço não foi alterado. Progresso por data de arquivo não comprova completude, unidade correta ou saúde do leitor. A próxima prova é a linhagem da fonte e o mapeamento autorizado para Itaim, sem assumir que pedidos capturados na Mooca pertençam ao Itaim.
+
 ## Decisões de arquitetura
 
 1. **Uma autoridade para cada fato.** O vínculo pedido–viagem–ator–aparelho precisa ser estável e verificável. Mapear as tabelas e eventos existentes antes de qualquer alteração. Aproveitar o backend PostgreSQL já implementado; convergir a instalação de teste depois de provar equivalência, idempotência e reversão. Não criar outro banco lógico concorrente para o copiloto.

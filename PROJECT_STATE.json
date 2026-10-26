@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "V1_OPERATIONAL_PLAN_DEFINED_HTTPS_LAB_PRESERVED",
-  "state_basis_head": "beeea51e67ceee14d9a9ebc9ead0fd3b9d734545",
+  "checkpoint_type": "COPILOTO_TATA_ORDER_READ_MODEL_LAB_PROVEN_LIVE_SOURCE_HOLD",
+  "state_basis_head": "3ae58ca64968abaca3faf8da06e3d4910a78f11a",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -38,9 +38,10 @@
     "Own-runtime interruption and PostgreSQL restart preserved a test marker; runtimes restarted and smoke passed again. GPS false, term unpublishable, ITAIM simulated. NetBird connected with BlockInbound true.",
     "Mooca remote lab applied: pilot binds NetBird IP 100.107.78.202:5193 under validated remote configuration; platform/PostgreSQL remain loopback. Windows firewall effective only on the mesh among observed active adapters, Ethernet excluded, 258 scoped rules and two-proxy source allowlist verified.",
     "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation.",
-    "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate."
+    "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate.",
+    "Copiloto TATA per-order read model reuses existing normalization engine. Nine synthetic tests pass: revisions, conflicts, source modes/units, minimization, missing/stale/future data and no inferred readiness/delivery/GPS association. No SQL reader or public route wired. Mooca reader service found Running; checkpoint mtime recent, host-status mtime old. Metadata-only inspection does not prove source health, contents, completeness or Itaim mapping."
   ],
-  "next_action": "Implement the first lab increment of the operational V1 plan: map exact human/native routes and prove authorization/session/unit/device boundaries with fictitious identities. Resolve native transport through HTTPS before physical GPS; converge existing persistence and preserve current Entregas access. Do not promote shadow_lab token to browser login or publish demonstration as operational Copiloto.",
+  "next_action": "Continue identity/native access and TATA order-source integration as explicit V1 requirements. Prove authorized source-unit mapping and sanitized current reader envelope compatibility before wiring the new read model to authenticated Copiloto. Preserve working HTTPS Entregas lab; no new watcher, SQL permissions or GPS activation.",
   "unknowns": [
     "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -86,6 +87,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Operational V1 implementation plan added; no GPS flag, real participant, production database, native endpoint exposure or main-product deployment changed."
+    "Pure TATA order read model and nine lab scenarios added to product CI; actual live reader-to-Copiloto wiring and UI remain pending."
   ]
 }

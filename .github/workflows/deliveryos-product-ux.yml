@@ -130,6 +130,8 @@ jobs:
         run: npx tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
       - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
         run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
+      - name: Copiloto normaliza pedidos pelo motor TATA sem promover historico a live
+        run: node tests/tata-reader/run-copilot-orders-tests.cjs
       - name: Seis celulas V3.3 sem pressão artificial e sem motoboy duplicado
         run: npx tsx src/product/viewmodels/run-copiloto-celulas-v33-tests.ts
       - name: Instalar Chromium somente antes das provas de navegador
