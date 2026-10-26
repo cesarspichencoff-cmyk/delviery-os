@@ -6,6 +6,8 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const uuid=n=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
 const source={
  day:"2026-10-25",ifood_store:"53069",native_store:"0001/01",
+ ifood_captured_at:"2026-10-26T12:00:00-03:00",
+ native_captured_at:"2026-10-26T12:05:00-03:00",
  ifood:[
   {day:"2026-10-25",store:"53069",uuid:uuid(1),short_id:"0006",final_status:"CONCLUIDO"},
   {day:"2026-10-25",store:"53069",uuid:uuid(2),short_id:"0130",final_status:"CONCLUIDO"},
@@ -26,9 +28,12 @@ const review=x=>{
  assert.deepEqual(r.effects,EFFECTS);
  for(const key of ["ready_for_operational_print","uuid_to_native_proven",
   "item_content_proven","independent_source_attestation_proven",
-  "source_store_mapping_attested","physical_print_proven"])
+  "source_store_mapping_attested","physical_print_proven",
+  "independent_snapshot_currency_proven"])
    assert.equal(r[key],false,key);
  assert.equal(r.differences_without_personal_ids,true);
+ assert.equal(r.source_sets_may_drift_after_capture,true);
+ assert.equal(r.source_capture_times_self_reported,true);
  const serialized=JSON.stringify(r);
  for(const row of source.ifood){
   assert.ok(!serialized.includes(row.uuid),"must not export UUID");
@@ -113,6 +118,34 @@ test("exact set remains review, not ready",()=>{
 test("empty or null input never authorizes action",()=>{
  assert.equal(review(null).status,"HOLD");
  assert.equal(review({}).status,"HOLD");
+});
+
+test("source timestamps required for mutable SQL set review",()=>{
+ const x=clone(source);delete x.native_captured_at;
+ const r=review(x);assert.equal(r.status,"HOLD");
+ assert.deepEqual(r.reasons,["SOURCE_CAPTURE_TIMESTAMPS_REQUIRED"]);
+});
+test("invalid timestamp cannot be used as freshness evidence",()=>{
+ const x=clone(source);x.ifood_captured_at="2026-10-26";
+ assert.deepEqual(review(x).reasons,["SOURCE_CAPTURE_TIMESTAMPS_REQUIRED"]);
+});
+test("five-minute recorded difference still never proves current DB parity",()=>{
+ const r=review(source);
+ assert.equal(r.source_capture_times_present,true);
+ assert.equal(r.source_capture_skew_minutes,5);
+ assert.equal(r.independent_snapshot_currency_proven,false);
+});
+test("two-hour source mismatch is reported, not suppressed",()=>{
+ const x=clone(source);x.native_captured_at="2026-10-26T14:00:00-03:00";
+ const r=review(x);
+ assert.equal(r.source_capture_skew_minutes,120);
+ assert.ok(r.reasons.includes("SOURCE_CAPTURE_WINDOWS_NOT_CONTEMPORANEOUS"));
+ assert.equal(r.ready_for_operational_print,false);
+});
+test("equal reported capture time cannot prove immutable source",()=>{
+ const x=clone(source);x.native_captured_at=x.ifood_captured_at;
+ const r=review(x);assert.equal(r.source_capture_skew_minutes,0);
+ assert.equal(r.independent_snapshot_currency_proven,false);
 });
 test("314 vs 317 synthetic volume proves 311/3/6 reconciliation without identity promotion",()=>{
  const x=clone(source);
