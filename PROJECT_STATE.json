@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "MOOCA_MESH_GUARD_AND_REMOTE_LAB_APPLIED_AUTHENTICATED_PROXY_HOLD",
-  "state_basis_head": "8f24f951d7e34f428cac524e8ef15a44bb465f9d",
+  "checkpoint_type": "MOOCA_HTTPS_ENTREGAS_UI_USER_CONFIRMED_FULL_PRODUCT_HOLD",
+  "state_basis_head": "ae98a28507d256828218fe5680e121af3f5ee5a1",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -36,11 +36,12 @@
     "Critical, async and pilot are alive; loopback 8080/5193. Health and ready 200; unauthenticated term 401. Windows canonical PostgreSQL tests 6/6 passed with synthetic fixtures.",
     "Own-runtime interruption and PostgreSQL restart preserved a test marker; runtimes restarted and smoke passed again. GPS false, term unpublishable, ITAIM simulated. NetBird connected with BlockInbound true.",
     "Mooca remote lab applied: pilot binds NetBird IP 100.107.78.202:5193 under validated remote configuration; platform/PostgreSQL remain loopback. Windows firewall effective only on the mesh among observed active adapters, Ethernet excluded, 258 scoped rules and two-proxy source allowlist verified.",
-    "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation."
+    "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation.",
+    "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate."
   ],
-  "next_action": "Confirm authenticated browser refresh of the saved NetBird HTTPS service. If 502 persists, inspect exact Peer target/port and attempt logs while preserving the two-proxy mesh firewall scope. Android, reboot/autostart and operational gates remain separate.",
+  "next_action": "Continue from user-confirmed HTTPS Entregas UI. Explain that the published server is the isolated Entregas pilot; inspect the separate main product runtime before planning any Copiloto deployment. Preserve authentication, mesh firewall scope and field gates.",
   "unknowns": [
-    "Authenticated NetBird proxy-to-app request remains unproven. TLS and unauthenticated 401 are proven; remote lab binding and mesh-only firewall guard are applied. Proxy IP rotation requires reviewed allowlist update.",
+    "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
     "Off-host backup and restore of this new local cluster remain unproven.",
     "Pilot signing custody and approved operational term fields remain undefined.",

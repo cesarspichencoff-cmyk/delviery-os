@@ -1,6 +1,6 @@
 # Ensaio de acesso remoto — Caixa Mooca
 
-Estado: **servidor e proteção aplicados; acesso autenticado pelo proxy pendente de confirmação humana**.
+Estado: **servidor e proteção aplicados; abertura da interface Entregas pelo HTTPS confirmada por César**.
 
 O Caixa Mooca hospeda um ambiente de teste do aplicativo ITAIM, com dados simulados e GPS desligado. Isso não libera operação real, distribuição de APK de campo ou coleta de localização.
 
@@ -26,7 +26,9 @@ Em 2026-10-26, aproximadamente 19h59–20h01 de São Paulo:
 - URL pública `https://deliveryos-piloto.eu1.netbird.services`: TLS verificado e resposta 401 sem autenticação. **O 401 comprova a barreira de autenticação, não a conexão autenticada do proxy ao aplicativo.** Não usamos nem extraímos a senha ou cookies do navegador de César.
 - Plataforma pronta: 200. Testes de governança do repositório: 14 guardas verdes.
 
-O fluxo autenticado ainda precisa ser confirmado atualizando o navegador que exibiu o 502. Caso continue falhando, o próximo diagnóstico é o alvo Peer/porta no serviço e os registros da tentativa; a proteção local não deve ser ampliada para resolver disponibilidade.
+Após a aplicação, César informou: “Ok abriu, sem o copiloto, só entregas”. Isso confirma por relato humano a abertura da interface pelo serviço HTTPS. Não comprova ações internas, integração com o Copiloto ou funcionamento do aplicativo Android.
+
+O processo publicado é `entregas_pilot_server`, cujo contrato mantém Copiloto desativado. A aplicação principal usa o servidor separado `product_system_server`; não foi instalada nem exposta por esta alteração.
 
 ## Correções encontradas no ensaio
 
