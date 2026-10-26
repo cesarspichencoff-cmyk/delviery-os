@@ -62,15 +62,18 @@ const seen = new Set();
 const rows = sample.map(([code, observed_name, occurrences]) => {
   assert.match(code, /^\d+\.\d+\.\d+\.\d+\.\d+$/);
   assert.ok(!seen.has(code)); seen.add(code);
-  const printer_codes = routing.products[code];
-  assert.ok(Array.isArray(printer_codes) && printer_codes.length > 0,
-    "Missing historical route: " + code);
+  const printer_codes = routing.products[code] || null;
+  if (printer_codes !== null)
+    assert.ok(Array.isArray(printer_codes) && printer_codes.length > 0,
+      "Invalid historical route: " + code);
   assert.ok(Number.isInteger(occurrences) && occurrences > 0);
   return {code, observed_name, occurrences_in_200_decisions:occurrences,
     historical_printer_routes:printer_codes, ...classifyEvidence(code),
-    status:"HOLD_NEEDS_CURRENT_CODE_BOUND_SOURCE"};
+    status:printer_codes ? "HOLD_NEEDS_CURRENT_CODE_BOUND_SOURCE" : "HOLD_ROUTE_MISSING"};
 });
 assert.equal(rows.length, 14);
+const routeMissing = rows.filter((r) => r.status === "HOLD_ROUTE_MISSING");
+assert.deepEqual(routeMissing.map((r) => r.code), ["8.20.11.002.00"]);
 assert.equal(rows.filter((r) => r.automatic_classification_authorized).length, 0);
 assert.equal(rows.find((r) => r.code === "9.75.00.020.00").historical_ambiguous_candidate, 1);
 assert.equal(rows.find((r) => r.code === "9.10.05.060.00").historical_exact_code_review, 1);
@@ -81,6 +84,7 @@ console.log(JSON.stringify({
  schema:"deliveryos.comandas.classification-source-gap-audit.v1",
  mode:"REVIEW_ONLY", sample_decisions:200, item_codes:rows.length,
  historical_audit_date:audit.captured_date,
+ without_route_in_source:routeMissing.length,
  with_exact_historical_review:rows.filter((r)=>r.historical_exact_code_review>0).length,
  with_ambiguous_historical_candidates:rows.filter((r)=>r.historical_ambiguous_candidate>0).length,
  currently_authorized_for_auto_classification:0,
