@@ -19,6 +19,7 @@ const old=[
 '$hard="UNEXPECTED_SERVICE_IDENTITY UNEXPECTED_SQL_LOGIN"',
 '$observations="observation_rows=@($observationRows)"',
 '$hash="snapshot_hash=$hash"',
+'$event=[ordered]@{}',
 '$event="Write-AtomicJson $eventPath $event"',
 '$timestamp="DTHRABERMESA=$order.DTHRABERMESA"',
 '$effects="database_write=$false print=$false;spooler_write=$false"',
