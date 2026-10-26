@@ -43,3 +43,26 @@ Leitura somente em memória de até 200 arquivos `*.decision.json` do diretório
 - **G4** Validar pedido novo na cadeia V2→V6.8→Academia→3 vias virtuais, sem impressão. Só então avaliar autorização separada para piloto operacional.
 
 **Conclusão:** o motor da Academia é fonte canônica de embalagem; não cobre identidade, origem, custódia de turno, idempotência/efeito físico. A sessão recuperou prova de leitura autônoma e de bloqueios, mas não concluiu WORLD_PROVEN de três vias em pedido real. Sem alterações no Windows operacional.
+
+## Lote adicional — 14 códigos canônicos com CLASSIFICATION_UNKNOWN
+
+Nova agregação read-only sobre as mesmas 200 decisões. **Contagens de ocorrências de motivo**, não número de pedidos únicos; nomes abaixo são apenas rótulos observados no Reader, nunca identidade/categoria homologada no catálogo Academia. Nenhuma observação de cliente foi lida/exportada.
+
+| Código canônico | Nome operacional observado | Ocorrências de CLASSIFICATION_UNKNOWN |
+| --- | --- | ---: |
+| `9.10.05.000.00` | CARPACCIO DE SALMAO | 20 |
+| `9.75.00.020.00` | MISSOSHIRO | 12 |
+| `9.10.05.060.00` | TUNA SHISSO TARTAR | 9 |
+| `9.15.00.060.00` | SALMAO/ATUM 1 PESSOA | 7 |
+| `9.10.00.050.00` | SHIMEJI E SHITAKE | 7 |
+| `8.00.05.000.00` | COCA COLA 350ML - UN | 4 |
+| `8.20.00.061.00` | MOCHI INDIVIDUAL | 4 |
+| `9.10.05.040.00` | TARTAR DE ATUM SPICY | 4 |
+| `9.10.05.070.00` | CEVICHE | 4 |
+| `8.00.00.010.00` | AGUA MINERAL C/GAS - UN | 3 |
+| `9.10.05.050.00` | TARTAR DE SALMAO | 2 |
+| `9.15.00.070.00` | SALMAO/ATUM 2 PESSOAS | 2 |
+| `9.99.00.007.00` | TATA CHOCOLATE | 2 |
+| `8.20.11.002.00` | COOKIE PISTACHE | 2 |
+
+**Diferença importante:** o motor Academia já contém regra nominal para Carpaccio (caixa fixa 750), Missoshiro, Tuna Shisso Tartar, Tartar de Atum Spicy e Ceviche (faixa selada 650). O fato de existirem regras nominativas **não** demonstra associação autenticada destes códigos e classificações na unidade nem permite ignorar `review_required`. O próximo delta seguro é conferir, em fonte de catálogo versionada e prova de loja atual, quais dos 14 códigos têm `CDPRODUTO`, classificação e praça aprovadas; só depois executar replays offline contra a mesma revisão.
