@@ -80,7 +80,58 @@ function transform(source){
    if(!originalFunction.includes(required))throw new Error("LEGACY_SHIFT_SEMANTICS_CHANGED:"+required);
  }
  let next=source.slice(0,start)+nativeFunction+"\n"+source.slice(end);
- next=next.replace(LEGACY_CALL,NATIVE_CALL+"\n"+additionalGuard);
+ // Replacement callback prevents JS 
+ if(next.includes("Read-ServiceState") ||
+   next.includes("SERVICE_STATE_EXPIRED_FOR_ORDER") ||
+   next.includes("production-service-state.json")){
+  // The old state path may still be declared globally. It is inert but must
+  // be removed from the candidate so it cannot be used by a future caller.
+  next=next.replace(
+   '$ServiceStatePath = "C:\\ProgramData\\TataComandaReader\\state\\production-service-state.json"\n',"");
+ }
+ if(next.includes("Read-ServiceState")||next.includes("SERVICE_STATE_EXPIRED_FOR_ORDER")||
+    next.includes("production-service-state.json"))throw new Error("LEGACY_SHIFT_DEPENDENCY_REMAINED");
+ for(const required of [
+  "observation_rows=@($observationRows)",
+  "snapshot_hash=$hash",
+  "Write-AtomicJson $eventPath $event",
+  "UNEXPECTED_SERVICE_IDENTITY",
+  "UNEXPECTED_SQL_LOGIN",
+  "DTHRABERMESA=$order.DTHRABERMESA",
+  "database_write=$false",
+  "print=$false;spooler_write=$false"
+ ])if(!next.includes(required))throw new Error("CRITICAL_CONTRACT_LOST:"+required);
+ if(!next.includes("production_role=$null")||!next.includes("NATIVE_ORDER_STATUS_NOT_ATTESTED"))
+  throw new Error("NATIVE_AUTHORITY_GUARD_LOST");
+ return next;
+}
+function cli(args){
+ if(args.length!==2)throw new Error("USAGE: node patch.js <local-live-source-copy> <new-output-file>");
+ const sourceFile=path.resolve(args[0]),outFile=path.resolve(args[1]);
+ if(sourceFile===outFile)throw new Error("SOURCE_OVERWRITE_FORBIDDEN");
+ for(const f of [sourceFile,outFile]){
+  if(/\\programdata\\|\\teknisa\\|\\odhen-perifericos\\/i.test(f))
+   throw new Error("OPERATIONAL_PATH_FORBIDDEN");
+ }
+ if(fs.existsSync(outFile))throw new Error("OUTPUT_EXISTS_REFUSE_OVERWRITE");
+ const bytes=fs.readFileSync(sourceFile);
+ const digest=crypto.createHash("sha256").update(bytes).digest("hex");
+ if(digest!==EXPECTED_SOURCE_SHA256)throw new Error("SOURCE_BYTES_NOT_VERIFIED");
+ const result=transform(bytes.toString("utf8"));
+ fs.writeFileSync(outFile,result,{encoding:"utf8",flag:"wx"});
+ const after=crypto.createHash("sha256").update(fs.readFileSync(outFile)).digest("hex");
+ console.log(JSON.stringify({schema:CONTRACT,status:"OFFLINE_CANDIDATE_CREATED",
+   source_sha256:digest,candidate_sha256:after,output:path.basename(outFile),
+   producer:"SHAPINNED_LOCAL_READ_ONLY",installed:false,
+   effects:{sql_write:false,printer:false,service:false,sequence:false}}));
+}
+if(require.main===module){try{cli(process.argv.slice(2))}catch(e){
+ console.error("COMANDAS_READER_PATCH_HOLD:"+e.message);process.exitCode=7;
+}}
+module.exports={transform,nativeFunction,additionalGuard,EXPECTED_SOURCE_SHA256,CONTRACT};
+ (apostrophe in regex end-anchor) from
+ // expanding to the rest of the original PowerShell source.
+ next=next.replace(LEGACY_CALL,()=>NATIVE_CALL+"\n"+additionalGuard);
  if(next.includes("Read-ServiceState") ||
    next.includes("SERVICE_STATE_EXPIRED_FOR_ORDER") ||
    next.includes("production-service-state.json")){
