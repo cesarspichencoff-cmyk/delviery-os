@@ -102,6 +102,10 @@ test("empty and null rejected",()=>{
 test("large input fails budget before aggregation",()=>{
  assert.deepEqual(safe(analyze(Array(5001).fill(data[0]))).reasons,["INPUT_BUDGET_EXCEEDED"]);
 });
+test("same timestamp different native states cannot establish transition",()=>{
+ const x=[row("T","3",1,1),row("T","P",2,1)];
+ assert.deepEqual(safe(analyze(x)).reasons,["STATUS_TRANSITION_ORDER_AMBIGUOUS_SAME_OBSERVED_AT"]);
+});
 test("input immutability: object values unchanged",()=>{
  const original=JSON.stringify(data);
  safe(analyze(data));
