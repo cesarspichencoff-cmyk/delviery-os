@@ -65,6 +65,22 @@ class LabPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exatamente um"):
             self.check(signature=self.signature + "\n" + self.signature)
 
+    def test_sdk_range_same_identity(self):
+        certificate = " certificate SHA-256 digest: " + "a" * 64
+        output = ("Signer (minSdkVersion=26, maxSdkVersion=32)" + certificate + "\n" +
+                  "Signer (minSdkVersion=33, maxSdkVersion=2147483647)" + certificate)
+        self.check(signature=output)
+
+    def test_scheme_labels_same_identity(self):
+        certificate = ": certificate SHA-256 digest: " + "a" * 64
+        self.check(signature="V2 Signer" + certificate + "\nV3.0 Signer" + certificate)
+
+    def test_rotated_identity_not_silently_accepted(self):
+        output = ("Signer (minSdkVersion=26, maxSdkVersion=32) certificate SHA-256 digest: " + "a" * 64 +
+                  "\nSigner (minSdkVersion=33, maxSdkVersion=2147483647) certificate SHA-256 digest: " + "b" * 64)
+        with self.assertRaisesRegex(ValueError, "exatamente um"):
+            self.check(signature=output)
+
 
 if __name__ == "__main__":
     unittest.main()

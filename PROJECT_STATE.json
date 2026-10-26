@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ANDROID_LAB_PACKAGE_CODE_READY_NEW_CI_PENDING",
-  "state_basis_head": "e1398385b0f7947001972736e4cd74030e87d4e4",
+  "checkpoint_type": "ANDROID_APKS_COMPILED_VERIFIERS_FIXED_CI_RETEST_PENDING",
+  "state_basis_head": "0de3dc42584f638268d5d4ebd56efb4dbe8e45c1",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -18,11 +18,14 @@
     "Product run 40232235149 succeeded, including HTTP, PostgreSQL canonical dispatch 6/6 and shared server cluster 6/6, browser, accessibility and governance.",
     "Xiaomi available by Cesar statement; model and Android version unobserved.",
     "Eight synthetic lab-package validation controls passed locally; real aapt/apksigner and APK assembly require new CI.",
-    "Legacy debug-for-field build guidance corrected; debug package is lab-only, pilot field signing remains separate."
+    "Legacy debug-for-field build guidance corrected; debug package is lab-only, pilot field signing remains separate.",
+    "Android run 40280263018 compiled app and instrumentation APKs and passed 110 JUnit; package publication failed closed at SDK certificate-format parsing.",
+    "Eleven synthetic package controls pass after supporting SDK signer output formats with one unique certificate identity.",
+    "Product run 40280262948 failed a11y contrast snapshots; bounded font/finite-animation settling and a low-contrast negative control added to the test. Product CSS/components unchanged."
   ],
   "next_action": "Verify new Android APK CI and lab package. Then implement a separately scoped authenticated consent receipt path, define verified HTTPS endpoints, pilot signing custody and term fields. Keep DRAFT/HOLD until physical and operational gates pass.",
   "unknowns": [
-    "New APK assembly/verification workflow has not yet been executed at this checkpoint.",
+    "New certificate parser and accessibility timing verifier require CI retest; no verified downloadable APK artifact yet.",
     "Two verified HTTPS URLs for an isolated physical test environment are not established.",
     "Confirmed field blocker: Android term acknowledgement client uses no pilot credential; server requires a rider session. Existing delegation scope is events-only, so consent transport needs a separate scoped design and proof.",
     "Pilot signing custody and approved operational location-term fields remain undefined.",
@@ -64,8 +67,7 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Build and verify lab debug APK plus instrumentation APK in CI",
-    "Fail absent/empty/failing JUnit evidence",
-    "Packaging identity/signature/hash gates and corrected Android build guide"
+    "SDK certificate-format compatibility without accepting multiple identities",
+    "Bounded accessibility settling and a live low-contrast control; CI reproduction pending"
   ]
 }

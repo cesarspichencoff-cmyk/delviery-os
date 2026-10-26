@@ -20,10 +20,19 @@ def package_name(badging):
 
 
 def signer_digest(output):
-    matches = re.findall(r"^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]{64})$", output, re.M)
-    if len(matches) != 1:
+    # Build-tools imprime o mesmo certificado por indice, faixa de SDK ou
+    # esquema V2/V3. Aceitar esses formatos nao autoriza outra identidade.
+    pattern = (r"^(Signer #\d+|Signer \(minSdkVersion=\d+, maxSdkVersion=\d+\)|"
+               r"V\d+(?:\.\d+)? Signer):? certificate SHA-256 digest: ([0-9a-fA-F]{64})\s*$")
+    lines = [line.strip() for line in output.splitlines() if "certificate SHA-256 digest:" in line]
+    matches = [re.fullmatch(pattern, line) for line in lines]
+    if not matches or any(match is None for match in matches):
+        raise ValueError("exige exatamente um assinante verificavel; formato: " + repr(lines))
+    labels = [match.group(1) for match in matches]
+    digests = {match.group(2).lower() for match in matches}
+    if len(set(labels)) != len(labels) or len(digests) != 1:
         raise ValueError("exige exatamente um assinante verificavel")
-    return matches[0].lower()
+    return next(iter(digests))
 
 
 def validate(apk, test_apk, badging, test_badging, signature, test_signature, commit):
