@@ -23,6 +23,9 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Contraprovas dos enderecos de campo (sem rede)
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain :app:verifyFieldEndpointPolicy
       - name: JVM Android + Room regression
         working-directory: android
         run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest

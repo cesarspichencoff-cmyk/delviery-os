@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ANDROID_LAB_AND_PRODUCT_CI_PROVEN_FIELD_HOLD",
-  "state_basis_head": "b88b5dcce3553765496a2b9b9e4d0e103b837aba",
+  "checkpoint_type": "FIELD_ENDPOINT_VALIDATION_CI_PENDING",
+  "state_basis_head": "18e453cea37e2dd2a1391f489c2f67ada613355c",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -27,7 +27,7 @@
     "Product run 40282604287 succeeded at same source head: PostgreSQL dispatch 6/6, server cluster 6/6, 12 axe audits with zero violations, live low-contrast negative control detected and SEM_FAIL_NOVO OK.",
     "Native term replay audit: worker has no pilot session, retains pending acknowledgement on 401 and does not mark it sent. Initial server acknowledgement still comes from the WebView session."
   ],
-  "next_action": "Prepare isolated HTTPS environment and approved pilot signing/term inputs, then generate and verify pilot APK before the existing physical field gate. Do not install the emulator debug artifact on a participant. Native term replay remains an explicit integration limitation, not a reason to widen event delegation.",
+  "next_action": "Verify new Gradle endpoint-policy cases, Android regression and product CI. Then prepare pilot build using verified HTTPS endpoints, signing custody and approved term inputs. Physical field hold remains.",
   "unknowns": [
     "No physical instrumentation or Xiaomi installation has run; successful CI is lab and product evidence only.",
     "Two verified HTTPS URLs for an isolated physical test environment are not established.",
@@ -71,6 +71,7 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Documentation and continuity consolidation only; runtime and tests unchanged since the proven source head."
+    "Gradle field endpoint validation parses URI and rejects malformed, credential-bearing and loopback endpoints without echoing them; 22 CI cases added.",
+    "Field guards cover direct BuildConfig generation and package tasks. New Gradle execution requires CI proof."
   ]
 }

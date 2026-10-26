@@ -56,3 +56,9 @@ Assinar sob a custódia aprovada, conferir identidade/assinante/SHA e aplicar o 
 ## Fronteira de prova
 
 CI aprovado comprova os comandos e artefatos daquela revisão. Não comprova servidor publicado, instalação no Xiaomi, recibo remoto do termo, GPS em segundo plano, fila offline física, bateria ou aceitação da equipe. Nenhum comando desta página instala aplicativo, cria identidade operacional ou liga coleta.
+
+## Validação dos endereços de campo
+
+A geração de `pilot`/`release` analisa a URI completa: exige HTTPS e host válido; recusa credenciais, query, fragmento, porta inválida, loopback e endereço do emulador. A mesma guarda cobre a geração direta do BuildConfig e o empacotamento. Os erros não reproduzem o endereço informado, para não revelar credenciais de uma configuração incorreta.
+
+O CI executa `:app:verifyFieldEndpointPolicy`: 19 casos recusados e três formatos aceitos, usando o mesmo validador da compilação. Esses testes não consultam DNS nem comprovam certificado TLS, alcance pelo Xiaomi ou aprovação do ambiente. IP privado com HTTPS continua sendo formato permitido, pois pode representar servidor da unidade; a confiança do certificado precisa de verificação real.
