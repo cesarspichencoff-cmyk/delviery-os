@@ -257,14 +257,17 @@ try {
     throw "COMMIT_AUTHORIZATION_ID_REQUIRED"
   }
 
-  $lockPath = $StatePath + ".lock"
-  $lock = [IO.File]::Open(
-    $lockPath,
-    [IO.FileMode]::OpenOrCreate,
-    [IO.FileAccess]::ReadWrite,
-    [IO.FileShare]::None
-  )
+  # Safety hold: a caller-supplied AuthorizationId proves nothing about a
+  # separate human approval or the Windows security principal. This draft
+  # writer MUST NOT commit until a trusted, independently controlled
+  # authorization and process-custody boundary is implemented and tested.
+  if ($Commit) {
+    throw "COMMIT_DISABLED_NO_INDEPENDENT_AUTHORIZATION_GATE"
+  }
 
+  # DRY_RUN must never create even a .lock file at the live state path.
+  # Since committing is disabled above, hash-before/hash-after is sufficient
+  # for an advisory plan; it never authorizes actual sequence allocation.
   $beforeSha = Get-Sha256 $StatePath
   $result.state_sha256_before = $beforeSha
   $result.effects.local_state_read = $true
