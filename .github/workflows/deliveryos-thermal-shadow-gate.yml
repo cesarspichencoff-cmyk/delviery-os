@@ -85,6 +85,8 @@ jobs:
         run: node tools/verificar_comandas_reconciliacao_fontes_v1_offline.cjs
       - name: Native Teknisa order-time watcher patch contract (synthetic, no service or print)
         run: node tools/verificar_comandas_reader_native_timestamp_patch_v1_offline.cjs
+      - name: Native status lifecycle transition audit without delivery or print interpretation
+        run: node tools/verificar_comandas_native_status_lifecycle_v1_offline.cjs
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
@@ -355,6 +357,8 @@ jobs:
         run: node tools/verificar_comandas_reconciliacao_fontes_v1_offline.cjs
       - name: Native Teknisa order-time watcher patch contract (synthetic, no service or print)
         run: node tools/verificar_comandas_reader_native_timestamp_patch_v1_offline.cjs
+      - name: Native status lifecycle transition audit without delivery or print interpretation
+        run: node tools/verificar_comandas_native_status_lifecycle_v1_offline.cjs
       - name: TATA sequence preview-only writer and self-authorization rejection (disposable Windows)
         shell: pwsh
         run: ./tools/verificar_tata_sequence_writer_preview_hold_v1.ps1
