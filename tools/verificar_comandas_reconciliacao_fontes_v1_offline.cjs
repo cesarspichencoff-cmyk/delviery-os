@@ -178,5 +178,38 @@ test("short collision in 314/317 input fails closed, not first-wins",()=>{
  x.native[313].short_id=x.native[0].short_id;
  assert.deepEqual(review(x).reasons,["DUPLICATE_SHORT_ID_WITHIN_STORE_DAY"]);
 });
+test("impossible calendar capture dates cannot masquerade as real snapshots",()=>{
+ for(const stamp of ["2026-02-31T12:00:00-03:00",
+  "2026-11-31T12:00:00-03:00","2026-02-29T12:00:00-03:00"]){
+  const x=clone(source);x.native_captured_at=stamp;
+  assert.deepEqual(review(x).reasons,["SOURCE_CAPTURE_TIMESTAMPS_REQUIRED"]);
+ }
+});
+test("valid leap-day capture timestamp remains accepted for independent review",()=>{
+ const x=clone(source);
+ x.ifood_captured_at="2028-02-29T12:00:00-03:00";
+ x.native_captured_at="2028-02-29T12:05:00-03:00";
+ const r=review(x);
+ assert.equal(r.source_capture_times_present,true);
+ assert.equal(r.independent_snapshot_currency_proven,false);
+});
+test("invalid offset and impossible local clock fail closed",()=>{
+ for(const stamp of ["2026-10-26T12:00:00+25:00",
+  "2026-10-26T24:00:00-03:00","2026-10-26T12:60:00-03:00"]){
+  const x=clone(source);x.ifood_captured_at=stamp;
+  assert.deepEqual(review(x).reasons,["SOURCE_CAPTURE_TIMESTAMPS_REQUIRED"]);
+ }
+});
+test("15-minute boundary uses exact seconds, no rounding bypass",()=>{
+ const x=clone(source);x.native_captured_at="2026-10-26T12:15:00-03:00";
+ const edge=review(x);
+ assert.equal(edge.source_capture_skew_minutes,15);
+ assert.ok(!edge.reasons.includes("SOURCE_CAPTURE_WINDOWS_NOT_CONTEMPORANEOUS"));
+ x.native_captured_at="2026-10-26T12:15:01-03:00";
+ const over=review(x);
+ assert.ok(over.source_capture_skew_minutes>15);
+ assert.ok(over.reasons.includes("SOURCE_CAPTURE_WINDOWS_NOT_CONTEMPORANEOUS"));
+ assert.equal(over.ready_for_operational_print,false);
+});
 console.log("COMANDAS_INDEPENDENT_PRESENCE_V1="+total+"/"+total+
  " NO_AUTO_UUID_JOIN NO_PRINT NO_DB NO_SEQUENCE NO_CUSTOMER_IDENTIFIERS");
