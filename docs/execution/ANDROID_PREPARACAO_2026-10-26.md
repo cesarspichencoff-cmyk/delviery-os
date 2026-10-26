@@ -85,3 +85,20 @@ Em `MainActivity.recordTermAcknowledgement`, o registro recebido da página entr
 | Xiaomi | Modelo/API e permissões observados; executar F01–F14 do gate, com evidências por cenário | Pendente físico |
 
 A próxima ação técnica é gerar e verificar a variante pilot quando essas entradas existirem. O pacote debug já entregue não substitui essa etapa. Os resultados atuais não autorizam afirmar instalação, coleta GPS ou aceitação humana.
+
+## Servidor inicial confirmado: Caixa Mooca
+
+César indicou Caixa Mooca como host inicial e confirmou que permanece ligado durante o delivery. Isso não altera a unidade operacional do piloto: Itaim. A consulta remota foi somente de inventário, sem instalação, serviço, banco, firewall ou túnel criado.
+
+Observado em 26/10/2026: Windows 11 Pro, seis núcleos, 15,9 GiB de RAM (4,8 GiB disponíveis na consulta), 293,3 GiB livres no disco e Node 24.21.0. CPU em consulta pontual: 18%, sem prova de carga simultânea no pico. Suspensão e hibernação automáticas AC/DC: índices zero no esquema ativo de alto desempenho. Não foram encontrados PostgreSQL, Docker Desktop, Caddy, cloudflared ou Tailscale no inventário de aplicativos consultado; a ausência de instalação portátil não foi provada.
+
+Plano de preparação para revisão:
+
+1. Usar uma pasta e dados próprios do Delivery OS, sem reutilizar banco ou configuração do caixa. Identificar/verificar a distribuição do PostgreSQL e as permissões antes de qualquer instalação. Não instalar Docker como requisito automático.
+2. Preparar piloto e plataforma a partir da mesma revisão comprovada, com parâmetros Itaim e ensaio declarado, portas locais e credenciais específicas; não executar migrations no banco do caixa.
+3. Definir dois endereços HTTPS estáveis e acesso ao domínio correspondente antes de gerar APK de campo. O Caddyfile atual contém tls internal explícito: apenas trocar ENTREGAS_DOMAIN não o converte em certificado público.
+4. Fazer ensaio local de persistência, desligamento e impacto no caixa, depois validar HTTPS remotamente e aplicar o gate físico. Não há instalação nem publicação concluída.
+
+Cloudflare Quick Tunnels foi avaliado como opção de teste temporário: não exige conta/domínio, mas o host muda a cada criação e não há garantia de disponibilidade. A autenticação por e-mail é interativa e não serve diretamente aos clientes nativos em segundo plano. Portanto, não é substituto automático dos endereços estáveis do app. Fonte oficial consultada: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/ (26/10/2026).
+
+Entrada pendente que muda a rota: domínio existente e acesso administrativo, ou escolha explícita de um ensaio temporário sem operação real. A consulta não estabeleceu nenhum deles.

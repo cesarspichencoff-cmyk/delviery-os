@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "FIELD_ENDPOINT_VALIDATION_CI_PENDING",
-  "state_basis_head": "18e453cea37e2dd2a1391f489c2f67ada613355c",
+  "checkpoint_type": "MOOCA_HOST_INVENTORY_PROVEN_HTTPS_PENDING",
+  "state_basis_head": "2fa859f369f72c3573575b528df4f6af05cce5d7",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -25,9 +25,12 @@
     "PR #126 revalidated on 2026-10-26: draft, unmerged, source head b88b5dcce3553765496a2b9b9e4d0e103b837aba.",
     "Android run 40282604107 succeeded at source head: 16 suites, 110 tests, zero failures/errors, 11 packaging controls and verified APK artifact 12632701697.",
     "Product run 40282604287 succeeded at same source head: PostgreSQL dispatch 6/6, server cluster 6/6, 12 axe audits with zero violations, live low-contrast negative control detected and SEM_FAIL_NOVO OK.",
-    "Native term replay audit: worker has no pilot session, retains pending acknowledgement on 401 and does not mark it sent. Initial server acknowledgement still comes from the WebView session."
+    "Native term replay audit: worker has no pilot session, retains pending acknowledgement on 401 and does not mark it sent. Initial server acknowledgement still comes from the WebView session.",
+    "Android run 40288279866 succeeded: 19 endpoint refusals, 3 valid formats, 110 JUnit and verified lab APKs. Product run 40288279882 succeeded at same source head.",
+    "Cesar selected Caixa Mooca as initial host and confirmed availability during delivery. Read-only Windows inventory completed; no deployment performed.",
+    "Host automatic sleep/hibernate AC/DC indexes are zero. PostgreSQL and HTTPS tools not found in queried installed-app inventory; portable installations remain unknown."
   ],
-  "next_action": "Verify new Gradle endpoint-policy cases, Android regression and product CI. Then prepare pilot build using verified HTTPS endpoints, signing custody and approved term inputs. Physical field hold remains.",
+  "next_action": "Resolve stable HTTPS domain/account access and prepare isolated native Windows runtime/database plan. Keep Itaim unit binding. Do not reuse cashier database or assume changing ENTREGAS_DOMAIN enables public TLS while tls internal remains explicit.",
   "unknowns": [
     "No physical instrumentation or Xiaomi installation has run; successful CI is lab and product evidence only.",
     "Two verified HTTPS URLs for an isolated physical test environment are not established.",
@@ -71,7 +74,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Gradle field endpoint validation parses URI and rejects malformed, credential-bearing and loopback endpoints without echoing them; 22 CI cases added.",
-    "Field guards cover direct BuildConfig generation and package tasks. New Gradle execution requires CI proof."
+    "Host selection and read-only inventory recorded; no runtime changes after proven endpoint-policy revision."
   ]
 }
