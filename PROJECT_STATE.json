@@ -4,13 +4,14 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "MOOCA_HOST_INVENTORY_PROVEN_HTTPS_PENDING",
-  "state_basis_head": "2fa859f369f72c3573575b528df4f6af05cce5d7",
+  "checkpoint_type": "MOOCA_LOCAL_RUNTIMES_AND_POSTGRES_PROVEN_HTTPS_HOLD",
+  "state_basis_head": "be5a3e346981f22a7cab2f39470756c7dc00ef07",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
     "docs/execution/evidencias/itaim-only-2026-10-25/results.json",
-    "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json"
+    "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json",
+    "docs/execution/evidencias/mooca-local-2026-10-26/deployment-state.json"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -28,15 +29,20 @@
     "Native term replay audit: worker has no pilot session, retains pending acknowledgement on 401 and does not mark it sent. Initial server acknowledgement still comes from the WebView session.",
     "Android run 40288279866 succeeded: 19 endpoint refusals, 3 valid formats, 110 JUnit and verified lab APKs. Product run 40288279882 succeeded at same source head.",
     "Cesar selected Caixa Mooca as initial host and confirmed availability during delivery. Read-only Windows inventory completed; no deployment performed.",
-    "Host automatic sleep/hibernate AC/DC indexes are zero. PostgreSQL and HTTPS tools not found in queried installed-app inventory; portable installations remain unknown."
+    "Host automatic sleep/hibernate AC/DC indexes are zero. PostgreSQL and HTTPS tools not found in queried installed-app inventory; portable installations remain unknown.",
+    "Mooca isolated local installation built source be5a3e3 on Node 24.21.0; portable PostgreSQL 16.15 with new SCRAM cluster and own database on loopback 55436.",
+    "Critical, async and pilot are alive; loopback 8080/5193. Health and ready 200; unauthenticated term 401. Windows canonical PostgreSQL tests 6/6 passed with synthetic fixtures.",
+    "Own-runtime interruption and PostgreSQL restart preserved a test marker; runtimes restarted and smoke passed again. GPS false, term unpublishable, ITAIM simulated. NetBird connected with BlockInbound true."
   ],
-  "next_action": "Resolve stable HTTPS domain/account access and prepare isolated native Windows runtime/database plan. Keep Itaim unit binding. Do not reuse cashier database or assume changing ENTREGAS_DOMAIN enables public TLS while tls internal remains explicit.",
+  "next_action": "Review NetBird HTTPS services and limited target rules, then bind only the intended interface/ports. Do not expose cashier services. Public URLs, boot autostart, off-host backup, approved term and physical Xiaomi gates remain pending.",
   "unknowns": [
-    "No physical instrumentation or Xiaomi installation has run; successful CI is lab and product evidence only.",
-    "Two verified HTTPS URLs for an isolated physical test environment are not established.",
-    "Native redundant term queue uses no session; initial WebView acknowledgement does use session. Determine replay lifecycle without silently broadening events delegation.",
-    "Pilot signing custody and approved operational location-term fields remain undefined.",
-    "APK installation, physical Xiaomi behavior, GPS/offline/background/battery, remote consent and human acceptance remain unproven."
+    "NetBird HTTPS target access, certificate and native authentication are not yet proven; BlockInbound remains true.",
+    "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
+    "Off-host backup and restore of this new local cluster remain unproven.",
+    "Pilot signing custody and approved operational term fields remain undefined.",
+    "Xiaomi physical GPS/offline/background/battery and human acceptance remain unproven.",
+    "Native term replay lifecycle remains pending; initial consent uses WebView session and must be proven remotely in the field environment.",
+    "Pilot operational storage in this installation remains an isolated local store; full operational persistence convergence with PostgreSQL is not established by the GPS dispatch tests."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -74,6 +80,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Host selection and read-only inventory recorded; no runtime changes after proven endpoint-policy revision."
+    "Windows-local preparation scripts and sanitized evidence; source runtime be5a3e3 unchanged."
   ]
 }

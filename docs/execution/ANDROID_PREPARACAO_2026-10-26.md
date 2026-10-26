@@ -102,3 +102,20 @@ Plano de preparação para revisão:
 Cloudflare Quick Tunnels foi avaliado como opção de teste temporário: não exige conta/domínio, mas o host muda a cada criação e não há garantia de disponibilidade. A autenticação por e-mail é interativa e não serve diretamente aos clientes nativos em segundo plano. Portanto, não é substituto automático dos endereços estáveis do app. Fonte oficial consultada: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/ (26/10/2026).
 
 Entrada pendente que muda a rota: domínio existente e acesso administrativo, ou escolha explícita de um ensaio temporário sem operação real. A consulta não estabeleceu nenhum deles.
+
+## Ambiente local preparado no Caixa Mooca
+
+Em 26/10/2026, sob instrução de César para preparar o host, foi criado `C:\Users\Tata\DeliveryOS-Ensaio`, separado do sistema do caixa. Não foi aplicado schema a banco existente. Código baixado do GitHub no commit be5a3e346981f22a7cab2f39470756c7dc00ef07, seleção restrita de arquivos do projeto, npm ci com lockfile e scripts de instalação desativados, build:platform aprovado no Windows com Node 24.21.0. O build-stamp registrou 77 fontes e SHA-256 2d4f1ddb3aeca4d8a1d6aebe5c1e7cd854a03e791d867b3cfa1b5c169798c77f.
+
+PostgreSQL portátil 16.15 baixado do fornecedor EDB, sem Docker e sem serviço global. O hash calculado do ZIP foi 43bb45f173a6f08cf1d29a97a6d8deb119e8e8093a24c00d2d1001a0ccaa8281; é um registro de integridade do download, não uma comparação independente com checksum do fornecedor. Cluster novo com SCRAM, porta 55436 e escuta somente em 127.0.0.1. Credenciais aleatórias geradas no host; pasta com ACL restrita ao usuário local, Administradores e SYSTEM. Nenhum segredo foi colocado no Git.
+
+- Piloto 5193, crítico 8080, assíncrono e PostgreSQL ativos após reinício do ensaio; somente loopback nas três portas.
+- /api/health, /health e /ready retornaram 200. /api/term sem sessão retornou 401.
+- Seis testes canônicos PostgreSQL do repositório passaram no Windows com fixtures sintéticas e banco de teste separado.
+- Os três runtimes foram interrompidos somente após verificar PID, executável, comando e horário de criação. PostgreSQL foi parado e reiniciado; marcador de ensaio persistiu e os runtimes voltaram a responder. Isso não prova desligamento gracioso dos runtimes no Windows nem recuperação após reboot do computador.
+- Papéis crítico, assíncrono e piloto conferidos sem superuser, createdb ou createrole. O piloto desta preparação usa seu armazenamento local isolado; os testes canônicos validam a leitura GPS da plataforma/PostgreSQL e não provam convergência total do armazenamento operacional.
+- Configuração: unidade ITAIM, source_mode simulated, participantes fictícios, GPS desligado e termo não publicável. NetBird conectado, mas BlockInbound permanece true. Nada publicado por HTTPS.
+
+A evidência sanitizada está em `evidencias/mooca-local-2026-10-26/deployment-state.json`. Os scripts executados foram preservados em `tools/windows-local-lab/`; dependem da pasta e das credenciais privadas do host e não são um instalador de produção.
+
+Próximo passo: configurar os dois serviços HTTPS no painel NetBird e conferir autenticação/escopo; só depois preparar bind na interface NetBird e regras limitadas às portas necessárias. Não liberar todo o computador, rotas, DNS do caixa ou SSH. Inicialização automática no boot, backup fora do host, aprovação operacional do termo e teste físico continuam pendentes.

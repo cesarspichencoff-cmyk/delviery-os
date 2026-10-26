@@ -1,0 +1,43 @@
+{
+    "sourceCommit":  "be5a3e346981f22a7cab2f39470756c7dc00ef07",
+    "scope":  "LOCAL_ONLY_NOT_FIELD_READY",
+    "unit":  "ITAIM",
+    "sourceMode":  "simulated",
+    "runtime":  [
+                    {
+                        "name":  "critical",
+                        "alive":  true
+                    },
+                    {
+                        "name":  "async",
+                        "alive":  true
+                    },
+                    {
+                        "name":  "pilot",
+                        "alive":  true
+                    }
+                ],
+    "listeners":  [
+                      {
+                          "LocalAddress":  "127.0.0.1",
+                          "LocalPort":  55436
+                      },
+                      {
+                          "LocalAddress":  "127.0.0.1",
+                          "LocalPort":  8080
+                      },
+                      {
+                          "LocalAddress":  "127.0.0.1",
+                          "LocalPort":  5193
+                      }
+                  ],
+    "gpsEnabled":  false,
+    "termPublishable":  false,
+    "postgresCanonicalTests":  "6/6 PASS",
+    "postgresRestartPersistence":  "PASS",
+    "netbirdConnected":  true,
+    "netbirdBlockInbound":  true,
+    "autostartOnWindowsBoot":  "NOT_CONFIGURED",
+    "publicHttps":  "NOT_PUBLISHED",
+    "observedAtUtc":  "2026-10-26T18:29:41.4373700Z"
+}
