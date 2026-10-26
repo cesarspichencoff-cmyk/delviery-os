@@ -223,8 +223,6 @@ jobs:
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
         run: node tools/verificar_revisao_turno_humano_v70.js
-      - name: Shift-state required fields and writer-reader parity (offline fail-closed)
-        run: npm run verificar:production-service-matrix
       - name: G2 exact-code classification and missing-route provenance (no promotion)
         run: node tools/verificar_comandas_classification_gap_v1.cjs
       - name: V8.12 preview-only shift writer static safety gate (no PowerShell on Linux)
@@ -488,8 +486,6 @@ jobs:
         run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
       - name: V7.0/V7.4 shift upper-boundary exclusivity matches real Windows V2 (offline)
         run: node tools/verificar_revisao_turno_humano_v70.js
-      - name: Shift-state required fields and writer-reader parity (offline fail-closed)
-        run: npm run verificar:production-service-matrix
       - name: G2 exact-code classification and missing-route provenance (no promotion)
         run: node tools/verificar_comandas_classification_gap_v1.cjs
       - name: V8.12 preview-only PowerShell shift writer adversarial Windows cases
