@@ -13,7 +13,7 @@ Arquivos conhecidos em `C:\ProgramData\TataComandaReader\shadow`, consultados so
 A cache declarou captura em 05/10/2026, às 15h27 -03:00. A lista de aliases declara atualização em 05/10, às 22h13 -03:00. **Datas/hashes identificam esses artefatos, não comprovam que a fonte nativa permaneceu inalterada até 26/10.**
 
 ## Confronto de 14 códigos com CLASSIFICATION_UNKNOWN em 200 decisões recentes
-- **14/14** possuem exatamente uma linha na cache de identidade local, com um nome nativo distinto por código.
+- **14/14** possuem exatamente uma linha na cache de identidade local, com um nome nativo distinto por código. A comparação adicional do **nome observado** contra `NMPRODUTO` nessa cache de 05/10, com normalização de maiúsculas, acentos e espaços (sem fuzzy), deu **14/14 correspondências e 0 divergências**; é prova relativa à cache histórica, não ao cadastro de hoje.
 - **0/14** possuem `canonical_code` no arquivo local de aliases; portanto nenhum desses 14 tem classificação validada por essa fonte específica.
 - **13/14** possuem ao menos uma rota no `routing.json` histórico.
 - **1/14** não possui rota na fonte: `8.20.11.002.00` (Cookie Pistache).
