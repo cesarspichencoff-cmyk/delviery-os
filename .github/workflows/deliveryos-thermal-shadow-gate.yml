@@ -9,6 +9,7 @@ on:
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
       - feat/thermal-v63-packaging-bridge-shadow-20261010
       - validation/thermal-v714-raw-quantity-fail-closed-20261011
+      - fix/comandas-figma-box-count-guard-20261013
 
 permissions:
   contents: read
