@@ -10,6 +10,12 @@ const EFFECTS=Object.freeze({database_read:false,database_write:false,
   network:false,sequence_write:false,print:false,spooler:false,fiscal:false});
 const uuidRegex=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const shortRegex=/^[0-9]{4}$/;
+function captureInstant(raw){
+ if(typeof raw!=="string"||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw))return null;
+ const date=Date.parse(raw);
+ return Number.isFinite(date)?date:null;
+}
 function validDay(day){
  if(typeof day!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(day))return false;
  const v=new Date(day+"T00:00:00.000Z");
@@ -26,6 +32,11 @@ function reconcilePresence(input){
   schema:SCHEMA,mode:"READ_ONLY_REVIEW",ready_for_operational_print:false,
   uuid_to_native_proven:false,item_content_proven:false,
   independent_source_attestation_proven:false,
+  independent_snapshot_currency_proven:false,
+  source_capture_times_present:false,
+  source_capture_times_self_reported:true,
+  source_capture_skew_minutes:null,
+  source_sets_may_drift_after_capture:true,
   source_store_mapping_attested:false,physical_print_proven:false,
   effects:EFFECTS,status:"HOLD",reasons:[],
   counts:{ifood_rows:0,native_rows:0,matched_short_ids:0,
@@ -36,11 +47,17 @@ function reconcilePresence(input){
  };
  const fail=code=>{result.reasons.push(code);return result;};
  if(!input||typeof input!=="object"||Array.isArray(input))return fail("INPUT_MISSING");
- const {day,ifood_store,native_store,ifood,native}=input;
+ const {day,ifood_store,native_store,ifood,native,
+  ifood_captured_at,native_captured_at}=input;
  if(!validDay(day)||typeof ifood_store!=="string"||!ifood_store.trim()||
    typeof native_store!=="string"||!native_store.trim()||
    !Array.isArray(ifood)||!Array.isArray(native))
   return fail("INVALID_BATCH_SCOPE");
+ const tIfood=captureInstant(ifood_captured_at);
+ const tNative=captureInstant(native_captured_at);
+ if(tIfood===null||tNative===null)return fail("SOURCE_CAPTURE_TIMESTAMPS_REQUIRED");
+ result.source_capture_times_present=true;
+ result.source_capture_skew_minutes=Math.round(Math.abs(tIfood-tNative)/60000);
  result.counts.ifood_rows=ifood.length;result.counts.native_rows=native.length;
  if(!ifood.length||!native.length)return fail("EMPTY_SOURCE_BATCH");
  if(ifood.length>20000||native.length>20000)return fail("INPUT_BUDGET_EXCEEDED");
@@ -79,6 +96,9 @@ function reconcilePresence(input){
  result.native_matched_status_codes=tally(matched,"status_code");
  result.native_unmatched_status_codes=tally(onlyNative,"status_code");
  result.reasons.push("SHORT_ID_DAY_STORE_CANDIDATE_ONLY");
+ if(result.source_capture_skew_minutes>15)
+  result.reasons.push("SOURCE_CAPTURE_WINDOWS_NOT_CONTEMPORANEOUS");
+ // Even equal captured_at values do not prove a frozen database revision.
  if(onlyIfood.length)result.reasons.push("IFOOD_ORDER_NOT_IN_NATIVE_SCOPE");
  if(onlyNative.length)result.reasons.push("NATIVE_ORDER_NOT_IN_IFOOD_EXPORT_SCOPE");
  result.status=onlyIfood.length||onlyNative.length?"DISCREPANCIES_REVIEW":"CANDIDATE_SET_REVIEW";
