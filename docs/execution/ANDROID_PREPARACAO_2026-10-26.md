@@ -59,3 +59,29 @@ O run Android 40281850540 concluiu com sucesso no HEAD 287e9d8257210ef2a4e03879f
 O run de produto 40281850522 recusou corretamente o controle de estado final: o reveal ainda tinha opacity=0. A expressão string passada a waitForFunction retornava uma função em vez de executar a condição; a correção invoca a expressão explicitamente. O próximo CI precisa comprovar espera real, opacidade final e detecção de contraste ruim. Nenhuma regra foi suprimida.
 
 A auditoria mais profunda de rider.js corrigiu a hipótese anterior sobre consentimento: answerTerm envia a escolha ao servidor com a sessão do WebView, exige resposta positiva e só então chama adoptAck para a cópia nativa e pedido de permissão. A fila nativa sem credencial merece investigação, mas não justifica criar outra autoridade de aceite nem afirmar que o aceite inicial está sempre quebrado.
+
+## Consolidação da retomada — 26/10/2026
+
+Revisão de código comprovada: `b88b5dcce3553765496a2b9b9e4d0e103b837aba`, PR #126 DRAFT, sem merge. Os dois runs foram revalidados como concluídos com sucesso na retomada:
+
+- [Android 40282604107](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40282604107): 16 suítes, 110 JUnit sem falhas/erros, 11 controles do empacotador, compilação e verificação SDK dos APKs.
+- [Produto 40282604287](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40282604287): PostgreSQL canônico 6/6, cluster 6/6, 12 auditorias axe sem violações e SEM_FAIL_NOVO OK. O reveal foi observado de nove opacidades zero até nove opacidades um; o baixo contraste injetado depois foi detectado.
+- [Artefato atual de bancada 12632701697](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40282604107/artifacts/12632701697): ZIP 4.633.708 bytes, SHA-256 `1528d9110ebc8fcb548cdbea4df73bc380e831509cfb893f4c288455f0e84a08`. O manifesto vincula o pacote à revisão acima. Não é variante de campo.
+
+As seções anteriores preservam a cronologia dos checkpoints, inclusive as tentativas recusadas. Esta seção resolve a pendência de CI descrita nelas. Esta consolidação altera documentação; não altera runtime ou testes.
+
+### Resultado da auditoria da repetição do termo
+
+Em `MainActivity.recordTermAcknowledgement`, o registro recebido da página entra no Room como pending. No SyncWorker, o cliente do piloto não leva a sessão humana; Unauthorized conserva o registro e não chama markSent. A sessão separada da plataforma não é apagada por esse caso. Se não houver outra falha, o trabalho pode concluir sem que esse registro mude para sent. Logo, conclusão do WorkManager não comprova essa transferência. O registro inicial do servidor deve ser consultado no ambiente autenticado, como exige F04 do gate existente. Nenhum novo token ou escopo foi criado nesta auditoria.
+
+### Próximo ensaio concreto
+
+| Entrada necessária | Critério observável antes da instalação | Estado |
+|---|---|---|
+| URL HTTPS do piloto e da plataforma | As duas alcançáveis pelo aparelho e com certificados confiáveis; unidade Itaim e ambiente isolado identificados | Pendente |
+| Custódia da assinatura pilot | Responsável e certificado público identificados; chave privada fora do Git | Pendente |
+| Termo operacional aprovado | Identidade do controlador, contato, retenção, versão/hash e aprovação definidos pelo responsável | Pendente |
+| APK pilot | Compilado com as URLs verificadas; identidade, assinatura e SHA conferidos | Depende das entradas acima |
+| Xiaomi | Modelo/API e permissões observados; executar F01–F14 do gate, com evidências por cenário | Pendente físico |
+
+A próxima ação técnica é gerar e verificar a variante pilot quando essas entradas existirem. O pacote debug já entregue não substitui essa etapa. Os resultados atuais não autorizam afirmar instalação, coleta GPS ou aceitação humana.

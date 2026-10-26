@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ANDROID_LAB_VERIFIED_PRODUCT_WAIT_FIX_PENDING",
-  "state_basis_head": "287e9d8257210ef2a4e03879f7d63f48a3572326",
+  "checkpoint_type": "ANDROID_LAB_AND_PRODUCT_CI_PROVEN_FIELD_HOLD",
+  "state_basis_head": "b88b5dcce3553765496a2b9b9e4d0e103b837aba",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -13,22 +13,23 @@
     "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json"
   ],
   "verified_state": [
-    "PR #126 revalidated at e139838; draft and unmerged.",
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
     "Product run 40232235149 succeeded, including HTTP, PostgreSQL canonical dispatch 6/6 and shared server cluster 6/6, browser, accessibility and governance.",
     "Xiaomi available by Cesar statement; model and Android version unobserved.",
-    "Eight synthetic lab-package validation controls passed locally; real aapt/apksigner and APK assembly require new CI.",
     "Legacy debug-for-field build guidance corrected; debug package is lab-only, pilot field signing remains separate.",
     "Android run 40280263018 compiled app and instrumentation APKs and passed 110 JUnit; package publication failed closed at SDK certificate-format parsing.",
     "Eleven synthetic package controls pass after supporting SDK signer output formats with one unique certificate identity.",
     "Product run 40280262948 failed a11y contrast snapshots; bounded font/finite-animation settling and a low-contrast negative control added to the test. Product CSS/components unchanged.",
     "Android run 40281850540 succeeded: 110 JUnit, 11 packaging controls, SDK-verified APKs and artifact 12633155576.",
     "Consent audit: rider.js writes the server record in the WebView session before native adoption; unauthenticated worker repetition is not evidence that initial consent is absent.",
-    "Product run 40281850522 rejected unfinished reveal; string wait expression now explicitly invoked, pending CI proof."
+    "PR #126 revalidated on 2026-10-26: draft, unmerged, source head b88b5dcce3553765496a2b9b9e4d0e103b837aba.",
+    "Android run 40282604107 succeeded at source head: 16 suites, 110 tests, zero failures/errors, 11 packaging controls and verified APK artifact 12632701697.",
+    "Product run 40282604287 succeeded at same source head: PostgreSQL dispatch 6/6, server cluster 6/6, 12 axe audits with zero violations, live low-contrast negative control detected and SEM_FAIL_NOVO OK.",
+    "Native term replay audit: worker has no pilot session, retains pending acknowledgement on 401 and does not mark it sent. Initial server acknowledgement still comes from the WebView session."
   ],
-  "next_action": "Verify corrected animation wait and all product gates in CI. Validate existing session consent and native repetition before changing auth. Keep DRAFT/HOLD until verified HTTPS, pilot signing, term and physical gates pass.",
+  "next_action": "Prepare isolated HTTPS environment and approved pilot signing/term inputs, then generate and verify pilot APK before the existing physical field gate. Do not install the emulator debug artifact on a participant. Native term replay remains an explicit integration limitation, not a reason to widen event delegation.",
   "unknowns": [
-    "Corrected accessibility condition requires CI proof; Android lab artifact is verified but no physical instrumentation has run.",
+    "No physical instrumentation or Xiaomi installation has run; successful CI is lab and product evidence only.",
     "Two verified HTTPS URLs for an isolated physical test environment are not established.",
     "Native redundant term queue uses no session; initial WebView acknowledgement does use session. Determine replay lifecycle without silently broadening events delegation.",
     "Pilot signing custody and approved operational location-term fields remain undefined.",
@@ -70,6 +71,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Explicit invocation of bounded animation condition and corrected consent audit; CI retest pending"
+    "Documentation and continuity consolidation only; runtime and tests unchanged since the proven source head."
   ]
 }
