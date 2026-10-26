@@ -1,0 +1,28 @@
+{
+  "observedAtUtc": "2026-10-26T23:00:52.305Z",
+  "scope": "REMOTE_LAB_NOT_FIELD_READY",
+  "hostSourceCommit": "be5a3e346981f22a7cab2f39470756c7dc00ef07",
+  "unit": "ITAIM",
+  "sourceMode": "simulated",
+  "publicUrl": "https://deliveryos-piloto.eu1.netbird.services",
+  "listeners": {"pilot": "100.107.78.202:5193", "platform": "127.0.0.1:8080", "postgres": "127.0.0.1:55436"},
+  "meshGuard": {
+    "effectiveRuleCount": 258,
+    "interface": "wt0",
+    "ethernetExcludedFromFirewallProfiles": true,
+    "proxyAllowlist": ["100.107.51.21", "100.107.100.135"],
+    "allowRuleDisableDetected": true,
+    "allowRuleRestoredAndVerified": true,
+    "independentRollbackTaskRemovedAfterCommit": true,
+    "manualRollbackAvailable": true,
+    "packetProbeFromAnotherPeer": "NOT_PROVEN"
+  },
+  "netbird": {"version": "0.81.4", "blockInbound": false, "disableDNS": true, "disableClientRoutes": true, "disableServerRoutes": true, "serverSSHAllowed": false, "remoteJobsAllowed": false},
+  "http": {"pilotHealth": 200, "platformReady": 200, "termWithoutSession": 401, "policiesWithoutSession": 401, "untrustedOriginPreflight": 403, "declaredOriginPreflight": 204, "syntheticSessionPolicies": 200, "publicWithoutAuthentication": 401, "publicTlsVerification": "PASS"},
+  "gpsCaptureEnabled": false,
+  "termPublishable": false,
+  "authenticatedProxyReachability": "PENDING_HUMAN_BROWSER_CONFIRMATION",
+  "windowsRebootAndAutostart": "NOT_PROVEN",
+  "physicalAndroid": "NOT_PROVEN",
+  "newSpend": 0
+}

@@ -4,14 +4,16 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "MOOCA_LOCAL_RUNTIMES_AND_POSTGRES_PROVEN_HTTPS_HOLD",
-  "state_basis_head": "be5a3e346981f22a7cab2f39470756c7dc00ef07",
+  "checkpoint_type": "MOOCA_MESH_GUARD_AND_REMOTE_LAB_APPLIED_AUTHENTICATED_PROXY_HOLD",
+  "state_basis_head": "8f24f951d7e34f428cac524e8ef15a44bb465f9d",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
     "docs/execution/evidencias/itaim-only-2026-10-25/results.json",
     "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json",
-    "docs/execution/evidencias/mooca-local-2026-10-26/deployment-state.json"
+    "docs/execution/evidencias/mooca-local-2026-10-26/deployment-state.json",
+    "docs/execution/MOOCA_ACESSO_REMOTO_2026-10-26.md",
+    "docs/execution/evidencias/mooca-local-2026-10-26/remote-access-state.json"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -32,11 +34,13 @@
     "Host automatic sleep/hibernate AC/DC indexes are zero. PostgreSQL and HTTPS tools not found in queried installed-app inventory; portable installations remain unknown.",
     "Mooca isolated local installation built source be5a3e3 on Node 24.21.0; portable PostgreSQL 16.15 with new SCRAM cluster and own database on loopback 55436.",
     "Critical, async and pilot are alive; loopback 8080/5193. Health and ready 200; unauthenticated term 401. Windows canonical PostgreSQL tests 6/6 passed with synthetic fixtures.",
-    "Own-runtime interruption and PostgreSQL restart preserved a test marker; runtimes restarted and smoke passed again. GPS false, term unpublishable, ITAIM simulated. NetBird connected with BlockInbound true."
+    "Own-runtime interruption and PostgreSQL restart preserved a test marker; runtimes restarted and smoke passed again. GPS false, term unpublishable, ITAIM simulated. NetBird connected with BlockInbound true.",
+    "Mooca remote lab applied: pilot binds NetBird IP 100.107.78.202:5193 under validated remote configuration; platform/PostgreSQL remain loopback. Windows firewall effective only on the mesh among observed active adapters, Ethernet excluded, 258 scoped rules and two-proxy source allowlist verified.",
+    "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation."
   ],
-  "next_action": "Review NetBird HTTPS services and limited target rules, then bind only the intended interface/ports. Do not expose cashier services. Public URLs, boot autostart, off-host backup, approved term and physical Xiaomi gates remain pending.",
+  "next_action": "Confirm authenticated browser refresh of the saved NetBird HTTPS service. If 502 persists, inspect exact Peer target/port and attempt logs while preserving the two-proxy mesh firewall scope. Android, reboot/autostart and operational gates remain separate.",
   "unknowns": [
-    "NetBird HTTPS target access, certificate and native authentication are not yet proven; BlockInbound remains true.",
+    "Authenticated NetBird proxy-to-app request remains unproven. TLS and unauthenticated 401 are proven; remote lab binding and mesh-only firewall guard are applied. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
     "Off-host backup and restore of this new local cluster remain unproven.",
     "Pilot signing custody and approved operational term fields remain undefined.",
