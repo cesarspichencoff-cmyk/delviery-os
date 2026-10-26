@@ -111,5 +111,25 @@ test("input immutability: object values unchanged",()=>{
  safe(analyze(data));
  assert.equal(JSON.stringify(data),original);
 });
+test("impossible native observation dates cannot fabricate a lifecycle",()=>{
+ for(const t of ["2026-02-31T12:00:01-03:00",
+  "2026-11-31T12:00:01-03:00","2026-02-29T12:00:01-03:00"]){
+  const x={...data[0],observed_at:t};
+  assert.deepEqual(safe(analyze([x])).reasons,["ROW_TIMESTAMP_INVALID"]);
+ }
+});
+test("native valid leap day remains evidence only",()=>{
+ const x={...data[0],observed_at:"2028-02-29T12:00:01-03:00"};
+ const result=safe(analyze([x]));
+ assert.equal(result.status,"EVIDENCE_ONLY_REVIEW");
+ assert.equal(result.status_semantics_proven,false);
+});
+test("equivalent time with different zones never fabricates order between states",()=>{
+ const x=[row("TZ","3",1,1),{
+  ...row("TZ","P",2,1),observed_at:"2026-10-26T15:00:01Z"
+ }];
+ assert.deepEqual(safe(analyze(x)).reasons,[
+  "STATUS_TRANSITION_ORDER_AMBIGUOUS_SAME_OBSERVED_AT"]);
+});
 console.log("COMANDAS_NATIVE_LIFECYCLE_V1="+count+"/"+count+
  " NO_STATUS_PROMOTION NO_PRINT NO_SEQUENCE NO_SQL");
