@@ -119,14 +119,14 @@ void (async () => {
               await page.screenshot({ path: join(dir, "operacao-viva-before.png") });
             }
           }
-          await page.waitForFunction(`() => {
+          await page.waitForFunction(`(() => {
             const root = document.querySelector('#superficie');
             return root && root.getAnimations({subtree:true}).every((animation) => {
               const timing = animation.effect.getTiming();
               return timing.iterations === Infinity ||
                 !['running','pending'].includes(animation.playState);
             });
-          }`, undefined, { timeout: 5000 });
+          })()`, undefined, { timeout: 5000 });
           if (motionProbe) {
             const after = await page.locator(".ds-reveal").evaluateAll((nodes) =>
               nodes.map((node) => Number(getComputedStyle(node).opacity)),

@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ANDROID_APKS_COMPILED_VERIFIERS_FIXED_CI_RETEST_PENDING",
-  "state_basis_head": "0de3dc42584f638268d5d4ebd56efb4dbe8e45c1",
+  "checkpoint_type": "ANDROID_LAB_VERIFIED_PRODUCT_WAIT_FIX_PENDING",
+  "state_basis_head": "287e9d8257210ef2a4e03879f7d63f48a3572326",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -21,13 +21,16 @@
     "Legacy debug-for-field build guidance corrected; debug package is lab-only, pilot field signing remains separate.",
     "Android run 40280263018 compiled app and instrumentation APKs and passed 110 JUnit; package publication failed closed at SDK certificate-format parsing.",
     "Eleven synthetic package controls pass after supporting SDK signer output formats with one unique certificate identity.",
-    "Product run 40280262948 failed a11y contrast snapshots; bounded font/finite-animation settling and a low-contrast negative control added to the test. Product CSS/components unchanged."
+    "Product run 40280262948 failed a11y contrast snapshots; bounded font/finite-animation settling and a low-contrast negative control added to the test. Product CSS/components unchanged.",
+    "Android run 40281850540 succeeded: 110 JUnit, 11 packaging controls, SDK-verified APKs and artifact 12633155576.",
+    "Consent audit: rider.js writes the server record in the WebView session before native adoption; unauthenticated worker repetition is not evidence that initial consent is absent.",
+    "Product run 40281850522 rejected unfinished reveal; string wait expression now explicitly invoked, pending CI proof."
   ],
-  "next_action": "Verify new Android APK CI and lab package. Then implement a separately scoped authenticated consent receipt path, define verified HTTPS endpoints, pilot signing custody and term fields. Keep DRAFT/HOLD until physical and operational gates pass.",
+  "next_action": "Verify corrected animation wait and all product gates in CI. Validate existing session consent and native repetition before changing auth. Keep DRAFT/HOLD until verified HTTPS, pilot signing, term and physical gates pass.",
   "unknowns": [
-    "New certificate parser and accessibility timing verifier require CI retest; no verified downloadable APK artifact yet.",
+    "Corrected accessibility condition requires CI proof; Android lab artifact is verified but no physical instrumentation has run.",
     "Two verified HTTPS URLs for an isolated physical test environment are not established.",
-    "Confirmed field blocker: Android term acknowledgement client uses no pilot credential; server requires a rider session. Existing delegation scope is events-only, so consent transport needs a separate scoped design and proof.",
+    "Native redundant term queue uses no session; initial WebView acknowledgement does use session. Determine replay lifecycle without silently broadening events delegation.",
     "Pilot signing custody and approved operational location-term fields remain undefined.",
     "APK installation, physical Xiaomi behavior, GPS/offline/background/battery, remote consent and human acceptance remain unproven."
   ],
@@ -67,7 +70,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "SDK certificate-format compatibility without accepting multiple identities",
-    "Bounded accessibility settling and a live low-contrast control; CI reproduction pending"
+    "Explicit invocation of bounded animation condition and corrected consent audit; CI retest pending"
   ]
 }
