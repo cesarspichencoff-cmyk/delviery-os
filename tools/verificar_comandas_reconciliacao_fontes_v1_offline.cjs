@@ -114,5 +114,36 @@ test("empty or null input never authorizes action",()=>{
  assert.equal(review(null).status,"HOLD");
  assert.equal(review({}).status,"HOLD");
 });
+test("314 vs 317 synthetic volume proves 311/3/6 reconciliation without identity promotion",()=>{
+ const x=clone(source);
+ x.ifood=Array.from({length:314},(_,n)=>({
+  day:x.day,store:x.ifood_store,uuid:uuid(n+1),
+  short_id:String(n).padStart(4,"0"),final_status:"CONCLUIDO"
+ }));
+ x.native=[
+  ...Array.from({length:311},(_,n)=>({day:x.day,store:x.native_store,
+    short_id:String(n).padStart(4,"0"),origin:"DLV_IFO",status_code:n%5?"P":"X"})),
+  ...Array.from({length:6},(_,n)=>({day:x.day,store:x.native_store,
+    short_id:String(n+8000),origin:"DLV_IFO",
+    status_code:n<4?"4":(n===4?"P":"X")}))
+ ];
+ const r=review(x);
+ assert.deepEqual(r.counts,{ifood_rows:314,native_rows:317,
+  matched_short_ids:311,only_ifood:3,only_native:6,ambiguous_short_ids:0});
+ assert.deepEqual(r.native_unmatched_status_codes,{"4":4,P:1,X:1});
+ assert.equal(r.uuid_to_native_proven,false);
+ assert.equal(r.ready_for_operational_print,false);
+});
+test("short collision in 314/317 input fails closed, not first-wins",()=>{
+ const x=clone(source);
+ x.ifood=Array.from({length:314},(_,n)=>({
+  day:x.day,store:x.ifood_store,uuid:uuid(n+1),
+  short_id:String(n).padStart(4,"0"),final_status:"CONCLUIDO"
+ }));
+ x.native=x.ifood.map((r)=>({day:r.day,store:x.native_store,
+   short_id:r.short_id,origin:"DLV_IFO",status_code:"P"}));
+ x.native[313].short_id=x.native[0].short_id;
+ assert.deepEqual(review(x).reasons,["DUPLICATE_SHORT_ID_WITHIN_STORE_DAY"]);
+});
 console.log("COMANDAS_INDEPENDENT_PRESENCE_V1="+total+"/"+total+
  " NO_AUTO_UUID_JOIN NO_PRINT NO_DB NO_SEQUENCE NO_CUSTOMER_IDENTIFIERS");
