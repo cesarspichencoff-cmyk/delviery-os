@@ -55,6 +55,11 @@ function analyzeNativeLifecycle(data){
   // The original events may arrive unordered. Stable sort, then deduplicate
   // the same hash; do not count retried identical emissions as new revisions.
   series.sort((a,b)=>a.time-b.time||a.hash.localeCompare(b.hash));
+  for(let k=1;k<series.length;k++){
+   if(series[k].time===series[k-1].time &&
+      series[k].status!==series[k-1].status)
+    return empty("HOLD","STATUS_TRANSITION_ORDER_AMBIGUOUS_SAME_OBSERVED_AT");
+  }
   const visited=new Set(),ordered=[];
   let initialOrigin=null,previousStatus=null,changed=false;
   for(const entry of series){
