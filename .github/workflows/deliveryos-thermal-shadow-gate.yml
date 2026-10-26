@@ -80,6 +80,8 @@ jobs:
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
       - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
         run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
+      - name: iFood official export x native Teknisa short ID set audit (synthetic no UUID promotion)
+        run: node tools/verificar_comandas_reconciliacao_fontes_v1_offline.cjs
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
@@ -346,6 +348,8 @@ jobs:
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
       - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
         run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
+      - name: iFood official export x native Teknisa short ID set audit (synthetic no UUID promotion)
+        run: node tools/verificar_comandas_reconciliacao_fontes_v1_offline.cjs
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
