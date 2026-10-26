@@ -1,152 +1,58 @@
-# Compilar e instalar o aplicativo Android
+# Android — compilação e preparação do teste
 
-> **AVISO DE FRESCOR E AUTORIZAÇÃO.** A tabela de SDK/ADB abaixo é um retrato antigo de outra etapa, não do Foxxy em 20/10/2026: Android SDK e ADB foram encontrados e 108 JUnit passaram, mas `adb devices -l` não mostrou aparelho conectado. **Compilar/ter ferramentas não autoriza instalar**. Antes de qualquer ensaio físico, seguir o [Gate de campo Android + Copiloto](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md), em **DRAFT/HOLD**.
+Atualizado em 26/10/2026. O [gate de campo](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md) governa instalação e ensaio físico. O app exige API 26 (Android 8.0) ou superior. O Xiaomi está disponível; modelo, versão e comportamento físico ainda não foram observados.
 
-> **O JDK e o Gradle wrapper já estão prontos.** Falta o Android SDK, que
-> exige um aceite de licença — decisão sua, não minha. Depois disso, um
-> comando gera o APK.
+## Bancada e campo
 
-## Caminho curto
-
-```powershell
-.\android\setup-android-sdk.ps1
-```
-
-Ele prepara tudo, **para** no aceite da licença, mostra o comando, e continua
-quando você rodar de novo. As seções abaixo detalham cada passo, caso prefira
-fazer à mão.
-
-## 1. Estado desta máquina
-
-| Componente | Estado | Comando de verificação |
+| Variante | Finalidade | Limite |
 |---|---|---|
-| JDK 17 (Temurin 17.0.19) | **instalado** | `java -version` |
-| Gradle 8.9 | **wrapper pronto e provado** | `.\gradlew.bat --version` |
-| Android SDK (platform 34, build-tools) | **ausente — falta aceitar a licença** | `sdkmanager --list` |
-| `adb` | ausente (vem com platform-tools) | `adb version` |
-| Emulador | ausente | `emulator -list-avds` |
-| Virtualização | **habilitada** | — |
+| `debug` | Bancada de emulador, com assinatura de desenvolvimento e endereços do emulador | Não distribuir a motoboys nem usar como variante de campo |
+| `pilot` | Ensaio físico autorizado, pacote `br.com.tata.entregas.pilot` e TLS estrito | Exige URLs HTTPS e assinatura sob custódia aprovada |
+| `release` | Publicação futura | Fora desta preparação |
 
-O wrapper valida a distribuição do Gradle pelo SHA-256 fixado em
-`gradle-wrapper.properties`, então qualquer máquina reproduz o mesmo build.
+A recomendação antiga de usar `assembleDebug` como APK de piloto foi retirada. Debug aceita CA de usuário e depuração WebView; o gate atual exige `pilot` para o campo.
 
-## 2. Instalar
+## Pacote de bancada automatizado
 
-**Caminho curto:** instalar o [Android Studio](https://developer.android.com/studio).
-Ele traz JDK, SDK, `adb` e emulador de uma vez, e é o que a maioria das
-pessoas mantém atualizado sem esforço.
+O workflow **DeliveryOS Android event receipt** executa JVM/Room e exige JUnit existente, contagem positiva e zero falhas/erros. Depois compila `assembleDebug` e `assembleDebugAndroidTest`, sem instalar em aparelho.
 
-**Caminho sem IDE**, se preferir:
+O empacotador usa `aapt` e `apksigner verify` reais para conferir pacote, SDK e assinatura, exige assinantes iguais, confere endereços de emulador no DEX e calcula SHA-256. Publica o artefato **android-bancada-nao-instalar-em-campo**, com retenção de 14 dias.
 
-```bash
-winget install --id EclipseAdoptium.Temurin.17.JDK
-```
+O pacote contém dois APKs, `manifest.json` e `LEIA-ME.txt`. Não inclui chave privada, credencial de loja ou configuração operacional. O manifesto declara `field_ready=false` e `physical_device_tested=false`. Compilar testes instrumentados não significa executá-los.
 
-Depois baixe as *command line tools* do Android e aceite as licenças:
+## Reproduzir a bancada
+
+Usar JDK 17, SDK compatível com compileSdk 34 e o wrapper versionado. O estado de SDK/ADB de outra máquina não deve ser tratado como fato desta máquina.
 
 ```bash
-sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+cd android
+bash ./gradlew --no-daemon --console=plain :app:testDebugUnitTest
+bash ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
 ```
+
+O wrapper está sem bit de execução; usar `bash ./gradlew`. A distribuição tem SHA fixado. O download do Gradle falhou no ambiente local desta sessão; o CI fornece a prova de compilação remota.
+
+## Preparar a variante de campo
+
+Registrar antes da geração:
+
+- Duas URLs HTTPS verificadas: piloto e plataforma, alcançáveis pelo aparelho, com certificados confiáveis.
+- Ambiente isolado do Itaim e modo de ensaio declarado, sem reclassificar fatos como operação real.
+- Custódia da assinatura e responsável por assinar, com chave e senha fora do Git.
+- Termo vigente, responsável, contato, retenção e aprovação definidos por César.
+- Modelo/Android do Xiaomi, participante autorizado, vínculo do aparelho e parada do ensaio.
+
+Com as URLs verificadas, gerar o APK ainda sem assinatura:
 
 ```bash
-sdkmanager --licenses
+cd android
+bash ./gradlew :app:assemblePilot \
+  -Pentregas.baseUrl="${PILOT_HTTPS_URL:?defina a URL HTTPS do piloto}" \
+  -Pentregas.platformUrl="${PLATFORM_HTTPS_URL:?defina a URL HTTPS da plataforma}"
 ```
 
-Por fim, aponte o SDK para o projeto criando `android/local.properties`
-(já está no `.gitignore`):
+Assinar sob a custódia aprovada, conferir identidade/assinante/SHA e aplicar o gate de instalação. Não usar URLs de exemplo para apresentar um APK como pronto para campo.
 
-```
-sdk.dir=C:\\Users\\<voce>\\AppData\\Local\\Android\\Sdk
-```
+## Fronteira de prova
 
-## 3. Gradle wrapper
-
-Já está pronto e versionado (`gradlew`, `gradlew.bat`, `gradle-wrapper.jar`,
-`gradle-wrapper.properties`). Não precisa de Gradle instalado:
-
-```bash
-cd android && ./gradlew --version
-```
-
-Provado nesta máquina: Gradle 8.9 sobre JVM 17.0.19, distribuição validada
-pelo SHA-256.
-
-## 4. Compilar
-
-```bash
-cd android && ./gradlew assembleDebug
-```
-
-O APK sai em:
-
-```
-android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-O `.gitignore` já bloqueia `*.apk` — o artefato não entra no repositório.
-
-## 5. Rodar os testes
-
-```bash
-cd android && ./gradlew testDebugUnitTest
-```
-
-**Sem Android SDK**, o portão de captura já pode ser verificado — ele é Kotlin
-puro:
-
-```bash
-cd android/gate-verification && gradle test
-```
-
-Compila e roda o MESMO `CaptureGate.kt` do aplicativo numa JVM comum. 12
-testes, todos passando nesta máquina.
-
-Testes instrumentados (precisam de aparelho ou emulador ligado):
-
-```bash
-cd android && ./gradlew connectedDebugAndroidTest
-```
-
-## 6. Instalar no aparelho
-
-Ative **Opções do desenvolvedor** → **Depuração USB** no celular, conecte e:
-
-```bash
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-## 7. Apontar para o servidor
-
-O endereço do servidor **não** está no código Kotlin — vem de propriedade do
-Gradle. Para o aparelho físico, use o IP do computador na rede local:
-
-```bash
-cd android && ./gradlew assembleDebug -Pentregas.baseUrl=https://192.168.0.10:5193
-```
-
-Para o emulador, o padrão `https://10.0.2.2:5193` já aponta para o `localhost`
-da máquina hospedeira.
-
-Antes disso, gere e confie no certificado — sem HTTPS o GPS não liga:
-
-```bash
-./tools/entregas_cert_local.sh
-```
-
-## 8. Assinatura de release
-
-**Nenhuma chave de assinatura está no repositório**, e o `build.gradle.kts`
-não configura `signingConfigs` de propósito. Quando for gerar release, crie a
-keystore fora do repositório e passe por `android/keystore.properties`
-(gitignored). O piloto não precisa disso: `assembleDebug` basta.
-
-## 9. Se der erro
-
-| Erro | Causa | O que fazer |
-|---|---|---|
-| `SDK location not found` | falta `local.properties` | passo 2 |
-| `Could not find gradle-wrapper.jar` | wrapper não gerado | passo 3 |
-| `Failed to install the following SDK components` | licenças | `sdkmanager --licenses` |
-| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | versão anterior assinada com outra chave | `adb uninstall br.com.tata.entregas.debug` |
-| App abre em branco | servidor inacessível ou certificado não confiado | passo 7 |
-| `net::ERR_CERT_AUTHORITY_INVALID` | CA local não instalada no aparelho | rode o script de certificado e instale a CA |
+CI aprovado comprova os comandos e artefatos daquela revisão. Não comprova servidor publicado, instalação no Xiaomi, recibo remoto do termo, GPS em segundo plano, fila offline física, bateria ou aceitação da equipe. Nenhum comando desta página instala aplicativo, cria identidade operacional ou liga coleta.

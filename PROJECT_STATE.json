@@ -4,35 +4,34 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "REVIEW_CI_PARTIAL_FIXES_PENDING_RETEST",
-  "state_basis_head": "fdae88a677163dc4e7f4d19ab251227808b0adb5",
+  "checkpoint_type": "ANDROID_LAB_PACKAGE_CODE_READY_NEW_CI_PENDING",
+  "state_basis_head": "e1398385b0f7947001972736e4cd74030e87d4e4",
   "verified_state_refs": [
+    "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
     "docs/execution/evidencias/itaim-only-2026-10-25/results.json",
     "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json"
   ],
   "verified_state": [
-    "Complete source checkout: 1876/1876 blobs present.",
-    "Exact v3.2 generator applied, then GPS response scope and device identity guards implemented.",
-    "Full build passes. Final run: 27 suites PASS with exit zero plus completion markers; 2 PostgreSQL suites explicitly SKIPPED.",
-    "Synthetic term runner incomplete-exit-zero reproduced; corrected final runner completes all 10 cases.",
-    "Cesar explicitly authorized sending the review commits and running CI on 2026-10-25 (reply: Sim).",
-    "Remote transport preserved all three Git trees exactly; original review head was fast-forwarded, never forced.",
-    "Android run 40231510082 succeeded at fdae88a: 16 JUnit suites, 110 tests, zero failures/errors.",
-    "Product run 40231510077 failed: cleanup races after successful HTTP/PG assertions and stale mission-ledger lifecycle date. Cluster and term step were not reached in that run.",
-    "Local correction: shared shutdown helper waits for exit before deletion; positive delayed-write test passes and early-return mutant fails. Governance passes 14 guards after lifecycle date reconciliation."
+    "PR #126 revalidated at e139838; draft and unmerged.",
+    "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
+    "Product run 40232235149 succeeded, including HTTP, PostgreSQL canonical dispatch 6/6 and shared server cluster 6/6, browser, accessibility and governance.",
+    "Xiaomi available by Cesar statement; model and Android version unobserved.",
+    "Eight synthetic lab-package validation controls passed locally; real aapt/apksigner and APK assembly require new CI.",
+    "Legacy debug-for-field build guidance corrected; debug package is lab-only, pilot field signing remains separate."
   ],
-  "next_action": "Send the bounded cleanup-test and lifecycle metadata fixes to PR #126 under existing authorization, then verify the new commit CI. Keep DRAFT/HOLD. No merge, deploy or operational effects.",
+  "next_action": "Verify new Android APK CI and lab package. Then implement a separately scoped authenticated consent receipt path, define verified HTTPS endpoints, pilot signing custody and term fields. Keep DRAFT/HOLD until physical and operational gates pass.",
   "unknowns": [
-    "Product CI on the next review commit is pending.",
-    "The cluster test did not run in the first CI because canonical dispatch cleanup failed; retry on the corrected test lifecycle.",
-    "APK, physical Android, Q018 full chain and field GPS remain unproven.",
-    "Real-source readiness, operational consent, backup and human pilot acceptance are not established by this change."
+    "New APK assembly/verification workflow has not yet been executed at this checkpoint.",
+    "Two verified HTTPS URLs for an isolated physical test environment are not established.",
+    "Confirmed field blocker: Android term acknowledgement client uses no pilot credential; server requires a rider session. Existing delegation scope is events-only, so consent transport needs a separate scoped design and proof.",
+    "Pilot signing custody and approved operational location-term fields remain undefined.",
+    "APK installation, physical Xiaomi behavior, GPS/offline/background/battery, remote consent and human acceptance remain unproven."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
     "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY",
-    "review_branch_updates": "EXPLICITLY_AUTHORIZED_BY_CESAR_2026_10_25_SIM; code/test/checkpoint updates within Itaim-only scope and CI; no production authority"
+    "review_branch_updates": "Cesar authorized all preparation and code/CI continuation in the current conversation on 2026-10-26; no new spend or assumed operational facts"
   },
   "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
   "session_policy": {
@@ -65,8 +64,8 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Test-process exit synchronization for HTTP and PostgreSQL test cleanup",
-    "Regression against delayed shutdown writes and an early-return mutant",
-    "Mission-ledger lifecycle date and record key correction; governance guards unchanged"
+    "Build and verify lab debug APK plus instrumentation APK in CI",
+    "Fail absent/empty/failing JUnit evidence",
+    "Packaging identity/signature/hash gates and corrected Android build guide"
   ]
 }

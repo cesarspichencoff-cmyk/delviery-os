@@ -40,4 +40,30 @@ jobs:
             failures+=int(t.attrib.get("failures","0"))
             errors+=int(t.attrib.get("errors","0"))
           print(f"ANDROID_EVENT_RECEIPT_JUNIT: suites={len(files)}, tests={tests}, failures={failures}, errors={errors}")
+          if not files or tests == 0 or failures or errors:
+            raise SystemExit("JUnit ausente, vazio ou com falhas nao e prova")
           PY
+      - name: Controles adversariais do pacote de bancada
+        run: python3 tools/test_entregas_android_lab_package.py
+      - name: Compilar APK e testes instrumentados de bancada (sem instalar)
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Verificar identidade, assinatura e integridade dos APKs
+        shell: bash
+        run: |
+          set -euo pipefail
+          aapt_path=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -n "$aapt_path"
+          tools_dir=$(dirname "$aapt_path")
+          python3 tools/entregas_android_lab_package.py \
+            --apk android/app/build/outputs/apk/debug/app-debug.apk \
+            --test-apk android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+            --aapt "$aapt_path" --apksigner "$tools_dir/apksigner" \
+            --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/android-lab"
+      - name: Publicar somente o pacote de bancada verificado
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bancada-nao-instalar-em-campo
+          path: ${{ runner.temp }}/android-lab/
+          if-no-files-found: error
+          retention-days: 14
