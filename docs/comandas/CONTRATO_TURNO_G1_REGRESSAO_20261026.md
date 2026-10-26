@@ -1,4 +1,7 @@
-# TATÁ Comandas — G1: contrato de turno e regressão da matriz
+# TATÁ Comandas — G1 legado: diagnóstico de regressão, requisito superado
+
+> **REORIENTAÇÃO CANÔNICA — 26/10/2026.** Esta auditoria foi escrita antes da recuperação do requisito humano V8.43 (20/10): César confirmou que os horários já constam na comanda e rejeitou aprovação diária e nova tabela de turnos. V8.48 desconfirmou a hipótese de pares de impressoras 00009/00003 e 00006/00004 como alternativas selecionadas por LUNCH/DINNER. Portanto, os testes abaixo são diagnóstico de um contrato legado, NÃO requisito do produto, nem prova de roteamento correto. Sua inclusão adicional em CI foi revertida; a proteção corrente de identidade, origens, destinos duais ambíguos e impressão sem autorização continua preservada. **Não construir um novo autorizador de turno para resolver o Comandas.**
+
 **Data:** 2026-10-26. **Estado:** OFFLINE_TEST_PASS / REVIEW_ONLY / DRAFT / HOLD.
 
 ## Diagnóstico verificável
