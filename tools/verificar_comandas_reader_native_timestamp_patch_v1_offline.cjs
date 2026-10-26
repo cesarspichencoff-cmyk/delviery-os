@@ -35,6 +35,13 @@ check("source function swapped in exactly one place",()=>{
  const s=newText();assert.equal(s.split("function Read-NativeOrderTime").length-1,1);
  assert.equal(s.split("$service=Read-NativeOrderTime").length-1,1);
 });
+check("complete guard survives single replacement without duplicated original body",()=>{
+ const s=newText();
+ assert.equal(s.split("$event=[ordered]@{").length-1,1);
+ assert.equal(s.split("NATIVE_ITEM_STATUS_NOT_ATTESTED").length-1,1);
+ assert.equal(s.split("Write-AtomicJson $eventPath $event").length-1,1);
+ assert.ok(s.includes("NATIVE_ITEM_QUANTITY_INVALID"));
+});
 check("no shift file, daily human approval, or clock time used",()=>{
  const s=newText();for(const bad of ["Read-ServiceState","SERVICE_STATE_EXPIRED_FOR_ORDER",
  "production-service-state.json","valid_from_local","Get-Date","new Date()"]){
