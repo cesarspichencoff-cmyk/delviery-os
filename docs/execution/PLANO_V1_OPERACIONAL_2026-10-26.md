@@ -1,0 +1,108 @@
+# Delivery OS — plano para a primeira operação validada
+
+Estado: plano de implementação e homologação. **Não é liberação de GPS, instalação de campo ou operação real.**
+
+Objetivo: conectar a operação de Entregas do Itaim, o aplicativo Android e o copiloto aos mesmos fatos verificáveis, sem novo gasto e preservando o caixa que hospeda o teste na Mooca.
+
+## Ponto de partida
+
+| Parte | Comprovado | Falta comprovar |
+|---|---|---|
+| Acesso | HTTPS e abertura de Entregas confirmados por César; proteção restrita do NetBird aplicada | Sessão humana individual, funcionamento nativo sem login interativo do proxy |
+| Servidor | PostgreSQL isolado; plataforma e banco internos; verificações HTTP e regras de rede passaram | Reinício do Windows, inicialização automática, recuperação e backup fora do host |
+| Entregas | Candidato com domínio, APIs e testes; instalação atual em modo simulado | Fluxo operacional completo pela sessão autorizada e convergência do armazenamento dessa instalação |
+| GPS | Código Android nativo, fila local e testes técnicos existem | GPS permanece desligado; termo não publicável; comportamento físico e recibos remotos pendentes |
+| Copiloto | Código de leitura e projeções existe na aplicação principal | Instalação atual não o publica; servidor principal ainda mistura demonstração com leituras configuráveis |
+| Celular | César informou disponibilidade de um Xiaomi | Modelo, versão Android, instalação e testes físicos desconhecidos |
+
+O histórico técnico não deve ser refeito por conveniência. Os 110 testes JVM e provas PostgreSQL existentes são base de regressão; não substituem observação em aparelho físico. Os scripts de preparação do host não representam um instalador operacional homologado.
+
+## Decisões de arquitetura
+
+1. **Uma autoridade para cada fato.** O vínculo pedido–viagem–ator–aparelho precisa ser estável e verificável. Mapear as tabelas e eventos existentes antes de qualquer alteração. Aproveitar o backend PostgreSQL já implementado; convergir a instalação de teste depois de provar equivalência, idempotência e reversão. Não criar outro banco lógico concorrente para o copiloto.
+2. **GPS nativo e vinculado à viagem.** O navegador oferece interface e consentimento; a captura é responsabilidade do Android. A ausência de permissão, identidade, aceite válido ou viagem autorizada impede a coleta. Coleta fora da jornada/viagem não entra por ampliação implícita de escopo.
+3. **Autorização humana e do aparelho são diferentes.** Senha compartilhada do NetBird não identifica gerente ou motoboy. Token de aparelho não vira sessão de gestor. Unidade é derivada do vínculo autorizado; o seletor da tela não concede acesso.
+4. **Copiloto operacional de leitura primeiro.** Usar as mesmas projeções de Entregas, com fato de origem, horário e estado de atualização. Recomendações não comandam a operação automaticamente. Começar pelos mecanismos existentes, sem dependência de IA paga. Dados gerenciais alheios à operação de entregas ficam fora deste escopo.
+5. **Fonte indisponível aparece indisponível.** Demonstração, simulação e leitura real precisam ser separadas visivelmente. Dados ausentes ou antigos não viram zero, posição atual, pedido associado ou entrega concluída.
+6. **Hospedagem preservada.** Mooca continua host inicial; Itaim continua unidade operacional. Banco e serviços internos permanecem privados. Não ampliar políticas de rede para corrigir falha de autenticação. Sem nova infraestrutura paga, domínio comprado ou dependência da API do iFood para a V1.
+
+## Ordem de execução
+
+As fases são ordenadas por dependência e evidência, não por prazo prometido. Preparação da interface e pesquisa do Android podem ocorrer durante os trabalhos de base, mas nenhuma tela pode declarar uma capacidade operacional ainda não validada.
+
+| Fase | Entrega concreta | Prova exigida para avançar |
+|---|---|---|
+| 1. Contrato e acesso | Mapa das rotas web/nativas, sessão humana, cadastro de aparelho, papéis e unidade; ensaio com identidades fictícias | Negar credencial ausente/expirada/forjada, ator ou aparelho trocado, unidade alheia e revogação; nenhuma consulta indevida ao banco |
+| 2. Fatos e persistência | Uma viagem controlada usa o backend durável previsto e alimenta as projeções compartilhadas | Mesmo pedido/viagem/ator/aparelho em servidor e telas; reinício preserva fatos; replay não duplica nem perde eventos; restauração de backup em banco separado |
+| 3. Android e privacidade | URLs nativas verificadas, termo com recibo remoto, sincronização e parada de captura; APK de ensaio verificável | Aceite e recusa, falhas de autorização, fila offline, revogação, término online/remoto offline e recuperação do serviço passam nas provas técnicas; assinatura de campo sob custódia definida |
+| 4. Aplicação principal e copiloto | Navegação integrada e leitura autenticada dos mesmos fatos; demonstrações identificadas ou retiradas das telas operacionais | Tela de Entregas e copiloto concordam sobre a mesma viagem; atraso/indisponibilidade ficam explícitos; nenhum comando automático ou dado de outra unidade |
+| 5. Homologação física | Executar F01–F14 no Xiaomi, com participante e janela definidos para o ensaio | Recusa respeitada, captura restrita, tela bloqueada, offline/retorno, bateria, término e reinício observados; recibos conferidos no servidor |
+| 6. Piloto acompanhado | Escopo pequeno do Itaim, contingência e responsável pela parada; crescimento só após avaliação | Loja e participante completam o ciclo aprovado, sem incidente de privacidade, perda/duplicação de fatos ou divergência entre Entregas e copiloto |
+
+**Primeiro incremento de código:** fechar o contrato de acesso humano/nativo em laboratório e suas contra-provas, aproveitando o que já existe. Publicar a tela principal antes disso só mudaria a aparência do ambiente.
+
+## Detalhes que podem bloquear a V1
+
+### Acesso Android pelo HTTPS existente
+
+O endereço que funciona no navegador ainda não comprova acesso do serviço Android em segundo plano. O aplicativo usa URLs de piloto e plataforma, e a plataforma atualmente escuta apenas em loopback.
+
+- Auditar cada chamada do WebView e do cliente nativo, seus métodos, credenciais e recibos. Expor somente o conjunto necessário de rotas, com autorização própria; nunca o servidor interno inteiro por conveniência.
+- A documentação atual do NetBird oferece autenticação por cabeçalho e ações por caminho. Essas são opções de transporte a provar, não decisões já aplicadas no painel.
+- O NetBird remove o cabeçalho usado na sua autenticação antes de encaminhar a chamada. Por isso, usar o preset Bearer em `Authorization` pode remover o Bearer que o aplicativo precisa verificar. Não reutilizar esse cabeçalho sem prova ponta a ponta.
+- Uma eventual exceção de autenticação no proxy deve se limitar a caminhos nativos já protegidos pela aplicação, testados com credenciais inválidas e revogadas. **Não liberar `/api` inteiro.** Nenhuma exceção foi aplicada por este plano.
+- Evitar segredo global embutido no APK. Provisionamento, expiração, revogação e custódia por aparelho devem ter contrato explícito. A escolha final depende da prova do cliente nativo e da configuração disponível na conta, sem novo custo.
+- Para leitura humana de fatos reais, implementar e validar o provedor de identidade autorizado e o vínculo individual; não promover o segredo `shadow_lab` a login de navegador.
+
+### Persistência compartilhada
+
+A instalação atual do piloto usa armazenamento isolado em arquivo, enquanto a plataforma usa PostgreSQL. A existência de testes de leitura GPS em PostgreSQL não demonstra que todo o fluxo operacional esteja convergido.
+
+Antes de trocar a configuração, levantar os escritores e leitores reais, provar o backend existente em banco descartável, comparar os mesmos cenários e ensaiar restauração. Não migrar banco da loja nem reclassificar fatos simulados como reais. A convergência deve preservar o domínio e o histórico já provados.
+
+### Consentimento e fila
+
+O WebView já registra o aceite no servidor antes de repassá-lo ao Android. O worker pode conservar uma repetição pendente ao receber 401; isso não prova ausência do aceite inicial. A correção precisa distinguir o recibo inicial e o ciclo de repetição, sem criar outra autoridade de consentimento.
+
+Separar falha transitória, autenticação/revogação e rejeição definitiva de domínio. Uma rejeição terminal não pode bloquear indefinidamente os fatos válidos seguintes; tampouco pode causar descarte silencioso. Provar a fila com recibo por evento, duplicatas, troca de sessão e reconexão.
+
+### Término remoto enquanto o celular está offline
+
+Um celular desconectado não recebe imediatamente uma ordem remota de parada. F13 continua bloqueador: o comportamento e o risco precisam ser decididos antes do campo.
+
+Investigar uma autorização de captura com validade limitada e renovação, usando tempo monotônico e parada segura quando não houver prova válida após reinício, ou mecanismo equivalente. Apresentar as consequências para privacidade e continuidade da viagem antes de escolher qualquer duração. Este plano **não inventa prazo de captura, retenção ou regra trabalhista**.
+
+### Recuperação do host
+
+Ensaiar, sem reiniciar o caixa em horário de operação, a sequência de parada/partida dos processos próprios, prontidão, falha do banco e restauração em destino isolado. Preparar inicialização automática com proteções e logs sem segredos. O teste de reboot do Windows exige janela adequada; não executá-lo automaticamente no caixa.
+
+Definir destino privado existente para backup criptografado fora do host e provar restauração. Git não recebe coordenadas, credenciais ou dados operacionais privados. Rever também expiração de sessão do NetBird, rotação dos IPs do proxy e recuperação após falta de energia: o endereço HTTPS, sozinho, não garante disponibilidade.
+
+## Definição de pronto
+
+- Pessoa e aparelho autenticados só operam os vínculos e a unidade autorizados.
+- A viagem controlada percorre o fluxo de domínio aprovado e produz os mesmos fatos em Entregas e copiloto.
+- Não há captura sem consentimento/viagem/autorização válida; recusa e parada local funcionam. F13 tem comportamento explícito aprovado e provado.
+- Offline e reconexão preservam os fatos; sucesso só aparece após confirmação do servidor.
+- Posição antiga ou fonte ausente tem indicação inequívoca; nenhuma inferência de pedido vira fato por semelhança de identificadores.
+- Parada, recuperação, backup e restauração são observados, com contingência executável pela loja.
+- O APK de campo e o Xiaomi passam nos cenários aplicáveis; compilar APK ou passar teste JVM não conta como aprovação física.
+- GPS e operação real só são liberados no escopo humano aprovado, após apresentar o ensaio concreto e seus resultados. Não há liberação por este documento.
+
+## Participações de César, somente no momento necessário
+
+1. Quando chegarmos ao aparelho: observar modelo e versão do Xiaomi. A ausência dessa informação não impede o trabalho técnico anterior.
+2. Antes de dados pessoais e campo: confirmar responsável pelo termo, contato, retenção, participante, janela e parada emergencial, a partir de proposta concreta. Não preencher informações legais por suposição.
+3. Definir custódia da assinatura do APK e aprovar o escopo do ensaio físico. Não enviar chave privada ou senha pelo chat.
+
+## Fontes para execução
+
+- `PROJECT_STATE.json` e `docs/execution/evidencias/mooca-local-2026-10-26/remote-access-state.json`: instalação e limites atuais.
+- `docs/entregas/pilot/GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md`: cenários físicos; estados históricos devem ser reconciliados com evidência posterior.
+- `docs/security/DELIVERYOS_OPERATOR_AUTH_AND_RLS_GATE_2026-10-15.md`: contrato de sessão humana e segregação.
+- `tools/entregas_pilot_server.ts`, `src/entregas/pilot/pilot-persistence-backend.ts` e `storage-cutover.ts`: backend e fronteiras existentes.
+- `tools/product_system_server.ts` e `src/product/security/escopo-api-shadow.ts`: leitura/demonstração e limite do segredo de laboratório.
+- `android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt`: credenciais, filas e recibos nativos.
+- Documentação oficial consultada em 26/10/2026: https://docs.netbird.io/manage/reverse-proxy/authentication — alternativas de autenticação, remoção de cabeçalho e ação por caminho. Gratuidade atual da beta não é compromisso de preço futuro.
+
+O plano pode ser ajustado quando uma prova revelar uma dependência diferente. Cada mudança deve registrar o motivo, preservar o que já funciona e manter separados código implementado, teste técnico, instalação, observação física e liberação operacional.

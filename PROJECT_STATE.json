@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "MOOCA_HTTPS_ENTREGAS_UI_USER_CONFIRMED_FULL_PRODUCT_HOLD",
-  "state_basis_head": "ae98a28507d256828218fe5680e121af3f5ee5a1",
+  "checkpoint_type": "V1_OPERATIONAL_PLAN_DEFINED_HTTPS_LAB_PRESERVED",
+  "state_basis_head": "beeea51e67ceee14d9a9ebc9ead0fd3b9d734545",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -13,7 +13,8 @@
     "docs/execution/evidencias/itaim-only-2026-10-25/source-hashes.json",
     "docs/execution/evidencias/mooca-local-2026-10-26/deployment-state.json",
     "docs/execution/MOOCA_ACESSO_REMOTO_2026-10-26.md",
-    "docs/execution/evidencias/mooca-local-2026-10-26/remote-access-state.json"
+    "docs/execution/evidencias/mooca-local-2026-10-26/remote-access-state.json",
+    "docs/execution/PLANO_V1_OPERACIONAL_2026-10-26.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -39,7 +40,7 @@
     "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation.",
     "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate."
   ],
-  "next_action": "Continue from user-confirmed HTTPS Entregas UI. Explain that the published server is the isolated Entregas pilot; inspect the separate main product runtime before planning any Copiloto deployment. Preserve authentication, mesh firewall scope and field gates.",
+  "next_action": "Implement the first lab increment of the operational V1 plan: map exact human/native routes and prove authorization/session/unit/device boundaries with fictitious identities. Resolve native transport through HTTPS before physical GPS; converge existing persistence and preserve current Entregas access. Do not promote shadow_lab token to browser login or publish demonstration as operational Copiloto.",
   "unknowns": [
     "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -85,6 +86,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Windows-local preparation scripts and sanitized evidence; source runtime be5a3e3 unchanged."
+    "Operational V1 implementation plan added; no GPS flag, real participant, production database, native endpoint exposure or main-product deployment changed."
   ]
 }
