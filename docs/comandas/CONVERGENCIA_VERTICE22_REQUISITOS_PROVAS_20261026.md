@@ -9,7 +9,7 @@ Conforme `docs/TATA_COMANDA_ESSENCIAL_V856_REVIEW_ONLY.md`:
 - número curto iFood, sequência TATÁ real de 3 dígitos já persistida, produtos, quantidades e observações por item intactos: obrigatórios;
 - caixa, sacola e kits: motor canônico da Academia decide; se executado corretamente mas sem prova completa, indicar `A DEFINIR` por campo, sem inventar; motor não executado = `NOT_EVALUATED`, não simular cálculo;
 - observação geral fiscal/financeira/alergia sem classificação validada não deve ser reproduzida automaticamente na produção;
-- impressão de comanda via Gestor iFood e fiscal via Teknisa são fluxos distintos, já presentes na loja. Nenhum novo efeito físico autorizado.
+- impressão de comanda via Gestor iFood e fiscal via Teknisa são mecanismos distintos, mas **César confirmou que a impressão de comandas do Gestor estava desativada em 25/10/2026**. Impressão simultânea em dias anteriores foi contingência temporária por erro, não rotina. Nenhum novo efeito físico autorizado.
 
 ## Evidências realizadas em 26/10
 1. Máquina `CAIXA_MOOCA` identificada diretamente, leitor `TataComandaReader` RUNNING, 2.047 eventos acumulados, consumer 2.047 bloqueados/0 READY. Relatório projetado 25/10: 331 pedidos e 1.378 unidades (não reconciliados como pedidos únicos). Estado legado de turno ainda em 14/10.
@@ -24,7 +24,7 @@ Conforme `docs/TATA_COMANDA_ESSENCIAL_V856_REVIEW_ONLY.md`:
 - Capturar **em leitura e com autorização de fonte** a mesma revisão de um pedido iFood real e sua ligação inequívoca ao pedido nativo Teknisa. A origem Gestor e o caminho de produção (impressora A/B) não estão comprovados por identificador exato nos logs anteriores; não usar SENHA, horário, sufixo ou aparência como join.
 - Verificar regras e fontes efetivas da sequência TATÁ e do produtor de binding persistido; hoje `bindings=0`. Não reservar `001`, criar sequência de teste na produção, reiniciar serviço, ou imprimir até prova de idempotência com valor exato.
 - Provar que V2, V6.8 e motor candidato/atual processam a mesma revisão com origem independentemente autenticada. Se classificação desconhecida, conservar `A DEFINIR`; se destino da impressora é duplo e ambíguo, HOLD físico.
-- Somente após prova funcional e avaliação de duplicidade com o Gestor iFood já ativo, preparar proposta de implantação reversível para aprovação humana específica, seguida de papel Epson e aceite óptico separado.
+- Somente após prova funcional e avaliação do **emissor realmente ativo na data do piloto** (não presumir Gestor ativo nem duas vias), preparar proposta de implantação reversível para aprovação humana específica, seguida de papel Epson e aceite óptico separado.
 
 ## Contra-regressões irrevogáveis
 - Não reiniciar a abordagem de assinatura/aprovação diária de turnos rejeitada pelo usuário.
@@ -50,6 +50,11 @@ Conforme `docs/TATA_COMANDA_ESSENCIAL_V856_REVIEW_ONLY.md`:
 2. Sequência TATÁ: identidade persistida e não duplicável vinculada à mesma revisão; arquivo observado na CAIXA_MOOCA `bindings=[]`, `next_value=1`.
 3. Categoria/praça: correspondência versionada, atual e comprovada entre origem nativa, motor aprovado e decisão; 14 códigos ainda sem autorização de promoção; dual A/B continua sem papel comprovado.
 4. Implantação reversível: prova de supervisão, exclusividade de geração, integridade das oito fontes e rollback em Windows descartável; aprovação específica antes da troca de serviço.
-5. Efeito físico: três vias Epson legíveis, sem duplicar produção já impressa pelo Gestor iFood, fiscal segregado, conferência e aceite operacional humano em janela segura.
+5. Efeito físico: três vias Epson legíveis na configuração efetivamente autorizada, sem duplicidade com o eventual emissor ativo **no dia do piloto**. Gestor de comandas desativado em 25/10 por confirmação de César; emissão fiscal segregada, conferência e aceite operacional humano em janela segura.
 
 **Veredito adversarial:** offline `TEST_PASS` para recortes relevantes; `WORLD_PROVEN=false`; `PHYSICAL_ACCEPTED=false`; portanto **ainda não 10/10**. Não exigir nova aprovação diária de turno, pois contraria César V8.43 e não é requisito material.
+
+
+## Fonte independente — atualização em 26/10/2026
+César enviou a exportação **máxima disponível** de pedidos iFood de 25/10: 314 pedidos com UUID completo e número curto, mas sem itens/quantidades. Cruzamento individual somente leitura com a Teknisa DLV_IFO: 311 IDs curtos únicos presentes em ambas; 3 somente no relatório iFood (concluídos), 6 somente na Teknisa (4 código interno `4`, 1 `P`, 1 `X`). Estado desses códigos não interpretado. Total DLV projetado 331 corresponde a 317 DLV_IFO + 12 DLV_NMO + 2 DLV_FOS. Ver `docs/comandas/CONCILIACAO_IFOOD_TEKNISA_20261025_CORRECAO_HUMANA.md`.
+**Classificação de verdade atualizada:** `INDEPENDENT_SHORT_ID_SET_JOIN_311=PROVEN_AS_CANDIDATES`; `IFood_UUID_TO_NATIVE_STRONG_IDENTITY=UNKNOWN`; `IFood_ITEM_CONTENT_CROSSCHECK=NOT_AVAILABLE_FROM_THIS_EXPORT`. Nunca exigir outra exportação com colunas que o Gestor não oferece.
