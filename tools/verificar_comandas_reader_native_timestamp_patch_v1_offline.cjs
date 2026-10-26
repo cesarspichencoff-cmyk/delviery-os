@@ -59,7 +59,9 @@ check("output exposes native timestamp, no route or service choice",()=>{
 check("rejects non-ifood native source and unknown order status",()=>{
  assert.ok(nativeFunction.includes("NATIVE_ORDER_ORIGIN_NOT_IFOOD"));
  assert.ok(nativeFunction.includes("NATIVE_ORDER_STATUS_NOT_ATTESTED"));
- assert.ok(nativeFunction.includes("$Status -cne 'A'"));
+ assert.ok(nativeFunction.includes("$blockers += 'NATIVE_ORDER_STATUS_NOT_ATTESTED'"));
+ assert.ok(!nativeFunction.includes("$Status -cne 'A'"));
+ assert.ok(nativeFunction.includes("NATIVE_ORDER_STATUS_INVALID"));
 });
 check("retains timestamp range, strict short ID and source evidence",()=>{
  assert.ok(nativeFunction.includes("NATIVE_ORDER_TIMESTAMP_UNTRUSTED"));
@@ -103,6 +105,14 @@ check("malformed or absent source rejected",()=>{
  assert.throws(()=>transform(null),/SOURCE_TEXT_REQUIRED/);
  assert.throws(()=>transform(""),/LEGACY_READER_ANCHORS_UNPROVEN/);
 });
+check("no order or item source code A is privileged for downstream readiness",()=>{
+ const s=newText();
+ assert.ok(!s.includes("$Status -cne 'A'"));
+ assert.ok(!s.includes("$sourceItem.IDSTPRCOMVEN -cne 'A'"));
+ assert.ok(nativeFunction.includes("  $blockers += 'NATIVE_ORDER_STATUS_NOT_ATTESTED'"));
+ assert.ok(additionalGuard.includes("NATIVE_ITEM_STATUS_NOT_ATTESTED:"));
+ assert.ok(additionalGuard.includes("NATIVE_ITEM_STATUS_INVALID:"));
+});
 if(process.env.GITHUB_ACTIONS==="true"&&process.platform==="win32"){
  const program=[
   "$ErrorActionPreference='Stop'",
@@ -112,7 +122,11 @@ if(process.env.GITHUB_ACTIONS==="true"&&process.platform==="win32"){
   "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_NMO';s='A';id='0068'},",
   "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_IFO';s='P';id='0068'},",
   "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_IFO';s='A';id='NOID'},",
-  "  @{t=[datetime]'2010-10-25T19:41:30';o='DLV_IFO';s='A';id='0068'}",
+  "  @{t=[datetime]'2010-10-25T19:41:30';o='DLV_IFO';s='A';id='0068'},",
+  "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_IFO';s='3';id='0068'},",
+  "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_IFO';s='X';id='0068'},",
+  "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_IFO';s='4';id='0068'},",
+  "  @{t=[datetime]'2026-10-25T19:41:30';o='DLV_IFO';s='1';id='0068'}",
   ")",
   "$out=@()",
   "foreach($c in $cases){$r=Read-NativeOrderTime $c.t $c.o $c.s $c.id;",
@@ -125,9 +139,9 @@ if(process.env.GITHUB_ACTIONS==="true"&&process.platform==="win32"){
   {encoding:"utf8",timeout:25000,windowsHide:true});
  if(r.status!==0)throw new Error("WINDOWS_FUNCTION_RUNTIME_FAILED:"+String(r.stderr).slice(-650));
  let a;try{a=JSON.parse(r.stdout.trim())}catch{throw new Error("WINDOWS_JSON_INVALID")}
- check("hosted Windows actual native function: positive + four negative inputs",()=>{
-  assert.equal(a.length,5);
-  assert.deepEqual(a[0].blockers,[]);
+ check("hosted Windows native timestamp valid but all statuses held without independent event proof",()=>{
+  assert.equal(a.length,9);
+  assert.ok(a[0].blockers.includes("NATIVE_ORDER_STATUS_NOT_ATTESTED"));
   assert.equal(a[0].service,null);
   assert.equal(a[0].role,null);
   assert.equal(a[0].day,"2026-10-25");
@@ -136,7 +150,10 @@ if(process.env.GITHUB_ACTIONS==="true"&&process.platform==="win32"){
   assert.ok(a[2].blockers.includes("NATIVE_ORDER_STATUS_NOT_ATTESTED"));
   assert.ok(a[3].blockers.includes("NATIVE_IFOOD_SHORT_ID_MISSING_OR_INVALID"));
   assert.ok(a[4].blockers.includes("NATIVE_ORDER_TIMESTAMP_UNTRUSTED"));
-  for(const x of a)assert.equal(x.source,"TEKNISA.VENDAREST.DTHRABERMESA");
+  for(const x of a){
+   assert.equal(x.source,"TEKNISA.VENDAREST.DTHRABERMESA");
+   assert.ok(x.blockers.includes("NATIVE_ORDER_STATUS_NOT_ATTESTED"));
+  }
  });
 }
 console.log("COMANDAS_NATIVE_TIMESTAMP_PATCH_V1="+passed+"/"+passed+
