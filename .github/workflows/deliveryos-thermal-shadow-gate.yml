@@ -93,6 +93,8 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda source scoping production native-only conference iFood crosscheck
         run: node tools/verificar_comandas_view_source_scope_v1_offline.cjs
+      - name: TATA Comanda real-state native Reader V2 pair integrity 3/P/X and item 4 (offline)
+        run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
       - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
         run: node tools/verificar_comandas_scoped_view_preview_v1_offline.cjs
       - name: TATA Comanda iFood versus Teknisa lifecycle V8.64 (synthetic 219 probes)
@@ -372,6 +374,8 @@ jobs:
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
       - name: TATA Comanda source scoping production native-only conference iFood crosscheck
         run: node tools/verificar_comandas_view_source_scope_v1_offline.cjs
+      - name: TATA Comanda real-state native Reader V2 pair integrity 3/P/X and item 4 (offline)
+        run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
       - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
         run: node tools/verificar_comandas_scoped_view_preview_v1_offline.cjs
       - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
