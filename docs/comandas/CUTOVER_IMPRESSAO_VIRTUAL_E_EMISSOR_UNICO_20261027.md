@@ -120,3 +120,11 @@ A CAIXA_MOOCA expôs no Windows as filas Balcão Sushi 1/2, Delivery Sushi 1/2, 
 **Estado e limites:** a estrutura está em review/test; NÃO existe interceptação live, monitor virtual instalado, edição em iFood/Teknisa, desvio de porta, alteração de filas, impressão, sequence binding, SQL, fiscal ou deploy. PR OPEN/DRAFT/HOLD.
 
 **Próxima apuração de maior valor:** inventário observável e de baixo risco das **duas saídas de impressão** (Teknisa e iFood Gestor), incluindo fonte, host e caminho de envio. Depois, provar como desligar **somente** a impressão antiga sem perder pedidos nem o fiscal. Uma decisão de rota sem essa prova vira papel perdido ou duplicado.
+
+## Proteção da identidade semântica V3 — 27/10/2026
+
+A auditoria offline do plano de impressão detectou **colisão determinística de material semântico** na chave V2: dois componentes diferentes com `component_key="A~B", label="C"` e `component_key="A", label="B~C"` geravam o mesmo texto concatenado por `~`. Uma única observação contendo ` | ` também podia colidir com duas observações distintas. Como a impressão futura usa o fingerprint para deduplicação, essa ambiguidade poderia esconder uma revisão legítima.
+
+A candidata `src/production/productionPrintPlan.ts` usa agora `production-ticket-v3-canonical-json`: serialização JSON de tuplas estruturadas com fronteiras inequívocas, componentes de preparo ordenados de forma estável e sem qualquer interpretação de turno como destino físico. A V3 deliberadamente **não reutiliza fingerprints V2**; os dois formatos não podem ser misturados ou migrados implicitamente em registros de tentativas. Testes adversariais verificam separação de componentes/observações diferentes, invariância sob permutação de componentes equivalentes e `ready_for_physical_print=false`.
+
+A alteração pertence exclusivamente à PR DRAFT, e o resultado de CI do HEAD novo deve ser atestado separadamente. Não há implantação, comparação com pedido real, impressão, modificação de fila, sequência TATÁ persistida nem autorização de cutover. O evento nativo de primeira produção e a prova física continuam desconhecidos. O projeto prossegue sem contato com o fornecedor por decisão operacional de César.
