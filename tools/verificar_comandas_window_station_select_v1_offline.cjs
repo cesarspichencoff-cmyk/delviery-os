@@ -17,13 +17,13 @@ function projection(routes=["00009","00003"],itemCode="9.15.00.075.00"){
   items:[{item_index:0,codigo:itemCode,nome:"SYNTHETIC",quantidade:1}]},
   src,printers);
 }
-function evidence(day="2026-10-27",hm="13:42",category="COMBINADOS"){
+function evidence(day="2026-10-27",hm="13:42",category="COMBINADOS",productCode="9.15.00.075.00"){
  return {schema:"tata.comandas.window-evidence-claim.v1",
   store_id:"0001",store_unit:"01",
   timestamp_origin:"TEKNISA_ORDER_SOURCE_CLAIM",
   snapshot_sha256:"a".repeat(64),source_ref:"SYNTHETIC_NATIVE_EVENT_ONLY",
   order_local_day:day,order_local_hm:hm,
-  item_roles:[{item_index:0,category,rule_ref:"SYNTHETIC_REVIEWED_RULE",
+  item_roles:[{item_index:0,category,product_code:productCode,rule_ref:"SYNTHETIC_REVIEWED_RULE",
    rule_source:"REVIEWED_CATALOG_RULE_CLAIM"}]};
 }
 let n=0;
@@ -68,7 +68,7 @@ test("weekday 15:00 no candidate",()=>{
 });
 test("weekend 16:29 lunch selects Balcao2 for rolls",()=>{
  ok(projection(["00006","00004"],"9.50.00.000.00"),
-  evidence("2026-10-25","16:29","ENROLADOS"),["00006"]);
+  evidence("2026-10-25","16:29","ENROLADOS","9.50.00.000.00"),["00006"]);
 });
 test("weekend 16:30 is outside reported lunch",()=>{
  hold(projection(),evidence("2026-10-25","16:30"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
@@ -78,7 +78,7 @@ test("weekday 18:00 dinner chooses Delivery Sushi1 only",()=>{
 });
 test("dinner 22:59 chooses Delivery Sushi2 only for rolls",()=>{
  ok(projection(["00006","00004"],"9.50.00.000.00"),
-  evidence("2026-10-27","22:59","ENROLADOS"),["00004"]);
+  evidence("2026-10-27","22:59","ENROLADOS","9.50.00.000.00"),["00004"]);
 });
 test("23:00 has no implied extra shift",()=>{
  hold(projection(),evidence("2026-10-27","23:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
@@ -111,11 +111,11 @@ test("dupla exception stays hold with original location unknown",()=>{
 });
 test("hot rolls retain Balcao Sushi2 in dinner, never route to Delivery Sushi2",()=>{
  ok(projection(["00006"],"9.65.00.000.00"),
-  evidence("2026-10-27","19:00","ENROLADOS_QUENTES"),["00006"]);
+  evidence("2026-10-27","19:00","ENROLADOS_QUENTES","9.65.00.000.00"),["00006"]);
 });
 test("hot rolls erroneously configured for both Balcao2 and Delivery2 hold",()=>{
  hold(projection(["00006","00004"],"9.65.00.000.00"),
-  evidence("2026-10-27","19:00","ENROLADOS_QUENTES"),"HOT_ROLL_ROUTE_CONFLICT_0");
+  evidence("2026-10-27","19:00","ENROLADOS_QUENTES","9.65.00.000.00"),"HOT_ROLL_ROUTE_CONFLICT_0");
 });
 test("missing configured alternate at lunch cannot invent Balcao1",()=>{
  hold(projection(["00003"]),evidence(),"SERVICE_DESTINATION_NOT_CONFIGURED_0");
@@ -126,9 +126,9 @@ test("missing configured alternate at dinner cannot invent Delivery1",()=>{
 });
 test("kitchen route remains its independent destination in all services",()=>{
  const lunch=ok(projection(["00002"],"9.90.00.010.00"),
-  evidence("2026-10-27","12:00","INDEPENDENT"),["00002"]);
+  evidence("2026-10-27","12:00","INDEPENDENT","9.90.00.010.00"),["00002"]);
  const dinner=ok(projection(["00002"],"9.90.00.010.00"),
-  evidence("2026-10-27","20:00","INDEPENDENT"),["00002"]);
+  evidence("2026-10-27","20:00","INDEPENDENT","9.90.00.010.00"),["00002"]);
  assert.deepEqual(codes(lunch),codes(dinner));
 });
 test("a second independent kitchen destination survives a valid sushi suppression",()=>{
@@ -158,6 +158,18 @@ test("review adapter connects real planner but cannot authorize physical ticket"
  assert.equal(result.plan.ready_for_physical_print,false);
  assert.equal(result.plan.print_intents[0].physical_effect_authorized,false);
  assert.equal(result.print_authorized,false);
+});
+test("station category is tied to the exact native product code, not its displayed name",()=>{
+ const e=evidence();e.item_roles[0].product_code="9.15.00.076.00";
+ hold(projection(),e,"ITEM_RULE_PRODUCT_IDENTITY_MISMATCH_0");
+});
+test("preview rejects a time different from the time used to select the destination",()=>{
+ const output=planWindowReview(projection(),evidence("2026-10-27","13:42"),
+   {...context,order_time:"19:00"},calibration);
+ assert.equal(output.status,"HOLD");
+ assert.ok(output.reasons.includes("PREVIEW_TIME_DIFFERS_FROM_NATIVE_ORDER_TIME"));
+ assert.equal(output.plan,null);
+ assert.equal(output.print_authorized,false);
 });
 test("historical 463-product matrix keeps 106 paired candidates without inferring categories",()=>{
  let p1=0,p2=0,other=0;
