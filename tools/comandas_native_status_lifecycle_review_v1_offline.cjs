@@ -80,7 +80,13 @@ function analyzeNativeLifecycle(data){
   for(const entry of series){
    if(initialOrigin===null)initialOrigin=entry.origin;
    if(entry.origin!==initialOrigin)return empty("HOLD","SAME_ORDER_KEY_MULTIPLE_ORIGINS");
-   if(visited.has(entry.hash))continue;
+   // A hash reappearing after a different snapshot may be a stale replay,
+   // not a genuine return to a former state. Never infer that transition.
+   if(visited.has(entry.hash)){
+    if(entry.hash!==ordered[ordered.length-1]?.hash)
+     return empty("HOLD","NONCONSECUTIVE_SNAPSHOT_REAPPEARANCE_AMBIGUOUS");
+    continue;
+   }
    visited.add(entry.hash);
    statuses[entry.status]=(statuses[entry.status]||0)+1;
    if(previousStatus!==null&&previousStatus!==entry.status){
