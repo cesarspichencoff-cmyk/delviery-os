@@ -168,6 +168,7 @@
     "cutover:entregas:plan": "npx tsx tools/entregas_storage_cutover.ts plan",
     "cutover:entregas:apply": "npx tsx tools/entregas_storage_cutover.ts apply",
     "test:entregas:pilot-postgres-backup": "npx tsx src/entregas/pilot/run-postgres-backup-restore-tests.ts",
+    "test:copiloto:tata-reader-adapter": "node tests/tata-reader/run-copilot-reader-adapter-tests.cjs",
     "test:copiloto:tata-orders": "node tests/tata-reader/run-copilot-orders-tests.cjs",
     "test:tata-reader:health": "node tests/tata-reader/run-health-tests.cjs",
     "test:tata-reader:static": "node tests/tata-reader/run-static-audit-tests.cjs",

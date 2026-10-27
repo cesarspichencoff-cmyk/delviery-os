@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "COPILOTO_TATA_ORDER_READ_MODEL_LAB_PROVEN_LIVE_SOURCE_HOLD",
-  "state_basis_head": "3ae58ca64968abaca3faf8da06e3d4910a78f11a",
+  "checkpoint_type": "NATIVE_TATA_READER_ADAPTER_LAB_PROVEN_SOURCE_SCOPE_HOLD",
+  "state_basis_head": "24342c67c8a5b6f707c4771d31d018d6e030ab47",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -39,9 +39,10 @@
     "Mooca remote lab applied: pilot binds NetBird IP 100.107.78.202:5193 under validated remote configuration; platform/PostgreSQL remain loopback. Windows firewall effective only on the mesh among observed active adapters, Ethernet excluded, 258 scoped rules and two-proxy source allowlist verified.",
     "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation.",
     "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate.",
-    "Copiloto TATA per-order read model reuses existing normalization engine. Nine synthetic tests pass: revisions, conflicts, source modes/units, minimization, missing/stale/future data and no inferred readiness/delivery/GPS association. No SQL reader or public route wired. Mooca reader service found Running; checkpoint mtime recent, host-status mtime old. Metadata-only inspection does not prove source health, contents, completeness or Itaim mapping."
+    "Copiloto TATA per-order read model reuses existing normalization engine. Nine synthetic tests pass: revisions, conflicts, source modes/units, minimization, missing/stale/future data and no inferred readiness/delivery/GPS association. No SQL reader or public route wired. Mooca reader service found Running; checkpoint mtime recent, host-status mtime old. Metadata-only inspection does not prove source health, contents, completeness or Itaim mapping.",
+    "Installed stable-order event schema and field names inspected on Mooca without exporting order IDs, items, observations or customer data. Native source codes 0001/01 observed; geographic mapping unproven. Inspected event explicitly blocks downstream due service-state date mismatch/expiry. Native adapter now preserves that denial and uses explicit source mapping/timezone, mode and read-only effect boundary. Nine integration scenarios pass through adapter -> existing Tata normalization -> Copiloto projection; live/UI wiring remains absent."
   ],
-  "next_action": "Continue identity/native access and TATA order-source integration as explicit V1 requirements. Prove authorized source-unit mapping and sanitized current reader envelope compatibility before wiring the new read model to authenticated Copiloto. Preserve working HTTPS Entregas lab; no new watcher, SQL permissions or GPS activation.",
+  "next_action": "Resolve verified native source mapping (0001/01 must not be assumed Itaim), existing service-state date/expiry blockers and explicit source timestamp timezone without changing the reader. Continue lab identity/native HTTP work; wire only authorized eligible source records into authenticated Copiloto, preserving source-denial state and data minimization.",
   "unknowns": [
     "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -87,6 +88,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Pure TATA order read model and nine lab scenarios added to product CI; actual live reader-to-Copiloto wiring and UI remain pending."
+    "Native stable-order event adapter, nine integration scenarios and CI step added. No reader change, SQL query, live-feed publication or GPS activation."
   ]
 }

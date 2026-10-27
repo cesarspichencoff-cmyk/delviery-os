@@ -25,6 +25,12 @@ Primeiro incremento implementado: `runtime/reporting/copiloto_tata_orders_v1.cjs
 
 Na inspeção somente de serviço e metadados do host, `TataComandaReader` estava Running e o arquivo de checkpoint teve gravação recente. O status do host observado tinha data antiga. Nenhum payload de pedido, segredo ou configuração do leitor foi extraído; serviço não foi alterado. Progresso por data de arquivo não comprova completude, unidade correta ou saúde do leitor. A próxima prova é a linhagem da fonte e o mapeamento autorizado para Itaim, sem assumir que pedidos capturados na Mooca pertençam ao Itaim.
 
+### Compatibilidade com o leitor instalado
+
+Segundo incremento: `runtime/reporting/copiloto_tata_reader_adapter_v1.cjs` adapta o evento `deliveryos.tata-reader-stable-order-event.v1` ao motor existente e à projeção de pedidos do copiloto. Nove cenários de integração sintéticos cobrem essa cadeia. Exige contexto de mapeamento aprovado no chamador, modo explícito, efeitos somente de leitura e timestamps com fuso. Preserva o bloqueio do produtor e descarta observações, clientes e campos financeiros na saída operacional. Um status de item não é convertido em prontidão ou entrega.
+
+A inspeção pontual no host observou códigos nativos `0001/01` e um evento com `ready_for_downstream_shadow=false`, bloqueado por `SERVICE_STATE_DATE_MISMATCH_ORDER_DATE` e `SERVICE_STATE_EXPIRED_FOR_ORDER`. Não foram exportados identificadores de pedidos, itens ou observações. O checkpoint contém esquema/entradas, sem identificação geográfica no topo. Esses fatos não comprovam que a fonte pertença ao Itaim nem autorizam remover bloqueios do leitor. É necessário verificar o mapeamento e a vigência do estado de serviço antes de alimentar a interface. Datas SQL sem fuso exigem política de origem explícita; não usar automaticamente o fuso do computador consumidor.
+
 ## Decisões de arquitetura
 
 1. **Uma autoridade para cada fato.** O vínculo pedido–viagem–ator–aparelho precisa ser estável e verificável. Mapear as tabelas e eventos existentes antes de qualquer alteração. Aproveitar o backend PostgreSQL já implementado; convergir a instalação de teste depois de provar equivalência, idempotência e reversão. Não criar outro banco lógico concorrente para o copiloto.
