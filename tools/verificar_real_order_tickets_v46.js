@@ -263,6 +263,44 @@ function smoke() {
     "a missing planned product code must never inherit source identity proof");
   assert.equal(codeReview.ready_for_semantic_preview,false);
   assert.equal(codeReview.effects.print,false);
+  // Countable resources must never be presented as ready without whole
+  // quantities and exact, independently evidenced bag allocation.
+  const reviewPackingFault=(modify, reason)=>{
+    const f=archivedCompleteInput();
+    modify(f);
+    const result=projectOperationalTicketsV45({
+      order_id:f.id,source_items:f.source_items,
+      production_plan:f.production_plan,
+      resource_projection:f.resource_projection,packaging_plan:f.packaging,
+    });
+    assert.ok(result.blocking_reasons.includes(reason),reason);
+    assert.equal(result.conference.ready_for_semantic_preview,false,reason);
+    assert.equal(result.ready_for_semantic_preview,false,reason);
+    assert.equal(result.ready_for_automatic_operational_print,false,reason);
+    assert.equal(result.effects.print,false,reason);
+    return result;
+  };
+  for (const unknownReason of ["EXACT_BAG_COUNT_UNKNOWN",
+    "KIT_PLAN_MISSING","PACKAGING_BOX_UNKNOWN_GROUP_99"]) {
+    reviewPackingFault(f=>f.resource_projection.unknowns.push(unknownReason),
+      "PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE");
+  }
+  reviewPackingFault(f=>{f.packaging.bags.exact_bag_count=2;},
+    "EXACT_BAG_ALLOCATION_NOT_PROVEN");
+  reviewPackingFault(f=>{
+    f.resource_projection.usages=f.resource_projection.usages.filter(u=>u.kind!=="BAG");
+  },"EXACT_BAG_ALLOCATION_NOT_PROVEN");
+  reviewPackingFault(f=>{
+    f.resource_projection.usages.find(u=>u.kind==="BAG").quantity=0.5;
+  },"BAG_OR_KIT_QUANTITY_NOT_WHOLE");
+  reviewPackingFault(f=>{
+    f.resource_projection.usages.find(u=>u.kind==="KIT").quantity=1.5;
+  },"BAG_OR_KIT_QUANTITY_NOT_WHOLE");
+  reviewPackingFault(f=>{f.packaging.bags.exact_bag_count_status="UNKNOWN";},
+    "EXACT_BAG_ALLOCATION_NOT_PROVEN");
+  const undefinedPlan=reviewPackingFault(f=>{f.packaging=undefined;},
+    "EXACT_BAG_ALLOCATION_NOT_PROVEN");
+  assert.ok(undefinedPlan.conference.warnings.includes("PACKAGING_PLAN_MISSING"));
   console.log("real-order-tickets-v46: 2 verified archived real-order scenarios PASS (no print)");
   return {complete,unknown};
 }
