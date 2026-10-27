@@ -171,6 +171,16 @@ test("preview rejects a time different from the time used to select the destinat
  assert.equal(output.plan,null);
  assert.equal(output.print_authorized,false);
 });
+test("expired conflicting dinner shift metadata cannot change lunch route or create approval task",()=>{
+ const p=projection(),e=evidence("2026-10-27","13:42");
+ const result=planWindowReview(p,e,{...context,
+  service_resolution:{service:"DINNER",evidence:"HUMAN_CONFIRMED_RULE",
+   source_ref:"STALE_PRIOR_DAY_SERVICE_STATE"}},calibration);
+ assert.equal(result.status,"REVIEW_CANDIDATE_ONLY");
+ assert.deepEqual(result.plan.print_intents.map(x=>x.printer.printer_code),["00009"]);
+ assert.equal(result.plan.print_intents[0].service_resolution.service,null);
+ assert.equal(result.plan.ready_for_physical_print,false);
+});
 test("historical 463-product matrix keeps 106 paired candidates without inferring categories",()=>{
  let p1=0,p2=0,other=0;
  for(const codes of Object.values(routing.products)){
