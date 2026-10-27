@@ -70,6 +70,18 @@ Para não falsear a prova, o módulo offline `tools/comandas_native_first_dispat
 
 Relatório com fontes oficiais, pontos de prova e barreiras de segurança: [Auditoria da primeira via Retail/ForSale](AUDITORIA_PRIMEIRO_DESPACHO_MARKETPLACE_FORSALE_20261027.md).
 
+## Verificação adversarial das três vias — embalagem desconhecida também afeta a produção
+
+**Prova de 27/10/2026 no código e no replay arquivado:** `projectOperationalTicketsV45` exige um vínculo de **caixa física comprovada por grupo de montagem** em cada via de produção. Se `packaging_plan=null`, o motor registra `STATION_BOX_ALLOCATION_NOT_PROVEN` para cada praça que precisava daquela alocação, e marca suas vias `ready_for_semantic_preview=false`. O bloqueio **não nasce apenas na conferência**. A proposta inicial de liberar as vias de produção quando o problema fosse aparentemente apenas de embalagem da conferência foi **rejeitada por testes**: a falta de prova também é material para os documentos de produção.
+
+O adaptador `comandas_scoped_view_preview_v1_offline.cjs` voltou ao comportamento fail-closed anterior, sem exceção ao gate global. A suíte `verificar_comandas_scoped_view_preview_v1_offline.cjs` foi alterada para usar a projeção V4.5 de **replay arquivado**, removendo o plano de embalagem e confirmando:
+- com caixa física desconhecida, **as duas vias de produção e a conferência ficam bloqueadas**, mesmo com iFood coincidente;
+- com caixa e produção comprovadas, **divergência exclusiva do iFood só veta a conferência**, preservando as duas vias de produção;
+- falhas de origem nativa, identificadores cruzados ou revisão continuam vetando todas;
+- o teste não lê pedidos novos, não imprime, não modifica sequência e não promove evidência de replay a produção.
+
+**Resultado em checkout isolado Foxxy:** 11/11 testes do adaptador e 25/25 de escopo de fontes PASS, HEAD `275a15023152934d89e45fc46ada3e470eac4f79`. A primeira tentativa anterior falhou **corretamente** porque o replay sem caixas não tinha produção individualmente pronta; a rota de liberação sem caixa foi descartada. CI hospedada do HEAD precisa ser confirmada separadamente.
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
