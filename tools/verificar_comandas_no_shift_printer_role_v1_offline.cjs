@@ -62,6 +62,14 @@ for(const pair of PAIRS){
   assert.equal(got.ready_for_shadow_payload,true,
    "single configured route does not require daily service state");
   assert.deepEqual(got.print_intents.map(x=>x.printer.printer_code),[code]);
+  const lunch=plan([code],"LUNCH"),dinner=plan([code],"DINNER");
+  verifyNoPhysical(lunch);verifyNoPhysical(dinner);
+  assert.equal(lunch.ready_for_shadow_payload,true);
+  assert.equal(dinner.ready_for_shadow_payload,true);
+  assert.equal(lunch.print_intents[0].intent_fingerprint,got.print_intents[0].intent_fingerprint,
+   "meal label must not fork the same production intent");
+  assert.equal(dinner.print_intents[0].intent_fingerprint,got.print_intents[0].intent_fingerprint);
+  assert.equal(dinner.print_intents[0].semantic_key_material,got.print_intents[0].semantic_key_material);
   oneTarget++;
  }
  const withKitchen=plan([pair.a,pair.b,"00002"],"LUNCH");
