@@ -36,6 +36,8 @@ A inspeção **somente do código instalado** em `CAIXA_MOOCA` identificou três
 
 **Convivência:** a impressão do Gestor iFood foi informada desligada em 25/10, porém isso não comprova o estado atual. Tratar iFood e Teknisa como **duas fontes de saída separadas**, cada uma com seu censo: quem inicia, qual host, driver/fila/porta/IP, se há outras vias simultâneas, papel gerado e função da via. Verificar que desativar cada fonte não afeta fiscalização, relatórios essenciais, impressoras de cozinha ou outros sistemas.
 
+**Candidato de supressão na fonte:** o PHP `ImpressaoPedido.php` possui filtro de pedido de produção `IDIMPPEDPROD='N'`, que omite seus três grupos de destinos nos condicionais examinados. Isso ainda **não comprova** que seja configurável especificamente para `DLV_IFO`, nem que o evento de primeira via do delivery percorra esse método. Não alterar `IDIMPPEDPROD` real, nem cortar toda a produção da loja. O caminho mais simples poderá ser essa supressão nativa **se** o callsite granular for provado. Ver [provas e limites](AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md).
+
 ## Prova já existente que não deve ser mal interpretada
 
 A CAIXA_MOOCA expôs no Windows as filas Balcão Sushi 1/2, Delivery Sushi 1/2, Cozinha e Caixa. Na inspeção anterior, 1.086 jobs de Delivery Sushi 1 estavam **retidos como Printed** porque a fila usa `KeepPrintedJobs=true`; 204 deles foram submetidos durante as janelas de almoço relatadas. Essa é evidência de **envio à fila**, não comprovação de papel desperdiçado, 1.086 pendentes ou de origem causal exclusiva da Teknisa. O código PHP instalado possui laços de `impressoraProducao`, `impressoraProducao2` e `impressoraPuxa`; **não** foi demonstrado que esse é o evento exato da primeira via de pedidos iFood.
