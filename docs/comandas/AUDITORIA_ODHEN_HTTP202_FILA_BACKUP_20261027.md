@@ -21,9 +21,15 @@ Essas fontes já foram verificadas por hash SHA-256 nesta investigação, confor
 ## Correção implementada, sem efeitos operacionais
 
 - Novo `tools/comandas_peripheral_bridge_ack_backup_v1_offline.cjs`: módulo puro que trata `HTTP_202_QUEUED` como confirmação **somente da aceitação na fila** e exige censo explícito tanto da rota principal quanto da **possível rota de backup** antes de admitir uma candidatura de revisão de cutover. Se a existência/estado da reserva não estiver demonstrado, responde `HOLD`. Mesmo com alegações positivas, `ready_for_cutover=false`, `can_change_peripheral=false`, `all_physical_legacy_outputs_suppressed=false` e nenhum efeito.
-- `tools/verificar_comandas_peripheral_bridge_ack_backup_v1_offline.cjs`: **17/17** cenários de regressão, incluindo backup ativado/desconhecido, reserva não coberta, fonte fiscal indevida, `202` falsamente promovido a papel e claims de autorização sem efeito.
-- Integração a `tools/comandas_legacy_virtual_cutover_review_v1_offline.cjs`: sempre que o modo alegado for `PONTE_HTTP_PRINT`, o censo de fila/backup é necessário; ausência ou conflito retorna **HOLD**, mesmo se os outros nove gates de transição forem alegados. Os testes de cutover passaram **47/47**. Testes anteriores de modo nativo **24/24** e transporte **23/23** mantidos.
+- `tools/verificar_comandas_peripheral_bridge_ack_backup_v1_offline.cjs`: **19/19** cenários de regressão, incluindo backup ativado/desconhecido, reserva não coberta, fonte fiscal indevida, `202` falsamente promovido a papel e claims de autorização sem efeito.
+- Integração a `tools/comandas_legacy_virtual_cutover_review_v1_offline.cjs`: sempre que o modo alegado for `PONTE_HTTP_PRINT`, o censo de fila/backup é necessário; ausência ou conflito retorna **HOLD**, mesmo se os outros nove gates de transição forem alegados. Os testes de cutover passaram **49/49**. Testes anteriores de modo nativo **24/24** e transporte **23/23** mantidos.
 - CI Linux/Windows ampliada com a nova suíte. Prova local em checkout descartável Foxxy, commit `50fa29e7676e231588ff12ed7e7f2e25fac9ab2d`; `BRIDGE_BACKUP_REGRESSION=SUCCESS`. CI hospedada do HEAD final deve ser conferida separadamente.
+
+## Atualização de segurança: backlog antigo continua existindo após desligar a origem
+
+A ponte Odhen pode salvar o job em fila interna antes de imprimi-lo e, conforme erro/timeout, enviá-lo ao backup. Portanto **suprimir apenas novas submissões antigas não remove jobs antigos já aceitos**. A futura passagem ao emissor único exige comprovar **o censo de jobs antigos pendentes** e a reconciliação de **tentativas ambíguas**, independentemente de o destino principal e o backup terem sido mapeados.
+
+O módulo `comandas_peripheral_bridge_ack_backup_v1_offline.cjs` passou a retornar `HOLD: QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED` se qualquer evidência de backlog/reconciliação estiver ausente. Este é um contrato de revisão **sem leitura de banco, fila, spooler ou log**: entradas declaradas em fixture não representam prova da loja. Os testes passaram **19/19** no módulo e **49/49** no contrato de transição em clone descartável Foxxy no commit `9bbc91340e1099136b1ae1301e2f873feb9b8b96`. O código não limpa fila, não considera `status:202` do JSON como papel e não autoriza alternância automática dos emissores.
 
 ## Efeito sobre o plano operacional
 
