@@ -67,6 +67,19 @@ O módulo `tools/comandas_legacy_virtual_cutover_review_v1_offline.cjs` passou a
 - Execução no **Foxxy em clone descartável**, commit `05426dbd2ac962526b73c7c37b8934d925f3fa9d`, `OFFLINE_TRANSPORT_REGRESSION=SUCCESS`, sem execução operacional no caixa.
 - Os dois scripts foram incluídos no workflow Linux/Windows; **não declarar CI integral até sucesso no HEAD exato**.
 
+## Possível desativação nativa de produção: IDIMPPEDPROD='N' (ainda não homologada)
+
+Outro achado no arquivo instalado `vendor/odhen/api/src/Service/ImpressaoPedido.php`, linhas 199–264:
+
+- A documentação do próprio código define `IDIMPPEDPROD='N'` como **não imprimir pedido da produção**; `S` como produção, `M` como maquininha, `T` como ambas.
+- Os três grupos `impressoraProducao`, `impressoraProducao2` e `impressoraPuxa` verificam `IDIMPPEDPROD` antes de chamar `montaPedido`. Para `N`, **os condicionais examinados não selecionam impressora de nenhum desses grupos**.
+- Isso é **melhor candidato conceitual a suprimir a via antiga na fonte** que desviar indiscriminadamente uma fila Windows da Epson. Mas **não prova** o valor ativo em cada pedido, se a primeira via de `DLV_IFO` usa exatamente esse método, quem fornece o argumento, se ele se aplica a outras vendas, nem se outras saídas do Gestor iFood ou do períferico coexistem.
+- `N` não deve ser configurado globalmente nem promovido a solução real antes de comprovar isolamento por **tipo de origem, pedido, loja, setor e documento**, e de demonstrar que o novo emissor já fornece a via necessária e o fiscal permanece intocado.
+
+Módulo puro `tools/comandas_teknisa_native_print_mode_v1_offline.cjs` modela os condicionais dos quatro valores e exige identidade do callsite/escopo de `DLV_IFO` como alegação de revisão, sempre sem autoridade de mudança. `tools/verificar_comandas_teknisa_native_print_mode_v1_offline.cjs`: **18/18 PASS** em cópia descartável de desenvolvimento. Sua saída positiva é `REVIEW_CANDIDATE_ONLY`, **não** prova de que `N` já foi aplicado e não comando para alterar configuração. O workflow Linux/Windows foi ampliado para executar a suíte.
+
+**Próxima evidência que pode mudar a decisão:** localizar o callsite de **primeira impressão de produção do pedido iFood** e o parâmetro recebido naquele callsite; confirmar seu escopo sem ler payloads ou alterar banco/GP. Se a opção de `N` for realmente granular e reversível, ela pode dispensar completamente o driver virtual e reduzir custo/risco.
+
 ## Próximo passo comprovável e seu limite
 
 O próximo censo, **passivo e com escopo de fonte definido**, precisa obter apenas o modo ativo de impressão de pedidos na integração da Teknisa, o nome/identidade do serviço periférico que recebe `/print` caso a ponte esteja ativa, se essa ponte usa realmente as filas Windows vistas no caixa ou IP direto, e se o GP/iFood tem saída separada. Evitar exportar URLs com credenciais, payloads, nomes de clientes, documentos, números de pedidos, configuração fiscal ou registro bruto de impressão.
