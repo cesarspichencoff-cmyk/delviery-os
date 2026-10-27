@@ -29,6 +29,6 @@ Após validação estrutural, o módulo emite **apenas metadados de fonte**, vin
 
 ## Casos negativos da nova suíte
 
-`tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs` verifica 34 cenários positivos e adversariais: cabeçalhos reais, item 4, cancelamento 6, cabeçalho 4, estados incertos, nota adulterada (incluindo hashes refeitos), quantidade, produto, duplicidade, conflito de origem/loja/dia/ID, exportação iFood errada e ausência de binding, com zero efeitos.
+`tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs` verifica 35 cenários positivos e adversariais: cabeçalhos reais, item 4, cancelamento 6, cabeçalho 4, estados incertos, nota adulterada (incluindo hashes refeitos), quantidade, produto, duplicidade, conflito de origem/loja/dia/ID, exportação iFood errada e ausência de binding, com zero efeitos.
 
 **Frente de prova:** fonte nativa consistente `≠` evento de impressão `≠` impressora autorizada `≠` papel físico. O CI da PR comprova testes sintéticos em ambiente isolado, não implantação. Sem instalação, SQL, spooler, serviço, sequência, fiscal ou impressão.
