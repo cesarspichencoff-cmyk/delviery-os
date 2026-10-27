@@ -44,7 +44,11 @@ const staged=()=>{
     kind:"DELIVERY_PRODUCTION_TICKET_ONLY",
     other_tek_orders_preserved:true,fiscal_outputs_preserved:true,
     callsite_evidence_ref:"SYNTHETIC_SCOPE_UNATTESTED",
-    callsite_snapshot_sha256:h}}};
+    callsite_snapshot_sha256:h},
+   proposed_application:{kind:"DELIVERY_ONLY_PER_INVOCATION_CLAIM",
+    shared_cashier_setting_untouched:true,mesa_and_balcao_unchanged:true,
+    override_evidence_ref:"SYNTHETIC_OVERRIDE_NOT_ATTESTED",
+    override_snapshot_sha256:h}}};
  return x;
 };
 let n=0;
@@ -205,6 +209,18 @@ test("other source-off configuration requires its own identifiable proof",()=>{
  x.teknisa_upstream_suppression={mechanism:"OTHER_SOURCE_SCOPED_PRINT_OFF",
   external_source_scoping:{status:"UNKNOWN"}};
  holds(x,"OTHER_UPSTREAM_SUPPRESSION_SCOPE_NOT_ATTESTED");
+});
+test("global cashier production print N must HOLD regardless of proposed cutover",()=>{
+ const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.proposed_application.kind="CASH_REGISTER_CONFIG_CHANGE";
+ holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("no attested per-delivery override is equivalent to unknown first print scope",()=>{
+ const x=staged();delete x.teknisa_upstream_suppression.native_mode_evidence.proposed_application;
+ holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("preserving mesa and balcao is mandatory for candidate cutover",()=>{
+ const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.proposed_application.mesa_and_balcao_unchanged=false;
+ holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
