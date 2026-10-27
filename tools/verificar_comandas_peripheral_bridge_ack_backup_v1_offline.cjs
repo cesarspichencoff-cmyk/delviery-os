@@ -11,7 +11,7 @@ function fixture(){
    backup_config_observed:true,backup_enabled:false,
    primary_destination_censused:true,
    primary_legacy_output_plan:"EXPLICITLY_COVERED"},
-  receipt_claim:{kind:"HTTP_202_QUEUED"}};
+  receipt_claim:{kind:"JSON_STATUS_202_QUEUED"}};
 }
 let n=0;
 function test(name,fn){fn();console.log("PASS "+(++n)+" "+name);}
@@ -39,12 +39,12 @@ function candidate(x){
  assert.equal(r.status,"REVIEW_CANDIDATE_ONLY",JSON.stringify(r));
  return r;
 }
-test("HTTP 202 from /print is queue acceptance, not paper",()=>{
+test("JSON field status=JSON status=202 from /print is queue acceptance, not paper",()=>{
  const r=candidate(fixture());
- assert.equal(r.reason,"HTTP_202_PROVES_QUEUE_ACCEPTANCE_ONLY_NOT_PHYSICAL_PAPER");
+ assert.equal(r.reason,"JSON_202_PROVES_QUEUE_ACCEPTANCE_ONLY_NOT_PHYSICAL_PAPER");
  assert.equal(r.physical_receipt_required_separately,true);
 });
-test("HTTP 202 does not prove a canonical DLV_IFO first print event",()=>{
+test("JSON field status=202 does not prove a canonical DLV_IFO first print event",()=>{
  const r=candidate(fixture());
  assert.equal(r.first_print_event_proven,false);
 });
@@ -56,7 +56,7 @@ test("unit mismatch holds",()=>{
  const x=fixture();x.store_unit="02";
  hold(x,"PERIPHERAL_INSTALLED_CODE_OR_STORE_INVALID");
 });
-test("missing route inventory holds even with HTTP 202",()=>{
+test("missing route inventory holds even with JSON field status=202",()=>{
  const x=fixture();delete x.route_census;
  hold(x,"PERIPHERAL_ROUTE_AND_BACKUP_CENSUS_MISSING");
 });
@@ -116,4 +116,4 @@ test("invalid inputs fail closed",()=>{
  }
 });
 console.log("COMANDAS_PERIPHERAL_BRIDGE_ACK_BACKUP_V1="+n+"/"+n+
- " HTTP_202_NOT_PAPER BACKUP_ROUTE_NOT_IGNORED ZERO_EFFECTS");
+ " JSON_202_NOT_PAPER BACKUP_ROUTE_NOT_IGNORED ZERO_EFFECTS");
