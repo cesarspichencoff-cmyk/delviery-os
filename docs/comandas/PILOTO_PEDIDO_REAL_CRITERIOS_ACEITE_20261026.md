@@ -71,3 +71,12 @@ A política de três vistas foi conectada a um **adaptador de prévia**: `tools/
 - `tools/verificar_comandas_scoped_view_preview_v1_offline.cjs` executa nove cenários no renderer compilado: ausência e divergência de iFood afetam só conferência; perda da revisão nativa, colisão interna e bloqueio semântico legítimo seguem bloqueando todos; source/replay intactos.
 - O adaptador é **OFFLINE/REVIEW_ONLY**, não está ligado ao Reader ou ao serviço instalado; não confundir bytes ESC/POS gerados *em memória* com emissão física.
 - **Não** remover o veto global a erros reais da fonte Teknisa; ele ainda protege todas as vias. Não alterar identificadores nativos de produção para refletir dados independentes do Gestor iFood; a conciliação fica no envelope separado da conferência.
+
+
+### Correspondência de lojas entre iFood e Teknisa — exigência adicional na conferência
+
+O número de estabelecimento iFood **53069** não é o identificador de filial `0001/01` da Teknisa. Uma comparação literal desses campos seria incorreta. O filtro da conferência agora exige um **mapeamento explícito do mesmo estabelecimento** entre as duas nomenclaturas, com proveniência indicada; sem mapa, com duas candidatas conflitantes ou com unidade nativa divergente, **a conferência fica em HOLD**, sem invalidar o conteúdo das duas vias de produção.
+
+O mapa relatado na conciliação histórica de 25/10 é apenas uma **candidatura para revisão**, não uma atestação independente de unidade vigente ou uma garantia de UUID/item idênticos. Esse limite aparece no código como `source_store_mapping_attested_here=false`, independentemente de os códigos curtos coincidirem. Não pedir ao usuário para imprimir no Gestor iFood nem acionar via extra para solucionar um mapeamento de identidade.
+
+Implementação: `tools/comandas_view_source_scope_v1_offline.cjs`, `tools/comandas_reader_v2_view_evidence_v1_offline.cjs` e suas suítes de regressão, nenhuma autorizando efeitos.
