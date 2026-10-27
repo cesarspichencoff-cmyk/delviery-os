@@ -59,6 +59,14 @@ function identify(input){
   if(mode==="DELPHI_FILE_DISPATCH"&&
      input.nul_target_is_downstream_delphi!==true)
    return base("HOLD","DELPHI_DISPATCH_NOT_PROVEN_TO_USE_SELECTED_WINDOWS_QUEUE",{mode});
+  if(mode==="PONTE_HTTP_PRINT"){
+   // The installed peripheral routes Epson through a native vendor DLL.
+   // A Windows queue seen on the box does NOT prove that DLL uses it.
+   if(dest.peripheral_backend==="EPSON_VENDOR_DLL")
+    return base("HOLD","EPSON_NATIVE_LIBRARY_NOT_PROVEN_TO_USE_WINDOWS_NUL",{mode});
+   if(dest.peripheral_backend!=="WINDOWS_WINSPOOL_API")
+    return base("HOLD","BRIDGE_PERIPHERAL_BACKEND_NOT_ATTESTED_AS_WINDOWS_SPOOLER",{mode});
+  }
   // All claims originate from caller: candidate ONLY, not an attestation.
   return base("REVIEW_CANDIDATE_ONLY",
    "WINDOWS_NUL_IS_PAPERLESS_SINK_NOT_NATIVE_ORDER_TRIGGER",{
