@@ -62,6 +62,14 @@ Novo gate de revisão `tools/comandas_ifood_installed_print_channels_v1_offline.
 
 [Auditoria detalhada com versões, SHA-256, distinção de fontes e limites](AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md). A primeira via de produção na Teknisa **continua UNKNOWN**, não sendo atribuída ao aplicativo do Gestor sem prova. Nenhuma transição live autorizada.
 
+## Fechamento da lacuna de identidade: pedido iFood → Retail → ForSale ≠ primeiro despacho
+
+A documentação específica da Teknisa descreve o iFood como integração do Retail, com **pré-pedido de marketplace distinto de venda PDV**, e a geração de comanda ForSale como etapa de fluxo. As chamadas PHP `Venda.php → IDIMPAUTENTREG → ImpressaoDelivery` examinadas antes são **relatórios pós-venda**, e a impressão pelo Gestor/GP iFood é **outro emissor**, não um evento nativo de produção. A simples presença de `FosExp.exe` no host **não comprova que ele faça o primeiro disparo**.
+
+Para não falsear a prova, o módulo offline `tools/comandas_native_first_dispatch_lineage_v1_offline.cjs` e o contrato de cutover distinguem esses estágios; um `preorder`, criação de ForSale, exportação, relatório ou ACK `Printed` não satisfaz o gate `native_first_print_trigger`. **26/26 casos próprios e 70/70 cenários de transição PASS** em cópia isolada. Continua **UNKNOWN** o ponto real de despacho `DLV_IFO`, e a PR não confere autoridade de imprimir ou desativar o emissor.
+
+Relatório com fontes oficiais, pontos de prova e barreiras de segurança: [Auditoria da primeira via Retail/ForSale](AUDITORIA_PRIMEIRO_DESPACHO_MARKETPLACE_FORSALE_20261027.md).
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
