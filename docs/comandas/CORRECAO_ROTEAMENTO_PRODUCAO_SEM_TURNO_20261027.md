@@ -1,5 +1,17 @@
 # Planejador de impressão — destinos físicos não são alternados por horário
 
+## Retificação de auditoria posterior — 27/10/2026
+
+A revalidação de 27/10 pela gestão e pela **leitura real da CAIXA_MOOCA** modifica a conclusão anterior de que os pares de sushi não tinham papel operacional por horário. A documentação de 30/09 já descrevia a distinção almoço/jantar, e a gestão reafirmou que **não quer imprimir nas impressoras que não trabalham naquele período**.
+
+Os pares `00009/00003` e `00006/00004` **são candidatos de alternância operacional documentada por família de preparo**, não destinos que devam imprimir simultaneamente. A matriz histórica apresenta 87 produtos no primeiro par e 19 no segundo. São 106 candidatos de supressão seletiva, sujeitos à validação de exceções e horários efetivos; **os outros 11 casos de dupla rota não são automaticamente alternativos**.
+
+O `HOLD` irrestrito implementado nesta PR foi uma proteção contra papel duplicado, **mas não é o comportamento final desejado**, pois pode bloquear pratos válidos. É necessário substituir esse mecanismo por um seletor com **evidência da janela original do pedido e categoria/praça comprovada**, que suprima filas inativas sem imprimir nas duas. A própria hora que já vem na comanda deve ser preservada; nenhuma aprovação diária ou relógio paralelo. Não transformar `production-service-state.json` vencido em prova.
+
+Ver [auditoria revisada das impressoras](AUDITORIA_REVALIDADA_IMPRESSORAS_E_JANELAS_20261027.md). **O planner físico segue DRAFT/HOLD até o seletor testado e homologado.** Esta retificação não autoriza alteração do arquivo de impressão da Teknisa, fila Windows, serviço ou impressora.
+
+
+
 **TATÁ Comandas · 27/10/2026 · PR #127 · DRAFT/HOLD · sem implantação**
 
 ## Decisão operacional preservada
