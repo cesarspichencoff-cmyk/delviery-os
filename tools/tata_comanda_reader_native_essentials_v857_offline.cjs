@@ -67,8 +67,8 @@ function canonicalProductCode(value){
  // five exact-length groups. Never discard arbitrary punctuation/separators.
  const compact=/^[A-Z0-9]{10}$/.test(supplied)
   ?supplied
-  :/^[A-Z0-9]\\.[A-Z0-9]{2}\\.[A-Z0-9]{2}\\.[A-Z0-9]{3}\\.[A-Z0-9]{2}$/.test(supplied)
-   ?supplied.replace(/\\./g,"")
+  :/^[A-Z0-9]\.[A-Z0-9]{2}\.[A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{2}$/.test(supplied)
+   ?supplied.replace(/\./g,"")
    :null;
  if(compact===null)return null;
  return [compact.slice(0,1),compact.slice(1,3),compact.slice(3,5),
