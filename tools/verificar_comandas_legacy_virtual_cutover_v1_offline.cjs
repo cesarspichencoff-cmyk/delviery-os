@@ -49,6 +49,21 @@ const staged=()=>{
    pending_or_ambiguous_attempts_reconciled:true},
   receipt_claim:{kind:"JSON_STATUS_202_QUEUED"}
  };
+ x.teknisa_delivery_report_census={
+  auto_branch:{store_id:"0001",store_unit:"01",
+   installed_source_sha256:{venda:h,impressao_delivery:h,
+    delivery_controller:h,msde_query:h},
+   path:"SALE_FINALIZATION",evidence_level:"VENDAS_CODE_ONLY",
+   sale_committed_without_error:true,is_delivery:true,
+   gross_total_positive:true,caixa_auto_delivery_report_flag:"S"},
+  manual_branch:{store_id:"0001",store_unit:"01",
+   installed_source_sha256:{venda:h,impressao_delivery:h,
+    delivery_controller:h,msde_query:h},
+   path:"MANUAL_DELIVERY_REPORT_REQUEST",evidence_level:"VENDAS_CODE_ONLY"},
+  cashier_global_setting_unchanged:true,
+  auto_report_intent:"INDEPENDENT_REPORT_DISPOSITION_REVIEWED",
+  manual_report_intent:"PRESERVE_ON_DEMAND_WITH_AUDIT"
+ };
  x.teknisa_upstream_suppression={mechanism:"IDIMPPEDPROD_N",
   native_mode_evidence:{store_id:"0001",store_unit:"01",
    impressao_pedido_sha256:h,mode:"N",
@@ -271,6 +286,30 @@ test("Odhen old queued jobs are reconciled before any new paper cutover",()=>{
 test("ambiguous old print effect cannot be silently reprinted after switch",()=>{
  const x=staged();x.peripheral_bridge_evidence.route_census.pending_or_ambiguous_attempts_reconciled=false;
  holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED");
+});
+test("missing delivery auto and manual report paths keeps cutover blocked",()=>{
+ const x=staged();delete x.teknisa_delivery_report_census;
+ holds(x,"TEKNISA_POST_SALE_AND_MANUAL_REPORT_PATHS_UNCENSUSED");
+});
+test("post-sale auto report is not first production or kitchen print",()=>{
+ const x=staged();x.teknisa_delivery_report_census.auto_branch.path="KITCHEN_FIRST_PRINT";
+ holds(x,"TEKNISA_AUTO_REPORT_NOT_SOURCE_SCOPED");
+});
+test("manual delivery report remains possible even if auto branch is disabled",()=>{
+ const x=staged();x.teknisa_delivery_report_census.manual_branch.path="SALE_FINALIZATION";
+ holds(x,"TEKNISA_MANUAL_REPORT_ENDPOINT_NOT_ACCOUNTED");
+});
+test("changing global caixa report setting is not a delivery-only change",()=>{
+ const x=staged();x.teknisa_delivery_report_census.cashier_global_setting_unchanged=false;
+ holds(x,"REPORT_CASHIER_SCOPE_OR_MANUAL_PATH_UNSAFE");
+});
+test("manual report should remain accountable on demand",()=>{
+ const x=staged();x.teknisa_delivery_report_census.manual_report_intent="DROP_ALL_REPORTS";
+ holds(x,"REPORT_CASHIER_SCOPE_OR_MANUAL_PATH_UNSAFE");
+});
+test("report cannot vanish from inventory due to a guess about existing ifood output",()=>{
+ const x=staged();x.teknisa_delivery_report_census.auto_report_intent="PROBABLY_DISABLED";
+ holds(x,"REPORT_CASHIER_SCOPE_OR_MANUAL_PATH_UNSAFE");
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
