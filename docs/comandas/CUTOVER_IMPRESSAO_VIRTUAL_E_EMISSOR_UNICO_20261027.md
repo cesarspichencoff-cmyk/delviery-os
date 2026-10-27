@@ -23,7 +23,10 @@ Referências oficiais:
 
 A inspeção **somente do código instalado** em `CAIXA_MOOCA` identificou três transportes possíveis da Teknisa: `PONTE_HTTP_PRINT` (`/print` para periféricos), `PHP_PORT_WRITE` (`fopen/fwrite`) e `DELPHI_FILE_DISPATCH`. **O ramo ativo não foi comprovado** e nenhuma fila foi desviada. Não se pode tratar `NUL` como cobertura universal desses caminhos. O contrato de transição exige agora o pré-voo `tools/comandas_teknisa_transport_census_v1_offline.cjs` compatível com o transporte e destino alegados antes de admitir sequer uma candidatura de migração. Caso faltem flags do runtime, prova da fila real depois da ponte ou do Delphi, ou comprovação de isolamento fiscal, a transição permanece `HOLD`.
 
-[Auditoria de transporte do PHP instalado](AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md) fornece SHA-256 dos módulos lidos, evidência de cada ramo, limites e testes; **20/20 pré-voo + 32/32 contrato de cutover** passaram em clone offline. Nenhum deles autentica sozinho a configuração de produção ou autoriza uma porta virtual.
+[Auditoria de transporte do PHP instalado](AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md) fornece SHA-256 dos módulos lidos, evidência de cada ramo, limites e testes; **23/23 pré-voo + 33/33 contrato de cutover** passaram em clone offline. Nenhum deles autentica sozinho a configuração de produção ou autoriza uma porta virtual.
+
+
+**Guard adicional do periférico Epson:** o Odhen Periféricos instalado usa uma **DLL de fornecedor** no ramo Epson, enquanto o código usa `SpoolerLibrary` para outros modelos. A existência de filas Windows de Epson não prova que a DLL utiliza essas filas. Portanto o redirecionamento de um caminho `PONTE_HTTP_PRINT → EPSON_VENDOR_DLL` para `NUL` recebe `HOLD`, ainda que alguém alegue uma fila downstream; o modo `WINDOWS_WINSPOOL_API` tem de ser demonstrado na rota efetiva, e não inferido de uma fila presente. A primeira preferência permanece a supressão seletiva da **via antiga** na fonte, sem atingir registro de pedidos, documentos fiscais ou relatórios.
 
 ## Alternativas em ordem de simplicidade
 
