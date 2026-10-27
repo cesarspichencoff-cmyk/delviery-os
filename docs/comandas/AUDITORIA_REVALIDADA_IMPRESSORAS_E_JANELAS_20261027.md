@@ -60,3 +60,9 @@ Isso oferece um mecanismo **plausível**, mas não causa demonstrada, de envio a
 Esta é a **reavaliação da premissa** com dados da loja, não autorização para ligar, pausar, descartar, limpar, reiniciar fila, instalar, alterar Teknisa/GP, modificar SQL, impressão ou deploy. O alvo de economia é **zero envio desnecessário a praças inativas**, sujeito a validação de produto/horário/exceção. Consumo de papel evitado só poderá ser quantificado por comparação real e apropriada de trabalhos e papel, e não pela contagem bruta de jobs retidos.
 
 **Estado: AUDITORIA DE ORIGEM MELHORADA / CORREÇÃO DO PLANEJADOR AINDA NECESSÁRIA / PR DRAFT-HOLD.**
+
+## Progresso de implementação: prévia seletiva offline, sem envio
+
+Foi acrescentado à PR #127 o adaptador opcional `tools/comandas_window_station_select_v1_offline.cjs`, documentado em [seletor por janela e praça](SELETOR_JANELA_PRACA_PREVIA_OFFLINE_V1_20261027.md). Em cópia descartável Foxxy, **27/27 testes** passaram, incluindo fronteiras de almoço/jantar, produto/categoria ligada por código exato, exceção dupla em HOLD, quentes no Balcão Sushi 2, cozinha independente e prévia com o planejador existente, sempre sem permissão de imprimir.
+
+**Diferença decisiva:** a versão de laboratório seleciona apenas **candidatos** e pode retirar da prévia o membro errado de um par alternativo, mas **não foi conectada ao Reader ou ao emissor instalado**. O bloqueio original dos pares no planejador permanece intacto para caminhos sem o adaptador. A alegação de origem/hora/categoria fornecida pelo teste **não é atestação independente**: categoria homologada, fonte de hora e estado físico continuam requisitos abertos. Não declarar economia de papel real nem ativação de rota na loja.
