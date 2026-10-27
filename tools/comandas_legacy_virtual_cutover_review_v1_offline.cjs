@@ -11,6 +11,8 @@ const {reviewNativeProductionPrintMode}=
  require("./comandas_teknisa_native_print_mode_v1_offline.cjs");
 const {assessBridgeLegacyOutput}=
  require("./comandas_peripheral_bridge_ack_backup_v1_offline.cjs");
+const {reviewDeliveryReportBoundary}=
+ require("./comandas_teknisa_delivery_report_boundary_v1_offline.cjs");
 const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
 const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
 const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
@@ -120,6 +122,27 @@ function reviewLegacyPrintCutover(input){
    "rollback_snapshot_and_reconciliation"]){
    if(!isProof(proof[k]))reasons.push("PROOF_MISSING_OR_INVALID:"+k);
   }
+ }
+ // The Teknisa post-sale automatic delivery report and the manual
+ // reprint endpoint are distinct from the kitchen first-production event.
+ // A global cashier IDIMPAUTENTREG change is NOT allowed by this proposal.
+ const report=input.teknisa_delivery_report_census;
+ if(!report||typeof report!=="object"||Array.isArray(report))
+  reasons.push("TEKNISA_POST_SALE_AND_MANUAL_REPORT_PATHS_UNCENSUSED");
+ else{
+  const auto=reviewDeliveryReportBoundary(report.auto_branch);
+  const manual=reviewDeliveryReportBoundary(report.manual_branch);
+  if(auto.status!=="SOURCE_PATH_CANDIDATE_ONLY" ||
+     auto.route_kind!=="POST_SALE_DELIVERY_REPORT")
+   reasons.push("TEKNISA_AUTO_REPORT_NOT_SOURCE_SCOPED:"+auto.reason);
+  if(manual.status!=="SOURCE_PATH_CANDIDATE_ONLY" ||
+     manual.route_kind!=="MANUAL_REPORT")
+   reasons.push("TEKNISA_MANUAL_REPORT_ENDPOINT_NOT_ACCOUNTED:"+manual.reason);
+  if(report.cashier_global_setting_unchanged!==true ||
+     !["INDEPENDENT_REPORT_DISPOSITION_REVIEWED","PRESERVE_DIFFERENT_DOCUMENT_REVIEWED"]
+       .includes(report.auto_report_intent) ||
+     report.manual_report_intent!=="PRESERVE_ON_DEMAND_WITH_AUDIT")
+   reasons.push("REPORT_CASHIER_SCOPE_OR_MANUAL_PATH_UNSAFE");
  }
  // Source coverage and confirmed route-to-sink are never implied by one
  // Windows "Printed" status or by past Gestor print being disabled.
