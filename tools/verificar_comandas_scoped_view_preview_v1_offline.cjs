@@ -77,10 +77,14 @@ test("native three-view order mismatch remains a global integrity hold",()=>{
  assert.ok(b.production.every(v=>v.byte_count===0));
  assert.equal(b.conference.byte_count,0);
 });
-test("incomplete native projection never becomes printable via matching iFood",()=>{
- const b=run(fixture(),partiallyKnownResult());
- assert.ok(b.production.every(v=>v.byte_count===0));
+test("incomplete native projection with zero production routes cannot be invented by iFood",()=>{
+ const src=partiallyKnownResult(),before=JSON.stringify(src);
+ const b=projectScopedPreview(src,fixture());
+ assert.equal(JSON.stringify(src),before);
+ assert.equal(b.production.length,0,"renderer must not invent missing production routes");
  assert.equal(b.conference.byte_count,0);
+ assert.equal(b.conference.ready_for_operational_print,false);
+ assert.equal(b.effects.print,false);
 });
 test("source review cannot inject modified external iFood number into native ticket identifiers",()=>{
  const claims=fixture();claims.ifood.short_id="0999";
