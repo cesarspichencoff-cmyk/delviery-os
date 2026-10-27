@@ -84,6 +84,10 @@ As regressões locais após essa integração ficaram em **18/18 (modo nativo)**
 
 **Próxima evidência que pode mudar a decisão:** localizar o callsite de **primeira impressão de produção do pedido iFood** e o parâmetro recebido naquele callsite; confirmar seu escopo sem ler payloads ou alterar banco/GP. Se a opção de `N` for realmente granular e reversível, ela pode dispensar completamente o driver virtual e reduzir custo/risco.
 
+## Retificação de alcance do IDIMPPEDPROD — configuração de caixa compartilhada
+
+A inspeção posterior de **133 PHP instalados** identificou `src/Service/Operator.php:314` como origem do `IDIMPPEDPROD` na sessão a partir da configuração **do caixa** e comprovou consumo desse mesmo parâmetro em caminhos de **mesa** (`Pedido.php:1293–1312`), **balcão** (`Controller/Payment.php:550–556`) e **reimpressão** (`GeneralFunctions.php:561–575`). Logo `IDIMPPEDPROD='N'` **na configuração compartilhada** pode cortar comandas válidas alheias ao delivery e **não é um atalho operacional permitido**. Um override estritamente restrito à invocação `DLV_IFO` permanece apenas hipótese, sem prova de callsite. Na PR, `CASH_REGISTER_CONFIG_CHANGE` ou ausência de override granular retorna `HOLD`; testes específicos **24/24 + 23/23 + 41/41 PASS** em Foxxy isolado. [Auditoria detalhada do escopo](AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md). Esta retificação prevalece sobre qualquer leitura anterior que sugira simplesmente parametrizar `N` no caixa.
+
 ## Próximo passo comprovável e seu limite
 
 O próximo censo, **passivo e com escopo de fonte definido**, precisa obter apenas o modo ativo de impressão de pedidos na integração da Teknisa, o nome/identidade do serviço periférico que recebe `/print` caso a ponte esteja ativa, se essa ponte usa realmente as filas Windows vistas no caixa ou IP direto, e se o GP/iFood tem saída separada. Evitar exportar URLs com credenciais, payloads, nomes de clientes, documentos, números de pedidos, configuração fiscal ou registro bruto de impressão.
