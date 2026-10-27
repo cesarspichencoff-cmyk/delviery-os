@@ -59,6 +59,16 @@ Os SHA fixam **bytes do código observado**. Não validam configuração de runt
 - `tools/comandas_legacy_virtual_cutover_review_v1_offline.cjs` exige censo explícito do relatório automático, da emissão manual e da preservação da opção global do caixa, além dos requisitos anteriores de Reader, sequência TATÁ, iFood, rotas e backup. Sem isso, **HOLD**; contrato ampliado **55/55 PASS** em Foxxy isolado.
 - CI Linux/Windows inclui o teste novo. Conferir o workflow no commit exato antes de declarar teste integral.
 
+## Pesquisa externa específica: Gestor iFood
+
+A documentação pública oficial do iFood descreve **configuração própria da impressão automática do Gestor**, separada do mecanismo de **aceite automático**: menu de Ajustes → Impressão → Impressão automática de pedidos. Ela também documenta um botão de **impressão manual**. Essas informações são **documentação pública do produto**, não configuração observada do Itaim em 27/10/2026. O relato da gestão de 25/10 de que o Gestor já estava sem impressão automática não foi revalidado por acesso à conta.
+
+Fontes externas:
+- https://blog-parceiros.ifood.com.br/aceite-automatico/ (atualizado em 18/07/2025)
+- https://blog-parceiros.ifood.com.br/gestor-de-pedidos-ifood/ (funções de impressão automática/manual)
+
+Implicação: o projeto precisa tratar separadamente **emissão do Gestor**, **relatório de entrega da Teknisa**, **produção nativa por praça** e **reimpressões manuais**. Não ativar impressão no Gestor para realizar o cruzamento de dados; também não alegar que a opção pública já esteja corretamente desativada na conta do Itaim.
+
 ## Próxima ação que realmente avança o projeto
 
 1. Identificar a integração executável/serviço ou evento que **cria a primeira via de produção `DLV_IFO`**; não reutilizar o pós-venda `IDIMPAUTENTREG` como gatilho.
