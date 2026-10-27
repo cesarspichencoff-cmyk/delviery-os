@@ -1,149 +1,67 @@
 "use strict";
-
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-
-const { projectExpectedRouting } = require("../dist/src/shadow/expectedRouting.js");
-const { planProductionPrintIntents } = require("../dist/src/production/productionPrintPlan.js");
-const { resolveProductionServiceShiftState } = require("../dist/src/production/serviceShiftState.js");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const {projectExpectedRouting}=require("../dist/src/shadow/expectedRouting.js");
+const {planProductionPrintIntents}=require("../dist/src/production/productionPrintPlan.js");
+const {resolveProductionServiceShiftState}=
+ require("../dist/src/production/serviceShiftState.js");
 
 function load(relativePath) {
-  return JSON.parse(fs.readFileSync(path.join(__dirname, "..", relativePath), "utf8"));
+ return JSON.parse(fs.readFileSync(path.join(__dirname,"..",relativePath),"utf8"));
 }
-
-const routing = load("data/odhen_product_routing_compact_v1.json");
-const printers = load("data/runtime_printer_map_v1.json");
-const calibration = load("data/production_printer_calibration_registry_v1.json");
-
-const pairs = [
-  { lunch: "00009", dinner: "00003" },
-  { lunch: "00006", dinner: "00004" },
+const routing=load("data/odhen_product_routing_compact_v1.json");
+const printers=load("data/runtime_printer_map_v1.json");
+const calibration=load("data/production_printer_calibration_registry_v1.json");
+const pairs=[
+ {key:"SUSHI_1",a:"00009",b:"00003"},
+ {key:"SUSHI_2",a:"00006",b:"00004"}
 ];
-
-function expectedForService(configured, service) {
-  let selected = [...configured];
-  for (const pair of pairs) {
-    if (selected.includes(pair.lunch) && selected.includes(pair.dinner)) {
-      const keep = service === "LUNCH" ? pair.lunch : pair.dinner;
-      selected = selected.filter(
-        (code) => (code !== pair.lunch && code !== pair.dinner) || code === keep,
-      );
-    }
+let checked=0,dualRoleProducts=0;
+for(const [productCode,codes] of Object.entries(routing.products)){
+ const projection=projectExpectedRouting({
+  ids:{pedido_interno:"MATRIX-"+productCode},
+  items:[{item_index:0,codigo:productCode,nome:productCode,quantidade:1}]
+ },routing,printers);
+ assert.equal(projection.ready,true,"routing invalid for "+productCode);
+ const ambiguous=pairs.filter(pair=>codes.includes(pair.a)&&codes.includes(pair.b));
+ if(ambiguous.length)dualRoleProducts++;
+ const refused=new Set(ambiguous.flatMap(pair=>[pair.a,pair.b]));
+ const independentlyRouted=[...new Set(codes.filter(code=>!refused.has(code)))].sort();
+ for(const service of ["LUNCH","DINNER",null]){
+  const plan=planProductionPrintIntents(projection,{
+   tata_sequence:"001",teknisa_sequence:"MATRIX-"+productCode,
+   ifood_sequence:"IFOOD-"+productCode,order_time:null,
+   service_resolution:service
+    ?{service,evidence:"HUMAN_CONFIRMED_RULE",source_ref:"synthetic:service-matrix"}
+    :{service:null,evidence:"UNKNOWN",source_ref:null},
+   template_version:"production-ticket-v2-shadow",ticket_items:[]
+  },calibration);
+  assert.equal(plan.ready_for_physical_print,false);
+  assert.equal(plan.effects.print,false);
+  assert.equal(plan.ready_for_shadow_payload,ambiguous.length===0,
+   "dual role must fail regardless of service: "+productCode);
+  for(const pair of ambiguous){
+   assert.ok(plan.blocking_reasons.includes(
+    pair.key+"_DUAL_PRODUCTION_ROLE_UNPROVEN_ITEM_0"),
+    "source ambiguity missing for "+productCode);
   }
-  return [...new Set(selected)].sort();
+  const actual=plan.print_intents.map(x=>x.printer.printer_code).sort();
+  assert.deepEqual(actual,independentlyRouted,
+   "never select role by meal shift: "+productCode);
+  for(const intent of plan.print_intents)
+   assert.equal(intent.physical_effect_authorized,false);
+ }
+ checked++;
 }
+assert.equal(checked,Object.keys(routing.products).length);
+assert.ok(checked>0&&dualRoleProducts>0);
+console.log("production-service-matrix-v1: SAFE_NO_SHIFT_ROLE_GATE"+
+ " products="+checked+" dual_role_holds="+dualRoleProducts+
+ " services=LUNCH,DINNER,NULL no-physical-effect");
 
-let checked = 0;
-let dualAlternativeProducts = 0;
-
-for (const [productCode, configuredCodes] of Object.entries(routing.products)) {
-  const projection = projectExpectedRouting(
-    {
-      ids: { pedido_interno: `MATRIX-${productCode}` },
-      items: [{
-        item_index: 0,
-        codigo: productCode,
-        nome: productCode,
-        quantidade: 1,
-      }],
-    },
-    routing,
-    printers,
-  );
-
-  assert.equal(projection.ready, true, `routing not ready for ${productCode}`);
-
-  const hasDualAlternative = pairs.some(
-    (pair) =>
-      configuredCodes.includes(pair.lunch) &&
-      configuredCodes.includes(pair.dinner),
-  );
-  if (hasDualAlternative) dualAlternativeProducts += 1;
-
-  for (const service of ["LUNCH", "DINNER"]) {
-    const plan = planProductionPrintIntents(
-      projection,
-      {
-        tata_sequence: "001",
-        teknisa_sequence: `MATRIX-${productCode}`,
-        ifood_sequence: `IFOOD-${productCode}`,
-        order_time: null,
-        service_resolution: {
-          service,
-          evidence: "HUMAN_CONFIRMED_RULE",
-          source_ref: "synthetic:service-matrix",
-        },
-        template_version: "production-ticket-v2-shadow",
-        ticket_items: [],
-      },
-      calibration,
-    );
-
-    assert.equal(
-      plan.ready_for_shadow_payload,
-      true,
-      `${service} plan not ready for ${productCode}: ${plan.blocking_reasons.join(",")}`,
-    );
-    assert.equal(plan.ready_for_physical_print, false);
-
-    const actualCodes = plan.print_intents
-      .map((intent) => intent.printer.printer_code)
-      .sort();
-    const expectedCodes = expectedForService(configuredCodes, service);
-
-    assert.deepEqual(
-      actualCodes,
-      expectedCodes,
-      `service route mismatch for ${productCode} / ${service}`,
-    );
-
-    for (const pair of pairs) {
-      assert.equal(
-        actualCodes.includes(pair.lunch) && actualCodes.includes(pair.dinner),
-        false,
-        `dual service printers leaked for ${productCode} / ${service}`,
-      );
-    }
-  }
-
-  if (hasDualAlternative) {
-    const unresolved = planProductionPrintIntents(
-      projection,
-      {
-        tata_sequence: "001",
-        teknisa_sequence: `MATRIX-${productCode}`,
-        ifood_sequence: `IFOOD-${productCode}`,
-        order_time: null,
-        service_resolution: {
-          service: null,
-          evidence: "UNKNOWN",
-          source_ref: null,
-        },
-        template_version: "production-ticket-v2-shadow",
-        ticket_items: [],
-      },
-      calibration,
-    );
-    assert.equal(unresolved.ready_for_shadow_payload, false);
-    assert.ok(
-      unresolved.blocking_reasons.some((reason) =>
-        reason.startsWith("SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_0_"),
-      ),
-      `missing service did not block ${productCode}`,
-    );
-  }
-
-  checked += 1;
-}
-
-assert.equal(checked, Object.keys(routing.products).length);
-assert.ok(checked > 0);
-
-console.log(
-  `production-service-matrix-v1: ok products=${checked} dual_alternatives=${dualAlternativeProducts}`,
-);
-
+// Below: historical service-state parser diagnostics, NOT current human
+// authorization to select a physical printer or create daily shift controls.
 
 const validState={
   schema:"deliveryos.production-service-shift-state.v2",
