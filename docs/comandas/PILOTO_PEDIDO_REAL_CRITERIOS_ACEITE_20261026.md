@@ -62,3 +62,12 @@ Os três tickets podem exibir o mesmo número curto de origem nativa; isso **nã
 Para 27/10, **não é necessário ativar a via impressa do Gestor iFood** para implementar essa arquitetura; a fonte independente poderá ser obtida pelo mecanismo legítimo já existente/consulta supervisionada. A ativação do Gestor somente como mecanismo de prova teria risco de duplicação, sem valor demonstrado nesta etapa. Não modificar a configuração por esta orientação.
 
 Ensaio offline: `tools/comandas_view_source_scope_v1_offline.cjs` e `tools/verificar_comandas_view_source_scope_v1_offline.cjs`. A política de segregação é de **evidência/revisão**, não um interruptor operacional: **nenhum campo de saída autoriza impressão, deploy ou sequência**. A coesão de identificadores entre três projeções V8.71 permanece importante, mas não é atestado independente do Gestor iFood. A trilha de produção efetiva exige ainda evento/fonte native, exclusividade, roteamento, cancelamento, sequência real e teste físico supervisionado.
+
+
+### Implementação incremental: isolamento também no renderizador offline
+
+A política de três vistas foi conectada a um **adaptador de prévia**: `tools/comandas_scoped_view_preview_v1_offline.cjs`. Ele reaproveita o renderizador nativo V4.6/V8.71 para obter as duas vias de produção e a conferência a partir do mesmo conteúdo Tecnisa, sem mudar a regra de coerência interna; **somente depois** aplica ao resultado da conferência a eventual falta de conciliação externa iFood. As duas vistas de produção são preservadas byte a byte no replay fictício quando o documento oficial está ausente ou divergente.
+
+- `tools/verificar_comandas_scoped_view_preview_v1_offline.cjs` executa nove cenários no renderer compilado: ausência e divergência de iFood afetam só conferência; perda da revisão nativa, colisão interna e bloqueio semântico legítimo seguem bloqueando todos; source/replay intactos.
+- O adaptador é **OFFLINE/REVIEW_ONLY**, não está ligado ao Reader ou ao serviço instalado; não confundir bytes ESC/POS gerados *em memória* com emissão física.
+- **Não** remover o veto global a erros reais da fonte Teknisa; ele ainda protege todas as vias. Não alterar identificadores nativos de produção para refletir dados independentes do Gestor iFood; a conciliação fica no envelope separado da conferência.
