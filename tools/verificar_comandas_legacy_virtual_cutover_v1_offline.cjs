@@ -99,6 +99,7 @@ test("Windows NUL can be reviewed as a sink only after source claims, never as t
  x.teknisa_transport_census.proposed_action="WINDOWS_NUL_REDIRECT";
  x.teknisa_transport_census.transport_destination.kind="WINDOWS_SPOOLER_QUEUE";
  x.teknisa_transport_census.nul_target_is_downstream_bridge=true;
+ x.teknisa_transport_census.transport_destination.peripheral_backend="WINDOWS_WINSPOOL_API";
  const r=check(x);
  assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
  assert.equal(r.virtual_sink_needs_independent_order_reader,true);
@@ -131,7 +132,17 @@ test("native transport and legacy action must agree",()=>{
  const x=staged();x.teknisa_transport_census.proposed_action="WINDOWS_NUL_REDIRECT";
  x.teknisa_transport_census.transport_destination.kind="WINDOWS_SPOOLER_QUEUE";
  x.teknisa_transport_census.nul_target_is_downstream_bridge=true;
+ x.teknisa_transport_census.transport_destination.peripheral_backend="WINDOWS_WINSPOOL_API";
  holds(x,"TEKNISA_TRANSPORT_AND_CUTOVER_ACTION_CONFLICT");
+});
+test("Epson native peripheral DLL keeps virtual NUL cutover in HOLD",()=>{
+ const x=staged();x.legacy_sources[0].proposed_legacy_action="WINDOWS_NUL_REDIRECT";
+ x.legacy_sources[0].path="WINDOWS_QUEUE";
+ x.teknisa_transport_census.proposed_action="WINDOWS_NUL_REDIRECT";
+ x.teknisa_transport_census.transport_destination.kind="WINDOWS_SPOOLER_QUEUE";
+ x.teknisa_transport_census.nul_target_is_downstream_bridge=true;
+ x.teknisa_transport_census.transport_destination.peripheral_backend="EPSON_VENDOR_DLL";
+ holds(x,"TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:EPSON_NATIVE_LIBRARY_NOT_PROVEN_TO_USE_WINDOWS_NUL");
 });
 test("unobserved runtime boolean flags cannot be invented from PHP source file",()=>{
  const x=staged();x.teknisa_transport_census.runtime_flags=null;
