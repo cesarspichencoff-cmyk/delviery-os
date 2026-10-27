@@ -9,6 +9,8 @@ const {identifyTeknisaPrintTransport}=
  require("./comandas_teknisa_transport_census_v1_offline.cjs");
 const {reviewNativeProductionPrintMode}=
  require("./comandas_teknisa_native_print_mode_v1_offline.cjs");
+const {assessBridgeLegacyOutput}=
+ require("./comandas_peripheral_bridge_ack_backup_v1_offline.cjs");
 const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
 const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
 const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
@@ -87,6 +89,14 @@ function reviewLegacyPrintCutover(input){
   reasons.push("TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:"+nativeTransport.reason);
  else if(nativeProposal.proposed_action!==byOrigin.get("TEKNISA").proposed_legacy_action)
   reasons.push("TEKNISA_TRANSPORT_AND_CUTOVER_ACTION_CONFLICT");
+ // Actual /print accepts to an Odhen internal queue and may forward a
+ // failed job to printerInfo.impBackup. Neither a 202 nor the primary
+ // destination census alone proves suppression of all old physical outputs.
+ if(nativeProposal?.runtime_flags?.utiliza_impressao_ponte===true){
+  const bridge=assessBridgeLegacyOutput(input.peripheral_bridge_evidence);
+  if(bridge.status!=="REVIEW_CANDIDATE_ONLY")
+   reasons.push("BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:"+bridge.reason);
+ }
  if(byOrigin.get("TEKNISA").proposed_legacy_action==="UPSTREAM_PRINT_OFF"){
   const sup=input.teknisa_upstream_suppression;
   if(!sup||typeof sup!=="object"||Array.isArray(sup))
