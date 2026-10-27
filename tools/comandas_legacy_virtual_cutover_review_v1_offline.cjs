@@ -25,7 +25,7 @@ function result(stage,status,reasons,extra={}){
   installation_authorized:false,can_activate:false,
   effects:EFFECTS,...extra};
 }
-function checkSource(s){
+function checkSource(s,stage){
  if(!s||typeof s!=="object"||Array.isArray(s)||
   !ORIGINS.includes(s.origin)||
   !["WINDOWS_QUEUE","DIRECT_PRINTER","APP_LEVEL","UNKNOWN"].includes(s.path)||
@@ -37,10 +37,10 @@ function checkSource(s){
   s.path!=="WINDOWS_QUEUE")return "NUL_DOES_NOT_INTERCEPT_NON_WINDOWS_OUTPUT";
  if(s.proposed_legacy_action==="WINDOWS_NUL_REDIRECT"&&
   s.has_other_unobserved_output)return "NUL_CANNOT_SUPPRESS_OTHER_PRINT_PATH";
- if(s.proposed_legacy_action==="KEEP_LEGACY")return "OLD_PHYSICAL_OUTPUT_REMAINS_ACTIVE";
- if(s.route_evidence!=="OBSERVED_ROUTE_CANDIDATE")
+ if(s.proposed_legacy_action==="KEEP_LEGACY"&&stage!=="SHADOW")return "OLD_PHYSICAL_OUTPUT_REMAINS_ACTIVE";
+ if(stage!=="SHADOW"&&s.route_evidence!=="OBSERVED_ROUTE_CANDIDATE")
   return "LEGACY_PATH_NOT_OBSERVED";
- if(s.has_other_unobserved_output)return "UNOBSERVED_LEGACY_PRINT_PATH";
+ if(stage!=="SHADOW"&&s.has_other_unobserved_output)return "UNOBSERVED_LEGACY_PRINT_PATH";
  return null;
 }
 function isProof(p){
@@ -60,7 +60,7 @@ function reviewLegacyPrintCutover(input){
  const invalid=[];
  for(const s of input.legacy_sources){
   if(byOrigin.has(s?.origin))invalid.push("DUPLICATE_ORIGIN");
-  const v=checkSource(s);
+  const v=checkSource(s,stage);
   if(v)invalid.push(s?.origin&&ORIGINS.includes(s.origin)?
     s.origin+":"+v:v);
   if(ORIGINS.includes(s?.origin))byOrigin.set(s.origin,s);
