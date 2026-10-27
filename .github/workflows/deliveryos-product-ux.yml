@@ -145,6 +145,8 @@ jobs:
         run: node tests/tata-reader/run-copilot-orders-tests.cjs
       - name: Evento nativo do leitor TATA passa pelo motor e pelo Copiloto (LAB)
         run: node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+      - name: Sessao propria do operador com provedor simulado (LAB)
+        run: node tests/tata-reader/run-neon-operator-session-tests.cjs
       - name: Identidade e vinculo de operador antecedem leitura (LAB)
         run: node tests/tata-reader/run-operator-read-authority-tests.cjs
       - name: Arquivos TATA alimentam Copiloto com limites e sem fallback antigo (LAB)
