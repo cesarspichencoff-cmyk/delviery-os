@@ -32,6 +32,14 @@ A inspeção **somente do código instalado** em `CAIXA_MOOCA` identificou três
 
 A inspeção posterior de **133 PHP instalados** identificou `src/Service/Operator.php:314` como origem do `IDIMPPEDPROD` na sessão a partir da configuração **do caixa** e comprovou consumo desse mesmo parâmetro em caminhos de **mesa** (`Pedido.php:1293–1312`), **balcão** (`Controller/Payment.php:550–556`) e **reimpressão** (`GeneralFunctions.php:561–575`). Logo `IDIMPPEDPROD='N'` **na configuração compartilhada** pode cortar comandas válidas alheias ao delivery e **não é um atalho operacional permitido**. Um override estritamente restrito à invocação `DLV_IFO` permanece apenas hipótese, sem prova de callsite. Na PR, `CASH_REGISTER_CONFIG_CHANGE` ou ausência de override granular retorna `HOLD`; testes específicos **24/24 + 23/23 + 41/41 PASS** em Foxxy isolado. [Auditoria detalhada do escopo](AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md). Esta retificação prevalece sobre qualquer leitura anterior que sugira simplesmente parametrizar `N` no caixa.
 
+## Retificação: resposta `status: 202` no JSON e emissão secundária Odhen
+
+A revisão estática de `odhen-perifericos/routes/imp.js:6–45` mostrou que `/print` responde com `res.json({status: 202, message: 'Impressao salva com sucesso'})` após `saveItemRequest`. O **202 é campo da resposta JSON**, não foi observada chamada `res.status(202)` nesse trecho; o **status HTTP efetivo não foi medido**. Em nenhum caso o valor comprova papel físico.
+
+Em `src/IMP/index.js:90–125`, a ponte enfileira dados e admite `printerInfo.impBackup`. Em `index.js:162–220`, falha/timeout pode fazer a impressão antiga sair por destino **backup**. O censo de rota principal não prova cobertura do backup nem que a via seja única. Novo [relatório específico](AUDITORIA_ODHEN_HTTP202_FILA_BACKUP_20261027.md) descreve os gatilhos e a fronteira da evidência.
+
+Os módulos offline `comandas_peripheral_bridge_ack_backup_v1_offline.cjs` e `comandas_legacy_virtual_cutover_review_v1_offline.cjs` exigem agora o inventário **de destino principal e reserva** antes de uma candidatura de transição via `PONTE_HTTP_PRINT`; backend desconhecido, reserva não observada e promoção do JSON 202 a prova de papel dão `HOLD`. Testes **17/17 + 47/47 PASS** no Foxxy isolado após correção explícita da diferença entre JSON e HTTP; nunca há efeito ou autorização para imprimir/desviar. O fluxo `DLV_IFO` de primeira via permanece **UNKNOWN**.
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
