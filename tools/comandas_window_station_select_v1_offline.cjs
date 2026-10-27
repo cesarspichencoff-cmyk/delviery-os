@@ -131,7 +131,11 @@ function planWindowReview(projection,windowClaim,context,calibration){
  if(!context||context.order_time!==windowClaim.order_local_hm)
   return answer("HOLD",["PREVIEW_TIME_DIFFERS_FROM_NATIVE_ORDER_TIME"],{
    period:source.period,plan:null});
- const plan=planProductionPrintIntents(source.projection,context,calibration);
+ // The native order-time candidate replaces expired/manual shift metadata
+ // only in this nonphysical replay. Never let a stale service label become a
+ // second destination decision or require a manager to approve every lunch.
+ const safeContext={...context,service_resolution:null};
+ const plan=planProductionPrintIntents(source.projection,safeContext,calibration);
  return {...source,plan,print_authorized:false,ready_for_operational_print:false};
 }
 module.exports={windowOf,selectWindowStations,planWindowReview,SCHEMA};
