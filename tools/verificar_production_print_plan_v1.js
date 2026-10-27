@@ -47,8 +47,26 @@ const order = {
   ],
 };
 
-const projection = projectExpectedRouting(order, routing, printers, nonProduction);
+// Historical fixture contains ambiguous dual sushi destinations. Use explicitly
+// single-destination SYNTHETIC entries to continue exercising the independent
+// content, observation, calibration and idempotency contracts below.
+const singleRouteFixture=structuredClone(routing);
+singleRouteFixture.products["9.15.00.075.00"]=["00003"];
+singleRouteFixture.products["9.50.00.000.00"]=["00004"];
+const projection = projectExpectedRouting(order, singleRouteFixture, printers, nonProduction);
 assert.equal(projection.ready, true);
+const ambiguousProjection=projectExpectedRouting(order,routing,printers,nonProduction);
+const ambiguousPlan=planProductionPrintIntents(ambiguousProjection,{
+ tata_sequence:"037",teknisa_sequence:"18452",ifood_sequence:"A1B2C3",
+ order_time:"19:42",
+ service_resolution:{service:"DINNER",evidence:"HUMAN_CONFIRMED_RULE",
+  source_ref:"synthetic:legacy-service"},
+ template_version:"production-ticket-v2-shadow",ticket_items:[]
+},calibration);
+assert.equal(ambiguousPlan.ready_for_shadow_payload,false,
+ "historical dual roles remain unproved even with DINNER label");
+assert.ok(ambiguousPlan.blocking_reasons.some(x=>x.includes("DUAL_PRODUCTION_ROLE_UNPROVEN")));
+assert.equal(ambiguousPlan.print_intents.length,0);
 
 const plan = planProductionPrintIntents(
   projection,
@@ -120,7 +138,7 @@ const lunchPlan = planProductionPrintIntents(
 assert.equal(lunchPlan.ready_for_shadow_payload, true);
 assert.deepEqual(
   lunchPlan.print_intents.map((x) => x.printer.printer_code).sort(),
-  ["00006", "00009"],
+  ["00003", "00004"],
 );
 
 for (const intent of plan.print_intents) {
@@ -183,18 +201,10 @@ const missingServicePlan = planProductionPrintIntents(
   },
   calibration,
 );
-assert.equal(missingServicePlan.ready_for_shadow_payload, false);
-assert.ok(
-  missingServicePlan.blocking_reasons.includes(
-    "SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_0_SUSHI_1",
-  ),
-);
-assert.ok(
-  missingServicePlan.blocking_reasons.includes(
-    "SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_1_SUSHI_2",
-  ),
-);
-assert.equal(missingServicePlan.print_intents.length, 0);
+assert.equal(missingServicePlan.ready_for_shadow_payload, true,
+ "a single-proved physical route has no daily-service approval dependency");
+assert.deepEqual(missingServicePlan.print_intents.map(
+ x=>x.printer.printer_code).sort(),["00003","00004"]);
 
 const unprovenServicePlan = planProductionPrintIntents(
   projection,
@@ -422,12 +432,15 @@ const dinnerWithIndependentKitchen = planProductionPrintIntents(
   },
   calibration,
 );
-assert.equal(dinnerWithIndependentKitchen.ready_for_shadow_payload, true);
+assert.equal(dinnerWithIndependentKitchen.ready_for_shadow_payload, false,
+ "independent kitchen output cannot cancel unproved sushi routes");
+assert.ok(dinnerWithIndependentKitchen.blocking_reasons.includes(
+ "SUSHI_2_DUAL_PRODUCTION_ROLE_UNPROVEN_ITEM_0"));
 assert.deepEqual(
   dinnerWithIndependentKitchen.print_intents
     .map((x) => x.printer.printer_code)
     .sort(),
-  ["00002", "00004"],
+  ["00002"],
 );
 
 const calibratedRegistry = structuredClone(calibration);
