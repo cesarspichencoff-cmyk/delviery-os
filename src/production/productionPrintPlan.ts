@@ -311,9 +311,9 @@ function stableSemanticKeyMaterial(input: {
     input.target.printer_name,
     input.target.printer_ip,
     input.templateVersion,
-    input.serviceResolution.service ?? "UNRESOLVED",
-    input.serviceResolution.evidence,
-    input.serviceResolution.source_ref ?? "",
+    // Service metadata is NOT a proven physical destination or a ticket
+    // content revision. A shift-label edit must not change the dedupe key for
+    // the SAME order, contents, route, origin and TATA sequence.
     input.ifoodSequence,
     input.teknisaSequence,
     input.tataSequence,
