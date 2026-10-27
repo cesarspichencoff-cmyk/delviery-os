@@ -26,6 +26,24 @@ const staged=()=>{
  {...source("IFOOD_GESTOR","UPSTREAM_PRINT_OFF","APP_LEVEL"),
  route_evidence:"OBSERVED_ROUTE_CANDIDATE"}];
  x.proofs=proofs();
+ x.native_first_dispatch_lineage={
+  store_id:"0001",store_unit:"01",
+  installed_or_observed_source_sha256:h,
+  event_type:"NATIVE_FIRST_PRODUCTION_DISPATCH_CLAIM",
+  order_origin:"DLV_IFO",
+  native_order_revision_ref:"SYNTHETIC_NATIVE_REVISION",
+  native_revision_snapshot_sha256:h,
+  dispatcher_component_ref:"SYNTHETIC_FORSALE_DISPATCHER_UNKNOWN",
+  dispatcher_source_sha256:h,
+  preorder_import_is_not_print_proof:true,
+  forsale_comanda_is_not_dispatch_proof:true,
+  post_sale_report_not_reused_as_first_print:true,
+  gp_and_gestor_not_reused_as_native_trigger:true,
+  station_route_censused:true,
+  first_attempt_identity_censused:true,
+  cancellation_revision_reconciled:true
+ };
+
  x.teknisa_transport_census={
   store_id:"0001",store_unit:"01",
   code_evidence:{impressao_pedido_sha256:h,impressao_util_sha256:h,
@@ -357,6 +375,38 @@ test("iFood printed success and spooler job id never imply paper",()=>{
  assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
  assert.equal(r.paper_proven,false);
  assert.equal(r.can_activate,false);
+});
+test("no first native production event proven despite synthetic source claims is HOLD",()=>{
+ const x=staged();delete x.native_first_dispatch_lineage;
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:SOURCE_AND_STORE_NOT_IDENTIFIED");
+});
+test("ForSale comanda generated is not first native production printing",()=>{
+ const x=staged();x.native_first_dispatch_lineage.event_type="FORSALE_COMANDA_CREATED";
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:NOT_NATIVE_PRODUCTION_DISPATCH");
+});
+test("Retail marketplace preorder is not physical kitchen dispatch",()=>{
+ const x=staged();x.native_first_dispatch_lineage.event_type="RETAIL_MARKETPLACE_PREORDER";
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:NOT_NATIVE_PRODUCTION_DISPATCH");
+});
+test("ForSale sales exporter process cannot prove first production print",()=>{
+ const x=staged();x.native_first_dispatch_lineage.event_type="FORSALE_SALE_EXPORT";
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:NOT_NATIVE_PRODUCTION_DISPATCH");
+});
+test("iFood GP HTTP print is not native Teknisa kitchen trigger",()=>{
+ const x=staged();x.native_first_dispatch_lineage.event_type="IFOOD_GP_HTTP_PRINT";
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:NOT_NATIVE_PRODUCTION_DISPATCH");
+});
+test("report delivered after sale cannot substitute for first native production event",()=>{
+ const x=staged();x.native_first_dispatch_lineage.event_type="TEKNISA_POST_SALE_DELIVERY_REPORT";
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:NOT_NATIVE_PRODUCTION_DISPATCH");
+});
+test("same DLV_IFO native revision must be identified before emission cutover",()=>{
+ const x=staged();x.native_first_dispatch_lineage.native_revision_snapshot_sha256="UNKNOWN";
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:DLV_IFO_REVISION_OR_DISPATCHER_LINK_MISSING");
+});
+test("unknown production destination means first print is not proven",()=>{
+ const x=staged();x.native_first_dispatch_lineage.station_route_censused=false;
+ holds(x,"NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:PRODUCTION_ATTEMPT_ROUTE_REVISION_NOT_RECONCILED");
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
