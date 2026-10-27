@@ -64,14 +64,14 @@ test("weekday 14:59 still lunch candidate",()=>{
  ok(projection(),evidence("2026-10-27","14:59"),["00009"]);
 });
 test("weekday 15:00 no candidate",()=>{
- hold(projection(),evidence("2026-10-27","15:00"),"OUTSIDE_REPORTED_WINDOW");
+ hold(projection(),evidence("2026-10-27","15:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
 });
 test("weekend 16:29 lunch selects Balcao2 for rolls",()=>{
  ok(projection(["00006","00004"],"9.50.00.000.00"),
   evidence("2026-10-25","16:29","ENROLADOS"),["00006"]);
 });
 test("weekend 16:30 is outside reported lunch",()=>{
- hold(projection(),evidence("2026-10-25","16:30"),"OUTSIDE_REPORTED_WINDOW");
+ hold(projection(),evidence("2026-10-25","16:30"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
 });
 test("weekday 18:00 dinner chooses Delivery Sushi1 only",()=>{
  ok(projection(),evidence("2026-10-27","18:00"),["00003"]);
@@ -81,10 +81,10 @@ test("dinner 22:59 chooses Delivery Sushi2 only for rolls",()=>{
   evidence("2026-10-27","22:59","ENROLADOS"),["00004"]);
 });
 test("23:00 has no implied extra shift",()=>{
- hold(projection(),evidence("2026-10-27","23:00"),"OUTSIDE_REPORTED_WINDOW");
+ hold(projection(),evidence("2026-10-27","23:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
 });
 test("9:00 outside cannot silently print at lunch or dinner",()=>{
- hold(projection(),evidence("2026-10-27","09:00"),"OUTSIDE_REPORTED_WINDOW");
+ hold(projection(),evidence("2026-10-27","09:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
 });
 test("unknown date, invalid leap day and malformed native time fail closed",()=>{
  for(const [day,hm] of [["2026-02-30","13:00"],["2026-10-27","25:00"],["2026-10-27","12:90"]])
