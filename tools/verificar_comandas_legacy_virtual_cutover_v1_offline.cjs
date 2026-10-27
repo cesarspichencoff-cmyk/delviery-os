@@ -37,6 +37,14 @@ const staged=()=>{
    path_matches_order_print:true},
   proposed_action:"UPSTREAM_PRINT_OFF"
  };
+ x.teknisa_upstream_suppression={mechanism:"IDIMPPEDPROD_N",
+  native_mode_evidence:{store_id:"0001",store_unit:"01",
+   impressao_pedido_sha256:h,mode:"N",
+   intended_scope:{origin:"DLV_IFO",
+    kind:"DELIVERY_PRODUCTION_TICKET_ONLY",
+    other_tek_orders_preserved:true,fiscal_outputs_preserved:true,
+    callsite_evidence_ref:"SYNTHETIC_SCOPE_UNATTESTED",
+    callsite_snapshot_sha256:h}}};
  return x;
 };
 let n=0;
@@ -175,6 +183,28 @@ test("without correct shift route print cutover is unsafe",()=>{
 test("without confirmed paper route cannot promote 3-view renderer",()=>{
  const x=staged();delete x.proofs.new_printer_route_calibration;
  holds(x,"PROOF_MISSING_OR_INVALID:new_printer_route_calibration");
+});
+test("UPSTREAM_PRINT_OFF label alone cannot override native source-level guards",()=>{
+ const x=staged();delete x.teknisa_upstream_suppression;
+ holds(x,"NATIVE_UPSTREAM_SUPPRESSION_MECHANISM_NOT_IDENTIFIED");
+});
+test("N must be scoped to DLV_IFO only and preserve other orders",()=>{
+ const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.intended_scope.kind="ALL_ORDERS";
+ holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:DELIVERY_ONLY_CALLSITE_AND_FISCAL_SCOPE_NOT_PROVEN");
+});
+test("N source candidate cannot disable fiscal outputs",()=>{
+ const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.intended_scope.fiscal_outputs_preserved=false;
+ holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:DELIVERY_ONLY_CALLSITE_AND_FISCAL_SCOPE_NOT_PROVEN");
+});
+test("S mode cannot be misrepresented as native no-print",()=>{
+ const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.mode="S";
+ holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:NATIVE_MODE_STILL_ALLOWS_SOME_PRODUCTION_OUTPUT");
+});
+test("other source-off configuration requires its own identifiable proof",()=>{
+ const x=staged();
+ x.teknisa_upstream_suppression={mechanism:"OTHER_SOURCE_SCOPED_PRINT_OFF",
+  external_source_scoping:{status:"UNKNOWN"}};
+ holds(x,"OTHER_UPSTREAM_SUPPRESSION_SCOPE_NOT_ATTESTED");
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
