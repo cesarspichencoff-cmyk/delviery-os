@@ -58,6 +58,11 @@ function assessBridgeLegacyOutput(input){
  if(census.primary_destination_censused!==true ||
     census.primary_legacy_output_plan!=="EXPLICITLY_COVERED")
   return out("HOLD","PRIMARY_PRINTER_CUTOVER_ROUTE_NOT_CENSUSED");
+ // Turning off FUTURE admission never cancels an already accepted bridge
+ // job. An old queued or ambiguous job may print later, including on backup.
+ if(census.pending_legacy_jobs_censused!==true ||
+    census.pending_or_ambiguous_attempts_reconciled!==true)
+  return out("HOLD","QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED");
  if(acknowledgment.kind==="JSON_STATUS_202_QUEUED"){
   // The route returns status 202 immediately after saveItemRequest; the
   // worker prints asynchronously and may fall back to printerInfo.impBackup.
