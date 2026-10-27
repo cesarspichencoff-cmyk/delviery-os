@@ -51,6 +51,21 @@ function reviewNativeProductionPrintMode(input){
     !SHA.test(target.callsite_snapshot_sha256||""))
   return answer("HOLD","DELIVERY_ONLY_CALLSITE_AND_FISCAL_SCOPE_NOT_PROVEN",{
    group_predicates:groupPredicates});
+ // Source audit found that the runtime flag is loaded from cashier
+ // configuration into session and reused in mesa, balcao and reprint
+ // paths. Never treat changing that shared configuration as a delivery-only
+ // suppression, even when caller claims other orders will be preserved.
+ const proposed=input.proposed_application;
+ if(!proposed||typeof proposed!=="object"||Array.isArray(proposed)||
+    proposed.kind!=="DELIVERY_ONLY_PER_INVOCATION_CLAIM"||
+    proposed.shared_cashier_setting_untouched!==true||
+    proposed.mesa_and_balcao_unchanged!==true||
+    typeof proposed.override_evidence_ref!=="string"||
+    proposed.override_evidence_ref.length<8||
+    !SHA.test(proposed.override_snapshot_sha256||""))
+  return answer("HOLD","CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED",{
+   group_predicates:groupPredicates,
+   cashier_session_shared_across_order_types:true});
  return answer("REVIEW_CANDIDATE_ONLY",
   "PHP_N_CONDITION_SEEN_BUT_RUNTIME_EFFECT_AND_SCOPE_NOT_ATTESTED",{
    group_predicates:groupPredicates,
