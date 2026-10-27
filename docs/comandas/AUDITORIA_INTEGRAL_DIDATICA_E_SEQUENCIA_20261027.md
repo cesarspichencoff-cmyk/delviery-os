@@ -18,6 +18,14 @@ Uma inspeção posterior de 133 PHP instalados demonstrou que `IDIMPPEDPROD` é 
 
 Relatos, caminhos PHP/linhas, testes e limites: [escopo compartilhado do caixa](AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md) e [transporte nativo](AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md). Tudo permanece **OFFLINE/DRAFT/HOLD** sem mudança física.
 
+## Retificação: resposta `status: 202` no JSON e emissão secundária Odhen
+
+A revisão estática de `odhen-perifericos/routes/imp.js:6–45` mostrou que `/print` responde com `res.json({status: 202, message: 'Impressao salva com sucesso'})` após `saveItemRequest`. O **202 é campo da resposta JSON**, não foi observada chamada `res.status(202)` nesse trecho; o **status HTTP efetivo não foi medido**. Em nenhum caso o valor comprova papel físico.
+
+Em `src/IMP/index.js:90–125`, a ponte enfileira dados e admite `printerInfo.impBackup`. Em `index.js:162–220`, falha/timeout pode fazer a impressão antiga sair por destino **backup**. O censo de rota principal não prova cobertura do backup nem que a via seja única. Novo [relatório específico](AUDITORIA_ODHEN_HTTP202_FILA_BACKUP_20261027.md) descreve os gatilhos e a fronteira da evidência.
+
+Os módulos offline `comandas_peripheral_bridge_ack_backup_v1_offline.cjs` e `comandas_legacy_virtual_cutover_review_v1_offline.cjs` exigem agora o inventário **de destino principal e reserva** antes de uma candidatura de transição via `PONTE_HTTP_PRINT`; backend desconhecido, reserva não observada e promoção do JSON 202 a prova de papel dão `HOLD`. Testes **17/17 + 47/47 PASS** no Foxxy isolado após correção explícita da diferença entre JSON e HTTP; nunca há efeito ou autorização para imprimir/desviar. O fluxo `DLV_IFO` de primeira via permanece **UNKNOWN**.
+
 ## 1. Leitura rápida: produto que se pretende entregar
 
 O projeto procura substituir uma rotina de comandas propensa a inconsistências por um conjunto de **três apresentações coordenadas do mesmo pedido**, de forma legível para a equipe, sem duplicar impressão nem criar um segundo cadastro manual:
