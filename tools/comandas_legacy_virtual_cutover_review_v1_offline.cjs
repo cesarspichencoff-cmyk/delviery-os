@@ -7,6 +7,8 @@
  */
 const {identifyTeknisaPrintTransport}=
  require("./comandas_teknisa_transport_census_v1_offline.cjs");
+const {reviewNativeProductionPrintMode}=
+ require("./comandas_teknisa_native_print_mode_v1_offline.cjs");
 const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
 const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
 const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
@@ -85,6 +87,19 @@ function reviewLegacyPrintCutover(input){
   reasons.push("TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:"+nativeTransport.reason);
  else if(nativeProposal.proposed_action!==byOrigin.get("TEKNISA").proposed_legacy_action)
   reasons.push("TEKNISA_TRANSPORT_AND_CUTOVER_ACTION_CONFLICT");
+ if(byOrigin.get("TEKNISA").proposed_legacy_action==="UPSTREAM_PRINT_OFF"){
+  const sup=input.teknisa_upstream_suppression;
+  if(!sup||typeof sup!=="object"||Array.isArray(sup))
+   reasons.push("NATIVE_UPSTREAM_SUPPRESSION_MECHANISM_NOT_IDENTIFIED");
+  else if(sup.mechanism==="IDIMPPEDPROD_N"){
+   const trial=reviewNativeProductionPrintMode(sup.native_mode_evidence);
+   if(trial.status!=="REVIEW_CANDIDATE_ONLY")
+    reasons.push("NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:"+trial.reason);
+  }else if(sup.mechanism==="OTHER_SOURCE_SCOPED_PRINT_OFF"){
+   if(!isProof(sup.external_source_scoping))
+    reasons.push("OTHER_UPSTREAM_SUPPRESSION_SCOPE_NOT_ATTESTED");
+  }else reasons.push("NATIVE_UPSTREAM_SUPPRESSION_MECHANISM_NOT_IDENTIFIED");
+ }
  if(!proof||typeof proof!=="object"||Array.isArray(proof))
   reasons.push("INDEPENDENT_PROOF_SET_MISSING");
  else{
