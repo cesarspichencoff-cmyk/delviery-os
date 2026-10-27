@@ -151,7 +151,9 @@ for (const intent of plan.print_intents) {
   assert.equal(intent.service_resolution.service, "DINNER");
   assert.equal(intent.intent_fingerprint.length, 64);
   assert.match(intent.intent_fingerprint, /^[a-f0-9]{64}$/);
-  assert.match(intent.semantic_key_material, /production-ticket-v2::18452::/);
+  assert.ok(intent.semantic_key_material.startsWith(
+    '["production-ticket-v3-canonical-json","18452",'
+  ));
 }
 
 assert.deepEqual(plan.no_own_production_ticket_items, [
@@ -309,6 +311,54 @@ const fingerprintBase = planProductionPrintIntents(
   },
   calibration,
 );
+// V2 delimiter collision: the two different component tuples below both
+// serialized as "A~B~C~2~EA~HUMAN_CONFIRMED_RULE" in the old key.
+const collisionContext=(component)=>({
+ tata_sequence:"037",teknisa_sequence:"18452",ifood_sequence:"A1B2C3",
+ order_time:"19:42",template_version:"production-ticket-v2-shadow",
+ ticket_items:[{item_index:0,prep_components:[component]}]
+});
+const componentBase={quantity:2,unit:"EA",proof:"HUMAN_CONFIRMED_RULE"};
+const collisionA=planProductionPrintIntents(projection,
+ collisionContext({...componentBase,component_key:"A~B",label:"C"}),calibration);
+const collisionB=planProductionPrintIntents(projection,
+ collisionContext({...componentBase,component_key:"A",label:"B~C"}),calibration);
+const kitchenIntent=plan=>plan.print_intents.find(x=>x.printer.printer_code==="00003");
+assert.ok(collisionA.ready_for_shadow_payload&&collisionB.ready_for_shadow_payload);
+assert.notEqual(kitchenIntent(collisionA).intent_fingerprint,
+ kitchenIntent(collisionB).intent_fingerprint,
+ "distinct prep components must never deduplicate as the same print intent");
+assert.equal(collisionA.ready_for_physical_print,false);
+assert.equal(collisionB.ready_for_physical_print,false);
+
+// V2 observation collision: a single text containing "|" vs two notes.
+const observationContext=(notes)=>({
+ tata_sequence:"037",teknisa_sequence:"18452",ifood_sequence:"A1B2C3",
+ order_time:"19:42",template_version:"production-ticket-v2-shadow",
+ order_observations:notes.map(value=>({
+  value,source_ref:"synthetic:review",relevance:"PRODUCTION_RELEVANT",
+  proof:"REAL_OBSERVED"
+ }))
+});
+const singleNote=planProductionPrintIntents(projection,
+ observationContext(["SEM MOLHO | NA CAIXA"]),calibration);
+const separateNotes=planProductionPrintIntents(projection,
+ observationContext(["SEM MOLHO","NA CAIXA"]),calibration);
+assert.notEqual(kitchenIntent(singleNote).intent_fingerprint,
+ kitchenIntent(separateNotes).intent_fingerprint,
+ "note boundaries must be structurally preserved");
+
+// Prep component order may vary in equivalent readbacks; canonical key stays stable.
+const comp1={...componentBase,component_key:"EBITEN",label:"Ebiten"};
+const comp2={...componentBase,component_key:"ARROZ",label:"Arroz"};
+const reorder=(components)=>planProductionPrintIntents(projection,{
+ ...collisionContext(comp1),
+ ticket_items:[{item_index:0,prep_components:components}]
+},calibration);
+assert.equal(kitchenIntent(reorder([comp1,comp2])).intent_fingerprint,
+ kitchenIntent(reorder([comp2,comp1])).intent_fingerprint,
+ "equivalent component sets require a stable fingerprint");
+
 const fingerprintReplay = planProductionPrintIntents(
   projection,
   {
