@@ -32,3 +32,11 @@ A saída tem sempre `print_authorized=false`, `sequence_authorized=false`, `stat
 Depois disso: classificador/praças atuais, autorização independente da sequência TATÁ com idempotência, rollback, janela de manutenção específica e teste físico supervisionado. A saída de comandas do Gestor iFood estava desligada em 25/10, por confirmação de César; impressão simultânea havia sido contingência, não rotina.
 
 **Estado:** REVIEW_ONLY / DRAFT / HOLD. Nenhuma alteração em produção, sem vínculo de sequência ou impressão. `CI_PASS` não é `WORLD_PROVEN`.
+
+## Correção de ambiguidade temporal — 27/10/2026
+
+Na revisão offline, foi detectada uma lacuna: o analisador descartava toda reaparição de um `snapshot_hash` já visto no pedido, mesmo quando outra revisão havia surgido entre as duas observações. A sequência observada `A(hash1) → B(hash2) → A(hash1)` não prova, por si só, que o sistema nativo realmente voltou ao estado A: o terceiro envelope pode ser reenvio tardio de um snapshot antigo. Produzir uma transição `B → A` ou ignorar o reaparecimento ocultaria essa incerteza.
+
+**Contrato de correção:** repetições consecutivas do mesmo hash continuam deduplicadas; reaparição **não consecutiva** do mesmo hash retorna `HOLD: NONCONSECUTIVE_SNAPSHOT_REAPPEARANCE_AMBIGUOUS` para o lote, sem inventar transição. A análise nunca autoriza impressão, sequência, classificação nem interpretação de negócio dos estados. Dois testes adversariais foram incluídos na suíte Linux/Windows já existente. A mudança é somente em arquivo de análise offline; não modifica Reader, serviços, impressão ou dados reais. A aprovação hospedada do HEAD exato deve ser verificada separadamente.
+
+**Direção operacional confirmada por César em 27/10:** avançar internamente sem contatar a Teknisa; a consulta preparada permanece não enviada. O desenvolvimento pode progredir com código, replays, reconciliação offline e evidências já legitimamente disponíveis, mas não pode trocar ausência da primeira via nativa por presunção. A supressão da via antiga e o piloto físico continuam bloqueados enquanto esse evento, destinos/reserva, sequências, caixas e rollback não estiverem provados por mecanismo válido.
