@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "TATA_SOURCE_STALE_SHIFT_DIAGNOSED_UNIT_CONFIRMATION_REQUIRED",
-  "state_basis_head": "7a0a87e2c6563c757ba601697628a1d93b669c78",
+  "checkpoint_type": "ITAIM_SOURCE_BINDING_HUMAN_CONFIRMED_READONLY_PREVIEW_PROVEN",
+  "state_basis_head": "5733c42ad9efd9cbf97cd5786a38fe4935e6fdb0",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -41,9 +41,10 @@
     "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate.",
     "Copiloto TATA per-order read model reuses existing normalization engine. Nine synthetic tests pass: revisions, conflicts, source modes/units, minimization, missing/stale/future data and no inferred readiness/delivery/GPS association. No SQL reader or public route wired. Mooca reader service found Running; checkpoint mtime recent, host-status mtime old. Metadata-only inspection does not prove source health, contents, completeness or Itaim mapping.",
     "Installed stable-order event schema and field names inspected on Mooca without exporting order IDs, items, observations or customer data. Native source codes 0001/01 observed; geographic mapping unproven. Inspected event explicitly blocks downstream due service-state date mismatch/expiry. Native adapter now preserves that denial and uses explicit source mapping/timezone, mode and read-only effect boundary. Nine integration scenarios pass through adapter -> existing Tata normalization -> Copiloto projection; live/UI wiring remains absent.",
-    "GitHub product run 40424344253 and Android run 40424344257 completed successfully at 7a0a87e2. Mooca production-service-state.json inspected by metadata allowlist: schema v2, store_id 0001, operational_date 2026-10-14, service LUNCH, HUMAN_CONFIRMED_RULE, clock_inference_used false, no unit_id/unit_name. This explains date/expiry blockers in the newer observed source event; no state file or reader modified."
+    "GitHub product run 40424344253 and Android run 40424344257 completed successfully at 7a0a87e2. Mooca production-service-state.json inspected by metadata allowlist: schema v2, store_id 0001, operational_date 2026-10-14, service LUNCH, HUMAN_CONFIRMED_RULE, clock_inference_used false, no unit_id/unit_name. This explains date/expiry blockers in the newer observed source event; no state file or reader modified.",
+    "Cesar confirmed that Tata Comandas on Caixa Mooca serves Itaim only. Host-scoped source mapping registered for native 0001/01; not a global native-code mapping. Bounded on-host metadata preview sampled 20 event files: 20 scope matches, zero mismatches/invalid/unreadable, 20 producer-blocked. No order contents exported. Source service state remains 2026-10-14 LUNCH; no source-mode assignment or publication. Six synthetic preview scenarios pass."
   ],
-  "next_action": "Confirm which geographical unit the Tata Comandas feed on Caixa Mooca represents. Native 0001/01 and host identity are insufficient. Prepare a reviewed renewal of the stale 2026-10-14 LUNCH service state only against approved operational scope; do not infer shift from clock or promote blocked source facts. Continue identity/native lab independently.",
+  "next_action": "Geographical source question is resolved by Cesar: Itaim only on this host. Continue human/native authentication work and prepare authenticated service-state review/renewal preserving approved shift/date rules; do not ask again which unit the source serves. Diagnose current producer blockers without interpreting bounded historical sample as a current order inventory. Live order feed remains unpublished.",
   "unknowns": [
     "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -89,6 +90,6 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Native stable-order event adapter, nine integration scenarios and CI step added. No reader change, SQL query, live-feed publication or GPS activation."
+    "Host-specific source binding and read-only bounded preview deployed in the isolated lab folder; reader state, source permissions, SQL, network rules and GPS unchanged."
   ]
 }

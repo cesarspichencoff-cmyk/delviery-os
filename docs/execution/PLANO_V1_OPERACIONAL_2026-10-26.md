@@ -128,3 +128,11 @@ Os runs de produto `40424344253` e Android `40424344257` concluíram com sucesso
 A inspeção restrita de metadados de `production-service-state.json` no host encontrou esquema v2, `store_id=0001`, data operacional `2026-10-14`, serviço `LUNCH`, evidência `HUMAN_CONFIRMED_RULE` e inferência de relógio desligada. Não há `unit_id` ou `unit_name` nesse arquivo. A data antiga explica o bloqueio de data/validade no evento recente inspecionado. O arquivo não foi renovado e nenhum serviço foi reiniciado.
 
 Antes de consumir como Itaim, confirmar qual unidade geográfica o TATÁ Comandas desse host representa. Códigos nativos repetíveis e nome do computador não concedem esse vínculo. A renovação do estado de serviço precisa preservar o escopo e as regras operacionais aprovadas; não marcar almoço/jantar automaticamente a partir da hora.
+
+## Confirmação da unidade de origem
+
+César respondeu “Do Itaim somente” para a origem do TATÁ Comandas desse caixa. Isso resolve o vínculo geográfico desta instalação: host CAIXA_MOOCA, fonte nativa 0001/01, unidade operacional ITAIM. O vínculo não deve ser reutilizado automaticamente em outro computador com os mesmos códigos.
+
+`tata-source-binding.json` e `tata-source-preview.cjs` foram preparados em `tools/windows-local-lab/` e copiados para o diretório protegido do ensaio. A comparação por nome de host é uma proteção contra uso acidental, não autenticação do computador. A prévia limita o número de entradas examinadas e o tamanho dos arquivos, não consulta SQL e não altera o leitor. Seis cenários sintéticos validam o escopo e a minimização.
+
+Em 2026-10-27T00:48:55.039Z, a janela de 20 arquivos examinada no host mostrou 20 correspondências de unidade/código e 20 bloqueios do produtor, sem arquivos inválidos ou ilegíveis. A amostra é por janela de diretório: não seleciona a revisão mais nova, não representa os pedidos atuais e não comprova completude. Códigos de bloqueio desconhecidos são agregados como OTHER_SOURCE_BLOCKER, sem revelar texto livre. O arquivo de estado de serviço continuava em 14/10, LUNCH. Publicação e modo de fonte continuam não definidos para uso operacional; GPS segue desligado. A confirmação da unidade não renova o estado de serviço nem remove o bloqueio de origem.
