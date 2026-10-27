@@ -541,7 +541,8 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
   }
   const exactBagCount = input.packaging_plan?.bags?.exact_bag_count;
   const exactBagStatus = input.packaging_plan?.bags?.exact_bag_count_status;
-  if (!Number.isSafeInteger(exactBagCount) || exactBagCount < 1 ||
+  if (typeof exactBagCount !== "number" ||
+      !Number.isSafeInteger(exactBagCount) || exactBagCount < 1 ||
       exactBagStatus !== "FACT" ||
       bags.reduce((count, bag) => count + bag.quantity, 0) !== exactBagCount) {
     reasons.add("EXACT_BAG_ALLOCATION_NOT_PROVEN");
