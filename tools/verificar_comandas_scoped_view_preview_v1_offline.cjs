@@ -94,7 +94,8 @@ test("real V4.5 native source with missing box allocation must HOLD both product
   order_id:f.id,source_items:f.source_items,production_plan:f.production_plan,
   resource_projection:f.resource_projection,packaging_plan:null
  });
- assert.deepEqual(src.blocking_reasons,[]);
+ assert.ok(src.blocking_reasons.includes("EXACT_BAG_ALLOCATION_NOT_PROVEN"),
+   "a missing packaging plan also lacks a proven external bag allocation");
  assert.equal(src.ready_for_semantic_preview,false);
  assert.equal(src.production.length,2);
  assert.equal(src.conference.ready_for_semantic_preview,false);
