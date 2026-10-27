@@ -120,3 +120,11 @@ Definir destino privado existente para backup criptografado fora do host e prova
 - Documentação oficial consultada em 26/10/2026: https://docs.netbird.io/manage/reverse-proxy/authentication — alternativas de autenticação, remoção de cabeçalho e ação por caminho. Gratuidade atual da beta não é compromisso de preço futuro.
 
 O plano pode ser ajustado quando uma prova revelar uma dependência diferente. Cada mudança deve registrar o motivo, preservar o que já funciona e manter separados código implementado, teste técnico, instalação, observação física e liberação operacional.
+
+## Diagnóstico confirmado da fonte e CI
+
+Os runs de produto `40424344253` e Android `40424344257` concluíram com sucesso no commit `7a0a87e2c6563c757ba601697628a1d93b669c78`.
+
+A inspeção restrita de metadados de `production-service-state.json` no host encontrou esquema v2, `store_id=0001`, data operacional `2026-10-14`, serviço `LUNCH`, evidência `HUMAN_CONFIRMED_RULE` e inferência de relógio desligada. Não há `unit_id` ou `unit_name` nesse arquivo. A data antiga explica o bloqueio de data/validade no evento recente inspecionado. O arquivo não foi renovado e nenhum serviço foi reiniciado.
+
+Antes de consumir como Itaim, confirmar qual unidade geográfica o TATÁ Comandas desse host representa. Códigos nativos repetíveis e nome do computador não concedem esse vínculo. A renovação do estado de serviço precisa preservar o escopo e as regras operacionais aprovadas; não marcar almoço/jantar automaticamente a partir da hora.

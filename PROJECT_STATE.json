@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "NATIVE_TATA_READER_ADAPTER_LAB_PROVEN_SOURCE_SCOPE_HOLD",
-  "state_basis_head": "24342c67c8a5b6f707c4771d31d018d6e030ab47",
+  "checkpoint_type": "TATA_SOURCE_STALE_SHIFT_DIAGNOSED_UNIT_CONFIRMATION_REQUIRED",
+  "state_basis_head": "7a0a87e2c6563c757ba601697628a1d93b669c78",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -40,9 +40,10 @@
     "Guard allow-rule disable negative control detected; restored rule passes. HTTP host tests pass: health/ready 200, unauthenticated term/policies 401, hostile preflight 403 and declared origin 204. Synthetic session confirms GPS false and term not publishable. Public TLS verified with unauthenticated 401. Authenticated proxy-to-app flow remains pending human browser confirmation.",
     "Cesar reports that the authenticated public URL opened Entregas UI. This is human browser confirmation of the published module, not proof of application actions, Copiloto integration or physical Android behavior. Entregas pilot explicitly keeps Copiloto false; main product server is separate.",
     "Copiloto TATA per-order read model reuses existing normalization engine. Nine synthetic tests pass: revisions, conflicts, source modes/units, minimization, missing/stale/future data and no inferred readiness/delivery/GPS association. No SQL reader or public route wired. Mooca reader service found Running; checkpoint mtime recent, host-status mtime old. Metadata-only inspection does not prove source health, contents, completeness or Itaim mapping.",
-    "Installed stable-order event schema and field names inspected on Mooca without exporting order IDs, items, observations or customer data. Native source codes 0001/01 observed; geographic mapping unproven. Inspected event explicitly blocks downstream due service-state date mismatch/expiry. Native adapter now preserves that denial and uses explicit source mapping/timezone, mode and read-only effect boundary. Nine integration scenarios pass through adapter -> existing Tata normalization -> Copiloto projection; live/UI wiring remains absent."
+    "Installed stable-order event schema and field names inspected on Mooca without exporting order IDs, items, observations or customer data. Native source codes 0001/01 observed; geographic mapping unproven. Inspected event explicitly blocks downstream due service-state date mismatch/expiry. Native adapter now preserves that denial and uses explicit source mapping/timezone, mode and read-only effect boundary. Nine integration scenarios pass through adapter -> existing Tata normalization -> Copiloto projection; live/UI wiring remains absent.",
+    "GitHub product run 40424344253 and Android run 40424344257 completed successfully at 7a0a87e2. Mooca production-service-state.json inspected by metadata allowlist: schema v2, store_id 0001, operational_date 2026-10-14, service LUNCH, HUMAN_CONFIRMED_RULE, clock_inference_used false, no unit_id/unit_name. This explains date/expiry blockers in the newer observed source event; no state file or reader modified."
   ],
-  "next_action": "Resolve verified native source mapping (0001/01 must not be assumed Itaim), existing service-state date/expiry blockers and explicit source timestamp timezone without changing the reader. Continue lab identity/native HTTP work; wire only authorized eligible source records into authenticated Copiloto, preserving source-denial state and data minimization.",
+  "next_action": "Confirm which geographical unit the Tata Comandas feed on Caixa Mooca represents. Native 0001/01 and host identity are insufficient. Prepare a reviewed renewal of the stale 2026-10-14 LUNCH service state only against approved operational scope; do not infer shift from clock or promote blocked source facts. Continue identity/native lab independently.",
   "unknowns": [
     "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
