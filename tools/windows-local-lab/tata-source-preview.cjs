@@ -17,8 +17,10 @@ function previewTataSource({root,binding,hostName,limit=20}) {
   function read(file){const s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.size>1048576)throw Error('SIGNAL_INVALID');
     return JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));}
   try {const s=read(path.join(root,'state','production-service-state.json'));
-    receipt.serviceState={schema:typeof s.schema==='string'?s.schema:null,
+    receipt.serviceState={schema:s.schema==='deliveryos.production-service-shift-state.v2'?s.schema:null,
       operationalDate:/^\d{4}-\d{2}-\d{2}$/.test(s.operational_date)?s.operational_date:null,
+      validFromLocal:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(s.valid_from_local)?s.valid_from_local:null,
+      validUntilLocal:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(s.valid_until_local)?s.valid_until_local:null,
       service:['LUNCH','DINNER'].includes(s.service)?s.service:null};
   }catch{receipt.serviceState={state:'missing_or_invalid'};}
   const dir=path.join(root,'state','reader-events-v1');

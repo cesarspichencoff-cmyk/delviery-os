@@ -30,6 +30,8 @@ const env = {
   ENTREGAS_GPS_FLAGS_CONFIG: path.join(root, 'gps-disabled.json'),
   ENTREGAS_PLATFORM_URL: 'http://127.0.0.1:8080', ENTREGAS_PLATFORM_READ_SECRET: secrets.read,
   ENTREGAS_USERS: users, ENTREGAS_ALLOWED_ORIGINS: publicUrl, ENTREGAS_PUBLIC_URL: publicUrl,
+  ENTREGAS_TATA_READER_ROOT: 'C:\\ProgramData\\TataComandaReader',
+  ENTREGAS_TATA_BINDING_PATH: path.join(root, 'tata-source-binding.json'),
 };
 const {loadCloudConfig} = require(path.join(app, 'dist/src/entregas/pilot/cloud-config.js'));
 const parsed = loadCloudConfig(env);

@@ -1,0 +1,121 @@
+{
+  "schema": "deliveryos.copiloto-source-deployment.v1",
+  "sourceBase": "07a3b29a76f04e2eaa631386fe2d7980712affa6",
+  "coreBuildBase": "be5a3e346981f22a7cab2f39470756c7dc00ef07",
+  "deploymentKind": "isolated_lab_component_overlay_not_full_runtime_release",
+  "host": "CAIXA_MOOCA",
+  "unitId": "ITAIM",
+  "hostReceipt": {
+    "observedAtUtc": "2026-10-27T01:36:39.468Z",
+    "scope": "HOST_HTTP_AND_NEW_HEADLESS_BROWSER_NOT_PUBLIC_PROXY_PROOF",
+    "results": [
+      {
+        "name": "anonymous_denied",
+        "status": 401
+      },
+      {
+        "name": "rider_denied",
+        "status": 403
+      },
+      {
+        "name": "write_denied",
+        "status": 405
+      },
+      {
+        "name": "manager_source_status",
+        "status": 200
+      },
+      {
+        "name": "health",
+        "status": 200
+      },
+      {
+        "name": "browser_390",
+        "pass": true
+      },
+      {
+        "name": "browser_1440",
+        "pass": true
+      }
+    ],
+    "sourceState": "source_blocked",
+    "sampledFiles": 20,
+    "producerBlocksDownstream": 20,
+    "serviceState": {
+      "schema": "deliveryos.production-service-shift-state.v2",
+      "operationalDate": "2026-10-14",
+      "validFromLocal": "2026-10-14T11:00:00",
+      "validUntilLocal": "2026-10-14T15:00:00",
+      "service": "LUNCH"
+    },
+    "ordersEnabled": false,
+    "gpsEnabled": false
+  },
+  "deployedFiles": [
+    {
+      "dest": "app/dist/tools/entregas_pilot_server.js",
+      "sha256": "297b779a46c0fef69b869db0275e8a01ba9128356d8205aa408560087752568e"
+    },
+    {
+      "dest": "app/dist/src/entregas/pilot/tata-source-status.js",
+      "sha256": "2092e1d78b3ad7fcaffe026868c12757861321222932fd87db3a572dc24c3bf0"
+    },
+    {
+      "dest": "app/tools/entregas_pilot_server.ts",
+      "sha256": "09022a3f9a7a504af4f3ff75611f64f3bb9dabb710769a5f79b3049a272c96ca"
+    },
+    {
+      "dest": "app/src/entregas/pilot/tata-source-status.ts",
+      "sha256": "9e4ed7a3f7bfcfac9dd29d3e926463606811ce4cd13790ec6f9ab24b67b5dc0f"
+    },
+    {
+      "dest": "app/tools/windows-local-lab/tata-source-preview.cjs",
+      "sha256": "88aa047679cfb2ec080b1b49da3b095f77ebea7303ce9bc84fa5e7bdd57fc5be"
+    },
+    {
+      "dest": "remote-pilot.cjs",
+      "sha256": "28a1c6231864b442016bde438d45c5a68dca442ecb7f8c6c48179cc993f20394"
+    },
+    {
+      "dest": "copiloto-source-smoke.cjs",
+      "sha256": "2c129c0ec2c67cffbe722f33adfe75f54636de448c0c4d5d238552a04bfa810e"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/index.html",
+      "sha256": "689a5f9ed17f7da38b63781a6247fbcb6ad21a89c83d0f520df82d893f724bd2"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/source.css",
+      "sha256": "7a7c69143907984c0feb60b603022ebf7c5f68ee4a65ddfddac327c154041a96"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/source.js",
+      "sha256": "c412a129fd4053eadb37e5792edc92358469a5369300627dac09fa1f1b1064ed"
+    },
+    {
+      "dest": "tata-source-preview.cjs",
+      "sha256": "88aa047679cfb2ec080b1b49da3b095f77ebea7303ce9bc84fa5e7bdd57fc5be"
+    }
+  ],
+  "localChecks": {
+    "typescript": "PASS",
+    "sourcePreview": 7,
+    "sourceStatusHttp": 6,
+    "sessionIsolation": 19,
+    "orderProjection": 9,
+    "nativeAdapter": 9,
+    "localChromium": "NOT_RUN_EXECUTABLE_ABSENT",
+    "hostEdgeBrowser": [
+      390,
+      1440
+    ]
+  },
+  "limits": [
+    "Source publication disabled; no current order inventory",
+    "Existing shared lab keys are not individual human authentication",
+    "No weekly service rule recovered; source state unchanged",
+    "No public authenticated proxy flow retested for the new page",
+    "GPS disabled; no physical Android proof"
+  ],
+  "rollbackBackup": "C:\\Users\\Tata\\DeliveryOS-Ensaio\\backup-copiloto-source-20261026\\previous-files.json"
+}

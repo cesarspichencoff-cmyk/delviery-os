@@ -136,10 +136,14 @@ jobs:
         run: node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
       - name: Vinculo por host e diagnostico limitado sem conteudo de pedidos
         run: node tests/tata-reader/run-source-preview-tests.cjs
+      - name: Copiloto diagnostica fonte via HTTP autenticado sem expor pedidos
+        run: node tests/tata-reader/run-source-status-http-tests.cjs
       - name: Seis celulas V3.3 sem pressão artificial e sem motoboy duplicado
         run: npx tsx src/product/viewmodels/run-copiloto-celulas-v33-tests.ts
       - name: Instalar Chromium somente antes das provas de navegador
         run: npx playwright install --with-deps chromium
+      - name: Tela da fonte do Copiloto com sessao e largura mobile/desktop
+        run: node tests/tata-reader/run-source-status-http-tests.cjs --browser
       - name: Copiloto e Entregas no mesmo HTTP real + Chromium 390
         run: npx tsx tests/product/run-copiloto-entregas-http-browser.ts
       - name: leitura da rua (view model + superficie)

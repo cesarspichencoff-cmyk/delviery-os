@@ -40,5 +40,12 @@ test('sample budget enforced and corrupt files are explicit',()=>{
   fs.writeFileSync(path.join(dir,'bad.json'),'{');assert.equal(preview(args).unreadableFiles,1);
   assert.equal(preview({...args,limit:1}).sampledFiles,1);
 });
+test('service state cannot leak text through its schema or window fields',()=>{
+  fs.writeFileSync(path.join(root,'state','production-service-state.json'),JSON.stringify({
+    schema:'PRIVATE_SENTINEL',operational_date:'PRIVATE_SENTINEL',service:'PRIVATE_SENTINEL',
+    valid_from_local:'PRIVATE_SENTINEL',valid_until_local:'PRIVATE_SENTINEL'}));
+  const r=preview(args);assert.equal(JSON.stringify(r).includes('PRIVATE_SENTINEL'),false);
+  assert.equal(r.serviceState.schema,null);assert.equal(r.serviceState.validFromLocal,null);
+});
 console.log(`SOURCE_PREVIEW_PASS ${passed}`);
 }finally{fs.rmSync(root,{recursive:true,force:true});}

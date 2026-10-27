@@ -68,6 +68,9 @@ import {
 } from "../src/entregas/pilot/capture-control";
 import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
 import { classifyQuality } from "../src/entregas/gps/validate";
+import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
+
+const tataSourceStatus = criarLeitorStatusTata(process.env);
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
@@ -437,6 +440,10 @@ function transformHtml(html: string, pathname: string): string {
     /AMBIENTE DE DEMONSTRAÇÃO[^<]*/g,
     banner,
   );
+  if (tataSourceStatus.enabled && pathname === "/console/index.html") {
+    out = out.replace("· Demo · sem shell · sem Copiloto · sem GPS de produção",
+      '· Ensaio · <a href="/copiloto/">Copiloto: fonte de pedidos</a> · GPS desligado');
+  }
   // esconder dock de demo na expedição iFood (id ou class; operação: ausente no HTML)
   if (pathname.includes("ifood-handoff") && !cfg.features?.demo_controls) {
     out = out.replace(
@@ -541,6 +548,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         features: { ...(cfg.features || {}), demo_controls: demoControls },
         shell: false,
         copiloto: false,
+        copiloto_source_status: tataSourceStatus.enabled,
         gps_production: gpsFlags.gps_capture_enabled,
         multi_instance: persistenceBackend?.multi_instance ?? false,
         storage_backend: persistenceBackend?.kind ?? "booting",
@@ -571,6 +579,14 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         banner,
         unit_name: cfg.unit_name,
       });
+    }
+
+    if (url.pathname === "/api/copiloto/source") {
+      if (!actor) return reply(401, { ok: false, code: "session_required" });
+      if (!["gerente", "lider_delivery"].includes(actor.role))
+        return reply(403, { ok: false, code: "manager_required" });
+      if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
+      return reply(200, tataSourceStatus.read());
     }
 
 
@@ -1109,6 +1125,10 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     // static UI
     let path = url.pathname === "/" ? "/console/index.html" : url.pathname;
+    if ((path === "/copiloto" || path.startsWith("/copiloto/")) && !tataSourceStatus.enabled) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end("Fonte do copiloto não configurada neste ambiente.");
+    }
     if (path === "/map-poc" || path.startsWith("/map-poc/")) {
       if (!cfg.features.map_poc) {
         res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

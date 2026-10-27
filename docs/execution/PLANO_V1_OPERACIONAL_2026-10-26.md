@@ -12,7 +12,7 @@ Objetivo: conectar a operação de Entregas do Itaim, o aplicativo Android e o c
 | Servidor | PostgreSQL isolado; plataforma e banco internos; verificações HTTP e regras de rede passaram | Reinício do Windows, inicialização automática, recuperação e backup fora do host |
 | Entregas | Candidato com domínio, APIs e testes; instalação atual em modo simulado | Fluxo operacional completo pela sessão autorizada e convergência do armazenamento dessa instalação |
 | GPS | Código Android nativo, fila local e testes técnicos existem | GPS permanece desligado; termo não publicável; comportamento físico e recibos remotos pendentes |
-| Copiloto | Código de leitura e projeções existe na aplicação principal | Instalação atual não o publica; servidor principal ainda mistura demonstração com leituras configuráveis |
+| Copiloto | Diagnóstico da fonte instalado no ensaio; adaptador e projeção de pedidos testados | Lista real de pedidos, sessão humana individual e aplicação principal integrada ainda pendentes |
 | Celular | César informou disponibilidade de um Xiaomi | Modelo, versão Android, instalação e testes físicos desconhecidos |
 
 O histórico técnico não deve ser refeito por conveniência. Os 110 testes JVM e provas PostgreSQL existentes são base de regressão; não substituem observação em aparelho físico. Os scripts de preparação do host não representam um instalador operacional homologado.
@@ -127,7 +127,7 @@ Os runs de produto `40424344253` e Android `40424344257` concluíram com sucesso
 
 A inspeção restrita de metadados de `production-service-state.json` no host encontrou esquema v2, `store_id=0001`, data operacional `2026-10-14`, serviço `LUNCH`, evidência `HUMAN_CONFIRMED_RULE` e inferência de relógio desligada. Não há `unit_id` ou `unit_name` nesse arquivo. A data antiga explica o bloqueio de data/validade no evento recente inspecionado. O arquivo não foi renovado e nenhum serviço foi reiniciado.
 
-Antes de consumir como Itaim, confirmar qual unidade geográfica o TATÁ Comandas desse host representa. Códigos nativos repetíveis e nome do computador não concedem esse vínculo. A renovação do estado de serviço precisa preservar o escopo e as regras operacionais aprovadas; não marcar almoço/jantar automaticamente a partir da hora.
+O vínculo geográfico dessa fonte foi posteriormente confirmado por César como Itaim, conforme a seção seguinte. A renovação do estado de serviço precisa preservar o escopo e as regras operacionais aprovadas; não marcar almoço/jantar automaticamente a partir da hora.
 
 ## Confirmação da unidade de origem
 
@@ -136,3 +136,15 @@ César respondeu “Do Itaim somente” para a origem do TATÁ Comandas desse ca
 `tata-source-binding.json` e `tata-source-preview.cjs` foram preparados em `tools/windows-local-lab/` e copiados para o diretório protegido do ensaio. A comparação por nome de host é uma proteção contra uso acidental, não autenticação do computador. A prévia limita o número de entradas examinadas e o tamanho dos arquivos, não consulta SQL e não altera o leitor. Seis cenários sintéticos validam o escopo e a minimização.
 
 Em 2026-10-27T00:48:55.039Z, a janela de 20 arquivos examinada no host mostrou 20 correspondências de unidade/código e 20 bloqueios do produtor, sem arquivos inválidos ou ilegíveis. A amostra é por janela de diretório: não seleciona a revisão mais nova, não representa os pedidos atuais e não comprova completude. Códigos de bloqueio desconhecidos são agregados como OTHER_SOURCE_BLOCKER, sem revelar texto livre. O arquivo de estado de serviço continuava em 14/10, LUNCH. Publicação e modo de fonte continuam não definidos para uso operacional; GPS segue desligado. A confirmação da unidade não renova o estado de serviço nem remove o bloqueio de origem.
+
+## Diagnóstico conectado ao ensaio em 26/10
+
+A tela `/copiloto/` e a API `GET /api/copiloto/source` foram instaladas no piloto isolado. O console oferece o link “Copiloto: fonte de pedidos”. A tela usa a chave já existente do ensaio; gerente/líder podem consultar metadados, sem transformar essa chave compartilhada em identidade humana individual. Sem sessão responde 401, motoboy recebe 403 e escrita recebe 405. A consulta reutiliza a prévia limitada, com cache máximo de cinco segundos e nenhuma rotina em segundo plano. Não existe nova consulta SQL.
+
+A interface distingue fonte bloqueada, indisponível, não configurada, sem evidência e amostra que exige revisão. Mostra a janela registrada e declara que a amostra não é um inventário atual. Nenhum identificador, item ou observação de pedido foi publicado. O status completo do Copiloto continua falso; o diagnóstico parcial é identificado separadamente.
+
+Prova final no host em `2026-10-27T01:36:39.468Z` (26/10, 22h36 em São Paulo): sete verificações passaram, incluindo login pelo formulário, atualização e ausência de rolagem horizontal no Edge com larguras 390 e 1440. Os 20 arquivos examinados continuavam bloqueados. A janela explícita era `2026-10-14T11:00:00` a `2026-10-14T15:00:00`, serviço LUNCH. O leitor e seu estado não foram alterados. O teste local de Chromium não pôde rodar por ausência do executável; a verificação de navegador foi executada no Edge do host, em contexto novo e temporário.
+
+O campo de procedência cita uma regra semanal do Itaim, mas seus horários completos não foram recuperados. Uma janela histórica isolada não define todos os dias. O setter instalado também omite `valid_from_local`, que o leitor atual exige; ele não deve ser usado sem correção. Próximo dado necessário: horários de almoço e jantar por dia, dias fechados e exceções aplicáveis. Nenhum turno foi renovado pelo relógio ou por suposição.
+
+Trata-se de atualização de componentes do ensaio sobre o núcleo `be5a3e3`, não de release integral. Os onze arquivos transferidos tiveram hashes conferidos e os arquivos anteriores foram preservados em `backup-copiloto-source-20261026`, no diretório protegido do ensaio. Somente o processo conhecido do piloto foi reiniciado. O PostgreSQL, a plataforma interna, o leitor, as permissões de rede e o GPS não sofreram alteração. A prova e os hashes estão em `evidencias/mooca-local-2026-10-26/copiloto-source-status-proof.json`. A navegação pela URL pública autenticada da nova tela ainda não foi revalidada por César.
