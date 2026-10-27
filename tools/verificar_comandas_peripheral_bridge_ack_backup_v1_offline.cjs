@@ -39,7 +39,7 @@ function candidate(x){
  assert.equal(r.status,"REVIEW_CANDIDATE_ONLY",JSON.stringify(r));
  return r;
 }
-test("JSON field status=JSON status=202 from /print is queue acceptance, not paper",()=>{
+test("JSON field status=202 from /print is queue acceptance, not paper",()=>{
  const r=candidate(fixture());
  assert.equal(r.reason,"JSON_202_PROVES_QUEUE_ACCEPTANCE_ONLY_NOT_PHYSICAL_PAPER");
  assert.equal(r.physical_receipt_required_separately,true);
