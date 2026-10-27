@@ -45,7 +45,7 @@ function assessBridgeLegacyOutput(input){
   return out("HOLD","PERIPHERAL_ROUTE_AND_BACKUP_CENSUS_MISSING");
  const acknowledgment=input.receipt_claim;
  if(!acknowledgment||typeof acknowledgment!=="object"||
-    !["HTTP_202_QUEUED","UNKNOWN","OTHER"].includes(acknowledgment.kind))
+    !["JSON_STATUS_202_QUEUED","UNKNOWN","OTHER"].includes(acknowledgment.kind))
   return out("HOLD","BRIDGE_ACK_KIND_UNKNOWN");
  if(census.backup_config_observed===false)
   return out("HOLD","BACKUP_CONFIG_NOT_OBSERVED_ON_ORDER_PATH");
@@ -58,11 +58,11 @@ function assessBridgeLegacyOutput(input){
  if(census.primary_destination_censused!==true ||
     census.primary_legacy_output_plan!=="EXPLICITLY_COVERED")
   return out("HOLD","PRIMARY_PRINTER_CUTOVER_ROUTE_NOT_CENSUSED");
- if(acknowledgment.kind==="HTTP_202_QUEUED"){
+ if(acknowledgment.kind==="JSON_STATUS_202_QUEUED"){
   // The route returns status 202 immediately after saveItemRequest; the
   // worker prints asynchronously and may fall back to printerInfo.impBackup.
   return out("REVIEW_CANDIDATE_ONLY",
-   "HTTP_202_PROVES_QUEUE_ACCEPTANCE_ONLY_NOT_PHYSICAL_PAPER",{
+   "JSON_202_PROVES_QUEUE_ACCEPTANCE_ONLY_NOT_PHYSICAL_PAPER",{
     primary_route_claim_only:true,
     backup_route_claim_only:true,
     physical_receipt_required_separately:true
