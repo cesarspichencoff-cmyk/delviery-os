@@ -9,7 +9,8 @@ const proofs=()=>Object.fromEntries([
  "native_reader_order_revision","native_first_print_trigger",
  "station_window_catalog","tata_sequence_persisted_and_readback",
  "new_printer_route_calibration","independent_source_coexistence",
- "legacy_source_path_census","rollback_snapshot_and_reconciliation"
+ "legacy_source_path_census","fiscal_and_other_reports_isolated",
+ "rollback_snapshot_and_reconciliation"
 ].map(k=>[k,proof()]));
 const source=(origin,action="KEEP_LEGACY",path="UNKNOWN")=>({
  origin,path,proposed_legacy_action:action,route_evidence:"UNVERIFIED",
@@ -129,6 +130,10 @@ test("without confirmed paper route cannot promote 3-view renderer",()=>{
  const x=staged();delete x.proofs.new_printer_route_calibration;
  holds(x,"PROOF_MISSING_OR_INVALID:new_printer_route_calibration");
 });
+test("fiscal and essential non-ticket output must be separately protected",()=>{
+ const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
+ holds(x,"PROOF_MISSING_OR_INVALID:fiscal_and_other_reports_isolated");
+});
 test("without cross-app exclusivity old/new can print twice",()=>{
  const x=staged();delete x.proofs.independent_source_coexistence;
  holds(x,"PROOF_MISSING_OR_INVALID:independent_source_coexistence");
@@ -137,7 +142,7 @@ test("cutover needs an exact snapshot and reversible plan",()=>{
  const x=staged();delete x.proofs.rollback_snapshot_and_reconciliation;
  holds(x,"PROOF_MISSING_OR_INVALID:rollback_snapshot_and_reconciliation");
 });
-test("self-asserted all eight proofs grants candidate review only, NEVER activation",()=>{
+test("self-asserted all nine proofs grants candidate review only, NEVER activation",()=>{
  const x=staged();const r=check(x);
  assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
  assert.deepEqual(r.selected_legacy_actions,[
