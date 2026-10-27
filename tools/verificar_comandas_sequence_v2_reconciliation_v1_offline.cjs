@@ -73,7 +73,8 @@ test("header X status is not treated as cancellation by itself",()=>{
  const x=input();x.pair=source("X");candidate(x,"001");
 });
 test("different iFood short ID inside native source does not bind 001 blindly",()=>{
- const x=input();x.pair.event.order.NRCOMANDAEXT="0077";refresh(x.pair);
+ const x=input();x.pair.event.order.NRCOMANDAEXT="0077";
+ x.pair.decision.ifood_sequence="0077";refresh(x.pair);
  candidate(x,"001");
 });
 test("synthetic existing binding is observed in supplied state, not proven live",()=>{
