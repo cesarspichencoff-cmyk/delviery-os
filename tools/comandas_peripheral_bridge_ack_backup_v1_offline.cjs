@@ -1,6 +1,6 @@
 "use strict";
 /**
- * Odhen Perifericos native bridge safety review. The observed /print 202
+ * Odhen Perifericos native bridge safety review. The observed /print JSON field status=202
  * acknowledges saving/queueing; it never certifies physical paper delivery.
  * Backup failover is a distinct physical destination and must be inventoried.
  * No log, socket, queue, printer, file or network reads.
