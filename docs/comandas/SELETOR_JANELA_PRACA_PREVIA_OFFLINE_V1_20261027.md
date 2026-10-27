@@ -18,11 +18,13 @@ O planejador anterior em `src/production/productionPrintPlan.ts` bloqueia os par
 - Exige coincidência entre `context.order_time` exibido e o horário usado para calcular a janela; e vínculo `item_index + product_code` para cada categoria. Não faz classificação automática nem atesta, sozinho, a origem do dado.
 - Resposta sempre `print_authorized=false`, `ready_for_operational_print=false`, `live_window_verified_here=false` e `effects.print=false`. O planejador também retorna `ready_for_physical_print=false`, mesmo quando é possível montar uma prévia legível.
 
+**Campo de turno legado:** o adaptador ignora metadados antigos de `service_resolution` na prévia; somente o horário do pedido informado na origem orienta a escolha candidata. Um estado vencido indicando jantar não redireciona uma comanda de almoço, não libera papel e não recria aprovação diária. Esse comportamento foi coberto por teste adversarial adicional.
+
 **Limite deliberado:** os campos de origem, snapshot e regra são **alegações fornecidas ao adaptador offline**. Ele não abre Reader real, não comprova pin do motor de classificação, assinatura da fonte, power-state, janela efetiva de energização, evento da primeira via, sequência TATÁ persistida nem coincidência real com um job Windows. Não está conectado ao consumidor instalado. Uma fixture que declara `TEKNISA_ORDER_SOURCE_CLAIM` não se torna automaticamente prova de integridade da origem.
 
 ## Prova executada
 
-Em cópia descartável no Foxxy no commit `4870efeb7c0f30eb832d7eb79071f1a949919092`, a compilação TypeScript e **27/27 testes** `tools/verificar_comandas_window_station_select_v1_offline.cjs` passaram. Casos: abertura de almoço, fronteira 15h, fim de semana 16h29/16h30, jantar 18h–22h59, 23h, calendário inválido, fonte ou loja ausente, classe divergente, dupla, quentes, cozinha independente, alternativa faltante, produto divergente, horário de prévia divergente, matriz 463/106/11 e integração com planejador sem efeitos.
+Em cópia descartável no Foxxy no commit `4870efeb7c0f30eb832d7eb79071f1a949919092`, a compilação TypeScript e **28/28 testes** `tools/verificar_comandas_window_station_select_v1_offline.cjs` passaram. Casos: abertura de almoço, fronteira 15h, fim de semana 16h29/16h30, jantar 18h–22h59, 23h, calendário inválido, fonte ou loja ausente, classe divergente, dupla, quentes, cozinha independente, alternativa faltante, produto divergente, horário de prévia divergente, matriz 463/106/11 e integração com planejador sem efeitos.
 
 O teste foi adicionado ao workflow de CI Linux/Windows. **Só declarar CI aprovada após conclusão no HEAD exato**.
 
