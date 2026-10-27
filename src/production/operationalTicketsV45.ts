@@ -310,7 +310,7 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
       const source = sources.find((s) => s.item_index === line.item_index);
       if (!source || canon(source.product_name) !== canon(line.product_name) ||
           source.quantity !== line.quantity ||
-          (source.product_code && line.product_code && source.product_code !== line.product_code)) {
+          (source.product_code ?? null) !== (line.product_code ?? null)) {
         localReasons.add("PRODUCTION_SOURCE_MISMATCH:" + line.item_index);
       }
       const chosen = source ?? {
@@ -362,8 +362,12 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     }
     // Proven source-based packing allocation is required; the station label
     // alone does not establish which item belongs in a physical box.
+    // An item name can contain "|" or ";". The legacy delimiter-based
+    // signature admitted false matches between ONE product and MULTIPLE
+    // different products. Preserve tuple and array boundaries structurally.
     const signature = (items: Array<{ name: string; quantity: number }>): string =>
-      items.map((x) => canon(x.name) + "|" + x.quantity).sort().join(";");
+      JSON.stringify(items.map((x) => [canon(x.name), x.quantity])
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
     for (const [groupId, box] of boxes) {
       const stationLines = sourceLinesByGroup.get(groupId) ?? [];
       const wanted = signature(stationLines.map((x) => ({ name: x.product_name, quantity: x.quantity })));
@@ -533,8 +537,26 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     : null;
   // Conference needs an evidenced packaging plan and full allocation.
   // A readable fallback trace is diagnostic, not semantic approval.
+  // A declared packaging group may be invalid or unallocated while every
+  // real item is incidentally covered by other groups. Remaining.size===0
+  // alone cannot certify the COMPLETE packing plan.
+  const packagingCoverageWarnings = [
+    "NON_BOXED_ITEM_MEMBERSHIP_NOT_PROVEN:",
+    "BOX_GROUP_NOT_PROVEN_OR_NOT_ALLOCATED:",
+    "AMBIGUOUS_OR_MISSING_BOX_ITEM:",
+    "PACKAGING_ROLE_NOT_CONFIRMED:",
+    "CLOSED_COMBO_CANNOT_SHARE_BOX:",
+    "PER_BOX_ITEM_ALLOCATION_UNKNOWN:",
+  ];
+  const packagingCoverageUnproven = [...warnings].some((warning) =>
+    packagingCoverageWarnings.some((prefix) => warning.startsWith(prefix)));
+  if (packagingCoverageUnproven) {
+    reasons.add("PACKAGING_GROUP_COVERAGE_NOT_PROVEN");
+    warnings.add("DATA_INTEGRITY:PACKAGING_GROUP_COVERAGE_NOT_PROVEN");
+  }
   const conferenceReady = reasons.size === 0 && input.packaging_plan !== null &&
-    input.packaging_plan.has_unknown === false && remaining.size === 0;
+    input.packaging_plan.has_unknown === false && remaining.size === 0 &&
+    !packagingCoverageUnproven;
   const conference: ConferenceTicketV45 = {
     order_id: input.order_id,
     identifiers: conferenceIdentifiers,
