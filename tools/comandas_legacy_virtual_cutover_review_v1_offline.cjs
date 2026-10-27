@@ -13,6 +13,8 @@ const {assessBridgeLegacyOutput}=
  require("./comandas_peripheral_bridge_ack_backup_v1_offline.cjs");
 const {reviewDeliveryReportBoundary}=
  require("./comandas_teknisa_delivery_report_boundary_v1_offline.cjs");
+const {reviewIfoodInstalledPrintChannels}=
+ require("./comandas_ifood_installed_print_channels_v1_offline.cjs");
 const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
 const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
 const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
@@ -112,6 +114,11 @@ function reviewLegacyPrintCutover(input){
     reasons.push("OTHER_UPSTREAM_SUPPRESSION_SCOPE_NOT_ATTESTED");
   }else reasons.push("NATIVE_UPSTREAM_SUPPRESSION_MECHANISM_NOT_IDENTIFIED");
  }
+ const ifood=reviewIfoodInstalledPrintChannels(
+  input.ifood_installed_print_census);
+ if(ifood.status!=="REVIEW_CANDIDATE_NEEDS_INDEPENDENT_ATTESTATION")
+  reasons.push("IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED:"+
+   ifood.reasons.join("|"));
  if(!proof||typeof proof!=="object"||Array.isArray(proof))
   reasons.push("INDEPENDENT_PROOF_SET_MISSING");
  else{
