@@ -1,6 +1,6 @@
 import type {IncomingMessage, ServerResponse} from 'node:http';
-import {createNeonOperatorSessions, operatorCredential} from '../auth/neon-operator-session';
-import {createOperatorReadAuthority, OperatorReadGrant} from '../auth/operator-read-authority';
+import {createNeonOperatorSessions, operatorCredential} from './neon-operator-session';
+import {createOperatorReadAuthority, OperatorReadGrant} from './operator-read-authority';
 
 /** Review-only composition. Does not listen, configure a provider, approve users or install routes.
  * readFeed and assets are server-owned; never resolve them from request parameters.

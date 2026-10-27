@@ -3,7 +3,8 @@
 const assert=require('node:assert/strict'),https=require('node:https'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const {createNeonOperatorSessions}=require('../../dist/src/platform/auth/neon-operator-session.js');
-const {createOperatorHttp}=require('../../dist/src/platform/copiloto/operator-http.js');
+const {createOperatorFileRoster}=require('../../dist/src/platform/auth/operator-file-roster.js');
+const {createOperatorHttp}=require('../../dist/src/platform/auth/operator-http.js');
 const {readTataFileFeed}=require('../../runtime/reporting/copiloto_tata_file_feed_v1.cjs');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'operator-http-')),dir=path.join(root,'state','reader-events-v1');
 fs.mkdirSync(dir,{recursive:true});
@@ -29,13 +30,16 @@ async function login(){const begin=await post('/api/operator/login/begin',{email
  execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',path.join(root,'key.pem'),'-out',path.join(root,'cert.pem'),'-days','1','-subj','/CN=localhost'],{stdio:'ignore'});
  let handler;server=https.createServer({key:fs.readFileSync(path.join(root,'key.pem')),cert:fs.readFileSync(path.join(root,'cert.pem'))},(req,res)=>handler(req,res));
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin='https://127.0.0.1:'+server.address().port;
- const sessions=createNeonOperatorSessions({authBase,appOrigin:origin,now:()=>now,approvedSubject:async e=>approved&&e===email?'SUBJECT':null,fetchTransport:async(url,init)=>{
+ const rosterFile=path.join(root,'operator-roster.json');
+ fs.writeFileSync(rosterFile,JSON.stringify({schema:'deliveryos.operator-roster.v1',entries:[{email,subject:'SUBJECT',unitId:'ITAIM',role:'gerente',active:true,approvalRef:'SYNTHETIC',expiresAt:'2026-10-28T15:00:00.000Z'}]}));
+ const roster=createOperatorFileRoster({file:rosterFile,issuer:authBase,now:()=>now});
+ const sessions=createNeonOperatorSessions({authBase,appOrigin:origin,now:()=>now,approvedSubject:async e=>approved?roster.approvedSubject(e):null,fetchTransport:async(url,init)=>{
   providerCalls++;assert(url.startsWith(authBase+'/'));
   if(url.includes('/sign-in/')){if(JSON.parse(init.body).otp!=='123456')return Response.json({error:'PRIVATE'}, {status:401});return Response.json({ok:true},{headers:{'Set-Cookie':'__Secure-better-auth.session_token=PRIVATE_PROVIDER_TOKEN; HttpOnly; Secure; Path=/'}});}
   if(url.includes('/get-session'))return Response.json({user:{id:'SUBJECT',email},session:{userId:'SUBJECT',createdAt:'2026-10-27T14:00:00Z',expiresAt:'2026-10-28T15:00:00Z'}});
   return Response.json({ok:true});
  }});
- handler=createOperatorHttp({sessions,now:()=>now,assets,lookupGrant:async()=>({issuer:sessions.issuer,subject:'SUBJECT',unitId:'ITAIM',role:'gerente',active:granted,approvalRef:'SYNTHETIC',expiresAtMs:now+60000}),readFeed:async()=>{reads++;return readTataFileFeed({root,scope,now:new Date(now).toISOString(),maxAgeMs:120000});}});
+ handler=createOperatorHttp({sessions,now:()=>now,assets,lookupGrant:async(...args)=>granted?roster.lookupGrant(...args):null,readFeed:async()=>{reads++;return readTataFileFeed({root,scope,now:new Date(now).toISOString(),maxAgeMs:120000});}});
  await test('HTTPS assets and authentication boundary',async()=>{
   const page=await request('/copiloto/pedidos/');assert.equal(page.status,200);assert(page.text.includes('Acesso individual'));assert.equal(page.headers['cache-control'],'no-store');assert(page.headers['content-security-policy'].includes("frame-ancestors 'none'"));
   assert.equal((await request('/api/copiloto/orders',{headers:{'X-Operator-Role':'gerente','X-Unit':'ITAIM',Authorization:'Bearer shared-key'}})).status,401);assert.equal(reads,0);
