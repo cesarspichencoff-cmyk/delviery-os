@@ -18,6 +18,12 @@ O novo módulo `tools/comandas_reader_v2_view_evidence_v1_offline.cjs` **não su
 
 Após validação estrutural, o módulo emite **apenas metadados de fonte**, vinculando as três vistas à mesma revisão nativa e repassando o candidato de exportação iFood exclusivamente para a política de conferência. O ID curto apresentado nas duas vias de produção nasce da Teknisa, **não** de cruzamento externo. A ausência ou divergência do iFood mantém as duas vistas de produção em `NATIVE_ONLY_REVIEW` e somente a conferência em `HOLD`.
 
+## Identidade de loja entre sistemas: não comparar números de namespaces diferentes
+
+A exportação oficial do iFood identificou o estabelecimento como **53069** e a fonte Teknisa identifica a unidade como **CDFILIAL=0001 / CDLOJA=01**. Esses números **não são mutuamente comparáveis**. O cruzamento na conferência exige agora `store_mapping`, um **candidato explícito** com `ifood_store_id`, `native_store_id`, `native_store_unit` e referência da associação humana/histórica. Sem mapa ou com divergência de loja/unidade, **apenas conferência recebe HOLD**; as duas vias continuam com `NATIVE_ONLY_REVIEW` se a Teknisa estiver estruturalmente íntegra.
+
+**Mesmo o mapeamento candidato coerente não comprova que o vínculo loja externa → filial/unidade interna esteja autenticado por autoridade independente.** `source_store_mapping_attested_here=false`, `ifood_source_authenticated_here=false`, `ifood_item_parity_proven=false`, e nenhum resultado autoriza papel. Testes adversariais em `tools/verificar_comandas_view_source_scope_v1_offline.cjs` agora cobrem 25 cenários, inclusive IDs numericamente iguais sem mapa e unidade nativa divergente.
+
 ## Limites que os testes não transformam em fatos
 
 1. `snapshot_hash` e `decision.fingerprint` são **autoconsistência calculada** dos dois envelopes; não provam origem de um processo independente ou autenticidade de escrita da Teknisa. Quem puder falsificar simultaneamente ambos ainda consegue produzir uma alegação consistente. Por isso `source_independently_attested=false`.
@@ -29,6 +35,6 @@ Após validação estrutural, o módulo emite **apenas metadados de fonte**, vin
 
 ## Casos negativos da nova suíte
 
-`tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs` verifica 35 cenários positivos e adversariais: cabeçalhos reais, item 4, cancelamento 6, cabeçalho 4, estados incertos, nota adulterada (incluindo hashes refeitos), quantidade, produto, duplicidade, conflito de origem/loja/dia/ID, exportação iFood errada e ausência de binding, com zero efeitos.
+`tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs` verifica 37 cenários positivos e adversariais: cabeçalhos reais, item 4, cancelamento 6, cabeçalho 4, estados incertos, nota adulterada (incluindo hashes refeitos), quantidade, produto, duplicidade, conflito de origem/loja/dia/ID, exportação iFood errada e ausência de binding, com zero efeitos.
 
 **Frente de prova:** fonte nativa consistente `≠` evento de impressão `≠` impressora autorizada `≠` papel físico. O CI da PR comprova testes sintéticos em ambiente isolado, não implantação. Sem instalação, SQL, spooler, serviço, sequência, fiscal ou impressão.
