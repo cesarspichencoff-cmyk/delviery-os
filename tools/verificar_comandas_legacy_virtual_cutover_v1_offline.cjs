@@ -64,6 +64,19 @@ const staged=()=>{
   auto_report_intent:"INDEPENDENT_REPORT_DISPOSITION_REVIEWED",
   manual_report_intent:"PRESERVE_ON_DEMAND_WITH_AUDIT"
  };
+ x.ifood_installed_print_census={
+  store_id:"0001",store_unit:"01",
+  package_fingerprints:{gp_asar_sha256:h,gestor_asar_sha256:h},
+  channels:["GP_HTTP_PRINT","GESTOR_IPC_PRINTORDER"].map(channel_id=>({
+   channel_id,proposed_action:"SOURCE_OFF",
+   runtime_auto_print_mode:"DISABLED",
+   runtime_observation_ref:"SYNTHETIC_IFOOD_STATE_NOT_ATTESTED",
+   runtime_observation_sha256:h,
+   manual_print_path_censused:true,
+   pending_or_ambiguous_jobs_reconciled:true,
+   source_control_scope_isolated:true
+  }))
+ };
  x.teknisa_upstream_suppression={mechanism:"IDIMPPEDPROD_N",
   native_mode_evidence:{store_id:"0001",store_unit:"01",
    impressao_pedido_sha256:h,mode:"N",
@@ -310,6 +323,40 @@ test("manual report should remain accountable on demand",()=>{
 test("report cannot vanish from inventory due to a guess about existing ifood output",()=>{
  const x=staged();x.teknisa_delivery_report_census.auto_report_intent="PROBABLY_DISABLED";
  holds(x,"REPORT_CASHIER_SCOPE_OR_MANUAL_PATH_UNSAFE");
+});
+test("missing installed iFood paths blocks whole old-new print cutover",()=>{
+ const x=staged();delete x.ifood_installed_print_census;
+ holds(x,"IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED");
+});
+test("GP auto output disabled does not prove Gestor IPC output disabled",()=>{
+ const x=staged();x.ifood_installed_print_census.channels.pop();
+ holds(x,"IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED");
+});
+test("Gestor IPC still emitting even if GP is off vetoes entire print cutover",()=>{
+ const x=staged();
+ x.ifood_installed_print_census.channels[1].proposed_action="KEEP_LEGACY";
+ holds(x,"IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED");
+});
+test("running local GP listener does not prove auto print off",()=>{
+ const x=staged();x.ifood_installed_print_census.channels[0].runtime_auto_print_mode="UNKNOWN";
+ holds(x,"IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED");
+});
+test("iFood manual print path survives an automatic printing setting",()=>{
+ const x=staged();x.ifood_installed_print_census.channels[1].manual_print_path_censused=false;
+ holds(x,"IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED");
+});
+test("iFood Windows sink cannot be proposed with shared fiscal queue",()=>{
+ const x=staged();x.ifood_installed_print_census.channels[0].proposed_action="WINDOWS_QUEUE_SINK_REVIEW";
+ holds(x,"IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED");
+});
+test("iFood printed success and spooler job id never imply paper",()=>{
+ const x=staged();Object.assign(x.ifood_installed_print_census,{
+  gp_response:"Successfully printed",gestor_ipc_reply:"Successfully printed",
+  windows_job_id:258});
+ const r=check(x);
+ assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
+ assert.equal(r.paper_proven,false);
+ assert.equal(r.can_activate,false);
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
