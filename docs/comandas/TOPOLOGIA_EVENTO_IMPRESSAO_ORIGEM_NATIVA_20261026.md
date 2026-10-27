@@ -44,3 +44,16 @@ A candidata deve manter **separados** `ORDER_CREATED`, `PRODUCTION_REQUEST_OBSER
 Para a primeira via futura, exigir um pedido real com identidade/revisão nativas, origem iFood independente e **prova da chamada/tentativa de produção no caminho efetivo do iFood ou do emissor autorizado**. `Account::order` oferece uma arquitetura de referência local, não prova o caminho do delivery; `GeneralFunctions::reprintPedido` demonstra um caminho separado de reimpressão. Não assumir que ambas as saídas de produção A/B são alternativas por horário. Não instalar hook, wrapper, leitor de spooler ou monitor de API para fabricar a evidência.
 
 Os bloqueios restantes são por fato operacional: evento inicial, composição e observações da mesma revisão, classificações e praças atuais, binding TATÁ persistido e exclusivo, gerador de papel único, reconciliação de falha/retry e inspeção óptica. **PR continua DRAFT/HOLD.**
+
+## Prova adicional: busca do identificador literal da origem iFood no backend instalado
+
+Foi feita **somente leitura de código**, em 26/10/2026, com `Select-String -SimpleMatch 'DLV_IFO'` sobre os arquivos `*.php` de duas raízes exatas no computador `CAIXA_MOOCA`:
+
+- `C:\TEKNISA\odhenPOS\backend_74000\src`;
+- `C:\TEKNISA\odhenPOS\backend_74000\vendor\odhen\api\src`.
+
+Resultado: **133 arquivos PHP examinados; 1 arquivo/1 ocorrência literal**: `vendor/odhen/api/src/Service/ImpressaoDelivery.php`, linha ~174, SHA-256 `E734D51CAEE85D02D5BB1F4EB270B21601B806912A0115B353F7C24756C6BD0C`. O trecho `printHeader` (~158–187) apenas escolhe o rótulo visível `Ifood` para origens `DLV_IFO`/`DLV_SPO` e usa `NRCOMANDAEXT` no cabeçalho de **Relatorio De Entrega**; não cria pedido nem comprova impressão de cozinha.
+
+**Escopo negativo:** não foi verificado todo o executável/integração externa Gestor iFood, arquivos binários, outras raízes não analisadas, runtime efetivo de cada transação ou qualquer evento de impressão. Portanto, `NO_IFOOD_ENTRYPOINT_FOUND_IN_THE_133_PHP_FILES` não significa que a integração não exista nem que esses PHP sejam o único código chamado; apenas impede uma falsa atribuição de causalidade à função de relatório.
+
+**Decisão:** não criar um endpoint substituto, não simular evento de primeira produção a partir de `P`/`X` ou impressão de relatório. Sem fonte de origem independente por mesma revisão e sem testemunha de tentativa, a geração autônoma de três vias segue **HOLD**. A exportação máxima de 25/10 com 314 pedidos prova 311 candidatos de associação por número curto, mas não contém composição; não solicitar outra exportação presumidamente mais granular.
