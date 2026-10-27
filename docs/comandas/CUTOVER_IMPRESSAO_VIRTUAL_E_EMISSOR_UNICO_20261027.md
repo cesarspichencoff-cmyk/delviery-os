@@ -19,6 +19,12 @@ Referências oficiais:
 
 **Gatilho preferido:** evento/revisão **nativa** do pedido já observado pelo Reader, acompanhado de uma fonte atestada de elegibilidade da primeira via. Não usar nome do documento no spooler, job ID ou status `Printed` como identidade de venda; não usar status `P` ou `X` da Teknisa como comprovante de primeira impressão. O cruzamento externo iFood × Teknisa continua **somente na conferência**, não nas duas produções.
 
+## Descoberta posterior que limita o desvio virtual
+
+A inspeção **somente do código instalado** em `CAIXA_MOOCA` identificou três transportes possíveis da Teknisa: `PONTE_HTTP_PRINT` (`/print` para periféricos), `PHP_PORT_WRITE` (`fopen/fwrite`) e `DELPHI_FILE_DISPATCH`. **O ramo ativo não foi comprovado** e nenhuma fila foi desviada. Não se pode tratar `NUL` como cobertura universal desses caminhos. O contrato de transição exige agora o pré-voo `tools/comandas_teknisa_transport_census_v1_offline.cjs` compatível com o transporte e destino alegados antes de admitir sequer uma candidatura de migração. Caso faltem flags do runtime, prova da fila real depois da ponte ou do Delphi, ou comprovação de isolamento fiscal, a transição permanece `HOLD`.
+
+[Auditoria de transporte do PHP instalado](AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md) fornece SHA-256 dos módulos lidos, evidência de cada ramo, limites e testes; **20/20 pré-voo + 32/32 contrato de cutover** passaram em clone offline. Nenhum deles autentica sozinho a configuração de produção ou autoriza uma porta virtual.
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
