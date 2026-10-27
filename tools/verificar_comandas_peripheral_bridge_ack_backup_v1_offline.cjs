@@ -10,7 +10,9 @@ function fixture(){
    origin_ref:"SYNTHETIC_NO_ORDER_LOG",snapshot_sha256:h,
    backup_config_observed:true,backup_enabled:false,
    primary_destination_censused:true,
-   primary_legacy_output_plan:"EXPLICITLY_COVERED"},
+   primary_legacy_output_plan:"EXPLICITLY_COVERED",
+   pending_legacy_jobs_censused:true,
+   pending_or_ambiguous_attempts_reconciled:true},
   receipt_claim:{kind:"JSON_STATUS_202_QUEUED"}};
 }
 let n=0;
@@ -91,6 +93,14 @@ test("missing primary route inventory refuses cutover",()=>{
 test("primary route still connected to old paper refuses cutover",()=>{
  const x=fixture();x.route_census.primary_legacy_output_plan="KEEP_OLD_PAPER";
  hold(x,"PRIMARY_PRINTER_CUTOVER_ROUTE_NOT_CENSUSED");
+});
+test("unknown old queued jobs cannot coexist with new output without reconciliation",()=>{
+ const x=fixture();x.route_census.pending_legacy_jobs_censused=false;
+ hold(x,"QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED");
+});
+test("ambiguous earlier submission blocks cutover even when pending jobs were censused",()=>{
+ const x=fixture();x.route_census.pending_or_ambiguous_attempts_reconciled=false;
+ hold(x,"QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED");
 });
 test("invalid delivery source claim cannot become an order identity",()=>{
  const x=fixture();x.route_census.scope="FISCAL_OUTPUT";
