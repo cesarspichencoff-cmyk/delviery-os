@@ -28,6 +28,14 @@ Foi realizada busca textual **somente leitura** em **133 arquivos PHP** nas árv
 
 O diretório `odhen-perifericos` mostrou ponte HTTP e backend Epson nativo; isso também não autoriza o desvio automático das filas Windows para `NUL`.
 
+## Prova posterior: `IDIMPAUTENTREG` é relatório pós-venda, não primeira via de produção
+
+A inspeção de 133 PHP instalados mais os controladores de delivery do POS mobile identificou um ramo **separado** em `Venda.php:469–499`: depois de venda de delivery bem-sucedida e `TOTALVENDABRT>0`, `IMPRIMEDLV_AUTOMATICO` lê `CAIXA.IDIMPAUTENTREG`; somente `'S'` solicita `ImpressaoDelivery::imprimeDelivery`. Esse módulo produz literalmente **`Relatorio De Entrega`** e usa `BUSCA_IMPRESSORA_DELIVERY` (`CAIXA.NRSEQIMPRLOJA7` com fallback para `NRSEQIMPRLOJA3`), destino distinto da matriz de produtos de produção.
+
+`src/Controller/Delivery.php:165–175` e duas telas mobile mostram **impressão manual do relatório**, independente do flag automático. Portanto, `IDIMPAUTENTREG=N` no caixa **não prova** inibição da primeira via de cozinha nem desativação do relatório manual, e o próprio flag é do caixa para deliveries, não um escopo `DLV_IFO` demonstrado. `Comanda::liberaComandaDelivery` apenas muda status `P/X` no trecho examinado, sem provar papel. O caminho da **primeira via de produção iFood segue UNKNOWN**.
+
+Implementação: `tools/comandas_teknisa_delivery_report_boundary_v1_offline.cjs` + **21/21** regressões; contrato `comandas_legacy_virtual_cutover_review_v1_offline.cjs` agora exige censo separado de **relatório automático e manual**, com **55/55** testes de transição em Foxxy isolado. Nenhuma opção real foi lida/alterada. [Auditoria detalhada, linhas, fingerprints e limites](AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md). O objetivo continua supressão **por emissor/ramo específico** e preservação do fiscal, com PR DRAFT/HOLD.
+
 ## Mudança de estratégia
 
 1. **Bloqueado:** `IDIMPPEDPROD=N` na configuração global/compartilhada do caixa, por risco de cortar mesa, balcão e reimpressão. NÃO alterar nem testar essa mudança no caixa vivo.
