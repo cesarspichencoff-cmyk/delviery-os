@@ -12,6 +12,12 @@ Na mesma inspeção, 1.086 trabalhos de `DELIVERY SUSHI 1` estavam **retidos com
 
 A PR #127 ainda não contém seletor de janela/categoria homologado nem altera a configuração de impressoras; o guard conservador fica ativo por segurança. O objetivo passa a ser substituir o bloqueio genérico por roteamento seletivo **sem envio à fila inativa**, com provas em código e aceitação posterior, e nunca permitir impressão em todas. Esta errata prevalece sobre trechos históricos abaixo que concluíam não haver utilidade operacional da alternância por janela.
 
+## Atualização: proteção do atendimento presencial na substituição das comandas antigas
+
+Uma inspeção posterior de 133 PHP instalados demonstrou que `IDIMPPEDPROD` é carregado **da configuração do caixa** para a sessão da Teknisa e utilizado também em **mesa, balcão e reimpressão**. Logo, usar `IDIMPPEDPROD=N` globalmente para neutralizar as vias antigas de delivery colocaria outros atendimentos em risco. A PR passou a **bloquear explicitamente** essa proposta, mesmo quando a entrada do avaliador declara que outros pedidos estão preservados. Apenas um eventual **override por chamada exclusivamente DLV_IFO**, ainda não demonstrado, pode continuar como hipótese técnica, jamais como autorização para alteração. A ponte Odhen Periféricos utiliza uma DLL Epson em certos caminhos, de modo que filas Windows não provam interceptação universal por `NUL`.
+
+Relatos, caminhos PHP/linhas, testes e limites: [escopo compartilhado do caixa](AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md) e [transporte nativo](AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md). Tudo permanece **OFFLINE/DRAFT/HOLD** sem mudança física.
+
 ## 1. Leitura rápida: produto que se pretende entregar
 
 O projeto procura substituir uma rotina de comandas propensa a inconsistências por um conjunto de **três apresentações coordenadas do mesmo pedido**, de forma legível para a equipe, sem duplicar impressão nem criar um segundo cadastro manual:
