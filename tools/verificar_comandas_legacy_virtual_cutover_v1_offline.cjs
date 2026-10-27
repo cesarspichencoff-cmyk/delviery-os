@@ -26,6 +26,17 @@ const staged=()=>{
  {...source("IFOOD_GESTOR","UPSTREAM_PRINT_OFF","APP_LEVEL"),
  route_evidence:"OBSERVED_ROUTE_CANDIDATE"}];
  x.proofs=proofs();
+ x.teknisa_transport_census={
+  store_id:"0001",store_unit:"01",
+  code_evidence:{impressao_pedido_sha256:h,impressao_util_sha256:h,
+   printing_sha256:h},
+  runtime_flags:{utiliza_impressao_ponte:true,utiliza_impressao_php:false,
+   observation_sha256:h,provenance:"SYNTHETIC_RUNTIME_ONLY"},
+  transport_destination:{kind:"DIRECT_OR_NETWORK_PORT",
+   provenance:"SYNTHETIC_BRIDGE_DESTINATION",
+   path_matches_order_print:true},
+  proposed_action:"UPSTREAM_PRINT_OFF"
+ };
  return x;
 };
 let n=0;
@@ -85,6 +96,9 @@ test("NUL cannot suppress an app's second unobserved output",()=>{
 test("Windows NUL can be reviewed as a sink only after source claims, never as trigger",()=>{
  const x=staged();x.legacy_sources[0].proposed_legacy_action="WINDOWS_NUL_REDIRECT";
  x.legacy_sources[0].path="WINDOWS_QUEUE";
+ x.teknisa_transport_census.proposed_action="WINDOWS_NUL_REDIRECT";
+ x.teknisa_transport_census.transport_destination.kind="WINDOWS_SPOOLER_QUEUE";
+ x.teknisa_transport_census.nul_target_is_downstream_bridge=true;
  const r=check(x);
  assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
  assert.equal(r.virtual_sink_needs_independent_order_reader,true);
@@ -101,6 +115,27 @@ test("Windows NUL alone cannot substitute for native first-print event proof",()
 test("shadow cannot quietly redirect or disable the original paper output",()=>{
  const x=baseline();x.legacy_sources[0].proposed_legacy_action="UPSTREAM_PRINT_OFF";
  holds(x,"SHADOW_MUST_KEEP_LEGACY_OUTPUT_UNCHANGED");
+});
+test("missing native active print mode is a HOLD despite every other claimed proof",()=>{
+ const x=staged();delete x.teknisa_transport_census;
+ holds(x,"TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:SOURCE_FINGERPRINTS_OR_STORE_INVALID");
+});
+test("native Windows NUL claim cannot bypass an HTTP bridge outside that queue",()=>{
+ const x=staged();x.legacy_sources[0].proposed_legacy_action="WINDOWS_NUL_REDIRECT";
+ x.legacy_sources[0].path="WINDOWS_QUEUE";
+ x.teknisa_transport_census.proposed_action="WINDOWS_NUL_REDIRECT";
+ x.teknisa_transport_census.transport_destination.kind="WINDOWS_SPOOLER_QUEUE";
+ holds(x,"TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:BRIDGE_HTTP_NOT_PROVEN_TO_USE_SELECTED_WINDOWS_QUEUE");
+});
+test("native transport and legacy action must agree",()=>{
+ const x=staged();x.teknisa_transport_census.proposed_action="WINDOWS_NUL_REDIRECT";
+ x.teknisa_transport_census.transport_destination.kind="WINDOWS_SPOOLER_QUEUE";
+ x.teknisa_transport_census.nul_target_is_downstream_bridge=true;
+ holds(x,"TEKNISA_TRANSPORT_AND_CUTOVER_ACTION_CONFLICT");
+});
+test("unobserved runtime boolean flags cannot be invented from PHP source file",()=>{
+ const x=staged();x.teknisa_transport_census.runtime_flags=null;
+ holds(x,"TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:ACTIVE_RUNTIME_PRINT_FLAGS_NOT_ATTESTED");
 });
 test("bare statement that iFood printing was off last week is not route attestation",()=>{
  const x=staged();x.legacy_sources[1].route_evidence="UNVERIFIED";
