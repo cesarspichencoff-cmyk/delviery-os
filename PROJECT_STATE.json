@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "OPERATOR_REGISTRY_PROVEN_ARCHITECTURE_FIX_REVIEW_ONLY",
-  "state_basis_head": "2394d827bb976f0f00ee353882b02f1470a01a89",
+  "checkpoint_type": "CI_GREEN_EXISTING_OPERATOR_ACCOUNT_PRIVATE_CANDIDATE",
+  "state_basis_head": "6dec9dcfe118fe6d77397eb5d60ac9fee2fa2b9b",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -73,9 +73,11 @@
     "Product CI 40504374924 completed: HTTPS/Chromium 390/1440 passed, final C6 failed because HTTP adapter was placed in protected core namespace. Moved transport to platform/auth; unchanged guards pass locally (M1 40, governance 14).",
     "Server-owned file roster implemented, eight local families pass; HTTPS composition six families now use real file roster with synthetic identities. No real approval or provider config changed.",
     "2026-10-27T14:48:41Z: latest three native events ready, zero blockers, LUNCH/HUMAN_CONFIRMED_RULE. Latest observed 11:48:37 Sao Paulo, proving post-weekly-fix emission, not full active inventory or authorized publication.",
-    "Existing provider OpenAPI returned 200, sign-in/email-otp and get-session routes confirmed. DeliveryOS origin absent and localhost disabled. Authenticated cookies/cache behavior remains unproven."
+    "Existing provider OpenAPI returned 200, sign-in/email-otp and get-session routes confirmed. DeliveryOS origin absent and localhost disabled. Authenticated cookies/cache behavior remains unproven.",
+    "Code 6dec9dc: product CI 40561326515 and Android CI 40561326967 completed successfully, including corrected architecture guard.",
+    "Cesar selected first access email; exact read-only Neon lookup found one verified, non-banned existing account. Inactive ITAIM-only roster/config saved outside app in private host candidate folder; ACL has no additional allow principals. No OTP, domain change, global role change or activation."
   ],
-  "next_action": "Check CI for auth namespace correction and file roster. Identify first approved operator email and existing subject; prepare exact DeliveryOS trusted origin without altering TATA OS settings. Real OTP/session/cookie proof and trusted source time/mode precede host installation.",
+  "next_action": "Use private host operator-access-review-20261027 candidate (email and subject already resolved; do not ask again). Prepare real origin/login integration, prove human OTP and cookies, then source mode/time policy before reversible installation. Candidate inactive; redate proposed expiry before any activation.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -124,7 +126,7 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Auth transport namespace correction and server-owned file roster; local tests pass, new CI pending."
+    "Documentation of successful CI and inactive private account candidate; no runtime code changes."
   ],
   "latest_review_transport": {
     "tested_local_code": "568352e91fcade791608134896f1028526e54649",

@@ -41,3 +41,13 @@ Isso confirma emissão recente pelo leitor e resolução do serviço. Não compr
 ## Próximo passo concreto
 
 Identificar o primeiro e-mail de operador no provedor existente e obter o vínculo aprovado de subject/ITAIM/papel. Preparar a adição exata da origem Delivery OS e teste humano de OTP, preservando TATÁ OS. Só depois integrar o leitor com procedência e política temporal explícitas e preparar instalação reversível. Não enviar código sem a instrução correspondente nem publicar usuários de produção no repositório público.
+
+## Fechamento do CI e preparação privada do primeiro acesso
+
+A revisão de código 6dec9dcfe118fe6d77397eb5d60ac9fee2fa2b9b (árvore c67787ba22cccb4993b193847d801f88afabc155) concluiu com sucesso nos CIs produto 40561326515 e Android 40561326967. Isso inclui a correção da guarda anteriormente vermelha.
+
+César informou o e-mail para o primeiro acesso. Consulta exata, somente leitura, encontrou uma única conta existente no Neon, e-mail verificado e banned=false. Nenhum usuário foi criado nem papel global alterado. E-mail e subject não são publicados neste repositório; constam apenas no candidato privado do host.
+
+Em 27/10 às 20h02 de São Paulo, foi preparado `C:\Users\Tata\DeliveryOS-Ensaio\operator-access-review-20261027`, separado da aplicação instalada. Contém `operator-roster.pending.json` e `configuration-review.json`. As ACLs foram comparadas com a raiz privada: zero identidades permitidas adicionais (raiz restrita a SYSTEM, Administradores e usuário Tata). Uma entrada somente para ITAIM, active=false; configuração enabled=false, publishEnabled=false e otpSent=false. A proposta de papel lider limita-se à leitura da aplicação e não foi ativada. A validade do candidato é 28/10 23h01 UTC e deve ser redefinida na eventual ativação; não constitui sessão criada.
+
+Próxima etapa: preparar integração real da origem no provedor, comprovar login humano/cookies e validar procedência/horário antes de habilitar a leitura. A conta já foi localizada: não perguntar novamente qual e-mail usar. Nenhum código foi enviado.
