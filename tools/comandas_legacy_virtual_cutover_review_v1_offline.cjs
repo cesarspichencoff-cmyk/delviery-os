@@ -67,6 +67,9 @@ function reviewLegacyPrintCutover(input){
  }
  for(const o of ORIGINS)if(!byOrigin.has(o))invalid.push(o+":SOURCE_COVERAGE_MISSING");
  if(invalid.length)return result(stage,"HOLD",invalid);
+ if(stage==="SHADOW"&&input.legacy_sources.some(
+   s=>s.proposed_legacy_action!=="KEEP_LEGACY"))
+  return result(stage,"HOLD",["SHADOW_MUST_KEEP_LEGACY_OUTPUT_UNCHANGED"]);
  if(stage==="SHADOW")return result(stage,"SHADOW_SAFE_REVIEW_ONLY",
   ["LEGACY_OUTPUT_NOT_CHANGED","TATA_NEW_PHYSICAL_OUTPUT_MUST_REMAIN_DISABLED"],{
   cutover_gates_not_evaluated:true});
@@ -84,8 +87,11 @@ function reviewLegacyPrintCutover(input){
  }
  // Source coverage and confirmed route-to-sink are never implied by one
  // Windows "Printed" status or by past Gestor print being disabled.
- if(input.legacy_sources.some(s=>s.proposed_legacy_action==="WINDOWS_NUL_REDIRECT"))
-  reasons.push("WINDOWS_NUL_DISCARDS_BYTES_NOT_ORDER_IDENTITY");
+ const hasNul=input.legacy_sources.some(
+   s=>s.proposed_legacy_action==="WINDOWS_NUL_REDIRECT");
+ // Windows NUL is an acceptable *proposal* for a paperless sink only
+ // after the independent Reader and other proof gates are claimed.
+ // It can NEVER serve as the trigger or identify an order in its own right.
  if(stage==="RECOVERY_REVIEW"){
   reasons.push("MANUAL_ROLLBACK_AND_DUPLICATE_RECONCILIATION_REQUIRED");
   return result(stage,"HOLD",reasons);
@@ -97,7 +103,9 @@ function reviewLegacyPrintCutover(input){
   ["SUPPLIED_PROOFS_ARE_NOT_INDEPENDENTLY_ATTESTED",
    "SEPARATE_HUMAN_APPROVAL_AND_PHYSICAL_PILOT_REQUIRED"],{
    selected_legacy_actions:ORIGINS.map(o=>({
-    origin:o,proposed_action:byOrigin.get(o).proposed_legacy_action}))
+    origin:o,proposed_action:byOrigin.get(o).proposed_legacy_action})),
+   virtual_sink_needs_independent_order_reader:hasNul,
+   windows_nul_is_only_paperless_sink:hasNul
   });
 }
 module.exports={reviewLegacyPrintCutover,SCHEMA,EFFECTS,ORIGINS};
