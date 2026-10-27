@@ -570,6 +570,37 @@ assert.equal(
   "CALIBRATION_REQUIRED",
 );
 
+// Blank or impossible values are not printer calibration evidence.
+function assertInvalidCalibration(modify,label){
+ const reg=structuredClone(calibratedRegistry);
+ const entry=reg.printers.find(x=>x.printer_code==="00003");
+ modify(entry.calibration);
+ const p=planProductionPrintIntents(projection,{
+  tata_sequence:"037",teknisa_sequence:"18452",ifood_sequence:"A1B2C3",
+  order_time:"19:42",template_version:"production-ticket-v2-shadow",
+  ticket_items:[]
+ },reg);
+ assert.equal(p.print_intents.find(x=>
+  x.printer.printer_code==="00003").calibration_status,
+  "CALIBRATION_REQUIRED",label);
+ assert.equal(p.ready_for_physical_print,false,label);
+}
+for(const bad of ["","   ","UNKNOWN","unknown"]){
+ for(const field of ["actual_device_variant","transport_selected",
+  "character_mode","cutter_test","one_physical_ticket_proof"]){
+  assertInvalidCalibration(c=>{c[field]=bad;},
+   "empty/unknown calibration "+field);
+ }
+}
+for(const bad of [0,-1,NaN,Infinity]){
+ for(const field of ["actual_media_width_mm","printable_width_dots"]){
+  assertInvalidCalibration(c=>{c[field]=bad;},
+   "invalid numeric calibration "+field);
+ }
+}
+assertInvalidCalibration(c=>{c.printable_width_dots=577.25;},
+ "noninteger dots cannot prove calibration");
+
 const intentFingerprint = plan.print_intents[0].intent_fingerprint;
 assert.equal(
   decideProductionPrintSubmission(intentFingerprint, []).decision,
