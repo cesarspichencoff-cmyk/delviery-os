@@ -1,0 +1,177 @@
+# TATÁ Comandas — auditoria integral, funcionamento explicado e sequência TATÁ
+
+**Data da apuração:** 27/10/2026. **Fonte de projeto:** `cesarspichencoff-cmyk/delviery-os`, PR #127, branch `audit/comandas-shift-contract-20261026`. **Situação:** OPEN/DRAFT/HOLD, sem integração operacional da candidata, sem impressão, sem novas gravações de sequência. Este documento descreve o projeto **TATÁ Comandas**, não avalia separadamente todo o GPS, motoboys ou copiloto do Delivery OS.
+
+## 1. Leitura rápida: produto que se pretende entregar
+
+O projeto procura substituir uma rotina de comandas propensa a inconsistências por um conjunto de **três apresentações coordenadas do mesmo pedido**, de forma legível para a equipe, sem duplicar impressão nem criar um segundo cadastro manual:
+
+1. **Produção 1:** itens, quantidades e observações obtidos exclusivamente da **Teknisa nativa**, enviados à praça/destino autorizado para essa preparação;
+2. **Produção 2:** mesma origem nativa, só com os produtos que competem à segunda praça/destino. Não é cópia necessariamente idêntica da Produção 1;
+3. **Conferência do caixa:** usa a composição da Teknisa e, **somente nesta via**, cruza a identidade/presença independente do pedido no iFood. Caixa, sacola e kit devem vir de um motor de regras comprovado, sem chute.
+
+**Nuance:** dois layouts/vias de produção foram solicitados, mas o planejador técnico atual agrupa intenções **por impressora física efetivamente roteada**. Um pedido com destinos distintos pode gerar zero, uma ou várias intenções no planner; o sistema não demonstrou ainda que o número material de tickets corresponda exatamente a duas vias para cada pedido real. Essa equivalência precisa ser resolvida no aceite de praças; não duplicar saídas para forçar uma contagem.
+
+Todos carregam a mesma **sequência TATÁ** quando ela estiver atribuída de forma real e persistente. O fiscal/NFC-e continua fora das três vias.
+
+## 2. Caminho do pedido — aquilo que é observado e aquilo que ainda é desconhecido
+
+**Diagrama funcional desejado:**
+
+`Pedido iFood → integração existente → venda/comanda Teknisa → Reader V2 (pedido + itens + observações + revisão) → prova de integridade da fonte → número TATÁ persistido → regras aprovadas → [duas projeções de produção] + [conferência iFood×Teknisa] → emissor exclusivo → impressoras`.
+
+A posição do **evento real de PRIMEIRA VIA** nessa cadeia **não está comprovada**: o código instalado mostra `Account::order → commit → imprimePedidoMesaComanda` para **mesa**, `GeneralFunctions::reprintPedido` para **reimpressão**, e `Venda::liberaComandaDelivery → [opcional] imprimeDelivery` para **relatório de entrega**. Esses caminhos não provam qual callback emite a primeira via de produção dos pedidos iFood. Busca literal `DLV_IFO` nos 133 PHP examinados encontrou-o uma vez no cabeçalho do relatório, não na integração de entrada. Ver [topologia](TOPOLOGIA_EVENTO_IMPRESSAO_ORIGEM_NATIVA_20261026.md).
+
+**Chave forte da comanda nativa:** `CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA`. O `NRCOMANDAEXT` é o **código curto iFood** em pedido `DLV_IFO` observado (por exemplo, `9627` em referência histórica), não uma chave UUID completa. Usar só horário ou os últimos dígitos para juntar registros é proibido.
+
+A exportação iFood de 25/10 tinha **314 pedidos** e **não trazia itens nem observações**. O confronto com a Teknisa obteve **311 candidatos únicos** pela chave curta e recorte, com **3 só iFood** e **6 só Teknisa**. Isso prova candidatos de presença independente, **não** conteúdo igual, UUID→SQL autenticado ou causa das divergências. iFood identifica o estabelecimento `53069`, Teknisa a unidade `0001/01`; são **namespaces distintos**. A conferência exige um mapa explícito candidato entre os dois, que também não equivale a atestação independente.
+
+## 3. Horários e operação
+
+**Horário do delivery informado pela gestão:**
+
+| Dia | Almoço | Jantar |
+|---|---|---|
+| Segunda a sexta | 11h–15h | 18h–23h |
+| Sábado e domingo | 11h–16h30 | 18h–23h |
+
+São horários de funcionamento, **não uma ordem para abrir ou fechar impressoras automaticamente**. O horário original do pedido já consta da comanda. Não instalar aprovador diário `LUNCH/DINNER`, não deduzir turno pelo relógio do computador e não criar uma tabela paralela de seleção de impressoras. Para agendados, pedidos fora das faixas, datas trocadas e exceções de feriado, o **tratamento automático não foi comprovado**: não inventar retenção, impressão ou descarte.
+
+A data usada para sequência TATÁ é o **dia do calendário local da loja**, fornecido pela origem; não resetar por almoço/jantar nem por saída do operador. `23:59` e `00:00` representam dias locais diferentes, desde que a data da origem tenha sido validada.
+
+## 4. O que aparece nas vias e de onde cada informação vem
+
+| Informação | Produção | Conferência | Critério |
+|---|---|---|---|
+| Código iFood curto | Campo `NRCOMANDAEXT` da Teknisa | Mesma origem + confronto independente iFood | Nunca inventar/usar UUID inferido |
+| Número interno Teknisa | `NRCOMANDA` | `NRCOMANDA` | Mesma chave/revisão |
+| Número TATÁ | Mesmo número nas praças | Mesmo número | **Somente após binding persistido e rechecado** |
+| Item/quantidade | Composição nativa exata | Composição nativa exata | Nome completo, quantidade positiva inteira, sem somas ou trocas silenciosas |
+| Observação de item | Imediatamente abaixo do item | Preservada no escopo correto | `DSOBSDESCIT`, `DSOBSPEDDIGCMD`, `TXPRODCOMVEN` quando ligadas por item/revisão |
+| Observação geral | **Não copiar automaticamente** texto financeiro, fiscal ou misto | Exige canal/revisão/classificação apropriados | `DSOBSCOMANDA` não está classificada integralmente |
+| Caixa, sacola, kit | Somente fatos relevantes e comprovados | Motor canônico aprovado da Academia | `A DEFINIR` só se motor realmente executado e inconclusivo; `NOT_EVALUATED` se não executado |
+| Nota fiscal, pagamento, endereço e cliente | Não entram | Não entram nas vias de comanda | Fiscal independente, privacidade |
+
+A hierarquia visual aprovada privilegia **praça, sequência TATÁ, caixa de montagem, quantidade+item e observação**, com letras legíveis, contraste e nenhum dado de cliente. O renderizador ESC/POS V4.6 produz **bytes apenas em memória em ambiente offline**. Perfil Epson TM-T20/80 mm e Fonte B/64 colunas permanecem não calibrados na impressora real. Sem teste em papel não há aceite óptico.
+
+## 5. Motor de regras de produto e montagem
+
+O Reader preserva o **produto comprado** e suas observações; a Academia decide, quando há versão autenticada e fatos suficientes, regras de **caixa, sacola, kit**, montagem e possíveis dependências de preparo. Misturar classificação derivada do nome, catálogo histórico e decisão real pode mandar ingredientes à praça errada.
+
+Prova histórica: cache local com **554 identidades**, matriz de destino para **463 códigos**, 14 códigos sob `CLASSIFICATION_UNKNOWN` analisados: **14/14** identidade e nome coerentes com cache histórica, **0/14** alias aplicável, **13/14** com alguma rota histórica; Cookie Pistache `8.20.11.002.00` **sem rota nessa matriz**. Nada disso autoriza promover classificação para a loja atual. Casos Kids, Tataki, Carpaccio, Missoshiro exigem a regra/motor correto com identidade e fonte comprovadas.
+
+A [PR #50 da Academia](https://github.com/cesarspichencoff-cmyk/tata-academia/pull/50) continua aberta e em rascunho no HEAD `030b44dabd95c836b38275016512488a98784245`; não assumir que o motor candidato foi publicado ou que seus resultados podem substituir o pin vigente. Não atribuir `A DEFINIR` a produtos, quantidades, ID iFood ou sequência TATÁ.
+
+## 6. Praças, rotas e a correção de turno já implementada
+
+O mapa histórico de 30/09 identifica entre outros: `00009` BALCÃO SUSHI 1, `00003` DELIVERY SUSHI 1, `00006` BALCÃO SUSHI 2, `00004` DELIVERY SUSHI 2; há ainda cozinha, caixa e outras praças.
+
+Documento operacional antigo descrevia esses códigos como **alternativas almoço/jantar**, mas a inspeção posterior de origem física **não confirmou essa equivalência para a seleção automática**. O planejador antigo ainda aplicava a suposição, criando risco de impressão em local errado e de novo fingerprint da mesma produção após mudar o rótulo de turno.
+
+A PR #127 agora **bloqueia ambos os destinos de um par ambíguo para aquele item**, independentemente de `LUNCH`, `DINNER` ou nulo; rotas únicas continuam representáveis e destinos independentes permanecem como diagnóstico. Em 463 produtos históricos, **106** têm ao menos um par desses códigos; **117** têm duas rotas configuradas por quaisquer motivos — as contagens **não são intercambiáveis**. O `intent_fingerprint` agora exclui metadados não causais de turno, evitando tratar como impressão nova o mesmo pedido/conteúdo/destino porque se alterou apenas o rótulo. O teste de tentativa ambígua anterior confirma bloqueio de reenvio após mudança de turno.
+
+Essas mudanças são **código candidato/testes**, não homologação de portas, filas, drivers, dispositivo e papel da loja. Ver [correção de roteamento](CORRECAO_ROTEAMENTO_PRODUCAO_SEM_TURNO_20261027.md).
+
+## 7. Estados reais — por que `P`, `X` e `A` não podem disparar papel
+
+Recorte passivo de **650 revisões** de 25–26/10, não 650 pedidos: 327 chaves compostas. Cabeçalhos: `3=263`, `P=289`, `X=94`, `4=4`; `A=0`. Entre 1.901 aparições de itens: `4=1876`, `6=17`, `3=8`, `A=0`. Transições observadas `3→P=190`, `3→X=66`, `X→P=61`, `P→4=4`.
+
+O código instalado indica que:
+- `A` pode representar pedido **agendado**, não via pronta;
+- `3` é um estado de fluxo nativo, não confirmação de cozinha;
+- `P` pode ser atribuído **antes de tentativa opcional** de relatório, portanto não é recibo de impressão;
+- `X` ocorre em alguns caminhos de retirada/conclusão automática, não deve ser confundido automaticamente com cancelamento;
+- cabeçalho `4` é cancelamento no SQL examinado; item `4` é **um outro campo** e não significa a mesma coisa; item `6` representa cancelamento no caminho observado.
+
+O Reader V2 de revisão da PR verifica `3/P/X` com item `4` para **autoconsistência de dados**, sem dar autoridade a nenhum estado para imprimir. Não usar transição `X→P` como prova de reimpressão. Um evento verdadeiro de primeira via, revisão, cancelamento ou reimpressão precisa ser atestado separadamente por seu emissor.
+
+## 8. Bloqueios instalados versus evidência de laboratório
+
+Inspeção anterior: serviço `TataComandaReader` estava `Running`; havia **2.047 decisões registradas como bloqueadas, 0 ready**. Amostra adicional de 500 decisões mais recentes tinha dois bloqueios herdados de serviço/turno em todas. Agrupando por chave e mantendo última revisão dentro da amostra: **250 chaves**, **56** apenas com família de turno/serviço e **194** também com outros motivos; destes, famílias observadas: sacolas **141**, kits **107**, classificação **67**, rota ausente **1**. As famílias se sobrepõem; não são métricas universais, e os períodos/amostras diferem das 650 revisões de eventos.
+
+**Explicação:** serviço rodando não significa comanda pronta; consertar a trava de turno, sozinho, não resolve as outras 194. Motor inconclusivo, rota não homologada, falta de sequência e falta de evento continuam bloqueios independentes. Dados da amostra não autorizam despejar todas as vias em papel.
+
+## 9. Sequência TATÁ — contrato, cálculo e estado real
+
+**Regra aprovada:** três dígitos de `001` a `999` por **loja + dia do calendário local**. No dia seguinte a mesma loja recomeça em `001`; outra loja possui numeração independente. Mesmo pedido, nova observação da mesma comanda ou reimpressão **reutiliza o número original**, nunca consome outro. Na mesma loja/dia, o milésimo pedido **bloqueia**; não volta a `001`.
+
+O planejamento `src/production/tataSequence.ts` é puro: `planDailyStoreTataSequence` calcula a próxima candidata pelos bindings existentes daquele escopo. O script de binding atômico `tools/tata_sequence_atomic_bind_v1.ps1` já dispõe de **DRY_RUN**, checagem de SHA, lock, replace atômico e releitura, com provas históricas de commit/replay **somente em arquivo temporário**. Não foi executado nesta apuração para gravar número real.
+
+**Evidência fresca na `CAIXA_MOOCA` em 27/10:** `C:\ProgramData\TataComandaReader\state\tata-sequence-state.json` continua schema V1, `policy={width:3,min:1,max:999}`, `bindings=0`, `next_value=1`, SHA-256 `11004FBB4AECA6D9E37607D82E30D5ADC28D2C8835DE3DEC3FAACC0B4453C329`, modificado em **05/10/2026**. `001` está **disponível como candidato matemático**, não atribuído a qualquer pedido.
+
+**Risco de identidade descoberto:** o `binding` V1 contém `scope_id`, `teknisa_order_id=NRCOMANDA` e `tata_sequence`. Não armazena `NRVENDAREST` nem o **snapshot forte** de quatro partes. Portanto, mesmo um número encontrado num estado fornecido não prova, por si só, que pertence à **mesma venda e revisão completa** observada agora. É necessária uma testemunha independente dessa ligação antes de usar o número em papel.
+
+**Nova proteção offline desta auditoria:** `tools/comandas_sequence_v2_reconciliation_v1_offline.cjs`, testada em `tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs`, aceita somente um Reader V2 autoconsistente, examina **todos** os bindings sintéticos do estado recebido e bloqueia:
+- colisão de número no mesmo dia/loja;
+- dois números para o mesmo pedido, até linhas duplicadas idênticas;
+- formato diferente de `DDD`, `000`, data impossível, escopo ilegível, política alterada;
+- pedido/item cancelado, snapshot inválido ou quantidade/adulteração de origem;
+- esgotamento depois de `999`;
+- falsa promoção por `state.persisted=true`, `authorize_commit=true` ou outra autodeclaração.
+
+Mesmo no caso positivo a saída é **`CANDIDATE_ONLY_NOT_PERSISTED`** ou **`EXISTING_BINDING_IN_SUPPLIED_STATE_NOT_ATTESTED`**. Em ambos: `number_for_operational_ticket=null`, `sequence_persisted_proven=false`, `strong_order_binding_proven=false`, `authorizes_sequence_commit=false`, `authorizes_first_print=false`. O campo `hypothetical_next_value` é **simulação declarada**, jamais número para a comanda.
+
+**Prova:** 28/28 regressões em Foxxy, após corrigir uma fixture inicialmente incoerente; build TypeScript no checkout isolado. CI Linux e Windows foram adicionadas ao workflow e exigem conclusão no HEAD exato. **Sem binding em produção.**
+
+## 10. Antiduplicidade, falhas e fronteira da impressão
+
+Para uma emissão futura deverão existir:
+- uma única identidade de pedido + revisão + via + destino;
+- um único emissor autorizado por destino; convivência com Teknisa e estado do Gestor iFood comprovada **no dia**;
+- `intent_fingerprint` estável, registro de tentativa, trava contra colisão, reinício e replay;
+- classificação separada: **planejada ≠ submetida ≠ observada pelo spooler ≠ papel físico confirmado**;
+- tentativa com efeito desconhecido exige **reconciliação**, jamais retry automático;
+- reimpressão é um **ato distinto e explicitamente observado**, mantendo mesma TATÁ.
+
+PrintService/Event 307 e testemunhas digitais anteriores fornecem contratos **offline** de reconciliação; evento de spooler não prova papel. Não instalar coletor de fila com autoridade de impressão sob rótulo "somente leitura". A evidência física final requer uma janela, impressoras corretas, inspeção óptica, ausência de segunda emissão e aceite humano explícito.
+
+O Gestor iFood estava **com impressão de comandas desligada em 25/10**, conforme gestão, e não precisa ser ligado para que se compare a presença de pedidos no caixa. Esse estado histórico não comprova o estado de todos os dias posteriores; deve ser verificado antes de qualquer piloto físico.
+
+## 11. Resultado adversarial por área
+
+| Área | Conclusão que as fontes sustentam | Falta material |
+|---|---|---|
+| Escopo 3 vias | Regra humana e contrato/testes implementados offline | Vincular ao circuito real sem efeitos; quantidade real de impressoras/praças |
+| Leitura Teknisa | Reader instalado, eventos e pares V2 presentes; 37 testes de integridade | Prova ponta a ponta de todas as revisões e origem atestada |
+| Conferência iFood | 311 candidatos independentes por ID curto/loja/dia na exportação de 25/10 | Fonte atual autenticada, vínculo UUID/loja e conteúdo externo quando realmente disponível |
+| Estados/cancelamentos | Semântica do PHP examinada e regras conservadoras | Evento inequívoco de primeira via/revisão/cancelamento |
+| Turno/horário | Horário humano conhecido; seleção por turno removida do planejador candidato | Destino físico atual comprovado sem heurística de turno |
+| Classificação/embalagem | Fontes/motor e regras de `A DEFINIR` mapeados | Aprovação/pin do motor, 14 casos e demais itens da loja |
+| Sequência TATÁ | Algoritmo, estado real 0 bindings, script atômico histórico e 28 testes novos | Binding forte, autorizado, persistido, reread independente |
+| ESC/POS visual | Prévia virtual; protótipos e testes offline | Calibração TM-T20/driver/fila e três papéis reais legíveis |
+| Idempotência | Fingerprint estabilizado contra troca de turno; simulações/crash | Prova de tentativa/efeito, concorrência na loja e emissor único |
+| Fiscal | Fluxo mantido separado | Não se propõe mudança fiscal |
+| Liberação | PR #127 DRAFT/HOLD | CI HEAD final, deploy autorizado, prova real e aceite humano |
+
+## 12. Caminho mínimo para sair de HOLD
+
+1. **Fechar CI da candidata no commit exato** e corrigir regressões sem retomar uma lógica rejeitada.
+2. **Fechar contrato forte da sequência**: ligar `scope+NRCOMANDA` do binder ao `CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA` da revisão, sem autoatestar.
+3. **Confirmar catálogo e roteamento da loja**, especialmente os 106 pares de códigos históricos suspeitos, os 14 casos sem classificação e o destino correto da conferência. Não pedir revisão de cada comanda manualmente se uma prova de configuração atual resolve a família.
+4. **Demonstrar o evento verdadeiro da primeira via do pedido iFood** no emissor existente ou na ponte autorizada; separar de `P/X`, cobrança, relatório e reimpressão.
+5. **Ensaiar atomicidade/releitura da sequência** no ambiente isolado para casos de concorrência, crash, troca de dia, mesmo pedido e recuperação. Não gravar `001` no caixa como teste informal.
+6. Com todos os gates documentados, **pedir autorização humana específica**, com identidade da máquina, janela, pedido real de teste, destino de cada via, mudanças exatas, STOP e rollback.
+7. **Piloto com prova em papel e aceite da equipe**, sem duplicate e sem alterar fiscal. Somente então reavaliar implantação.
+
+## 13. Vocabulário de prova e honestidade
+
+- **FACT/OBSERVED:** dados realmente vistos na origem com escopo definido.
+- **CANDIDATE/INFERENCE:** correspondência plausível, não vínculo atestado.
+- **SIMULATION:** número, via ou fluxo produzido apenas em memória/fixture.
+- **UNKNOWN/HOLD:** ausência de prova material; nunca completar por suposição.
+- **CODE_READY/TEST_PASS:** código/contrato validado no escopo dos testes.
+- **DEPLOYED:** versão exata instalada e verificada no dispositivo correto.
+- **WORLD_PROVEN:** emissão/reconciliação e papel observados no mundo real.
+- **HUMAN_ACCEPTED:** operação aceita pela equipe e pela autoridade de gestão.
+
+**Veredito:** houve evolução material comprovada em código e testes. A **sequência TATÁ ainda não foi ligada a nenhum pedido real**, o caminho real da primeira impressão segue não atestado e nenhuma via física foi liberada. O projeto **não está 10/10 operacional**, embora sua fronteira de segurança esteja mais explícita e várias regressões históricas tenham sido eliminadas.
+
+### Fontes principais desta auditoria
+
+- [Escopo, origem, dados históricos e decisões](CONVERGENCIA_VERTICE22_REQUISITOS_PROVAS_20261026.md)
+- [Revisões de estados e limites da impressão](AMOSTRA_REAL_650_REVISOES_ESTADOS_E_EVENTO_PRODUCAO_20261026.md)
+- [Topologia do código PHP](TOPOLOGIA_EVENTO_IMPRESSAO_ORIGEM_NATIVA_20261026.md)
+- [Protocolo de piloto e autorização](PILOTO_PEDIDO_REAL_CRITERIOS_ACEITE_20261026.md)
+- [Classificação local e bloqueios](ORIGEM_CLASSIFICACAO_CAIXA_MOOCA_READONLY_20261026.md)
+- [Correção das impressoras e fingerprint](CORRECAO_ROTEAMENTO_PRODUCAO_SEM_TURNO_20261027.md)
+- `src/production/tataSequence.ts`, `tools/tata_sequence_atomic_bind_v1.ps1`, `tools/comandas_sequence_v2_reconciliation_v1_offline.cjs`.
