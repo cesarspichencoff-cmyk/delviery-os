@@ -31,3 +31,17 @@ O relatório individual do iFood oferece 314 pedidos, 311 códigos curtos coinci
 - Pilot readiness: **HOLD**; **physical effects = 0**.
 
 **Aceite 10/10 só depois de `CODE_READY + CI/TEST_PASS + DEPLOYED + WORLD_PROVEN + HUMAN_ACCEPTED` sem obrigação crítica aberta.**
+
+
+## Rota de validação viável com a exportação oficial real (proposta de revisão, não autorização)
+
+**Limite conhecido e confirmado por César:** a exportação oficial do iFood fornece 314 identificadores/horários/situações, **sem linhas de itens ou observações**. Portanto a exigência de comparar *automaticamente* cada item iFood contra a Teknisa a partir dessa planilha é **inexequível com essa fonte**. Não pedir outra planilha equivalente nem promover campos inexistentes.
+
+A proposta de menor complexidade separa as provas, sem inventar vínculo:
+1. **Presença independente do pedido:** exportação oficial iFood + `DLV_IFO` na Teknisa com mesma loja/dia/código curto sem colisão. Para 25/10, 311 são candidatos únicos, não UUID autenticado. Três só-iFood e seis só-Teknisa ficam em HOLD individual até explicação de recorte/origem, sem matching por horário.
+2. **Conteúdo operacional primário:** o banco nativo Tecnisa (linhas `ITCOMANDAVEN` e observações por origem) é a fonte de produtos e quantidades. O Reader V2 deve preservar exatamente a chave composta, o hash da revisão e a coleção completa de itens/notas, com releitura sem discrepância. A prova anterior SQL↔Reader foi 5/5 **revisões**, não cinco pedidos independentes nem prova do conteúdo iFood.
+3. **Revisão independente de conteúdo, se necessária para efeito:** no piloto supervisionado, comparar localmente no aplicativo oficial já autorizado, **para a mesma comanda visível**, os itens/quantidades/observações relevantes do pedido selecionado com a prévia nativa. Não criar API nova, não ler sessão, cache ou credenciais, não automatizar clique remoto nem exportar PII. Se a tela/fonte não estiver disponível, registrar `IFood_ITEM_PARITY=UNKNOWN`, não simular equivalência; não autorizar impressão autônoma por esse dado.
+4. **Primeira via versus reimpressão:** manter independente da semântica `IDSTCOMANDA`. Os arquivos PHP observados mostram impressão de mesa após `commit`, reimpressão dedicada e relatório de entrega separado; **não provam evento de cozinha do iFood**. Para um piloto autorizado, o disparo deve ser controlado por uma identidade/revisão explícita, não `P`, `X`, turno ou timestamp aproximado. Antes de qualquer automatismo, atestar quem emite e se já houve efeito sobre essa mesma revisão; status de spooler sozinho não prova papel.
+5. **Número e saída física:** sequência TATÁ real ainda `bindings=0`; não renderizar `001` como atribuído. Para fase de efeito futuro, exigir binding persistido atômico com releitura independente, roteamento homologado, configuração de impressoras na loja, três vias conferidas, exclusividade e STOP/rollback sob autorização humana próxima do efeito.
+
+**Decisão proposta para revisão:** permitir investigação e **prévia não produtiva** sobre conteúdo SQL↔Reader provado, mesmo que a exportação iFood não contenha itens; isso não é `IFood_ITEM_PARITY=PROVEN`, não prova `PRINT_EVENT`, nem libera sequência, produção automática, instalação ou papel. A Fase 1/2 de autorização específica permanece intacta.
