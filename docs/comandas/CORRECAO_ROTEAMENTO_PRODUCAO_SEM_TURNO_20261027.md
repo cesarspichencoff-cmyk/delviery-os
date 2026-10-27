@@ -38,3 +38,14 @@ Esses dados vêm da matriz **histórica de 30/09 para 0001 - TATÁ ITAIM**, não
 4. Manter iFood × Teknisa só na conferência; não ligar impressão do Gestor iFood como substituto de prova de vínculo.
 
 **Estado: CODE_READY + ISOLATED_TEST_PASS na revisão local. Não DEPLOYED, não WORLD_PROVEN, não HUMAN_ACCEPTED.** PR continua DRAFT/HOLD. Sem escrita no caixa, alteração de serviço, SQL, sequência, spooler, impressora, GP/iFood ou fiscal.
+
+
+## Identidade de intenção estável, sem falso reenvio ao mudar o turno
+
+A revisão do planejador revelou outra dependência antiga: `stableSemanticKeyMaterial` incluía `serviceResolution.service`, `evidence` e `source_ref` na base do SHA-256 da **intenção de produção**. Após corrigir o roteamento, esses campos não decidem mais uma impressora física. Se uma etiqueta externa de turno fosse alterada, o **mesmo pedido, mesmos produtos, mesmo destino, mesmo horário nativo e mesma sequência** receberia um `intent_fingerprint` diferente e poderia driblar controles de duplicação que comparam apenas essa chave.
+
+**Correção:** as etiquetas de serviço continuam presentes no metadata de diagnóstico, mas não no material usado para o fingerprint de produção. Permanecem no hash os identificadores do pedido, `ifood_sequence` nativo, `teknisa_sequence`, sequência TATÁ, destino, template, horário original, observações e linhas/produtos. Para uma rota **única e igualmente configurada**, `LUNCH`, `DINNER` ou `null` não podem gerar fingerprints diferentes. Para um par ambíguo, os três continuam `HOLD` e com zero destinos selecionados daquele par.
+
+Prova em cópia temporária Foxxy no commit `68144b95bc24953f6d79b8b1af46e1960fe02f6d`: build TS, matriz 463 produtos/106 casos de par ambíguo e as seis suítes direcionadas passaram, incluindo o novo teste de **fingerprint idêntico** entre etiquetas. Testes não equivalem a confirmar que o GP/Teknisa já emitiu ou não em papel.
+
+**Segurança:** excluir metadados não causais do hash não é autorização para repetir tentativa; submissão, reconciliação independente, falha ambígua e confirmação física continuam gates separados e fechados.
