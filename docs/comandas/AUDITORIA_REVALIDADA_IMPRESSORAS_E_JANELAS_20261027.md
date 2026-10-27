@@ -39,6 +39,12 @@ Detalhe por data: 22/10 jantar 116; 23/10 almoço 33, jantar 241, fora 1; 24/10 
 
 **Conclusão suportada:** a fila do Windows recebeu trabalhos de DELIVERY SUSHI 1 também no almoço. **Não há prova** de 204 papéis desperdiçados, 204 pedidos distintos, causa exclusiva da Teknisa, fila ainda pendente, impressão acumulada liberada depois ou status de energia da Epson. A combinação da regra humana e dos horários observados exige investigar a origem e evitar submissões indevidas. **Nenhuma fila foi alterada ou esvaziada.**
 
+## Leitura do código PHP instalado: a impressão pode percorrer vários destinos
+
+O arquivo instalado `C:\TEKNISA\odhenPOS\backend_74000\vendor\odhen\api\src\Service\ImpressaoPedido.php` foi consultado **somente em leitura**. Nos trechos **214–230, 231–247 e 248–262**, existem laços separados que preparam impressões para `impressoraProducao`, `impressoraProducao2` e `impressoraPuxa`. Os testes presentes nesses trechos tratam tipo de dispositivo/parâmetros como `IDIMPPEDPROD`, **não exibem seleção por horário de almoço/jantar**.
+
+Isso oferece um mecanismo **plausível**, mas não causa demonstrada, de envio a mais de um destino já configurado. O caminho PHP examinado **não foi provado como o emissor da primeira via do iFood/DLV_IFO**; tampouco os 204 jobs Windows foram causalmente ligados a esse laço. Não alterar o PHP como resultado desta leitura.
+
 ## Correção de arquitetura necessária
 
 1. **Distinguir rota cadastrada, praça necessária e impressora elegível na janela do pedido.** O pedido deve carregar o horário original da Teknisa; o sistema não deve escolher pelo relógio atual ou turno expirado de 14/10.
