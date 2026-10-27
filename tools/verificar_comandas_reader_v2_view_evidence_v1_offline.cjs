@@ -24,9 +24,13 @@ function independent(x){
  const o=x.event.order;
  x.ifood={schema:"tata.comandas.ifood-export-claim.v1",
   source_kind:"OFFICIAL_IFOOD_EXPORT",source_fingerprint:"b".repeat(64),
-  source_ref:"SYNTHETIC_EXPORT_NOT_ATTESTATION",store_id:o.CDFILIAL,
+  source_ref:"SYNTHETIC_EXPORT_NOT_ATTESTATION",store_id:"53069",
   operational_date:o.DTHRABERMESA.slice(0,10),
   short_id:o.NRCOMANDAEXT,short_id_unique_for_day:true};
+ x.store_mapping={schema:"tata.comandas.cross-system-store-candidate.v1",
+  source_kind:"HUMAN_RECONCILIATION_CANDIDATE",
+  source_ref:"SYNTHETIC_MAP_NOT_ATTESTATION",ifood_store_id:"53069",
+  native_store_id:o.CDFILIAL,native_store_unit:o.CDLOJA};
  return x;
 }
 let total=0;
@@ -98,6 +102,18 @@ test("wrong external iFood ID holds conference only, native production same",()=
  const b=ok(x);
  assert.deepEqual(a.source_review.production,b.source_review.production);
  assert.equal(b.source_review.conference.status,"HOLD");
+});
+test("missing store crosswalk prevents conference iFood candidate without touching native production",()=>{
+ const x=independent(native());delete x.store_mapping;
+ const r=ok(x);
+ assert.equal(r.source_review.conference.status,"HOLD");
+ assert.equal(r.source_review.conference.reasons[0],
+  "CROSS_SYSTEM_STORE_MAPPING_CANDIDATE_REQUIRED");
+});
+test("mismatched iFood merchant/store crosswalk never equals native store by coincidence",()=>{
+ const x=independent(native());x.store_mapping.native_store_unit="02";
+ const r=ok(x);
+ assert.equal(r.source_review.conference.status,"HOLD");
 });
 test("external source missing day holds conference only",()=>{
  const x=independent(native("X"));x.ifood.operational_date="2026-10-25";
