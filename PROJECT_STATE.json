@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "BOUNDED_TATA_FILE_FEED_CONTROL_TESTED_REVIEW_ONLY",
-  "state_basis_head": "b58c48aa3a710c4a3a2066c0b4bbb7013f3ef342",
+  "checkpoint_type": "OPERATOR_READ_AUTH_BOUNDARY_TESTED_PROVIDER_WIRING_PENDING",
+  "state_basis_head": "7c9bac6e374ab5946cefb18dd66cdea785b6ddc6",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -23,7 +23,8 @@
     "docs/execution/MOOCA_POSTGRES_RECUPERACAO_2026-10-27.md",
     "docs/execution/evidencias/mooca-local-2026-10-26/pg-backup-restore-proof.json",
     "docs/execution/COPILOTO_SOURCE_TIME_2026-10-27.md",
-    "docs/execution/COPILOTO_FILE_FEED_2026-10-27.md"
+    "docs/execution/COPILOTO_FILE_FEED_2026-10-27.md",
+    "docs/execution/COPILOTO_OPERATOR_AUTH_2026-10-27.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -58,9 +59,10 @@
     "Manual on-host PostgreSQL custom archive restored into separate authenticated loopback cluster 55438. Same exported source snapshot: 24 tables, 13 rows, equal canonical data/column digests. Restored-only negative control detected and rolled back; cluster stopped. Pilot/platform HTTP 200 and Tata reader Running. Archive private ACL, no off-host copy/encryption/schedule/global-role recovery; no live restore.",
     "Explicit scoped source-time policy adapter implemented in review code, not installed/published. 15 adapter families plus 9 existing Tata projection families pass. Validated calendars, fraction preservation, host-zone independence, historical DST gap/fold rejection and source denial preservation. Latest three native events inspected still predate weekly rule fix; no newer valid event observed. Previous a221 CI product 40455004434 and Android 40455004481 both succeeded (run names not re-read).",
     "Bounded server file feed implemented in review code only: native files -> scoped time adapter -> existing TATA motor -> minimized Copiloto projection. 19 file scenarios, 15 adapter families and 9 projection families pass. Fail closed on corrupt/current blocked revision, budget excess and observed file changes. No HTTP route, live authentication, publication or host installation. Prior b58 CI product 40455916162 and Android 40455915994 succeeded.",
-    "Native archive metadata scan exceeded 1000 files; existing producer checkpoint has 250 Itaim 0001/01 entries, all 250 referenced files found, zero pending/missing in observation. Review feed now selects by that checkpoint and verifies key/hash/identity, refusing changed checkpoints. No source data modified or mode assigned; checkpoint selection is not complete active-order inventory."
+    "Native archive metadata scan exceeded 1000 files; existing producer checkpoint has 250 Itaim 0001/01 entries, all 250 referenced files found, zero pending/missing in observation. Review feed now selects by that checkpoint and verifies key/hash/identity, refusing changed checkpoints. No source data modified or mode assigned; checkpoint selection is not complete active-order inventory.",
+    "Read-only TATA OS auth branch inspection found Neon OTP relay bound to TATA OS origin/actor registry. Live Neon trusted-domain lookup confirms three TATA OS domains and no Delivery OS origin. No external config/user/OTP action. New server operator-read authority checks verified issuer/audience/subject, current active scoped grant and expiry before source read; nine synthetic families and full TypeScript pass. No real IdP adapter/login installed."
   ],
-  "next_action": "Wire authenticated real Itaim order reading after trusted individual identity, source/time provenance and new valid native event. Bounded file feed is tested in review only; use tested native-checkpoint selection (250 references located on host); validate actual contents and source authority before publication. Do not silently sample as active inventory. Then native receipt authority/Xiaomi field validation; operational prerequisites remain recurring encrypted off-host backup and least privilege.",
+  "next_action": "Implement real provider adapter and own protected Delivery OS session using inspected Neon identity candidate, with server-approved operator subject mapping. Delivery OS origin is absent from live trusted-domain list; review configuration, issuer/audience, cost and actual browser flow before enabling. Read authority boundary, time adapter and checkpoint feed already exist in review. No new IdP provision or reuse of TATA OS cookie/stock authority by assumption.",
   "unknowns": [
     "No genuine source event after the weekly-rule installation was observed. Native SQL timestamps lack offset; explicit policy-based conversion is tested in review code, but trusted live configuration and wiring remain needed. The weekly schedule itself is confirmed and installed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
