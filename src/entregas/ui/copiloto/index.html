@@ -22,15 +22,20 @@
       <h2 id="source-title">Leitor TATÁ Comandas</h2>
       <dl>
         <div><dt>Unidade da fonte</dt><dd>Itaim</dd></div>
-        <div><dt>Janela registrada no leitor</dt><dd id="window">Aguardando leitura</dd></div>
+        <div><dt>Última janela do arquivo legado</dt><dd id="window">Aguardando leitura</dd></div>
         <div><dt>Diagnóstico consultado</dt><dd id="read-at">Aguardando leitura</dd></div>
       </dl>
+      <table id="weekly" hidden>
+        <caption>Horários semanais configurados</caption>
+        <thead><tr><th>Dia</th><th>Almoço</th><th>Jantar</th></tr></thead>
+        <tbody id="weekly-body"></tbody>
+      </table>
       <p id="sample" hidden></p>
       <button id="refresh" type="button">Verificar novamente</button>
     </section>
     <section aria-labelledby="next-title">
       <h2 id="next-title">Leitura dos pedidos</h2>
-      <p>Aguardando a validação da vigência e a conexão autorizada da fonte. Ainda não há lista de pedidos nesta tela.</p>
+      <p>A conexão autorizada e a atualização da fonte ainda precisam ser comprovadas. Ainda não há lista de pedidos nesta tela.</p>
       <p>O diagnóstico usa uma amostra limitada de arquivos. Ela não representa os pedidos atuais nem o total da operação.</p>
     </section>
     <p class="note">Somente consulta da fonte. Esta tela não coleta localização.</p>

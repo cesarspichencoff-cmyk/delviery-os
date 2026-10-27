@@ -1,0 +1,267 @@
+{
+  "schema": "deliveryos.itaim-weekly-service-proof.v1",
+  "sourceBase": "283f1502d1e6a97927574257d0316bf3789705c1",
+  "humanRule": {
+    "source": "cesar:chat:2026-10-26:itaim-delivery-hours",
+    "weekdaysLunch": "11:00-15:00",
+    "weekendLunch": "11:00-16:30",
+    "dailyDinner": "18:00-23:00"
+  },
+  "install": {
+    "schema": "deliveryos.weekly-service-install.v1",
+    "mode": "Apply",
+    "unit": "ITAIM",
+    "old_watcher_sha256": "A58E428826D70EDF27763C3FA47893608305A7FB48F973EE1F84F02E5DA19C5C",
+    "candidate_sha256": "92B33E82ED72426BE46FE20BCB2A4F4557F9716108886F89E15A4E262C506D44",
+    "policy_sha256": "50F4028BA11FFA6AECE4140B56C26FD200B28CFA4A774E989D67069BBC729090",
+    "checks_passed": 82,
+    "sql_write": false,
+    "checkpoint_reset": false,
+    "historical_events_changed": false,
+    "legacy_state_changed": false,
+    "service_restart": true,
+    "status": "APPLIED_HEALTHY",
+    "observed_at_utc": "2026-10-27T02:21:03.0784385Z",
+    "health": {
+      "state": "HEALTHY",
+      "ok_batches": 2,
+      "last_batch": "OK",
+      "consecutive_failures": 0,
+      "pinned_watcher_verified": true,
+      "checkpoint_advanced": true,
+      "supervisor_run_stable": true,
+      "service_process_stable": true,
+      "declared_effects": [
+        "database_read",
+        "local_checkpoint_write",
+        "local_event_write"
+      ]
+    },
+    "backup_dir": "C:\\Users\\Tata\\DeliveryOS-Ensaio\\weekly-service-backup-20261027T021859802",
+    "installed_config_sha256": "07A4FA15048E9AD2E4B2769622B01892F1423F1EE7E5224BF2140FA71F15B0A6"
+  },
+  "resolverTests": {
+    "schema": "deliveryos.weekly-service-tests.v1",
+    "passed": 82,
+    "sql_executed": false,
+    "source_state_changed": false,
+    "resolver_sha256": "92B33E82ED72426BE46FE20BCB2A4F4557F9716108886F89E15A4E262C506D44",
+    "policy_sha256": "50F4028BA11FFA6AECE4140B56C26FD200B28CFA4A774E989D67069BBC729090"
+  },
+  "atomicTests": {
+    "passed": 3,
+    "scope": "temporary_files_only_create_replace_restore"
+  },
+  "diagnosticHost": {
+    "observedAtUtc": "2026-10-27T02:23:00.513Z",
+    "scope": "HOST_HTTP_AND_NEW_HEADLESS_BROWSER_NOT_PUBLIC_PROXY_PROOF",
+    "results": [
+      {
+        "name": "anonymous_denied",
+        "status": 401
+      },
+      {
+        "name": "rider_denied",
+        "status": 403
+      },
+      {
+        "name": "write_denied",
+        "status": 405
+      },
+      {
+        "name": "manager_source_status",
+        "status": 200
+      },
+      {
+        "name": "health",
+        "status": 200
+      },
+      {
+        "name": "browser_390",
+        "pass": true
+      },
+      {
+        "name": "browser_1440",
+        "pass": true
+      }
+    ],
+    "sourceState": "source_blocked",
+    "sampledFiles": 20,
+    "producerBlocksDownstream": 20,
+    "serviceState": {
+      "schema": "deliveryos.production-service-shift-state.v2",
+      "operationalDate": "2026-10-14",
+      "validFromLocal": "2026-10-14T11:00:00",
+      "validUntilLocal": "2026-10-14T15:00:00",
+      "service": "LUNCH"
+    },
+    "servicePolicy": {
+      "state": "configured",
+      "effectiveFrom": "2026-10-26",
+      "timezone": "America/Sao_Paulo",
+      "boundary": "START_INCLUSIVE_END_EXCLUSIVE",
+      "week": [
+        {
+          "dayOfWeek": 0,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "16:30"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        },
+        {
+          "dayOfWeek": 1,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "15:00"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        },
+        {
+          "dayOfWeek": 2,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "15:00"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        },
+        {
+          "dayOfWeek": 3,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "15:00"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        },
+        {
+          "dayOfWeek": 4,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "15:00"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        },
+        {
+          "dayOfWeek": 5,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "15:00"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        },
+        {
+          "dayOfWeek": 6,
+          "windows": [
+            {
+              "service": "LUNCH",
+              "start": "11:00",
+              "end": "16:30"
+            },
+            {
+              "service": "DINNER",
+              "start": "18:00",
+              "end": "23:00"
+            }
+          ]
+        }
+      ]
+    },
+    "ordersEnabled": false,
+    "gpsEnabled": false
+  },
+  "diagnosticFiles": [
+    {
+      "dest": "tata-source-preview.cjs",
+      "sha256": "0701a2df2ce23f7502c43da4bb15fddf959cd7812431751b73e3eb205d15c274"
+    },
+    {
+      "dest": "copiloto-source-smoke.cjs",
+      "sha256": "8d84d7ce29da6023b751eddf35d530c5298f38f847bae4288dc5173185718a9d"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/index.html",
+      "sha256": "e52fbe17a7bb2cb263d1dcb0fa1e90b9de02d6964ce2ab72b95a6cf6a20e0988"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/source.js",
+      "sha256": "71a2466b680da66cae7d9a838205930f93a04b6f575451dbc412a4af6cd09e2a"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/source.css",
+      "sha256": "3a88f273c1e52ab78bd06253577cf5bd0714b8c2b6cd2647da0570caec59d9b9"
+    },
+    {
+      "dest": "app/tools/windows-local-lab/tata-source-preview.cjs",
+      "sha256": "0701a2df2ce23f7502c43da4bb15fddf959cd7812431751b73e3eb205d15c274"
+    }
+  ],
+  "sourceTimeObservation": {
+    "nativeTimeKind": "Unspecified",
+    "nativeTimeHasOffset": false,
+    "lastEventFileUtc": "2026-10-27T02:04:24.9431538Z",
+    "postInstallEventObserved": false
+  },
+  "initialAttempt": {
+    "outcome": "ATOMIC_REPLACE_FAILED_MANUALLY_RECOVERED",
+    "cause": "WinPS 5.1 null backup path coerced to invalid empty path",
+    "recovery": "Original watcher/config hashes verified, newly created policy removed, original service restarted; checkpoint not reset",
+    "correction": "Nonempty temporary backup path and create/replace/restore tests passed before successful retry"
+  },
+  "priorCi": {
+    "commit": "283f1502d1e6a97927574257d0316bf3789705c1",
+    "successRuns": [
+      40433838401,
+      40433838511
+    ]
+  },
+  "limits": [
+    "No post-install genuine order event observed",
+    "No historical event rewrite or replay",
+    "No live order publication or source mode assignment",
+    "Native timestamps still require explicit instant mapping before Copiloto order publication",
+    "GPS disabled; no Android physical proof",
+    "Automatic rollback path after corrected installation not fault-injected"
+  ]
+}

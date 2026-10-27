@@ -11,6 +11,8 @@ const states = {
 async function refresh() {
   el('refresh').disabled = true;
   el('sample').hidden = true;
+  el('weekly').hidden = true;
+  el('weekly-body').replaceChildren();
   el('window').textContent = 'Indisponível';
   el('read-at').textContent = 'Indisponível';
   try {
@@ -29,6 +31,23 @@ async function refresh() {
     el('message').textContent = message;
     const p = data.preview;
     if (p) {
+      if (p.servicePolicy?.state === 'configured') {
+        const week = p.servicePolicy.week;
+        const names = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        for (const day of [1,2,3,4,5,6,0]) {
+          const d = week.find(d => d.dayOfWeek === day);
+          const tr = document.createElement('tr');
+          for (const text of [names[day], ...['LUNCH','DINNER'].map(service => {
+            const w = d.windows.find(w => w.service === service);return `${w.start}–${w.end}`;
+          })]) { const td = document.createElement('td');td.textContent = text;tr.append(td); }
+          el('weekly-body').append(tr);
+        }
+        el('weekly').hidden = false;
+        if (data.state === 'source_blocked') {
+          el('title').textContent = 'Regra semanal registrada';
+          el('message').textContent = 'A amostra consultada contém eventos bloqueados. Os registros históricos foram preservados; aguardamos novos eventos válidos para comprovar a leitura atual.';
+        }
+      }
       const s = p.serviceState;
       if (s?.operationalDate) el('window').textContent = `${s.operationalDate} · ${s.service === 'LUNCH' ? 'Almoço' : s.service === 'DINNER' ? 'Jantar' : 'Turno não validado'}${s.validFromLocal && s.validUntilLocal ? ` · ${s.validFromLocal.slice(11,16)}–${s.validUntilLocal.slice(11,16)}` : ''}`;
       if (p.observedAtUtc) el('read-at').textContent = new Date(p.observedAtUtc).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });

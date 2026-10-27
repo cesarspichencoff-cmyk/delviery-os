@@ -47,5 +47,20 @@ test('service state cannot leak text through its schema or window fields',()=>{
   const r=preview(args);assert.equal(JSON.stringify(r).includes('PRIVATE_SENTINEL'),false);
   assert.equal(r.serviceState.schema,null);assert.equal(r.serviceState.validFromLocal,null);
 });
+test('weekly schedule preserves weekday and weekend windows without publishing orders',()=>{
+  const p=JSON.parse(fs.readFileSync(path.join(__dirname,'../../tools/windows-local-lab/production-service-weekly-policy.json'),'utf8'));
+  Object.assign(p,{host_name:'LAB',source_unit_id:'SOURCE',source_store_id:'STORE',source_ref:'PRIVATE_SENTINEL'});
+  fs.mkdirSync(path.join(root,'bin'));fs.writeFileSync(path.join(root,'bin','production-service-weekly-policy.json'),JSON.stringify(p));
+  const r=preview(args);assert.equal(r.servicePolicy.state,'configured');
+  assert.equal(r.servicePolicy.week.find(d=>d.dayOfWeek===1).windows[0].end,'15:00');
+  for(const d of [0,6])assert.equal(r.servicePolicy.week.find(x=>x.dayOfWeek===d).windows[0].end,'16:30');
+  for(const d of r.servicePolicy.week)assert.deepEqual(d.windows[1],{service:'DINNER',start:'18:00',end:'23:00'});
+  assert.equal(JSON.stringify(r).includes('PRIVATE_SENTINEL'),false);assert.equal(r.publishEnabled,false);
+});
+test('invalid weekly rules remain invalid and cannot leak raw text',()=>{
+  const file=path.join(root,'bin','production-service-weekly-policy.json');const p=JSON.parse(fs.readFileSync(file));
+  p.week[0].windows[0].start='PRIVATE_SENTINEL';fs.writeFileSync(file,JSON.stringify(p));
+  const r=preview(args);assert.equal(r.servicePolicy.state,'invalid');assert.equal(JSON.stringify(r).includes('PRIVATE_SENTINEL'),false);
+});
 console.log(`SOURCE_PREVIEW_PASS ${passed}`);
 }finally{fs.rmSync(root,{recursive:true,force:true});}

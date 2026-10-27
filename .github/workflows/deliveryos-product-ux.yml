@@ -18,6 +18,17 @@ permissions:
   contents: read
 
 jobs:
+  tata-weekly-service-windows:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regra semanal do Itaim no Windows PowerShell 5.1 sem SQL
+        shell: powershell
+        run: .\tests\tata-reader\run-weekly-service-tests.ps1 -ResolverPath .\runtime\tata-reader\read_service_weekly_v1.ps1 -PolicyPath .\tools\windows-local-lab\production-service-weekly-policy.json
+      - name: Criacao, troca e restauracao atomicas no Windows PowerShell 5.1
+        shell: powershell
+        run: .\tests\tata-reader\run-weekly-install-atomic-tests.ps1 -InstallerPath .\tools\windows-local-lab\install-weekly-service.ps1
   product-ux:
     runs-on: ubuntu-latest
     timeout-minutes: 40

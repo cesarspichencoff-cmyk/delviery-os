@@ -20,6 +20,7 @@ async function main(){
   const data=await response.json();assert.equal(data.unitId,'ITAIM');assert.equal(data.ordersEnabled,false);
   assert.equal(data.operationalOrderTotal,null);assert.equal(data.preview?.sourceBindingConfirmed,true);
   assert.equal(data.preview?.publishEnabled,false);assert.equal(data.preview?.sourceMode,null);
+  assert.equal(data.preview?.servicePolicy?.state,'configured');
   const health=await(await check('health',null,'GET','/api/health')).json();
   assert.equal(health.copiloto,false);assert.equal(health.copiloto_source_status,true);
   assert.equal(health.gps_production,false);assert.equal(health.term_publishable,false);
@@ -38,6 +39,8 @@ async function main(){
       assert.notEqual(title,'Acesso do responsável necessário');assert.notEqual(title,'Consulta indisponível');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       assert((await page.locator('#sample').innerText()).includes('sem garantia de atualidade'));
+      assert.equal(await page.locator('#weekly tbody tr').count(),7);
+      assert((await page.locator('#weekly').innerText()).includes('16:30'));
       await page.getByRole('button',{name:'Verificar novamente'}).click();
       await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
       results.push({name:'browser_'+width,pass:true});
@@ -46,7 +49,7 @@ async function main(){
   const receipt={observedAtUtc:new Date().toISOString(),scope:'HOST_HTTP_AND_NEW_HEADLESS_BROWSER_NOT_PUBLIC_PROXY_PROOF',
     results,sourceState:data.state,sampledFiles:data.preview.sampledFiles,
     producerBlocksDownstream:data.preview.producerBlocksDownstream,
-    serviceState:data.preview.serviceState,ordersEnabled:false,gpsEnabled:false};
+    serviceState:data.preview.serviceState,servicePolicy:data.preview.servicePolicy,ordersEnabled:false,gpsEnabled:false};
   fs.writeFileSync(path.join(root,'copiloto-source-proof.json'),JSON.stringify(receipt,null,2));
   console.log('COPILOTO_SOURCE_HOST_PASS',JSON.stringify(receipt));
 }
