@@ -109,6 +109,8 @@ jobs:
         run: node tools/verificar_comandas_peripheral_bridge_ack_backup_v1_offline.cjs
       - name: TATA Comanda delivery post-sale report source isolated from production and manual path
         run: node tools/verificar_comandas_teknisa_delivery_report_boundary_v1_offline.cjs
+      - name: TATA Comanda iFood GP local HTTP and Gestor IPC old-print sources separated
+        run: node tools/verificar_comandas_ifood_installed_print_channels_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
@@ -410,6 +412,8 @@ jobs:
         run: node tools/verificar_comandas_peripheral_bridge_ack_backup_v1_offline.cjs
       - name: TATA Comanda delivery post-sale report source isolated from production and manual path
         run: node tools/verificar_comandas_teknisa_delivery_report_boundary_v1_offline.cjs
+      - name: TATA Comanda iFood GP local HTTP and Gestor IPC old-print sources separated
+        run: node tools/verificar_comandas_ifood_installed_print_channels_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
