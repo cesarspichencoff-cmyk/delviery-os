@@ -54,3 +54,15 @@ Os eventos foram agrupados pela chave composta **apenas em memória**, ordenados
 ## Critério adversarial de conclusão
 
 Dados de 650 snapshots + semântica parcial do código ≠ prova da intenção de produção, da execução do fluxo real de impressão, da origem Gestor iFood ou de efeito físico. **DRAFT/HOLD; ZERO alteração no caixa.** Nenhum novo status foi promovido e nenhuma sequência atribuída.
+
+## Segunda amostra independente: decisões, sem duplicar os pedidos
+
+Outro recorte passivo de **500 arquivos mais recentes por `LastWriteTimeUtc`** em `state/reader-shadow-decisions-v1` foi analisado exclusivamente em memória local, sem exportar chave, nome, produto, nota ou identificador:
+
+- **250 chaves compostas distintas**; análise adicional considera somente o arquivo mais recente **dentro da amostra** para cada chave.
+- **56/250** tinham apenas a família de bloqueios de serviço/turno (`UPSTREAM_SERVICE_STATE_*` e `SERVICE_REQUIRED_*`). Isso **não** significa prontidão real caso o bloqueio de turno desapareça: prova de item, origem, sequência, impressora e evento segue independente.
+- **194/250** tinham ao menos um bloqueio adicional fora da família turno/serviço.
+- Contagens sobre as 250 revisões selecionadas por chave: `BAG_*=141`, `KITS_*=107`, `CLASSIFICATION_UNKNOWN_*=67`, `ROUTE_NOT_FOUND*=1`. **Famílias se sobrepõem e não são proporções do universo**.
+- Nenhuma decisão dessa análise foi promovida a READY nem foi alterado o sistema.
+
+**Prioridade:** turno obsoleto é uma causa universal no lote de 500 decisões, mas não a única; depois de removê-lo em código de revisão, a maioria das chaves ainda precisa de outra prova. Sanar em paralelo identidade/classificação, embalagens com motor aprovado e roteamento de praça; não reintroduzir assinatura diária ou horário fictício, e não tratar `A` como estado universal de pedido ou item.
