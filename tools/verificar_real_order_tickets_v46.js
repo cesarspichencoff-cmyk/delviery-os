@@ -190,6 +190,79 @@ function smoke() {
   assert.ok(unknown.conference.warnings.some((w)=>w.includes("PACKAGING_PLAN_MISSING")));
   assert.ok(unknown.blocking_reasons.includes("PRODUCTION_PLAN_NOT_SHADOW_READY"));
   assert.equal(unknown.effects.print,false);
+
+  // Negative regression: every sold line is allocated, yet the package plan
+  // contains an additional unverified group. A green conference is false.
+  const ghost=archivedCompleteInput();
+  ghost.packaging.groups.push({
+    box:"750",boxes:1,status:"UNKNOWN",
+    products:[{name:"SYNTHETIC UNMATCHED",quantity:1}],
+  });
+  const ghostReview=projectOperationalTicketsV45({
+    order_id:ghost.id,source_items:ghost.source_items,
+    production_plan:ghost.production_plan,
+    resource_projection:ghost.resource_projection,packaging_plan:ghost.packaging,
+  });
+  assert.equal(ghostReview.conference.items_without_proven_box.length,0);
+  assert.equal(ghostReview.conference.ready_for_semantic_preview,false,
+    "unverified extra packaging group cannot be hidden by covered source items");
+  assert.ok(ghostReview.blocking_reasons.includes(
+    "PACKAGING_GROUP_COVERAGE_NOT_PROVEN"));
+  assert.equal(ghostReview.ready_for_automatic_operational_print,false);
+
+  // Previous signature collision:
+  // "A|1;B" x1 -> "A|1;B|1" == ("A" x1 + "B" x1).
+  // Only the source's real SINGLE product is permitted to prove that box.
+  const collision=archivedCompleteInput();
+  const changed=collision.source_items.find(s=>s.item_index===1);
+  assert.ok(changed&&changed.quantity===1);
+  const originalName=changed.product_name;
+  const grp=collision.packaging.groups.find(g=>
+    g.products.length===1 && g.products[0].name===originalName &&
+    g.products[0].quantity===1);
+  assert.ok(grp,"archived one-unit group needed for adversarial fixture");
+  changed.product_name="A|1;B";
+  for(const intent of collision.production_plan.print_intents){
+    for(const line of intent.lines){
+      if(line.item_index===changed.item_index)line.product_name=changed.product_name;
+    }
+  }
+  grp.products=[{name:"A",quantity:1},{name:"B",quantity:1}];
+  const collided=projectOperationalTicketsV45({
+    order_id:collision.id,source_items:collision.source_items,
+    production_plan:collision.production_plan,
+    resource_projection:collision.resource_projection,packaging_plan:collision.packaging,
+  });
+  const relevant=collided.production.filter(station=>
+    station.items_without_proven_box.some(x=>x.source_item_index===changed.item_index) ||
+    station.boxes.some(box=>box.items.some(x=>x.source_item_index===changed.item_index)));
+  assert.ok(relevant.length>0);
+  assert.ok(relevant.every(station=>
+    station.warnings.some(w=>w.startsWith("STATION_BOX_ALLOCATION_NOT_PROVEN:"))),
+    "separate products must not prove the source item's physical box");
+  assert.equal(collided.ready_for_automatic_operational_print,false);
+
+  // Missing product code cannot be silently treated as identity equality.
+  const missingCode=archivedCompleteInput();
+  const first=missingCode.production_plan.print_intents
+    .flatMap(intent=>intent.lines).find(line=>line.product_code);
+  assert.ok(first);
+  for(const intent of missingCode.production_plan.print_intents){
+    for(const line of intent.lines){
+      if(line.item_index===first.item_index)line.product_code=null;
+    }
+  }
+  const codeReview=projectOperationalTicketsV45({
+    order_id:missingCode.id,source_items:missingCode.source_items,
+    production_plan:missingCode.production_plan,
+    resource_projection:missingCode.resource_projection,
+    packaging_plan:missingCode.packaging,
+  });
+  assert.ok(codeReview.production.some(station=>
+    station.warnings.includes("PRODUCTION_SOURCE_MISMATCH:"+first.item_index)),
+    "a missing planned product code must never inherit source identity proof");
+  assert.equal(codeReview.ready_for_semantic_preview,false);
+  assert.equal(codeReview.effects.print,false);
   console.log("real-order-tickets-v46: 2 verified archived real-order scenarios PASS (no print)");
   return {complete,unknown};
 }
