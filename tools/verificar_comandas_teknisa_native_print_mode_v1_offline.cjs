@@ -8,7 +8,11 @@ const fixture=(mode="N")=>({store_id:"0001",store_unit:"01",
  intended_scope:{origin:"DLV_IFO",kind:"DELIVERY_PRODUCTION_TICKET_ONLY",
   other_tek_orders_preserved:true,fiscal_outputs_preserved:true,
   callsite_evidence_ref:"SYNTHETIC_CALLSITE_NOT_LIVE",
-  callsite_snapshot_sha256:SHA}});
+  callsite_snapshot_sha256:SHA},
+ proposed_application:{kind:"DELIVERY_ONLY_PER_INVOCATION_CLAIM",
+  shared_cashier_setting_untouched:true,mesa_and_balcao_unchanged:true,
+  override_evidence_ref:"SYNTHETIC_OVERRIDE_NOT_ATTESTED",
+  override_snapshot_sha256:SHA}});
 let n=0;function test(s,f){f();console.log("PASS "+(++n)+" "+s);}
 function check(x){
  const old=JSON.stringify(x),r=review(x);
@@ -81,6 +85,32 @@ test("source file without SHA-256 is not code evidence",()=>{
 test("store mismatch cannot deactivate another branch",()=>{
  const x=fixture();x.store_id="0002";
  hold(x,"PHP_PRINT_MODE_OR_SOURCE_INVALID");
+});
+test("changing cashier configuration IDIMPPEDPROD globally is forbidden",()=>{
+ const x=fixture();x.proposed_application.kind="CASH_REGISTER_CONFIG_CHANGE";
+ hold(x,"CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("missing per-delivery override callsite blocks native N even with item claim",()=>{
+ const x=fixture();delete x.proposed_application;
+ hold(x,"CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("per-delivery proposal must leave cashier session value unmodified",()=>{
+ const x=fixture();x.proposed_application.shared_cashier_setting_untouched=false;
+ hold(x,"CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("mesa and balcao production remain non-negotiable",()=>{
+ const x=fixture();x.proposed_application.mesa_and_balcao_unchanged=false;
+ hold(x,"CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("unproven per-delivery override digest is not recognized",()=>{
+ const x=fixture();x.proposed_application.override_snapshot_sha256="unknown";
+ hold(x,"CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("caller claims cannot prove a real first delivery production event",()=>{
+ const r=check(fixture());
+ assert.equal(r.status,"REVIEW_CANDIDATE_ONLY");
+ assert.equal(r.real_first_print_callsite_identified_here,false);
+ assert.equal(r.can_set_live_mode,false);
 });
 test("positive self-attested user flags have no authority",()=>{
  const x=fixture();x.installed=true;x.paper_output_blocked=true;
