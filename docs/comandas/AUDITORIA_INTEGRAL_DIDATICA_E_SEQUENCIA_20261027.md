@@ -26,6 +26,12 @@ Em `src/IMP/index.js:90–125`, a ponte enfileira dados e admite `printerInfo.im
 
 Os módulos offline `comandas_peripheral_bridge_ack_backup_v1_offline.cjs` e `comandas_legacy_virtual_cutover_review_v1_offline.cjs` exigem agora o inventário **de destino principal e reserva** antes de uma candidatura de transição via `PONTE_HTTP_PRINT`; backend desconhecido, reserva não observada e promoção do JSON 202 a prova de papel dão `HOLD`. Testes **17/17 + 47/47 PASS** no Foxxy isolado após correção explícita da diferença entre JSON e HTTP; nunca há efeito ou autorização para imprimir/desviar. O fluxo `DLV_IFO` de primeira via permanece **UNKNOWN**.
 
+## Atualização de segurança: backlog antigo continua existindo após desligar a origem
+
+A ponte Odhen pode salvar o job em fila interna antes de imprimi-lo e, conforme erro/timeout, enviá-lo ao backup. Portanto **suprimir apenas novas submissões antigas não remove jobs antigos já aceitos**. A futura passagem ao emissor único exige comprovar **o censo de jobs antigos pendentes** e a reconciliação de **tentativas ambíguas**, independentemente de o destino principal e o backup terem sido mapeados.
+
+O módulo `comandas_peripheral_bridge_ack_backup_v1_offline.cjs` passou a retornar `HOLD: QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED` se qualquer evidência de backlog/reconciliação estiver ausente. Este é um contrato de revisão **sem leitura de banco, fila, spooler ou log**: entradas declaradas em fixture não representam prova da loja. Os testes passaram **19/19** no módulo e **49/49** no contrato de transição em clone descartável Foxxy no commit `9bbc91340e1099136b1ae1301e2f873feb9b8b96`. O código não limpa fila, não considera `status:202` do JSON como papel e não autoriza alternância automática dos emissores.
+
 ## 1. Leitura rápida: produto que se pretende entregar
 
 O projeto procura substituir uma rotina de comandas propensa a inconsistências por um conjunto de **três apresentações coordenadas do mesmo pedido**, de forma legível para a equipe, sem duplicar impressão nem criar um segundo cadastro manual:
