@@ -81,11 +81,25 @@ test("NUL cannot suppress an app's second unobserved output",()=>{
  x.legacy_sources[0].has_other_unobserved_output=true;
  holds(x,"NUL_CANNOT_SUPPRESS_OTHER_PRINT_PATH");
 });
-test("Windows NUL only creates review debt; it is not the trigger",()=>{
+test("Windows NUL can be reviewed as a sink only after source claims, never as trigger",()=>{
  const x=staged();x.legacy_sources[0].proposed_legacy_action="WINDOWS_NUL_REDIRECT";
  x.legacy_sources[0].path="WINDOWS_QUEUE";
- const r=holds(x,"WINDOWS_NUL_DISCARDS_BYTES_NOT_ORDER_IDENTITY");
+ const r=check(x);
+ assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
+ assert.equal(r.virtual_sink_needs_independent_order_reader,true);
+ assert.equal(r.windows_nul_is_only_paperless_sink,true);
  assert.equal(r.virtual_output_is_an_order_trigger,false);
+ assert.equal(r.can_activate,false);
+});
+test("Windows NUL alone cannot substitute for native first-print event proof",()=>{
+ const x=staged();x.legacy_sources[0].proposed_legacy_action="WINDOWS_NUL_REDIRECT";
+ x.legacy_sources[0].path="WINDOWS_QUEUE";
+ delete x.proofs.native_first_print_trigger;
+ holds(x,"PROOF_MISSING_OR_INVALID:native_first_print_trigger");
+});
+test("shadow cannot quietly redirect or disable the original paper output",()=>{
+ const x=baseline();x.legacy_sources[0].proposed_legacy_action="UPSTREAM_PRINT_OFF";
+ holds(x,"SHADOW_MUST_KEEP_LEGACY_OUTPUT_UNCHANGED");
 });
 test("bare statement that iFood printing was off last week is not route attestation",()=>{
  const x=staged();x.legacy_sources[1].route_evidence="UNVERIFIED";
