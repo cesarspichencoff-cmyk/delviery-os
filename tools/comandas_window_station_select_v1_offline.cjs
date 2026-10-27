@@ -63,7 +63,7 @@ function selectWindowStations(projection,windowClaim){
      role.rule_source!=="REVIEWED_CATALOG_RULE_CLAIM")
    return answer("HOLD",["ITEM_ROLE_CLAIM_INVALID_OR_DUPLICATE"],{period});
   if(typeof role.product_code!=="string"||
-     !/^[A-Z0-9]\\.[A-Z0-9]{2}\\.[A-Z0-9]{2}\\.[A-Z0-9]{3}\\.[A-Z0-9]{2}$/.test(role.product_code))
+     !/^[A-Z0-9]\.[A-Z0-9]{2}\.[A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{2}$/.test(role.product_code))
    return answer("HOLD",["ITEM_ROLE_SOURCE_PRODUCT_CODE_INVALID"],{period});
   roles.set(role.item_index,role);
  }
