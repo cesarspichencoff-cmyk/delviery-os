@@ -235,41 +235,32 @@ function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
   );
 }
 
-const SERVICE_ALTERNATIVE_GROUPS = [
-  { key: "SUSHI_1", lunch: "00009", dinner: "00003" },
-  { key: "SUSHI_2", lunch: "00006", dinner: "00004" },
+/** Legacy printer pairs have NOT been proved to be lunch/dinner switches.
+ * Current native evidence shows distinct production roles. If both codes are
+ * assigned to one item, refuse BOTH unproved destinations; preserve other
+ * independently routed destinations solely for diagnostic preview.
+ * A source service value never authorizes picking one physical printer.
+ */
+const UNPROVEN_DUAL_PRODUCTION_ROLES = [
+  { key: "SUSHI_1", codes: ["00009", "00003"] },
+  { key: "SUSHI_2", codes: ["00006", "00004"] },
 ] as const;
 
 function selectTargetsForService(
   targets: ExpectedRoutingTarget[],
-  service: ProductionService | null,
+  _service: ProductionService | null,
   itemIndex: number,
   blocking: Set<string>,
 ): ExpectedRoutingTarget[] {
   let selected = [...targets];
-
-  for (const group of SERVICE_ALTERNATIVE_GROUPS) {
-    const codes = new Set<string>([group.lunch, group.dinner]);
-    const present = selected.filter((target) => codes.has(target.printer_code));
-    if (present.length < 2) continue;
-
-    if (!service) {
-      blocking.add(
-        `SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_${itemIndex}_${group.key}`,
-      );
-      selected = selected.filter((target) => !codes.has(target.printer_code));
-      continue;
-    }
-
-    const activePrinterCode =
-      service === "LUNCH" ? group.lunch : group.dinner;
-    selected = selected.filter(
-      (target) =>
-        !codes.has(target.printer_code) ||
-        target.printer_code === activePrinterCode,
-    );
+  for (const group of UNPROVEN_DUAL_PRODUCTION_ROLES) {
+    const present = selected.filter((target) =>
+      (group.codes as readonly string[]).includes(target.printer_code));
+    if (new Set(present.map(target=>target.printer_code)).size < 2) continue;
+    blocking.add(`${group.key}_DUAL_PRODUCTION_ROLE_UNPROVEN_ITEM_${itemIndex}`);
+    selected = selected.filter((target) =>
+      !(group.codes as readonly string[]).includes(target.printer_code));
   }
-
   return selected;
 }
 
