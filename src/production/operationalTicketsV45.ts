@@ -521,8 +521,32 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     if (name !== "GARI" && name !== "WASABI" && name !== "TARE") continue;
     accompanimentMap.set(name, (accompanimentMap.get(name) ?? 0) + complement.quantity);
   }
+  // Quantity and completeness of packaging evidence are independent of
+  // per-item box membership. A complete-looking box layout is not a proven
+  // conference ticket if the resource motor still lacks bags/kits.
   if (!bags.length) warnings.add("BAG_SIZE_OR_COUNT_NOT_PROVEN");
   if (input.packaging_plan?.has_unknown) warnings.add("PACKAGING_ENGINE_UNKNOWN");
+  const packingUnknownPrefixes = ["PACKAGING_", "BAG_", "EXACT_BAG_", "KIT_"];
+  const packingUnknown = input.resource_projection.unknowns.some((reason) =>
+    packingUnknownPrefixes.some((prefix) => reason.startsWith(prefix)));
+  if (packingUnknown) {
+    reasons.add("PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE");
+    warnings.add("DATA_INTEGRITY:PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE");
+  }
+  const nonIntegralResources = [...bags, ...kits].some((resource) =>
+    !Number.isSafeInteger(resource.quantity) || resource.quantity <= 0);
+  if (nonIntegralResources) {
+    reasons.add("BAG_OR_KIT_QUANTITY_NOT_WHOLE");
+    warnings.add("DATA_INTEGRITY:BAG_OR_KIT_QUANTITY_NOT_WHOLE");
+  }
+  const exactBagCount = input.packaging_plan?.bags?.exact_bag_count;
+  const exactBagStatus = input.packaging_plan?.bags?.exact_bag_count_status;
+  if (!Number.isSafeInteger(exactBagCount) || exactBagCount < 1 ||
+      exactBagStatus !== "FACT" ||
+      bags.reduce((count, bag) => count + bag.quantity, 0) !== exactBagCount) {
+    reasons.add("EXACT_BAG_ALLOCATION_NOT_PROVEN");
+    warnings.add("DATA_INTEGRITY:EXACT_BAG_ALLOCATION_NOT_PROVEN");
+  }
   for (const unknown of input.resource_projection.unknowns) warnings.add("RESOURCE_UNKNOWN:" + unknown);
   const unallocated = [...remaining.values()].map((s) => itemFromSource(s, aliases, reasons));
   for (const issue of reasons) warnings.add("DATA_INTEGRITY:" + issue);
@@ -554,7 +578,7 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     reasons.add("PACKAGING_GROUP_COVERAGE_NOT_PROVEN");
     warnings.add("DATA_INTEGRITY:PACKAGING_GROUP_COVERAGE_NOT_PROVEN");
   }
-  const conferenceReady = reasons.size === 0 && input.packaging_plan !== null &&
+  const conferenceReady = reasons.size === 0 && input.packaging_plan != null &&
     input.packaging_plan.has_unknown === false && remaining.size === 0 &&
     !packagingCoverageUnproven;
   const conference: ConferenceTicketV45 = {
