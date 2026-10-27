@@ -378,6 +378,38 @@ test("synthetic A order and items can only provide in-memory preview, never a pr
  assert.equal(r.print_authorized,false);
  assert.deepEqual(r.bytes,[]);
 });
+
+function nativeCodeVariant(rawCode){
+ const x=pair();x.event.order.items[0].CDARVPROD=rawCode;
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.decision.snapshot_hash=x.event.snapshot_hash;
+ x.decision.fingerprint=decisionHash(x.decision);
+ return x;
+}
+test("formatted native CDARVPROD matches exact compact code in source-preserving preview",()=>{
+ const r=audit(nativeCodeVariant("9.20.00.010.00"));
+ assert.equal(r.status,"SOURCE_NATIVE_ESSENTIAL_PREVIEW_HOLD");
+ assert.equal(r.essential.items[0].code,"9.20.00.010.00");
+ assert.equal(r.print_authorized,false);
+ assert.equal(r.ready_for_operational_print,false);
+});
+test("malformed but compact-equivalent native tree code is rejected, not loosely stripped",()=>{
+ const r=audit(nativeCodeVariant("92.0.00.010.00"));
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"ITEM_IDENTITY_NAME_OR_QUANTITY_MISMATCH");
+});
+test("embedded slash, backslash and extra separator cannot masquerade as canonical native code",()=>{
+ for(const bad of [String.raw`9\20.00.010.00`,"9/20.00.010.00","9..20.00.010.00"]){
+  const r=audit(nativeCodeVariant(bad));
+  assert.equal(r.status,"HOLD",bad);
+  assert.equal(r.reason,"ITEM_IDENTITY_NAME_OR_QUANTITY_MISMATCH");
+ }
+});
+test("fully formatted but different native product identity is still blocked",()=>{
+ const r=audit(nativeCodeVariant("9.20.00.010.01"));
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"ITEM_IDENTITY_NAME_OR_QUANTITY_MISMATCH");
+});
 test("missing source event pair",()=>{
  const x=pair();delete x.event;assert.equal(audit(x).status,"HOLD");
 });
