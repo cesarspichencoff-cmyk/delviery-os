@@ -5,6 +5,8 @@
  * Windows NUL means PAPER SINK only: never an authenticated order trigger.
  * Claims from a caller are not independently attested by this module.
  */
+const {identifyTeknisaPrintTransport}=
+ require("./comandas_teknisa_transport_census_v1_offline.cjs");
 const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
 const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
 const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
@@ -75,6 +77,14 @@ function reviewLegacyPrintCutover(input){
   cutover_gates_not_evaluated:true});
  const proof=input.proofs;
  const reasons=[];
+ // The deployed PHP explicitly supports three distinct transport branches.
+ // An alleged route alone cannot prove that a Windows NUL port intercepts it.
+ const nativeProposal=input.teknisa_transport_census;
+ const nativeTransport=identifyTeknisaPrintTransport(nativeProposal);
+ if(nativeTransport.status!=="REVIEW_CANDIDATE_ONLY")
+  reasons.push("TEKNISA_ACTIVE_PRINT_TRANSPORT_NOT_ATTESTED:"+nativeTransport.reason);
+ else if(nativeProposal.proposed_action!==byOrigin.get("TEKNISA").proposed_legacy_action)
+  reasons.push("TEKNISA_TRANSPORT_AND_CUTOVER_ACTION_CONFLICT");
  if(!proof||typeof proof!=="object"||Array.isArray(proof))
   reasons.push("INDEPENDENT_PROOF_SET_MISSING");
  else{
