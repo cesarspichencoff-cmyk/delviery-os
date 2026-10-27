@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "LOCAL_POSTGRES_BACKUP_RESTORE_PROVEN_SIMULATED_LAB",
-  "state_basis_head": "f0cf0ea40d3cfb9196d7e4a0e32c4c987f4ec78e",
+  "checkpoint_type": "SOURCE_TIME_ADAPTER_PROVEN_IN_CONTROL_NOT_PUBLISHED",
+  "state_basis_head": "a221d00ea0ee9ff28b0c945012d2cc7c681801e6",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -21,7 +21,8 @@
     "docs/execution/MOOCA_POSTGRES_CONVERGENCIA_2026-10-26.md",
     "docs/execution/evidencias/mooca-local-2026-10-26/shared-pg-lab-proof.json",
     "docs/execution/MOOCA_POSTGRES_RECUPERACAO_2026-10-27.md",
-    "docs/execution/evidencias/mooca-local-2026-10-26/pg-backup-restore-proof.json"
+    "docs/execution/evidencias/mooca-local-2026-10-26/pg-backup-restore-proof.json",
+    "docs/execution/COPILOTO_SOURCE_TIME_2026-10-27.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -53,11 +54,12 @@
     "Itaim-only source diagnostic installed in isolated Mooca pilot at /copiloto/. Metadata API requires manager/leader lab key, rejects anonymous/rider/write access, and exposes no order payload. Host Edge at 390/1440 passed login, blocked status, refresh and width checks. Source still 2026-10-14 LUNCH 11:00-15:00. Source publication and GPS remain off. This is a component overlay on core build be5a, not full Copiloto or human identity rollout.",
     "Cesar reconfirmed Itaim delivery windows: weekdays lunch 11:00-15:00, Saturday/Sunday lunch 11:00-16:30, daily dinner 18:00-23:00. Weekly native-local order-time resolver installed and supervisor hash updated. Final proof 2026-10-27T02:21:03Z: two complete OK batches, zero consecutive failures, stable service/supervisor, checkpoint advanced. 82 rule tests and 3 atomic file tests passed on WinPS 5.1. Historical events/checkpoint/legacy dated state preserved. Diagnostic weekly table and host Edge 390/1440 passed; no post-install real event observed, order publication/GPS off.",
     "Isolated EMPTY simulated legacy console switched to existing PostgreSQL 55436 with minimum role, after separate 55437 cutover 7/7 and two-server 6/6 tests. Copiloto lab summary reads same facade/queue; HTTP write, limited-role DB read, Copiloto read, pilot restart, readback and own-probe cleanup preserved source fingerprint. Host browser/HTTP 10 checks passed. Native receipt schema/authority unavailable: authenticated events batch explicitly 503 retryable before domain execution. No 0011, source reader or network changes; GPS off.",
-    "Manual on-host PostgreSQL custom archive restored into separate authenticated loopback cluster 55438. Same exported source snapshot: 24 tables, 13 rows, equal canonical data/column digests. Restored-only negative control detected and rolled back; cluster stopped. Pilot/platform HTTP 200 and Tata reader Running. Archive private ACL, no off-host copy/encryption/schedule/global-role recovery; no live restore."
+    "Manual on-host PostgreSQL custom archive restored into separate authenticated loopback cluster 55438. Same exported source snapshot: 24 tables, 13 rows, equal canonical data/column digests. Restored-only negative control detected and rolled back; cluster stopped. Pilot/platform HTTP 200 and Tata reader Running. Archive private ACL, no off-host copy/encryption/schedule/global-role recovery; no live restore.",
+    "Explicit scoped source-time policy adapter implemented in review code, not installed/published. 15 adapter families plus 9 existing Tata projection families pass. Validated calendars, fraction preservation, host-zone independence, historical DST gap/fold rejection and source denial preservation. Latest three native events inspected still predate weekly rule fix; no newer valid event observed. Previous a221 CI product 40455004434 and Android 40455004481 both succeeded (run names not re-read)."
   ],
-  "next_action": "Keep confirmed Itaim unit and weekly hours. Recover/review receipt schema and per-unit authority, prepare individual human and native authentication, establish source instant mapping/provenance and observe a genuine new event without replay/reset. PostgreSQL legacy lab and simulated shared queue are installed: do not repeat empty cutover. Real order list and field GPS remain unpublished. Manual PostgreSQL data/column recovery drill is proven. Add recurring/off-host encrypted backup and reconstruct least-privilege identities before operational rollout; do not treat same-host archive as disaster recovery.",
+  "next_action": "Prioritize authenticated real Itaim order reading: establish trusted caller/time-policy/source-mode provenance, observe a new valid native event without replay/reset, wire bounded feed and verify Copiloto UI. Time resolver is review-only, not installed. Then native receipt authority and Xiaomi field validation. Parallel prerequisite before operations: recurring encrypted off-host backup and individual identity. Do not repeat unit/hours or empty storage cutover.",
   "unknowns": [
-    "No genuine source event after the weekly-rule installation was observed. Native SQL timestamps lack offset; explicit source instant mapping remains needed for Copiloto. The weekly schedule itself is confirmed and installed.",
+    "No genuine source event after the weekly-rule installation was observed. Native SQL timestamps lack offset; explicit policy-based conversion is tested in review code, but trusted live configuration and wiring remain needed. The weekly schedule itself is confirmed and installed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
     "Off-host backup and restore of this new local cluster remain unproven.",
     "Pilot signing custody and approved operational term fields remain undefined.",

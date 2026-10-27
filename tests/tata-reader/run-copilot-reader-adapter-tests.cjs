@@ -62,4 +62,47 @@ test('fresh audit of an old source observation remains stale',()=>{
   const r=project({unitId:scope.unitId,sourceUnitId:scope.sourceUnitId,revisions:[a.revision],
     now:e.recorded_at,maxAgeMs:120000});assert.equal(r.orders[0].state,'stale');
 });
+const {resolveNativeOpenedAt:resolve,explicitInstant}=require('../../runtime/reporting/tata_source_time_v1.cjs');
+const timed={...scope,sourceTimePolicy:{schema:'deliveryos.source-time-policy.v1',timeZone:'America/Sao_Paulo',
+  field:'DTHRABERMESA',basis:'NATIVE_LOCAL_WALL_TIME',unitId:scope.unitId,sourceUnitId:scope.sourceUnitId,
+  sourceStoreId:scope.sourceStoreId,evidenceRef:'SYNTHETIC_TIME_POLICY'}};
+test('explicit source policy preserves fractions and native payload',()=>{
+  const e=event();e.order.DTHRABERMESA='2026-10-26T20:00:00.1234567';const original=JSON.stringify(e);
+  const a=adapt(e,timed);assert.equal(a.state,'adapted');
+  assert.equal(a.revision.identity.opened_at,'2026-10-26T20:00:00.1234567-03:00');
+  assert.equal(a.time_resolution.evidenceRef,'SYNTHETIC_TIME_POLICY');assert.equal(JSON.stringify(e),original);
+  const view=project({unitId:scope.unitId,sourceUnitId:scope.sourceUnitId,revisions:[a.revision],now:'2026-10-26T23:02:00Z',maxAgeMs:120000});
+  assert.equal(view.orders.length,1);assert.equal(view.live_source_verified,false);
+  assert.equal(view.orders[0].ready_for_dispatch,null);
+});
+test('consumer timezone does not change the resolved instant',()=>{
+  const prior=process.env.TZ;
+  try{for(const zone of ['UTC','Asia/Tokyo','America/Los_Angeles']){
+    process.env.TZ=zone;assert.equal(resolve('2026-10-26T20:00:00',timed).instant,'2026-10-26T20:00:00-03:00');
+  }}finally{if(prior===undefined)delete process.env.TZ;else process.env.TZ=prior;}
+});
+test('source policy must match unit/store and cannot come from event',()=>{
+  for(const delta of [{sourceStoreId:'OTHER'},{unitId:'OTHER'},{evidenceRef:''},{timeZone:'UTC'},{basis:'HOST_CLOCK'}]){
+    assert.equal(resolve('2026-10-26T20:00:00',{...timed,sourceTimePolicy:{...timed.sourceTimePolicy,...delta}}).state,'blocked');
+  }
+  const e=event();e.order.DTHRABERMESA='2026-10-26T20:00:00';e.sourceTimePolicy=timed.sourceTimePolicy;
+  assert.equal(adapt(e,scope).state,'blocked');
+});
+test('calendar rollovers, offset errors and unsupported dates rejected',()=>{
+  for(const value of ['2026-02-30T12:00:00','2026-13-01T12:00:00','2026-10-26T24:00:00','2026-10-26T12:60:00','2026-10-26T12:00:60','1999-01-01T00:00:00','2100-01-01T00:00:00']){
+    assert.equal(resolve(value,timed).state,'blocked');assert.equal(explicitInstant(value+'Z'),false);
+  }
+  for(const value of ['2026-10-26T12:00:00-00:00','2026-10-26T12:00:00+14:01','2026-10-26T12:00:00-03:60'])assert.equal(explicitInstant(value),false);
+  assert.equal(resolve('2024-02-29T12:00:00',timed).state,'resolved');
+});
+test('historical summer offset, skipped time and repeated time',()=>{
+  assert.equal(resolve('2018-12-01T12:00:00',timed).instant,'2018-12-01T12:00:00-02:00');
+  assert.equal(resolve('2018-11-04T00:30:00',timed).reason,'SOURCE_LOCAL_TIME_NONEXISTENT');
+  assert.equal(resolve('2019-02-16T23:30:00',timed).reason,'SOURCE_LOCAL_TIME_AMBIGUOUS');
+});
+test('time policy cannot override producer block or unknown provenance',()=>{
+  const e=event();e.order.DTHRABERMESA='2026-10-26T20:00:00';e.blockers=['EXPIRED'];
+  assert.equal(adapt(e,timed).reason,'READER_DOWNSTREAM_BLOCKED');
+  e.blockers=[];assert.equal(adapt(e,{...timed,sourceMode:null}).reason,'AUTHORIZED_SOURCE_MAPPING_REQUIRED');
+});
 console.log(`COPILOT_READER_ADAPTER_PASS ${passed}`);

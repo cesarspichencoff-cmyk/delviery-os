@@ -2,6 +2,7 @@
 
 // Adapter for the installed reader's stable-order event. No IO or source mutation.
 // The authenticated caller owns mapping/provenance approval; a string is not proof.
+const {resolveNativeOpenedAt,explicitInstant}=require('./tata_source_time_v1.cjs');
 const MODES = new Set(['real', 'simulated', 'control']);
 function adaptStableTataOrderV1(event, scope) {
   const blocked = code => ({state: 'blocked', reason: code, revision: null});
@@ -27,10 +28,9 @@ function adaptStableTataOrderV1(event, scope) {
       ['database_write','network_call','odhen_write','print','spooler_write','fiscal_action','sefaz_call','cutover']
         .some(k => effects[k] !== false)) return blocked('READER_EFFECT_BOUNDARY_INVALID');
   const text = v => typeof v === 'string' && v.trim().length > 0;
-  const instant = v => text(v) && /T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(v) && Number.isFinite(Date.parse(v));
-  // SQL datetime without an offset must not silently use the consumer host timezone.
-  if (!instant(event.observed_at) || !instant(order.DTHRABERMESA))
-    return blocked('EXPLICIT_SOURCE_TIMEZONE_REQUIRED');
+  if (!explicitInstant(event.observed_at))return blocked('EXPLICIT_SOURCE_TIMEZONE_REQUIRED');
+  const time=resolveNativeOpenedAt(order.DTHRABERMESA,scope);
+  if(time.state!=='resolved')return blocked(time.reason);
   if (![order.NRVENDAREST,order.NRCOMANDA,order.IDORGCMDVENDA,event.snapshot_hash].every(text))
     return blocked('READER_IDENTITY_INVALID');
   if (!Array.isArray(order.items) || order.items.length === 0 || order.items.length > 5000)
@@ -47,12 +47,12 @@ function adaptStableTataOrderV1(event, scope) {
       product_code: item.CDPRODUTO, route_code: text(item.CDARVPROD) ? item.CDARVPROD : null,
       quantity: Number(q)});
   }
-  return {state: 'adapted', reason: null, revision: {
+  return {state: 'adapted', reason: null, time_resolution: time, revision: {
     source_mode: scope.sourceMode,
     identity: {unit_id: scope.sourceUnitId, store_id: scope.sourceStoreId,
       nr_venda_rest: order.NRVENDAREST, nr_comanda: order.NRCOMANDA,
       origin: order.IDORGCMDVENDA, order_status: text(order.IDSTCOMANDA) ? order.IDSTCOMANDA : null,
-      opened_at: order.DTHRABERMESA, snapshot_hash: event.snapshot_hash},
+      opened_at: time.instant, snapshot_hash: event.snapshot_hash},
     revision: {source_observed_at: event.observed_at}, items,
     // Native item statuses and service selection do not imply readiness or KDS timestamps.
     lifecycle: {}, financial: {},
