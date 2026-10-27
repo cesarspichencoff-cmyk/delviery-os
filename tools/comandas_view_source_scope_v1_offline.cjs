@@ -37,6 +37,7 @@ function view(id,status,reasons){
 function result(status,production,conference){
  return {schema:SCHEMA,status,production,conference,
    independent_ifood_source_attested_here:false,
+   source_store_mapping_attested_here:false,
    physical_print_proven:false,effects:EFFECTS};
 }
 function allHold(reason){
@@ -84,14 +85,29 @@ function assessViewSourceScopes(input){
   return result("EVIDENCE_ONLY",prod,
    view("CONFERENCE","HOLD",["INDEPENDENT_IFOOD_CROSSCHECK_NOT_ATTESTED"]));
  }
- if(x.store_id!==n.store_id||x.operational_date!==n.operational_date||
-    x.short_id!==n.short_id){
+ // External iFood merchant ID and native CDFILIAL/CDLOJA are DIFFERENT
+ // namespaces (observed: 53069 versus 0001/01). An equal string is NOT a
+ // mapping. An explicit historical mapping is a review CANDIDATE, never
+ // independent attestation or printing authority.
+ const m=input.store_mapping;
+ if(!m||typeof m!=="object"||Array.isArray(m)||
+   m.schema!=="tata.comandas.cross-system-store-candidate.v1"||
+   m.source_kind!=="HUMAN_RECONCILIATION_CANDIDATE"||
+   !validText(m.source_ref)||
+   m.ifood_store_id!==x.store_id||
+   m.native_store_id!==n.store_id||
+   m.native_store_unit!==n.store_unit){
   return result("EVIDENCE_ONLY",prod,
-   view("CONFERENCE","HOLD",["IFood_TEK_STORE_DAY_SHORT_ID_CONFLICT"]));
+   view("CONFERENCE","HOLD",["CROSS_SYSTEM_STORE_MAPPING_CANDIDATE_REQUIRED"]));
+ }
+ if(x.operational_date!==n.operational_date||x.short_id!==n.short_id){
+  return result("EVIDENCE_ONLY",prod,
+   view("CONFERENCE","HOLD",["IFood_TEK_DAY_OR_SHORT_ID_CONFLICT"]));
  }
  return result("EVIDENCE_ONLY",prod,view("CONFERENCE",
     "IFOOD_TEK_CANDIDATE_MATCH_REVIEW_ONLY",[
-      "SHORT_ID_DAY_STORE_MATCH_NOT_FULL_UUID_PROOF",
+      "SHORT_ID_DAY_MAPPED_STORES_CANDIDATE_NOT_FULL_UUID_PROOF",
+      "CROSS_SYSTEM_STORE_MAPPING_NOT_INDEPENDENTLY_ATTESTED",
       "OFFICIAL_EXPORT_DOES_NOT_PROVE_ITEM_CONTENT",
       "CONFERENCE_PRINT_REQUIRES_SEPARATE_APPROVAL"
     ]));
