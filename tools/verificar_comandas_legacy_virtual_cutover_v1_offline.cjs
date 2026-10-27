@@ -45,7 +45,7 @@ const staged=()=>{
    backup_config_observed:true,backup_enabled:false,
    primary_destination_censused:true,
    primary_legacy_output_plan:"EXPLICITLY_COVERED"},
-  receipt_claim:{kind:"HTTP_202_QUEUED"}
+  receipt_claim:{kind:"JSON_STATUS_202_QUEUED"}
  };
  x.teknisa_upstream_suppression={mechanism:"IDIMPPEDPROD_N",
   native_mode_evidence:{store_id:"0001",store_unit:"01",
@@ -232,7 +232,7 @@ test("preserving mesa and balcao is mandatory for candidate cutover",()=>{
  const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.proposed_application.mesa_and_balcao_unchanged=false;
  holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
 });
-test("HTTP 202 and unknown Odhen internal queue backup are not a complete cutover",()=>{
+test("JSON field status=202 and unknown Odhen internal queue backup are not a complete cutover",()=>{
  const x=staged();delete x.peripheral_bridge_evidence;
  holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:PERIPHERAL_INSTALLED_CODE_OR_STORE_INVALID");
 });
@@ -250,7 +250,7 @@ test("backup path must be observed on the specific order route",()=>{
  const x=staged();x.peripheral_bridge_evidence.route_census.backup_config_observed=false;
  holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:BACKUP_CONFIG_NOT_OBSERVED_ON_ORDER_PATH");
 });
-test("claim of HTTP 202 as completed print cannot bypass bridge model",()=>{
+test("claim of JSON field status=202 as completed print cannot bypass bridge model",()=>{
  const x=staged();x.peripheral_bridge_evidence.receipt_claim.kind="PAPER_CONFIRMED";
  holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:BRIDGE_ACK_KIND_UNKNOWN");
 });
