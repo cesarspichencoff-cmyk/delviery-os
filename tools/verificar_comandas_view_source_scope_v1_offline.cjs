@@ -46,6 +46,7 @@ function safe(x){
  assert.ok(!JSON.stringify(out).includes("SYNTHETIC_ORDER"),"aggregate leaks identity");
  return out;
 }
+if(require.main===module){
 check("two production vias use Teknisa only; conference has candidate iFood short-ID match",()=>{
  const r=safe(fixture());
  assert.equal(r.status,"EVIDENCE_ONLY");
@@ -149,4 +150,5 @@ check("null and arrays fail closed without effects",()=>{
 });
 console.log("COMANDAS_VIEW_SOURCE_SCOPE_V1="+count+"/"+count+
  " PRODUCTION_NATIVE_ONLY CONFERENCE_IFOOD_TEKNISA_ONLY NO_PRINT NO_SQL NO_HOST");
+}
 module.exports={fixture};
