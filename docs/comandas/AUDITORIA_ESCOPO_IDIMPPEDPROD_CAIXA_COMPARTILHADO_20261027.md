@@ -43,3 +43,16 @@ O módulo puro `tools/comandas_teknisa_native_print_mode_v1_offline.cjs` agora e
 O contrato `tools/comandas_legacy_virtual_cutover_review_v1_offline.cjs` usa esse veto em `UPSTREAM_PRINT_OFF`. Os testes novos cobrem esse risco em cadeia, inclusive falso atestado de preservação de balcão. Em clone descartável Foxxy, commit `c3025be4306836d3ad7577ac420f4fcd24afad2f`, a regressão direcionada passou **24/24** (modo nativo), **23/23** (transporte), **41/41** (transição). **Não representa deploy ou sucesso de papel.**
 
 **Fronteira de efeito:** nenhuma porta, fila, impressora, status de caixa, opção da Teknisa, configuração GP/iFood, SQL, sequência TATÁ, serviço, dados fiscais ou produção foram modificados. A PR permanece DRAFT/HOLD.
+
+## Fingerprints dos seis caminhos observados (CAIXA_MOOCA, somente leitura)
+
+| Fonte instalada | SHA-256 |
+|---|---|
+| `src/Service/Operator.php` | `6A9C41125589ACD16831D05535D39F3F2512B67D7651D398CAC4029415AFED4F` |
+| `src/Service/Pedido.php` | `0617AAD392816F2B5CDB61B685AE2F77DF6FC2E08D630676C13584CE91BF9702` |
+| `src/Controller/Account.php` | `D0A4358B040B8E42988DCC6B71766B2846E27C40526958F8483A9CC6754313D0` |
+| `src/Controller/Payment.php` | `C3103513BA3EB3E2C166B3BF4892B16B51F6CA9EC3C0598FBE5C2353F5B5BA46` |
+| `src/Service/Payment.php` | `345C529A2C6FCA4AD4791967C3E0A020283E96DE4D87017B9AA197D5B69D848A` |
+| `src/Service/GeneralFunctions.php` | `B837F683615153AB8FBA461766BB9D7FF9D4048E1B1F32D71003A1348B666F94` |
+
+Serviço Windows `Perifericos` observado **Running** no host na mesma inspeção. Esse fato comprova que o serviço existe e está executando; **não comprova** que ele recebeu ou imprimiu uma determinada primeira via `DLV_IFO`. Não houve leitura de documento de impressão ou manipulação do serviço.
