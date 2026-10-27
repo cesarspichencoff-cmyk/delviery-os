@@ -103,6 +103,8 @@ jobs:
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
+      - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
+        run: node tools/verificar_comandas_teknisa_native_print_mode_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
@@ -398,6 +400,8 @@ jobs:
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
+      - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
+        run: node tools/verificar_comandas_teknisa_native_print_mode_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
