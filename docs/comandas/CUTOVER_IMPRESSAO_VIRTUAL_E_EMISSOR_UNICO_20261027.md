@@ -54,6 +54,14 @@ A inspeção de 133 PHP instalados mais os controladores de delivery do POS mobi
 
 Implementação: `tools/comandas_teknisa_delivery_report_boundary_v1_offline.cjs` + **21/21** regressões; contrato `comandas_legacy_virtual_cutover_review_v1_offline.cjs` agora exige censo separado de **relatório automático e manual**, com **55/55** testes de transição em Foxxy isolado. Nenhuma opção real foi lida/alterada. [Auditoria detalhada, linhas, fingerprints e limites](AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md). O objetivo continua supressão **por emissor/ramo específico** e preservação do fiscal, com PR DRAFT/HOLD.
 
+## Descoberta comprovada: impressão do iFood tem **dois caminhos de software** no caixa
+
+A inspeção passiva em 27/10/2026 encontrou o aplicativo **Impressora GP iFood 1.2.0** (`POST /print` local, porta padrão 4013; a porta estava em `LISTEN`) e o **Gestor de Pedidos 8.10.4**, cujo próprio módulo Electron recebe `printOrder` por IPC e chama `@ifood/thermal-printer`. Ambos têm biblioteca `@ifood/thermal-printer` 1.0.32, que usa a infraestrutura de impressoras Windows para `printDirect RAW` e `ThermalPrinter({interface:'printer:'+nome,driver:nodePrinter})`. O código do Gestor responde **`Successfully printed` antes de aguardar a função assíncrona**, portanto o ACK não comprova papel. Esse desenho é **diferente** da ponte Odhen Epson nativa e não prova que ambos os aplicativos estejam imprimindo no Itaim.
+
+Novo gate de revisão `tools/comandas_ifood_installed_print_channels_v1_offline.cjs`: **`GP_HTTP_PRINT` e `GESTOR_IPC_PRINTORDER` têm de ser censados independentemente**, inclusive manual, impressora Windows real, fila compartilhada/fiscal e trabalhos antigos ambíguos. **Desligar GP não prova Gestor off**; nem desativar automático prova ausência de reimpressão manual. Um `jobId`, uma resposta HTTP e o IPC `printOrderReply` não são recibos físicos. **23/23 testes dedicados + 62/62 testes de transição PASS em checkout isolado**. Nenhuma mudança foi feita no caixa.
+
+[Auditoria detalhada com versões, SHA-256, distinção de fontes e limites](AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md). A primeira via de produção na Teknisa **continua UNKNOWN**, não sendo atribuída ao aplicativo do Gestor sem prova. Nenhuma transição live autorizada.
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
