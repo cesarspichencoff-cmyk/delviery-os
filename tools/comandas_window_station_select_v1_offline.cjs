@@ -62,14 +62,21 @@ function selectWindowStations(projection,windowClaim){
      typeof role.rule_ref!=="string"||!role.rule_ref.trim()||
      role.rule_source!=="REVIEWED_CATALOG_RULE_CLAIM")
    return answer("HOLD",["ITEM_ROLE_CLAIM_INVALID_OR_DUPLICATE"],{period});
-  roles.set(role.item_index,role.category);
+  if(typeof role.product_code!=="string"||
+     !/^[A-Z0-9]\\.[A-Z0-9]{2}\\.[A-Z0-9]{2}\\.[A-Z0-9]{3}\\.[A-Z0-9]{2}$/.test(role.product_code))
+   return answer("HOLD",["ITEM_ROLE_SOURCE_PRODUCT_CODE_INVALID"],{period});
+  roles.set(role.item_index,role);
  }
  const items=projection.items.map(item=>{
   const result={...item,targets:[...item.targets]};
   if(item.routing_status!=="ROUTED")return result;
   const codes=new Set(item.targets.map(t=>t.printer_code));
-  const category=roles.get(item.item_index);
-  if(!category){blocked.push("MISSING_ITEM_STATION_RULE_"+item.item_index);return result;}
+  const rule=roles.get(item.item_index);
+  if(!rule){blocked.push("MISSING_ITEM_STATION_RULE_"+item.item_index);return result;}
+  if(rule.product_code!==item.product_code){
+   blocked.push("ITEM_RULE_PRODUCT_IDENTITY_MISMATCH_"+item.item_index);return result;
+  }
+  const category=rule.category;
   if(["UNKNOWN","COMBINADO_DUPLA_EXCEPTION"].includes(category)){
    blocked.push("PRODUCT_STATION_EXCEPTION_OR_UNKNOWN_"+item.item_index);return result;
   }
@@ -119,6 +126,11 @@ function selectWindowStations(projection,windowClaim){
 function planWindowReview(projection,windowClaim,context,calibration){
  const source=selectWindowStations(projection,windowClaim);
  if(source.status!=="REVIEW_CANDIDATE_ONLY")return {...source,plan:null};
+ // The printed time must be the same time as the candidate selector used;
+ // a caller cannot route at lunch and render a different clock time.
+ if(!context||context.order_time!==windowClaim.order_local_hm)
+  return answer("HOLD",["PREVIEW_TIME_DIFFERS_FROM_NATIVE_ORDER_TIME"],{
+   period:source.period,plan:null});
  const plan=planProductionPrintIntents(source.projection,context,calibration);
  return {...source,plan,print_authorized:false,ready_for_operational_print:false};
 }
