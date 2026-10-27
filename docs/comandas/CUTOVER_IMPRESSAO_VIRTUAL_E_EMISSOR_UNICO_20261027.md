@@ -46,6 +46,14 @@ A ponte Odhen pode salvar o job em fila interna antes de imprimi-lo e, conforme 
 
 O módulo `comandas_peripheral_bridge_ack_backup_v1_offline.cjs` passou a retornar `HOLD: QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED` se qualquer evidência de backlog/reconciliação estiver ausente. Este é um contrato de revisão **sem leitura de banco, fila, spooler ou log**: entradas declaradas em fixture não representam prova da loja. Os testes passaram **19/19** no módulo e **49/49** no contrato de transição em clone descartável Foxxy no commit `9bbc91340e1099136b1ae1301e2f873feb9b8b96`. O código não limpa fila, não considera `status:202` do JSON como papel e não autoriza alternância automática dos emissores.
 
+## Prova posterior: `IDIMPAUTENTREG` é relatório pós-venda, não primeira via de produção
+
+A inspeção de 133 PHP instalados mais os controladores de delivery do POS mobile identificou um ramo **separado** em `Venda.php:469–499`: depois de venda de delivery bem-sucedida e `TOTALVENDABRT>0`, `IMPRIMEDLV_AUTOMATICO` lê `CAIXA.IDIMPAUTENTREG`; somente `'S'` solicita `ImpressaoDelivery::imprimeDelivery`. Esse módulo produz literalmente **`Relatorio De Entrega`** e usa `BUSCA_IMPRESSORA_DELIVERY` (`CAIXA.NRSEQIMPRLOJA7` com fallback para `NRSEQIMPRLOJA3`), destino distinto da matriz de produtos de produção.
+
+`src/Controller/Delivery.php:165–175` e duas telas mobile mostram **impressão manual do relatório**, independente do flag automático. Portanto, `IDIMPAUTENTREG=N` no caixa **não prova** inibição da primeira via de cozinha nem desativação do relatório manual, e o próprio flag é do caixa para deliveries, não um escopo `DLV_IFO` demonstrado. `Comanda::liberaComandaDelivery` apenas muda status `P/X` no trecho examinado, sem provar papel. O caminho da **primeira via de produção iFood segue UNKNOWN**.
+
+Implementação: `tools/comandas_teknisa_delivery_report_boundary_v1_offline.cjs` + **21/21** regressões; contrato `comandas_legacy_virtual_cutover_review_v1_offline.cjs` agora exige censo separado de **relatório automático e manual**, com **55/55** testes de transição em Foxxy isolado. Nenhuma opção real foi lida/alterada. [Auditoria detalhada, linhas, fingerprints e limites](AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md). O objetivo continua supressão **por emissor/ramo específico** e preservação do fiscal, com PR DRAFT/HOLD.
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
