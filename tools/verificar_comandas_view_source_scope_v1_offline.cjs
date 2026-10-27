@@ -17,8 +17,11 @@ function fixture(){
   })),
   ifood:{schema:"tata.comandas.ifood-export-claim.v1",
    source_kind:"OFFICIAL_IFOOD_EXPORT",source_fingerprint:"b".repeat(64),
-   source_ref:"SYNTHETIC_OFFICIAL_EXPORT",store_id:"0001",
-   operational_date:"2026-10-26",short_id:"9627",short_id_unique_for_day:true}
+   source_ref:"SYNTHETIC_OFFICIAL_EXPORT",store_id:"53069",
+   operational_date:"2026-10-26",short_id:"9627",short_id_unique_for_day:true},
+  store_mapping:{schema:"tata.comandas.cross-system-store-candidate.v1",
+   source_kind:"HUMAN_RECONCILIATION_CANDIDATE",source_ref:"SYNTHETIC_MAP_NOT_ATTESTATION",
+   ifood_store_id:"53069",native_store_id:"0001",native_store_unit:"01"}
  };
 }
 const clone=x=>structuredClone(x);
@@ -31,6 +34,7 @@ function safe(x){
  assert.equal(out.effects.sql_read,false);assert.equal(out.effects.printer,undefined);
  assert.equal(out.physical_print_proven,false);
  assert.equal(out.independent_ifood_source_attested_here,false);
+ assert.equal(out.source_store_mapping_attested_here,false);
  assert.equal(out.production.length,2);
  assert.deepEqual(out.production.map(z=>z.id),["PRODUCTION_1","PRODUCTION_2"]);
  assert.equal(out.conference.id,"CONFERENCE");
@@ -69,12 +73,37 @@ check("iFood day mismatch affects conference only",()=>{
 check("iFood short-ID mismatch affects conference only",()=>{
  const a=safe(fixture()),x=fixture();x.ifood.short_id="9999";
  const b=safe(x);assert.equal(prodFingerprint(a),prodFingerprint(b));
- assert.equal(b.conference.reasons[0],"IFood_TEK_STORE_DAY_SHORT_ID_CONFLICT");
+ assert.equal(b.conference.reasons[0],"IFood_TEK_DAY_OR_SHORT_ID_CONFLICT");
 });
 check("iFood store mismatch affects conference only",()=>{
  const a=safe(fixture()),x=fixture();x.ifood.store_id="002";
  const b=safe(x);assert.equal(prodFingerprint(a),prodFingerprint(b));
  assert.equal(b.conference.status,"HOLD");
+});
+check("iFood and native store IDs in different namespaces require explicit mapping",()=>{
+ const x=fixture();delete x.store_mapping;
+ const r=safe(x);
+ assert.equal(r.conference.status,"HOLD");
+ assert.equal(r.conference.reasons[0],"CROSS_SYSTEM_STORE_MAPPING_CANDIDATE_REQUIRED");
+ assert.ok(r.production.every(v=>v.status==="NATIVE_ONLY_REVIEW"));
+});
+check("iFood merchant 53069 cannot masquerade as native 0001 through numeric equality",()=>{
+ const x=fixture();x.ifood.store_id="0001";
+ const r=safe(x);
+ assert.equal(r.conference.status,"HOLD");
+ assert.equal(r.conference.reasons[0],"CROSS_SYSTEM_STORE_MAPPING_CANDIDATE_REQUIRED");
+});
+check("store mapping with wrong native unit holds conference only",()=>{
+ const x=fixture();x.store_mapping.native_store_unit="02";
+ const r=safe(x);
+ assert.equal(r.conference.status,"HOLD");
+ assert.ok(r.production.every(v=>v.status==="NATIVE_ONLY_REVIEW"));
+});
+check("store map status cannot self-promote independent source attestation",()=>{
+ const x=fixture();x.store_mapping.mapping_independently_attested=true;
+ const r=safe(x);
+ assert.equal(r.conference.status,"IFOOD_TEK_CANDIDATE_MATCH_REVIEW_ONLY");
+ assert.equal(r.source_store_mapping_attested_here,false);
 });
 check("unattested iFood export label blocks conference but leaves production independent",()=>{
  const a=safe(fixture()),x=fixture();x.ifood.source_kind="TEKNISA_READER_V2";
