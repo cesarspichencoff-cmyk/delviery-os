@@ -15,6 +15,8 @@ const {reviewDeliveryReportBoundary}=
  require("./comandas_teknisa_delivery_report_boundary_v1_offline.cjs");
 const {reviewIfoodInstalledPrintChannels}=
  require("./comandas_ifood_installed_print_channels_v1_offline.cjs");
+const {reviewNativeFirstDispatch}=
+ require("./comandas_native_first_dispatch_lineage_v1_offline.cjs");
 const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
 const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
 const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
@@ -119,6 +121,13 @@ function reviewLegacyPrintCutover(input){
  if(ifood.status!=="REVIEW_CANDIDATE_NEEDS_INDEPENDENT_ATTESTATION")
   reasons.push("IFOOD_GP_AND_GESTOR_PRINT_PATHS_UNCENSUSED:"+
    ifood.reasons.join("|"));
+ // A marketplace preorder, the ForSale comanda creation, the ForSale
+ // export job, a post-sale delivery report or GP/Gestor spooler ACK cannot
+ // stand in for the real native first-production dispatch event.
+ const firstDispatch=reviewNativeFirstDispatch(
+   input.native_first_dispatch_lineage);
+ if(firstDispatch.status!=="REVIEW_CANDIDATE_NOT_INDEPENDENTLY_ATTESTED")
+  reasons.push("NATIVE_FIRST_PRINT_LINEAGE_UNPROVEN:"+firstDispatch.reason);
  if(!proof||typeof proof!=="object"||Array.isArray(proof))
   reasons.push("INDEPENDENT_PROOF_SET_MISSING");
  else{
