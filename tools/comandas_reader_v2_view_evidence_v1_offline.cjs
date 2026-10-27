@@ -143,7 +143,8 @@ function assessNativeReaderV2(input){
    id,source_kind:"TEKNISA_READER_V2",
    native_snapshot_sha256:e.snapshot_hash
   })),
-  ifood:input.ifood??null
+  ifood:input.ifood??null,
+  store_mapping:input.store_mapping??null
  };
  const scope=assessViewSourceScopes(sourceClaims);
  if(scope.production.some(v=>v.status!=="NATIVE_ONLY_REVIEW"))
