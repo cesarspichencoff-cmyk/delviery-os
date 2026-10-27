@@ -28,6 +28,10 @@ A inspeção **somente do código instalado** em `CAIXA_MOOCA` identificou três
 
 **Guard adicional do periférico Epson:** o Odhen Periféricos instalado usa uma **DLL de fornecedor** no ramo Epson, enquanto o código usa `SpoolerLibrary` para outros modelos. A existência de filas Windows de Epson não prova que a DLL utiliza essas filas. Portanto o redirecionamento de um caminho `PONTE_HTTP_PRINT → EPSON_VENDOR_DLL` para `NUL` recebe `HOLD`, ainda que alguém alegue uma fila downstream; o modo `WINDOWS_WINSPOOL_API` tem de ser demonstrado na rota efetiva, e não inferido de uma fila presente. A primeira preferência permanece a supressão seletiva da **via antiga** na fonte, sem atingir registro de pedidos, documentos fiscais ou relatórios.
 
+## Retificação de alcance do IDIMPPEDPROD — configuração de caixa compartilhada
+
+A inspeção posterior de **133 PHP instalados** identificou `src/Service/Operator.php:314` como origem do `IDIMPPEDPROD` na sessão a partir da configuração **do caixa** e comprovou consumo desse mesmo parâmetro em caminhos de **mesa** (`Pedido.php:1293–1312`), **balcão** (`Controller/Payment.php:550–556`) e **reimpressão** (`GeneralFunctions.php:561–575`). Logo `IDIMPPEDPROD='N'` **na configuração compartilhada** pode cortar comandas válidas alheias ao delivery e **não é um atalho operacional permitido**. Um override estritamente restrito à invocação `DLV_IFO` permanece apenas hipótese, sem prova de callsite. Na PR, `CASH_REGISTER_CONFIG_CHANGE` ou ausência de override granular retorna `HOLD`; testes específicos **24/24 + 23/23 + 41/41 PASS** em Foxxy isolado. [Auditoria detalhada do escopo](AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md). Esta retificação prevalece sobre qualquer leitura anterior que sugira simplesmente parametrizar `N` no caixa.
+
 ## Alternativas em ordem de simplicidade
 
 1. **Desativação da via antiga na fonte, se houver configuração específica**, mantendo a geração/leitura dos pedidos. Exige identificar exatamente a opção, seu escopo (comandas de produção vs caixa/relatório/fiscal), a configuração vigente e a capacidade de reverter. Não assumir que existe uma chave global segura na Teknisa.
