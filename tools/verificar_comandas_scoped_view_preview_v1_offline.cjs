@@ -2,8 +2,10 @@
 const assert=require("node:assert/strict");
 const {projectScopedPreview,SCHEMA}=require("./comandas_scoped_view_preview_v1_offline.cjs");
 const {fixture}=require("./verificar_comandas_view_source_scope_v1_offline.cjs");
-const {archivedResult,partiallyKnownResult}=
+const {archivedResult,archivedCompleteInput,partiallyKnownResult}=
  require("./verificar_real_order_tickets_v46.js");
+const {projectOperationalTicketsV45}=
+ require("../dist/src/production/operationalTicketsV45.js");
 const clone=x=>structuredClone(x);
 const native=archivedResult();
 const original=JSON.stringify(native);
@@ -85,6 +87,68 @@ test("incomplete native projection with zero production routes cannot be invente
  assert.equal(b.conference.byte_count,0);
  assert.equal(b.conference.ready_for_operational_print,false);
  assert.equal(b.effects.print,false);
+});
+test("actual V4.5 archived projection with missing conference packaging retains two safe native previews",()=>{
+ const f=archivedCompleteInput();
+ const src=projectOperationalTicketsV45({
+  order_id:f.id,source_items:f.source_items,production_plan:f.production_plan,
+  resource_projection:f.resource_projection,packaging_plan:null
+ });
+ assert.deepEqual(src.blocking_reasons,[]);
+ assert.equal(src.ready_for_semantic_preview,false);
+ assert.equal(src.conference.ready_for_semantic_preview,false);
+ assert.equal(src.production.length,2);
+ assert.ok(src.production.every(p=>p.ready_for_semantic_preview===true));
+ assert.ok(src.conference.warnings.includes("PACKAGING_PLAN_MISSING"));
+ const b=run(fixture(),src);
+ assert.ok(b.production.every(v=>v.ready_for_offline_preview&&v.byte_count>0),
+  "kitchen/sushi preview remains native-only despite cashier packaging gap");
+ assert.equal(b.conference.byte_count,0);
+ assert.ok(b.conference.blocking_reasons.includes("CONFERENCE_NATIVE_PACKAGING_HOLD"));
+});
+test("missing packaging plus absent iFood keeps native production bytes, holds cashier",()=>{
+ const f=archivedCompleteInput();
+ const src=projectOperationalTicketsV45({
+  order_id:f.id,source_items:f.source_items,production_plan:f.production_plan,
+  resource_projection:f.resource_projection,packaging_plan:null
+ });
+ const original=run(fixture(),src),claim=fixture();delete claim.ifood;
+ const missing=run(claim,src);
+ assert.deepEqual(prodView(missing),prodView(original));
+ assert.equal(missing.conference.byte_count,0);
+});
+test("missing cashier packaging never overrides a global native source failure",()=>{
+ const f=archivedCompleteInput();
+ const src=projectOperationalTicketsV45({
+  order_id:f.id,source_items:f.source_items,production_plan:f.production_plan,
+  resource_projection:f.resource_projection,packaging_plan:null
+ });
+ src.blocking_reasons.push("NATIVE_SOURCE_INVALID");
+ const v=run(fixture(),src);
+ assert.ok(v.production.every(p=>p.byte_count===0));
+ assert.equal(v.conference.byte_count,0);
+});
+test("missing cashier packaging never bypasses native three-view mismatch",()=>{
+ const f=archivedCompleteInput();
+ const src=projectOperationalTicketsV45({
+  order_id:f.id,source_items:f.source_items,production_plan:f.production_plan,
+  resource_projection:f.resource_projection,packaging_plan:null
+ });
+ src.production[0].identifiers.teknisa="FORGED";
+ const v=run(fixture(),src);
+ assert.ok(v.production.every(p=>p.byte_count===0));
+ assert.equal(v.conference.byte_count,0);
+});
+test("native production ticket local HOLD blocks source even if cashier packaging is unknown",()=>{
+ const f=archivedCompleteInput();
+ const src=projectOperationalTicketsV45({
+  order_id:f.id,source_items:f.source_items,production_plan:f.production_plan,
+  resource_projection:f.resource_projection,packaging_plan:null
+ });
+ src.production[0].ready_for_semantic_preview=false;
+ const v=run(fixture(),src);
+ assert.ok(v.production.every(p=>p.byte_count===0));
+ assert.equal(v.conference.byte_count,0);
 });
 test("source review cannot inject modified external iFood number into native ticket identifiers",()=>{
  const claims=fixture();claims.ifood.short_id="0999";
