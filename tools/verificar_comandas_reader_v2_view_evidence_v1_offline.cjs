@@ -136,8 +136,15 @@ test("adversary recalculates both hashes but quantity mismatch still holds",()=>
  const x=native();x.event.order.items[0].QTPRODCOMVEN="3.000";refresh(x);
  hold(x,"NATIVE_ITEM_STATUS_IDENTITY_QUANTITY_OR_NOTES_HOLD");
 });
-test("adversary recalculates both hashes but item source ID mismatch still holds",()=>{
+test("rehashed product change breaks observation-to-native-item linkage first",()=>{
  const x=native();x.event.order.items[0].CDPRODUTO="wrong";refresh(x);
+ hold(x,"NATIVE_ITEM_OBSERVATION_JOIN_INVALID");
+});
+test("rehashed product change also fails even when item note joins are aligned",()=>{
+ const x=native();x.event.order.items[0].CDPRODUTO="wrong";
+ for(const note of x.event.order.observation_rows)
+  if(note.scope_hint==="item"&&note.item_index===0)note.CDPRODUTO="wrong";
+ refresh(x);
  hold(x,"NATIVE_ITEM_STATUS_IDENTITY_QUANTITY_OR_NOTES_HOLD");
 });
 test("old item observation fingerprint blocks after source edit",()=>{
