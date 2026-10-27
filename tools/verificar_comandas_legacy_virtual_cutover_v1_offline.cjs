@@ -37,6 +37,16 @@ const staged=()=>{
    path_matches_order_print:true},
   proposed_action:"UPSTREAM_PRINT_OFF"
  };
+ x.peripheral_bridge_evidence={
+  store_id:"0001",store_unit:"01",
+  code_fingerprints:{routes_imp_js:h,src_imp_js:h,printer_handler_js:h},
+  route_census:{scope:"TEKNISA_DLV_IFO_PRODUCTION_VIA_CLAIM",
+   origin_ref:"SYNTHETIC_BRIDGE_SOURCE",snapshot_sha256:h,
+   backup_config_observed:true,backup_enabled:false,
+   primary_destination_censused:true,
+   primary_legacy_output_plan:"EXPLICITLY_COVERED"},
+  receipt_claim:{kind:"HTTP_202_QUEUED"}
+ };
  x.teknisa_upstream_suppression={mechanism:"IDIMPPEDPROD_N",
   native_mode_evidence:{store_id:"0001",store_unit:"01",
    impressao_pedido_sha256:h,mode:"N",
@@ -221,6 +231,36 @@ test("no attested per-delivery override is equivalent to unknown first print sco
 test("preserving mesa and balcao is mandatory for candidate cutover",()=>{
  const x=staged();x.teknisa_upstream_suppression.native_mode_evidence.proposed_application.mesa_and_balcao_unchanged=false;
  holds(x,"NATIVE_UPSTREAM_SCOPE_NOT_ESTABLISHED:CASHIER_WIDE_IDIMPPEDPROD_MUST_NOT_BE_CHANGED");
+});
+test("HTTP 202 and unknown Odhen internal queue backup are not a complete cutover",()=>{
+ const x=staged();delete x.peripheral_bridge_evidence;
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:PERIPHERAL_INSTALLED_CODE_OR_STORE_INVALID");
+});
+test("backup enabled without destination census prevents old paper suppression",()=>{
+ const x=staged();x.peripheral_bridge_evidence.route_census.backup_enabled=true;
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:BACKUP_PRINTER_COULD_EMIT_UNCONTROLLED_LEGACY_PAPER");
+});
+test("backup route declared but uncontrolled prevents old paper suppression",()=>{
+ const x=staged();Object.assign(x.peripheral_bridge_evidence.route_census,{
+  backup_enabled:true,backup_destination_censused:true,
+  backup_legacy_output_plan:"KEEP_OLD_PAPER"});
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:BACKUP_PRINTER_COULD_EMIT_UNCONTROLLED_LEGACY_PAPER");
+});
+test("backup path must be observed on the specific order route",()=>{
+ const x=staged();x.peripheral_bridge_evidence.route_census.backup_config_observed=false;
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:BACKUP_CONFIG_NOT_OBSERVED_ON_ORDER_PATH");
+});
+test("claim of HTTP 202 as completed print cannot bypass bridge model",()=>{
+ const x=staged();x.peripheral_bridge_evidence.receipt_claim.kind="PAPER_CONFIRMED";
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:BRIDGE_ACK_KIND_UNKNOWN");
+});
+test("backend not using Odhen HTTP bridge does not require that bridge model",()=>{
+ const x=staged();x.teknisa_transport_census.runtime_flags.utiliza_impressao_ponte=false;
+ x.teknisa_transport_census.runtime_flags.utiliza_impressao_php=true;
+ delete x.peripheral_bridge_evidence;
+ const r=check(x);
+ assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
+ assert.equal(r.can_activate,false);
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
