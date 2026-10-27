@@ -27,10 +27,18 @@ async function main(){
   }finally{await client.end();}
  }else if(cmd==='start'){
   if(fs.existsSync(path.join(root,'runtime-pids.json')))throw Error('Arquivo de processos existe; conferir antes de reiniciar');
+  const pilotStorageEnv={};
+  if(fs.existsSync(path.join(root,'pilot-storage.json'))){
+   const storage=JSON.parse(fs.readFileSync(path.join(root,'pilot-storage.json'),'utf8'));
+   const cfg=JSON.parse(fs.readFileSync(path.join(root,'pilot-local.json'),'utf8'));
+   const flags=JSON.parse(fs.readFileSync(path.join(root,'gps-disabled.json'),'utf8'));
+   if(storage.schema!=='deliveryos.lab-pilot-storage.v1'||storage.kind!=='postgres'||storage.unitId!=='ITAIM'||storage.sourceMode!=='simulated'||storage.scope!=='isolated_legacy_console_only'||cfg.unit_id!=='ITAIM'||cfg.mode!=='test'||cfg.source_mode!=='simulated'||flags.gps_capture_enabled!==false)throw Error('Configuracao PostgreSQL do ensaio invalida');
+   Object.assign(pilotStorageEnv,{ENTREGAS_STORAGE_BACKEND:'postgres',DELIVERYOS_DATABASE_SSL:'false',DELIVERYOS_DATABASE_URL:dbUrl('deliveryos_entregas_pilot',secrets.pilot)});
+  }
   await portFree(5193);await portFree(8080);
   const critical=launch('critical','dist/src/platform/bin/critical.js',{...common,DELIVERYOS_DATABASE_URL:dbUrl('deliveryos_critical',secrets.critical)});
   const asyncPid=launch('async','dist/src/platform/bin/async-runtime.js',{...common,DELIVERYOS_DATABASE_URL:dbUrl('deliveryos_async',secrets.async),DELIVERYOS_INSTANCE_ID:'mooca-lab-async'});
-  const pilot=launch('pilot','dist/tools/entregas_pilot_server.js',{...envBase,ENTREGAS_ENV:'local',ENTREGAS_BIND:'127.0.0.1',ENTREGAS_UI_PORT:'5193',ENTREGAS_UNIT_ID:'ITAIM',ENTREGAS_PILOT_CONFIG:path.join(root,'pilot-local.json'),ENTREGAS_DATA_DIR:path.join(root,'data','pilot'),ENTREGAS_GPS_FLAGS_CONFIG:path.join(root,'gps-disabled.json'),ENTREGAS_PLATFORM_URL:'http://127.0.0.1:8080',ENTREGAS_PLATFORM_READ_SECRET:secrets.read});
+  const pilot=launch('pilot','dist/tools/entregas_pilot_server.js',{...envBase,...pilotStorageEnv,ENTREGAS_ENV:'local',ENTREGAS_BIND:'127.0.0.1',ENTREGAS_UI_PORT:'5193',ENTREGAS_UNIT_ID:'ITAIM',ENTREGAS_PILOT_CONFIG:path.join(root,'pilot-local.json'),ENTREGAS_DATA_DIR:path.join(root,'data','pilot'),ENTREGAS_GPS_FLAGS_CONFIG:path.join(root,'gps-disabled.json'),ENTREGAS_PLATFORM_URL:'http://127.0.0.1:8080',ENTREGAS_PLATFORM_READ_SECRET:secrets.read});
   fs.writeFileSync(path.join(root,'runtime-pids.json'),JSON.stringify({critical,async:asyncPid,pilot}));
   console.log('LOCAL_RUNTIMES_STARTED',JSON.stringify({critical,async:asyncPid,pilot}));
  }else if(cmd==='smoke'){

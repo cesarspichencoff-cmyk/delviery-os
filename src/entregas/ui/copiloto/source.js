@@ -11,6 +11,7 @@ const states = {
 async function refresh() {
   el('refresh').disabled = true;
   el('sample').hidden = true;
+  el('lab-storage').hidden = true;
   el('weekly').hidden = true;
   el('weekly-body').replaceChildren();
   el('window').textContent = 'Indisponível';
@@ -54,6 +55,20 @@ async function refresh() {
       el('sample').textContent = `Janela de diagnóstico: ${p.sampledFiles} arquivos examinados; ${p.producerBlocksDownstream} bloqueados pelo produtor. Seleção por diretório, sem garantia de atualidade.`;
       el('sample').hidden = false;
     }
+    try {
+      const r = await fetch('/api/copiloto/lab-storage', { cache: 'no-store' });
+      if (r.ok) {
+        const lab = await r.json();
+        if (lab.scope === 'LAB_SIMULATED_ONLY' && lab.source_mode === 'simulated' &&
+            Number.isSafeInteger(lab.registered_trips) && Number.isSafeInteger(lab.ready_queue_records)) {
+          el('lab-backend').textContent = lab.storage_backend === 'postgres'
+            ? 'Base compartilhada em PostgreSQL.' : 'Base em arquivo do ensaio.';
+          el('lab-trips').textContent = String(lab.registered_trips);
+          el('lab-ready').textContent = String(lab.ready_queue_records);
+          el('lab-storage').hidden = false;
+        }
+      }
+    } catch { /* Source status remains available; do not retain old lab counts. */ }
   } catch {
     el('title').textContent = 'Consulta indisponível';
     el('message').textContent = 'Não foi possível consultar o servidor. Tente novamente.';

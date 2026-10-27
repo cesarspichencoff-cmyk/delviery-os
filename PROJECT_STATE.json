@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ITAIM_WEEKLY_SERVICE_ACTIVE_HEALTHY_SOURCE_PUBLICATION_OFF",
-  "state_basis_head": "283f1502d1e6a97927574257d0316bf3789705c1",
+  "checkpoint_type": "POSTGRES_LEGACY_LAB_AND_SHARED_COPILOTO_SUMMARY_PROVEN",
+  "state_basis_head": "a23baafc20a90ca7c54e91c92558418dcb2a4d40",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -17,7 +17,9 @@
     "docs/execution/PLANO_V1_OPERACIONAL_2026-10-26.md",
     "docs/execution/evidencias/mooca-local-2026-10-26/copiloto-source-status-proof.json",
     "docs/execution/ITAIM_DELIVERY_HOURS_2026-10-26.md",
-    "docs/execution/evidencias/mooca-local-2026-10-26/weekly-service-policy-proof.json"
+    "docs/execution/evidencias/mooca-local-2026-10-26/weekly-service-policy-proof.json",
+    "docs/execution/MOOCA_POSTGRES_CONVERGENCIA_2026-10-26.md",
+    "docs/execution/evidencias/mooca-local-2026-10-26/shared-pg-lab-proof.json"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -47,18 +49,21 @@
     "GitHub product run 40424344253 and Android run 40424344257 completed successfully at 7a0a87e2. Mooca production-service-state.json inspected by metadata allowlist: schema v2, store_id 0001, operational_date 2026-10-14, service LUNCH, HUMAN_CONFIRMED_RULE, clock_inference_used false, no unit_id/unit_name. This explains date/expiry blockers in the newer observed source event; no state file or reader modified.",
     "Cesar confirmed that Tata Comandas on Caixa Mooca serves Itaim only. Host-scoped source mapping registered for native 0001/01; not a global native-code mapping. Bounded on-host metadata preview sampled 20 event files: 20 scope matches, zero mismatches/invalid/unreadable, 20 producer-blocked. No order contents exported. Source service state remains 2026-10-14 LUNCH; no source-mode assignment or publication. Six synthetic preview scenarios pass.",
     "Itaim-only source diagnostic installed in isolated Mooca pilot at /copiloto/. Metadata API requires manager/leader lab key, rejects anonymous/rider/write access, and exposes no order payload. Host Edge at 390/1440 passed login, blocked status, refresh and width checks. Source still 2026-10-14 LUNCH 11:00-15:00. Source publication and GPS remain off. This is a component overlay on core build be5a, not full Copiloto or human identity rollout.",
-    "Cesar reconfirmed Itaim delivery windows: weekdays lunch 11:00-15:00, Saturday/Sunday lunch 11:00-16:30, daily dinner 18:00-23:00. Weekly native-local order-time resolver installed and supervisor hash updated. Final proof 2026-10-27T02:21:03Z: two complete OK batches, zero consecutive failures, stable service/supervisor, checkpoint advanced. 82 rule tests and 3 atomic file tests passed on WinPS 5.1. Historical events/checkpoint/legacy dated state preserved. Diagnostic weekly table and host Edge 390/1440 passed; no post-install real event observed, order publication/GPS off."
+    "Cesar reconfirmed Itaim delivery windows: weekdays lunch 11:00-15:00, Saturday/Sunday lunch 11:00-16:30, daily dinner 18:00-23:00. Weekly native-local order-time resolver installed and supervisor hash updated. Final proof 2026-10-27T02:21:03Z: two complete OK batches, zero consecutive failures, stable service/supervisor, checkpoint advanced. 82 rule tests and 3 atomic file tests passed on WinPS 5.1. Historical events/checkpoint/legacy dated state preserved. Diagnostic weekly table and host Edge 390/1440 passed; no post-install real event observed, order publication/GPS off.",
+    "Isolated EMPTY simulated legacy console switched to existing PostgreSQL 55436 with minimum role, after separate 55437 cutover 7/7 and two-server 6/6 tests. Copiloto lab summary reads same facade/queue; HTTP write, limited-role DB read, Copiloto read, pilot restart, readback and own-probe cleanup preserved source fingerprint. Host browser/HTTP 10 checks passed. Native receipt schema/authority unavailable: authenticated events batch explicitly 503 retryable before domain execution. No 0011, source reader or network changes; GPS off."
   ],
-  "next_action": "Do not ask again for source unit or weekly hours. Observe a new genuine eligible source event without replay/reset; establish explicit native timestamp instant mapping, source mode/provenance and individual human/native authentication before publishing orders. GPS remains disabled and field gates open.",
+  "next_action": "Keep confirmed Itaim unit and weekly hours. Recover/review receipt schema and per-unit authority, prepare individual human and native authentication, establish source instant mapping/provenance and observe a genuine new event without replay/reset. PostgreSQL legacy lab and simulated shared queue are installed: do not repeat empty cutover. Real order list and field GPS remain unpublished. Add PostgreSQL backup/recovery before operational rollout.",
   "unknowns": [
     "No genuine source event after the weekly-rule installation was observed. Native SQL timestamps lack offset; explicit source instant mapping remains needed for Copiloto. The weekly schedule itself is confirmed and installed.",
-    "Authenticated HTTPS Entregas UI loading was confirmed by Cesar. App actions, main-product/Copiloto deployment and native authentication remain unproven. Proxy IP rotation requires reviewed allowlist update.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
     "Off-host backup and restore of this new local cluster remain unproven.",
     "Pilot signing custody and approved operational term fields remain undefined.",
     "Xiaomi physical GPS/offline/background/battery and human acceptance remain unproven.",
     "Native term replay lifecycle remains pending; initial consent uses WebView session and must be proven remotely in the field environment.",
-    "Pilot operational storage in this installation remains an isolated local store; full operational persistence convergence with PostgreSQL is not established by the GPS dispatch tests."
+    "Pilot legacy console now uses PostgreSQL and Copiloto simulated summary shares its queue. Full platform-event convergence, real order source publication and individual human/native identity remain unproven.",
+    "New summary and storage were proven on host HTTP/Edge, not authenticated public-proxy navigation.",
+    "PostgreSQL mode disables the file backup timer/endpoints; PostgreSQL recurring and off-host backup/restore are still pending.",
+    "Native receipt table and approved per-unit role are absent. Current shared PostgreSQL role cannot confirm native batch events; explicit retryable 503 is expected."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",

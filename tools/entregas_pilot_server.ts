@@ -552,6 +552,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         gps_production: gpsFlags.gps_capture_enabled,
         multi_instance: persistenceBackend?.multi_instance ?? false,
         storage_backend: persistenceBackend?.kind ?? "booting",
+        native_inbound_receipts: persistenceBackend?.native_inbound_receipts ?? { available: false, reason: "booting" },
         api_version: DEVICE_API_VERSION,
         https: httpsResolution.enabled,
         lan: bindResolution.exposedToLan,
@@ -587,6 +588,23 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         return reply(403, { ok: false, code: "manager_required" });
       if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
       return reply(200, tataSourceStatus.read());
+    }
+
+    if (url.pathname === "/api/copiloto/lab-storage") {
+      if (!actor) return reply(401, { ok: false, code: "session_required" });
+      if (!["gerente", "lider_delivery"].includes(actor.role))
+        return reply(403, { ok: false, code: "manager_required" });
+      if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
+      if (url.search) return reply(400, { ok: false, code: "no_query_parameters" });
+      if (cfg.mode !== "test" || cfg.source_mode !== "simulated")
+        return reply(403, { ok: false, code: "simulated_lab_only" });
+      // Same application read as Entregas; no second store or inferred native orders.
+      const snapshot = await facade.snapshot();
+      return reply(200, { schema: "deliveryos.copiloto-lab-storage.v1",
+        scope: "LAB_SIMULATED_ONLY", unit_id: cfg.unit_id, source_mode: "simulated",
+        observed_at: new Date().toISOString(), storage_backend: persistenceBackend!.kind,
+        registered_trips: snapshot.trips.length, ready_queue_records: snapshot.ready_orders.length,
+        operational_order_total: null, no_action_executed: true });
     }
 
 
@@ -826,6 +844,9 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         attestedDeviceId = auth.claims.device_id;
       }
       if (!eventActor) return reply(401, { ok: false, human: NO_SESSION });
+      if (!persistenceBackend?.native_inbound_receipts.available) {
+        return reply(503, { ok: false, code: "DURABLE_RECEIPTS_UNAVAILABLE", retryable: true });
+      }
       const body = JSON.parse(await readBody(req)) as {
         events?: Array<{
           event_id: string;

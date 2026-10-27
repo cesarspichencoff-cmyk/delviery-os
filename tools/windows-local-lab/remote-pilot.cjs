@@ -33,13 +33,24 @@ const env = {
   ENTREGAS_TATA_READER_ROOT: 'C:\\ProgramData\\TataComandaReader',
   ENTREGAS_TATA_BINDING_PATH: path.join(root, 'tata-source-binding.json'),
 };
+const storagePath = path.join(root, 'pilot-storage.json');
+let storage = 'file';
+if (fs.existsSync(storagePath)) {
+  const declared = JSON.parse(fs.readFileSync(storagePath, 'utf8'));
+  if (declared.schema !== 'deliveryos.lab-pilot-storage.v1' || declared.unitId !== 'ITAIM' ||
+      declared.kind !== 'postgres' || declared.sourceMode !== 'simulated' ||
+      declared.scope !== 'isolated_legacy_console_only') throw Error('REMOTE_LAB_STORAGE_REFUSED');
+  storage = 'postgres'; env.ENTREGAS_STORAGE_BACKEND = 'postgres';
+  env.DELIVERYOS_DATABASE_SSL = 'false';
+  env.DELIVERYOS_DATABASE_URL = 'postgresql://deliveryos_entregas_pilot:' + secrets.pilot + '@127.0.0.1:55436/deliveryos_lab';
+}
 const {loadCloudConfig} = require(path.join(app, 'dist/src/entregas/pilot/cloud-config.js'));
 const parsed = loadCloudConfig(env);
 if (!parsed.ok) throw Error('REMOTE_LAB_REFUSED: cloud configuration invalid');
 if (process.argv[2] === 'check') {
   console.log('REMOTE_LAB_CONFIG_PASS', JSON.stringify({bind: address, port: 5193,
     publicUrl, remote: parsed.config.remote, users: parsed.config.users.length,
-    gps: false, mode: cfg.mode, source: cfg.source_mode}));
+    gps: false, mode: cfg.mode, source: cfg.source_mode, storage}));
 } else if (['start', 'start-local'].includes(process.argv[2])) {
   // The PowerShell controller verifies and stops only the previously recorded pilot.
   const record = JSON.parse(fs.readFileSync(path.join(root, 'runtime-pids.json'), 'utf8'));

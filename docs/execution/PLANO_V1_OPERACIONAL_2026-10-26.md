@@ -10,9 +10,9 @@ Objetivo: conectar a operação de Entregas do Itaim, o aplicativo Android e o c
 |---|---|---|
 | Acesso | HTTPS e abertura de Entregas confirmados por César; proteção restrita do NetBird aplicada | Sessão humana individual, funcionamento nativo sem login interativo do proxy |
 | Servidor | PostgreSQL isolado; plataforma e banco internos; verificações HTTP e regras de rede passaram | Reinício do Windows, inicialização automática, recuperação e backup fora do host |
-| Entregas | Candidato com domínio, APIs e testes; instalação atual em modo simulado | Fluxo operacional completo pela sessão autorizada e convergência do armazenamento dessa instalação |
+| Entregas | Console legado do ensaio em PostgreSQL, com persistência e fila compartilhada comprovadas | Recibos nativos, identidade individual e fluxo operacional completo |
 | GPS | Código Android nativo, fila local e testes técnicos existem | GPS permanece desligado; termo não publicável; comportamento físico e recibos remotos pendentes |
-| Copiloto | Diagnóstico da fonte instalado no ensaio; adaptador e projeção de pedidos testados | Lista real de pedidos, sessão humana individual e aplicação principal integrada ainda pendentes |
+| Copiloto | Diagnóstico da fonte e resumo simulado da mesma fila do Entregas instalados | Lista real de pedidos, sessão humana individual e aplicação principal integrada ainda pendentes |
 | Celular | César informou disponibilidade de um Xiaomi | Modelo, versão Android, instalação e testes físicos desconhecidos |
 
 O histórico técnico não deve ser refeito por conveniência. Os 110 testes JVM e provas PostgreSQL existentes são base de regressão; não substituem observação em aparelho físico. Os scripts de preparação do host não representam um instalador operacional homologado.
@@ -70,7 +70,7 @@ O endereço que funciona no navegador ainda não comprova acesso do serviço And
 
 ### Persistência compartilhada
 
-A instalação atual do piloto usa armazenamento isolado em arquivo, enquanto a plataforma usa PostgreSQL. A existência de testes de leitura GPS em PostgreSQL não demonstra que todo o fluxo operacional esteja convergido.
+O console legado do ensaio passou a usar PostgreSQL, com origem vazia e prova de fila compartilhada com o resumo simulado do Copiloto. Recibos nativos continuam indisponíveis. Isso não demonstra que todo o fluxo operacional esteja convergido nem substitui a prova de GPS físico.
 
 Antes de trocar a configuração, levantar os escritores e leitores reais, provar o backend existente em banco descartável, comparar os mesmos cenários e ensaiar restauração. Não migrar banco da loja nem reclassificar fatos simulados como reais. A convergência deve preservar o domínio e o histórico já provados.
 
@@ -148,5 +148,9 @@ Prova final no host em `2026-10-27T01:36:39.468Z` (26/10, 22h36 em São Paulo): 
 O campo de procedência cita uma regra semanal do Itaim, mas seus horários completos não foram recuperados. Uma janela histórica isolada não define todos os dias. O setter instalado também omite `valid_from_local`, que o leitor atual exige; ele não deve ser usado sem correção. Próximo dado necessário: horários de almoço e jantar por dia, dias fechados e exceções aplicáveis. Nenhum turno foi renovado pelo relógio ou por suposição.
 
 **Pendência posteriormente resolvida:** César reconfirmou os horários nesta conversa, e a regra semanal foi aplicada ao leitor com dois lotes saudáveis comprovados. A fonte vigente e a prova estão em `ITAIM_DELIVERY_HOURS_2026-10-26.md`. Não repetir a pergunta pelos horários. O arquivo legado de 14/10 foi preservado como histórico; a política semanal é a autoridade de turno do watcher atualizado. Publicação de pedidos, identidade humana e GPS continuam separados desta correção.
+
+## Convergência posterior do ensaio
+
+O console legado foi transferido, com origem e destino vazios, para o PostgreSQL do ensaio. O resumo do Copiloto passou a ler a mesma fila, sob modo explicitamente simulado. A cadeia API → banco com papel limitado → Copiloto → reinício → nova leitura e limpeza do registro sintético próprio passou. Isso substitui a situação histórica de persistência em arquivo para esse console, mas não comprova convergência operacional completa. Recibos nativos estão indisponíveis e retornam 503 explícito; nenhuma migration 0011 foi aplicada. Estado, provas e limites de backup/recuperação estão em `MOOCA_POSTGRES_CONVERGENCIA_2026-10-26.md`.
 
 Trata-se de atualização de componentes do ensaio sobre o núcleo `be5a3e3`, não de release integral. Os onze arquivos transferidos tiveram hashes conferidos e os arquivos anteriores foram preservados em `backup-copiloto-source-20261026`, no diretório protegido do ensaio. Somente o processo conhecido do piloto foi reiniciado. O PostgreSQL, a plataforma interna, o leitor, as permissões de rede e o GPS não sofreram alteração. A prova e os hashes estão em `evidencias/mooca-local-2026-10-26/copiloto-source-status-proof.json`. A navegação pela URL pública autenticada da nova tela ainda não foi revalidada por César.

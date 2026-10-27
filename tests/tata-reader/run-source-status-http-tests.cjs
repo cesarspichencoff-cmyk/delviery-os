@@ -36,7 +36,7 @@ async function call(token,method='GET',route='/api/copiloto/source'){
     fs.writeFileSync(bindingPath,JSON.stringify(binding));
   });
   const config=JSON.parse(fs.readFileSync('config/entregas-pilot.example.json','utf8'));
-  config.mode='test';config.bind='127.0.0.1';config.data_dir=path.join(root,'data');
+  config.mode='test';config.source_mode='simulated';config.bind='127.0.0.1';config.data_dir=path.join(root,'data');
   config.users=[{actor_id:'lab-manager',role:'gerente',label:'Synthetic manager',token:'synthetic-manager'},
     {actor_id:'lab-rider',role:'motoboy_interno',label:'Synthetic rider',token:'synthetic-rider'}];
   config.backup.auto_interval_minutes=600;
@@ -73,6 +73,21 @@ async function call(token,method='GET',route='/api/copiloto/source'){
     const health=JSON.parse((await call(null,'GET','/api/health')).body);
     assert.equal(health.copiloto,false);assert.equal(health.copiloto_source_status,true);assert.equal(health.gps_production,false);
   });
+  await test('Copiloto lab summary reads the same queue and hides order content',async()=>{
+    const route='/api/copiloto/lab-storage';
+    assert.equal((await call(null,'GET',route)).status,401);
+    const forged=await fetch(base+route,{headers:{'X-NetBird-User':'synthetic-manager@example.invalid','X-NetBird-Groups':'gerente'}});
+    assert.equal(forged.status,401);
+    assert.equal((await call('synthetic-rider','GET',route)).status,403);
+    assert.equal((await call('synthetic-manager','POST',route)).status,405);
+    assert.equal((await call('synthetic-manager','GET',route+'?unit_id=OTHER')).status,400);
+    const added=await fetch(base+'/api/ready-order',{method:'POST',headers:{Authorization:'Bearer synthetic-manager','Content-Type':'application/json'},
+      body:JSON.stringify({order_ref:'SYNTHETIC_PRIVATE_REF',label:'PRIVATE_SENTINEL',channel:'proprio'})});
+    assert.equal((await added.json()).ok,true);
+    const r=await call('synthetic-manager','GET',route),lab=JSON.parse(r.body);
+    assert.equal(lab.ready_queue_records,1);assert.equal(lab.scope,'LAB_SIMULATED_ONLY');assert.equal(lab.operational_order_total,null);
+    assert.equal(r.body.includes('PRIVATE_SENTINEL'),false);assert.equal(r.body.includes('SYNTHETIC_PRIVATE_REF'),false);
+  });
   if(process.argv.includes('--browser')) {
     const {chromium}=require('playwright');const browser=await chromium.launch({headless:true});
     try {for(const width of [390,1440]) await test('browser session, blocked status, refresh and width '+width,async()=>{
@@ -92,6 +107,19 @@ async function call(token,method='GET',route='/api/copiloto/source'){
       }finally{await page.close();}
     });}finally{await browser.close();}
   }
+  await test('lab summary refuses real, control, unknown and non-test configurations',async()=>{
+    for(const variant of [{mode:'test',source_mode:'real'},{mode:'test',source_mode:'control'},
+        {mode:'test',source_mode:undefined},{mode:'pilot',source_mode:'simulated'}]) {
+      child.kill();await new Promise(resolve=>child.once('exit',resolve));
+      const next={...config,...variant};fs.writeFileSync(path.join(root,'pilot.json'),JSON.stringify(next));
+      child=spawn(process.execPath,['dist/tools/entregas_pilot_server.js'],{env,stdio:['ignore','ignore','ignore']});
+      let up=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/health')).ok){up=true;break}}catch{}
+        if(child.exitCode!==null)break;await new Promise(r=>setTimeout(r,100));}
+      assert(up,'variant server failed');
+      const r=await call('synthetic-manager','GET','/api/copiloto/lab-storage');
+      assert.equal(r.status,403);assert.equal(JSON.parse(r.body).code,'simulated_lab_only');
+    }
+  });
   console.log(`SOURCE_STATUS_HTTP_PASS ${passed}`);
 }finally{
   if(child&&child.exitCode===null){child.kill();await new Promise(resolve=>child.once('exit',resolve));}

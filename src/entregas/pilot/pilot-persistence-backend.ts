@@ -20,6 +20,7 @@ export interface PilotPersistenceBackend {
   readonly storage: PilotUnitOfWorkSource;
   readonly ready_orders: PilotReadyOrderStore;
   readonly database_role?: string;
+  readonly native_inbound_receipts: { available: boolean; reason: string | null };
   close(): Promise<void>;
 }
 
@@ -65,17 +66,18 @@ function parseSsl(env: NodeJS.ProcessEnv, url: string): boolean | undefined {
 async function preflightPostgres(
   client: Awaited<ReturnType<typeof createPgClient>>,
   unitId: string,
-): Promise<string> {
+): Promise<{ role: string; receipts: PilotPersistenceBackend["native_inbound_receipts"] }> {
   const roleRows = await client.query<{
     current_user: string;
     rolsuper: boolean;
     rolcreaterole: boolean;
     rolcreatedb: boolean;
+    rolbypassrls: boolean;
   }>(
     `SELECT current_user,
             r.rolsuper,
             r.rolcreaterole,
-            r.rolcreatedb
+            r.rolcreatedb, r.rolbypassrls
        FROM pg_roles r
       WHERE r.rolname = current_user`,
   );
@@ -88,7 +90,7 @@ async function preflightPostgres(
       `papel PostgreSQL recusado: ${role.current_user}; esperado deliveryos_entregas_pilot`,
     );
   }
-  if (role.rolsuper || role.rolcreaterole || role.rolcreatedb) {
+  if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolbypassrls) {
     throw new Error("papel do piloto tem autoridade administrativa indevida");
   }
 
@@ -174,7 +176,13 @@ async function preflightPostgres(
     throw new Error("papel PostgreSQL do piloto pode alterar schema_migration; autoridade excessiva");
   }
 
-  return role.current_user;
+  const [receipt] = await client.query<{ present: boolean }>(
+    "SELECT to_regclass('entregas.inbound_receipt') IS NOT NULL AS present",
+  );
+  // This shared role is not a per-unit receipt authority. Do not grant it
+  // broad receipt access merely to make native sync appear functional.
+  return { role: role.current_user, receipts: { available: false,
+    reason: receipt?.present ? "unit_bound_receipt_authority_required" : "receipt_schema_missing" } };
 }
 
 export async function createPilotPersistenceBackend(args: {
@@ -189,6 +197,7 @@ export async function createPilotPersistenceBackend(args: {
     return {
       kind,
       multi_instance: false,
+      native_inbound_receipts: { available: true, reason: null },
       storage: createFilePilotUnitOfWorkSource(join(args.data_dir, "store.json")),
       ready_orders: createFilePilotReadyOrderStore(
         join(args.data_dir, "ready_orders.json"),
@@ -217,7 +226,7 @@ export async function createPilotPersistenceBackend(args: {
   });
 
   try {
-    const role = await preflightPostgres(client, args.unit_id);
+    const preflight = await preflightPostgres(client, args.unit_id);
     const storage: PilotUnitOfWorkSource = {
       kind: "external",
       open: () => new PgEntregasUnitOfWork(client, args.unit_id),
@@ -227,7 +236,8 @@ export async function createPilotPersistenceBackend(args: {
       multi_instance: true,
       storage,
       ready_orders: new PgPilotReadyOrderStore(client, args.unit_id),
-      database_role: role,
+      database_role: preflight.role,
+      native_inbound_receipts: preflight.receipts,
       close: () => client.close(),
     };
   } catch (e) {

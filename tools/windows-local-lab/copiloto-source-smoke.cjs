@@ -24,6 +24,14 @@ async function main(){
   const health=await(await check('health',null,'GET','/api/health')).json();
   assert.equal(health.copiloto,false);assert.equal(health.copiloto_source_status,true);
   assert.equal(health.gps_production,false);assert.equal(health.term_publishable,false);
+  await check('lab_summary_anonymous_denied',null,'GET','/api/copiloto/lab-storage',401);
+  const lab=await(await check('lab_summary_manager',manager.token,'GET','/api/copiloto/lab-storage')).json();
+  assert.equal(lab.scope,'LAB_SIMULATED_ONLY');assert.equal(lab.source_mode,'simulated');
+  assert.equal(lab.storage_backend,health.storage_backend);assert.equal(lab.operational_order_total,null);
+  if(health.storage_backend==='postgres'){
+    assert.equal(health.native_inbound_receipts.available,false);
+    await check('native_sync_explicitly_unavailable',manager.token,'POST','/api/events/batch',503);
+  }
   const {chromium}=require(path.join(root,'app/node_modules/playwright'));
   const browser=await chromium.launch({headless:true,channel:'msedge'});
   try {for(const width of [390,1440]){
@@ -41,6 +49,8 @@ async function main(){
       assert((await page.locator('#sample').innerText()).includes('sem garantia de atualidade'));
       assert.equal(await page.locator('#weekly tbody tr').count(),7);
       assert((await page.locator('#weekly').innerText()).includes('16:30'));
+      assert.equal(await page.locator('#lab-storage').isVisible(),true);
+      assert((await page.locator('#lab-storage').innerText()).includes('Dados simulados'));
       await page.getByRole('button',{name:'Verificar novamente'}).click();
       await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
       results.push({name:'browser_'+width,pass:true});
@@ -49,7 +59,8 @@ async function main(){
   const receipt={observedAtUtc:new Date().toISOString(),scope:'HOST_HTTP_AND_NEW_HEADLESS_BROWSER_NOT_PUBLIC_PROXY_PROOF',
     results,sourceState:data.state,sampledFiles:data.preview.sampledFiles,
     producerBlocksDownstream:data.preview.producerBlocksDownstream,
-    serviceState:data.preview.serviceState,servicePolicy:data.preview.servicePolicy,ordersEnabled:false,gpsEnabled:false};
+    serviceState:data.preview.serviceState,servicePolicy:data.preview.servicePolicy,labStorage:lab,
+    storageBackend:health.storage_backend,nativeInboundReceipts:health.native_inbound_receipts,ordersEnabled:false,gpsEnabled:false};
   fs.writeFileSync(path.join(root,'copiloto-source-proof.json'),JSON.stringify(receipt,null,2));
   console.log('COPILOTO_SOURCE_HOST_PASS',JSON.stringify(receipt));
 }
