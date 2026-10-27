@@ -1,0 +1,103 @@
+"use strict";
+/**
+ * TATÁ Comandas — virtual print cutover review V1.
+ * Pure architecture assessment, NOT interception, no host/driver/spooler API.
+ * Windows NUL means PAPER SINK only: never an authenticated order trigger.
+ * Claims from a caller are not independently attested by this module.
+ */
+const SCHEMA="tata.comandas.legacy-output-cutover-review.v1";
+const ORIGINS=["TEKNISA","IFOOD_GESTOR"];
+const EFFECTS=Object.freeze({read_host:false,read_spooler:false,
+ read_print_job:false,print:false,reprint:false,install:false,deploy:false,
+ change_printer:false,change_port:false,change_queue:false,clear_queue:false,
+ change_service:false,change_teknisa:false,change_ifood:false,
+ sql_read:false,sql_write:false,sequence_allocate:false,sequence_write:false,
+ filesystem_write:false,network:false,fiscal:false});
+const HEX=/^[0-9a-f]{64}$/i;
+function result(stage,status,reasons,extra={}){
+ return {schema:SCHEMA,stage,status,reasons:[...new Set(reasons)].sort(),
+  legacy_printers_changed:false,legacy_paper_suppressed_proven:false,
+  virtual_output_is_an_order_trigger:false,
+  old_print_completed_implies_new_print_completed:false,
+  live_order_ingress_proven:false,source_disabling_proven:false,
+  new_emitter_exclusive_proven:false,roll_back_executed:false,
+  paper_proven:false,customer_facing_cutover_authorized:false,
+  installation_authorized:false,can_activate:false,
+  effects:EFFECTS,...extra};
+}
+function checkSource(s){
+ if(!s||typeof s!=="object"||Array.isArray(s)||
+  !ORIGINS.includes(s.origin)||
+  !["WINDOWS_QUEUE","DIRECT_PRINTER","APP_LEVEL","UNKNOWN"].includes(s.path)||
+  !["KEEP_LEGACY","UPSTREAM_PRINT_OFF","WINDOWS_NUL_REDIRECT"].includes(s.proposed_legacy_action)||
+  !["OBSERVED_ROUTE_CANDIDATE","UNVERIFIED"].includes(s.route_evidence)||
+  typeof s.route_ref!=="string"||!s.route_ref||s.route_ref.length>256||
+  typeof s.has_other_unobserved_output!=="boolean")return "LEGACY_SOURCE_SCHEMA_INVALID";
+ if(s.proposed_legacy_action==="WINDOWS_NUL_REDIRECT"&&
+  s.path!=="WINDOWS_QUEUE")return "NUL_DOES_NOT_INTERCEPT_NON_WINDOWS_OUTPUT";
+ if(s.proposed_legacy_action==="WINDOWS_NUL_REDIRECT"&&
+  s.has_other_unobserved_output)return "NUL_CANNOT_SUPPRESS_OTHER_PRINT_PATH";
+ if(s.proposed_legacy_action==="KEEP_LEGACY")return "OLD_PHYSICAL_OUTPUT_REMAINS_ACTIVE";
+ if(s.route_evidence!=="OBSERVED_ROUTE_CANDIDATE")
+  return "LEGACY_PATH_NOT_OBSERVED";
+ if(s.has_other_unobserved_output)return "UNOBSERVED_LEGACY_PRINT_PATH";
+ return null;
+}
+function isProof(p){
+ return p&&typeof p==="object"&&!Array.isArray(p)&&
+  p.status==="CANDIDATE_EVIDENCE"&&typeof p.evidence_ref==="string"&&
+  p.evidence_ref.length>6&&p.evidence_ref.length<=256&&
+  typeof p.snapshot_sha256==="string"&&HEX.test(p.snapshot_sha256);
+}
+function reviewLegacyPrintCutover(input){
+ const stage=input?.stage??"UNKNOWN";
+ if(!input||typeof input!=="object"||Array.isArray(input)||
+  !["SHADOW","PREPARE_CUTOVER","RECOVERY_REVIEW"].includes(stage)||
+  input.store_id!=="0001"||input.store_unit!=="01"||
+  !Array.isArray(input.legacy_sources)||input.legacy_sources.length!==2)
+  return result(stage,"HOLD",["COVERAGE_OR_STAGE_INVALID"]);
+ const byOrigin=new Map();
+ const invalid=[];
+ for(const s of input.legacy_sources){
+  if(byOrigin.has(s?.origin))invalid.push("DUPLICATE_ORIGIN");
+  const v=checkSource(s);
+  if(v)invalid.push(s?.origin&&ORIGINS.includes(s.origin)?
+    s.origin+":"+v:v);
+  if(ORIGINS.includes(s?.origin))byOrigin.set(s.origin,s);
+ }
+ for(const o of ORIGINS)if(!byOrigin.has(o))invalid.push(o+":SOURCE_COVERAGE_MISSING");
+ if(invalid.length)return result(stage,"HOLD",invalid);
+ if(stage==="SHADOW")return result(stage,"SHADOW_SAFE_REVIEW_ONLY",
+  ["LEGACY_OUTPUT_NOT_CHANGED","TATA_NEW_PHYSICAL_OUTPUT_MUST_REMAIN_DISABLED"],{
+  cutover_gates_not_evaluated:true});
+ const proof=input.proofs;
+ const reasons=[];
+ if(!proof||typeof proof!=="object"||Array.isArray(proof))
+  reasons.push("INDEPENDENT_PROOF_SET_MISSING");
+ else{
+  for(const k of ["native_reader_order_revision","native_first_print_trigger",
+   "station_window_catalog","tata_sequence_persisted_and_readback",
+   "new_printer_route_calibration","independent_source_coexistence",
+   "legacy_source_path_census","rollback_snapshot_and_reconciliation"]){
+   if(!isProof(proof[k]))reasons.push("PROOF_MISSING_OR_INVALID:"+k);
+  }
+ }
+ // Source coverage and confirmed route-to-sink are never implied by one
+ // Windows "Printed" status or by past Gestor print being disabled.
+ if(input.legacy_sources.some(s=>s.proposed_legacy_action==="WINDOWS_NUL_REDIRECT"))
+  reasons.push("WINDOWS_NUL_DISCARDS_BYTES_NOT_ORDER_IDENTITY");
+ if(stage==="RECOVERY_REVIEW"){
+  reasons.push("MANUAL_ROLLBACK_AND_DUPLICATE_RECONCILIATION_REQUIRED");
+  return result(stage,"HOLD",reasons);
+ }
+ if(reasons.length)return result(stage,"HOLD",reasons);
+ // Even complete synthetic proofs cannot confer host authority, printer
+ // ownership, data custody, or actual observed duplicate-free operation.
+ return result(stage,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION",
+  ["SUPPLIED_PROOFS_ARE_NOT_INDEPENDENTLY_ATTESTED",
+   "SEPARATE_HUMAN_APPROVAL_AND_PHYSICAL_PILOT_REQUIRED"],{
+   selected_legacy_actions:ORIGINS.map(o=>({
+    origin:o,proposed_action:byOrigin.get(o).proposed_legacy_action}))
+  });
+}
+module.exports={reviewLegacyPrintCutover,SCHEMA,EFFECTS,ORIGINS};
