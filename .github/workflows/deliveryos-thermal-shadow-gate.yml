@@ -99,6 +99,8 @@ jobs:
         run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
       - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
         run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
+      - name: TATA Comanda Itaim window and station selective shadow route (no print)
+        run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
         run: node tools/verificar_production_print_plan_v1.js
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
@@ -388,6 +390,8 @@ jobs:
         run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
       - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
         run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
+      - name: TATA Comanda Itaim window and station selective shadow route (no print)
+        run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
         run: node tools/verificar_production_print_plan_v1.js
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
