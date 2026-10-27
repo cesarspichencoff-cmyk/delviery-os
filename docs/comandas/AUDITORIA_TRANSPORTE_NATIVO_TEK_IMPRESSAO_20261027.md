@@ -26,6 +26,25 @@ O ramo ponte tem **prioridade** quando está ativo, independentemente do segundo
 
 Este documento **não afirma** que `ImpressaoPedido.php` seja o primeiro evento disparador de produção para `DLV_IFO`; o elo pedido iFood → tentativa de impressão precisa de prova independente. Nem o caminho do Gestor iFood foi atestado. A documentação relata que em 25/10 sua impressão estava desligada, sem prova atual de configuração ou outras saídas.
 
+## Novo achado: a ponte Odhen Periféricos possui backend de Epson separado
+
+A inspeção limitada a **arquivos de código** do diretório instalado `C:\TEKNISA\odhen-perifericos` encontrou:
+
+| Arquivo | SHA-256 observado | Fato |
+|---|---|---|
+| `routes/imp.js` | `F1B8F3AFCEFE422B5D564B1189736525444BB7938B891E5CD035EC9A36D7C726` | Declara `router.post('/print')` e entrega `printerInfo` + comandos a `saveItemRequest` |
+| `src/IMP/index.js` | `6DB48BF3BD8BEBB287785DC30E7ECC4576BBF14E22AC66428C37990C8E089DCC` | Guarda a solicitação em uma fila própria `dbModel.saveItem`, cria trabalho por porta e prevê impressora de backup |
+| `src/IMP/PrinterLibraryHandler.js` | `6F1EE69D09DB44714530C47CE236B782FC4539031462C82B373FDAE2BF1B4771` | Seleciona backend por marca: **Epson usa `LibraryBridge.getLibrary('epson', ...)`**, enquanto outras marcas podem usar `SpoolerLibrary` |
+| `src/util/SpoolerLibrary.js` | `BDB698F02B50CCAE112BF95B12A35936A6C061F9B0D5647E5B0F6F740D334D3C` | Contém acesso ao spooler via `winspool` para modelos que utilizam esse backend |
+
+O `src/IMP/PrinterLibraryHandler.js` chama `epsonLibrary.IniciaPorta(porta)` para o ramo Epson. Isso **não prova** que a DLL nunca utilize o spooler internamente, mas **também não prova** que os trabalhos sejam interceptáveis por uma fila Windows alterada para `NUL`. Logo, a presença das filas Windows no host **não autoriza a virtualização dessas Epson**.
+
+A configuração de impressoras documentada na Teknisa para o Itaim (capturada em 30/09) lista **Epson TM-T20** nos destinos de produção `00002`, `00003`, `00004`, `00006`, `00007` e `00009`. Essa configuração histórica não atesta que os processos de impressão em outubro vieram da ponte ou usaram seu ramo Epson, apenas torna a hipótese de **backend nativo** material.
+
+**Correção fail-closed:** `comandas_teknisa_transport_census_v1_offline.cjs` agora exige distinguir `EPSON_VENDOR_DLL`, `WINDOWS_WINSPOOL_API` e `UNKNOWN` quando se propõe desviar para `NUL` um fluxo vindo da ponte. Epson nativo = **HOLD**, até prova de que a própria DLL e a rota do pedido passam pela fila cuja porta mudaria. Backend não identificado = **HOLD**. Mesmo o Windows spooler declarado por fixture é apenas candidato, sem autoridade de implantação.
+
+Testes adversariais ampliados: **23/23 pré-voo de transporte** e **33/33 contrato de substituição** em clone descartável Foxxy no commit `0ddb5e0beaa2c4dacd682d67c56ffcfa1e25de31`. Não foi lido conteúdo de pedidos, logs de clientes, chaves, certificados, senha, payload `/print` ou fila de impressões nesta rodada.
+
 ## Alteração efetivamente codificada
 
 O módulo puro `tools/comandas_teknisa_transport_census_v1_offline.cjs` agora verifica **declarações de revisão** de:
@@ -43,8 +62,8 @@ O módulo `tools/comandas_legacy_virtual_cutover_review_v1_offline.cjs` passou a
 
 ## Evidências de teste
 
-- `tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs`: **20/20 PASS**, três modos, tipagem, flags ausentes, destinos diretos, HTTP/Delphi sem prova da fila downstream, snapshots inválidos e `NUL` jamais sendo gatilho.
-- `tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs`: **32/32 PASS** após integração: transição em sombra, duas origens independentes, nenhuma desativação fiscal, provas ausentes e incompatibilidade entre modo nativo e proposta de desvio.
+- `tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs`: **23/23 PASS**, três modos, tipagem, flags ausentes, destinos diretos, HTTP/Delphi sem prova da fila downstream, snapshots inválidos e `NUL` jamais sendo gatilho.
+- `tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs`: **33/33 PASS** após integração: transição em sombra, duas origens independentes, nenhuma desativação fiscal, provas ausentes e incompatibilidade entre modo nativo e proposta de desvio.
 - Execução no **Foxxy em clone descartável**, commit `05426dbd2ac962526b73c7c37b8934d925f3fa9d`, `OFFLINE_TRANSPORT_REGRESSION=SUCCESS`, sem execução operacional no caixa.
 - Os dois scripts foram incluídos no workflow Linux/Windows; **não declarar CI integral até sucesso no HEAD exato**.
 
