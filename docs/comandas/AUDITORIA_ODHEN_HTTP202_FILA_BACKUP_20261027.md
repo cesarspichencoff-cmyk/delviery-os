@@ -1,14 +1,16 @@
-# Odhen Periféricos — confirmação HTTP 202 e impressora reserva
+# Odhen Periféricos — campo JSON status 202, fila e impressora reserva
 
 **27/10/2026 · TATÁ Comandas · PR #127 · inspeção somente de código instalado na CAIXA_MOOCA**
 
 ## Descoberta material
 
-A ponte Odhen de impressão mantém uma fila própria e reconhece o recebimento de solicitações antes de existir confirmação de papel físico. Além disso, o worker pode encaminhar determinados trabalhos a **outra impressora, de backup**, caso haja erro ou timeout. O projeto não pode tratar `/print = 202` como impresso nem considerar suprimida uma comanda antiga apenas porque sua primeira impressora foi neutralizada.
+**Precisão de protocolo:** a função examinada usa `res.json(response)` com um campo `status: 202`; ela **não chama `res.status(202)`** nesse trecho. O status HTTP efetivo depende do servidor/middleware e não foi medido. Não declarar que a resposta tem HTTP status 202.
+
+A ponte Odhen de impressão mantém uma fila própria e reconhece o recebimento de solicitações antes de existir confirmação de papel físico. Além disso, o worker pode encaminhar determinados trabalhos a **outra impressora, de backup**, caso haja erro ou timeout. O projeto não pode tratar `/print` retornou `status: 202` no JSON como impresso nem considerar suprimida uma comanda antiga apenas porque sua primeira impressora foi neutralizada.
 
 ## Evidência localizada e limites
 
-- `C:\TEKNISA\odhen-perifericos\routes\imp.js:10–45` — `router.post('/print')` valida o modelo/porta, chama `printer.saveItemRequest(printerInfo, req.body.commands)` e responde com `status: 202` e mensagem `Impressao salva com sucesso`. Esse retorno provém da **submissão para armazenamento/fila interna**, não da verificação de saída de papel.
+- `C:\TEKNISA\odhen-perifericos\routes\imp.js:10–45` — `router.post('/print')` valida o modelo/porta, chama `printer.saveItemRequest(printerInfo, req.body.commands)` e responde pelo método `res.json(...)` com o campo `status: 202` e mensagem `Impressao salva com sucesso`. Esse retorno provém da **submissão para armazenamento/fila interna**, não da verificação de saída de papel.
 - `src/IMP/index.js:90–113` — `saveItemRequest` registra `printerInfo.commands`, `date`, `servico` e opção `printerInfo.impBackup`, e chama `dbModel.saveItem`. A descrição/identidade do pedido iFood e a primeira via **não são atestadas por esse trecho**.
 - `src/IMP/index.js:114–125` — quando `impBackup` existe, `enviaDocImpBackup` cria destino alternativo e envia `process.send({cmd:'enviaDocImpBackup', ...})`. O destino de backup real da unidade **não foi lido nem comprovado**.
 - `src/IMP/index.js:156–220` — o worker usa `printCommands`, remove da fila após resolução, marca `ERROR` em falhas e pode chamar `enviaDocImpBackup` quando o item com erro persistente é retirado (linhas 171–180) ou quando expira o timeout ao tentar abrir a porta (linhas 203–218). Os ramos que encaminham backup estão presentes no **código instalado**. Isso não prova quantos foram executados no período.
