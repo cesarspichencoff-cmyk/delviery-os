@@ -11,6 +11,8 @@ const {projectExpectedRouting}=
  require("../dist/src/shadow/expectedRouting.js");
 const {planProductionPrintIntents}=
  require("../dist/src/production/productionPrintPlan.js");
+const {decideProductionPrintSubmission}=
+ require("../dist/src/production/productionPrintIdempotency.js");
 const load=p=>JSON.parse(fs.readFileSync(path.join(__dirname,"..",p),"utf8"));
 const routing=load("data/odhen_product_routing_compact_v1.json");
 const printers=load("data/runtime_printer_map_v1.json");
@@ -79,6 +81,19 @@ for(const pair of PAIRS){
   "unrelated kitchen route remains visible, NEVER ready to print");
  retainedOthers++;
 }
+const sourceFingerprint=plan(["00009"],"LUNCH").print_intents[0].intent_fingerprint;
+const alteredServiceFingerprint=plan(["00009"],"DINNER").print_intents[0].intent_fingerprint;
+const noServiceFingerprint=plan(["00009"],null).print_intents[0].intent_fingerprint;
+assert.equal(sourceFingerprint,alteredServiceFingerprint);
+assert.equal(sourceFingerprint,noServiceFingerprint);
+assert.equal(decideProductionPrintSubmission(alteredServiceFingerprint,[{
+ intent_fingerprint:sourceFingerprint,attempt_id:"SYNTHETIC_PRIOR_ATTEMPT",
+ state:"SUBMISSION_RETURNED_UNOBSERVED"
+}]).decision,"BLOCK_RECONCILIATION_REQUIRED",
+ "changing only meal label must not turn an ambiguous prior attempt into a fresh submission");
+const differentDestinationFingerprint=plan(["00003"],null).print_intents[0].intent_fingerprint;
+assert.notEqual(sourceFingerprint,differentDestinationFingerprint,
+ "different printer destination must keep a distinct production intent");
 const fakeOverride=plan(["00009","00003"],"DINNER");
 assert.equal(fakeOverride.ready_for_shadow_payload,false,
  "a human-entered lunch/dinner label cannot independently attest printer roles");
