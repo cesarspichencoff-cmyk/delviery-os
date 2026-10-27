@@ -101,6 +101,8 @@ jobs:
         run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
       - name: TATA Comanda Itaim window and station selective shadow route (no print)
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
+      - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
+        run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
@@ -394,6 +396,8 @@ jobs:
         run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
       - name: TATA Comanda Itaim window and station selective shadow route (no print)
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
+      - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
+        run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
