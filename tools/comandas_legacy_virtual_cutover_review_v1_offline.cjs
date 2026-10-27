@@ -81,7 +81,8 @@ function reviewLegacyPrintCutover(input){
   for(const k of ["native_reader_order_revision","native_first_print_trigger",
    "station_window_catalog","tata_sequence_persisted_and_readback",
    "new_printer_route_calibration","independent_source_coexistence",
-   "legacy_source_path_census","rollback_snapshot_and_reconciliation"]){
+   "legacy_source_path_census","fiscal_and_other_reports_isolated",
+   "rollback_snapshot_and_reconciliation"]){
    if(!isProof(proof[k]))reasons.push("PROOF_MISSING_OR_INVALID:"+k);
   }
  }
