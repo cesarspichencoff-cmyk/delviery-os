@@ -51,6 +51,26 @@ test("same revision replay not double counted",()=>{
  assert.equal(r.repeated_snapshot_rows,1);
  assert.deepEqual(r.status_revisions,safe(analyze(data)).status_revisions);
 });
+test("nonconsecutive reappearance of the same snapshot is ambiguous, not a proved reversal",()=>{
+ const first=row("ABA","3",1,1),middle=row("ABA","P",2,2);
+ const stale={...first,observed_at:"2026-10-26T12:00:03-03:00"};
+ const ordered=safe(analyze([first,middle,stale]));
+ assert.equal(ordered.status,"HOLD");
+ assert.deepEqual(ordered.reasons,[
+  "NONCONSECUTIVE_SNAPSHOT_REAPPEARANCE_AMBIGUOUS"]);
+ const reversed=safe(analyze([stale,middle,first]));
+ assert.deepEqual(reversed.reasons,ordered.reasons);
+});
+test("consecutive repetition of one snapshot remains deduplicated without inventing transitions",()=>{
+ const first=row("REPEAT","3",1,1);
+ const retry={...first,observed_at:"2026-10-26T12:00:02-03:00"};
+ const second=row("REPEAT","P",2,3);
+ const r=safe(analyze([second,retry,first]));
+ assert.equal(r.status,"EVIDENCE_ONLY_REVIEW");
+ assert.equal(r.repeated_snapshot_rows,1);
+ assert.deepEqual(r.status_revisions,{"3":1,P:1});
+ assert.deepEqual(r.transitions,{"3 -> P":1});
+});
 test("different status on same fingerprint blocks",()=>{
  const corrupt={...data[0],status:"P"};
  assert.deepEqual(safe(analyze([...data,corrupt])).reasons,
