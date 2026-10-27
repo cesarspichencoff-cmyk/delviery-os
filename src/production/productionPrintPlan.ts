@@ -266,7 +266,7 @@ function selectTargetsForService(
 
 function normalizedPrepComponents(
   components: ProductionTicketItemMetadata["prep_components"],
-): string {
+): Array<Array<string | number>> {
   return [...(components ?? [])]
     .map((component) => [
       clean(component.component_key),
@@ -274,9 +274,8 @@ function normalizedPrepComponents(
       Number(component.quantity),
       clean(component.unit),
       component.proof,
-    ].join("~"))
-    .sort()
-    .join("|");
+    ])
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 }
 
 function stableSemanticKeyMaterial(input: {
@@ -291,36 +290,35 @@ function stableSemanticKeyMaterial(input: {
   orderObservations: string[];
   lines: PlannedProductionLine[];
 }): string {
-  const lines = input.lines
-    .map((line) => [
-      line.item_index,
-      line.product_code ?? "",
-      line.product_name,
-      line.quantity,
-      line.mount_group_id ?? "",
-      line.box_label ?? "",
-      line.item_observations.join(" | "),
-      normalizedPrepComponents(line.prep_components),
-    ].join("~"))
-    .join("||");
+  // V3 replaces delimiter joins: user notes, product names and component
+  // labels may legitimately contain ~, | and ::. The V2 join could make
+  // different semantic tickets share one fingerprint and suppress a revision.
+  // This version is deliberately incompatible with any historical V2 key.
+  const lines = input.lines.map((line) => [
+    line.item_index,
+    line.product_code,
+    line.product_name,
+    line.quantity,
+    line.mount_group_id,
+    line.box_label,
+    [...line.item_observations],
+    normalizedPrepComponents(line.prep_components),
+  ]);
 
-  return [
-    "production-ticket-v2",
+  // The service label is not a proven print route or content revision.
+  // It must not change the intent identity for otherwise identical tickets.
+  return JSON.stringify([
+    "production-ticket-v3-canonical-json",
     input.orderId,
-    input.target.printer_code,
-    input.target.printer_name,
-    input.target.printer_ip,
+    [input.target.printer_code, input.target.printer_name, input.target.printer_ip],
     input.templateVersion,
-    // Service metadata is NOT a proven physical destination or a ticket
-    // content revision. A shift-label edit must not change the dedupe key for
-    // the SAME order, contents, route, origin and TATA sequence.
     input.ifoodSequence,
     input.teknisaSequence,
     input.tataSequence,
-    input.orderTime ?? "",
-    input.orderObservations.join(" | "),
+    input.orderTime,
+    [...input.orderObservations],
     lines,
-  ].join("::");
+  ]);
 }
 
 function fingerprintSemanticIntent(material: string): string {
