@@ -2,6 +2,16 @@
 
 **Data da apuração:** 27/10/2026. **Fonte de projeto:** `cesarspichencoff-cmyk/delviery-os`, PR #127, branch `audit/comandas-shift-contract-20261026`. **Situação:** OPEN/DRAFT/HOLD, sem integração operacional da candidata, sem impressão, sem novas gravações de sequência. Este documento descreve o projeto **TATÁ Comandas**, não avalia separadamente todo o GPS, motoboys ou copiloto do Delivery OS.
 
+## Errata operacional posterior: destino físico de sushi varia conforme janela comprovada
+
+A conclusão anterior de que nenhum par Balcão/Delivery deveria ser selecionado por serviço **foi retificada** após a orientação reiterada pela gestão e auditoria passiva da CAIXA_MOOCA. O dado humano válido é: no almoço as impressoras **Delivery Sushi 1 e 2 ficam desligadas**; os produtos de combinado e enrolados vão às respectivas praças Balcão, enquanto no jantar os destinos **Delivery Sushi 1 e 2** recebem as famílias indicadas; **enrolados quentes continuam no Balcão Sushi 2**, e combinado dupla tem exceção a preservar.
+
+Portanto, **não imprimir os dois membros de uma rota dupla** e também **não bloquear indefinidamente os dois como solução operacional final**. É preciso selecionar somente a praça em operação para a janela e produto, com a hora original da comanda e exceções comprovadas, sem aprovação diária manual e sem escolher pelo relógio atual do Windows. Evidência de janela não é prova de que a Epson esteja energizada ou apta a imprimir no segundo exato: conferir dados de serviço/estação com a operação.
+
+Na mesma inspeção, 1.086 trabalhos de `DELIVERY SUSHI 1` estavam **retidos com estado Printed**, porque o Windows tem `KeepPrintedJobs=true`; **204 foram submetidos à fila no período de almoço relatado**. Estes não são 204 pedidos distintos ou papéis desperdiçados provados, e tampouco são uma fila de 1.086 trabalhos pendentes. As outras filas têm retenção desativada, impedindo comparações ingênuas de contagem. Fonte detalhada: [auditoria revisada](AUDITORIA_REVALIDADA_IMPRESSORAS_E_JANELAS_20261027.md).
+
+A PR #127 ainda não contém seletor de janela/categoria homologado nem altera a configuração de impressoras; o guard conservador fica ativo por segurança. O objetivo passa a ser substituir o bloqueio genérico por roteamento seletivo **sem envio à fila inativa**, com provas em código e aceitação posterior, e nunca permitir impressão em todas. Esta errata prevalece sobre trechos históricos abaixo que concluíam não haver utilidade operacional da alternância por janela.
+
 ## 1. Leitura rápida: produto que se pretende entregar
 
 O projeto procura substituir uma rotina de comandas propensa a inconsistências por um conjunto de **três apresentações coordenadas do mesmo pedido**, de forma legível para a equipe, sem duplicar impressão nem criar um segundo cadastro manual:
