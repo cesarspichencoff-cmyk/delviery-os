@@ -147,6 +147,8 @@ jobs:
         run: node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
       - name: Sessao propria do operador com provedor simulado (LAB)
         run: node tests/tata-reader/run-neon-operator-session-tests.cjs
+      - name: Login e leitura de arquivo pelo motor TATA no HTTPS isolado (LAB)
+        run: node tests/tata-reader/run-operator-http-tests.cjs
       - name: Identidade e vinculo de operador antecedem leitura (LAB)
         run: node tests/tata-reader/run-operator-read-authority-tests.cjs
       - name: Arquivos TATA alimentam Copiloto com limites e sem fallback antigo (LAB)
@@ -159,6 +161,8 @@ jobs:
         run: npx tsx src/product/viewmodels/run-copiloto-celulas-v33-tests.ts
       - name: Instalar Chromium somente antes das provas de navegador
         run: npx playwright install --with-deps chromium
+      - name: Operador individual e pedidos no Chromium mobile/desktop (LAB)
+        run: node tests/tata-reader/run-operator-http-tests.cjs --browser
       - name: Tela da fonte do Copiloto com sessao e largura mobile/desktop
         run: node tests/tata-reader/run-source-status-http-tests.cjs --browser
       - name: Copiloto e Entregas no mesmo HTTP real + Chromium 390

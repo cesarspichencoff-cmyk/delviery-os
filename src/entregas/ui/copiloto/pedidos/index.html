@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pedidos · Copiloto Itaim</title><link rel="stylesheet" href="/copiloto/pedidos/app.css"><script src="/copiloto/pedidos/app.js" defer></script></head>
+<body><main>
+<header><span class="eyebrow">DELIVERY OS · ITAIM</span><div><button id="refresh">Atualizar leitura</button> <button id="logout" hidden>Sair</button></div></header>
+<h1>Leitura dos pedidos</h1><p class="intro">Copiloto em validação. A leitura ainda não confirma a fila completa, o despacho ou a entrega.</p>
+<p id="status" role="status" aria-live="polite">Verificando acesso…</p>
+<section id="access" hidden aria-labelledby="access-title"><h2 id="access-title">Acesso individual</h2>
+<form id="email-form"><label for="email">E-mail autorizado</label><input id="email" type="email" autocomplete="email" required maxlength="254"><button type="submit">Receber código</button></form>
+<form id="code-form" hidden><label for="otp">Código recebido por e-mail</label><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,10}" minlength="4" maxlength="10" required><button type="submit">Entrar</button></form></section>
+<section id="reading" hidden aria-labelledby="reading-title"><div class="heading"><h2 id="reading-title">Registros observados</h2></div><p id="coverage">Esta lista não representa o total de pedidos ativos.</p><div id="orders"></div></section>
+<footer>Somente leitura · Horário de São Paulo<br>Almoço: 11h–15h; sábado e domingo até 16h30. Jantar: 18h–23h.</footer>
+<noscript>Ative o JavaScript para acessar a leitura dos pedidos.</noscript>
+</main></body></html>
