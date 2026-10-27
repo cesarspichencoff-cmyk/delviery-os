@@ -78,6 +78,10 @@ Outro achado no arquivo instalado `vendor/odhen/api/src/Service/ImpressaoPedido.
 
 Módulo puro `tools/comandas_teknisa_native_print_mode_v1_offline.cjs` modela os condicionais dos quatro valores e exige identidade do callsite/escopo de `DLV_IFO` como alegação de revisão, sempre sem autoridade de mudança. `tools/verificar_comandas_teknisa_native_print_mode_v1_offline.cjs`: **18/18 PASS** em cópia descartável de desenvolvimento. Sua saída positiva é `REVIEW_CANDIDATE_ONLY`, **não** prova de que `N` já foi aplicado e não comando para alterar configuração. O workflow Linux/Windows foi ampliado para executar a suíte.
 
+**Integração no contrato de substituição:** `comandas_legacy_virtual_cutover_review_v1_offline.cjs` exige agora `teknisa_upstream_suppression` se a alternativa escolhida for `UPSTREAM_PRINT_OFF`. O caminho `IDIMPPEDPROD_N` precisa receber evidência de revisão coerente com a origem `DLV_IFO`, preservação de outras vendas e fiscal. Outras opções de configuração requerem prova própria de escopo. Uma simples string `UPSTREAM_PRINT_OFF`, `mode=S`, mudança global ou alegação fiscal falsa resultam em **HOLD**. O módulo de arquitetura **jamais concede autorização para aplicar `N` na loja**.
+
+As regressões locais após essa integração ficaram em **18/18 (modo nativo)**, **23/23 (transporte)** e **38/38 (substituição)** no commit `e2ab5d2554538dd5259ff8f122cd87b8bc501ab9`. O último número substitui o 33/33 anterior.
+
 **Próxima evidência que pode mudar a decisão:** localizar o callsite de **primeira impressão de produção do pedido iFood** e o parâmetro recebido naquele callsite; confirmar seu escopo sem ler payloads ou alterar banco/GP. Se a opção de `N` for realmente granular e reversível, ela pode dispensar completamente o driver virtual e reduzir custo/risco.
 
 ## Próximo passo comprovável e seu limite
