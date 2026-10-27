@@ -1,6 +1,16 @@
 # TATÁ Comanda — fechamento da auditoria de convergência VÉRTICE 2.2
 **26/10/2026 · Proveniência consolidada · REVIEW_ONLY / DRAFT / HOLD**
 
+## Correção de escopo operacional — 26/10/2026, prevalece sobre o histórico
+
+**As duas vias de produção permanecem.** Cada uma utiliza apenas a composição, a revisão, as observações e a classificação/rota derivadas da **Teknisa nativa**. **O cruzamento iFood × Teknisa acontece exclusivamente na via de conferência do caixa**. A ausência/divergência da fonte independente iFood não pode se tornar causa de bloqueio das duas vias de produção; já ausência de integridade nativa impede ambas e a conferência. O número curto iFood trazido no registro nativo pode ser exibido na produção sem executar qualquer comparação com exportação/GP externo.
+
+Os três layouts físicos previstos continuam: **produção 1 + produção 2 + conferência**. A comparação externa não é pré-condição global, e seu resultado não pode ser injetado como `GLOBAL_SOURCE_SEMANTIC_BLOCKED` das vias de produção. Em versão de laboratório, os identificadores das três projeções seguem coerentes porque derivam do mesmo registro nativo, mas isso é apenas integridade interna. **Fonte externa independente é dever somente da conferência.**
+
+Em 27/10, **não solicitar a ativação da impressão de comandas pelo Gestor iFood** para obter a comparação. Consultar/exportar por meio legítimo e limitado se for necessário; ligar a via impressa por si só não autentica composição e pode duplicar papel. Não atribuir a impressoras produção 1/2 uma alternância por turno sem prova. Nenhuma autorização física foi dada.
+
+Implementação/revisão: `docs/comandas/PILOTO_PEDIDO_REAL_CRITERIOS_ACEITE_20261026.md`, `tools/comandas_view_source_scope_v1_offline.cjs` e teste dedicado no CI Linux/Windows. A política é `EVIDENCE_ONLY`, sem deploy, alteração de SQL, seq. TATÁ, sistema de caixa ou impressora.
+
 ## Decisão humana que prevalece — NÃO reabrir turno
 César em 20/10 (documento `docs/COMANDAS_V843_TURNO_DERIVADO_DO_HORARIO_REVIEW_ONLY.md`): “O que muda a operação é o horário” e “Os horários vêm na comanda, não precisa se preocupar com isso”. **Não criar aprovação diária, nova tabela horária, autenticação de troca LUNCH/DINNER ou regra de seleção de impressoras derivada do relógio.** O horário deve permanecer fiel ao pedido. V8.48 desconfirmou que códigos A/B de impressora sejam pares alternativos por turno; na candidata V714, ambiguidades de destino geram `SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN`/`SUSHI2_DUAL_PRODUCTION_ROLE_UNPROVEN`, não impressão em ambos nem seleção inferida. Registros legados de `production-service-state.json` com validade antiga são obstáculos do pipeline legado, **não um requisito humano de novo autorizador**.
 
