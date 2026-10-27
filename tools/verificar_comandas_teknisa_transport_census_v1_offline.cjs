@@ -53,11 +53,27 @@ test("bridge HTTP /print with direct IP path cannot be caught by local Windows N
 });
 test("bridge HTTP with independently downstream mapped Windows queue is only candidate",()=>{
  const x=input(true,false);x.nul_target_is_downstream_bridge=true;
+ x.transport_destination.peripheral_backend="WINDOWS_WINSPOOL_API";
  candidate(x,"PONTE_HTTP_PRINT");
 });
 test("bridge has priority over PHP flag if both are true",()=>{
  const x=input(true,true);x.nul_target_is_downstream_bridge=true;
+ x.transport_destination.peripheral_backend="WINDOWS_WINSPOOL_API";
  candidate(x,"PONTE_HTTP_PRINT");
+});
+test("installed Epson vendor DLL cannot be presumed to feed Windows NUL",()=>{
+ const x=input(true,false);x.nul_target_is_downstream_bridge=true;
+ x.transport_destination.peripheral_backend="EPSON_VENDOR_DLL";
+ hold(x,"EPSON_NATIVE_LIBRARY_NOT_PROVEN_TO_USE_WINDOWS_NUL");
+});
+test("unknown peripheral print backend remains hold despite asserted queue route",()=>{
+ const x=input(true,false);x.nul_target_is_downstream_bridge=true;
+ x.transport_destination.peripheral_backend="UNKNOWN";
+ hold(x,"BRIDGE_PERIPHERAL_BACKEND_NOT_ATTESTED_AS_WINDOWS_SPOOLER");
+});
+test("missing peripheral backend also blocks NUL migration for bridge",()=>{
+ const x=input(true,false);x.nul_target_is_downstream_bridge=true;
+ hold(x,"BRIDGE_PERIPHERAL_BACKEND_NOT_ATTESTED_AS_WINDOWS_SPOOLER");
 });
 test("PHP fopen/fwrite with actual Windows queue is merely sink candidate",()=>{
  candidate(input(false,true),"PHP_PORT_WRITE");
