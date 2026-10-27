@@ -214,24 +214,33 @@ function validatedOrderObservations(
   return accepted;
 }
 
+function calibrationClaimPresent(value: string): boolean {
+  const normalized = clean(value).toUpperCase();
+  return normalized.length > 0 && normalized !== "UNKNOWN";
+}
+
 function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
   const c = entry.calibration;
   return (
-    clean(c.actual_device_variant) !== "UNKNOWN" &&
+    calibrationClaimPresent(c.actual_device_variant) &&
     typeof c.actual_media_width_mm === "number" &&
+    Number.isFinite(c.actual_media_width_mm) &&
+    c.actual_media_width_mm > 0 &&
     typeof c.printable_width_dots === "number" &&
-    clean(c.transport_selected) !== "UNKNOWN" &&
-    clean(c.character_mode) !== "UNKNOWN" &&
-    clean(c.accent_test) !== "UNKNOWN" &&
-    clean(c.cutter_test) !== "UNKNOWN" &&
-    clean(c.feed_after_cut_test) !== "UNKNOWN" &&
-    clean(c.bold_double_size_legibility) !== "UNKNOWN" &&
-    clean(c.density_legibility) !== "UNKNOWN" &&
-    clean(c.paperout_observation) !== "UNKNOWN" &&
-    clean(c.cover_open_observation) !== "UNKNOWN" &&
-    clean(c.offline_observation) !== "UNKNOWN" &&
-    clean(c.spooler_job_observation) !== "UNKNOWN" &&
-    clean(c.one_physical_ticket_proof) !== "UNKNOWN"
+    Number.isInteger(c.printable_width_dots) &&
+    c.printable_width_dots > 0 &&
+    calibrationClaimPresent(c.transport_selected) &&
+    calibrationClaimPresent(c.character_mode) &&
+    calibrationClaimPresent(c.accent_test) &&
+    calibrationClaimPresent(c.cutter_test) &&
+    calibrationClaimPresent(c.feed_after_cut_test) &&
+    calibrationClaimPresent(c.bold_double_size_legibility) &&
+    calibrationClaimPresent(c.density_legibility) &&
+    calibrationClaimPresent(c.paperout_observation) &&
+    calibrationClaimPresent(c.cover_open_observation) &&
+    calibrationClaimPresent(c.offline_observation) &&
+    calibrationClaimPresent(c.spooler_job_observation) &&
+    calibrationClaimPresent(c.one_physical_ticket_proof)
   );
 }
 
