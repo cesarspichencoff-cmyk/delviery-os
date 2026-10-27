@@ -44,7 +44,9 @@ const staged=()=>{
    origin_ref:"SYNTHETIC_BRIDGE_SOURCE",snapshot_sha256:h,
    backup_config_observed:true,backup_enabled:false,
    primary_destination_censused:true,
-   primary_legacy_output_plan:"EXPLICITLY_COVERED"},
+   primary_legacy_output_plan:"EXPLICITLY_COVERED",
+   pending_legacy_jobs_censused:true,
+   pending_or_ambiguous_attempts_reconciled:true},
   receipt_claim:{kind:"JSON_STATUS_202_QUEUED"}
  };
  x.teknisa_upstream_suppression={mechanism:"IDIMPPEDPROD_N",
@@ -261,6 +263,14 @@ test("backend not using Odhen HTTP bridge does not require that bridge model",()
  const r=check(x);
  assert.equal(r.status,"CUTOVER_CANDIDATE_NEEDS_EXTERNAL_ATTESTATION");
  assert.equal(r.can_activate,false);
+});
+test("Odhen old queued jobs are reconciled before any new paper cutover",()=>{
+ const x=staged();x.peripheral_bridge_evidence.route_census.pending_legacy_jobs_censused=false;
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED");
+});
+test("ambiguous old print effect cannot be silently reprinted after switch",()=>{
+ const x=staged();x.peripheral_bridge_evidence.route_census.pending_or_ambiguous_attempts_reconciled=false;
+ holds(x,"BRIDGE_QUEUE_AND_BACKUP_PATH_NOT_ACCOUNTED_FOR:QUEUED_OR_AMBIGUOUS_OLD_JOBS_NOT_RECONCILED");
 });
 test("fiscal and essential non-ticket output must be separately protected",()=>{
  const x=staged();delete x.proofs.fiscal_and_other_reports_isolated;
