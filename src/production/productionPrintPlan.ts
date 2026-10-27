@@ -330,9 +330,10 @@ function fingerprintSemanticIntent(material: string): string {
 /**
  * Builds one logical ticket intent per resolved active production station.
  *
- * Configured lunch/dinner alternatives are mutually exclusive. If both
- * alternatives exist for one item, service must be supplied explicitly; this
- * planner never infers service from the clock.
+ * Printer codes historically labeled as lunch/dinner alternatives are
+ * NOT proved mutually exclusive by shift. If both appear on the SAME sold
+ * item, this planner refuses those ambiguous destinations regardless of a
+ * service label; only source-attested physical roles could change that gate.
  *
  * It deliberately does NOT render bytes and never authorizes a physical effect.
  * Product routing authority comes from ExpectedRoutingProjection. Printer
