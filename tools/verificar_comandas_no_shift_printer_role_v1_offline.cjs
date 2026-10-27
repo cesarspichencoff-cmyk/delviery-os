@@ -74,6 +74,6 @@ for(const pair of PAIRS){
 const fakeOverride=plan(["00009","00003"],"DINNER");
 assert.equal(fakeOverride.ready_for_shadow_payload,false,
  "a human-entered lunch/dinner label cannot independently attest printer roles");
-assert.ok(routing.counts?.two_target>0,"historical source includes dual target entries");
+assert.ok(routing.counts?.two_targets>0,"historical source includes dual target entries");
 console.log("COMANDAS_NO_SHIFT_PRINTER_ROLE_GATE_V1="+(checked+oneTarget+retainedOthers+1)+"/"+
  (checked+oneTarget+retainedOthers+1)+" DUAL_PAIRS_HOLD SINGLE_ROUTE_PRESERVED NO_PRINT");
