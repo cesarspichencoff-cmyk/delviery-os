@@ -5,6 +5,9 @@
  * the Reader is current, that a journal is complete, or that paper was sent.
  * No SQL, network, printer, filesystem, sequence or host operations.
  */
+const {createHash}=require("node:crypto");
+const {verifyPrintAttemptWitnessV882}=
+ require("../dist/src/production/printAttemptWitnessV882.js");
 const {assessNativeReaderV2}=
  require("./comandas_reader_v2_view_evidence_v1_offline.cjs");
 const {decideProductionOrderRevisionReviewV1}=
@@ -17,6 +20,14 @@ const EFFECTS=Object.freeze({
 });
 const SHA=/^[a-f0-9]{64}$/i;
 const STATION=/^[A-Z0-9_-]{1,48}$/;
+// Derived from the checked native Reader source and stable station identity.
+// A matching hash proves a bounded DATA LINK, not independent custody or paper.
+function orderStationWitnessBindingSha256V1(orderKey,day,station){
+ return createHash("sha256").update(
+  "TATA-COMANDAS-ORDER-STATION-WITNESS-V1\n"+
+  JSON.stringify([orderKey,day,station])
+ ).digest("hex");
+}
 function hold(reason,extras={}){
  return {schema:SCHEMA,status:"HOLD",reasons:[reason],
   reader_revision_consistency_checked:false,
@@ -66,11 +77,51 @@ function reviewReaderPrintHistory(input){
  const reason=diagnosis.verdict==="HOLD"
   ?diagnosis.reasons[0]
   :"READER_AND_JOURNAL_CLAIMS_NOT_INDEPENDENTLY_ATTESTED";
+ // Optional historical source-separated observation. Reuse the existing
+ // V8.82 signature and source-separation verifier rather than accepting a
+ // caller's job status. Trust supplied with the witness is NOT independently
+ // custodied; even successful cryptography cannot certify paper/no-effect.
+ if(input.print_attempt_witness!==undefined){
+  const w=input.print_attempt_witness;
+  if(!w||typeof w!=="object"||Array.isArray(w)||
+     !w.record||typeof w.record!=="object"||Array.isArray(w.record)||
+     !w.trust||typeof w.trust!=="object"||Array.isArray(w.trust)||
+     typeof w.now_utc!=="string")
+   return hold("PRINT_ATTEMPT_WITNESS_ENVELOPE_INVALID",{
+    reader_revision_consistency_checked:true,
+    history_diagnostic_verdict:diagnosis.verdict
+   });
+  const binding=orderStationWitnessBindingSha256V1(
+   event.order_key,order.DTHRABERMESA.slice(0,10),c.station_code);
+  if(w.record.order_binding_sha256!==binding||
+     w.record.store_id!==order.CDFILIAL)
+   return hold("PRINT_ATTEMPT_WITNESS_ORDER_STATION_SCOPE_MISMATCH",{
+    reader_revision_consistency_checked:true,
+    history_diagnostic_verdict:diagnosis.verdict
+   });
+  const verification=verifyPrintAttemptWitnessV882(
+   w.record,w.trust,w.now_utc);
+  if(verification.status!=="SIGNED_SOURCE_SEPARATION_MATCH_RECONCILIATION_ONLY"||
+     verification.signed_witness_verified!==true)
+   return hold("PRINT_ATTEMPT_WITNESS_SIGNATURE_OR_TRUST_INVALID",{
+    reader_revision_consistency_checked:true,
+    history_diagnostic_verdict:diagnosis.verdict
+   });
+  return hold(diagnosis.verdict==="HOLD"
+     ?reason:"SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED",{
+    reader_revision_consistency_checked:true,
+    history_diagnostic_verdict:diagnosis.verdict,
+    source_witness_signature_verified:true,
+    // This is a cryptographically coherent statement from supplied trust,
+    // not independent key custody, source-of-first-print, or real-paper proof.
+    source_witness_trust_independently_attested:false,
+    witnessed_observation_requires_reconciliation:true
+   });
+ }
  return hold(reason,{
   reader_revision_consistency_checked:true,
-  // A positive internal diagnostic is not an authorization, even when all
-  // caller-supplied claims say true. No trusted effect journal is wired here.
   history_diagnostic_verdict:diagnosis.verdict
  });
 }
-module.exports={SCHEMA,EFFECTS,reviewReaderPrintHistory};
+module.exports={SCHEMA,EFFECTS,reviewReaderPrintHistory,
+ orderStationWitnessBindingSha256V1};
