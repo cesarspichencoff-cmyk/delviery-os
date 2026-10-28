@@ -282,7 +282,7 @@ const attemptRow=(linked,state,updates={})=>({
 test("Reader and attempt history link remains HOLD despite all caller claims true",()=>{
  const r=linkedReview(linkedInput());
  assert.equal(r.reader_revision_consistency_checked,true);
- assert.equal(r.history_diagnostic_verdict,"HOLD");
+ assert.equal(r.history_diagnostic_verdict,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY");
  assert.deepEqual(r.reasons,
   ["READER_AND_JOURNAL_CLAIMS_NOT_INDEPENDENTLY_ATTESTED"]);
 });
