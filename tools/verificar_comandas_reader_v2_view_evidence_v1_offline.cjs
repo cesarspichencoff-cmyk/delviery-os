@@ -452,7 +452,7 @@ test("signed spooler witness is correlated but never proves first print or physi
  assert.equal(r.source_witness_trust_independently_attested,false);
  assert.equal(r.witnessed_observation_requires_reconciliation,true);
  assert.deepEqual(r.reasons,[
-  "SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED"]);
+  "PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"]);
  assert.equal(r.first_native_print_event_proven,false);
  assert.equal(r.prior_physical_effect_absence_proven,false);
 });
@@ -461,7 +461,7 @@ test("signed witness for older semantic fingerprint still blocks revised print",
  assert.notEqual(x.print_attempt_witness.record.intent_fingerprint,
   x.candidate.intent_fingerprint);
  assert.deepEqual(linkedReview(x).reasons,[
-  "SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED"]);
+  "PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"]);
 });
 test("modified witness signature and supplied wrong public key both hold",()=>{
  const x=syntheticSourceWitness(linkedInput());
