@@ -54,6 +54,7 @@ function reviewReaderPrintHistory(input){
  const diagnosis=decideProductionOrderRevisionReviewV1({
   order_key:event.order_key,
   station_code:c.station_code,
+  operational_date:order.DTHRABERMESA.slice(0,10),
   native_snapshot_sha256:event.snapshot_hash,
   intent_fingerprint:c.intent_fingerprint,
   history:input.history,
