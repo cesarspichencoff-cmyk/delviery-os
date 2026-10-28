@@ -64,6 +64,81 @@ try{
   assert.equal(o.sequence_bindings_total,1);
   assert.equal(o.content_valid_but_sequence_missing,0);
  });
+ test("real native 3/P/X with item 4 is counted as shadow-only evidence",()=>{
+  for(const header of ["3","P","X"]){
+   const y=pair();
+   y.event.order.IDSTCOMANDA=header;
+   for(const item of y.event.order.items)item.IDSTPRCOMVEN="4";
+   write(y);const o=run();
+   assert.equal(o.status,"READONLY_DIAGNOSTIC_ONLY");
+   assert.equal(o.unique_event_decision_pairs,1);
+   assert.equal(o.observed_native_structural_review_candidates,1);
+   assert.equal(o.observed_native_note_parity_review_candidates,1);
+   assert.equal(o.observed_native_note_parity_conflicts,0);
+   assert.equal(o.basic_essential_content_candidates,0);
+   assert.equal(o.note_parity_verified_candidates,0);
+   assert.equal(o.paired_with_persisted_tata_sequence,0);
+   assert.equal(o.observed_native_revisions_authorized_for_print,false);
+   assert.equal(o.native_first_production_dispatch_proven,false);
+   assert.equal(o.printing_authorized,false);
+   assert.ok(o.blocking_codes.includes(
+    "OBSERVED_NATIVE_STATES_ARE_REVIEW_ONLY_NOT_PRINT_AUTHORITY"));
+  }
+ });
+ test("real native item status 6 or canceled header is not reviewed as healthy",()=>{
+  const canceledItem=pair();
+  canceledItem.event.order.IDSTCOMANDA="P";
+  for(const item of canceledItem.event.order.items)item.IDSTPRCOMVEN="4";
+  canceledItem.event.order.items[0].IDSTPRCOMVEN="6";
+  write(canceledItem);const a=run();
+  assert.equal(a.observed_native_structural_review_candidates,0);
+  assert.equal(a.observed_native_note_parity_review_candidates,0);
+  assert.equal(a.basic_essential_content_candidates,0);
+  assert.equal(a.printing_authorized,false);
+  const canceledHeader=pair();
+  canceledHeader.event.order.IDSTCOMANDA="4";
+  for(const item of canceledHeader.event.order.items)item.IDSTPRCOMVEN="4";
+  write(canceledHeader);const b=run();
+  assert.equal(b.observed_native_structural_review_candidates,0);
+  assert.equal(b.native_first_production_dispatch_proven,false);
+ });
+ test("real native note conflicts remain visible but never promote readiness",()=>{
+  for(const mode of ["missing-item-note","missing-order-note",
+                     "changed-quantity","unproven-join"]){
+   const y=pair();
+   y.event.order.IDSTCOMANDA="3";
+   for(const item of y.event.order.items)item.IDSTPRCOMVEN="4";
+   if(mode==="missing-item-note")y.decision.items[0].observations=[];
+   if(mode==="missing-order-note")y.decision.order_observations=[];
+   if(mode==="changed-quantity")y.decision.items[0].quantity=99;
+   if(mode==="unproven-join")
+    y.event.order.observation_rows[0].join_proven=false;
+   write(y);const o=run();
+   assert.equal(o.observed_native_note_parity_review_candidates,0);
+   if(mode==="changed-quantity"){
+    assert.equal(o.observed_native_structural_review_candidates,0);
+    assert.equal(o.observed_native_note_parity_conflicts,0);
+   }else{
+    assert.equal(o.observed_native_structural_review_candidates,1);
+    assert.equal(o.observed_native_note_parity_conflicts,1);
+    assert.ok(o.blocking_codes.includes(
+     "OBSERVED_NATIVE_ITEM_OR_ORDER_NOTES_CONFLICT"));
+   }
+   assert.equal(o.paired_with_persisted_tata_sequence,0);
+   assert.equal(o.printing_authorized,false);
+  }
+ });
+ test("real native review never bypasses missing source/decision parity",()=>{
+  const y=pair();y.event.order.IDSTCOMANDA="X";
+  for(const item of y.event.order.items)item.IDSTPRCOMVEN="4";
+  y.decision.ifood_sequence="different";
+  write(y);
+  const o=run();
+  assert.equal(o.observed_native_structural_review_candidates,0);
+  assert.equal(o.observed_native_note_parity_review_candidates,0);
+  assert.equal(o.native_first_production_dispatch_proven,false);
+  assert.equal(o.printing_authorized,false);
+ });
  test("no binding reveals exact real blocker without inventing a sequence",()=>{
   const y=pair();y.sequence_state.bindings=[];write(y);
   const o=run();assert.equal(o.basic_essential_content_candidates,1);
