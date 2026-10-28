@@ -20,6 +20,12 @@ const EFFECTS=Object.freeze({
 });
 const SHA=/^[0-9a-f]{64}$/i;
 const STATION=/^[A-Z0-9_-]{1,48}$/;
+const ORDER_KEY=/^[A-Z0-9_-]{1,48}(?:\|[A-Z0-9_-]{1,48}){3}$/;
+function validDay(value){
+ if(typeof value!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+ const instant=new Date(value+"T00:00:00Z");
+ return Number.isFinite(instant.valueOf())&&instant.toISOString().slice(0,10)===value;
+}
 const ATTEMPT=/^(?:[A-Za-z0-9_-]{1,128}|attempt:[a-z0-9._-]{8,96})$/;
 const STATES=new Set(["PLANNED","PROVEN_NO_EFFECT_FAILURE",
  "SUBMISSION_RETURNED_UNOBSERVED","SPOOLER_OBSERVED",
@@ -83,10 +89,9 @@ function correlateNativeFirstDispatch(input){
  // Every row must have a usable journal identity; dropping malformed rows
  // before scope filtering could falsely make a duplicated attempt disappear.
  if(input.history.some(r=>!r||typeof r!=="object"||Array.isArray(r)||
-    typeof r.order_key!=="string"||
+    typeof r.order_key!=="string"||!ORDER_KEY.test(r.order_key)||
     typeof r.station_code!=="string"||!STATION.test(r.station_code)||
-    typeof r.operational_date!=="string"||
-    !/^\d{4}-\d{2}-\d{2}$/.test(r.operational_date)||
+    !validDay(r.operational_date)||
     typeof r.attempt_id!=="string"||!ATTEMPT.test(r.attempt_id)||
     typeof r.intent_fingerprint!=="string"||!SHA.test(r.intent_fingerprint)||
     typeof r.native_snapshot_sha256!=="string"||
@@ -104,6 +109,12 @@ function correlateNativeFirstDispatch(input){
   return result("HOLD",rows.length===0
    ?"FIRST_DISPATCH_ATTEMPT_NOT_IN_JOURNAL"
    :"FIRST_DISPATCH_MULTIPLE_ATTEMPT_ROWS_UNRECONCILED",scope);
+ // Attempt IDs are physical-submission identities, never reusable for a
+ // different order, station or operational day. A reused ID elsewhere in
+ // the supplied journal poisons this candidate, even when the local scope
+ // contains exactly one matching row.
+ if(input.history.filter(r=>r.attempt_id===c.attempt_id).length!==1)
+  return result("HOLD","FIRST_DISPATCH_ATTEMPT_ID_REUSED_ACROSS_SCOPE",scope);
  const r=rows[0];
  if(r.attempt_id!==c.attempt_id||
     r.intent_fingerprint!==c.intent_fingerprint||
