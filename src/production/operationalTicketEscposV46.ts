@@ -391,16 +391,45 @@ export function renderOperationalTicketsProofV46(source: OperationalTicketsResul
 } {
   const production=source.production.map(renderProductionTicketProofV46);
   const conference=renderConferenceTicketProofV46(source.conference);
-  const sourceDenied=source.ready_for_semantic_preview !== true ||
-    !Array.isArray(source.blocking_reasons) || source.blocking_reasons.length>0;
-  const crossViewReasons=sourceDenied?[]:threeViewCoherenceReasonsV871(source);
-  if(sourceDenied||crossViewReasons.length>0){
-    const reasons=sourceDenied?["GLOBAL_SOURCE_SEMANTIC_BLOCKED"]:crossViewReasons;
+  // Explicitly allow only known, conference-local packing evidence gaps to
+  // preserve NATIVE station previews. Any unknown/global integrity failure,
+  // incompatible source flag or unready station still vetoes ALL three.
+  const conferenceOnlyReasons=new Set([
+    "EXACT_BAG_ALLOCATION_NOT_PROVEN",
+    "PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE",
+    "BAG_OR_KIT_QUANTITY_NOT_WHOLE",
+    "PACKAGING_GROUP_COVERAGE_NOT_PROVEN",
+  ]);
+  const fullyReady=source.ready_for_semantic_preview === true &&
+    Array.isArray(source.blocking_reasons) &&
+    source.blocking_reasons.length===0 &&
+    source.conference.ready_for_semantic_preview===true &&
+    source.production.every(ticket=>ticket.ready_for_semantic_preview===true);
+  const conferenceOnlyHold=source.ready_for_semantic_preview===false &&
+    Array.isArray(source.blocking_reasons) &&
+    source.blocking_reasons.length>0 &&
+    source.blocking_reasons.every(reason=>conferenceOnlyReasons.has(reason)) &&
+    source.conference.ready_for_semantic_preview===false &&
+    source.production.length===2 &&
+    source.production.every(ticket=>ticket.ready_for_semantic_preview===true);
+  const crossViewReasons=fullyReady||conferenceOnlyHold
+    ?threeViewCoherenceReasonsV871(source):[];
+  if((!fullyReady&&!conferenceOnlyHold)||crossViewReasons.length>0){
+    const reasons=crossViewReasons.length>0
+      ?crossViewReasons:["GLOBAL_SOURCE_SEMANTIC_BLOCKED"];
     const veto=(proof:TicketEscPosProofV46)=>reasons.reduce(
       (state,reason)=>vetoSemanticBytesV71(state,reason),proof);
     return {
       production:production.map(veto),
       conference:veto(conference),
+      effects:{print:false,spooler_write:false,odhen_write:false,cut:false},
+    };
+  }
+  if(conferenceOnlyHold){
+    return {
+      production,
+      conference:vetoSemanticBytesV71(
+        conference,"CONFERENCE_ONLY_SEMANTIC_BLOCKED"),
       effects:{print:false,spooler_write:false,odhen_write:false,cut:false},
     };
   }
