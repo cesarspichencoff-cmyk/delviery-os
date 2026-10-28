@@ -69,6 +69,27 @@ export function decideProductionPrintSubmission(
     };
   }
 
+  // A single attempt identifier must never be claimed by two different
+  // semantic intents, even when one row has another fingerprint. The legacy
+  // fingerprint-only API cannot prove that rows belong to different orders.
+  const attemptIntents = new Map<string, string>();
+  for (const entry of history) {
+    const id = clean(entry.attempt_id);
+    const fp = clean(entry.intent_fingerprint);
+    const previous = attemptIntents.get(id);
+    if (previous !== undefined && previous !== fp) {
+      return {
+        schema: "deliveryos.production-print-submission-decision.v1",
+        intent_fingerprint: fingerprint,
+        decision: "BLOCK_RECONCILIATION_REQUIRED",
+        blocking_reasons: ["ATTEMPT_ID_REUSED_FOR_DIFFERENT_INTENTS"],
+        automatic_retry_allowed: false,
+        effects: { print: false, spooler_write: false },
+      };
+    }
+    attemptIntents.set(id, fp);
+  }
+
   const relevant = history.filter(
     (entry) => clean(entry.intent_fingerprint) === fingerprint,
   );
@@ -100,6 +121,20 @@ export function decideProductionPrintSubmission(
       intent_fingerprint: fingerprint,
       decision: "BLOCK_RECONCILIATION_REQUIRED",
       blocking_reasons: ["PRIOR_EFFECT_NOT_PROVEN_ABSENT"],
+      automatic_retry_allowed: false,
+      effects: { print: false, spooler_write: false },
+    };
+  }
+
+  // PLANNED means an intent has already entered the submission lifecycle.
+  // A second caller may be racing the first, or a crash may have occurred
+  // before the journal captured an eventual effect. Never call it first.
+  if (relevant.some((entry) => entry.state === "PLANNED")) {
+    return {
+      schema: "deliveryos.production-print-submission-decision.v1",
+      intent_fingerprint: fingerprint,
+      decision: "BLOCK_RECONCILIATION_REQUIRED",
+      blocking_reasons: ["PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"],
       automatic_retry_allowed: false,
       effects: { print: false, spooler_write: false },
     };
@@ -238,6 +273,11 @@ export function decideProductionOrderRevisionReviewV1(
       return result("ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED");
     attempts.set(key, signature);
   }
+  // A pending planned attempt can be concurrently submitted or replayed
+  // after an unobserved crash. Content revisions do not erase that risk.
+  // This is review-only, but it must never label an unfinished attempt
+  // as even a clean candidate for a later physical-effect decision.
+  // Preserve stronger printed/unknown-effect vetoes below.
   // Same native four-part ID reappearing under another operational day
   // must be reconciled; silently discarding old attempts could cause paper
   // duplication across a midnight boundary or reused vendor identifiers.
@@ -254,6 +294,8 @@ export function decideProductionOrderRevisionReviewV1(
     item.state === "SPOOLER_OBSERVED" ||
     item.state === "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"))
     return result("PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION");
+  if (relevant.some(item => item.state === "PLANNED"))
+    return result("PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
   if (relevant.some(item =>
     item.native_snapshot_sha256.toLowerCase() ===
       input.native_snapshot_sha256.toLowerCase() &&
