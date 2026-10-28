@@ -437,8 +437,16 @@ function syntheticSourceWitness(x,options={}){
  if(options.wrongStore) x.print_attempt_witness.record.store_id="9999";
  return x;
 }
+function attachSignedAttempt(x,state="PLANNED",overrides={}){
+ const rec=x.print_attempt_witness.record;
+ x.history.push(attemptRow(x,state,{
+  intent_fingerprint:rec.intent_fingerprint,
+  attempt_id:rec.attempt_id,...overrides
+ }));
+ return x;
+}
 test("signed spooler witness is correlated but never proves first print or physical paper",()=>{
- const x=syntheticSourceWitness(linkedInput());
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
  const r=linkedReview(x);
  assert.equal(r.source_witness_signature_verified,true);
  assert.equal(r.source_witness_trust_independently_attested,false);
@@ -449,7 +457,7 @@ test("signed spooler witness is correlated but never proves first print or physi
  assert.equal(r.prior_physical_effect_absence_proven,false);
 });
 test("signed witness for older semantic fingerprint still blocks revised print",()=>{
- const x=syntheticSourceWitness(linkedInput("P"));
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput("P")));
  assert.notEqual(x.print_attempt_witness.record.intent_fingerprint,
   x.candidate.intent_fingerprint);
  assert.deepEqual(linkedReview(x).reasons,[
@@ -479,11 +487,58 @@ test("wrong native order-station binding, store, and witness age hold",()=>{
   ["PRINT_ATTEMPT_WITNESS_SIGNATURE_OR_TRUST_INVALID"]);
 });
 test("confirmed physical history wins over signed spooler report",()=>{
- const x=syntheticSourceWitness(linkedInput());
- x.history=[attemptRow(x,"PHYSICALLY_CONFIRMED")];
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+ x.history.push(attemptRow(x,"PHYSICALLY_CONFIRMED"));
  const r=linkedReview(x);
  assert.deepEqual(r.reasons,["PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION"]);
  assert.equal(r.source_witness_signature_verified,true);
+});
+test("a valid signature without matching journal attempt is not correlated",()=>{
+ const x=syntheticSourceWitness(linkedInput());
+ const r=linkedReview(x);
+ assert.equal(r.source_witness_signature_verified,true);
+ assert.deepEqual(r.reasons,["SIGNED_WITNESS_ATTEMPT_NOT_IN_SCOPED_HISTORY"]);
+ assert.equal(r.print_authorized,false);
+});
+test("signed attempt cannot be attached to a different journal intent",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()),"PLANNED",{
+  intent_fingerprint:"e".repeat(64)
+ });
+ assert.deepEqual(linkedReview(x).reasons,
+  ["SIGNED_WITNESS_ATTEMPT_FINGERPRINT_CONTRADICTED"]);
+});
+test("signed spooler observation contradicts claimed proven no effect",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()),
+  "PROVEN_NO_EFFECT_FAILURE");
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["SIGNED_WITNESS_CONTRADICTS_PROVEN_NO_EFFECT"]);
+ assert.equal(r.prior_physical_effect_absence_proven,false);
+ assert.equal(r.automatic_retry_allowed,false);
+});
+test("signed witness cannot attach to different store day or station journal rows",()=>{
+ for(const change of [
+  {order_key:"0001|01|OTHER|0000348850"},
+  {station_code:"00002"},
+  {operational_date:"2026-10-21"}
+ ]){
+  const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()),
+   "PLANNED",change);
+  const r=linkedReview(x);
+  assert.equal(r.status,"HOLD");
+  assert.equal(r.print_authorized,false);
+  assert.ok(r.reasons[0]==="SIGNED_WITNESS_ATTEMPT_NOT_IN_SCOPED_HISTORY" ||
+    r.reasons[0]==="ORDER_STATION_OPERATIONAL_DAY_CONTRADICTED");
+ }
+});
+test("canonical signed attempt IDs accepted but malformed IDs rejected",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+ assert.equal(linkedReview(x).history_diagnostic_verdict,
+  "REVIEW_CANDIDATE_NO_PRINT_AUTHORITY");
+ const bad=attachSignedAttempt(syntheticSourceWitness(linkedInput()),
+  "PLANNED",{attempt_id:"attempt:INVALID SPACES"});
+ assert.deepEqual(linkedReview(bad).reasons,
+  ["SIGNED_WITNESS_ATTEMPT_NOT_IN_SCOPED_HISTORY"]);
+ assert.equal(linkedReview(bad).history_diagnostic_verdict,"HOLD");
 });
 test("missing witness contents cannot supply independent authority",()=>{
  const x=linkedInput();x.print_attempt_witness={};
