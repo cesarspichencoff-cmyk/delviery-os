@@ -113,7 +113,7 @@ function correlateNativeFirstDispatch(input){
  // different order, station or operational day. A reused ID elsewhere in
  // the supplied journal poisons this candidate, even when the local scope
  // contains exactly one matching row.
- if(input.history.filter(r=>r.attempt_id===c.attempt_id).length!==1)
+ if(input.history.filter(r=>r.attempt_id===c.attempt_id).length>1)
   return result("HOLD","FIRST_DISPATCH_ATTEMPT_ID_REUSED_ACROSS_SCOPE",scope);
  const r=rows[0];
  if(r.attempt_id!==c.attempt_id||
