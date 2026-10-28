@@ -700,16 +700,18 @@ test("self-declared production dispatcher source with mismatched origin holds",(
  y.claim.station_route_censused=false;
  dispatchCheck(y,"HOLD","FIRST_DISPATCH_EVENT_KIND_OR_SOURCE_CLAIM_REJECTED");
 });
-test("same first-dispatch attempt reused by another order, station or day holds",()=>{
+test("reused first-dispatch attempt across orders or stations and day contradictions hold",()=>{
  for(const change of [
   {order_key:"0001|01|DIFFERENT|ORDER"},
-  {station_code:"00002"},
-  {operational_date:"2026-10-21"}
+  {station_code:"00002"}
  ]){
   const x=correlatedDispatchInput();
   x.history.push({...x.history[0],...change});
   dispatchCheck(x,"HOLD","FIRST_DISPATCH_ATTEMPT_ID_REUSED_ACROSS_SCOPE");
  }
+ const crossDay=correlatedDispatchInput();
+ crossDay.history.push({...crossDay.history[0],operational_date:"2026-10-21"});
+ dispatchCheck(crossDay,"HOLD","FIRST_DISPATCH_ORDER_DAY_CONTRADICTED");
 });
 test("separate stations with separate attempt identities remain claims, never physical proof",()=>{
  const x=correlatedDispatchInput();
