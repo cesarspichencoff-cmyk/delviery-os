@@ -667,10 +667,27 @@ assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
  intent_fingerprint:intentFingerprint,attempt_id:"A7",
  state:"PROVEN_NO_EFFECT_FAILURE"
 }]).decision,"ALLOW_RETRY_PROVEN_NO_EFFECT");
-assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
+const priorPlanned=decideProductionPrintSubmission(intentFingerprint,[{
  intent_fingerprint:intentFingerprint,attempt_id:"A8",
  state:"PLANNED"
-}]).decision,"ALLOW_FIRST_SUBMISSION");
+}]);
+assert.equal(priorPlanned.decision,"BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(priorPlanned.blocking_reasons,
+ ["PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"]);
+assert.equal(priorPlanned.automatic_retry_allowed,false);
+const concurrentPlanned=decideProductionPrintSubmission(intentFingerprint,[
+ {intent_fingerprint:intentFingerprint,attempt_id:"A8",state:"PLANNED"},
+ {intent_fingerprint:intentFingerprint,attempt_id:"A9",state:"PLANNED"}
+]);
+assert.deepEqual(concurrentPlanned.blocking_reasons,
+ ["PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"]);
+const reusedAcrossIntent=decideProductionPrintSubmission(intentFingerprint,[
+ {intent_fingerprint:intentFingerprint,attempt_id:"A9",state:"PROVEN_NO_EFFECT_FAILURE"},
+ {intent_fingerprint:"another-native-revision",attempt_id:"A9",state:"PLANNED"}
+]);
+assert.equal(reusedAcrossIntent.decision,"BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(reusedAcrossIntent.blocking_reasons,
+ ["ATTEMPT_ID_REUSED_FOR_DIFFERENT_INTENTS"]);
 
 
 const shaA="a".repeat(64),shaB="b".repeat(64),shaC="c".repeat(64);
@@ -707,8 +724,12 @@ for(const state of ["SUBMISSION_RETURNED_UNOBSERVED","SPOOLER_OBSERVED",
  const x=scopedBase();x.history=[orderRow(state)];
  assertOrderReview(x,"HOLD","PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION");
 }
-for(const state of ["PLANNED","PROVEN_NO_EFFECT_FAILURE"]){
- const x=scopedBase();x.history=[orderRow(state)];
+{
+ const x=scopedBase();x.history=[orderRow("PLANNED")];
+ assertOrderReview(x,"HOLD","PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
+}
+{
+ const x=scopedBase();x.history=[orderRow("PROVEN_NO_EFFECT_FAILURE")];
  assertOrderReview(x,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
   "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
 }
@@ -768,8 +789,15 @@ assertOrderReview(sameIntentDiffRevision,"HOLD",
  "PRINT_INTENT_REUSED_ACROSS_NATIVE_REVISIONS");
 const exactDuplicate=scopedBase();exactDuplicate.history=[
  orderRow("PLANNED"),orderRow("PLANNED")];
-assertOrderReview(exactDuplicate,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
- "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
+assertOrderReview(exactDuplicate,"HOLD",
+ "PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
+const completedAndPlanned=scopedBase();
+completedAndPlanned.history=[
+ orderRow("PROVEN_NO_EFFECT_FAILURE"),
+ orderRow("PLANNED",{attempt_id:"A2",native_snapshot_sha256:shaB,
+  intent_fingerprint:shaC})];
+assertOrderReview(completedAndPlanned,"HOLD",
+ "PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
 
 assert.deepEqual(plan.effects, {
   print: false,
