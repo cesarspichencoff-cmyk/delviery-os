@@ -122,6 +122,37 @@ test("empty and null rejected",()=>{
 test("large input fails budget before aggregation",()=>{
  assert.deepEqual(safe(analyze(Array(5001).fill(data[0]))).reasons,["INPUT_BUDGET_EXCEEDED"]);
 });
+test("two distinct content revisions with same status/time cannot invent latest snapshot",()=>{
+ const x=[row("SAME","3",1,1),row("SAME","3",2,1)];
+ const result=safe(analyze(x));
+ assert.equal(result.status,"HOLD");
+ assert.deepEqual(result.reasons,["NATIVE_REVISION_ORDER_AMBIGUOUS_SAME_OBSERVED_AT"]);
+ assert.deepEqual(safe(analyze([...x].reverse())).reasons,result.reasons);
+ assert.equal(result.print_authorized,false);
+ assert.equal(result.sequence_authorized,false);
+});
+test("same native status with sub-millisecond changed contents is still ambiguous",()=>{
+ const x=[row("SUBMS","P",1,1),row("SUBMS","P",2,1)];
+ x[0].observed_at="2026-10-26T12:00:01.0001-03:00";
+ x[1].observed_at="2026-10-26T12:00:01.0002-03:00";
+ assert.deepEqual(safe(analyze(x)).reasons,
+  ["NATIVE_REVISION_ORDER_AMBIGUOUS_SAME_OBSERVED_AT"]);
+});
+test("exact duplicate snapshot at identical time is a replay, not new contents",()=>{
+ const a=row("SAME_HASH","3",1,1);
+ const r=safe(analyze([a,{...a}]));
+ assert.equal(r.status,"EVIDENCE_ONLY_REVIEW");
+ assert.equal(r.observed_revisions,2);
+ assert.equal(r.repeated_snapshot_rows,1);
+ assert.deepEqual(r.status_revisions,{"3":1});
+ assert.deepEqual(r.transitions,{});
+});
+test("equal timestamps across different orders are not a conflict",()=>{
+ const r=safe(analyze([row("A_EQ","3",1,1),row("B_EQ","P",1,1)]));
+ assert.equal(r.status,"EVIDENCE_ONLY_REVIEW");
+ assert.equal(r.distinct_orders,2);
+ assert.deepEqual(r.transitions,{});
+});
 test("same timestamp different native states cannot establish transition",()=>{
  const x=[row("T","3",1,1),row("T","P",2,1)];
  assert.deepEqual(safe(analyze(x)).reasons,["STATUS_TRANSITION_ORDER_AMBIGUOUS_SAME_OBSERVED_AT"]);
