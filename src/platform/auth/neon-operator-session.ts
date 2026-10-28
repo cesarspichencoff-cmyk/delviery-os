@@ -23,6 +23,7 @@ export function createNeonOperatorSessions(cfg:{authBase:string;appOrigin:string
  const sessions=new Map<string,{upstream:string;subject:string;created:number;expires:number}>();
  const flows=new Map<string,{email:string;subject:string;expires:number;attempts:number;busy:boolean}>();
  const limits=new Map<string,{until:number;count:number}>();
+ let pendingBegins=0;
  const fail=(status:number,code:string)=>({ok:false as const,status,code,setCookies:[] as string[]});
  function cleanup(){const t=now();if(!Number.isSafeInteger(t))throw Error('INVALID_CLOCK');for(const [k,s] of sessions)if(s.expires<=t)sessions.delete(k);for(const [k,s] of flows)if(s.expires<=t)flows.delete(k);for(const [k,s] of limits)if(s.until<=t)limits.delete(k);}
  async function call(route:string,method:string,body?:unknown,upstream?:string){
@@ -58,17 +59,22 @@ export function createNeonOperatorSessions(cfg:{authBase:string;appOrigin:string
   async begin(requestOrigin:unknown,email:unknown){
    if(requestOrigin!==appOrigin)return fail(403,'ORIGIN_FORBIDDEN');
    if(typeof email!=='string'||email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return fail(400,'EMAIL_INVALID');
-   const normalized=email.toLowerCase();
+   const normalized=email.toLowerCase();let reserved=false;
    try{
-    cleanup();const key=digest(normalized),t=now(),limit=limits.get(key);
-    if(limit&&limit.count>=3||limits.size>=1000||flows.size>=100||sessions.size>=100)return fail(429,'LOGIN_LIMIT');
-    limits.set(key,{until:limit?.until??t+300000,count:(limit?.count??0)+1});
+    cleanup();
     const subject=await approved(normalized);if(typeof subject!=='string'||!subject.trim()||subject.length>512)return fail(403,'OPERATOR_NOT_APPROVED');
+    // Unknown addresses must not consume approved-login capacity. Re-read after the
+    // asynchronous approval so concurrent requests cannot share a stale counter.
+    cleanup();const key=digest(normalized),t=now(),limit=limits.get(key);
+    if(limit&&limit.count>=3||!limit&&limits.size>=1000||flows.size+pendingBegins>=100||sessions.size>=100)return fail(429,'LOGIN_LIMIT');
+    limits.set(key,{until:limit?.until??t+300000,count:(limit?.count??0)+1});
+    pendingBegins++;reserved=true;
     const {response}=await call('/email-otp/send-verification-otp','POST',{email:normalized,type:'sign-in'});
     if(!response.ok)return fail(503,'LOGIN_PROVIDER_UNAVAILABLE');
     const token=randomBytes(32).toString('hex');flows.set(digest(token),{email:normalized,subject,expires:t+300000,attempts:0,busy:false});
     return {ok:true as const,status:200,code:'CODE_REQUESTED',setCookies:[cookie(FLOW,token,300)]};
    }catch{return fail(503,'LOGIN_PROVIDER_UNAVAILABLE');}
+   finally{if(reserved)pendingBegins--;}
   },
   async complete(requestOrigin:unknown,header:unknown,otp:unknown){
    if(requestOrigin!==appOrigin)return fail(403,'ORIGIN_FORBIDDEN');

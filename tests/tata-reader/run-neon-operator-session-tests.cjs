@@ -23,6 +23,25 @@ let n=0;async function test(name,fn){await fn();n++;console.log('PASS',name);}
  await test('logout removes local session and refuses foreign origin',async()=>{const x=fixture(),l=await login(x);assert.equal(x.session.logout('https://other.invalid',l.cookie).status,403);assert.equal(x.session.logout(origin,l.cookie).status,200);assert.equal(await x.session.verifyIdentity(l.credential),null);});
  await test('consumed login flow cannot be reused',async()=>{const x=fixture(),l=await login(x);assert.equal((await x.session.complete(origin,l.flow,'123456')).status,401);});
  await test('OTP requests limited per approved address',async()=>{const x=fixture();for(let i=0;i<3;i++)assert.equal((await x.session.begin(origin,email)).status,200);assert.equal((await x.session.begin(origin,email)).status,429);assert.equal(x.calls.length,3);});
+ await test('unapproved addresses cannot exhaust approved operator login capacity',async()=>{
+  const x=fixture();x.cfg.approvedSubject=async e=>e===email?'SUBJECT':null;
+  const bridge=create(x.cfg);
+  for(let i=0;i<1001;i++)assert.equal((await bridge.begin(origin,'unknown'+i+'@example.invalid')).status,403);
+  assert.equal(x.calls.length,0);assert.equal((await bridge.begin(origin,email)).status,200);assert.equal(x.calls.length,1);
+ });
+ await test('concurrent approval cannot bypass per-address OTP limit',async()=>{
+  const x=fixture();let release;const gate=new Promise(r=>release=r);x.cfg.approvedSubject=async()=>{await gate;return 'SUBJECT';};
+  const bridge=create(x.cfg),pending=Array.from({length:20},()=>bridge.begin(origin,email));release();
+  const results=await Promise.all(pending);assert.equal(results.filter(r=>r.status===200).length,3);assert.equal(results.filter(r=>r.status===429).length,17);assert.equal(x.calls.length,3);
+ });
+ await test('pending provider requests reserve bounded flow capacity and release on failure',async()=>{
+  const x=fixture();let release;const gate=new Promise(r=>release=r);let calls=0;
+  x.cfg.fetchTransport=async()=>{calls++;await gate;throw Error('SYNTHETIC_PROVIDER_FAILURE');};
+  const bridge=create(x.cfg),pending=Array.from({length:120},(_,i)=>bridge.begin(origin,'approved'+i+'@example.invalid'));
+  await new Promise(r=>setImmediate(r));assert.equal(calls,100);release();const results=await Promise.all(pending);
+  assert.equal(results.filter(r=>r.status===429).length,20);assert.equal(results.filter(r=>r.status===503).length,100);
+  assert.equal((await bridge.begin(origin,'new-approved@example.invalid')).status,503);assert.equal(calls,101);
+ });
  await test('provider errors do not expose internal detail or session',async()=>{const x=fixture();x.cfg.fetchTransport=async()=>{throw Error('PRIVATE_SENTINEL');};const r=await create(x.cfg).begin(origin,email);assert.equal(r.status,503);assert(!JSON.stringify(r).includes('PRIVATE_SENTINEL'));});
  await test('HTTP endpoint and credentials embedded in URL refused',async()=>{const x=fixture();assert.throws(()=>create({...x.cfg,authBase:'http://provider.invalid/auth'}));assert.throws(()=>create({...x.cfg,authBase:'https://user:password@provider.invalid/auth'}));});
  await test('concurrent completion cannot duplicate session and logout cancels pending issuance',async()=>{
