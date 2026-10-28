@@ -678,7 +678,9 @@ const scopedBase=()=>({
  order_key:"0001|01|0000349281|0000348850",station_code:"00003",
  native_snapshot_sha256:shaB,intent_fingerprint:shaC,
  history:[],history_complete_for_order_station:true,
- history_source_ref:"OFFLINE_FIXTURE_NOT_AN_ATTESTATION"
+ history_source_ref:"OFFLINE_FIXTURE_NOT_AN_ATTESTATION",
+ current_native_revision_verified_latest:true,
+ cancellation_revision_reconciled:true
 });
 const orderRow=(state,changes={})=>({
  order_key:"0001|01|0000349281|0000348850",station_code:"00003",
@@ -717,6 +719,18 @@ for(const field of ["order_key","station_code"]){
  assertOrderReview(x,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
   "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
 }
+for(const field of ["current_native_revision_verified_latest",
+ "cancellation_revision_reconciled"]){
+ const x=scopedBase();x[field]=false;
+ assertOrderReview(x,"HOLD",
+  "LATEST_NATIVE_REVISION_OR_CANCELLATION_UNRECONCILED");
+}
+const staleAndPrinted=scopedBase();
+staleAndPrinted.current_native_revision_verified_latest=false;
+staleAndPrinted.history=[orderRow("PHYSICALLY_CONFIRMED")];
+assertOrderReview(staleAndPrinted,"HOLD",
+ "LATEST_NATIVE_REVISION_OR_CANCELLATION_UNRECONCILED");
+
 const incomplete=scopedBase();incomplete.history_complete_for_order_station=false;
 assertOrderReview(incomplete,"HOLD","ORDER_STATION_HISTORY_COMPLETENESS_UNATTESTED");
 const noSource=scopedBase();noSource.history_source_ref="";
