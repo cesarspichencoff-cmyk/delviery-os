@@ -700,6 +700,39 @@ test("self-declared production dispatcher source with mismatched origin holds",(
  y.claim.station_route_censused=false;
  dispatchCheck(y,"HOLD","FIRST_DISPATCH_EVENT_KIND_OR_SOURCE_CLAIM_REJECTED");
 });
+test("same first-dispatch attempt reused by another order, station or day holds",()=>{
+ for(const change of [
+  {order_key:"0001|01|DIFFERENT|ORDER"},
+  {station_code:"00002"},
+  {operational_date:"2026-10-21"}
+ ]){
+  const x=correlatedDispatchInput();
+  x.history.push({...x.history[0],...change});
+  dispatchCheck(x,"HOLD","FIRST_DISPATCH_ATTEMPT_ID_REUSED_ACROSS_SCOPE");
+ }
+});
+test("separate stations with separate attempt identities remain claims, never physical proof",()=>{
+ const x=correlatedDispatchInput();
+ x.history.push({...x.history[0],station_code:"00002",
+  attempt_id:"attempt:separate_station_0002"});
+ const r=dispatchCheck(x,"CORRELATED_CLAIMS_REVIEW_ONLY",
+  "DISPATCH_AND_JOURNAL_ARE_NOT_INDEPENDENT_SOURCE_ATTESTATION");
+ assert.equal(r.journal_first_attempt_correlated,true);
+ assert.equal(r.print_authorized,false);
+});
+test("malformed unrelated journal row cannot hide a false first-dispatch candidate",()=>{
+ for(const change of [
+  {operational_date:"2026-02-30"},
+  {order_key:"MALFORMED"},
+  {attempt_id:"attempt:INVALID SPACE"},
+  {station_code:"BAD STATION"}
+ ]){
+  const x=correlatedDispatchInput();
+  x.history.push({...x.history[0],order_key:"0001|01|OTHER|ORDER",
+   attempt_id:"attempt:unrelated_order_0002",...change});
+  dispatchCheck(x,"HOLD","FIRST_DISPATCH_JOURNAL_INVALID");
+ }
+});
 test("native item cancellation cannot be hidden by coherent dispatch claim",()=>{
  const x=correlatedDispatchInput();
  x.reader_pair.event.order.items[0].IDSTPRCOMVEN="6";
