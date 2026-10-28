@@ -18,7 +18,7 @@ export function createOperatorReadAuthority<T>(deps: {
   const {issuer,audience,unitId,verifyIdentity,lookupGrant,read,now}=deps;
   if (![issuer,audience,unitId].every(v=>typeof v==='string'&&v.trim())) throw Error('OPERATOR_AUTH_CONFIGURATION_REQUIRED');
   const deny=(status:401|403|503,code:string)=>({ok:false as const,status,code,data:null});
-  return async (credential: unknown, requestedUnit: unknown) => {
+  const authorize = async (credential: unknown, requestedUnit: unknown) => {
     if(typeof credential!=='string'||!credential.trim()||credential.length>16384)return deny(401,'IDENTITY_REQUIRED');
     if(typeof requestedUnit!=='string'||requestedUnit!==unitId)return deny(403,'UNIT_NOT_AUTHORIZED');
     let identity: VerifiedOperatorIdentity|null;
@@ -38,7 +38,18 @@ export function createOperatorReadAuthority<T>(deps: {
     if(!grant||grant.active!==true||grant.issuer!==issuer||grant.subject!==subject||grant.unitId!==unitId||
       !['gerente','lider'].includes(grant.role)||typeof grant.approvalRef!=='string'||!grant.approvalRef.trim()||
       !Number.isSafeInteger(grant.expiresAtMs)||grant.expiresAtMs<=checkedAt)return deny(403,'OPERATOR_GRANT_REQUIRED');
-    try{return {ok:true as const,status:200 as const,code:'AUTHORIZED_READ',data:await read(unitId)};}
-    catch{return deny(503,'ORDER_SOURCE_UNAVAILABLE');}
+    return {ok:true as const,subject,identityExpiry,grantExpiry:grant.expiresAtMs,checkedAt};
+  };
+  return async (credential: unknown, requestedUnit: unknown) => {
+    const before=await authorize(credential,requestedUnit);if(!before.ok)return before;
+    let data:T;
+    try{data=await read(unitId);}catch{return deny(503,'ORDER_SOURCE_UNAVAILABLE');}
+    // A source read may finish after logout, revocation or expiry. Never release
+    // the computed data on the strength of the earlier permission snapshot alone.
+    const after=await authorize(credential,requestedUnit);if(!after.ok)return after;
+    if(after.subject!==before.subject)return deny(403,'OPERATOR_GRANT_REQUIRED');
+    if(after.checkedAt<before.checkedAt||after.checkedAt>=before.identityExpiry)return deny(401,'IDENTITY_INVALID_OR_EXPIRED');
+    if(after.checkedAt>=before.grantExpiry)return deny(403,'OPERATOR_GRANT_REQUIRED');
+    return {ok:true as const,status:200 as const,code:'AUTHORIZED_READ',data};
   };
 }

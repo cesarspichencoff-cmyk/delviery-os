@@ -4,6 +4,7 @@ import type {IncomingMessage, ServerResponse} from 'node:http';
 import {createOperatorFileRoster} from './operator-file-roster';
 import {createNeonOperatorSessions} from './neon-operator-session';
 import {createOperatorHttp} from './operator-http';
+import {createIsolatedTataReader} from './operator-source-worker';
 
 /** Opt-in composition for the existing pilot server. No new listener or legacy-token authority.
  * Configuration and roster must live outside the public asset directory, under host ACLs.
@@ -52,12 +53,12 @@ export function createOperatorPilotRuntime(env:NodeJS.ProcessEnv, appRoot=proces
     const sessions=createNeonOperatorSessions({authBase:cfg.authBase,appOrigin:cfg.appOrigin,now,
       approvedSubject:async email=>{unchanged();return roster.approvedSubject(email);}});
     // Fixed implementation path. Configuration never selects executable code.
-    const {readTataFileFeed}=require(path.join(appRoot,'runtime/reporting/copiloto_tata_file_feed_v1.cjs'));
+    const sourceReader=createIsolatedTataReader({appRoot,root:cfg.sourceRoot,scope,maxAgeMs:cfg.maxAgeMs});
     const assetsDir=path.join(assetsRoot,'copiloto/pedidos');
     operator=createOperatorHttp({sessions,now,
       lookupGrant:async(...args)=>{unchanged();return roster.lookupGrant(...args);},
       readFeed:async unit=>{unchanged();if(unit!=='ITAIM')throw Error('UNIT_NOT_AUTHORIZED');
-        return readTataFileFeed({root:cfg.sourceRoot,scope,now:new Date(now()).toISOString(),maxAgeMs:cfg.maxAgeMs});},
+        const result=await sourceReader.read(new Date(now()).toISOString());unchanged();return result;},
       assets:{html:fs.readFileSync(path.join(assetsDir,'index.html'),'utf8'),js:fs.readFileSync(path.join(assetsDir,'app.js'),'utf8'),css:fs.readFileSync(path.join(assetsDir,'app.css'),'utf8')}});
   }
   return {enabled, async handle(req:IncomingMessage,res:ServerResponse):Promise<boolean>{

@@ -4,7 +4,7 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ASTRA_LOGIN_CAPACITY_FIX_CI_GREEN",
+  "checkpoint_type": "ISOLATED_READER_POST_READ_AUTH_LOCAL_PROVEN",
   "state_basis_head": "2ccac17b5022df05ececb3f84be4d8bf459eb9a8",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
@@ -31,7 +31,8 @@
     "docs/execution/evidencias/mooca-local-2026-10-26/source-metadata-2026-10-27.json",
     "docs/execution/COPILOTO_ACCESS_REGISTRY_2026-10-27.md",
     "docs/execution/PILOTO_LEITOR_ENTREGAS_IFOOD_2026-10-27.md",
-    "docs/execution/REVISAO_PRE_INSTALACAO_2026-10-28.md"
+    "docs/execution/REVISAO_PRE_INSTALACAO_2026-10-28.md",
+    "docs/execution/LEITOR_ISOLADO_2026-10-28.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -82,9 +83,10 @@
     "Remote Desktop Commander attempt returned monthly usage limit, explicitly no retry/reconnect. No fresh host observation or execution in this turn; no paid alternative introduced.",
     "Mounted operator runtime revision d7e1667: product CI 40618187751 and Android CI 40618187805 both completed successfully, including actual Entregas server composition test. No host deployment.",
     "Explicit Astra high review identified unauthenticated login-capacity poisoning. Regression reproduced old failure; corrected approval-before-capacity, post-await counter read and pending OTP reservations. Local session18/HTTPS6/mounted9 passed; no real OTP or host change.",
-    "Astra-driven login capacity correction: product CI40646268461 and Android CI40646266951 success for 2ccac17b. No installation; reader lifecycle/throughput risks remain open."
+    "Astra-driven login capacity correction: product CI40646268461 and Android CI40646266951 success for 2ccac17b. No installation; reader lifecycle/throughput risks remain open.",
+    "Reader moved to one bounded disposable worker per instance with no queue/cache; HTTP responsiveness during synthetic CPU work, timeout/termination and recovery passed. Identity/grant rechecked after source completion; revoke/logout/expiry/subject switch discard response. Local worker4/authority13/mounted9/HTTPS6/session18 pass."
   ],
-  "next_action": "Before installation address synchronous reader blocking and recheck authorization after any async read; validate producer checkpoint against existing files without reset. Host connector quota remains; no installation or OTP performed.",
+  "next_action": "Verify isolated-reader CI, then when host access is available measure source/identity latency on Mooca, validate checkpoint references without reset, live login and source provenance, and reversible launcher installation. No deployment yet.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -134,7 +136,7 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Documentation-only CI closure; no runtime delta."
+    "Isolated reader and post-read authorization implemented and locally tested; new CI pending."
   ],
   "latest_review_transport": {
     "tested_local_code": "9c6b3d9fc1976911f3595babdf3f3d35b472fc1b",
