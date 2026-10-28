@@ -70,6 +70,11 @@ function analyzeNativeLifecycle(data){
   // The original events may arrive unordered. Stable sort, then deduplicate
   // the same hash; do not count retried identical emissions as new revisions.
   series.sort((a,b)=>a.time-b.time||a.hash.localeCompare(b.hash));
+  // Identity/origin contradiction outranks ordering uncertainty. Report the
+  // semantic cause even if two contradictory records share one timestamp.
+  const firstOrigin=series[0].origin;
+  if(series.some(entry=>entry.origin!==firstOrigin))
+   return empty("HOLD","SAME_ORDER_KEY_MULTIPLE_ORIGINS");
   for(let k=1;k<series.length;k++){
    if(series[k].time===series[k-1].time){
     if(series[k].status!==series[k-1].status)
