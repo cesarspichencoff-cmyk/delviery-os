@@ -400,11 +400,13 @@ export function renderOperationalTicketsProofV46(source: OperationalTicketsResul
     "BAG_OR_KIT_QUANTITY_NOT_WHOLE",
     "PACKAGING_GROUP_COVERAGE_NOT_PROVEN",
   ]);
+  // The legacy direct renderer intentionally respects LOCAL ticket vetoes:
+  // a single station/conference flag cannot erase unrelated valid previews
+  // if the aggregate source itself was otherwise validated. Each renderer
+  // still returns ZERO bytes for its own invalid ticket.
   const fullyReady=source.ready_for_semantic_preview === true &&
     Array.isArray(source.blocking_reasons) &&
-    source.blocking_reasons.length===0 &&
-    source.conference.ready_for_semantic_preview===true &&
-    source.production.every(ticket=>ticket.ready_for_semantic_preview===true);
+    source.blocking_reasons.length===0;
   const conferenceOnlyHold=source.ready_for_semantic_preview===false &&
     Array.isArray(source.blocking_reasons) &&
     source.blocking_reasons.length>0 &&
