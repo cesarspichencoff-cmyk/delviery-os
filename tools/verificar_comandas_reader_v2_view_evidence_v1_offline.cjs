@@ -6,6 +6,9 @@ const {snapshotHash,decisionHash}=
  require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
 const {assessNativeReaderV2:review,SCHEMA,EFFECTS}=
  require("./comandas_reader_v2_view_evidence_v1_offline.cjs");
+const {reviewReaderPrintHistory:reviewAttemptLink,SCHEMA:LINK_SCHEMA,
+ EFFECTS:LINK_EFFECTS}=
+ require("./comandas_reader_print_history_link_v1_offline.cjs");
 const copy=x=>structuredClone(x);
 function native(status="3"){
  const x=fixture();
@@ -228,5 +231,132 @@ test("unrecognized record-shaped arrays fail closed",()=>{
  hold([],"INPUT_INVALID");
 });
 test("null input fails closed",()=>{hold(null,"INPUT_INVALID");});
+
+function linkedInput(state="3"){
+ const reader_pair=native(state);
+ return {
+  reader_pair,
+  candidate:{
+   order_key:reader_pair.event.order_key,
+   operational_date:reader_pair.event.order.DTHRABERMESA.slice(0,10),
+   native_snapshot_sha256:reader_pair.event.snapshot_hash,
+   station_code:"00003",intent_fingerprint:"c".repeat(64)
+  },
+  history:[],history_complete_claim:true,
+  history_source_ref:"FIXTURE_READ_ONLY_NOT_ATTESTED",
+  latest_revision_claim:true,cancellation_reconciled_claim:true
+ };
+}
+function linkedReview(input){
+ const before=JSON.stringify(input),r=reviewAttemptLink(input);
+ assert.equal(JSON.stringify(input),before,"bridge is pure and immutable");
+ assert.equal(r.schema,LINK_SCHEMA);
+ assert.deepEqual(r.effects,LINK_EFFECTS);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.print_authorized,false);
+ assert.equal(r.ready_for_operational_print,false);
+ assert.equal(r.automatic_retry_allowed,false);
+ assert.equal(r.journal_independently_attested,false);
+ assert.equal(r.first_native_print_event_proven,false);
+ assert.equal(r.latest_revision_independently_attested,false);
+ assert.equal(r.cancellation_semantics_proven,false);
+ const serialized=JSON.stringify(r);
+ for(const secret of ["ENTREGA NA PORTARIA","ALERGIA A CAMARAO",
+  "SEM CEBOLINHA","0000348850","0000349281"]){
+  assert.equal(serialized.includes(secret),false,"no order data leak");
+ }
+ return r;
+}
+const attemptRow=(linked,state,updates={})=>({
+ order_key:linked.reader_pair.event.order_key,
+ station_code:"00003",
+ native_snapshot_sha256:"a".repeat(64),
+ intent_fingerprint:"b".repeat(64),
+ attempt_id:"A1",state,...updates
+});
+test("Reader and attempt history link remains HOLD despite all caller claims true",()=>{
+ const r=linkedReview(linkedInput());
+ assert.equal(r.reader_revision_consistency_checked,true);
+ assert.equal(r.history_diagnostic_verdict,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY");
+ assert.deepEqual(r.reasons,
+  ["READER_AND_JOURNAL_CLAIMS_NOT_INDEPENDENTLY_ATTESTED"]);
+});
+test("prior physical print on older native revision blocks new semantic intent",()=>{
+ const x=linkedInput("P");
+ x.history=[attemptRow(x,"PHYSICALLY_CONFIRMED")];
+ const r=linkedReview(x);
+ assert.equal(r.reader_revision_consistency_checked,true);
+ assert.equal(r.history_diagnostic_verdict,"HOLD");
+ assert.deepEqual(r.reasons,["PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION"]);
+});
+test("earlier unknown print effect prevents review even when content changed",()=>{
+ for(const state of ["SPOOLER_OBSERVED","SUBMISSION_RETURNED_UNOBSERVED",
+  "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"]){
+  const x=linkedInput("X");x.history=[attemptRow(x,state)];
+  const r=linkedReview(x);
+  assert.deepEqual(r.reasons,["PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION"]);
+ }
+});
+test("unverified latest revision and unreconciled cancellation each hold",()=>{
+ for(const field of ["latest_revision_claim","cancellation_reconciled_claim"]){
+  const x=linkedInput();x[field]=false;
+  const r=linkedReview(x);
+  assert.deepEqual(r.reasons,["LATEST_NATIVE_REVISION_OR_CANCELLATION_UNRECONCILED"]);
+ }
+});
+test("absent complete journal scope does not fabricate a clean history",()=>{
+ const x=linkedInput();x.history_complete_claim=false;
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["ORDER_STATION_HISTORY_COMPLETENESS_UNATTESTED"]);
+});
+test("candidate selected different native revision is rejected before history review",()=>{
+ for(const modify of [
+  x=>x.candidate.native_snapshot_sha256="d".repeat(64),
+  x=>x.candidate.order_key="0001|01|DIFFERENT|ORDER",
+  x=>x.candidate.operational_date="2026-10-22",
+  x=>x.candidate.station_code="",
+  x=>x.candidate.intent_fingerprint="WRONG"
+ ]){
+  const x=linkedInput();modify(x);
+  const r=linkedReview(x);
+  assert.equal(r.reader_revision_consistency_checked,false);
+  assert.deepEqual(r.reasons,
+   ["READER_PRINT_LINK_ORDER_DATE_REVISION_OR_STATION_MISMATCH"]);
+ }
+});
+test("cancelled native item 6 and altered observed content fail before attempt claim",()=>{
+ const cancelled=linkedInput();
+ cancelled.reader_pair.event.order.items[0].IDSTPRCOMVEN="6";
+ refresh(cancelled.reader_pair);
+ assert.deepEqual(linkedReview(cancelled).reasons,
+  ["NATIVE_READER_REVISION_NOT_CONSISTENT"]);
+ const edited=linkedInput();
+ edited.reader_pair.event.order.items[0].QTPRODCOMVEN="7.000";
+ refresh(edited.reader_pair);
+ assert.deepEqual(linkedReview(edited).reasons,
+  ["NATIVE_READER_REVISION_NOT_CONSISTENT"]);
+});
+test("native header 4 is not silently reclassified as print-ready",()=>{
+ const x=linkedInput("4");
+ assert.deepEqual(linkedReview(x).reasons,
+  ["NATIVE_READER_REVISION_NOT_CONSISTENT"]);
+});
+test("invalid or conflicting historical attempt cannot be treated as absent",()=>{
+ for(const history of [null,[null],[{state:"PHYSICALLY_CONFIRMED"}]]){
+  const x=linkedInput();x.history=history;
+  assert.deepEqual(linkedReview(x).reasons,
+   ["ORDER_STATION_ATTEMPT_HISTORY_INVALID"]);
+ }
+ const x=linkedInput();
+ x.history=[attemptRow(x,"PLANNED"),
+  attemptRow(x,"PHYSICALLY_CONFIRMED")];
+ assert.deepEqual(linkedReview(x).reasons,
+  ["ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED"]);
+});
+test("absent native pair never yields an untrusted positive proof",()=>{
+ const x=linkedInput();delete x.reader_pair;
+ assert.deepEqual(linkedReview(x).reasons,["NATIVE_READER_REVISION_NOT_CONSISTENT"]);
+});
+
 console.log("COMANDAS_READER_V2_VIEW_EVIDENCE_V1="+total+"/"+total+
  " REAL_NATIVE_STATUS_SEMANTICS SOURCE_PAIR_ONLY CONFERENCE_IFOOD_ONLY NO_PRINT_NO_SQL");
