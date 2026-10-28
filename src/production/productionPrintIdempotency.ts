@@ -183,7 +183,9 @@ const validStation = (value: unknown): value is string =>
 const validHash = (value: unknown): value is string =>
   typeof value === "string" && SHA256.test(value);
 const validAttempt = (value: unknown): value is string =>
-  typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+  typeof value === "string" &&
+  (/^[A-Za-z0-9_-]{1,128}$/.test(value) ||
+    /^attempt:[a-z0-9._-]{8,96}$/.test(value));
 
 export function decideProductionOrderRevisionReviewV1(
   input: OrderRevisionPrintReviewInputV1,
