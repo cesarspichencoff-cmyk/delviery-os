@@ -17,7 +17,7 @@ Após a leitura, a configuração é conferida novamente; antes de devolver os d
 - Servidor Entregas real em processo de teste: 9 famílias com a nova composição.
 - HTTPS: 6; sessão: 18. TypeScript compilou; M1 40 e governança 14 passaram.
 
-Fixtures sintéticas descartáveis. Nenhum acesso remoto, OTP real, publicação, impressão, escrita no Odhen ou alteração da operação. CI completo da nova revisão pendente neste checkpoint.
+Fixtures sintéticas descartáveis. Nenhum acesso remoto, OTP real, publicação, impressão, escrita no Odhen ou alteração da operação. CI completo aprovado na revisão e3071759b0e2eecf18beed0912ed48b433d50b06: produto 40648260788 e Android 40648260728. Local equivalente 9cae0f1bc58dea0ae142195d2859c901e58bae60; árvore idêntica 0d3daf2db93302fb8fb9431769069795a3f19e68.
 
 ## Próximo limite
 

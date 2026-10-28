@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ISOLATED_READER_POST_READ_AUTH_LOCAL_PROVEN",
-  "state_basis_head": "2ccac17b5022df05ececb3f84be4d8bf459eb9a8",
+  "checkpoint_type": "ISOLATED_READER_POST_READ_AUTH_CI_GREEN",
+  "state_basis_head": "e3071759b0e2eecf18beed0912ed48b433d50b06",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -84,9 +84,10 @@
     "Mounted operator runtime revision d7e1667: product CI 40618187751 and Android CI 40618187805 both completed successfully, including actual Entregas server composition test. No host deployment.",
     "Explicit Astra high review identified unauthenticated login-capacity poisoning. Regression reproduced old failure; corrected approval-before-capacity, post-await counter read and pending OTP reservations. Local session18/HTTPS6/mounted9 passed; no real OTP or host change.",
     "Astra-driven login capacity correction: product CI40646268461 and Android CI40646266951 success for 2ccac17b. No installation; reader lifecycle/throughput risks remain open.",
-    "Reader moved to one bounded disposable worker per instance with no queue/cache; HTTP responsiveness during synthetic CPU work, timeout/termination and recovery passed. Identity/grant rechecked after source completion; revoke/logout/expiry/subject switch discard response. Local worker4/authority13/mounted9/HTTPS6/session18 pass."
+    "Reader moved to one bounded disposable worker per instance with no queue/cache; HTTP responsiveness during synthetic CPU work, timeout/termination and recovery passed. Identity/grant rechecked after source completion; revoke/logout/expiry/subject switch discard response. Local worker4/authority13/mounted9/HTTPS6/session18 pass.",
+    "Isolated source and post-read authorization: product CI40648260788 and Android CI40648260728 both success at e3071759. No host installation."
   ],
-  "next_action": "Verify isolated-reader CI, then when host access is available measure source/identity latency on Mooca, validate checkpoint references without reset, live login and source provenance, and reversible launcher installation. No deployment yet.",
+  "next_action": "When host access is available measure source/identity latency on Mooca, validate checkpoint references without reset, live login and source provenance, then reversible launcher installation. Reader worker and post-read authorization are CI green; physical Xiaomi and Gestor iFood remain pending.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -136,12 +137,12 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Isolated reader and post-read authorization implemented and locally tested; new CI pending."
+    "Documentation-only closure of successful CI."
   ],
   "latest_review_transport": {
-    "tested_local_code": "9c6b3d9fc1976911f3595babdf3f3d35b472fc1b",
-    "equivalent_remote_code": "2ccac17b5022df05ececb3f84be4d8bf459eb9a8",
-    "exact_tree": "70a84562c2d4da7a637df52fd3f3cb2d2fc9b9d7",
-    "proof": "docs/execution/REVISAO_PRE_INSTALACAO_2026-10-28.md"
+    "tested_local_code": "9cae0f1bc58dea0ae142195d2859c901e58bae60",
+    "equivalent_remote_code": "e3071759b0e2eecf18beed0912ed48b433d50b06",
+    "exact_tree": "0d3daf2db93302fb8fb9431769069795a3f19e68",
+    "proof": "docs/execution/LEITOR_ISOLADO_2026-10-28.md"
   }
 }
