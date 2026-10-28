@@ -129,3 +129,112 @@ export function decideProductionPrintSubmission(
     effects: { print: false, spooler_write: false },
   };
 }
+
+
+/** Cross-revision, SAME native order+station print-effect review.
+ * Never convert a self-reported complete journal to physical authority.
+ * A revised semantic fingerprint cannot erase an older print attempt.
+ */
+export interface NativeOrderPrintAttemptV1 extends ProductionPrintAttemptEvidence {
+  order_key: string; // CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA
+  station_code: string; // native station identity, not meal shift
+  native_snapshot_sha256: string;
+}
+export interface OrderRevisionPrintReviewInputV1 {
+  order_key: string;
+  station_code: string;
+  native_snapshot_sha256: string;
+  intent_fingerprint: string;
+  history: readonly NativeOrderPrintAttemptV1[];
+  history_complete_for_order_station: boolean;
+  history_source_ref: string;
+}
+export interface OrderRevisionPrintReviewV1 {
+  schema: "deliveryos.order-revision-print-review.v1";
+  verdict: "HOLD" | "REVIEW_CANDIDATE_NO_PRINT_AUTHORITY";
+  reasons: string[];
+  ready_for_operational_print: false;
+  automatic_retry_allowed: false;
+  effects: { print: false; spooler_write: false; sequence_write: false };
+}
+const SHA256 = /^[a-fA-F0-9]{64}$/;
+const NATIVE_TOKEN = /^[A-Z0-9_-]{1,48}$/;
+const KNOWN_ATTEMPT_STATES = new Set<ProductionPrintEvidenceState>([
+  "PLANNED", "PROVEN_NO_EFFECT_FAILURE",
+  "SUBMISSION_RETURNED_UNOBSERVED", "SPOOLER_OBSERVED",
+  "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION", "PHYSICALLY_CONFIRMED",
+]);
+const validOrderKey = (value: unknown): value is string =>
+  typeof value === "string" && value.split("|").length === 4 &&
+  value.split("|").every(part => NATIVE_TOKEN.test(part));
+const validStation = (value: unknown): value is string =>
+  typeof value === "string" && NATIVE_TOKEN.test(value);
+const validHash = (value: unknown): value is string =>
+  typeof value === "string" && SHA256.test(value);
+const validAttempt = (value: unknown): value is string =>
+  typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+
+export function decideProductionOrderRevisionReviewV1(
+  input: OrderRevisionPrintReviewInputV1,
+): OrderRevisionPrintReviewV1 {
+  const result = (reason: string | null): OrderRevisionPrintReviewV1 => ({
+    schema: "deliveryos.order-revision-print-review.v1",
+    verdict: reason ? "HOLD" : "REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
+    reasons: reason ? [reason] : ["HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION"],
+    ready_for_operational_print: false,
+    automatic_retry_allowed: false,
+    effects: { print: false, spooler_write: false, sequence_write: false },
+  });
+  if (!input || typeof input !== "object" || Array.isArray(input) ||
+      !validOrderKey(input.order_key) || !validStation(input.station_code) ||
+      !validHash(input.native_snapshot_sha256) ||
+      !validHash(input.intent_fingerprint))
+    return result("ORDER_STATION_OR_NATIVE_REVISION_IDENTITY_INVALID");
+  if (input.history_complete_for_order_station !== true ||
+      typeof input.history_source_ref !== "string" ||
+      !/^[A-Za-z0-9:._/-]{8,256}$/.test(input.history_source_ref))
+    return result("ORDER_STATION_HISTORY_COMPLETENESS_UNATTESTED");
+  if (!Array.isArray(input.history) || input.history.length > 5000)
+    return result("ORDER_STATION_ATTEMPT_HISTORY_INVALID");
+  const attempts = new Map<string, string>();
+  for (const item of input.history) {
+    if (!item || typeof item !== "object" || Array.isArray(item) ||
+        !validOrderKey(item.order_key) || !validStation(item.station_code) ||
+        !validHash(item.native_snapshot_sha256) ||
+        !validHash(item.intent_fingerprint) ||
+        !validAttempt(item.attempt_id) ||
+        !KNOWN_ATTEMPT_STATES.has(item.state))
+      return result("ORDER_STATION_ATTEMPT_HISTORY_INVALID");
+    const key = JSON.stringify([item.order_key, item.station_code, item.attempt_id]);
+    const signature = JSON.stringify([
+      item.native_snapshot_sha256.toLowerCase(),
+      item.intent_fingerprint.toLowerCase(), item.state,
+    ]);
+    const previous = attempts.get(key);
+    if (previous !== undefined && previous !== signature)
+      return result("ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED");
+    attempts.set(key, signature);
+  }
+  const relevant = input.history.filter(item =>
+    item.order_key === input.order_key && item.station_code === input.station_code);
+  if (relevant.some(item => item.state === "PHYSICALLY_CONFIRMED"))
+    return result("PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION");
+  if (relevant.some(item =>
+    item.state === "SUBMISSION_RETURNED_UNOBSERVED" ||
+    item.state === "SPOOLER_OBSERVED" ||
+    item.state === "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"))
+    return result("PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION");
+  if (relevant.some(item =>
+    item.native_snapshot_sha256.toLowerCase() ===
+      input.native_snapshot_sha256.toLowerCase() &&
+    item.intent_fingerprint.toLowerCase() !==
+      input.intent_fingerprint.toLowerCase()))
+    return result("SAME_NATIVE_REVISION_DIFFERENT_INTENT_IDENTITY");
+  if (relevant.some(item =>
+    item.intent_fingerprint.toLowerCase() ===
+      input.intent_fingerprint.toLowerCase() &&
+    item.native_snapshot_sha256.toLowerCase() !==
+      input.native_snapshot_sha256.toLowerCase()))
+    return result("PRINT_INTENT_REUSED_ACROSS_NATIVE_REVISIONS");
+  return result(null);
+}
