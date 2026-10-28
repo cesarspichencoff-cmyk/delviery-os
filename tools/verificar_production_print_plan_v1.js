@@ -676,7 +676,7 @@ assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
 const shaA="a".repeat(64),shaB="b".repeat(64),shaC="c".repeat(64);
 const scopedBase=()=>({
  order_key:"0001|01|0000349281|0000348850",station_code:"00003",
- native_snapshot_sha256:shaB,intent_fingerprint:shaC,
+ operational_date:"2026-10-20",native_snapshot_sha256:shaB,intent_fingerprint:shaC,
  history:[],history_complete_for_order_station:true,
  history_source_ref:"OFFLINE_FIXTURE_NOT_AN_ATTESTATION",
  current_native_revision_verified_latest:true,
@@ -684,7 +684,7 @@ const scopedBase=()=>({
 });
 const orderRow=(state,changes={})=>({
  order_key:"0001|01|0000349281|0000348850",station_code:"00003",
- native_snapshot_sha256:shaA,intent_fingerprint:shaA,attempt_id:"A1",
+ operational_date:"2026-10-20",native_snapshot_sha256:shaA,intent_fingerprint:shaA,attempt_id:"A1",
  state,...changes
 });
 function assertOrderReview(input,verdict,reason){
@@ -740,6 +740,20 @@ for(const bad of [null,[null],[orderRow("UNRECOGNIZED")],
  const x=scopedBase();x.history=bad;
  assertOrderReview(x,"HOLD","ORDER_STATION_ATTEMPT_HISTORY_INVALID");
 }
+for(const invalid of ["2026-02-30","2026-13-01","2026-2-1",""]){
+ const x=scopedBase();x.operational_date=invalid;
+ assertOrderReview(x,"HOLD","ORDER_STATION_OR_NATIVE_REVISION_IDENTITY_INVALID");
+ const y=scopedBase();y.history=[orderRow("PLANNED",{operational_date:invalid})];
+ assertOrderReview(y,"HOLD","ORDER_STATION_ATTEMPT_HISTORY_INVALID");
+}
+const differentDay=scopedBase();
+differentDay.history=[orderRow("PHYSICALLY_CONFIRMED",{
+ operational_date:"2026-10-19"})];
+assertOrderReview(differentDay,"HOLD","ORDER_STATION_OPERATIONAL_DAY_CONTRADICTED");
+const differentDayNoEffect=scopedBase();
+differentDayNoEffect.history=[orderRow("PROVEN_NO_EFFECT_FAILURE",{
+ operational_date:"2026-10-21"})];
+assertOrderReview(differentDayNoEffect,"HOLD","ORDER_STATION_OPERATIONAL_DAY_CONTRADICTED");
 const repeatedAttempt=scopedBase();
 repeatedAttempt.history=[orderRow("PLANNED"),orderRow("PROVEN_NO_EFFECT_FAILURE")];
 assertOrderReview(repeatedAttempt,"HOLD","ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED");
