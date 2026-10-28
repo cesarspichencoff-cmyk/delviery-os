@@ -121,6 +121,82 @@ test("matching iFood cannot override native production packaging HOLD",()=>{
  assert.equal(a.conference.byte_count,0);
  assert.equal(b.conference.byte_count,0);
 });
+// A missing kit or wrong bag count is a conference packing failure, not a
+// native kitchen/sushi source revision failure. Preview bytes are OFFLINE ONLY.
+function projectArchivedChange(change){
+ const f=archivedCompleteInput();
+ change(f);
+ return projectOperationalTicketsV45({
+  order_id:f.id,source_items:f.source_items,
+  production_plan:f.production_plan,resource_projection:f.resource_projection,
+  packaging_plan:f.packaging
+ });
+}
+test("known conference-only resource gaps preserve two native production previews",()=>{
+ const baseline=run();
+ const changes=[
+  {name:"KIT_PLAN_MISSING",modify:f=>f.resource_projection.unknowns.push("KIT_PLAN_MISSING"),
+   reason:"PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE"},
+  {name:"EXACT_BAG_MISMATCH",modify:f=>{f.packaging.bags.exact_bag_count=2;},
+   reason:"EXACT_BAG_ALLOCATION_NOT_PROVEN"},
+  {name:"UNKNOWN_BAG_RESOURCE",modify:f=>f.resource_projection.unknowns.push("EXACT_BAG_COUNT_UNKNOWN"),
+   reason:"PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE"},
+  {name:"EXTRA_INVALID_BOX",modify:f=>f.packaging.groups.push({
+   box:"750",boxes:1,status:"UNKNOWN",products:[{name:"SYNTHETIC_GHOST",quantity:1}]
+  }),reason:"PACKAGING_GROUP_COVERAGE_NOT_PROVEN"},
+ ];
+ for(const item of changes){
+  const src=projectArchivedChange(item.modify);
+  assert.ok(src.blocking_reasons.includes(item.reason),item.name);
+  assert.equal(src.ready_for_semantic_preview,false,item.name);
+  assert.ok(src.production.every(s=>s.ready_for_semantic_preview),item.name);
+  assert.equal(src.conference.ready_for_semantic_preview,false,item.name);
+  const preview=run(fixture(),src);
+  assert.deepEqual(prodView(preview),prodView(baseline),item.name);
+  assert.equal(preview.conference.byte_count,0,item.name);
+  assert.equal(preview.conference.ready_for_offline_preview,false,item.name);
+  assert.equal(preview.effects.print,false,item.name);
+ }
+});
+test("native integrity remains global even alongside conference-only gap",()=>{
+ const src=projectArchivedChange(f=>f.resource_projection.unknowns.push("KIT_PLAN_MISSING"));
+ src.blocking_reasons.push("NATIVE_SOURCE_INVALID");
+ const a=run(fixture(),src);
+ assert.ok(a.production.every(s=>s.byte_count===0));
+ assert.equal(a.conference.byte_count,0);
+});
+test("unknown reason and inconsistent readiness claims cannot bypass global veto",()=>{
+ const base=projectArchivedChange(f=>f.resource_projection.unknowns.push("KIT_PLAN_MISSING"));
+ const versions=[
+  s=>s.blocking_reasons.push("UNCLASSIFIED_ERROR"),
+  s=>{s.ready_for_semantic_preview=true;},
+  s=>{s.conference.ready_for_semantic_preview=true;},
+  s=>{s.production[0].ready_for_semantic_preview=false;},
+  s=>{s.production=s.production.slice(0,1);},
+ ];
+ for(const mutation of versions){
+  const src=clone(base);mutation(src);
+  const preview=run(fixture(),src);
+  assert.ok(preview.production.every(v=>v.byte_count===0));
+  assert.equal(preview.conference.byte_count,0);
+ }
+});
+test("three-view identity mismatch still zeros all bytes with only conference packing fault",()=>{
+ const src=projectArchivedChange(f=>f.resource_projection.unknowns.push("KIT_PLAN_MISSING"));
+ src.production[0].identifiers.teknisa="SYNTHETIC_WRONG_ORDER";
+ const preview=run(fixture(),src);
+ assert.ok(preview.production.every(v=>v.byte_count===0));
+ assert.equal(preview.conference.byte_count,0);
+});
+test("missing official iFood crosscheck still changes conference only on packing fault",()=>{
+ const src=projectArchivedChange(f=>f.resource_projection.unknowns.push("KIT_PLAN_MISSING"));
+ const approved=run(fixture(),src),unknown=fixture();
+ delete unknown.ifood;
+ const absent=run(unknown,src);
+ assert.deepEqual(prodView(absent),prodView(approved));
+ assert.equal(absent.conference.byte_count,0);
+ assert.equal(absent.effects.print,false);
+});
 test("source review cannot inject modified external iFood number into native ticket identifiers",()=>{
  const claims=fixture();claims.ifood.short_id="0999";
  const b=run(claims);
