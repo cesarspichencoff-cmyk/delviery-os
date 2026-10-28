@@ -663,10 +663,15 @@ for(const history of malformedHistories){
  assert.equal(gate.automatic_retry_allowed,false);
  assert.deepEqual(gate.effects,{print:false,spooler_write:false});
 }
-assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
+const selfDeclaredNoEffect=decideProductionPrintSubmission(intentFingerprint,[{
  intent_fingerprint:intentFingerprint,attempt_id:"A7",
  state:"PROVEN_NO_EFFECT_FAILURE"
-}]).decision,"ALLOW_RETRY_PROVEN_NO_EFFECT");
+}]);
+assert.equal(selfDeclaredNoEffect.decision,"BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(selfDeclaredNoEffect.blocking_reasons,
+ ["NO_EFFECT_HISTORY_LACKS_INDEPENDENT_ATTESTATION"]);
+assert.equal(selfDeclaredNoEffect.automatic_retry_allowed,false);
+assert.deepEqual(selfDeclaredNoEffect.effects,{print:false,spooler_write:false});
 const priorPlanned=decideProductionPrintSubmission(intentFingerprint,[{
  intent_fingerprint:intentFingerprint,attempt_id:"A8",
  state:"PLANNED"
