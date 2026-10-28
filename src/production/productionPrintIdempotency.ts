@@ -40,6 +40,35 @@ export function decideProductionPrintSubmission(
   const fingerprint = clean(intentFingerprint);
   if (!fingerprint) throw new Error("INTENT_FINGERPRINT_REQUIRED");
 
+  // Real-world journals can contain incomplete rows or an unknown state
+  // after a schema change. Never equate those records with no prior attempt.
+  // Do not trust runtime data merely because TypeScript describes a union.
+  const knownStates = new Set<ProductionPrintEvidenceState>([
+    "PLANNED",
+    "PROVEN_NO_EFFECT_FAILURE",
+    "SUBMISSION_RETURNED_UNOBSERVED",
+    "SPOOLER_OBSERVED",
+    "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION",
+    "PHYSICALLY_CONFIRMED",
+  ]);
+  const invalidHistory = !Array.isArray(history) || history.some(
+    (entry) => !entry || typeof entry !== "object" ||
+      typeof entry.intent_fingerprint !== "string" ||
+      !clean(entry.intent_fingerprint) ||
+      typeof entry.attempt_id !== "string" || !clean(entry.attempt_id) ||
+      !knownStates.has(entry.state),
+  );
+  if (invalidHistory) {
+    return {
+      schema: "deliveryos.production-print-submission-decision.v1",
+      intent_fingerprint: fingerprint,
+      decision: "BLOCK_RECONCILIATION_REQUIRED",
+      blocking_reasons: ["ATTEMPT_HISTORY_INTEGRITY_UNPROVEN"],
+      automatic_retry_allowed: false,
+      effects: { print: false, spooler_write: false },
+    };
+  }
+
   const relevant = history.filter(
     (entry) => clean(entry.intent_fingerprint) === fingerprint,
   );
