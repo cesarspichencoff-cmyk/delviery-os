@@ -34,7 +34,7 @@ O exemplo versionado é deliberadamente desligado. O candidato privado anterior 
 
 Nove famílias passaram: opt-in; 13 configurações inválidas; bloqueio das rotas desligadas e aliases; isolamento da UI/token legado; login sintético até itens lidos pelo motor no servidor implantável; bloqueio da fonte sem reutilizar resultado anterior; revogação do cadastro; alteração da configuração; vencimento sem reinício. A sessão de leitura recebe 401 ao tentar comando do Entregas. Tipo/quantidade dos itens e procedência simulada foram conferidos; dados privados sentinela não saem na resposta.
 
-Regressões locais: HTTPS 6; cadastro 8; sessão 15; autorização 9; feed 19; diagnóstico HTTP 8; boot Itaim 8 recusas + 1 aceitação; despacho HTTP 15. TypeScript compilou. CI completo desta revisão ainda pendente; a última revisão anterior verde é 6dec9dc.
+Regressões locais: HTTPS 6; cadastro 8; sessão 15; autorização 9; feed 19; diagnóstico HTTP 8; boot Itaim 8 recusas + 1 aceitação; despacho HTTP 15. TypeScript compilou. CI completo desta revisão concluído com sucesso, conforme fechamento abaixo.
 
 ## Limite externo encontrado
 
@@ -47,3 +47,13 @@ O conector de acesso remoto respondeu que a cota mensal foi atingida e orientou 
 3. **Gestor do iFood:** qualificar a captura disponível na sessão da loja e os identificadores que a fonte efetivamente emite. Reutilizar contratos existentes; provar deduplicação e associação antes de unir pedidos. O projeto já distingue o ciclo externo do pedido de etapas internas da cozinha (DECISIONS D79/D80 e QUALIFICACAO_PRODUTORES_VIVOS). A tela `ifood-handoff` não comprova captura do Gestor. Não aceitar, cancelar ou despachar pedido automaticamente, nem inferir trabalho por praça a partir do estado geral.
 
 O piloto completo continua pendente desses testes reais. Esta revisão elimina a lacuna de composição do servidor; não declara o conjunto pronto para produção.
+
+## Fechamento da revisão
+
+Commit remoto `d7e166715bc9fb9f15b77aa1a1b52d700270555c`, local equivalente `8a7ef2e181d74ca8022ae708d9a7ab02f148c94d`, árvore idêntica `47e285bf87df1b86972f81198136d793dc8a4f4e`.
+
+- Produto: https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40618187751 — success, finalizado 27/10 às 23h02 de São Paulo (28/10 02h02 UTC).
+- Android: https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40618187805 — success, finalizado no mesmo minuto.
+- M1 40 e governança 14 passaram localmente. Corrigida somente a data de atualização do ledger para acompanhar a data UTC do commit; nenhuma guarda foi relaxada.
+
+A árvore de código testada segue apenas na revisão; nenhum merge ou deploy. O instalador deverá apontar explicitamente `ENTREGAS_OPERATOR_CONFIG` no launcher privado: o launcher instalado ainda não fornece essa variável. A checagem do NetBird deverá confirmar que o proxy preserva o Host da origem HTTPS esperada; não confiar em cabeçalho encaminhado arbitrário para contornar divergência. Login humano/cookies, fonte real, associação à expedição, Xiaomi e Gestor iFood continuam sem prova operacional desta versão.
