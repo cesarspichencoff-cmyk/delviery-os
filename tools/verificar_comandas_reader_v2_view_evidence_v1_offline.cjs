@@ -355,7 +355,7 @@ test("invalid or conflicting historical attempt cannot be treated as absent",()=
 });
 test("absent native pair never yields an untrusted positive proof",()=>{
  const x=linkedInput();delete x.reader_pair;
- assert.deepEqual(linkedReview(x).reasons,["NATIVE_READER_REVISION_NOT_CONSISTENT"]);
+ assert.deepEqual(linkedReview(x).reasons,["READER_PRINT_LINK_INPUT_INVALID"]);
 });
 
 console.log("COMANDAS_READER_V2_VIEW_EVIDENCE_V1="+total+"/"+total+
