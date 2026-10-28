@@ -144,13 +144,17 @@ export function decideProductionPrintSubmission(
     relevant.length > 0 &&
     relevant.every((entry) => entry.state === "PROVEN_NO_EFFECT_FAILURE");
 
+  // A journal field labeled PROVEN is not independently verified proof.
+  // This legacy gate receives no witness/trust chain and cannot distinguish
+  // self-asserted no-effect from an attempt that actually reached a device.
+  // Never authorize an automatic retry based on that label alone.
   if (onlyProvenNoEffect) {
     return {
       schema: "deliveryos.production-print-submission-decision.v1",
       intent_fingerprint: fingerprint,
-      decision: "ALLOW_RETRY_PROVEN_NO_EFFECT",
-      blocking_reasons: [],
-      automatic_retry_allowed: true,
+      decision: "BLOCK_RECONCILIATION_REQUIRED",
+      blocking_reasons: ["NO_EFFECT_HISTORY_LACKS_INDEPENDENT_ATTESTATION"],
+      automatic_retry_allowed: false,
       effects: { print: false, spooler_write: false },
     };
   }
