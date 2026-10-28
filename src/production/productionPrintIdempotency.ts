@@ -9,9 +9,10 @@ export interface ProductionPrintAttemptEvidence {
 export interface ProductionPrintSubmissionDecision {
   schema: "deliveryos.production-print-submission-decision.v1";
   intent_fingerprint: string;
+  // This legacy, fingerprint-only gate has no independent journal custody
+  // or order/station scope and therefore exposes BLOCK decisions only.
+  // Future print authorization requires a separate authenticated protocol.
   decision:
-    | "ALLOW_FIRST_SUBMISSION"
-    | "ALLOW_RETRY_PROVEN_NO_EFFECT"
     | "BLOCK_RECONCILIATION_REQUIRED"
     | "BLOCK_ALREADY_PHYSICALLY_CONFIRMED";
   blocking_reasons: string[];
