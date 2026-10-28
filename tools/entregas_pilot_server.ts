@@ -69,8 +69,10 @@ import {
 import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
 import { classifyQuality } from "../src/entregas/gps/validate";
 import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
+import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
 
 const tataSourceStatus = criarLeitorStatusTata(process.env);
+const operatorRuntime = createOperatorPilotRuntime(process.env);
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
@@ -444,6 +446,9 @@ function transformHtml(html: string, pathname: string): string {
     out = out.replace("· Demo · sem shell · sem Copiloto · sem GPS de produção",
       '· Ensaio · <a href="/copiloto/">Copiloto: fonte de pedidos</a> · GPS desligado');
   }
+  if (operatorRuntime.enabled && pathname === "/console/index.html") {
+    out = out.replace('</body>', '<p><a href="/copiloto/pedidos/">Leitura de comandas · acesso individual</a></p></body>');
+  }
   // esconder dock de demo na expedição iFood (id ou class; operação: ausente no HTML)
   if (pathname.includes("ifood-handoff") && !cfg.features?.demo_controls) {
     out = out.replace(
@@ -495,6 +500,7 @@ window.entregasPilotLogin = async (token) => {
 let autoBackupTimer: ReturnType<typeof setInterval> | null = null;
 
 const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  if (await operatorRuntime.handle(req, res)) return;
   if (req.method === "OPTIONS") {
     const preflight = corsHeaders(req.headers.origin);
     // Sem origem permitida, o preflight não concede nada.
@@ -549,6 +555,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         shell: false,
         copiloto: false,
         copiloto_source_status: tataSourceStatus.enabled,
+        copiloto_orders_configured: operatorRuntime.enabled,
         gps_production: gpsFlags.gps_capture_enabled,
         multi_instance: persistenceBackend?.multi_instance ?? false,
         storage_backend: persistenceBackend?.kind ?? "booting",

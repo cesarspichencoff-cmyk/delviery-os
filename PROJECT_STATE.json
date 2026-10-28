@@ -4,7 +4,7 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "CI_GREEN_EXISTING_OPERATOR_ACCOUNT_PRIVATE_CANDIDATE",
+  "checkpoint_type": "OPERATOR_MOUNT_LOCAL_PROVEN_REMOTE_CONNECTOR_QUOTA",
   "state_basis_head": "6dec9dcfe118fe6d77397eb5d60ac9fee2fa2b9b",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
@@ -29,7 +29,8 @@
     "docs/execution/COPILOTO_OPERATOR_HTTP_2026-10-27.md",
     "docs/execution/evidencias/mooca-local-2026-10-26/operator-browser-proof.json",
     "docs/execution/evidencias/mooca-local-2026-10-26/source-metadata-2026-10-27.json",
-    "docs/execution/COPILOTO_ACCESS_REGISTRY_2026-10-27.md"
+    "docs/execution/COPILOTO_ACCESS_REGISTRY_2026-10-27.md",
+    "docs/execution/PILOTO_LEITOR_ENTREGAS_IFOOD_2026-10-27.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -75,9 +76,11 @@
     "2026-10-27T14:48:41Z: latest three native events ready, zero blockers, LUNCH/HUMAN_CONFIRMED_RULE. Latest observed 11:48:37 Sao Paulo, proving post-weekly-fix emission, not full active inventory or authorized publication.",
     "Existing provider OpenAPI returned 200, sign-in/email-otp and get-session routes confirmed. DeliveryOS origin absent and localhost disabled. Authenticated cookies/cache behavior remains unproven.",
     "Code 6dec9dc: product CI 40561326515 and Android CI 40561326967 completed successfully, including corrected architecture guard.",
-    "Cesar selected first access email; exact read-only Neon lookup found one verified, non-banned existing account. Inactive ITAIM-only roster/config saved outside app in private host candidate folder; ACL has no additional allow principals. No OTP, domain change, global role change or activation."
+    "Cesar selected first access email; exact read-only Neon lookup found one verified, non-banned existing account. Inactive ITAIM-only roster/config saved outside app in private host candidate folder; ACL has no additional allow principals. No OTP, domain change, global role change or activation.",
+    "Review delta: individual operator runtime mounted opt-in in actual Entregas server; nine synthetic process families pass, including native file/TATA read, legacy-token isolation, revocation, source loss and config expiry. Not installed on host.",
+    "Remote Desktop Commander attempt returned monthly usage limit, explicitly no retry/reconnect. No fresh host observation or execution in this turn; no paid alternative introduced."
   ],
-  "next_action": "Use private host operator-access-review-20261027 candidate (email and subject already resolved; do not ask again). Prepare real origin/login integration, prove human OTP and cookies, then source mode/time policy before reversible installation. Candidate inactive; redate proposed expiry before any activation.",
+  "next_action": "Validate review CI. When authorized host access is available, use already resolved private operator account, validate provider origin and human login, explicit source mode/time/age policy, then reversible installation. Prove reader -> Copiloto -> Entregas before Gestor iFood; physical Xiaomi remains pending.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -88,7 +91,8 @@
     "Pilot legacy console now uses PostgreSQL and Copiloto simulated summary shares its queue. Full platform-event convergence, real order source publication and individual human/native identity remain unproven.",
     "New summary and storage were proven on host HTTP/Edge, not authenticated public-proxy navigation.",
     "PostgreSQL mode disables the file backup timer/endpoints; Manual PostgreSQL archive/restore drill passed; recurring and off-host recovery, encryption and role/privilege reconstruction remain pending.",
-    "Native receipt table and approved per-unit role are absent. Current shared PostgreSQL role cannot confirm native batch events; explicit retryable 503 is expected."
+    "Native receipt table and approved per-unit role are absent. Current shared PostgreSQL role cannot confirm native batch events; explicit retryable 503 is expected.",
+    "Host access connector monthly quota exhausted on this turn. Operator runtime composition not installed; no new real-source/login evidence. Gestor iFood capture and association remain unproven."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -126,7 +130,7 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Documentation of successful CI and inactive private account candidate; no runtime code changes."
+    "Operator runtime composition, disabled example, actual-server regression test and CI wiring; full CI pending for this code delta."
   ],
   "latest_review_transport": {
     "tested_local_code": "568352e91fcade791608134896f1028526e54649",
