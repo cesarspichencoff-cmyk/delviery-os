@@ -148,6 +148,8 @@ export interface OrderRevisionPrintReviewInputV1 {
   history: readonly NativeOrderPrintAttemptV1[];
   history_complete_for_order_station: boolean;
   history_source_ref: string;
+  current_native_revision_verified_latest: boolean;
+  cancellation_revision_reconciled: boolean;
 }
 export interface OrderRevisionPrintReviewV1 {
   schema: "deliveryos.order-revision-print-review.v1";
@@ -194,6 +196,12 @@ export function decideProductionOrderRevisionReviewV1(
       typeof input.history_source_ref !== "string" ||
       !/^[A-Za-z0-9:._/-]{8,256}$/.test(input.history_source_ref))
     return result("ORDER_STATION_HISTORY_COMPLETENESS_UNATTESTED");
+  // Source state 3/P/X has no known release or cancellation semantics here.
+  // Until the latest revision and cancellation history are reconciled,
+  // even a supposedly complete attempt journal is not a review candidate.
+  if (input.current_native_revision_verified_latest !== true ||
+      input.cancellation_revision_reconciled !== true)
+    return result("LATEST_NATIVE_REVISION_OR_CANCELLATION_UNRECONCILED");
   if (!Array.isArray(input.history) || input.history.length > 5000)
     return result("ORDER_STATION_ATTEMPT_HISTORY_INVALID");
   const attempts = new Map<string, string>();
