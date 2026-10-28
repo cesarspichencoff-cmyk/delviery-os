@@ -72,7 +72,25 @@ function correlateNativeFirstDispatch(input){
  const lineage=reviewNativeFirstDispatch(claim);
  if(lineage.status!=="REVIEW_CANDIDATE_NOT_INDEPENDENTLY_ATTESTED")
   return result("HOLD","FIRST_DISPATCH_EVENT_KIND_OR_SOURCE_CLAIM_REJECTED",scope);
+ if(input.history_scope_complete_claim!==true||
+    input.latest_native_revision_claim!==true||
+    input.cancellation_reconciled_claim!==true||
+    typeof input.history_source_ref!=="string"||
+    !/^[A-Za-z0-9:._/-]{8,256}$/.test(input.history_source_ref))
+  return result("HOLD","FIRST_DISPATCH_JOURNAL_OR_NATIVE_CURRENCY_UNATTESTED",scope);
  if(!Array.isArray(input.history)||input.history.length>5000)
+  return result("HOLD","FIRST_DISPATCH_JOURNAL_INVALID",scope);
+ // Every row must have a usable journal identity; dropping malformed rows
+ // before scope filtering could falsely make a duplicated attempt disappear.
+ if(input.history.some(r=>!r||typeof r!=="object"||Array.isArray(r)||
+    typeof r.order_key!=="string"||
+    typeof r.station_code!=="string"||!STATION.test(r.station_code)||
+    typeof r.operational_date!=="string"||
+    !/^\d{4}-\d{2}-\d{2}$/.test(r.operational_date)||
+    typeof r.attempt_id!=="string"||!ATTEMPT.test(r.attempt_id)||
+    typeof r.intent_fingerprint!=="string"||!SHA.test(r.intent_fingerprint)||
+    typeof r.native_snapshot_sha256!=="string"||
+    !SHA.test(r.native_snapshot_sha256)||!STATES.has(r.state)))
   return result("HOLD","FIRST_DISPATCH_JOURNAL_INVALID",scope);
  // Reject conflicting/sideloaded records for this exact order+station;
  // one candidate print attempt cannot prove exclusivity against a second
