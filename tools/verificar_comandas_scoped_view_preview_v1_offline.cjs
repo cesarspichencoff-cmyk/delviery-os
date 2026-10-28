@@ -176,7 +176,10 @@ test("unknown reason and inconsistent readiness claims cannot bypass global veto
  ];
  for(const mutation of versions){
   const src=clone(base);mutation(src);
-  const preview=run(fixture(),src);
+  // A deliberate missing-station fixture cannot satisfy run()'s normal
+  // two-station shape assertion. Review it directly as malformed evidence.
+  const preview=src.production.length===2
+    ?run(fixture(),src):projectScopedPreview(src,fixture());
   assert.ok(preview.production.every(v=>v.byte_count===0));
   assert.equal(preview.conference.byte_count,0);
  }
