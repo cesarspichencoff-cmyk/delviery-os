@@ -282,7 +282,7 @@ const attemptRow=(linked,state,updates={})=>({
 test("Reader and attempt history link remains HOLD despite all caller claims true",()=>{
  const r=linkedReview(linkedInput());
  assert.equal(r.reader_revision_consistency_checked,true);
- assert.equal(r.history_diagnostic_verdict,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY");
+ assert.equal(r.history_diagnostic_verdict,"HOLD");
  assert.deepEqual(r.reasons,
   ["READER_AND_JOURNAL_CLAIMS_NOT_INDEPENDENTLY_ATTESTED"]);
 });
@@ -533,12 +533,20 @@ test("signed witness cannot attach to different store day or station journal row
 test("canonical signed attempt IDs accepted but malformed IDs rejected",()=>{
  const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
  assert.equal(linkedReview(x).history_diagnostic_verdict,
-  "REVIEW_CANDIDATE_NO_PRINT_AUTHORITY");
+  "HOLD");
  const bad=attachSignedAttempt(syntheticSourceWitness(linkedInput()),
   "PLANNED",{attempt_id:"attempt:INVALID SPACES"});
  assert.deepEqual(linkedReview(bad).reasons,
   ["SIGNED_WITNESS_ATTEMPT_NOT_IN_SCOPED_HISTORY"]);
  assert.equal(linkedReview(bad).history_diagnostic_verdict,"HOLD");
+});
+test("incomplete planned attempt remains a pending submission even if signed",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+ const r=linkedReview(x);
+ assert.equal(r.history_diagnostic_verdict,"HOLD");
+ assert.deepEqual(r.reasons,["PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"]);
+ assert.equal(r.print_authorized,false);
+ assert.equal(r.automatic_retry_allowed,false);
 });
 test("missing witness contents cannot supply independent authority",()=>{
  const x=linkedInput();x.print_attempt_witness={};
