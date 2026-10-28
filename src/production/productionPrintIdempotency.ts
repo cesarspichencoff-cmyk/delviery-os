@@ -294,8 +294,6 @@ export function decideProductionOrderRevisionReviewV1(
     item.state === "SPOOLER_OBSERVED" ||
     item.state === "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"))
     return result("PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION");
-  if (relevant.some(item => item.state === "PLANNED"))
-    return result("PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
   if (relevant.some(item =>
     item.native_snapshot_sha256.toLowerCase() ===
       input.native_snapshot_sha256.toLowerCase() &&
@@ -308,5 +306,7 @@ export function decideProductionOrderRevisionReviewV1(
     item.native_snapshot_sha256.toLowerCase() !==
       input.native_snapshot_sha256.toLowerCase()))
     return result("PRINT_INTENT_REUSED_ACROSS_NATIVE_REVISIONS");
+  if (relevant.some(item => item.state === "PLANNED"))
+    return result("PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
   return result(null);
 }
