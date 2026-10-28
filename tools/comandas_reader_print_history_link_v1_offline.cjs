@@ -107,16 +107,38 @@ function reviewReaderPrintHistory(input){
     reader_revision_consistency_checked:true,
     history_diagnostic_verdict:diagnosis.verdict
    });
+  // Cryptographic coherence alone is NOT enough. The witnessed attempt
+  // must be represented in this scoped order/station/day journal, including
+  // its semantic fingerprint. Otherwise a signed observation for another
+  // attempt could be misattributed to this order after a revision.
+  const witnessed=Array.isArray(input.history)?input.history.filter(row=>
+   row && typeof row==="object" && !Array.isArray(row) &&
+   row.order_key===event.order_key &&
+   row.operational_date===order.DTHRABERMESA.slice(0,10) &&
+   row.station_code===c.station_code &&
+   row.attempt_id===w.record.attempt_id
+  ):[];
+  const witnessFlags={
+   reader_revision_consistency_checked:true,
+   history_diagnostic_verdict:diagnosis.verdict,
+   source_witness_signature_verified:true,
+   source_witness_trust_independently_attested:false,
+   witnessed_observation_requires_reconciliation:true
+  };
+  if(!witnessed.length)
+   return hold("SIGNED_WITNESS_ATTEMPT_NOT_IN_SCOPED_HISTORY",witnessFlags);
+  if(witnessed.some(row=>typeof row.intent_fingerprint!=="string" ||
+     row.intent_fingerprint.toLowerCase()!==w.record.intent_fingerprint.toLowerCase()))
+   return hold("SIGNED_WITNESS_ATTEMPT_FINGERPRINT_CONTRADICTED",witnessFlags);
+  if(verification.witnessed_spooler_state==="SPOOLER_OBSERVED" &&
+     witnessed.some(row=>row.state==="PROVEN_NO_EFFECT_FAILURE"))
+   return hold("SIGNED_WITNESS_CONTRADICTS_PROVEN_NO_EFFECT",witnessFlags);
+  // A valid signed spooler observation always requires reconciliation.
+  // Even a self-reported complete journal is neither independent custody
+  // nor permission to print; preserve stronger historical vetoes.
   return hold(diagnosis.verdict==="HOLD"
-     ?reason:"SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED",{
-    reader_revision_consistency_checked:true,
-    history_diagnostic_verdict:diagnosis.verdict,
-    source_witness_signature_verified:true,
-    // This is a cryptographically coherent statement from supplied trust,
-    // not independent key custody, source-of-first-print, or real-paper proof.
-    source_witness_trust_independently_attested:false,
-    witnessed_observation_requires_reconciliation:true
-   });
+     ?reason:"SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED",
+     witnessFlags);
  }
  return hold(reason,{
   reader_revision_consistency_checked:true,
