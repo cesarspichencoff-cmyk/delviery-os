@@ -270,6 +270,7 @@ function linkedReview(input){
 const attemptRow=(linked,state,updates={})=>({
  order_key:linked.reader_pair.event.order_key,
  station_code:"00003",
+ operational_date:linked.reader_pair.event.order.DTHRABERMESA.slice(0,10),
  native_snapshot_sha256:"a".repeat(64),
  intent_fingerprint:"b".repeat(64),
  attempt_id:"A1",state,...updates
@@ -352,6 +353,24 @@ test("invalid or conflicting historical attempt cannot be treated as absent",()=
   attemptRow(x,"PHYSICALLY_CONFIRMED")];
  assert.deepEqual(linkedReview(x).reasons,
   ["ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED"]);
+});
+test("same native sale key in another operational day cannot hide earlier print",()=>{
+ const x=linkedInput("P");
+ x.history=[attemptRow(x,"PHYSICALLY_CONFIRMED",{
+  operational_date:"2026-10-19"
+ })];
+ const r=linkedReview(x);
+ assert.equal(r.reader_revision_consistency_checked,true);
+ assert.deepEqual(r.reasons,["ORDER_STATION_OPERATIONAL_DAY_CONTRADICTED"]);
+ assert.equal(r.print_authorized,false);
+});
+test("impossible attempt operational day is rejected before review",()=>{
+ const x=linkedInput("3");
+ x.history=[attemptRow(x,"SPOOLER_OBSERVED",{
+  operational_date:"2026-02-30"
+ })];
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["ORDER_STATION_ATTEMPT_HISTORY_INVALID"]);
 });
 test("absent native pair never yields an untrusted positive proof",()=>{
  const x=linkedInput();delete x.reader_pair;
