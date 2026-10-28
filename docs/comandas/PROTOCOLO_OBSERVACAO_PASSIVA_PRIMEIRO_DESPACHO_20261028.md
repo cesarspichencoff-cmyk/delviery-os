@@ -10,6 +10,18 @@ Em inventário de dispositivos Remote Desktop Commander, consultado em 28/10: `C
 
 O primeiro evento `DLV_IFO` que cria uma tentativa de impressão de produção segue **UNKNOWN**. A documentação de `docs/comandas/AUDITORIA_PRIMEIRO_DESPACHO_MARKETPLACE_FORSALE_20261027.md` demonstra que importação de marketplace, criação de comanda ForSale, relatório de entrega, saída GP/Gestor, aceitação Odhen e status Windows não são intercambiáveis com esse evento. `tools/comandas_native_first_dispatch_correlation_v1_offline.cjs` só valida coerência de *alegações* com o Reader; não identifica o emissor real.
 
+### Atualização da inspeção permitida — bloqueio de conector
+
+A automação preexistente `TATÁ Comandas — integridade` (`6adeeea21c488191968835b158d9855a`) delimita acesso **somente ao host exatamente `CAIXA_MOOCA`**, e exclusivamente aos quatro arquivos agregados já existentes:
+- `C:\\ProgramData\\TataComandaReader\\state\\reader-heartbeat-v1.json`
+- `C:\\ProgramData\\TataComandaReader\\evidence\\shadow-consumer-status.json`
+- `C:\\ProgramData\\TataComandaReader\\evidence\\reporting-projector-status.json`
+- `C:\\ProgramData\\TataComandaReader\\state\\production-service-state.json`
+
+Em 28/10/2026, uma tentativa de leitura **somente desses arquivos** retornou `Desktop Commander monthly usage limit` em todos os casos. **Quatro solicitações tentadas; zero conteúdos de arquivos recebidos; nenhuma evidência nova de saúde do Reader.** O conector indicou expressamente não repetir/reconectar. Consequentemente, não há base para inferir mudança de `ready_count`, estado do serviço, frescor de heartbeat, projeção nem primeira impressão. Esta autorização antiga de integridade **não se estende** a capturas individuais de impressão, logs de spooler, banco ou configuração Retail; ela tampouco prova que `CAIXA_MOOCA` seja fisicamente o equipamento autorizado para a primeira via do Itaim.
+
+**Conduta:** interromper tentativas pelo mesmo conector; não usar outro conector ou sessão para burlar a cota ou a proteção. Um futuro acesso deverá respeitar o mecanismo e autorização apropriados. Até lá, `READER_HEALTH_FRESHNESS=UNKNOWN`, `FIRST_NATIVE_DISPATCH=UNKNOWN`, `PILOT=HOLD`.
+
 ## 2. Fronteira de autorização e identidade do equipamento
 
 Antes de ler qualquer fonte viva: (a) confirmar por evidência externa a **unidade, dispositivo, papel e permissões** do host; (b) aprovar explicitamente o escopo limitado da fonte de leitura; (c) não contornar controles de acesso. Disponibilidade de um equipamento, nome `CAIXA_MOOCA` ou aprovação genérica de continuação **não autorizam** leitura de configurações protegidas, pedidos privados, filas de impressão, credenciais, logs ou banco.
@@ -54,6 +66,6 @@ O primeiro resultado aceitável de B pode ser **`READONLY_SOURCE_TRACE_PROVEN`**
 
 A investigação B é **parcial** se apenas identificar fonte/callsite, mas faltar transporte ou tentativa. É **HOLD** se a unidade não for comprovada, se a inspeção exigir outra permissão, se a única observação for de fila ou se a revisão mudar entre capturas. Só avançar a proposta de piloto **depois** da prova da cadeia de origem e canal, sequência persistida/escopo forte, roteamento de duas praças + uma conferência, exclusividade de emissor, rollback e autorização explícita para o efeito físico.
 
-**Estado neste checkpoint:** `CODE_CI_PASS`; `SOURCE_FIRST_DISPATCH_UNKNOWN`; `DEVICE_UNIT_NOT_REVERIFIED`; `NO_LIVE_READ`; `NO_PRINT`; `PILOT_HOLD`.
+**Estado neste checkpoint:** `PREVIOUS_CODE_CI_PASS`; `SOURCE_FIRST_DISPATCH_UNKNOWN`; `DEVICE_UNIT_NOT_REVERIFIED`; `AGGREGATE_READ_ATTEMPTED_BLOCKED_BY_CONNECTOR_LIMIT`; `NO_LIVE_FILE_CONTENT`; `NO_PRINT`; `PILOT_HOLD`. Nova CI do commit documental deve ser verificada separadamente.
 
 **Arquivos correlatos:** `docs/comandas/AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md`; `docs/comandas/AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md`; `docs/comandas/PILOTO_PEDIDO_REAL_CRITERIOS_ACEITE_20261026.md`.
