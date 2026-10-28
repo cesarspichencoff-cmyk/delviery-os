@@ -2,7 +2,35 @@
 (() => {
  const $=id=>document.getElementById(id),status=$('status');
  let epoch=0,controller=null,refreshTimer=null,busy=false;
- let records=[],selectedKey=null;
+ let records=[],selectedKey=null,focusRevision=0;
+ document.addEventListener('focusin',()=>focusRevision++);
+ function rememberFocus(){
+  const active=document.activeElement;
+  if(!active)return null;
+  if(active.id==='search'||active.id==='state-filter')return {id:active.id};
+  const row=active.closest('.order-row');
+  if(row)return {row:row.dataset.orderKey};
+  if(!$('detail').contains(active))return null;
+  const item=active.closest('.item');
+  if(item&&active.tagName==='SUMMARY')return {item:item.dataset.productCode,order:selectedKey};
+  if(active.matches('.source-detail summary'))return {source:true,order:selectedKey};
+  if(active.matches('.back-to-list'))return {back:true,order:selectedKey};
+  if(active.id==='selected-order-title')return {heading:true,order:selectedKey};
+  return null;
+ }
+ function restoreFocus(saved,revision){
+  // Never steal focus after the operator moved elsewhere while the read was pending.
+  if(!saved||revision!==focusRevision||$('reading').hidden)return;
+  let target=saved.id?$(saved.id):null;
+  if(saved.row)target=Array.from($('orders').children).find(row=>row.dataset.orderKey===saved.row);
+  if(saved.order===selectedKey){
+   if(saved.item)target=Array.from($('detail').querySelectorAll('.item')).find(item=>item.dataset.productCode===saved.item)?.querySelector('summary');
+   else if(saved.source)target=$('detail').querySelector('.source-detail summary');
+   else if(saved.back)target=$('detail').querySelector('.back-to-list');
+   else if(saved.heading)target=$('selected-order-title');
+  }
+  target?.focus({preventScroll:true});
+ }
  const key=order=>JSON.stringify([order.source_mode,order.store_id,order.sale_ref,order.order_ref,order.opened_at]);
  function clear(keepLayout=false){clearTimeout(refreshTimer);records=[];selectedKey=null;$('orders').replaceChildren();$('detail').replaceChildren();$('record-count').textContent='';$('result-count').textContent='';if(!keepLayout)$('reading').hidden=true;$('reading').setAttribute('aria-busy',String(keepLayout));if(keepLayout)$('detail').append(text('p','Revalidando acesso e leitura…','empty'));}
  function cancel(){epoch++;controller?.abort();controller=null;clear();busy=false;buttons(false);}
@@ -66,7 +94,7 @@
   const selected=found.find(order=>key(order)===preferred)||found[0];selectedKey=selected?key(selected):null;
   const rows=found.map(order=>{
    const button=document.createElement('button'),top=document.createElement('span'),meta=document.createElement('span');
-   button.type='button';button.className='order-row';button.setAttribute('aria-controls','detail');button.setAttribute('aria-pressed',String(key(order)===selectedKey));
+   button.type='button';button.className='order-row';button.dataset.orderKey=key(order);button.setAttribute('aria-controls','detail');button.setAttribute('aria-pressed',String(key(order)===selectedKey));
    button.setAttribute('aria-label','Investigar comanda '+order.order_ref+', '+states[order.state]);
    top.className='row-top';meta.className='row-meta';
    top.append(text('span','Comanda '+order.order_ref,'row-title'),text('span',time(order.source_observed_at),'row-time'));
@@ -97,11 +125,11 @@
   status.textContent=records.length?'Leitura recebida. Confira origem e horário.':'Sem observações recentes. Isso não significa que não existam pedidos ativos.';
  }
  async function load(){
-  if(busy)return;const preferred=selectedKey;const expanded=Array.from($('detail').querySelectorAll('.item[open]'),el=>el.dataset.productCode);const sourceOpen=!!$('detail').querySelector('.source-detail[open]');const scroll=$('orders').parentElement.scrollTop;clear(!$('reading').hidden);status.textContent='Atualizando leitura…';
+  if(busy)return;const savedFocus=rememberFocus(),revision=focusRevision;const preferred=selectedKey;const expanded=Array.from($('detail').querySelectorAll('.item[open]'),el=>el.dataset.productCode);const sourceOpen=!!$('detail').querySelector('.source-detail[open]');const scroll=$('orders').parentElement.scrollTop;clear(!$('reading').hidden);status.textContent='Atualizando leitura…';
   const r=await request('/api/copiloto/orders');if(!r)return;
   if(!r.ok){if(r.status===401||r.status===403){access(failure(r));if(r.status===403)$('logout').hidden=false;}else{clear();status.textContent=failure(r);}return;}
   $('access').hidden=true;$('logout').hidden=false;
-  try{render(r.data,preferred);if(selectedKey&&selectedKey===preferred){for(const el of $('detail').querySelectorAll('.item'))el.open=expanded.includes(el.dataset.productCode);const source=$('detail').querySelector('.source-detail');if(source)source.open=sourceOpen;$('orders').parentElement.scrollTop=scroll;}}catch{clear();status.textContent='Leitura inválida. Nenhum pedido foi exibido.';}
+  try{render(r.data,preferred);if(selectedKey&&selectedKey===preferred){for(const el of $('detail').querySelectorAll('.item'))el.open=expanded.includes(el.dataset.productCode);const source=$('detail').querySelector('.source-detail');if(source)source.open=sourceOpen;$('orders').parentElement.scrollTop=scroll;}restoreFocus(savedFocus,revision);}catch{clear();status.textContent='Leitura inválida. Nenhum pedido foi exibido.';}
   // A bounded display lease: clear and revalidate, including after returning to the tab.
   refreshTimer=setTimeout(load,30000);
  }

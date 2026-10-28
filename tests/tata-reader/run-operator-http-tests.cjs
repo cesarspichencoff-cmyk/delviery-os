@@ -96,6 +96,20 @@ async function login(){const begin=await post('/api/operator/login/begin',{email
     await page.getByRole('button',{name:'Atualizar leitura',exact:true}).click();
     await page.locator('.source-detail[open]').waitFor();
     assert.equal(await page.locator('.item[open]').count(),1);
+    // Trigger the same refresh handler without clicking away from the investigated item.
+    await page.locator('.item summary').first().focus();
+    await page.locator('#refresh').dispatchEvent('click');
+    await page.locator('.source-detail[open]').waitFor();
+    assert.equal(await page.locator('.item summary').first().evaluate(el=>el===document.activeElement),true);
+    // A deliberate focus change during a slow response must win over restoration.
+    let focusEntered,focusRelease;
+    const focusStarted=new Promise(r=>focusEntered=r),focusGate=new Promise(r=>focusRelease=r);
+    await page.route('**/api/copiloto/orders',async route=>{const response=await route.fetch();focusEntered();await focusGate;await route.fulfill({response});},{times:1});
+    await page.locator('#refresh').dispatchEvent('click');await focusStarted;
+    await page.locator('#search').focus();focusRelease();
+    await page.locator('.source-detail[open]').waitFor();
+    assert.equal(await page.locator('#search').evaluate(el=>el===document.activeElement),true);
+
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.equal(await page.evaluate(()=>document.cookie), '');assert.equal(await page.evaluate(()=>localStorage.length+sessionStorage.length),0);
     const cookies=await context.cookies();assert(cookies.some(c=>c.name==='__Host-deliveryos_operator'&&c.httpOnly&&c.secure&&c.sameSite==='Strict'));assert(!cookies.some(c=>c.value.includes('PRIVATE')));

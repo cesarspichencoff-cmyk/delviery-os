@@ -151,6 +151,7 @@
     "scope": "authenticated isolated reader; canonical Home unchanged",
     "status": "local tests and interactive synthetic visual review passed; CI pending",
     "installed_on_mooca": false,
-    "evidence": "docs/design/COPILOTO_LEITOR_VISUAL_2026-10-28.md"
+    "evidence": "docs/design/COPILOTO_LEITOR_VISUAL_2026-10-28.md",
+    "keyboard_continuity": "Focus preservation implemented; delayed-response focus-change browser controls added; CI pending"
   }
 }
