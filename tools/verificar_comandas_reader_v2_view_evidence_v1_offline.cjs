@@ -9,6 +9,9 @@ const {assessNativeReaderV2:review,SCHEMA,EFFECTS}=
 const {reviewReaderPrintHistory:reviewAttemptLink,SCHEMA:LINK_SCHEMA,
  EFFECTS:LINK_EFFECTS,orderStationWitnessBindingSha256V1}=
  require("./comandas_reader_print_history_link_v1_offline.cjs");
+const {correlateNativeFirstDispatch:reviewFirstDispatch,
+ SCHEMA:DISPATCH_SCHEMA,EFFECTS:DISPATCH_EFFECTS}=
+ require("./comandas_native_first_dispatch_correlation_v1_offline.cjs");
 const crypto=require("node:crypto");
 const {printAttemptWitnessKeyFingerprintV882,
  printAttemptWitnessMessageV882,printAttemptWitnessRecordHashV882}=
@@ -557,6 +560,151 @@ test("missing witness contents cannot supply independent authority",()=>{
 test("absent native pair never yields an untrusted positive proof",()=>{
  const x=linkedInput();delete x.reader_pair;
  assert.deepEqual(linkedReview(x).reasons,["READER_PRINT_LINK_INPUT_INVALID"]);
+});
+
+
+function correlatedDispatchInput(status="3"){
+ const x=linkedInput(status),o=x.reader_pair.event.order;
+ const claim={
+  store_id:o.CDFILIAL,store_unit:o.CDLOJA,
+  installed_or_observed_source_sha256:"d".repeat(64),
+  event_type:"NATIVE_FIRST_PRODUCTION_DISPATCH_CLAIM",
+  order_origin:"DLV_IFO",
+  native_order_revision_ref:"FIXTURE_NATIVE_REVISION",
+  native_revision_snapshot_sha256:x.reader_pair.event.snapshot_hash,
+  dispatcher_component_ref:"FIXTURE_DISPATCHER_COMPONENT",
+  dispatcher_source_sha256:"e".repeat(64),
+  preorder_import_is_not_print_proof:true,
+  forsale_comanda_is_not_dispatch_proof:true,
+  post_sale_report_not_reused_as_first_print:true,
+  gp_and_gestor_not_reused_as_native_trigger:true,
+  station_route_censused:true,first_attempt_identity_censused:true,
+  cancellation_revision_reconciled:true,
+  native_order_key:x.reader_pair.event.order_key,
+  operational_date:o.DTHRABERMESA.slice(0,10),
+  station_code:x.candidate.station_code,
+  first_attempt_id:"attempt:first_dispatch_0001"
+ };
+ const candidate={
+  order_key:x.reader_pair.event.order_key,
+  operational_date:claim.operational_date,
+  station_code:claim.station_code,
+  native_snapshot_sha256:x.reader_pair.event.snapshot_hash,
+  intent_fingerprint:"c".repeat(64),
+  attempt_id:claim.first_attempt_id
+ };
+ return {reader_pair:x.reader_pair,claim,candidate,
+  history:[attemptRow(x,"PLANNED",{
+   native_snapshot_sha256:x.reader_pair.event.snapshot_hash,
+   intent_fingerprint:candidate.intent_fingerprint,
+   attempt_id:candidate.attempt_id
+  })],history_scope_complete_claim:true,
+  latest_native_revision_claim:true,
+  cancellation_reconciled_claim:true,
+  history_source_ref:"FIXTURE_CLAIM_ONLY_NOT_ATTESTATION"};
+}
+function dispatchCheck(input,status,reason){
+ const before=JSON.stringify(input),r=reviewFirstDispatch(input);
+ assert.equal(JSON.stringify(input),before);
+ assert.equal(r.schema,DISPATCH_SCHEMA);
+ assert.equal(r.status,status);
+ assert.equal(r.reason,reason);
+ assert.deepEqual(r.effects,DISPATCH_EFFECTS);
+ for(const field of ["actual_first_native_print_event_proven",
+  "journal_independently_attested","physical_paper_proven",
+  "source_and_journal_currency_proven","can_authorize_cutover",
+  "print_authorized","automatic_retry_allowed"])
+  assert.equal(r[field],false,field);
+ for(const secret of ["0000348850","0000349281","SEM CEBOLINHA",
+  "ENTREGA NA PORTARIA"])
+  assert.ok(!JSON.stringify(r).includes(secret),"no order leakage");
+ return r;
+}
+test("native first dispatch matching Reader and one journal row is only a claim",()=>{
+ for(const status of ["3","P","X"]){
+  const x=correlatedDispatchInput(status);
+  const r=dispatchCheck(x,"CORRELATED_CLAIMS_REVIEW_ONLY",
+   "DISPATCH_AND_JOURNAL_ARE_NOT_INDEPENDENT_SOURCE_ATTESTATION");
+  assert.equal(r.reader_revision_consistency_checked,true);
+  assert.equal(r.native_order_station_day_correlated,true);
+  assert.equal(r.journal_first_attempt_correlated,true);
+ }
+});
+test("preorder and other false trigger events cannot become native dispatch",()=>{
+ for(const event of ["RETAIL_MARKETPLACE_PREORDER",
+  "FORSALE_COMANDA_CREATED","IFOOD_GESTOR_IPC_PRINT",
+  "TEKNISA_POST_SALE_DELIVERY_REPORT","WINDOWS_PRINTED_JOB_STATUS",
+  "ODHEN_BRIDGE_QUEUE_ACK"]){
+  const x=correlatedDispatchInput();x.claim.event_type=event;
+  dispatchCheck(x,"HOLD","FIRST_DISPATCH_EVENT_KIND_OR_SOURCE_CLAIM_REJECTED");
+ }
+});
+test("claimed dispatch to another native order, station or day rejected",()=>{
+ for(const change of [
+  x=>x.claim.native_order_key="0001|01|UNRELATED|SALE",
+  x=>x.claim.station_code="00002",
+  x=>x.claim.operational_date="2026-10-21",
+  x=>x.candidate.station_code="00002",
+  x=>x.claim.native_revision_snapshot_sha256="f".repeat(64),
+  x=>x.candidate.native_snapshot_sha256="f".repeat(64)
+ ]){
+  const x=correlatedDispatchInput();change(x);
+  dispatchCheck(x,"HOLD","FIRST_DISPATCH_ORDER_DAY_REVISION_OR_STATION_MISMATCH");
+ }
+});
+test("no journal row or multiple first attempts cannot prove first dispatch",()=>{
+ const x=correlatedDispatchInput();x.history=[];
+ dispatchCheck(x,"HOLD","FIRST_DISPATCH_ATTEMPT_NOT_IN_JOURNAL");
+ const y=correlatedDispatchInput();
+ y.history.push({...y.history[0],attempt_id:"attempt:concurrent_dispatch_0002"});
+ dispatchCheck(y,"HOLD","FIRST_DISPATCH_MULTIPLE_ATTEMPT_ROWS_UNRECONCILED");
+ const z=correlatedDispatchInput();z.history.push({...z.history[0]});
+ dispatchCheck(z,"HOLD","FIRST_DISPATCH_MULTIPLE_ATTEMPT_ROWS_UNRECONCILED");
+});
+test("pending journal of another revision or intent fails correlation",()=>{
+ for(const change of [
+  x=>x.history[0].attempt_id="attempt:wrong_attempt_0001",
+  x=>x.history[0].intent_fingerprint="b".repeat(64),
+  x=>x.history[0].native_snapshot_sha256="f".repeat(64),
+  x=>x.history[0].state="UNRECOGNIZED"
+ ]){
+  const x=correlatedDispatchInput();change(x);
+  const r=dispatchCheck(x,"HOLD",
+   x.history[0].state==="UNRECOGNIZED"
+    ?"FIRST_DISPATCH_JOURNAL_INVALID"
+    :"FIRST_DISPATCH_JOURNAL_ATTEMPT_IDENTITY_MISMATCH");
+  assert.equal(r.print_authorized,false);
+ }
+});
+test("cross-day attempt collisions and corrupted sibling row fail closed",()=>{
+ const x=correlatedDispatchInput();
+ x.history[0].operational_date="2026-10-19";
+ dispatchCheck(x,"HOLD","FIRST_DISPATCH_ORDER_DAY_CONTRADICTED");
+ const y=correlatedDispatchInput();y.history.push(null);
+ dispatchCheck(y,"HOLD","FIRST_DISPATCH_JOURNAL_INVALID");
+});
+test("unverified cancellation, latest native state or journal completeness hold",()=>{
+ for(const field of ["history_scope_complete_claim",
+  "latest_native_revision_claim","cancellation_reconciled_claim"]){
+  const x=correlatedDispatchInput();x[field]=false;
+  dispatchCheck(x,"HOLD","FIRST_DISPATCH_JOURNAL_OR_NATIVE_CURRENCY_UNATTESTED");
+ }
+ const x=correlatedDispatchInput();x.history_source_ref="";
+ dispatchCheck(x,"HOLD","FIRST_DISPATCH_JOURNAL_OR_NATIVE_CURRENCY_UNATTESTED");
+});
+test("self-declared production dispatcher source with mismatched origin holds",()=>{
+ const x=correlatedDispatchInput();
+ x.claim.order_origin="DLV_NMO";
+ dispatchCheck(x,"HOLD","FIRST_DISPATCH_EVENT_KIND_OR_SOURCE_CLAIM_REJECTED");
+ const y=correlatedDispatchInput();
+ y.claim.station_route_censused=false;
+ dispatchCheck(y,"HOLD","FIRST_DISPATCH_EVENT_KIND_OR_SOURCE_CLAIM_REJECTED");
+});
+test("native item cancellation cannot be hidden by coherent dispatch claim",()=>{
+ const x=correlatedDispatchInput();
+ x.reader_pair.event.order.items[0].IDSTPRCOMVEN="6";
+ refresh(x.reader_pair);
+ dispatchCheck(x,"HOLD","READER_V2_NATIVE_REVISION_UNTRUSTED");
 });
 
 console.log("COMANDAS_READER_V2_VIEW_EVIDENCE_V1="+total+"/"+total+
