@@ -7,7 +7,7 @@ const path = require("node:path");
 const { projectExpectedRouting } = require("../dist/src/shadow/expectedRouting.js");
 const { planProductionPrintIntents } = require("../dist/src/production/productionPrintPlan.js");
 const {
-  decideProductionPrintSubmission,
+  decideProductionPrintSubmission, decideProductionOrderRevisionReviewV1,
 } = require("../dist/src/production/productionPrintIdempotency.js");
 
 const routing = JSON.parse(
@@ -671,6 +671,77 @@ assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
  intent_fingerprint:intentFingerprint,attempt_id:"A8",
  state:"PLANNED"
 }]).decision,"ALLOW_FIRST_SUBMISSION");
+
+
+const shaA="a".repeat(64),shaB="b".repeat(64),shaC="c".repeat(64);
+const scopedBase=()=>({
+ order_key:"0001|01|0000349281|0000348850",station_code:"00003",
+ native_snapshot_sha256:shaB,intent_fingerprint:shaC,
+ history:[],history_complete_for_order_station:true,
+ history_source_ref:"OFFLINE_FIXTURE_NOT_AN_ATTESTATION"
+});
+const orderRow=(state,changes={})=>({
+ order_key:"0001|01|0000349281|0000348850",station_code:"00003",
+ native_snapshot_sha256:shaA,intent_fingerprint:shaA,attempt_id:"A1",
+ state,...changes
+});
+function assertOrderReview(input,verdict,reason){
+ const before=JSON.stringify(input);
+ const output=decideProductionOrderRevisionReviewV1(input);
+ assert.equal(JSON.stringify(input),before,"input must not mutate");
+ assert.equal(output.schema,"deliveryos.order-revision-print-review.v1");
+ assert.equal(output.verdict,verdict);
+ assert.ok(output.reasons.includes(reason),JSON.stringify(output.reasons));
+ assert.equal(output.ready_for_operational_print,false);
+ assert.equal(output.automatic_retry_allowed,false);
+ assert.deepEqual(output.effects,{print:false,spooler_write:false,sequence_write:false});
+}
+for(const state of ["PHYSICALLY_CONFIRMED"]){
+ const x=scopedBase();x.history=[orderRow(state)];
+ assertOrderReview(x,"HOLD","PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION");
+}
+for(const state of ["SUBMISSION_RETURNED_UNOBSERVED","SPOOLER_OBSERVED",
+ "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"]){
+ const x=scopedBase();x.history=[orderRow(state)];
+ assertOrderReview(x,"HOLD","PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION");
+}
+for(const state of ["PLANNED","PROVEN_NO_EFFECT_FAILURE"]){
+ const x=scopedBase();x.history=[orderRow(state)];
+ assertOrderReview(x,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
+  "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
+}
+for(const field of ["order_key","station_code"]){
+ const x=scopedBase();x.history=[orderRow("PHYSICALLY_CONFIRMED",{
+  [field]:field==="order_key"?"0001|01|OTHER|ANOTHER":"00002"
+ })];
+ assertOrderReview(x,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
+  "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
+}
+const incomplete=scopedBase();incomplete.history_complete_for_order_station=false;
+assertOrderReview(incomplete,"HOLD","ORDER_STATION_HISTORY_COMPLETENESS_UNATTESTED");
+const noSource=scopedBase();noSource.history_source_ref="";
+assertOrderReview(noSource,"HOLD","ORDER_STATION_HISTORY_COMPLETENESS_UNATTESTED");
+for(const bad of [null,[null],[orderRow("UNRECOGNIZED")],
+ [orderRow("PLANNED",{attempt_id:""})]]){
+ const x=scopedBase();x.history=bad;
+ assertOrderReview(x,"HOLD","ORDER_STATION_ATTEMPT_HISTORY_INVALID");
+}
+const repeatedAttempt=scopedBase();
+repeatedAttempt.history=[orderRow("PLANNED"),orderRow("PROVEN_NO_EFFECT_FAILURE")];
+assertOrderReview(repeatedAttempt,"HOLD","ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED");
+const sameRevisionDiffIntent=scopedBase();
+sameRevisionDiffIntent.history=[orderRow("PLANNED",{
+ native_snapshot_sha256:shaB,intent_fingerprint:shaA})];
+assertOrderReview(sameRevisionDiffIntent,"HOLD",
+ "SAME_NATIVE_REVISION_DIFFERENT_INTENT_IDENTITY");
+const sameIntentDiffRevision=scopedBase();
+sameIntentDiffRevision.history=[orderRow("PLANNED",{intent_fingerprint:shaC})];
+assertOrderReview(sameIntentDiffRevision,"HOLD",
+ "PRINT_INTENT_REUSED_ACROSS_NATIVE_REVISIONS");
+const exactDuplicate=scopedBase();exactDuplicate.history=[
+ orderRow("PLANNED"),orderRow("PLANNED")];
+assertOrderReview(exactDuplicate,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
+ "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
 
 assert.deepEqual(plan.effects, {
   print: false,
