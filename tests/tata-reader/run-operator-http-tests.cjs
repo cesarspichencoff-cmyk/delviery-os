@@ -15,8 +15,7 @@ const event={schema:'deliveryos.tata-reader-stable-order-event.v1',snapshot_hash
 const write=()=>fs.writeFileSync(file,JSON.stringify(event));write();
 fs.writeFileSync(path.join(root,'state','reader-watch-checkpoint-v1.json'),JSON.stringify({schema:'deliveryos.tata-reader-continuous-checkpoint.v1',bootstrap_complete:true,entries:[{order_key:event.order_key,snapshot_hash:hash,emitted_hash:hash,stable_count:2}]}));
 const scope={unitId:'ITAIM',sourceUnitId:'LAB',sourceStoreId:'01',mappingEvidenceRef:'SYNTHETIC',sourceMode:'simulated'};
-const assetsDir=path.resolve(__dirname,'../../src/entregas/ui/copiloto/pedidos');
-const assets={html:fs.readFileSync(path.join(assetsDir,'index.html'),'utf8'),js:fs.readFileSync(path.join(assetsDir,'app.js'),'utf8'),css:fs.readFileSync(path.join(assetsDir,'app.css'),'utf8')};
+const assets=require('../../dist/src/platform/auth/operator-ui-assets.js').loadOperatorUiAssets(path.resolve(__dirname,'../..'));
 let passed=0;
 async function test(label,fn){await fn();passed++;console.log('PASS',label);}
 function request(route,options={}){return new Promise((resolve,reject)=>{
@@ -84,6 +83,19 @@ async function login(){const begin=await post('/api/operator/login/begin',{email
     await page.goto(origin+'/copiloto/pedidos/');await page.locator('#email').waitFor({state:'visible'});
     await page.locator('#email').fill(email);await page.getByRole('button',{name:'Receber código'}).click();await page.locator('#otp').fill('123456');await page.getByRole('button',{name:'Entrar',exact:true}).click();
     await page.getByRole('heading',{name:'Comanda C1'}).waitFor();assert(await page.getByText('SIMULADO',{exact:true}).isVisible());assert(await page.getByText('2 × produto P1',{exact:true}).isVisible());
+    await page.getByLabel('Buscar comanda ou código de produto').fill('P1');
+    assert.equal(await page.locator('.order-row').count(),1);
+    await page.getByLabel('Buscar comanda ou código de produto').fill('NAO-EXISTE');
+    assert.equal(await page.locator('article').count(),0);assert(await page.locator('#empty-results').isVisible());
+    await page.getByLabel('Buscar comanda ou código de produto').fill('');
+    await page.getByLabel('Estado da leitura').selectOption('conflict');assert.equal(await page.locator('article').count(),0);
+    await page.getByLabel('Estado da leitura').selectOption('all');
+    await page.locator('.item summary').first().press('Enter');
+    assert(await page.getByText('Praça: não informada nesta leitura.',{exact:true}).isVisible());
+    await page.locator('.source-detail summary').click();
+    await page.getByRole('button',{name:'Atualizar leitura',exact:true}).click();
+    await page.locator('.source-detail[open]').waitFor();
+    assert.equal(await page.locator('.item[open]').count(),1);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.equal(await page.evaluate(()=>document.cookie), '');assert.equal(await page.evaluate(()=>localStorage.length+sessionStorage.length),0);
     const cookies=await context.cookies();assert(cookies.some(c=>c.name==='__Host-deliveryos_operator'&&c.httpOnly&&c.secure&&c.sameSite==='Strict'));assert(!cookies.some(c=>c.value.includes('PRIVATE')));

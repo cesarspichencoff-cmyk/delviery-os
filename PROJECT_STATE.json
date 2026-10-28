@@ -32,7 +32,8 @@
     "docs/execution/COPILOTO_ACCESS_REGISTRY_2026-10-27.md",
     "docs/execution/PILOTO_LEITOR_ENTREGAS_IFOOD_2026-10-27.md",
     "docs/execution/REVISAO_PRE_INSTALACAO_2026-10-28.md",
-    "docs/execution/LEITOR_ISOLADO_2026-10-28.md"
+    "docs/execution/LEITOR_ISOLADO_2026-10-28.md",
+    "docs/design/COPILOTO_LEITOR_VISUAL_2026-10-28.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -144,5 +145,12 @@
     "equivalent_remote_code": "e3071759b0e2eecf18beed0912ed48b433d50b06",
     "exact_tree": "0d3daf2db93302fb8fb9431769069795a3f19e68",
     "proof": "docs/execution/LEITOR_ISOLADO_2026-10-28.md"
+  },
+  "reader_visual_checkpoint": {
+    "date": "2026-10-28",
+    "scope": "authenticated isolated reader; canonical Home unchanged",
+    "status": "local tests and interactive synthetic visual review passed; CI pending",
+    "installed_on_mooca": false,
+    "evidence": "docs/design/COPILOTO_LEITOR_VISUAL_2026-10-28.md"
   }
 }

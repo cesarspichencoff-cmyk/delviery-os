@@ -51,6 +51,10 @@ async function start(enabled){
  const page=await req(port,'/copiloto/pedidos/');assert.equal(page.status,200);assert(!page.text.includes('pilot-session-boot'));assert(!page.text.includes('localStorage'));assert.match(page.headers['content-security-policy'],/default-src 'none'/);
  assert.equal((await req(port,'/console/')).status,200);assert.equal((await req(port,'/api/health')).data.copiloto_orders_configured,true);
  assert.equal((await req(port,'/copiloto/pedidos/index.html')).status,404);
+ const css=await req(port,'/copiloto/pedidos/app.css');assert.equal(css.status,200);
+ assert(css.text.includes('--org-fundo: #08130d'));assert(css.text.includes('--motion-quick:120ms'));
+ assert(css.text.includes('prefers-reduced-motion:reduce'));assert(css.text.includes('.workbench'));
+ assert(!css.text.includes('@import'));
  assert.equal((await req(port,'/api/copiloto/orders','GET',undefined,{Authorization:'Bearer '+pilot.users[0].token})).status,401);
  assert.equal((await req(port,'/api/operator/login/begin','OPTIONS',undefined,{Origin:origin})).status,405);
  pass('actual pilot composes independent read UI without legacy bearer authority or script injection');
