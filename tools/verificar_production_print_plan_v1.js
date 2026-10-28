@@ -602,10 +602,12 @@ assertInvalidCalibration(c=>{c.printable_width_dots=577.25;},
  "noninteger dots cannot prove calibration");
 
 const intentFingerprint = plan.print_intents[0].intent_fingerprint;
-assert.equal(
-  decideProductionPrintSubmission(intentFingerprint, []).decision,
-  "ALLOW_FIRST_SUBMISSION",
-);
+const noJournal=decideProductionPrintSubmission(intentFingerprint, []);
+assert.equal(noJournal.decision,"BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(noJournal.blocking_reasons,
+ ["EMPTY_UNATTESTED_HISTORY_CANNOT_PROVE_FIRST_SUBMISSION"]);
+assert.equal(noJournal.automatic_retry_allowed,false);
+assert.deepEqual(noJournal.effects,{print:false,spooler_write:false});
 assert.equal(
   decideProductionPrintSubmission(intentFingerprint, [
     {
@@ -636,16 +638,22 @@ assert.equal(
   ]).decision,
   "BLOCK_ALREADY_PHYSICALLY_CONFIRMED",
 );
-assert.equal(
-  decideProductionPrintSubmission("different-fingerprint", [
-    {
-      intent_fingerprint: intentFingerprint,
-      attempt_id: "A4",
-      state: "PHYSICALLY_CONFIRMED",
-    },
-  ]).decision,
-  "ALLOW_FIRST_SUBMISSION",
-);
+const revisedAfterPrint=decideProductionPrintSubmission("different-fingerprint",[
+ {intent_fingerprint:intentFingerprint,attempt_id:"A4",
+  state:"PHYSICALLY_CONFIRMED"}
+]);
+assert.equal(revisedAfterPrint.decision,"BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(revisedAfterPrint.blocking_reasons,
+ ["UNSCOPED_HISTORY_CANNOT_PROVE_FIRST_SUBMISSION"]);
+assert.equal(revisedAfterPrint.automatic_retry_allowed,false);
+const unrelatedJournal=decideProductionPrintSubmission(intentFingerprint,[
+ {intent_fingerprint:"another-intent",attempt_id:"B1",
+  state:"PROVEN_NO_EFFECT_FAILURE"}
+]);
+assert.equal(unrelatedJournal.decision,"BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(unrelatedJournal.blocking_reasons,
+ ["UNSCOPED_HISTORY_CANNOT_PROVE_FIRST_SUBMISSION"]);
+assert.equal(unrelatedJournal.automatic_retry_allowed,false);
 
 // Adversarial journal entries cannot become an apparent first print.
 const malformedHistories=[
