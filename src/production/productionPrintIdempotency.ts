@@ -138,11 +138,13 @@ export function decideProductionPrintSubmission(
 export interface NativeOrderPrintAttemptV1 extends ProductionPrintAttemptEvidence {
   order_key: string; // CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA
   station_code: string; // native station identity, not meal shift
+  operational_date: string; // Reader DTHRABERMESA day, no timezone inference.
   native_snapshot_sha256: string;
 }
 export interface OrderRevisionPrintReviewInputV1 {
   order_key: string;
   station_code: string;
+  operational_date: string;
   native_snapshot_sha256: string;
   intent_fingerprint: string;
   history: readonly NativeOrderPrintAttemptV1[];
@@ -169,6 +171,13 @@ const KNOWN_ATTEMPT_STATES = new Set<ProductionPrintEvidenceState>([
 const validOrderKey = (value: unknown): value is string =>
   typeof value === "string" && value.split("|").length === 4 &&
   value.split("|").every(part => NATIVE_TOKEN.test(part));
+const validDate = (value: unknown): value is string => {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false;
+  const instant = new Date(value + "T00:00:00Z");
+  return !Number.isNaN(instant.valueOf()) &&
+    instant.toISOString().slice(0, 10) === value;
+};
 const validStation = (value: unknown): value is string =>
   typeof value === "string" && NATIVE_TOKEN.test(value);
 const validHash = (value: unknown): value is string =>
@@ -189,6 +198,7 @@ export function decideProductionOrderRevisionReviewV1(
   });
   if (!input || typeof input !== "object" || Array.isArray(input) ||
       !validOrderKey(input.order_key) || !validStation(input.station_code) ||
+      !validDate(input.operational_date) ||
       !validHash(input.native_snapshot_sha256) ||
       !validHash(input.intent_fingerprint))
     return result("ORDER_STATION_OR_NATIVE_REVISION_IDENTITY_INVALID");
@@ -208,12 +218,15 @@ export function decideProductionOrderRevisionReviewV1(
   for (const item of input.history) {
     if (!item || typeof item !== "object" || Array.isArray(item) ||
         !validOrderKey(item.order_key) || !validStation(item.station_code) ||
+        !validDate(item.operational_date) ||
         !validHash(item.native_snapshot_sha256) ||
         !validHash(item.intent_fingerprint) ||
         !validAttempt(item.attempt_id) ||
         !KNOWN_ATTEMPT_STATES.has(item.state))
       return result("ORDER_STATION_ATTEMPT_HISTORY_INVALID");
-    const key = JSON.stringify([item.order_key, item.station_code, item.attempt_id]);
+    const key = JSON.stringify([
+      item.order_key, item.station_code, item.operational_date, item.attempt_id,
+    ]);
     const signature = JSON.stringify([
       item.native_snapshot_sha256.toLowerCase(),
       item.intent_fingerprint.toLowerCase(), item.state,
@@ -223,8 +236,15 @@ export function decideProductionOrderRevisionReviewV1(
       return result("ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED");
     attempts.set(key, signature);
   }
-  const relevant = input.history.filter(item =>
+  // Same native four-part ID reappearing under another operational day
+  // must be reconciled; silently discarding old attempts could cause paper
+  // duplication across a midnight boundary or reused vendor identifiers.
+  const sameNativeIdentity = input.history.filter(item =>
     item.order_key === input.order_key && item.station_code === input.station_code);
+  if (sameNativeIdentity.some(item =>
+    item.operational_date !== input.operational_date))
+    return result("ORDER_STATION_OPERATIONAL_DAY_CONTRADICTED");
+  const relevant = sameNativeIdentity;
   if (relevant.some(item => item.state === "PHYSICALLY_CONFIRMED"))
     return result("PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION");
   if (relevant.some(item =>
