@@ -7,8 +7,12 @@ const {snapshotHash,decisionHash}=
 const {assessNativeReaderV2:review,SCHEMA,EFFECTS}=
  require("./comandas_reader_v2_view_evidence_v1_offline.cjs");
 const {reviewReaderPrintHistory:reviewAttemptLink,SCHEMA:LINK_SCHEMA,
- EFFECTS:LINK_EFFECTS}=
+ EFFECTS:LINK_EFFECTS,orderStationWitnessBindingSha256V1}=
  require("./comandas_reader_print_history_link_v1_offline.cjs");
+const crypto=require("node:crypto");
+const {printAttemptWitnessKeyFingerprintV882,
+ printAttemptWitnessMessageV882,printAttemptWitnessRecordHashV882}=
+ require("../dist/src/production/printAttemptWitnessV882.js");
 const copy=x=>structuredClone(x);
 function native(status="3"){
  const x=fixture();
@@ -372,6 +376,121 @@ test("impossible attempt operational day is rejected before review",()=>{
  const r=linkedReview(x);
  assert.deepEqual(r.reasons,["ORDER_STATION_ATTEMPT_HISTORY_INVALID"]);
 });
+// Only synthetic Ed25519 evidence. Verification proves signature coherence,
+// NOT independent custodian identity, first native dispatch or physical paper.
+function syntheticSourceWitness(x,options={}){
+ const keys=crypto.generateKeyPairSync("ed25519");
+ const now="2026-10-25T05:00:30.000Z";
+ const record={
+  schema:"deliveryos.print-attempt-source-witness.v882",
+  witness_instance_id:"witness:spooler_review_0001",revision:7,
+  store_id:x.reader_pair.event.order.CDFILIAL,
+  order_binding_sha256:orderStationWitnessBindingSha256V1(
+   x.reader_pair.event.order_key,
+   x.reader_pair.event.order.DTHRABERMESA.slice(0,10),
+   x.candidate.station_code),
+  intent_fingerprint:"b".repeat(64),
+  attempt_id:"attempt:print_attempt_0001",
+  route_contract_sha256:"f37dae40779c5a205a26ceb289cd748d1c7747c1947c278f534a2dcc2f296f4c",
+  collector_instance_id:"collector:readonly_spooler_0001",
+  submitter_instance_id:"submitter:tata_sidecar_0001",
+  source_channel:"WINDOWS_SPOOLER_READONLY",
+  source_read_succeeded:true,
+  source_snapshot_sha256:"1".repeat(64),
+  observation_started_at:"2026-10-25T05:00:00.000Z",
+  observed_at:"2026-10-25T05:00:02.000Z",
+  nonce:"nonce:attempt_witness_0001",
+  spooler_observation:{
+   job_exists:true,submission_rejected_before_job_creation:false,
+   job_statuses:["PRINTED"],printer_statuses:[]
+  },
+  claimed_evidence_state:"SPOOLER_OBSERVED",
+  signature_base64:""
+ };
+ const {signature_base64:_ignored,...unsigned}=record;
+ record.signature_base64=crypto.sign(null,
+  printAttemptWitnessMessageV882(unsigned),keys.privateKey).toString("base64");
+ const trust={
+  schema:"deliveryos.print-attempt-witness-trust.v882",
+  authority:"REVIEW_ONLY_SUPPLIED_TRUST",
+  expected_witness_instance_id:record.witness_instance_id,
+  required_revision:record.revision,
+  required_record_sha256:printAttemptWitnessRecordHashV882(record),
+  expected_store_id:record.store_id,
+  expected_order_binding_sha256:record.order_binding_sha256,
+  expected_intent_fingerprint:record.intent_fingerprint,
+  expected_attempt_id:record.attempt_id,
+  expected_route_contract_sha256:record.route_contract_sha256,
+  expected_collector_instance_id:record.collector_instance_id,
+  expected_submitter_instance_id:record.submitter_instance_id,
+  expected_source_snapshot_sha256:record.source_snapshot_sha256,
+  public_key_spki_pem:keys.publicKey.export({
+   type:"spki",format:"pem"}).toString(),
+  public_key_sha256:printAttemptWitnessKeyFingerprintV882(keys.publicKey),
+  valid_from:"2026-10-25T04:59:00.000Z",
+  valid_until:"2026-10-25T05:05:00.000Z",
+  max_observation_age_seconds:60,
+  max_observation_duration_seconds:10,
+  revoked_nonces:[]
+ };
+ x.print_attempt_witness={record,trust,now_utc:now};
+ if(options.wrongStore) x.print_attempt_witness.record.store_id="9999";
+ return x;
+}
+test("signed spooler witness is correlated but never proves first print or physical paper",()=>{
+ const x=syntheticSourceWitness(linkedInput());
+ const r=linkedReview(x);
+ assert.equal(r.source_witness_signature_verified,true);
+ assert.equal(r.source_witness_trust_independently_attested,false);
+ assert.equal(r.witnessed_observation_requires_reconciliation,true);
+ assert.deepEqual(r.reasons,[
+  "SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED"]);
+ assert.equal(r.first_native_print_event_proven,false);
+ assert.equal(r.prior_physical_effect_absence_proven,false);
+});
+test("signed witness for older semantic fingerprint still blocks revised print",()=>{
+ const x=syntheticSourceWitness(linkedInput("P"));
+ assert.notEqual(x.print_attempt_witness.record.intent_fingerprint,
+  x.candidate.intent_fingerprint);
+ assert.deepEqual(linkedReview(x).reasons,[
+  "SIGNED_PRINT_ATTEMPT_OBSERVED_EFFECT_RECONCILIATION_REQUIRED"]);
+});
+test("modified witness signature and supplied wrong public key both hold",()=>{
+ const x=syntheticSourceWitness(linkedInput());
+ x.print_attempt_witness.record.signature_base64="A".repeat(88);
+ assert.deepEqual(linkedReview(x).reasons,
+  ["PRINT_ATTEMPT_WITNESS_SIGNATURE_OR_TRUST_INVALID"]);
+ const y=syntheticSourceWitness(linkedInput());
+ y.print_attempt_witness.trust.public_key_spki_pem="invalid key";
+ assert.deepEqual(linkedReview(y).reasons,
+  ["PRINT_ATTEMPT_WITNESS_SIGNATURE_OR_TRUST_INVALID"]);
+});
+test("wrong native order-station binding, store, and witness age hold",()=>{
+ const x=syntheticSourceWitness(linkedInput());
+ x.print_attempt_witness.record.order_binding_sha256="d".repeat(64);
+ assert.deepEqual(linkedReview(x).reasons,
+  ["PRINT_ATTEMPT_WITNESS_ORDER_STATION_SCOPE_MISMATCH"]);
+ const y=syntheticSourceWitness(linkedInput(),{wrongStore:true});
+ assert.deepEqual(linkedReview(y).reasons,
+  ["PRINT_ATTEMPT_WITNESS_ORDER_STATION_SCOPE_MISMATCH"]);
+ const z=syntheticSourceWitness(linkedInput());
+ z.print_attempt_witness.now_utc="2026-10-26T05:00:30.000Z";
+ assert.deepEqual(linkedReview(z).reasons,
+  ["PRINT_ATTEMPT_WITNESS_SIGNATURE_OR_TRUST_INVALID"]);
+});
+test("confirmed physical history wins over signed spooler report",()=>{
+ const x=syntheticSourceWitness(linkedInput());
+ x.history=[attemptRow(x,"PHYSICALLY_CONFIRMED")];
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION"]);
+ assert.equal(r.source_witness_signature_verified,true);
+});
+test("missing witness contents cannot supply independent authority",()=>{
+ const x=linkedInput();x.print_attempt_witness={};
+ assert.deepEqual(linkedReview(x).reasons,
+  ["PRINT_ATTEMPT_WITNESS_ENVELOPE_INVALID"]);
+});
+
 test("absent native pair never yields an untrusted positive proof",()=>{
  const x=linkedInput();delete x.reader_pair;
  assert.deepEqual(linkedReview(x).reasons,["READER_PRINT_LINK_INPUT_INVALID"]);
