@@ -647,6 +647,31 @@ assert.equal(
   "ALLOW_FIRST_SUBMISSION",
 );
 
+// Adversarial journal entries cannot become an apparent first print.
+const malformedHistories=[
+ [{intent_fingerprint:intentFingerprint,attempt_id:"A5",state:"UNRECOGNIZED_STATE"}],
+ [{intent_fingerprint:intentFingerprint,attempt_id:"",state:"PLANNED"}],
+ [{intent_fingerprint:"",attempt_id:"A6",state:"PLANNED"}],
+ [null],
+ [{}],
+ null,
+];
+for(const history of malformedHistories){
+ const gate=decideProductionPrintSubmission(intentFingerprint,history);
+ assert.equal(gate.decision,"BLOCK_RECONCILIATION_REQUIRED");
+ assert.deepEqual(gate.blocking_reasons,["ATTEMPT_HISTORY_INTEGRITY_UNPROVEN"]);
+ assert.equal(gate.automatic_retry_allowed,false);
+ assert.deepEqual(gate.effects,{print:false,spooler_write:false});
+}
+assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
+ intent_fingerprint:intentFingerprint,attempt_id:"A7",
+ state:"PROVEN_NO_EFFECT_FAILURE"
+}]).decision,"ALLOW_RETRY_PROVEN_NO_EFFECT");
+assert.equal(decideProductionPrintSubmission(intentFingerprint,[{
+ intent_fingerprint:intentFingerprint,attempt_id:"A8",
+ state:"PLANNED"
+}]).decision,"ALLOW_FIRST_SUBMISSION");
+
 assert.deepEqual(plan.effects, {
   print: false,
   spooler_write: false,
