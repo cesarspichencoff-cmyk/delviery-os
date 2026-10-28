@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "review/deliveryos-v1-role-convergence-20261022",
-  "checkpoint_type": "ASTRA_PREINSTALL_LOGIN_LOCKOUT_FIXED_LOCAL",
-  "state_basis_head": "d7e166715bc9fb9f15b77aa1a1b52d700270555c",
+  "checkpoint_type": "ASTRA_LOGIN_CAPACITY_FIX_CI_GREEN",
+  "state_basis_head": "2ccac17b5022df05ececb3f84be4d8bf459eb9a8",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -81,9 +81,10 @@
     "Review delta: individual operator runtime mounted opt-in in actual Entregas server; nine synthetic process families pass, including native file/TATA read, legacy-token isolation, revocation, source loss and config expiry. Not installed on host.",
     "Remote Desktop Commander attempt returned monthly usage limit, explicitly no retry/reconnect. No fresh host observation or execution in this turn; no paid alternative introduced.",
     "Mounted operator runtime revision d7e1667: product CI 40618187751 and Android CI 40618187805 both completed successfully, including actual Entregas server composition test. No host deployment.",
-    "Explicit Astra high review identified unauthenticated login-capacity poisoning. Regression reproduced old failure; corrected approval-before-capacity, post-await counter read and pending OTP reservations. Local session18/HTTPS6/mounted9 passed; no real OTP or host change."
+    "Explicit Astra high review identified unauthenticated login-capacity poisoning. Regression reproduced old failure; corrected approval-before-capacity, post-await counter read and pending OTP reservations. Local session18/HTTPS6/mounted9 passed; no real OTP or host change.",
+    "Astra-driven login capacity correction: product CI40646268461 and Android CI40646266951 success for 2ccac17b. No installation; reader lifecycle/throughput risks remain open."
   ],
-  "next_action": "Verify new CI. Before installation resolve/measure synchronous reader blocking and recheck authorization after any async read; validate producer checkpoint against existing files without reset. Host connector quota remains; no installation or OTP performed.",
+  "next_action": "Before installation address synchronous reader blocking and recheck authorization after any async read; validate producer checkpoint against existing files without reset. Host connector quota remains; no installation or OTP performed.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -133,12 +134,12 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Login capacity fix and three adversarial regressions; latest CI pending."
+    "Documentation-only CI closure; no runtime delta."
   ],
   "latest_review_transport": {
-    "tested_local_code": "8a7ef2e181d74ca8022ae708d9a7ab02f148c94d",
-    "equivalent_remote_code": "d7e166715bc9fb9f15b77aa1a1b52d700270555c",
-    "exact_tree": "47e285bf87df1b86972f81198136d793dc8a4f4e",
-    "proof": "docs/execution/PILOTO_LEITOR_ENTREGAS_IFOOD_2026-10-27.md"
+    "tested_local_code": "9c6b3d9fc1976911f3595babdf3f3d35b472fc1b",
+    "equivalent_remote_code": "2ccac17b5022df05ececb3f84be4d8bf459eb9a8",
+    "exact_tree": "70a84562c2d4da7a637df52fd3f3cb2d2fc9b9d7",
+    "proof": "docs/execution/REVISAO_PRE_INSTALACAO_2026-10-28.md"
   }
 }
