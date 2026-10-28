@@ -159,11 +159,19 @@ export function decideProductionPrintSubmission(
     };
   }
 
+  // A fingerprint-only history has no independent completeness, custody,
+  // native order/station/day or cross-revision proof. An empty journal is not
+  // evidence of absence, and another fingerprint may belong to this order.
+  // The order-scoped review must remain a separate, non-authorizing step.
   return {
     schema: "deliveryos.production-print-submission-decision.v1",
     intent_fingerprint: fingerprint,
-    decision: "ALLOW_FIRST_SUBMISSION",
-    blocking_reasons: [],
+    decision: "BLOCK_RECONCILIATION_REQUIRED",
+    blocking_reasons: [
+      relevant.length === 0 && history.length === 0
+        ? "EMPTY_UNATTESTED_HISTORY_CANNOT_PROVE_FIRST_SUBMISSION"
+        : "UNSCOPED_HISTORY_CANNOT_PROVE_FIRST_SUBMISSION",
+    ],
     automatic_retry_allowed: false,
     effects: { print: false, spooler_write: false },
   };
