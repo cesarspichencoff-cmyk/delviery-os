@@ -135,7 +135,7 @@ function renderTrips() {
             `<div class="meta">${d.active ? "●" : "○"} ${d.order_ref} · ${chip(d.state)}${d.active ? "" : " (fora do ativo)"}</div>`,
         )
         .join("");
-      return `<div class="item ${focusTripId === t.trip_id ? "active" : ""} ${pend ? "pend" : ""}" role="listitem" data-focus="${t.trip_id}">
+      return `<div class="item ${focusTripId === t.trip_id ? "active" : ""} ${pend ? "pend" : ""}" role="listitem" tabindex="0" data-focus="${t.trip_id}">
         <div style="width:100%;cursor:pointer">
           <div><strong>Viagem</strong> ${chip(t.state)} <span class="trip-id">${t.trip_id}</span></div>
           <div class="meta">Motoboy: ${riderName(t.courier_actor_id)}</div>
@@ -145,6 +145,9 @@ function renderTrips() {
     })
     .join("");
   $("tripsList").querySelectorAll("[data-focus]").forEach((el) => {
+    el.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); el.click(); $("focus-title").focus(); }
+    });
     el.addEventListener("click", () => {
       focusTripId = el.getAttribute("data-focus");
       renderFocus();
