@@ -95,6 +95,8 @@ jobs:
         run: node tools/verificar_comandas_view_source_scope_v1_offline.cjs
       - name: TATA Comanda real-state native Reader V2 pair integrity 3/P/X and item 4 (offline)
         run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
+      - name: Existing Itaim Reader four-file metadata-only static contract
+        run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
       - name: TATA Comanda daily sequence candidate V2 no binding or paper authority
         run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
       - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
@@ -400,6 +402,8 @@ jobs:
         run: node tools/verificar_comandas_view_source_scope_v1_offline.cjs
       - name: TATA Comanda real-state native Reader V2 pair integrity 3/P/X and item 4 (offline)
         run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
+      - name: Existing Itaim Reader four-file metadata-only static contract
+        run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
       - name: TATA Comanda daily sequence candidate V2 no binding or paper authority
         run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
       - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
