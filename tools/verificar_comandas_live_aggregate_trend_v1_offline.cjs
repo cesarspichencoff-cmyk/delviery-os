@@ -106,8 +106,15 @@ mutate("report with more adapted than sources is rejected",
  (a,b)=>{b.projector.adapted_revisions=20000;},unknown,
  "SANITIZED_SAMPLE_INVALID_OR_UNSAFE");
 mutate("captured before baseline cannot invent progress",
- (a,b)=>{b.captured_at="2026-10-29T16:30:00Z";},unknown,
- "SAMPLE_ORDER_NOT_MONOTONIC");
+ (a,b)=>{
+  b.captured_at="2026-10-29T16:30:00Z";
+  // A sample must first be internally time-consistent. Only then can the
+  // comparator specifically reject its chronology relative to the baseline.
+  b.reader.updated_at="2026-10-29T16:29:50Z";
+  b.reader.last_success_at="2026-10-29T16:29:40Z";
+  b.shadow.updated_at="2026-10-29T16:29:48Z";
+  b.projector.updated_at="2026-10-29T16:29:45Z";
+ },unknown,"SAMPLE_ORDER_NOT_MONOTONIC");
 mutate("shift remains expired even when aggregates align",
  (a,b)=>{b.shift.valid_until_local="2026-10-27T15:00:00";},
  progress,"SHIFT_STATE_EXPIRED");
