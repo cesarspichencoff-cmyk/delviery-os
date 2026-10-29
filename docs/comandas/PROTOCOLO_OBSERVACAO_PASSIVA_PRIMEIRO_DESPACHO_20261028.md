@@ -69,3 +69,22 @@ A investigação B é **parcial** se apenas identificar fonte/callsite, mas falt
 **Estado neste checkpoint:** `PREVIOUS_CODE_CI_PASS`; `SOURCE_FIRST_DISPATCH_UNKNOWN`; `DEVICE_UNIT_NOT_REVERIFIED`; `AGGREGATE_READ_ATTEMPTED_BLOCKED_BY_CONNECTOR_LIMIT`; `NO_LIVE_FILE_CONTENT`; `NO_PRINT`; `PILOT_HOLD`. Nova CI do commit documental deve ser verificada separadamente.
 
 **Arquivos correlatos:** `docs/comandas/AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md`; `docs/comandas/AUDITORIA_ESCOPO_IDIMPPEDPROD_CAIXA_COMPARTILHADO_20261027.md`; `docs/comandas/PILOTO_PEDIDO_REAL_CRITERIOS_ACEITE_20261026.md`.
+
+## 7. Retomada de 29/10/2026 — decisão sem e-mail, evidência pública e próximo passo
+
+**Decisão operacional explícita de César:** não usar e-mail para conduzir o TATÁ Comandas. Minutas de comunicação anteriores são histórico, **não** uma pendência a enviar. Não pesquisar caixa de entrada/rascunhos, não preparar nem enviar mensagens ao fornecedor e não apresentar o e-mail como pré-requisito. Um eventual suporte por canal diverso requer decisão própria; não há contato autorizado nesta fase.
+
+**Nova checagem de fontes oficiais, sem acesso à loja:**
+- [Teknisa — APIs e integrações](https://www.teknisa.com/api): `/order` capta pré-pedido de delivery; a listagem de `/orderStatus` inclui estados como `em produção` e `cupom impresso`. **Nenhum desses estados, isoladamente, identifica o callsite ou prova primeira via de cozinha `DLV_IFO`, destino, reserva, revisão exata ou papel.**
+- [Teknisa/EatTake — Integração Order API](https://ajuda.teknisa.com/eattake/integracao-pdv-teknisa/integracao-order-api): o texto descreve operação autônoma até a cozinha **para aquela integração documentada**. É evidência de arquitetura possível, **não** de que o Itaim utilize o mesmo emissor ou ponto de disparo.
+- [Microsoft — prncnfg](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/prncnfg): `keepprintedjobs` retém documentos já processados para possível resubmissão. Portanto a contagem de registros `Printed` retidos não mede pedidos únicos, trabalhos pendentes ou papéis comprovadamente produzidos.
+
+**Checkpoint do software revalidado:** PR #127 `OPEN/DRAFT/HOLD`, HEAD `7def2cc5f27c5bdbc89c1fbf33d1d0b0f54a9347`; [GitHub Actions 40805004939](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40805004939) concluiu `success`, 130 etapas Linux e 117 Windows. Tudo **offline**; fonte nativa viva e papel continuam não comprovados.
+
+**Rota mínima de avanço sem e-mail e sem contorno de acesso:**
+1. Continuar a revisão offline dos pontos de origem já examinados, mantendo como `UNKNOWN` o componente de primeira tentativa real. Não converter status da Order API, documentação de parceiro ou presença de executável em atestado de impressão.
+2. Quando existir mecanismo legítimo e permissão **específica** para um único equipamento e fonte, comprovar em leitura passiva: unidade/host, versão/callsite de despacho `DLV_IFO`, chave composta + revisão, primeira tentativa, praça, transporte ativo e destino reserva. A cota mensal do acesso remoto permanece limite; **não** testar outra conta/conector para contorná-la.
+3. Resolver separadamente a classificação corrente de itens sem prova, a distribuição física por caixas/praças e a persistência idempotente do número TATÁ. As duas produções usam fonte nativa; iFood independente somente na conferência. Preservar mesa, balcão, relatório e fiscal.
+4. Somente após prova suficiente, apresentar um piloto supervisionado com autorização **separada**, uma tentativa por via, prevenção de duplicação, reconciliação de backlog/reprint, observação física e rollback. Nenhuma impressão ou alteração é aprovada por este documento.
+
+**Efeitos desta atualização:** documentação exclusivamente; nenhum e-mail, pedido, arquivo de produção, serviço, configuração, sequência, impressora, spooler, SQL, fiscal, deploy ou merge alterado. `FIRST_NATIVE_DISPATCH=UNKNOWN`; `WORLD_PROVEN=false`; `PILOT=HOLD`.
