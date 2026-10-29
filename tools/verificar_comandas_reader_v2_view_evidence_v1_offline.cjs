@@ -510,6 +510,38 @@ test("signed attempt cannot be attached to a different journal intent",()=>{
  assert.deepEqual(linkedReview(x).reasons,
   ["SIGNED_WITNESS_ATTEMPT_FINGERPRINT_CONTRADICTED"]);
 });
+test("signed attempt duplicated in scoped journal is not considered uniquely linked",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+ x.history.push(structuredClone(x.history[0]));
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["SIGNED_WITNESS_ATTEMPT_REUSED_OR_DUPLICATED"]);
+ assert.equal(r.source_witness_signature_verified,true);
+ assert.equal(r.first_native_print_event_proven,false);
+ assert.equal(r.automatic_retry_allowed,false);
+});
+test("signed attempt ID reused for another native order or station is rejected",()=>{
+ for(const mutation of [
+  {order_key:"0001|01|OTHER|0000348850"},
+  {station_code:"00004"},
+  {operational_date:"2026-10-21"}
+ ]){
+  const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+  x.history.push({...x.history[0],...mutation});
+  const r=linkedReview(x);
+  assert.deepEqual(r.reasons,["SIGNED_WITNESS_ATTEMPT_REUSED_OR_DUPLICATED"]);
+  assert.equal(r.first_native_print_event_proven,false);
+  assert.equal(r.print_authorized,false);
+ }
+});
+test("valid signature cannot attach to an older or different native revision",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+ x.history[0].native_snapshot_sha256="e".repeat(64);
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["SIGNED_WITNESS_NATIVE_REVISION_CONTRADICTED"]);
+ assert.equal(r.source_witness_signature_verified,true);
+ assert.equal(r.witnessed_observation_requires_reconciliation,true);
+ assert.equal(r.ready_for_operational_print,false);
+});
 test("signed spooler observation contradicts claimed proven no effect",()=>{
  const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()),
   "PROVEN_NO_EFFECT_FAILURE");
