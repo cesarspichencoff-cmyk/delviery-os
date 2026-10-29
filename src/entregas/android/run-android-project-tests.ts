@@ -318,16 +318,16 @@ test("primeira inscrição no Fused não corre contra remove assíncrono", () =>
   );
   assert.match(svc, /if \(previous == null\) \{\s*register\(\)/,
     "primeira inscrição precisa registrar sem remove prévio");
-  assert.match(svc, /removeLocationUpdates\(callback\)\.addOnCompleteListener[\s\S]{0,120}register\(\)/,
+  assert.match(svc, /removeLocationUpdates\(previous\)\.addOnCompleteListener[\s\S]{0,200}removed\.isSuccessful\) register\(\)/,
     "troca de cadência precisa esperar remove terminar antes de registrar de novo");
-  assert.match(svc, /requestLocationUpdates[\s\S]{0,400}addOnFailureListener[\s\S]{0,160}stopBecause/,
+  assert.match(svc, /addOnFailureListener\s*\{\s*if \(sessions\.isCurrent\(registration\)\) stopBecause\("falha_inscricao_localizacao", session\)/,
     "falha assíncrona de inscrição não pode deixar serviço ativo sem GPS");
 });
 
 test("stop remove o callback do Fused e limpa a viagem ativa", () => {
   const svc = read("app/src/main/java/br/com/tata/entregas/location/TripLocationService.kt");
   const stopBody = svc.slice(svc.indexOf("private fun stopBecause"));
-  assert.match(stopBody, /removeLocationUpdates\(callback\)/);
+  assert.match(stopBody, /callback\?\.let \{ fused\.removeLocationUpdates\(it\)/);
   assert.match(stopBody, /clear\(EntregasDatabase\.KEY_ACTIVE_TRIP\)/);
   assert.match(stopBody, /stopSelf\(\)/);
 });

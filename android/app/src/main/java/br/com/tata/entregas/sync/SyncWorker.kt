@@ -26,6 +26,28 @@ internal data class GpsBatchOutcome(
     val credentialRefused: Boolean = false,
 )
 
+/** Limita cada execução sem abandonar o saldo de uma fila offline. */
+internal data class GpsDrainOutcome(
+    val retryable: Boolean = false,
+    val credentialRefused: Boolean = false,
+    val remaining: Boolean = false,
+)
+
+internal suspend fun drainGpsQueue(
+    db: EntregasDatabase,
+    send: suspend (List<GpsPointEntity>) -> ApiResult<JSONObject>,
+): GpsDrainOutcome {
+    repeat(3) {
+        val batch = db.gpsPoints().nextBatch(100)
+        if (batch.isEmpty()) return GpsDrainOutcome()
+        val outcome = applyGpsBatchResponse(db, batch, send(batch))
+        if (outcome.retryable || outcome.credentialRefused) {
+            return GpsDrainOutcome(outcome.retryable, outcome.credentialRefused)
+        }
+    }
+    return GpsDrainOutcome(remaining = db.gpsPoints().nextBatch(1).isNotEmpty())
+}
+
 /**
  * Aplica à fila Room a resposta da plataforma para UM lote de GPS.
  *
@@ -293,8 +315,7 @@ class SyncWorker(
         }
 
         // 3. Pontos de GPS.
-        val points = db.gpsPoints().nextBatch(BATCH_SIZE)
-        if (points.isNotEmpty()) {
+        val gpsDrain = drainGpsQueue(db) { points ->
             val payloads = points.map { p ->
                 JSONObject().apply {
                     put("point_id", p.pointId)
@@ -316,10 +337,10 @@ class SyncWorker(
                     put("source", "device")
                 }
             }
-            val outcome = applyGpsBatchResponse(db, points, api.sendPoints(payloads, correlationId))
-            if (outcome.retryable) retryable = true
-            if (outcome.credentialRefused) credencialRecusada = true
+            api.sendPoints(payloads, correlationId)
         }
+        if (gpsDrain.retryable) retryable = true
+        if (gpsDrain.credentialRefused) credencialRecusada = true
 
         // 4. B5 — somente contagens agregadas; sem coordenada, payload ou PII.
         // Um 403 de autorização aqui também é aviso de credencial: revogação
@@ -367,6 +388,8 @@ class SyncWorker(
         }
         // Other transient work (including GPS platform sync) retains bounded retry.
         if (retryable) return retryOrYield()
+        // Saldo após progresso não é falha esgotada: deve ter continuação.
+        if (gpsDrain.remaining) return Result.retry()
         if (pilotAuthorizationBlocked) return Result.failure()
         return Result.success()
     }

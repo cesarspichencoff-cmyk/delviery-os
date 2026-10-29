@@ -37,6 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -79,10 +80,13 @@ class TripLocationService : Service() {
 
     private lateinit var fused: FusedLocationProviderClient
     private lateinit var db: EntregasDatabase
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Lifecycle, callbacks e conclusões de Tasks compartilham o main thread.
+    // Room suspende sem bloquear; apenas o HTTP bloqueante vai para IO.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val persistMutex = Mutex()
+    private val sessions = CaptureSessionLifecycle()
 
-    private var tripId: String? = null
+    private val tripId: String? get() = sessions.current?.tripId
     private var deviceId: String = ""
     private var policy: AdaptivePolicy = AdaptivePolicy.FALLBACK
     private var currentDecision: CaptureDecision? = null
@@ -92,24 +96,28 @@ class TripLocationService : Service() {
     private var recoveredAfterRestart: Boolean = false
     private var captureControlJob: Job? = null
 
-    private val callback = object : LocationCallback() {
+    private var callback: LocationCallback? = null
+
+    private fun createCallback(registration: CaptureSessionLifecycle.Registration) = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
-            val trip = tripId ?: return stopBecause("sem viagem ativa")
+            if (!sessions.isCurrent(registration)) return
+            val session = registration.session
             // Lote: o Fused pode entregar várias de uma vez quando agrupa.
             result.locations.forEach { location ->
                 val point = CanonicalPoint.fromLocation(
                     location = location,
-                    tripId = trip,
+                    tripId = session.tripId,
                     deviceId = deviceId,
                     capturedOffline = !NetworkState.isOnline(this@TripLocationService),
                 )
-                persist(point)
+                persist(point, session)
                 Bridge.publishLocation(point, location.time)
             }
             reevaluateCadence()
         }
 
         override fun onLocationAvailability(availability: LocationAvailability) {
+            if (!sessions.isCurrent(registration)) return
             freshness = if (availability.isLocationAvailable) "current" else "unavailable"
             Bridge.publishServiceState(serviceStateJson())
             updateNotification()
@@ -167,21 +175,29 @@ class TripLocationService : Service() {
             return
         }
 
-        tripId = trip
-        scope.launch {
-            deviceId = db.deviceState().get(EntregasDatabase.KEY_DEVICE_ID) ?: DeviceId.ensure(db)
-            db.deviceState().put(
-                br.com.tata.entregas.data.DeviceStateEntity(
-                    key = EntregasDatabase.KEY_ACTIVE_TRIP,
-                    value = trip,
-                    updatedAtMs = System.currentTimeMillis(),
-                ),
-            )
-            policy = PolicyStore.load(db)
-            requestUpdates(decideNow())
-            Bridge.publishServiceState(serviceStateJson())
-            startCaptureControlLoop(trip)
+        captureControlJob?.cancel()
+        // Não há startup solto em IO. START só devolve depois da escrita local;
+        // STOP é serializado com ela e não pode ser desfeito por uma continuação.
+        val session = sessions.begin(trip) {
+            runBlocking {
+                deviceId = db.deviceState().get(EntregasDatabase.KEY_DEVICE_ID) ?: DeviceId.ensure(db)
+                policy = PolicyStore.load(db)
+                db.deviceState().put(
+                    br.com.tata.entregas.data.DeviceStateEntity(
+                        key = EntregasDatabase.KEY_ACTIVE_TRIP,
+                        value = trip,
+                        updatedAtMs = System.currentTimeMillis(),
+                    ),
+                )
+            }
         }
+        currentDecision = null
+        lastAccuracyM = null
+        freshness = "unknown"
+        requestUpdates(decideNow())
+        if (!sessions.isCurrent(session)) return
+        Bridge.publishServiceState(serviceStateJson())
+        startCaptureControlLoop(session)
         SyncScheduler.ensurePeriodic(this)
     }
 
@@ -192,31 +208,33 @@ class TripLocationService : Service() {
      * preservam a captura. Só uma resposta autoritativa do piloto ou uma
      * revogação terminal encerram o foreground service.
      */
-    private fun startCaptureControlLoop(boundTrip: String) {
+    private fun startCaptureControlLoop(session: CaptureSessionLifecycle.Session) {
         captureControlJob?.cancel()
         captureControlJob = scope.launch {
-            while (isActive && tripId == boundTrip) {
-                verifyCaptureState(boundTrip)
-                if (tripId != boundTrip) break
+            while (isActive && sessions.isCurrent(session)) {
+                verifyCaptureState(session)
+                if (!sessions.isCurrent(session)) break
                 delay(CAPTURE_CONTROL_INTERVAL_MS)
             }
         }
     }
 
-    private suspend fun verifyCaptureState(boundTrip: String) {
+    private suspend fun verifyCaptureState(captureSession: CaptureSessionLifecycle.Session) {
         // O portão local não vale só no início. Permissão revogada, localização
         // desligada, flag atualizada ou termo local invalidado durante a viagem
         // precisam derrubar a captura mesmo sem callback do Fused ou WebView.
-        val localGate = GateSnapshot.evaluate(this@TripLocationService, db, boundTrip)
+        val localGate = GateSnapshot.evaluate(this@TripLocationService, db, captureSession.tripId)
+        if (!sessions.isCurrent(captureSession)) return
         if (!localGate.allowed) {
             Bridge.publishGateBlocked(localGate)
-            stopBecause(localGate.primaryBlock?.code ?: "portao_bloqueado")
+            stopBecause(localGate.primaryBlock?.code ?: "portao_bloqueado", captureSession)
             return
         }
 
         if (!NetworkState.isOnline(this@TripLocationService)) return
 
         val session = DeviceSession.sessaoAtual(db)
+        if (!sessions.isCurrent(captureSession)) return
         if (session == null) {
             SyncScheduler.requestNow(this@TripLocationService)
             return
@@ -227,7 +245,9 @@ class TripLocationService : Service() {
             { session.token },
             CAPTURE_CONTROL_TIMEOUT_MS,
         )
-        val action = when (val result = pilot.captureState(boundTrip)) {
+        val result = withContext(Dispatchers.IO) { pilot.captureState(captureSession.tripId) }
+        if (!sessions.isCurrent(captureSession)) return
+        val action = when (result) {
             is ApiResult.Ok -> RemoteCaptureControl.success(
                 hasCapture = result.value.has("capture"),
                 capture = result.value.optBoolean("capture", true),
@@ -246,7 +266,7 @@ class TripLocationService : Service() {
                 SyncScheduler.requestNow(this@TripLocationService)
             }
             is RemoteCaptureAction.Stop -> {
-                if (tripId == boundTrip) stopBecause(action.reason)
+                stopBecause(action.reason, captureSession)
             }
         }
     }
@@ -275,16 +295,22 @@ class TripLocationService : Service() {
             PackageManager.PERMISSION_GRANTED
 
     private fun requestUpdates(decision: CaptureDecision) {
+        val session = sessions.current ?: return
         if (!hasLocationPermission()) {
-            stopBecause("permissao_revogada")
+            stopBecause("permissao_revogada", session)
             return
         }
 
-        val previous = currentDecision
+        val previous = callback
+        val registration = sessions.register(session) ?: return
+        // Cada inscrição tem callback próprio: remover A depois de iniciar B
+        // jamais remove B, inclusive numa simples troca de cadência.
+        val callback = createCallback(registration)
+        this.callback = callback
         currentDecision = decision
 
         fun register() {
-            if (tripId == null) return
+            if (!sessions.isCurrent(registration)) return
             try {
                 // A Task é assíncrona. Só tratamos a inscrição como válida
                 // depois do sucesso; falha não pode deixar um FGS "ativo"
@@ -294,15 +320,18 @@ class TripLocationService : Service() {
                     callback,
                     mainLooper,
                 ).addOnSuccessListener {
-                    if (tripId != null) {
+                    if (sessions.isCurrent(registration)) {
                         Bridge.publishServiceState(serviceStateJson())
                         updateNotification()
+                    } else {
+                        // STOP pode ter ocorrido enquanto a Task estava pendente.
+                        fused.removeLocationUpdates(callback)
                     }
                 }.addOnFailureListener {
-                    if (tripId != null) stopBecause("falha_inscricao_localizacao")
+                    if (sessions.isCurrent(registration)) stopBecause("falha_inscricao_localizacao", session)
                 }
             } catch (e: SecurityException) {
-                stopBecause("permissao_revogada")
+                stopBecause("permissao_revogada", session)
             }
         }
 
@@ -313,8 +342,11 @@ class TripLocationService : Service() {
         } else {
             // Mudança de cadência: só registra a nova política depois que a
             // remoção anterior terminou de verdade.
-            fused.removeLocationUpdates(callback).addOnCompleteListener {
-                register()
+            fused.removeLocationUpdates(previous).addOnCompleteListener { removed ->
+                if (sessions.isCurrent(registration)) {
+                    if (removed.isSuccessful) register()
+                    else stopBecause("falha_remocao_localizacao", session)
+                }
             }
         }
     }
@@ -343,7 +375,7 @@ class TripLocationService : Service() {
         if (next.context != currentDecision?.context) requestUpdates(next)
     }
 
-    private fun persist(point: CanonicalGpsPoint) {
+    private fun persist(point: CanonicalGpsPoint, session: CaptureSessionLifecycle.Session) {
         // O callback chega no mainLooper em ordem. UNDISPATCHED entra na fila
         // do mutex nessa mesma ordem antes de devolver o controle ao callback.
         // O mutex preserva a ordem observada; o Room, por sua vez, reserva a
@@ -379,9 +411,14 @@ class TripLocationService : Service() {
                 )
                 // IGNORE de pointId repetido não consome número da sequência.
                 if (inserted == -1L) return@withLock
-                lastAccuracyM = point.accuracyM
-                pendingSync = db.gpsPoints().pendingCount()
-                updateNotification()
+                val pending = db.gpsPoints().pendingCount()
+                // Pontos já observados continuam duráveis após STOP, mas sua
+                // conclusão não pode ressuscitar notificação nem alterar B.
+                if (sessions.isCurrent(session)) {
+                    lastAccuracyM = point.accuracyM
+                    pendingSync = pending
+                    updateNotification()
+                }
                 SyncScheduler.requestNow(this@TripLocationService)
             }
         }
@@ -416,20 +453,24 @@ class TripLocationService : Service() {
      * Para de verdade: remove o callback do Fused, limpa a viagem ativa do
      * Room e derruba o serviço. Depois disto nenhum ponto novo é possível.
      */
-    private fun stopBecause(reason: String) {
+    private fun stopBecause(reason: String, expected: CaptureSessionLifecycle.Session? = null) {
+        if (!sessions.stop(expected) {
+            runBlocking { db.deviceState().clear(EntregasDatabase.KEY_ACTIVE_TRIP) }
+        }) return
         captureControlJob?.cancel()
         captureControlJob = null
-        fused.removeLocationUpdates(callback)
-        tripId = null
+        callback?.let { fused.removeLocationUpdates(it) }
+        callback = null
         currentDecision = null
-        runBlocking { db.deviceState().clear(EntregasDatabase.KEY_ACTIVE_TRIP) }
         Bridge.publishStopped(reason)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
     override fun onDestroy() {
-        fused.removeLocationUpdates(callback)
+        sessions.invalidate()
+        callback?.let { fused.removeLocationUpdates(it) }
+        callback = null
         scope.cancel()
         super.onDestroy()
     }
