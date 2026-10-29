@@ -404,6 +404,19 @@ jobs:
         run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
       - name: Existing Itaim Reader four-file metadata-only static contract
         run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
+      - name: Existing Reader wrong-host fail-closed on disposable Windows CI only
+        shell: pwsh
+        run: |
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'CI_HOST_MUST_NOT_BE_PRODUCTION_HOST' }
+          $output = & ./tools/tata_reader_itaim_metadata_v1_readonly.ps1 | ConvertFrom-Json
+          if ($output.status -ne 'HOLD' -or
+              $output.host_matches_approved_name -ne $false -or
+              $output.files.Count -ne 0 -or
+              $output.effect_boundary.file_contents_read -ne $false -or
+              $output.effect_boundary.file_write -ne $false -or
+              $output.ready_for_operational_print -ne $false) {
+            throw 'ITAIM_EXISTING_READER_WRONG_HOST_NOT_FAIL_CLOSED'
+          }
       - name: TATA Comanda daily sequence candidate V2 no binding or paper authority
         run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
       - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
