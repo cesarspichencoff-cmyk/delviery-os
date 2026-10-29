@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
 const {projectScopedPreview,SCHEMA}=require("./comandas_scoped_view_preview_v1_offline.cjs");
-const {fixture}=require("./verificar_comandas_view_source_scope_v1_offline.cjs");
+const {fixture:unboundSourceFixture}=require("./verificar_comandas_view_source_scope_v1_offline.cjs");
 const {archivedResult,archivedCompleteInput,partiallyKnownResult}=
  require("./verificar_real_order_tickets_v46.js");
 const {projectOperationalTicketsV45}=
@@ -9,6 +9,15 @@ const {projectOperationalTicketsV45}=
 const clone=x=>structuredClone(x);
 const native=archivedResult();
 const original=JSON.stringify(native);
+function fixture(){
+ const x=unboundSourceFixture();
+ const id=native.identifiers;
+ assert.ok(id&&typeof id.teknisa==="string"&&typeof id.ifood==="string");
+ x.native.order_key="0001|01|SYNTHETIC_SALE|"+id.teknisa;
+ x.native.short_id=id.ifood;
+ x.ifood.short_id=id.ifood;
+ return x;
+}
 let n=0;
 function test(label,fn){fn();n++;console.log("PASS "+n+" "+label);}
 function run(claims=fixture(),src=native){
@@ -37,6 +46,32 @@ test("two native-only production previews + one crosschecked conference",()=>{
  assert.ok(r.production.every(v=>v.ready_for_offline_preview&&v.byte_count>0));
  assert.equal(r.conference.ready_for_offline_preview,true);
  assert.ok(r.conference.byte_count>0);
+});
+test("a self-consistent native source claim about another order blocks all preview bytes",()=>{
+ const x=fixture();x.native.order_key="0001|01|SYNTHETIC_SALE|WRONG_ORDER";
+ const r=run(x);
+ assert.deepEqual(r.production.map(v=>v.byte_count),[0,0]);
+ assert.equal(r.conference.byte_count,0);
+ assert.equal(r.native_projection_identity_consistent,false);
+ assert.equal(r.native_snapshot_independently_bound_to_rendered_projection,false);
+ assert.ok(r.production.every(v=>v.blocking_reasons.includes(
+  "NATIVE_PREVIEW_SOURCE_ORDER_IDENTITY_NOT_BOUND")));
+ assert.equal(r.effects.print,false);
+});
+test("even a coherent fake iFood short ID cannot bind another native claim to preview",()=>{
+ const x=fixture();x.native.short_id="9999";x.ifood.short_id="9999";
+ const r=run(x);
+ assert.deepEqual(r.production.map(v=>v.byte_count),[0,0]);
+ assert.equal(r.conference.byte_count,0);
+ assert.equal(r.native_projection_identity_consistent,false);
+ assert.equal(r.ready_for_operational_print,false);
+});
+test("matching visible native order IDs remain a review, not independent snapshot proof",()=>{
+ const r=run();
+ assert.equal(r.native_projection_identity_consistent,true);
+ assert.equal(r.native_snapshot_independently_bound_to_rendered_projection,false);
+ assert.equal(r.ready_for_operational_print,false);
+ assert.equal(r.effects.spooler_write,false);
 });
 test("absence of official iFood source removes only conference preview bytes",()=>{
  const a=run(),claims=fixture();delete claims.ifood;
