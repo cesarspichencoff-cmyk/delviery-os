@@ -105,6 +105,8 @@ jobs:
         run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
       - name: TATA Comanda Itaim window and station selective shadow route (no print)
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
+      - name: TATA Comanda Reader revision bound to native day and window candidate
+        run: node tools/verificar_comandas_native_window_revision_binding_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
@@ -427,6 +429,8 @@ jobs:
         run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
       - name: TATA Comanda Itaim window and station selective shadow route (no print)
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
+      - name: TATA Comanda Reader revision bound to native day and window candidate
+        run: node tools/verificar_comandas_native_window_revision_binding_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
