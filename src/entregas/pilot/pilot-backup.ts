@@ -4,6 +4,10 @@
  */
 import {
   copyFileSync,
+  renameSync,
+  openSync,
+  closeSync,
+  fsyncSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -57,9 +61,20 @@ function validateStoreJson(path: string): { ok: boolean; error?: string } {
   try {
     const raw = readFileSync(path, "utf8");
     const data = JSON.parse(raw) as Record<string, unknown>;
-    if (!data || typeof data !== "object") return { ok: false, error: "JSON inválido" };
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return { ok: false, error: "JSON inválido" };
+    }
     for (const k of ["trips", "handoffs", "occurrences", "riders", "events", "outbox"]) {
       if (!(k in data)) return { ok: false, error: `faltando chave ${k}` };
+    }
+    const version = data.receipt_schema_version;
+    const hasMap = Object.prototype.hasOwnProperty.call(data, "inbound_receipts");
+    if ((version !== undefined && version !== 1) || (version === 1 && !hasMap)) {
+      return { ok: false, error: "contrato de recibos de entrada invalido" };
+    }
+    if (hasMap && (!data.inbound_receipts ||
+        typeof data.inbound_receipts !== "object" || Array.isArray(data.inbound_receipts))) {
+      return { ok: false, error: "mapa de recibos de entrada invalido" };
     }
     return { ok: true };
   } catch (e) {
@@ -139,6 +154,52 @@ export function restoreBackup(
     if (!existsSync(backupPath)) {
       return { ok: false, error: "arquivo ausente", human: "Backup não encontrado." };
     }
+    if (!existsSync(dataFile) && existsSync(dataFile + ".bak")) {
+      return { ok: false, error: "principal_ausente_backup_lateral_presente",
+        human: "Restauração bloqueada: principal ausente e backup lateral presente. Exige recuperação assistida." };
+    }
+
+    // Recibos de entrada sao ACK de comandos aplicados. Restaurar uma
+    // geracao anterior, mesmo com checksum valido, poderia apagar o ACK
+    // enquanto o aparelho ainda guarda o evento e vai tentar de novo.
+    // Sem restauracao consciente dos recibos + dominio, BLOQUEAR.
+    if (existsSync(dataFile)) {
+      const currentRaw = readFileSync(dataFile, "utf8");
+      let current: unknown;
+      try {
+        current = JSON.parse(currentRaw) as unknown;
+      } catch {
+        // Dados truncados podem perder todo o sufixo com inbound_receipts.
+        // Ausencia textual de chave NAO prova que nao existiam recibos.
+        // Preservar o arquivo para recuperacao humana, sem overwrite.
+        return { ok: false, error: "estado_atual_corrompido_recuperacao_assistida",
+          human: "Restauração bloqueada: arquivo atual corrompido exige recuperação assistida." };
+      }
+      if (current !== undefined) {
+      if (!current || typeof current !== "object" || Array.isArray(current)) {
+        return { ok: false, error: "estado_atual_invalido", human: "Restauração bloqueada: estado atual inválido." };
+      }
+      const source = current as Record<string, unknown>;
+      const version = source.receipt_schema_version;
+      const hasMap = Object.prototype.hasOwnProperty.call(source, "inbound_receipts");
+      if ((version !== undefined && version !== 1) || (version === 1 && !hasMap)) {
+        return { ok: false, error: "recibos_atual_inconsistente",
+          human: "Restauração bloqueada: contrato de recibos inconsistente." };
+      }
+      if (hasMap) {
+        const receipts = source.inbound_receipts;
+        if (!receipts || typeof receipts !== "object" || Array.isArray(receipts)) {
+          return { ok: false, error: "mapa_recibos_invalido",
+            human: "Restauração bloqueada: recibos de entrada inválidos." };
+        }
+        if (Object.keys(receipts).length > 0) {
+          const human = "Restauração bloqueada: há recibos de comandos aplicados. Exige recuperação transacional.";
+          log?.error("restore_failed", human, "restore_requires_receipt_aware_recovery");
+          return { ok: false, error: "restore_requires_receipt_aware_recovery", human };
+        }
+      }
+      }
+    }
 
     const expected = expectedHashFromSidecar(backupPath);
     if (!expected.ok) {
@@ -176,9 +237,11 @@ export function restoreBackup(
       const pre = dataFile + ".pre-restore";
       copyFileSync(dataFile, pre);
     }
-    // replace
-    copyFileSync(tmp, dataFile);
-    rmSync(tmp, { force: true });
+    // Publica de uma vez o arquivo temporario ja validado. Nao truncar
+    // o principal com copyFileSync: erro no meio nao pode apagar o original.
+    const fd = openSync(tmp, "r+");
+    try { fsyncSync(fd); } finally { closeSync(fd); }
+    renameSync(tmp, dataFile);
     const hash = sha256File(dataFile);
     const human = "Restauração concluída. Reinicie o servidor do piloto.";
     log?.info("restore_done", human, backupPath, { meta: { sha256: hash } });

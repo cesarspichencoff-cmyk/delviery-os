@@ -76,6 +76,43 @@ class RoomSyncRaceRecoveryTest {
         createdAtMs = 1_000L,
     )
 
+    @Test fun offlineBacklog250DrainsWithoutNewCapture() = runBlocking {
+        repeat(250) { db.gpsPoints().insert(gps("offline-$it")) }
+        val sizes = mutableListOf<Int>()
+        val outcome = br.com.tata.entregas.sync.drainGpsQueue(db) { points ->
+            sizes += points.size
+            br.com.tata.entregas.sync.ApiResult.Ok(org.json.JSONObject().apply {
+                put("accepted", points.size); put("duplicate", 0); put("rejected", 0)
+            })
+        }
+        assertEquals(listOf(100, 100, 50), sizes)
+        assertEquals(0, db.gpsPoints().pendingCount())
+        assertEquals(false, outcome.remaining)
+    }
+
+    @Test fun boundedDrainSignalsContinuationInsteadOfSuccessWithSaldo() = runBlocking {
+        repeat(350) { db.gpsPoints().insert(gps("bounded-$it")) }
+        val outcome = br.com.tata.entregas.sync.drainGpsQueue(db) { points ->
+            br.com.tata.entregas.sync.ApiResult.Ok(org.json.JSONObject().apply {
+                put("accepted", points.size); put("duplicate", 0); put("rejected", 0)
+            })
+        }
+        assertEquals(50, db.gpsPoints().pendingCount())
+        assertTrue(outcome.remaining)
+    }
+
+    @Test fun invalidReceiptStopsDrainWithoutLosingOfflinePoints() = runBlocking {
+        repeat(250) { db.gpsPoints().insert(gps("invalid-$it")) }
+        var calls = 0
+        val outcome = br.com.tata.entregas.sync.drainGpsQueue(db) {
+            calls++
+            br.com.tata.entregas.sync.ApiResult.Ok(org.json.JSONObject())
+        }
+        assertEquals(1, calls)
+        assertEquals(250, db.gpsPoints().pendingCount())
+        assertTrue(outcome.retryable)
+    }
+
     @Test fun confirmedGpsNeverReentersQueueOnLateTimeout() = runBlocking {
         db.gpsPoints().insert(gps("gps-1"))
         val ids = db.gpsPoints().nextBatch(20).map { it.pointId }

@@ -1,0 +1,6 @@
+OK memory same-uow command_id collision refused
+OK memory after-reopen command_id collision refused
+OK file same-uow command_id collision refused
+OK file after-reopen command_id collision refused
+OK PG fake command_id lookup
+INBOUND_COMMAND_ID_COLLISION: 7/7 PASS (MEMORY+FILE+PG SQL FAKE)

@@ -1,0 +1,267 @@
+{
+  "code_commit": "37331b33f92b2d8b7457ce479ac6978a9a72e71b",
+  "requires_exit_zero_and_completion_marker": true,
+  "tests": [
+    {
+      "test": "entregas/pilot/run-itaim-boot-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "ITAIM_ONLY_BOOT_ACCEPTANCE_OK 1/1",
+      "marker_found": true,
+      "seconds": 0.67,
+      "log": "pilot__run-itaim-boot-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-canonical-dispatch-http-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "CANONICAL_DISPATCH_HTTP_GREEN 15/15",
+      "marker_found": true,
+      "seconds": 0.42,
+      "log": "pilot__run-canonical-dispatch-http-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-capture-control-http-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "CAPTURE_CONTROL_HTTP: 8/8 PASS",
+      "marker_found": true,
+      "seconds": 0.42,
+      "log": "pilot__run-capture-control-http-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-capture-control-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "CAPTURE_CONTROL: 17/17 PASS",
+      "marker_found": true,
+      "seconds": 0.06,
+      "log": "pilot__run-capture-control-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-producer-signing-boot-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "PRODUCER_SIGNING_BOOT: 4/4 PASS",
+      "marker_found": true,
+      "seconds": 6.49,
+      "log": "pilot__run-producer-signing-boot-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-termo-sintetico-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "TERMO_SINTETICO_GREEN",
+      "marker_found": true,
+      "seconds": 15.21,
+      "log": "pilot__run-termo-sintetico-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-persistence-recreate-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "17 persistence-recreate tests OK",
+      "marker_found": true,
+      "seconds": 6.24,
+      "log": "pilot__run-persistence-recreate-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-cloud-config-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "21 cloud-config tests OK",
+      "marker_found": true,
+      "seconds": 0.07,
+      "log": "pilot__run-cloud-config-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-delegated-authorization-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "PILOT_DELEGATED_AUTH_CONTRACT_GREEN 25",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "pilot__run-delegated-authorization-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-pilot-gate-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "15 pilot gate tests OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "pilot__run-pilot-gate-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-source-mode-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "PILOT_SOURCE_MODE: 5/5 PASS",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "pilot__run-source-mode-tests.log"
+    },
+    {
+      "test": "entregas/android/run-device-api-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "50 device-api tests OK",
+      "marker_found": true,
+      "seconds": 18.98,
+      "log": "android__run-device-api-tests.log"
+    },
+    {
+      "test": "entregas/android/run-android-project-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "43 android project tests OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "android__run-android-project-tests.log"
+    },
+    {
+      "test": "entregas/offline/run-offline-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "17 offline queue tests OK",
+      "marker_found": true,
+      "seconds": 0.06,
+      "log": "offline__run-offline-tests.log"
+    },
+    {
+      "test": "entregas/offline/run-outbox-persistence-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "6 outbox persistence tests OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "offline__run-outbox-persistence-tests.log"
+    },
+    {
+      "test": "entregas/persistence/run-memory-uow-rollback-isolation-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "MEMORY_UOW_COMMITTED_ISOLATION=5/5 PASS",
+      "marker_found": true,
+      "seconds": 0.06,
+      "log": "persistence__run-memory-uow-rollback-isolation-tests.log"
+    },
+    {
+      "test": "entregas/persistence/run-inbound-fingerprint-normalization-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "INBOUND_FINGERPRINT_NORMALIZATION: 6/6 OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "persistence__run-inbound-fingerprint-normalization-tests.log"
+    },
+    {
+      "test": "entregas/operational/run-inbound-replay-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "INBOUND_REPLAY: 4/4 OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "operational__run-inbound-replay-tests.log"
+    },
+    {
+      "test": "entregas/operational/run-inbound-command-id-collision-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "INBOUND_COMMAND_ID_COLLISION: 7/7 PASS",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "operational__run-inbound-command-id-collision-tests.log"
+    },
+    {
+      "test": "entregas/operational/run-inbound-commit-uncertainty-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "INBOUND_COMMIT_UNCERTAINTY: 5/5 OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "operational__run-inbound-commit-uncertainty-tests.log"
+    },
+    {
+      "test": "entregas/operational/run-inbound-stage-isolation-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "INBOUND_STAGE_ISOLATION: 7/7 OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "operational__run-inbound-stage-isolation-tests.log"
+    },
+    {
+      "test": "entregas/operational/run-rejected-receipt-lifecycle-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "RECEIPT_LIFECYCLE: 9/9 OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "operational__run-rejected-receipt-lifecycle-tests.log"
+    },
+    {
+      "test": "entregas/operational/run-shared-uow-cross-instance-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "SHARED_UOW_CROSS_INSTANCE: 2/2 OK",
+      "marker_found": true,
+      "seconds": 0.16,
+      "log": "operational__run-shared-uow-cross-instance-tests.log"
+    },
+    {
+      "test": "entregas/persistence/run-inbound-receipt-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "RECEIPTS synthetic: OK=12 RED=0",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "persistence__run-inbound-receipt-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-cutover-inbound-receipts-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "CUTOVER_INBOUND_RECEIPTS: 7/7 OK",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "pilot__run-cutover-inbound-receipts-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-canonical-dispatch-postgres-tests",
+      "status": "SKIPPED",
+      "exit": 0,
+      "completion_marker": null,
+      "marker_found": false,
+      "seconds": 0.11,
+      "log": "pilot__run-canonical-dispatch-postgres-tests.log"
+    },
+    {
+      "test": "entregas/pilot/run-postgres-server-cluster-tests",
+      "status": "SKIPPED",
+      "exit": 0,
+      "completion_marker": null,
+      "marker_found": false,
+      "seconds": 0.06,
+      "log": "pilot__run-postgres-server-cluster-tests.log"
+    },
+    {
+      "test": "platform/run-localizacao-viagem-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "LOCALIZACAO_CANONICA_GREEN 3/3",
+      "marker_found": true,
+      "seconds": 0.07,
+      "log": "platform-location.log"
+    },
+    {
+      "test": "platform/run-dispatch-location-read-tests",
+      "status": "PASS",
+      "exit": 0,
+      "completion_marker": "DISPATCH_CANONICAL_READ_GREEN 6/6",
+      "marker_found": true,
+      "seconds": 0.11,
+      "log": "platform-dispatch.log"
+    }
+  ]
+}

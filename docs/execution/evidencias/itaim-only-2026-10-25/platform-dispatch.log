@@ -1,0 +1,7 @@
+ok segredos por unidade são opcionais, mas inválidos falham fechado
+ok assertion é curta, específica da viagem e adulteração é recusada
+ok papel sem rota não consegue emitir assertion de rota
+ok location para papel sem rota traz metadata sem coordenada
+ok gerente recebe rota canônica e token não serve para outra viagem
+ok rota desconfigurada responde 503, nunca cai em fonte alternativa
+DISPATCH_CANONICAL_READ_GREEN 6/6

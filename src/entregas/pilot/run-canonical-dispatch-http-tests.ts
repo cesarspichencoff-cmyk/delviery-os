@@ -1,16 +1,17 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer as createHttpServer, type Server } from "node:http";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { verifyPlatformReadAssertion } from "../foundation/platform-read-assertion";
+import { stopTestProcess } from "./test-process-shutdown";
 
 const ROOT = process.cwd();
 const OPS = "CHANGE_ME_OPS_TOKEN";
 const SECRET = "fixture-dispatch-read-".padEnd(48, "x");
-const UNIT = "unit-piloto-1";
+const UNIT = "ITAIM";
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -23,10 +24,23 @@ function freePort(): Promise<number> {
   });
 }
 
-async function startPlatform(): Promise<{ base: string; server: Server }> {
+type Corruption = "none" | "unit" | "trip" | "missing_unit" | "missing_trip" | "point";
+
+async function startPlatform(corruption: { kind: Corruption }): Promise<{ base: string; server: Server }> {
   const port = await freePort();
   const server = createHttpServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    function scopedBody(body: Record<string, unknown>): Record<string, unknown> {
+      if (corruption.kind === "unit") body.unit_id = "UNIT_FICTICIA_NEGADA";
+      if (corruption.kind === "trip") body.trip_id = "TRIP-FICTICIA-NEGADA";
+      if (corruption.kind === "missing_unit") delete body.unit_id;
+      if (corruption.kind === "missing_trip") delete body.trip_id;
+      if (corruption.kind === "point" && Array.isArray(body.points)) {
+        body.points = body.points.map((point, index) => index === 0
+          ? { ...point, trip_id: "TRIP-FICTICIA-NEGADA" } : point);
+      }
+      return body;
+    }
     if (
       req.method !== "GET" ||
       !["/api/dispatch/trip/location", "/api/dispatch/trip/route"].includes(url.pathname)
@@ -55,7 +69,7 @@ async function startPlatform(): Promise<{ base: string; server: Server }> {
     }
     res.writeHead(200, { "content-type": "application/json" });
     if (url.pathname.endsWith("/location")) {
-      res.end(JSON.stringify({
+      res.end(JSON.stringify(scopedBody({
         ok: true,
         source: "platform.event_log",
         unit_id: UNIT,
@@ -70,10 +84,10 @@ async function startPlatform(): Promise<{ base: string; server: Server }> {
           latitude: -23.5,
           longitude: -46.6,
         },
-      }));
+      })));
       return;
     }
-    res.end(JSON.stringify({
+    res.end(JSON.stringify(scopedBody({
       ok: true,
       source: "platform.event_log",
       unit_id: UNIT,
@@ -94,7 +108,7 @@ async function startPlatform(): Promise<{ base: string; server: Server }> {
           captured_offline: false, clock_trust: "trusted",
         },
       ],
-    }));
+    })));
   });
   await new Promise<void>((resolve) => server.listen(port, "127.0.0.1", resolve));
   return { base: `http://127.0.0.1:${port}`, server };
@@ -147,20 +161,13 @@ async function get(base: string, path: string, token = OPS) {
 }
 
 async function stopPilot(p: Pilot) {
-  try {
-    if (p.proc.pid) {
-      if (process.platform === "win32") {
-        execFileSync("taskkill", ["/PID", String(p.proc.pid), "/T", "/F"], { stdio: "ignore" });
-      } else {
-        process.kill(-p.proc.pid, "SIGTERM");
-      }
-    }
-  } catch { /* já saiu */ }
+  await stopTestProcess(p.proc);
   rmSync(p.dir, { recursive: true, force: true });
 }
 
 async function main() {
-  const platform = await startPlatform();
+  const corruption: { kind: Corruption } = { kind: "none" };
+  const platform = await startPlatform(corruption);
   let pilot: Pilot | null = null;
   let noSecret: Pilot | null = null;
   try {
@@ -184,6 +191,24 @@ async function main() {
     const raw = route.body.bruto as Record<string, unknown>;
     assert.equal(raw.raw_count, 2);
 
+    let rejected = 0;
+    for (const kind of ["unit", "trip", "missing_unit", "missing_trip", "point"] as const) {
+      corruption.kind = kind;
+      for (const scope of kind === "point" ? ["route"] : ["location", "route"]) {
+        const invalid = await get(pilot.base, `/api/trip/${scope}?trip_id=T-CANON`);
+        assert.equal(invalid.status, 503, `${scope}: aceitar resposta ${kind} rompe o escopo`);
+        assert.equal(invalid.body.ok, false);
+        const payload = JSON.stringify(invalid.body);
+        assert.equal(payload.includes("UNIT_FICTICIA_NEGADA"), false);
+        assert.equal(payload.includes("TRIP-FICTICIA-NEGADA"), false);
+        assert.equal(payload.includes("-23.5"), false, "falha nao pode devolver coordenadas");
+        rejected += 1;
+      }
+    }
+    corruption.kind = "none";
+    assert.equal((await get(pilot.base, "/api/trip/route?trip_id=T-CANON")).status, 200);
+    assert.equal(rejected, 9);
+
     const oldGps = await fetch(pilot.base + "/api/gps/batch", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: "Bearer " + OPS },
@@ -198,7 +223,7 @@ async function main() {
     assert.equal(unavailable.status, 503);
     assert.equal(unavailable.body.code, "canonical_location_unavailable");
 
-    console.log("CANONICAL_DISPATCH_HTTP_GREEN 5/5");
+    console.log("CANONICAL_DISPATCH_HTTP_GREEN 15/15 (9 recusas de escopo + recuperacao)");
   } finally {
     if (pilot) await stopPilot(pilot);
     if (noSecret) await stopPilot(noSecret);

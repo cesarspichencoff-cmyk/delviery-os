@@ -1,0 +1,11 @@
+{
+  "schema": "deliveryos.tata-source-binding.v1",
+  "hostName": "CAIXA_MOOCA",
+  "deviceRef": "b73e12c2-3b0c-4a0f-ad17-5ed39455e482",
+  "unitId": "ITAIM",
+  "sourceUnitId": "0001",
+  "sourceStoreId": "01",
+  "evidence": "CESAR_CONFIRMED_SOURCE_IS_ITAIM_ONLY_2026_10_26",
+  "sourceMode": null,
+  "publishEnabled": false
+}

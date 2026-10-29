@@ -11,13 +11,24 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020, review/deliveryos-v1-role-convergence-20261022]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  tata-weekly-service-windows:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regra semanal do Itaim no Windows PowerShell 5.1 sem SQL
+        shell: powershell
+        run: .\tests\tata-reader\run-weekly-service-tests.ps1 -ResolverPath .\runtime\tata-reader\read_service_weekly_v1.ps1 -PolicyPath .\tools\windows-local-lab\production-service-weekly-policy.json
+      - name: Criacao, troca e restauracao atomicas no Windows PowerShell 5.1
+        shell: powershell
+        run: .\tests\tata-reader\run-weekly-install-atomic-tests.ps1 -InstallerPath .\tools\windows-local-lab\install-weekly-service.ps1
   product-ux:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -45,21 +56,75 @@ jobs:
           "$pg_bin/pg_isready" -h "$pg_sock" -p 55434 -U "$USER" -d postgres
           echo "DELIVERYOS_PG_URL=postgresql://$USER@localhost:55434/postgres?host=$pg_sock" >> "$GITHUB_ENV"
           echo "DELIVERYOS_PG_DATA=$pg_data" >> "$GITHUB_ENV"
+      - name: SQL 0001-0010 reais + papeis oficiais no PG efemero
+        run: node tests/product/run-official-migrations-role-composition-lab.cjs
+      - name: Papel de recibos em PG efemero (somente fixture, sem migration 0011)
+        run: node tests/product/run-inbound-receipt-role-attestation-lab.cjs
+      - name: Proposta RLS por unidade (PG efemero, sem migration 0011)
+        run: node tests/product/run-review-receipt-rls-composition-lab.cjs
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
       # A API de aparelho e executada contra dist/tools/entregas_pilot_server.js:
       # compilar ANTES do teste, sem duplicar o build no workflow.
       - run: npm run -s build:platform
-      # Contratos de aparelho e fila nao sao compilacao Kotlin nem prova fisica.
-      # Um so gate curto impede que o piloto ignore regressao offline no
-      # mesmo commit que valida PostgreSQL/Copiloto.
-      - name: Android/offline/piloto - contratos sinteticos sem aparelho
+      - name: ITAIM-only - recusar boot para unidade/config incorreta
+        run: npx tsx src/entregas/pilot/run-itaim-boot-tests.ts
+      - name: Processos de teste - concluir escrita de encerramento antes da limpeza
+        run: node dist/src/entregas/pilot/run-test-process-shutdown-tests.js
+      - name: ITAIM-only - identidade, GPS e regressao do termo no HTTP real
+        id: itaim_http_gate
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          npx tsx src/entregas/android/run-android-project-tests.ts
-          npx tsx src/entregas/android/run-device-api-tests.ts
+          node dist/src/entregas/pilot/run-canonical-dispatch-http-tests.js
+          node dist/src/entregas/pilot/run-capture-control-http-tests.js
+          node dist/src/entregas/pilot/run-termo-sintetico-tests.js
+      - name: ITAIM-only - despacho e cluster PostgreSQL descartavel
+        id: itaim_pg_gate
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DELIVERYOS_PG_URL"
+          node dist/src/entregas/pilot/run-canonical-dispatch-postgres-tests.js
+          node dist/src/entregas/pilot/run-postgres-server-cluster-tests.js
+      - name: Recibos duraveis - regressao sintetica do nucleo original
+        shell: bash
+        run: |
+          set -uo pipefail
+          failed=0
+          for test_path in \
+            src/entregas/persistence/run-memory-uow-rollback-isolation-tests.ts \
+            src/entregas/persistence/run-inbound-fingerprint-normalization-tests.ts \
+            src/entregas/operational/run-inbound-replay-tests.ts \
+            src/entregas/operational/run-inbound-command-id-collision-tests.ts \
+            src/entregas/operational/run-inbound-commit-uncertainty-tests.ts \
+            src/entregas/operational/run-inbound-stage-isolation-tests.ts \
+            src/entregas/operational/run-rejected-receipt-lifecycle-tests.ts \
+            src/entregas/operational/run-shared-uow-cross-instance-tests.ts \
+            src/entregas/persistence/run-inbound-receipt-tests.ts \
+            src/entregas/pilot/run-cutover-inbound-receipts-tests.ts
+          do
+            echo "=== $test_path ==="
+            npx tsx "$test_path" || failed=$((failed+1))
+          done
+          if [[ "$failed" -ne 0 ]]; then
+            echo "::error::$failed testes de recibos falharam"
+            exit 1
+          fi
+      # Os gates sao processos independentes: um RED HTTP nao pode pular
+      # a regressao de offline, fonte e piloto. Um gate final FORCA falha.
+      - name: Android - contrato estrutural sintetico (sem aparelho)
+        run: npx tsx src/entregas/android/run-android-project-tests.ts
+      - name: HTTP do aparelho - idempotencia e replay (P0)
+        id: http_device_gate
+        continue-on-error: true
+        run: npx tsx src/entregas/android/run-device-api-tests.ts
+      - name: Offline e piloto - regressao independente (sem aparelho)
+        shell: bash
+        run: |
+          set -euo pipefail
           npx tsx src/entregas/offline/run-offline-tests.ts
           npx tsx src/entregas/offline/run-outbox-persistence-tests.ts
           npx tsx src/entregas/pilot/run-source-mode-tests.ts
@@ -76,8 +141,38 @@ jobs:
         run: npx tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
       - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
         run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
+      - name: Copiloto normaliza pedidos pelo motor TATA sem promover historico a live
+        run: node tests/tata-reader/run-copilot-orders-tests.cjs
+      - name: Evento nativo do leitor TATA passa pelo motor e pelo Copiloto (LAB)
+        run: node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+      - name: Cadastro do operador em arquivo protegido sem aprovacao implicita (LAB)
+        run: node tests/tata-reader/run-operator-roster-tests.cjs
+      - name: Sessao propria do operador com provedor simulado (LAB)
+        run: node tests/tata-reader/run-neon-operator-session-tests.cjs
+      - name: Login e leitura de arquivo pelo motor TATA no HTTPS isolado (LAB)
+        run: node tests/tata-reader/run-operator-http-tests.cjs
+      - name: Composicao opt-in no servidor Entregas sem autoridade legada (LAB)
+        run: node tests/tata-reader/run-operator-pilot-tests.cjs
+      - name: Pacote do leitor e Entregas conferido offline sem ativacao (LAB)
+        run: node tests/tata-reader/run-operator-package-preflight-tests.cjs
+      - name: Leitura isolada preserva HTTP e termina trabalho lento (LAB)
+        run: node tests/tata-reader/run-source-worker-tests.cjs
+      - name: Identidade e vinculo de operador antecedem leitura (LAB)
+        run: node tests/tata-reader/run-operator-read-authority-tests.cjs
+      - name: Arquivos TATA alimentam Copiloto com limites e sem fallback antigo (LAB)
+        run: node tests/tata-reader/run-file-feed-tests.cjs
+      - name: Vinculo por host e diagnostico limitado sem conteudo de pedidos
+        run: node tests/tata-reader/run-source-preview-tests.cjs
+      - name: Copiloto diagnostica fonte via HTTP autenticado sem expor pedidos
+        run: node tests/tata-reader/run-source-status-http-tests.cjs
       - name: Seis celulas V3.3 sem pressão artificial e sem motoboy duplicado
         run: npx tsx src/product/viewmodels/run-copiloto-celulas-v33-tests.ts
+      - name: Instalar Chromium somente antes das provas de navegador
+        run: npx playwright install --with-deps chromium
+      - name: Operador individual e pedidos no Chromium mobile/desktop (LAB)
+        run: node tests/tata-reader/run-operator-http-tests.cjs --browser
+      - name: Tela da fonte do Copiloto com sessao e largura mobile/desktop
+        run: node tests/tata-reader/run-source-status-http-tests.cjs --browser
       - name: Copiloto e Entregas no mesmo HTTP real + Chromium 390
         run: npx tsx tests/product/run-copiloto-entregas-http-browser.ts
       - name: leitura da rua (view model + superficie)
@@ -131,6 +226,23 @@ jobs:
       - run: npm run -s test:platform:cadeia
       - name: guardas de governanca, sem FAIL_NOVO
         run: npx tsx tests/product/run-sem-fail-novo.ts
+      # continue-on-error acima evita mascarar a cobertura das demais suites.
+      # Esse passo torna o veredito final invariavelmente RED se HTTP nao passou.
+      - name: P0 - impedir verde falso quando HTTP idempotencia falha
+        if: ${{ always() && steps.http_device_gate.outcome != 'success' }}
+        shell: bash
+        run: |
+          echo "::error::HTTP idempotencia/replay nao passou; PR DRAFT/HOLD/NO_GO"
+          exit 1
+      - name: P0 - exigir os gates ITAIM-only no mesmo HEAD
+        if: ${{ always() && (steps.itaim_http_gate.outcome != 'success' || steps.itaim_pg_gate.outcome != 'success') }}
+        shell: bash
+        run: |
+          echo "::error::Gate ITAIM-only HTTP/PG nao passou; PR DRAFT/HOLD/NO_GO"
+          exit 1
+      - name: P0 - nucleo real de recibos presente no mesmo HEAD do CI
+        if: always()
+        run: node tests/product/run-inbound-receipt-integration-presence-gate.cjs
       - name: Encerrar PostgreSQL descartavel
         if: always()
         shell: bash

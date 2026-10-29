@@ -1,0 +1,44 @@
+{
+  "schema": "deliveryos.pg-backup-restore.v1",
+  "observedAtUtc": "2026-10-27T05:21:38.077Z",
+  "scope": "LOCAL_SIMULATED_LAB_ONLY",
+  "archiveSha256": "a54c3652a9831d35ec94b2344094cd9ced42d99c89d90004e15c65167a3c818e",
+  "archiveBytes": 75347,
+  "consistentSnapshot": true,
+  "restoredSeparateClusterPort": 55438,
+  "sourceReadOnly": true,
+  "inventory": {
+    "tables": 24,
+    "rows": 13,
+    "dataSha256": "b0efaee78b04100cf09bb790d50fe00fbed848b05e59b48657d2c6e641cf71aa",
+    "columnsSha256": "15f004ff9bc71648d4de655898616141040fb93383e85c43a43a606349fd41e6"
+  },
+  "restoredDataAndColumnsEqual": true,
+  "negativeControlDetected": true,
+  "negativeControlRolledBack": true,
+  "disposableClusterStopped": true,
+  "offHost": false,
+  "encrypted": false,
+  "scheduled": false,
+  "rolesPasswordsAndPrivilegesRestored": false,
+  "liveDatabaseRestore": false,
+  "postcheck": {
+    "dumpAndRestoreStderrEmpty": true,
+    "backupAclOnlyTataAdministratorsSystem": true,
+    "restorePortListening": false,
+    "pilotHttp": 200,
+    "platformHttp": 200,
+    "reader": "Running"
+  },
+  "priorCodeCI": {
+    "sha": "f0cf0ea40d3cfb9196d7e4a0e32c4c987f4ec78e",
+    "product": {
+      "run": 40443414235,
+      "conclusion": "success"
+    },
+    "android": {
+      "run": 40443414272,
+      "conclusion": "success"
+    }
+  }
+}

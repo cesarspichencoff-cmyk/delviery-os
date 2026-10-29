@@ -1,0 +1,26 @@
+PASS 1 valid Ed25519 delegated token + live registry 200
+PASS 2 empty token 401
+PASS 3 platform bearer is never pilot bearer 401
+PASS 4 wrong signature 401
+PASS 5 untrusted kid 401
+PASS 6 wrong audience 401
+PASS 7 wrong issuer 401
+PASS 8 wrong scope 401
+PASS 9 wrong version 401
+PASS 10 expired 401
+PASS 11 not yet active 401
+PASS 12 iat in future 401
+PASS 13 lifetime > 300 seconds 401
+PASS 14 missing actor 401
+PASS 15 unsupported actor role 401
+PASS 16 wrong unit 403
+PASS 17 device revoked in authoritative registry 403
+PASS 18 registry unknown is fail closed 503
+PASS 19 registry exception is fail closed 503
+PASS 20 registry subject mismatch 403
+PASS 21 registry role mismatch 403
+PASS 22 public key rotation unknown 401
+PASS 23 oversized bearer 401
+PASS 24 malformed base64 and token shape 401
+PASS 25 tampered claim changes fail signature 401
+PILOT_DELEGATED_AUTH_CONTRACT_GREEN 25

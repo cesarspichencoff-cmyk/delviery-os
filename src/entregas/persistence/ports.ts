@@ -3,6 +3,7 @@ import type { Occurrence } from "../operational/occurrence";
 import type { RiderOperationalState } from "../operational/rider-state";
 import type { EntregasPublicEvent } from "../contracts/events/types";
 import type { OutboxRecord } from "../integration/outbox";
+import type { DurableInboundReceipt } from "./inbound-receipt";
 
 export interface TripRecord {
   trip: Trip;
@@ -48,13 +49,24 @@ export interface OutboxRepository {
   all(): Promise<OutboxRecord[]>;
 }
 
+/** A busca pelas TRES chaves nao pode esconder colisao dividida entre linhas. */
+export interface InboundReceiptRepository {
+  find(eventId: string, idempotencyKey: string, commandId?: string): Promise<DurableInboundReceipt[]>;
+  stage(record: DurableInboundReceipt): void;
+  /** Detecta ACK preparado fora do turno serializado do comando. */
+  hasStaged(): boolean;
+}
+
 export interface UnitOfWork {
+  inboundReceipts: InboundReceiptRepository;
   trips: TripRepository;
   handoffs: HandoffRepository;
   occurrences: OccurrenceRepository;
   riders: RiderStateRepository;
   events: EventStore;
   outbox: OutboxRepository;
+  /** Impede iniciar outro comando com dominio/outbox staged por terceiro. */
+  hasPendingWrites(): boolean;
   /** Commit atômico da unidade (domínio + eventos + outbox) */
   commit(): Promise<void>;
   /** Descarta mudanças não commitadas */

@@ -1,0 +1,7 @@
+Build: npm run -s build:platform PASS
+TEST_PROCESS_SHUTDOWN_GREEN: delayed final write completed before exit/cleanup
+SHUTDOWN_MUTATION_RED_CONFIRMED: early return before exit rejected
+CANONICAL_DISPATCH_HTTP_GREEN 15/15
+CAPTURE_CONTROL_HTTP: 8/8 PASS
+GOVERNANCE_GATE_GREEN: 14 guards, after lifecycle metadata correction
+PostgreSQL cluster: not available locally; CI retest required

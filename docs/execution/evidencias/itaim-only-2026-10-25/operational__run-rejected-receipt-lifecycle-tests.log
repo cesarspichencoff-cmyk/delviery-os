@@ -1,0 +1,10 @@
+OK memoria: recusa nao vira ACK do proximo comando
+OK arquivo: recusa nao vira ACK do proximo comando
+OK memoria: sucesso sem mutacao persiste ACK de entrada
+OK PG fake: falha transacional limpa stage antes de nova tentativa
+OK mutex: rejeicao concorrente nao apaga viagem de outro comando
+OK receipt binding: mismatch de ator e comando falha fechado
+OK fingerprint: hash nao correspondente impede efeito operacional
+OK PG fake: conflito transacional requer releitura do recibo
+OK snapshot: mutacao concorrente nao altera comando aplicado
+RECEIPT_LIFECYCLE: 9/9 OK (SINTETICO)

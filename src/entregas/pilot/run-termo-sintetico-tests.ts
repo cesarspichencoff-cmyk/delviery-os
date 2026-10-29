@@ -61,13 +61,17 @@ interface Execucao {
 async function subir(opcoes: { termo: string | null; env: Record<string, string>; servidor?: string }): Promise<Execucao> {
   const dir = mkdtempSync(join(tmpdir(), "termo-sintetico-"));
   const porta = await portaLivre();
+  // Arquivo declarado precisa existir. Sem coordenadas, geofence permanece
+  // indisponivel; a fixture continua sem qualquer localizacao real.
+  const unitPath = join(dir, "unidade-sem-coordenadas.json");
+  writeFileSync(unitPath, JSON.stringify({ unit_id: "ITAIM" }), "utf8");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ENTREGAS_PILOT_CONFIG: join(RAIZ, "config", "entregas-pilot.example.json"),
     ENTREGAS_UI_PORT: String(porta),
     ENTREGAS_DATA_DIR: join(dir, "dados"),
     ENTREGAS_TERM_CONFIG: opcoes.termo ?? join(dir, "sem-termo.json"),
-    ENTREGAS_UNIT_CONFIG: join(dir, "sem-unidade.json"),
+    ENTREGAS_UNIT_CONFIG: unitPath,
     ENTREGAS_GPS_FLAGS_CONFIG: join(dir, "sem-flags.json"),
     ENTREGAS_HTTPS: "",
     ...opcoes.env,
@@ -87,7 +91,9 @@ async function health(porta: number, ms = 20_000): Promise<Record<string, unknow
   const limite = Date.now() + ms;
   while (Date.now() < limite) {
     try {
-      const r = await fetch(`http://127.0.0.1:${porta}/api/health`);
+      const r = await fetch(`http://127.0.0.1:${porta}/api/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
       if (r.ok) return (await r.json()) as Record<string, unknown>;
     } catch {
       /* subindo */
@@ -98,9 +104,19 @@ async function health(porta: number, ms = 20_000): Promise<Record<string, unknow
 }
 
 async function derrubar(e: Execucao): Promise<void> {
-  if (e.processo.exitCode === null) {
+  if (e.processo.exitCode === null && e.processo.signalCode === null) {
     e.processo.kill("SIGKILL");
-    await e.saiu;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        e.saiu,
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error("servidor nao encerrou")), 5000);
+        }),
+      ]);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
   }
   rmSync(e.dir, { recursive: true, force: true });
 }
@@ -269,6 +285,7 @@ async function main(): Promise<void> {
     "o servidor compilado mudou durante a suíte",
   );
 
+  assert.equal(passou + falhas.length, 10, "suite incompleta nao pode emitir GREEN");
   console.log(`\n${passou}/${passou + falhas.length}`);
   if (falhas.length) {
     for (const f of falhas) console.log(`  FALHA ${f}`);
@@ -278,7 +295,13 @@ async function main(): Promise<void> {
   console.log("\nTERMO_SINTETICO_GREEN");
 }
 
+// Uma Promise pendente nao mantem Node vivo. Sem este watchdog, um runner
+// interrompido entre casos pode sair 0 sem ter emitido o resultado final.
+const suiteWatchdog = setTimeout(() => {
+  console.error("TERMO_SINTETICO_INCOMPLETE: prazo da suite esgotado");
+  process.exit(1);
+}, 90_000);
 void main().catch((e) => {
   console.error("falha ao executar a suíte:", e);
   process.exit(1);
-});
+}).finally(() => clearTimeout(suiteWatchdog));

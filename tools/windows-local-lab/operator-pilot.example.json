@@ -1,0 +1,6 @@
+{
+  "schema": "deliveryos.operator-pilot.v1",
+  "unitId": "ITAIM",
+  "enabled": false,
+  "publishEnabled": false
+}

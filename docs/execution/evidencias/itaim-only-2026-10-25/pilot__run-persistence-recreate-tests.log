@@ -1,0 +1,4 @@
+=== Persistência sobrevivendo à recriação ===
+volume:  /tmp/deliveryos-volume-TAeRcj
+
+=== 17 persistence-recreate tests OK ===

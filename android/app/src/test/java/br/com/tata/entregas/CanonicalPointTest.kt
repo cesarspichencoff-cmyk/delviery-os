@@ -1,7 +1,6 @@
 package br.com.tata.entregas
 
 import android.location.Location
-import android.os.Build
 import br.com.tata.entregas.location.CanonicalPoint
 import br.com.tata.entregas.notify.TripNotification
 import org.junit.Assert.assertEquals
@@ -22,7 +21,8 @@ import org.robolectric.annotation.Config
  * ponto no reenvio — falha silenciosa, das piores.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.TIRAMISU])
+// Matriz de API: prova de conversão/identidade, não de GPS físico por fabricante.
+@Config(sdk = [26, 28, 29, 30, 31, 32, 33, 34])
 class CanonicalPointTest {
 
     /** Coordenada sintética. Nunca localização real de funcionário ou cliente. */

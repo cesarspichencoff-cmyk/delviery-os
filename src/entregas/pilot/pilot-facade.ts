@@ -3,6 +3,7 @@
  * O backend arquivo continua default; a facade não conhece mais o formato do store.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
+import { canonicalInboundFingerprint, type DurableInboundReceipt } from "../persistence/inbound-receipt";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createPilotPolicy } from "../foundation/policy";
@@ -105,6 +106,8 @@ export class PilotApplicationFacade {
   private occCache = new Map<string, Occurrence>();
   private riderCache = new Map<string, RiderOperationalState>();
   private commandIds = new Set<string>();
+  /** Serializacao intra-processo: FileUoW nao e seguro em escritas paralelas. */
+  private commandTail: Promise<void> = Promise.resolve();
   private readonly readyOrders: PilotReadyOrderStore;
 
   constructor(
@@ -247,11 +250,29 @@ export class PilotApplicationFacade {
     return this.executeAs(this.activeActor, cmd);
   }
 
-  // Explicit per-request identity. Caller must authenticate before invoking.
-  // Never bind a new actor globally while a different command is awaiting I/O.
+  // A identidade ja autenticada e capturada ANTES da espera pela fila.
+  // Recibo opcional: somente a rota de eventos verificada deve fornece-lo.
   async executeAs(
     actor: ActorContext | null,
     cmd: Command | Record<string, unknown>,
+    inbound?: { event_id: string; idempotency_key: string; device_id: string | null },
+  ): Promise<AppResult> {
+    const verifiedActor = actor ? Object.freeze({ ...actor }) : null;
+    const previous = this.commandTail;
+    let unlock!: () => void;
+    this.commandTail = new Promise<void>((resolve) => { unlock = resolve; });
+    await previous;
+    try {
+      return await this.executeAsSerial(verifiedActor, cmd, inbound);
+    } finally {
+      unlock();
+    }
+  }
+
+  private async executeAsSerial(
+    actor: ActorContext | null,
+    cmd: Command | Record<string, unknown>,
+    inbound?: { event_id: string; idempotency_key: string; device_id: string | null },
   ): Promise<AppResult> {
     if (!actor) {
       this.last_human_error = "É preciso entrar com seu acesso antes de agir.";
@@ -261,7 +282,7 @@ export class PilotApplicationFacade {
     }
 
     const command_id = String((cmd as { command_id?: string }).command_id || "");
-    if (command_id && this.commandIds.has(command_id)) {
+    if (!inbound && command_id && this.commandIds.has(command_id)) {
       this.last_human_error = "Esta ação já foi registrada. Não envie de novo.";
       this.last_error = "DUPLICATE_COMMAND";
       this.log.warn("conflict", this.last_human_error, command_id, {
@@ -272,6 +293,8 @@ export class PilotApplicationFacade {
 
     const full = {
       ...cmd,
+      // Idempotency key vinda do envelope de evento validado pelo HTTP.
+      ...(inbound ? { idempotency_key: inbound.idempotency_key } : {}),
       // A sessão é a autoridade. Actor e unidade vindos do corpo são dados
       // não confiáveis e nunca podem elevar papel nem atravessar unidade.
       actor: actor,
@@ -322,7 +345,45 @@ export class PilotApplicationFacade {
           };
         }
       }
-      const result = await this.svc.execute(validated);
+      let service = this.svc;
+      let receipt: DurableInboundReceipt | undefined;
+      if (inbound) {
+        if (!/^[A-Za-z0-9_-]{1,128}$/.test(inbound.event_id) ||
+            !/^[A-Za-z0-9_-]{1,128}$/.test(inbound.idempotency_key) ||
+            !command_id || !/^[A-Za-z0-9_-]{1,128}$/.test(command_id)) {
+          return { ok:false, code:"INVALID_EVENT_IDENTITY", error:"Identidade do evento invalida" };
+        }
+        // UoW propria do evento: recibo e dominio fazem commit juntos.
+        // Neste piloto o backend file e monoprocesso; PG sem role RLS de
+        // recibos nao deve conseguir confirmar evento.
+        const transaction = this.storage.open();
+        service = new EntregasApplicationService(
+          transaction, createPilotPolicy({ max_stops: this.cfg.max_stops }),
+          this.cfg.source_mode,
+        );
+        receipt = {
+          unit_id: this.cfg.unit_id, event_id: inbound.event_id,
+          idempotency_key: inbound.idempotency_key,
+          actor_id: actor.actor_id, actor_role: actor.role,
+          device_id: inbound.device_id,
+          command_id, command_type: validated.type,
+          fingerprint: canonicalInboundFingerprint({
+            event_id: inbound.event_id,
+            idempotency_key: inbound.idempotency_key,
+            command: full as unknown as Record<string, unknown>,
+            unit_id: this.cfg.unit_id,
+            actor_id: actor.actor_id, actor_role: actor.role,
+            device_id: inbound.device_id,
+          }),
+          outcome: "applied", code: null, recorded_at: new Date().toISOString(),
+        };
+      }
+      // Comando legado continua no servico da fachada, sem recibo artificial.
+      // A rota HTTP usa a UoW exclusiva e um recibo atomico por evento.
+      const result = inbound
+        ? await service.execute(validated, receipt, full)
+        : await this.svc.execute(validated);
+      if (inbound) this.reloadStore();
       if (!result.ok) {
         this.last_error = result.error ?? "rejeitado";
         this.last_human_error = result.error ?? "Ação não concluída.";
@@ -342,9 +403,10 @@ export class PilotApplicationFacade {
         }
         return result;
       }
-      if (command_id) this.commandIds.add(command_id);
+      if (!inbound && command_id) this.commandIds.add(command_id);
       this.last_error = null;
       this.last_human_error = null;
+      if (result.code === "REPLAY_APPLIED") return result;
       if (result.trip) {
         this.tripCache.set(result.trip.trip.trip_id, result.trip);
         const used = new Set(
@@ -374,7 +436,9 @@ export class PilotApplicationFacade {
       if (/persist|ENOENT|EPERM|JSON/i.test(technical)) {
         this.log.error("persistence_error", "Problema ao gravar dados.", technical);
       }
-      return { ok: false, error: this.last_human_error, code: "EXCEPTION" };
+      return inbound
+        ? {ok:false, error:this.last_human_error, code:"COMMIT_UNCONFIRMED_RETRY", retryable:true}
+        : { ok: false, error: this.last_human_error, code: "EXCEPTION" };
     }
   }
 

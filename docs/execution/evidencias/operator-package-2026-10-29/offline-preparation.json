@@ -1,0 +1,82 @@
+{
+  "schema": "deliveryos.operator-package-preflight.v1",
+  "ok": true,
+  "code": "OFFLINE_PREPARATION_PASS",
+  "activationAllowed": false,
+  "configState": "absent_disabled",
+  "checks": [
+    {
+      "id": "APP_ROOT",
+      "ok": true
+    },
+    {
+      "id": "NODE_CAPABILITIES",
+      "ok": true
+    },
+    {
+      "id": "MODULE_GRAPH_0",
+      "ok": true
+    },
+    {
+      "id": "MODULE_GRAPH_1",
+      "ok": true
+    },
+    {
+      "id": "MODULE_GRAPH_2",
+      "ok": true
+    },
+    {
+      "id": "MODULE_GRAPH_3",
+      "ok": true
+    },
+    {
+      "id": "UI_ASSET_0",
+      "ok": true
+    },
+    {
+      "id": "UI_ASSET_1",
+      "ok": true
+    },
+    {
+      "id": "UI_ASSET_2",
+      "ok": true
+    },
+    {
+      "id": "UI_ASSET_3",
+      "ok": true
+    },
+    {
+      "id": "UI_ASSET_4",
+      "ok": true
+    },
+    {
+      "id": "OPERATOR_CONFIG_STATIC",
+      "ok": true
+    }
+  ],
+  "blockers": [],
+  "activationBlockers": [
+    "STATIC_PACKAGE_AND_CONFIG_ONLY",
+    "LAUNCHER_NOT_VERIFIED",
+    "SOURCE_AND_CHECKPOINT_NOT_READ",
+    "ROSTER_AND_ACL_NOT_VERIFIED",
+    "LIVE_IDENTITY_AND_PROXY_NOT_VERIFIED",
+    "NO_OPERATIONAL_ACCEPTANCE",
+    "EXTERNAL_DEPENDENCIES_RESOLVED_NOT_EXECUTED",
+    "EXTERNAL_TRANSITIVE_GRAPH_NOT_VERIFIED",
+    "OPERATOR_CONFIG_NOT_ENABLED_CANDIDATE"
+  ],
+  "checkedPackageFiles": 76,
+  "checkedFilesSha256": "c10f6a205188fbfa9584805f816f290b105c3a3017a729ed18f7b7513176c6b1",
+  "externalDependencyCount": 1,
+  "limitations": [
+    "STATIC_PACKAGE_AND_CONFIG_ONLY",
+    "LAUNCHER_NOT_VERIFIED",
+    "SOURCE_AND_CHECKPOINT_NOT_READ",
+    "ROSTER_AND_ACL_NOT_VERIFIED",
+    "LIVE_IDENTITY_AND_PROXY_NOT_VERIFIED",
+    "NO_OPERATIONAL_ACCEPTANCE",
+    "EXTERNAL_DEPENDENCIES_RESOLVED_NOT_EXECUTED",
+    "EXTERNAL_TRANSITIVE_GRAPH_NOT_VERIFIED"
+  ]
+}

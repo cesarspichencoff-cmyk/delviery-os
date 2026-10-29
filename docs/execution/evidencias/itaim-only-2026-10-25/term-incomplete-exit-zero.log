@@ -1,0 +1,10 @@
+
+=== Termo sintético: só no laboratório ===
+
+  ok  T1 a fixture carrega a marca em título, corpo, vigência e em todo campo legal
+  ok  T2 nenhum dado legal inventado: sem CNPJ, sem e-mail, sem telefone, sem data civil
+  ok  T3 ela torna o termo publicável — é para isso que ela existe, e só isso
+  ok  T4 não é o padrão de ninguém: fora de config/, e o caminho padrão do termo é ignorado pelo Git
+  ok  T5 sem laboratório declarado, o piloto NÃO sobe com a fixture
+  ok  T6 laboratório declarado MAS remoto: o piloto NÃO sobe com a fixture
+  ok  T7 laboratório declarado e local: sobe, publica, e DECLARA que o termo é sintético

@@ -51,7 +51,7 @@ import {
   AcknowledgementStore,
   type AckStorage,
 } from "../src/entregas/consent/acknowledgement";
-import { loadUnitConfig, type UnitConfig } from "../src/entregas/gps/unit-config";
+import { PILOT_UNIT_ID, loadUnitConfig, type UnitConfig } from "../src/entregas/gps/unit-config";
 import { buildOperationalTrack, buildRawTrack } from "../src/entregas/gps/track-projection";
 import {
   buildTripTimeline,
@@ -68,9 +68,64 @@ import {
 } from "../src/entregas/pilot/capture-control";
 import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
 import { classifyQuality } from "../src/entregas/gps/validate";
+import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
+import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
+
+const tataSourceStatus = criarLeitorStatusTata(process.env);
+const operatorRuntime = createOperatorPilotRuntime(process.env);
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
+
+// Contrato inalterável do aplicativo implantável: esta instância é somente ITAIM.
+// Validar antes de criar diretório, gravar dados ou abrir conexão/porta.
+if (cfg.unit_id !== PILOT_UNIT_ID) {
+  throw new Error("ITAIM_ONLY_UNIT_MISMATCH: unidade do piloto inválida");
+}
+const declaredUnit = process.env.ENTREGAS_UNIT_ID;
+if (declaredUnit !== undefined && declaredUnit !== PILOT_UNIT_ID) {
+  throw new Error("ITAIM_ONLY_ENV_MISMATCH: ENTREGAS_UNIT_ID deve ser ITAIM");
+}
+
+// Configuração de geofence ausente é permitida (recurso indisponível);
+// arquivo explícito ausente, JSON inválido ou outra unidade são fatais.
+const configuredUnitPath = process.env.ENTREGAS_UNIT_CONFIG || "config/entregas-unit-itaim.json";
+const unitConfigPath = isAbsolute(configuredUnitPath)
+  ? configuredUnitPath : join(process.cwd(), configuredUnitPath);
+let bootUnitRaw: Partial<UnitConfig> | null = null;
+if (!existsSync(unitConfigPath) && process.env.ENTREGAS_UNIT_CONFIG !== undefined) {
+  throw new Error("ITAIM_ONLY_UNIT_CONFIG_MISSING: arquivo de unidade declarado não existe");
+}
+if (existsSync(unitConfigPath)) {
+  try {
+    bootUnitRaw = JSON.parse(readFileSync(unitConfigPath, "utf8")) as Partial<UnitConfig>;
+  } catch {
+    throw new Error("ITAIM_ONLY_UNIT_CONFIG_INVALID: JSON inválido ou ilegível");
+  }
+  if (bootUnitRaw?.unit_id !== PILOT_UNIT_ID) {
+    throw new Error("ITAIM_ONLY_UNIT_CONFIG_MISMATCH: GPS configurado para unidade diferente");
+  }
+}
+// Termo de localização não pode trocar o alvo do aplicativo.
+// Ausência do arquivo de termo é permitida (texto-base NÃO publicável).
+const configuredTermPath = process.env.ENTREGAS_TERM_CONFIG || "config/entregas-term.json";
+const termConfigPath = isAbsolute(configuredTermPath)
+  ? configuredTermPath : join(process.cwd(), configuredTermPath);
+let bootTermOverride: Partial<LocationTerm> | null = null;
+if (existsSync(termConfigPath)) {
+  try {
+    const candidate: unknown = JSON.parse(readFileSync(termConfigPath, "utf8"));
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+      throw new Error("termo não é objeto");
+    }
+    bootTermOverride = candidate as Partial<LocationTerm>;
+  } catch {
+    throw new Error("ITAIM_ONLY_TERM_CONFIG_INVALID: termo não é JSON objeto válido");
+  }
+  if (bootTermOverride.unit_id !== undefined && bootTermOverride.unit_id !== PILOT_UNIT_ID) {
+    throw new Error("ITAIM_ONLY_TERM_UNIT_MISMATCH: termo de unidade não autorizada");
+  }
+}
 /* Diretório de dados: o ambiente manda, e em modo remoto é obrigatório.
    Caminho absoluto é usado como está — é assim que o volume é montado. */
 const rawDataDir = process.env.ENTREGAS_DATA_DIR?.trim() || cfg.data_dir;
@@ -182,14 +237,9 @@ function readJsonIfPresent<T>(file: string): T | null {
   }
 }
 
-const unitRaw = readJsonIfPresent<Partial<UnitConfig>>(
-  process.env.ENTREGAS_UNIT_CONFIG || "config/entregas-unit-itaim.json",
-);
-const unitConfig = loadUnitConfig(unitRaw);
+const unitConfig = loadUnitConfig(bootUnitRaw);
 
-const termOverride = readJsonIfPresent<Partial<LocationTerm>>(
-  process.env.ENTREGAS_TERM_CONFIG || "config/entregas-term.json",
-);
+const termOverride = bootTermOverride;
 /* Sem o arquivo do responsável, o termo continua o modelo — não publicável. */
 const activeTerm: LocationTerm = { ...TERM_ITAIM_V1, ...(termOverride ?? {}) };
 
@@ -292,14 +342,14 @@ function canonicalObservationAsPoint(
   };
 }
 
-function canonicalRoutePoints(raw: unknown): GPSPoint[] {
+function canonicalRoutePoints(raw: unknown, tripId: string): GPSPoint[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((item): GPSPoint[] => {
     if (!item || typeof item !== "object") return [];
     const p = item as Record<string, unknown>;
     const accuracy = typeof p.accuracy_m === "number" ? p.accuracy_m : NaN;
     if (
-      typeof p.trip_id !== "string" ||
+      p.trip_id !== tripId ||
       typeof p.device_id !== "string" ||
       typeof p.latitude !== "number" ||
       typeof p.longitude !== "number" ||
@@ -392,6 +442,13 @@ function transformHtml(html: string, pathname: string): string {
     /AMBIENTE DE DEMONSTRAÇÃO[^<]*/g,
     banner,
   );
+  if (tataSourceStatus.enabled && pathname === "/console/index.html") {
+    out = out.replace("· Demo · sem shell · sem Copiloto · sem GPS de produção",
+      '· Ensaio · <a href="/copiloto/">Copiloto: fonte de pedidos</a> · GPS desligado');
+  }
+  if (operatorRuntime.enabled && pathname === "/console/index.html") {
+    out = out.replace('</body>', '<p><a href="/copiloto/pedidos/">Leitura de comandas · acesso individual</a></p></body>');
+  }
   // esconder dock de demo na expedição iFood (id ou class; operação: ausente no HTML)
   if (pathname.includes("ifood-handoff") && !cfg.features?.demo_controls) {
     out = out.replace(
@@ -443,6 +500,7 @@ window.entregasPilotLogin = async (token) => {
 let autoBackupTimer: ReturnType<typeof setInterval> | null = null;
 
 const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  if (await operatorRuntime.handle(req, res)) return;
   if (req.method === "OPTIONS") {
     const preflight = corsHeaders(req.headers.origin);
     // Sem origem permitida, o preflight não concede nada.
@@ -496,9 +554,12 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         features: { ...(cfg.features || {}), demo_controls: demoControls },
         shell: false,
         copiloto: false,
+        copiloto_source_status: tataSourceStatus.enabled,
+        copiloto_orders_configured: operatorRuntime.enabled,
         gps_production: gpsFlags.gps_capture_enabled,
         multi_instance: persistenceBackend?.multi_instance ?? false,
         storage_backend: persistenceBackend?.kind ?? "booting",
+        native_inbound_receipts: persistenceBackend?.native_inbound_receipts ?? { available: false, reason: "booting" },
         api_version: DEVICE_API_VERSION,
         https: httpsResolution.enabled,
         lan: bindResolution.exposedToLan,
@@ -526,6 +587,31 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         banner,
         unit_name: cfg.unit_name,
       });
+    }
+
+    if (url.pathname === "/api/copiloto/source") {
+      if (!actor) return reply(401, { ok: false, code: "session_required" });
+      if (!["gerente", "lider_delivery"].includes(actor.role))
+        return reply(403, { ok: false, code: "manager_required" });
+      if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
+      return reply(200, tataSourceStatus.read());
+    }
+
+    if (url.pathname === "/api/copiloto/lab-storage") {
+      if (!actor) return reply(401, { ok: false, code: "session_required" });
+      if (!["gerente", "lider_delivery"].includes(actor.role))
+        return reply(403, { ok: false, code: "manager_required" });
+      if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
+      if (url.search) return reply(400, { ok: false, code: "no_query_parameters" });
+      if (cfg.mode !== "test" || cfg.source_mode !== "simulated")
+        return reply(403, { ok: false, code: "simulated_lab_only" });
+      // Same application read as Entregas; no second store or inferred native orders.
+      const snapshot = await facade.snapshot();
+      return reply(200, { schema: "deliveryos.copiloto-lab-storage.v1",
+        scope: "LAB_SIMULATED_ONLY", unit_id: cfg.unit_id, source_mode: "simulated",
+        observed_at: new Date().toISOString(), storage_backend: persistenceBackend!.kind,
+        registered_trips: snapshot.trips.length, ready_queue_records: snapshot.ready_orders.length,
+        operational_order_total: null, no_action_executed: true });
     }
 
 
@@ -584,6 +670,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           ok: false,
           unknown: true,
           human: "Não foi possível confirmar a viagem agora.",
+        });
+      }
+
+      if (identidade.identity.unit_id !== PILOT_UNIT_ID) {
+        return reply(200, {
+          ok: true,
+          capture: false,
+          trip_id: tripId,
+          reason: "device_unit_not_allowed",
+          checked_at: new Date().toISOString(),
         });
       }
 
@@ -737,6 +833,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/events/batch" && req.method === "POST") {
       let eventActor: ActorContext | null = actor;
+      let attestedDeviceId: string | null = null;
       // Delegation is accepted only in the Authorization header (never query).
       const delegatedHeader = typeof req.headers.authorization === "string"
         ? /^Bearer\s+(pt1\.[^\s]+)$/i.exec(req.headers.authorization)?.[1]
@@ -751,13 +848,31 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           ok:false,code:auth.reason,retryable:auth.status===503,
         });
         eventActor = {actor_id:auth.claims.actor_id,role:auth.claims.role};
+        attestedDeviceId = auth.claims.device_id;
       }
       if (!eventActor) return reply(401, { ok: false, human: NO_SESSION });
+      if (!persistenceBackend?.native_inbound_receipts.available) {
+        return reply(503, { ok: false, code: "DURABLE_RECEIPTS_UNAVAILABLE", retryable: true });
+      }
       const body = JSON.parse(await readBody(req)) as {
-        events?: Array<{ event_id: string; command: Record<string, unknown> }>;
+        events?: Array<{
+          event_id: string;
+          idempotency_key?: string;
+          command: Record<string, unknown>;
+        }>;
       };
-      const results: Array<{ event_id: string; ok: boolean; error?: string }> = [];
-      for (const ev of body.events ?? []) {
+      if (!Array.isArray(body.events) || body.events.length > 100)
+        return reply(400,{ok:false,code:"INVALID_EVENTS_BATCH"});
+      const results: Array<{
+        event_id:string;ok:boolean;error?:string;code?:string;retryable?:boolean;
+      }> = [];
+      for (const ev of body.events) {
+        if (!ev || typeof ev !== "object" || !ev.command ||
+            typeof ev.command !== "object" || Array.isArray(ev.command)) {
+          results.push({event_id:typeof ev?.event_id==="string"?ev.event_id:"",
+            ok:false,code:"INVALID_EVENT",retryable:false});
+          continue;
+        }
         // O aparelho propoe; o dominio dispoe. Nenhuma regra e reavaliada aqui.
         const cmd = { ...ev.command } as Record<string, unknown>;
         if (typeof cmd.courier_actor_id === "string") {
@@ -766,8 +881,20 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         if (typeof cmd.rider_id === "string") {
           cmd.rider_id = asInternalRiderActorId(cmd.rider_id);
         }
-        const r = await facade.executeAs(eventActor, cmd as never);
-        results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
+        // Compatibilidade de envelopes legados sem chave explicita:
+        // event_id e identidade estavel. Nunca criar UUID a cada tentativa.
+        const key = typeof ev.idempotency_key==="string" && ev.idempotency_key.trim()
+          ? ev.idempotency_key
+          : typeof cmd.idempotency_key==="string" && cmd.idempotency_key.trim()
+            ? cmd.idempotency_key : ev.event_id;
+        const r = await facade.executeAs(eventActor, cmd as never, {
+          event_id:ev.event_id,idempotency_key:key,device_id:attestedDeviceId,
+        });
+        results.push({
+          event_id:ev.event_id,ok:r.ok,
+          error:r.ok?undefined:r.error,
+          code:r.code,retryable:r.retryable ?? false,
+        });
       }
       return reply(200, { ok: true, results });
     }
@@ -904,7 +1031,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
             human: canonical.human,
           });
         }
-        points = canonicalRoutePoints(canonical.body.points);
+        points = canonicalRoutePoints(canonical.body.points, tripId);
         const declaredCount =
           typeof canonical.body.point_count === "number" ? canonical.body.point_count : -1;
         if (declaredCount !== points.length) {
@@ -1026,6 +1153,10 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     // static UI
     let path = url.pathname === "/" ? "/console/index.html" : url.pathname;
+    if ((path === "/copiloto" || path.startsWith("/copiloto/")) && !tataSourceStatus.enabled) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end("Fonte do copiloto não configurada neste ambiente.");
+    }
     if (path === "/map-poc" || path.startsWith("/map-poc/")) {
       if (!cfg.features.map_poc) {
         res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

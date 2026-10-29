@@ -239,6 +239,15 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     assert.ok(js.includes("Confirmar entrega"));
   });
 
+  await test("painel de acompanhamento não solicita GPS nem inicia captura", () => {
+    const base = join(process.cwd(), "src/entregas/ui");
+    const files = ["console/console.js", "console/dispatch-location.js", "shared/client.js"];
+    for (const file of files) {
+      const source = readFileSync(join(base, file), "utf8");
+      assert.doesNotMatch(source, /navigator\.geolocation|watchPosition\s*\(|getCurrentPosition\s*\(|startTripCapture\s*\(/, file);
+    }
+  });
+
   await test("console: sem mapa pseudogeográfico — sequência de endereços", () => {
     const html = readFileSync(
       join(process.cwd(), "src/entregas/ui/console/index.html"),

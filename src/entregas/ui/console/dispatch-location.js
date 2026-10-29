@@ -30,6 +30,8 @@ export function createDispatchLocation(opts = {}) {
   let arrivals = [];
   let error = null;
   let loading = false;
+  let generation = 0;
+  let receivedAt = 0;
 
   function ageLabel(age_s) {
     if (age_s == null) return "sem atualização";
@@ -39,7 +41,10 @@ export function createDispatchLocation(opts = {}) {
   }
 
   function state() {
-    const f = location ? location.freshness : "unknown";
+    const elapsed = Math.max(0, (now().getTime() - receivedAt) / 1000);
+    // Cache de tela: não altera os limiares do GPS calculados no servidor.
+    const valid = location && elapsed < 30;
+    const f = valid ? location.freshness : "unknown";
     return {
       trip_id: tripId,
       loading,
@@ -47,14 +52,14 @@ export function createDispatchLocation(opts = {}) {
       freshness: f,
       severity: SEVERITY[f] ?? 5,
       // Frase sempre presente: a tela nunca fica muda sobre o estado do sinal.
-      label: location ? location.label : "Sem posição nesta viagem",
-      age_label: ageLabel(location ? location.age_s : undefined),
+      label: valid ? location.label : location ? "Posição aguardando atualização" : "Sem posição nesta viagem",
+      age_label: ageLabel(location && location.age_s != null ? Math.floor(location.age_s + elapsed) : undefined),
       accuracy_m: location ? location.accuracy_m : undefined,
       point_count: location ? location.point_count : 0,
-      usable: Boolean(location && location.usable),
-      coordinates_visible: Boolean(location && location.coordinates_visible),
+      usable: Boolean(valid && location.usable),
+      coordinates_visible: Boolean(valid && location.coordinates_visible),
       // Só existe quando o papel pode ver. Ausência é o default.
-      last_point: location && location.coordinates_visible ? location.last_point : undefined,
+      last_point: valid && location.coordinates_visible ? location.last_point : undefined,
       timeline,
       arrivals,
       // Contagem que interessa ao operador: quantas paradas chegaram mas não
@@ -69,36 +74,55 @@ export function createDispatchLocation(opts = {}) {
     onRender(state());
   }
 
-  async function refresh(id) {
-    tripId = id || tripId;
-    if (!tripId) {
-      location = null;
-      timeline = [];
-      arrivals = [];
-      render();
-      return;
-    }
-    loading = true;
+  function clear() {
+    location = null;
+    timeline = [];
+    arrivals = [];
     error = null;
+    loading = false;
+  }
+
+  function setTrip(id) {
+    generation += 1;
+    tripId = id || null;
+    clear();
+    render();
+  }
+
+  async function refresh(id = tripId) {
+    const request = ++generation;
+    tripId = id || null;
+    const requestedTrip = tripId;
+    clear();
+    if (!requestedTrip) { render(); return; }
+    loading = true;
     render();
     try {
       const [loc, tl] = await Promise.all([
-        fetchJson(`/api/trip/location?trip_id=${encodeURIComponent(tripId)}`),
-        fetchJson(`/api/trip/timeline?trip_id=${encodeURIComponent(tripId)}`),
+        fetchJson(`/api/trip/location?trip_id=${encodeURIComponent(requestedTrip)}`),
+        fetchJson(`/api/trip/timeline?trip_id=${encodeURIComponent(requestedTrip)}`),
       ]);
-      location = loc && loc.ok ? loc : null;
-      timeline = tl && tl.ok ? tl.timeline || [] : [];
-      arrivals = tl && tl.ok ? tl.arrivals || [] : [];
+      if (request !== generation) return;
+      if (!loc?.ok || !tl?.ok || (loc.trip_id && loc.trip_id !== requestedTrip)) {
+        throw new Error("Resposta indisponível ou fora da viagem");
+      }
+      location = loc;
+      receivedAt = now().getTime();
+      timeline = tl.timeline || [];
+      arrivals = tl.arrivals || [];
     } catch (e) {
-      // Falha de rede não apaga o que já estava na tela; só avisa.
+      if (request !== generation) return;
+      clear();
       error = "Não foi possível atualizar agora.";
     } finally {
-      loading = false;
-      render();
+      if (request === generation) {
+        loading = false;
+        render();
+      }
     }
   }
 
-  return { refresh, state, setTrip: (id) => (tripId = id) };
+  return { refresh, state, setTrip };
 }
 
 /** Renderiza o estado do sinal. Nunca escreve coordenada. */

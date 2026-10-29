@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -30,17 +32,49 @@ val entregasPlatformUrl: String =
  *
  * O `debug` fica de fora: ele existe justamente para apontar para o emulador.
  */
-fun problemasDoEndereco(): List<String> {
+fun problemasDaUrlDeCampo(url: String): List<String> {
+    val uri = runCatching { URI(url) }.getOrNull()
+        ?: return listOf("URL malformada")
     val problemas = mutableListOf<String>()
-    for ((nome, url) in listOf("piloto" to entregasBaseUrl, "plataforma" to entregasPlatformUrl)) {
-        if (!url.startsWith("https://")) {
-            problemas += "$nome não é HTTPS"
-        }
-        for (local in listOf("10.0.2.2", "localhost", "127.0.0.1", "0.0.0.0")) {
-            if (url.contains(local)) problemas += "$nome aponta para máquina local ($local)"
-        }
+    if (!uri.scheme.equals("https", ignoreCase = true)) problemas += "não é HTTPS"
+    val host = uri.host?.lowercase()?.removePrefix("[")?.removeSuffix("]")?.trimEnd('.')
+    if (host.isNullOrBlank()) problemas += "host ausente ou inválido"
+    if (uri.rawUserInfo != null) problemas += "credenciais na URL não são permitidas"
+    if (uri.rawQuery != null || uri.rawFragment != null) problemas += "query e fragmento não são permitidos"
+    if (uri.port == 0 || uri.port > 65535) problemas += "porta inválida"
+    if (host != null && (host == "localhost" || host.endsWith(".localhost") ||
+        host == "10.0.2.2" || host == "0.0.0.0" || host.startsWith("127.") ||
+        host == "::1" || host == "0:0:0:0:0:0:0:1" || host == "::" || host == "0:0:0:0:0:0:0:0")) {
+        problemas += "aponta para máquina local"
     }
     return problemas
+}
+
+fun problemasDoEndereco(): List<String> =
+    listOf("piloto" to entregasBaseUrl, "plataforma" to entregasPlatformUrl).flatMap { (nome, url) ->
+        problemasDaUrlDeCampo(url).map { "$nome: $it" }
+    }
+
+// Contraprovas executadas pelo Gradle real no CI; nenhum host é acessado.
+tasks.register("verifyFieldEndpointPolicy") {
+    doLast {
+        val refused = listOf(
+            "http://pilot.example", "https:///api", "https://", "https://user:secret@pilot.example",
+            "https://pilot.example?token=secret", "https://pilot.example#fragment",
+            "https://LOCALHOST", "https://localhost.", "https://test.localhost", "https://127.0.0.2",
+            "https://10.0.2.2:5193", "https://0.0.0.0", "https://[::1]", "https://[::]",
+            "https://[0:0:0:0:0:0:0:1]", "https://pilot.example:0", "https://pilot.example:65536",
+            "https://bad host.example", "https://pilot.example/\"injection",
+        )
+        val accepted = listOf("https://pilot.example", "https://platform.example:8443/", "https://192.168.1.25:5193")
+        refused.forEachIndexed { index, url ->
+            check(problemasDaUrlDeCampo(url).isNotEmpty()) { "URL inválida aceita no caso $index" }
+        }
+        accepted.forEachIndexed { index, url ->
+            check(problemasDaUrlDeCampo(url).isEmpty()) { "URL válida recusada no caso $index" }
+        }
+        println("ANDROID_FIELD_ENDPOINT_POLICY: ${refused.size} recusas + ${accepted.size} aceites; sem DNS/TLS/rede")
+    }
 }
 
 /**
@@ -58,14 +92,15 @@ gradle.taskGraph.whenReady {
     val alvo = allTasks.firstOrNull { tarefa ->
         variantesDeCampo.any { v ->
             tarefa.name.startsWith("assemble") && tarefa.name.endsWith(v) ||
-                tarefa.name.startsWith("bundle") && tarefa.name.endsWith(v)
+                tarefa.name.startsWith("bundle") && tarefa.name.endsWith(v) ||
+                tarefa.name == "generate${v}BuildConfig" || tarefa.name == "package$v"
         }
     }
     if (alvo != null) {
         val problemas = problemasDoEndereco()
         if (problemas.isNotEmpty()) {
             throw GradleException(
-                "Endereço inválido para a variante de campo (${alvo.name}): piloto=$entregasBaseUrl plataforma=$entregasPlatformUrl — " +
+                "Endereço inválido para a variante de campo (${alvo.name}): " +
                     problemas.joinToString("; ") + ". " +
                     "Defina os domínios reais: ./gradlew ${alvo.name} -Pentregas.baseUrl=https://SEU_DOMINIO -Pentregas.platformUrl=https://SUA_PLATAFORMA",
             )

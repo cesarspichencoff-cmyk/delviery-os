@@ -199,6 +199,9 @@ function spawnServer(
   databaseUrl: string,
   logs: Map<number, { out: string; err: string }>,
 ): ChildProcess {
+  // O boot recusa arquivo declarado ausente; fixture sem coordenadas reais.
+  const unitPath = join(dataDir, "unit-unconfigured.json");
+  writeFileSync(unitPath, JSON.stringify({ unit_id: UNIT }));
   const state = { out: "", err: "" };
   logs.set(port, state);
   const child = spawn(
@@ -216,7 +219,7 @@ function spawnServer(
         ENTREGAS_STORAGE_BACKEND: "postgres",
         DELIVERYOS_DATABASE_URL: databaseUrl,
         DELIVERYOS_DATABASE_SSL: "false",
-        ENTREGAS_UNIT_CONFIG: join(dataDir, "unit-does-not-exist.json"),
+        ENTREGAS_UNIT_CONFIG: unitPath,
         ENTREGAS_TERM_CONFIG: join(dataDir, "term-does-not-exist.json"),
         ENTREGAS_GPS_FLAGS_CONFIG: join(dataDir, "gps-flags-does-not-exist.json"),
       },
@@ -379,7 +382,16 @@ async function main(): Promise<void> {
     for (const h of [healthA, healthB]) {
       assert.equal(h.multi_instance, true);
       assert.equal(h.storage_backend, "postgres");
+      assert.deepEqual(h.native_inbound_receipts, {
+        available: false, reason: "receipt_schema_missing",
+      });
     }
+    const unsupportedNative = await api(5311, "/api/events/batch", {
+      method: "POST", body: JSON.stringify({ events: [] }),
+    });
+    assert.equal(unsupportedNative.status, 503);
+    assert.equal(unsupportedNative.body.code, "DURABLE_RECEIPTS_UNAVAILABLE");
+    assert.equal(unsupportedNative.body.retryable, true);
 
     const [readyA, readyB] = await Promise.all([
       api(5311, "/api/ready-order", {

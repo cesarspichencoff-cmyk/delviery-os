@@ -1,0 +1,90 @@
+{
+  "schema": "deliveryos.operator-browser-proof.v1",
+  "tested_remote_commit": "bb1f4da85584f8a0172f1ed66e2c6ba6dfd054bb",
+  "tested_tree": "502b7bd9131bd243e93772ee63d7d6f6c224b524",
+  "host": "CAIXA_MOOCA",
+  "platform": "Windows isolated HTTPS loopback; Playwright headless Edge",
+  "viewports": [
+    390,
+    1440
+  ],
+  "result": "OPERATOR_HTTPS_PASS 8 WITH_BROWSER",
+  "exit_code": 0,
+  "source": "Synthetic temporary checkpoint/event files through actual TATA adapter and motor",
+  "provider": "Injected mock; no real email or provider request",
+  "adaptations": [
+    "OpenSSL test certificate generated in scratch and copied only into disposable test fixture; not installed in OS trust store",
+    "Playwright launch channel msedge; fresh contexts, ignoreHTTPSErrors for test certificate only",
+    "All 12 runtime/test/asset files SHA-256 verified before test"
+  ],
+  "checks": [
+    "HTTPS login and scoped feed",
+    "HttpOnly Secure SameSite cookie; no local/sessionStorage credential",
+    "390 and 1440: no horizontal overflow, no page errors",
+    "Source blocked clears visible records",
+    "Revoked grant clears visible records",
+    "Logout clears records, reload remains signed out",
+    "Held successful read released after logout cannot restore records"
+  ],
+  "files": [
+    {
+      "path": "dist/src/platform/copiloto/operator-http.js",
+      "sha256": "6e0e74005d301d17e7a50d87589c1500d56e552ad077f24846b3c87522c2335e"
+    },
+    {
+      "path": "dist/src/platform/auth/neon-operator-session.js",
+      "sha256": "708c95c9a4ef3edee6e68cb885258d4c219290cdd3693bd87e1b57ae3df72674"
+    },
+    {
+      "path": "dist/src/platform/auth/operator-read-authority.js",
+      "sha256": "a7caa582dbf6e2630209bfa56b1d9997a3acb87b4f837930d4e5af803e766b8c"
+    },
+    {
+      "path": "runtime/reporting/copiloto_tata_file_feed_v1.cjs",
+      "sha256": "5346bd80cdc46d7a066ea97da27e8360f790ae227bb8aa02b74318486a082408"
+    },
+    {
+      "path": "runtime/reporting/copiloto_tata_reader_adapter_v1.cjs",
+      "sha256": "3d5ad9185d629ac877863887b07fd573fcf489391424d865f00969bcd968bb7b"
+    },
+    {
+      "path": "runtime/reporting/copiloto_tata_orders_v1.cjs",
+      "sha256": "fc50618420acaff59793a0a78b91a41f8cec63bd016e94e03875dcb99e0cf096"
+    },
+    {
+      "path": "runtime/reporting/tata_source_time_v1.cjs",
+      "sha256": "0cef78ab13dc9c4e208e2679b51b99781f3102090166a933dceaf4f22a7de85b"
+    },
+    {
+      "path": "runtime/reporting/tata_comanda_order_truth_v1.cjs",
+      "sha256": "58c7f9d2af11423270384da5d427f8872d1dfbba028302d27069228e8a7b2b15"
+    },
+    {
+      "path": "src/entregas/ui/copiloto/pedidos/index.html",
+      "sha256": "c0a7a977439584a465933ae99b0c6be0dbcacd11cacd888ca66e7d46841f9b46"
+    },
+    {
+      "path": "src/entregas/ui/copiloto/pedidos/app.js",
+      "sha256": "a083492c6ce82226c7b944a91cd569c73f63ffd197ee9006f73f49db780fe283"
+    },
+    {
+      "path": "src/entregas/ui/copiloto/pedidos/app.css",
+      "sha256": "65fdc20e69c657248286cc04a4185843d4bd62c52901d2461472bfa6aa5d8440"
+    },
+    {
+      "path": "tests/tata-reader/run-operator-http-tests.cjs",
+      "sha256": "0c1c870e3ae5096155ed859922028c62429fe2ac6acd6453313bff437a4f634f"
+    }
+  ],
+  "limits": [
+    "No public NetBird journey",
+    "No real identity provider proof",
+    "No actual iPhone/Xiaomi proof",
+    "No real orders or GPS enabled",
+    "CI Chromium installation still pending at recording"
+  ],
+  "installed_application_changed": false,
+  "checked_at_utc": "2026-10-27T12:42:34.7108435Z",
+  "browser_version": "156.0.4314.42",
+  "isolated_test_directory_removed": true
+}

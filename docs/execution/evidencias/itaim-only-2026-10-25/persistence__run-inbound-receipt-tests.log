@@ -1,0 +1,13 @@
+OK recibo e outbox persistem no mesmo commit apos reinicio
+OK rollback nao deixa recibo nem evento fantasma
+OK colisao de chave numa UoW unica falha fechado
+OK identificadores herdados do Object.prototype nao sao recibos
+OK escritor antigo sem recibos nao pode apagar ACK novo
+OK principal ausente com .bak nao pode inicializar armazenamento vazio
+OK snapshot obsoleto falha fechado e recarregamento preserva ambos recibos
+OK restore de backup antigo nao apaga recibos de entrada ja aplicados
+OK restore recusa JSON corrompido com assinatura de recibos visivel
+OK restore nao atravessa principal ausente com backup lateral
+OK restore recusa store truncado sem assinatura textual restante
+OK backup com schema de recibos desconhecido e hash valido e recusado
+RECEIPTS synthetic: OK=12 RED=0

@@ -1,0 +1,16 @@
+{
+  "schema": "deliveryos.source-metadata-check.v1",
+  "checked_at_utc": "2026-10-27T12:32:56.2093105Z",
+  "checked_at_sao_paulo": "2026-10-27T09:32:56-03:00",
+  "host": "CAIXA_MOOCA",
+  "unit_scope": "ITAIM",
+  "read_only": true,
+  "latest_selected_file_count": 3,
+  "latest_observed_at": "2026-10-26T23:04:24.9417715-03:00",
+  "selected_events_ready": false,
+  "each_selected_event_blockers": 2,
+  "each_selected_event_service_blockers": 2,
+  "each_selected_event_has_explicit_opened_offset": false,
+  "customer_or_order_content_exported": false,
+  "interpretation": "No post-weekly-install observation found among latest three files. Check occurred before lunch opening; this does not establish reader failure. No checkpoint reset or source mode change."
+}

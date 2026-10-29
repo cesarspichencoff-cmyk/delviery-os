@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-25",
+  "repository": "cesarspichencoff-cmyk/delviery-os",
+  "pr": 126,
+  "authorized_by": "Cesar, current conversation: Sim",
+  "branch": "review/deliveryos-v1-role-convergence-20261022",
+  "expected_previous_head": "07b5bb098f970b039c0fe387c33fdfb6a85b6682",
+  "head": "fdae88a677163dc4e7f4d19ab251227808b0adb5",
+  "draft": true,
+  "merged": false,
+  "transports": [
+    {
+      "local_sha": "3ac9e08d82d1dabc697e0047c9a640e8efe9d87c",
+      "remote_sha": "02554be4108c3036792d30d0b645f7d57848b8f6",
+      "tree_sha": "6de8555800747be7092b1baa23f83fa06e7bf139"
+    },
+    {
+      "local_sha": "37331b33f92b2d8b7457ce479ac6978a9a72e71b",
+      "remote_sha": "ae294958c9931269b8a4d7410f3895e71a1a6a76",
+      "tree_sha": "938074d93481bac6c5e1c97b1cd75546db85d3a2"
+    },
+    {
+      "local_sha": "cee47a3800e3d52e84999b5b7832a694e6d45dfe",
+      "remote_sha": "fdae88a677163dc4e7f4d19ab251227808b0adb5",
+      "tree_sha": "9789953e9e7d154f66c6f671c0b37abfd9e8cef3"
+    }
+  ],
+  "proof": "Each remote Git tree SHA equals the corresponding local Git tree SHA; fast-forward with expected previous head; no force.",
+  "ci": [
+    {
+      "run_id": 40231510082,
+      "name": "DeliveryOS Android event receipt",
+      "observed_status": "completed",
+      "conclusion": "success",
+      "junit_suites": 16,
+      "junit_tests": 110,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "run_id": 40231510077,
+      "name": "deliveryos-product-ux",
+      "observed_status": "completed",
+      "conclusion": "failure",
+      "causes": [
+        "capture HTTP cleanup ENOTEMPTY",
+        "canonical PG cleanup ENOTEMPTY",
+        "G6c lifecycle date of mission ledger stale"
+      ],
+      "cluster_test": "NOT_RUN",
+      "term_test_in_new_http_gate": "NOT_RUN"
+    }
+  ],
+  "limits": [
+    "No merge",
+    "No deploy",
+    "No operational database/migration",
+    "No physical-device proof"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "verification_basis": "worktree content before review commit; CI retest pending",
+  "sha256": {
+    ".github/workflows/deliveryos-product-ux.yml": "426abbc5e08909984ddd7b279afc4324a0eba0eb2197ac8863a605586305b610",
+    "src/entregas/pilot/test-process-shutdown.ts": "d97a0587bd37184d51d65daf0dcf723c339e05c11316f42675d8133b5d9281bb",
+    "src/entregas/pilot/run-test-process-shutdown-tests.ts": "fe5f222ae566b12b7eb0087b8e2cc6a7f3e58e0ef6ddee0bb100716addaa5b09",
+    "src/entregas/pilot/run-canonical-dispatch-http-tests.ts": "b8bb6ad56d8f5d2512e68cbc8edd7e4986ebd0d2ebaefbf1f2f183cfff2d4d8e",
+    "src/entregas/pilot/run-capture-control-http-tests.ts": "6e218dcbc46df4f21bccebf9566b7c183b88d19cf39a463a1cc3ac66462e8dd5",
+    "src/entregas/pilot/run-canonical-dispatch-postgres-tests.ts": "f5a924ee5190e973e481c0b58e9e919ea7713cd9106b771e679c1988edd46445"
+  }
+}

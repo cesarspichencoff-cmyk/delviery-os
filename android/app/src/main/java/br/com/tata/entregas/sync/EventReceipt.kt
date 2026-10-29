@@ -10,6 +10,8 @@ internal sealed interface EventReceiptDecision {
     data class Apply(
         val sentIds: List<String>,
         val rejected: List<EventReceiptRejected>,
+        /** Falhas com commit desconhecido continuam no Room para o mesmo reenvio. */
+        val retryable: List<EventReceiptRejected> = emptyList(),
     ) : EventReceiptDecision
     data class Invalid(val reason: String) : EventReceiptDecision
 }
@@ -40,6 +42,7 @@ internal fun decideEventReceipt(
     val expected = ids.toSet()
     val decisions = mutableMapOf<String, Boolean>()
     val reasons = mutableMapOf<String, String>()
+    val retryableIds = mutableSetOf<String>()
     for (i in 0 until results.length()) {
         val result = results.optJSONObject(i)
             ?: return EventReceiptDecision.Invalid("resultado_invalido")
@@ -53,10 +56,21 @@ internal fun decideEventReceipt(
         }
         val ok = result.opt("ok") as? Boolean
             ?: return EventReceiptDecision.Invalid("aceite_sem_booleano")
+        val rawRetryable = result.opt("retryable")
+        if (rawRetryable != null && rawRetryable !is Boolean) {
+            return EventReceiptDecision.Invalid("retryable_sem_booleano")
+        }
+        val retry = rawRetryable == true
+        if (ok && retry) return EventReceiptDecision.Invalid("aceite_contraditorio")
+        val code = result.opt("code") as? String
+        if (!ok && code in setOf("COMMIT_UNCONFIRMED_RETRY", "RECEIPT_CONFLICT_RECHECK") && !retry) {
+            return EventReceiptDecision.Invalid("resultado_incerto_sem_retryable")
+        }
         decisions[id] = ok
         if (!ok) {
             val error = (result.opt("error") as? String).orEmpty()
             reasons[id] = semSegredo(error).ifBlank { "recusa_sem_motivo" }.take(240)
+            if (retry) retryableIds.add(id)
         }
     }
     if (decisions.size != ids.size) {
@@ -64,7 +78,9 @@ internal fun decideEventReceipt(
     }
     return EventReceiptDecision.Apply(
         sentIds = ids.filter { decisions[it] == true },
-        rejected = ids.filter { decisions[it] == false }
+        rejected = ids.filter { decisions[it] == false && it !in retryableIds }
+            .map { EventReceiptRejected(it, reasons[it] ?: "recusa_sem_motivo") },
+        retryable = ids.filter { it in retryableIds }
             .map { EventReceiptRejected(it, reasons[it] ?: "recusa_sem_motivo") },
     )
 }

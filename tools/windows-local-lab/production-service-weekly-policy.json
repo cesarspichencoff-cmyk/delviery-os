@@ -1,0 +1,124 @@
+{
+  "schema": "deliveryos.production-service-weekly-policy.v1",
+  "enabled": true,
+  "policy_version": "ITAIM_DELIVERY_HOURS_2026_10_26_V1",
+  "unit_id": "ITAIM",
+  "host_name": "CAIXA_MOOCA",
+  "source_unit_id": "0001",
+  "source_store_id": "01",
+  "timezone": "America/Sao_Paulo",
+  "order_time_basis": "NATIVE_DTHRABERMESA_LOCAL",
+  "boundary": "START_INCLUSIVE_END_EXCLUSIVE",
+  "evidence": "HUMAN_CONFIRMED_RULE",
+  "source_ref": "cesar:chat:2026-10-26:itaim-delivery-hours",
+  "clock_inference_used": false,
+  "effective_from": "2026-10-26",
+  "effective_until": null,
+  "week": [
+    {
+      "day_of_week": 0,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "16:30"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    },
+    {
+      "day_of_week": 1,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "15:00"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    },
+    {
+      "day_of_week": 2,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "15:00"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    },
+    {
+      "day_of_week": 3,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "15:00"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    },
+    {
+      "day_of_week": 4,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "15:00"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    },
+    {
+      "day_of_week": 5,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "15:00"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    },
+    {
+      "day_of_week": 6,
+      "windows": [
+        {
+          "service": "LUNCH",
+          "start": "11:00",
+          "end": "16:30"
+        },
+        {
+          "service": "DINNER",
+          "start": "18:00",
+          "end": "23:00"
+        }
+      ]
+    }
+  ]
+}

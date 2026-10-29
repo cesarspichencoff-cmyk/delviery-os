@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Copiloto · Fonte do Itaim</title>
+  <link rel="stylesheet" href="/copiloto/source.css">
+</head>
+<body>
+  <header><a href="/">← Entregas</a><span>ITAIM · ENSAIO</span></header>
+  <main>
+    <p class="eyebrow">COPILOTO · FONTE DE PEDIDOS</p>
+    <h1 id="title">Verificando a fonte</h1>
+    <p id="message" role="status" aria-live="polite">Aguarde a leitura do servidor.</p>
+    <form id="login" hidden>
+      <label for="access-key">Chave de acesso do ensaio</label>
+      <input id="access-key" type="password" autocomplete="off" required>
+      <button id="enter" type="submit">Entrar</button>
+      <p id="login-error" role="alert"></p>
+    </form>
+    <section aria-labelledby="source-title">
+      <h2 id="source-title">Leitor TATÁ Comandas</h2>
+      <dl>
+        <div><dt>Unidade da fonte</dt><dd>Itaim</dd></div>
+        <div><dt>Última janela do arquivo legado</dt><dd id="window">Aguardando leitura</dd></div>
+        <div><dt>Diagnóstico consultado</dt><dd id="read-at">Aguardando leitura</dd></div>
+      </dl>
+      <table id="weekly" hidden>
+        <caption>Horários semanais configurados</caption>
+        <thead><tr><th>Dia</th><th>Almoço</th><th>Jantar</th></tr></thead>
+        <tbody id="weekly-body"></tbody>
+      </table>
+      <p id="sample" hidden></p>
+      <button id="refresh" type="button">Verificar novamente</button>
+    </section>
+    <section id="lab-storage" hidden aria-labelledby="lab-title">
+      <h2 id="lab-title">Entregas no ensaio</h2>
+      <p id="lab-backend"></p>
+      <dl><div><dt>Viagens registradas no ensaio</dt><dd id="lab-trips"></dd></div>
+        <div><dt>Registros na fila do ensaio</dt><dd id="lab-ready"></dd></div></dl>
+      <p>Dados simulados, lidos da mesma base do Entregas. Estes números não representam os pedidos reais do restaurante.</p>
+    </section>
+    <section aria-labelledby="next-title">
+      <h2 id="next-title">Leitura dos pedidos</h2>
+      <p>A conexão autorizada e a atualização da fonte ainda precisam ser comprovadas. Ainda não há lista de pedidos nesta tela.</p>
+      <p>O diagnóstico usa uma amostra limitada de arquivos. Ela não representa os pedidos atuais nem o total da operação.</p>
+    </section>
+    <p class="note">Somente consulta da fonte. Esta tela não coleta localização.</p>
+  </main>
+  <script type="module" src="/copiloto/source.js"></script>
+</body>
+</html>

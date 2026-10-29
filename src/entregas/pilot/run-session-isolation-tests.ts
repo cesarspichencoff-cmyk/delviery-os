@@ -243,6 +243,23 @@ async function main(): Promise<void> {
    * 3. Concorrência
    * ---------------------------------------------------------------- */
 
+  await test("tablet, caixa e motoboy preservam três identidades simultâneas", async () => {
+    const terminals = [
+      { name: "tablet", token: GERENTE, role: "gerente" },
+      { name: "caixa-mooca", token: OPS, role: "operador_expedicao" },
+      { name: "celular-motoboy", token: RIDER, role: "motoboy_interno" },
+    ];
+    for (let round = 0; round < 3; round++) {
+      await Promise.all(terminals.map(async terminal => {
+        const result = await api("/api/session", { token: terminal.token });
+        assert.equal(result.status, 200, terminal.name);
+        assert.equal((result.json.actor as { role: string }).role, terminal.role, terminal.name);
+      }));
+      const anonymous = await api("/api/session", { token: null });
+      assert.equal(anonymous.json.actor, null, "terminal sem credencial não herda sessão");
+    }
+  });
+
   await test("duas requisições paralelas de atores diferentes não se contaminam", async () => {
     const pares = await Promise.all(
       Array.from({ length: 12 }, (_, i) =>

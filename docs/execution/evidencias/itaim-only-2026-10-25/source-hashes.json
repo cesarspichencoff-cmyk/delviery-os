@@ -1,0 +1,19 @@
+{
+  "code_commit": "37331b33f92b2d8b7457ce479ac6978a9a72e71b",
+  "sha256": {
+    ".github/workflows/deliveryos-product-ux.yml": "ace4cdb72520da4dd9d8074a8b94e7e884ba984714fc0d8238632e8f37a00cdf",
+    "config/entregas-pilot.example.json": "4f902a83c686123ede5c5e8b01a894a9d5194f8977c0eeb74a5f1d4214d0d06e",
+    "src/entregas/android/run-device-api-tests.ts": "9c2100e241c88528f9f915a7ca6f4fe85d08e0ce26ef844f0415741d46b53826",
+    "src/entregas/pilot/platform-location-client.ts": "4efd36bdf29c00dc65443b69fabc6d8d6afe41450c40e8a557f27c00943ae39c",
+    "src/entregas/pilot/run-canonical-dispatch-http-tests.ts": "db1c8d12438da0efc44ebd7b0c2c8ab9da221c65f06ad924daf3b9361a5ba361",
+    "src/entregas/pilot/run-canonical-dispatch-postgres-tests.ts": "9c1dfcf376424af2c20a75e32b382ef410af4b2066f26d8f6a75d43249ec9287",
+    "src/entregas/pilot/run-capture-control-http-tests.ts": "527105fb2fc6af49837403c2aa9c7741772a3770e3004c3d4a7dbcd714a935a1",
+    "src/entregas/pilot/run-itaim-boot-tests.ts": "d8c7fc6d1b76ad71ebae1bbc597d98747a89324242ac5d38993397d90b081f2d",
+    "src/entregas/pilot/run-postgres-server-cluster-tests.ts": "a603a375e94026bde73d9a52bc24f468803a04b1acdb830d9c33d4ef02948260",
+    "src/entregas/pilot/run-producer-signing-boot-tests.ts": "c85e3df7e8266668a6471587c3284fd6f90e1baa9958b115ae084b8a7cbdf22f",
+    "src/entregas/pilot/run-termo-sintetico-tests.ts": "938b2ffdf48b6c3d1404c3afd7f9350d7aa91b2cabd7effeef46fbc590f1fb3f",
+    "tools/bancada_q018_cadeia.sh": "f458c3f9e21632aeea5787c2cdc19b90f25cca51783859de672ba92af1195df4",
+    "tools/bancada_termo_sintetico.json": "3eeeb2a609855114af28d110726efe84b1e3d520617f1413c2d12eaaff272ff6",
+    "tools/entregas_pilot_server.ts": "ddebf859b877dc0215244b3772c97bf38316e8ccaca05bcc7acaa32d4f05d548"
+  }
+}

@@ -1,0 +1,423 @@
+{
+  "schema": "deliveryos.shared-pg-lab-proof.v1",
+  "sourceBase": "a23baafc20a90ca7c54e91c92558418dcb2a4d40",
+  "coreBuildBase": "be5a3e346981f22a7cab2f39470756c7dc00ef07",
+  "deploymentKind": "component_overlay_isolated_simulated_legacy_console",
+  "receipts": {
+    "pg-storage-readiness-proof.json": {
+      "schema": "deliveryos.pg-storage-readiness.v1",
+      "observedAtUtc": "2026-10-27T02:40:48.240Z",
+      "scope": "ISOLATED_SIMULATED_LAB_ONLY",
+      "identity": {
+        "database": "deliveryos_lab",
+        "role": "deliveryos_entregas_pilot",
+        "rolsuper": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolbypassrls": false
+      },
+      "migrations": [
+        "0001_platform_foundation",
+        "0002_event_log_contexto_dispositivo",
+        "0003_event_log_source_mode",
+        "0004_event_log_sem_truncate",
+        "0005_device_vinculo_de_segredo",
+        "0006_entregas_cluster_persistence",
+        "0007_entregas_ready_order",
+        "0008_ready_order_consumido_por_delivery",
+        "0009_device_offline_queue_depth",
+        "0010_producer_attestation",
+        "probe:escrita"
+      ],
+      "unitActive": false,
+      "receiptTableExists": false,
+      "sourceCounts": {
+        "trips": 0,
+        "deliveries": 0,
+        "handoffs": 0,
+        "occurrences": 0,
+        "riders": 0,
+        "events": 0,
+        "outbox": 0,
+        "ready_orders": 0
+      },
+      "sourceFingerprint": "d13414e1c4949a4edfb7be28732509828c0f9c5ea5433e0d2ca1838ffb04bc60",
+      "targetCounts": {
+        "trips": 0,
+        "deliveries": 0,
+        "handoffs": 0,
+        "occurrences": 0,
+        "riders": 0,
+        "events": 0,
+        "outbox": 0,
+        "ready_orders": 0
+      },
+      "canSwitch": false,
+      "noMutationExecuted": true
+    },
+    "pg-ephemeral-proof.json": {
+      "schema": "deliveryos.pg-ephemeral-proof.v1",
+      "observedAtUtc": "2026-10-27T02:53:58.015Z",
+      "scope": "SEPARATE_CLUSTER_55437_SYNTHETIC_ONLY",
+      "results": [
+        {
+          "suite": "run-storage-cutover-tests.js",
+          "result": "PILOT_STORAGE_CUTOVER: 7/7 PASS"
+        },
+        {
+          "suite": "run-postgres-server-cluster-tests.js",
+          "result": "PILOT_POSTGRES_SERVER_CLUSTER: 6/6 PASS"
+        }
+      ],
+      "labDatabase55436Touched": false
+    },
+    "pg-storage-cutover-proof.json": {
+      "observedAtUtc": "2026-10-27T02:57:23.369Z",
+      "scope": "EMPTY_SIMULATED_LEGACY_CONSOLE_ONLY",
+      "result": {
+        "unit_id": "ITAIM",
+        "source_fingerprint": "d13414e1c4949a4edfb7be28732509828c0f9c5ea5433e0d2ca1838ffb04bc60",
+        "imported_counts": {
+          "trips": 0,
+          "deliveries": 0,
+          "handoffs": 0,
+          "occurrences": 0,
+          "riders": 0,
+          "events": 0,
+          "outbox": 0,
+          "ready_orders": 0
+        },
+        "target_fingerprint": "d13414e1c4949a4edfb7be28732509828c0f9c5ea5433e0d2ca1838ffb04bc60"
+      },
+      "sourcePreserved": true,
+      "nativeReceiptsAvailable": false,
+      "gps": false
+    },
+    "pg-storage-persistence-proof.json": {
+      "observedAtUtc": "2026-10-27T03:04:13.138Z",
+      "scope": "SYNTHETIC_EMPTY_LAB_ONLY",
+      "httpWrite": true,
+      "limitedRoleSqlRead": true,
+      "pilotRestartSurvived": true,
+      "httpReadAfterRestart": true,
+      "copilotoSharesSameQueue": true,
+      "ownedProbeRemoved": true,
+      "finalSnapshotEqualsOriginal": true,
+      "gps": false,
+      "nativeReceiptSync": false
+    },
+    "copiloto-source-proof.json": {
+      "observedAtUtc": "2026-10-27T03:04:15.234Z",
+      "scope": "HOST_HTTP_AND_NEW_HEADLESS_BROWSER_NOT_PUBLIC_PROXY_PROOF",
+      "results": [
+        {
+          "name": "anonymous_denied",
+          "status": 401
+        },
+        {
+          "name": "rider_denied",
+          "status": 403
+        },
+        {
+          "name": "write_denied",
+          "status": 405
+        },
+        {
+          "name": "manager_source_status",
+          "status": 200
+        },
+        {
+          "name": "health",
+          "status": 200
+        },
+        {
+          "name": "lab_summary_anonymous_denied",
+          "status": 401
+        },
+        {
+          "name": "lab_summary_manager",
+          "status": 200
+        },
+        {
+          "name": "native_sync_explicitly_unavailable",
+          "status": 503
+        },
+        {
+          "name": "browser_390",
+          "pass": true
+        },
+        {
+          "name": "browser_1440",
+          "pass": true
+        }
+      ],
+      "sourceState": "source_blocked",
+      "sampledFiles": 20,
+      "producerBlocksDownstream": 20,
+      "serviceState": {
+        "schema": "deliveryos.production-service-shift-state.v2",
+        "operationalDate": "2026-10-14",
+        "validFromLocal": "2026-10-14T11:00:00",
+        "validUntilLocal": "2026-10-14T15:00:00",
+        "service": "LUNCH"
+      },
+      "servicePolicy": {
+        "state": "configured",
+        "effectiveFrom": "2026-10-26",
+        "timezone": "America/Sao_Paulo",
+        "boundary": "START_INCLUSIVE_END_EXCLUSIVE",
+        "week": [
+          {
+            "dayOfWeek": 0,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "16:30"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          },
+          {
+            "dayOfWeek": 1,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "15:00"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          },
+          {
+            "dayOfWeek": 2,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "15:00"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          },
+          {
+            "dayOfWeek": 3,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "15:00"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          },
+          {
+            "dayOfWeek": 4,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "15:00"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          },
+          {
+            "dayOfWeek": 5,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "15:00"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          },
+          {
+            "dayOfWeek": 6,
+            "windows": [
+              {
+                "service": "LUNCH",
+                "start": "11:00",
+                "end": "16:30"
+              },
+              {
+                "service": "DINNER",
+                "start": "18:00",
+                "end": "23:00"
+              }
+            ]
+          }
+        ]
+      },
+      "labStorage": {
+        "schema": "deliveryos.copiloto-lab-storage.v1",
+        "scope": "LAB_SIMULATED_ONLY",
+        "unit_id": "ITAIM",
+        "source_mode": "simulated",
+        "observed_at": "2026-10-27T03:04:13.324Z",
+        "storage_backend": "postgres",
+        "registered_trips": 0,
+        "ready_queue_records": 0,
+        "operational_order_total": null,
+        "no_action_executed": true
+      },
+      "storageBackend": "postgres",
+      "nativeInboundReceipts": {
+        "available": false,
+        "reason": "receipt_schema_missing"
+      },
+      "ordersEnabled": false,
+      "gpsEnabled": false
+    },
+    "remote-http-proof.json": {
+      "observedAtUtc": "2026-10-27T03:06:36.117Z",
+      "scope": "HOST_HTTP_ONLY_NOT_AUTHENTICATED_PROXY_OR_PHYSICAL_DEVICE_PROOF",
+      "results": [
+        {
+          "name": "pilot_health",
+          "status": 200
+        },
+        {
+          "name": "platform_ready",
+          "status": 200
+        },
+        {
+          "name": "term_requires_session",
+          "status": 401
+        },
+        {
+          "name": "policies_require_session",
+          "status": 401
+        },
+        {
+          "name": "untrusted_origin_denied",
+          "status": 403
+        },
+        {
+          "name": "public_origin_allowed",
+          "status": 204
+        },
+        {
+          "name": "synthetic_session_policies",
+          "status": 200
+        }
+      ],
+      "gps": false,
+      "termPublishable": false
+    }
+  },
+  "initialDeploymentFiles": [
+    {
+      "dest": "app/dist/tools/entregas_pilot_server.js",
+      "sha256": "c9f83ef5fe09fee403a67662281135ae477528d9407620b7047a90fb25bd12d9"
+    },
+    {
+      "dest": "app/dist/src/entregas/pilot/pilot-persistence-backend.js",
+      "sha256": "fe8a00cf5655732573cbc6f08527c657314ee80cc1ee0c78d6bdb97c1a6f661a"
+    },
+    {
+      "dest": "app/tools/entregas_pilot_server.ts",
+      "sha256": "82af7b055bed192713b74c2e461c114be15586a90c784114e122292d309ed7dc"
+    },
+    {
+      "dest": "app/src/entregas/pilot/pilot-persistence-backend.ts",
+      "sha256": "387dff173f6f25304e8833d09d7743865d9d8aa3a4cccf464e5b214b6e3f906f"
+    },
+    {
+      "dest": "remote-pilot.cjs",
+      "sha256": "ef151170f72b71487799184b484124bbd4f804127b1b2ef6bb991745d8d9091c"
+    },
+    {
+      "dest": "pg-storage-switch.cjs",
+      "sha256": "a26a0759647be4e3b5be51e859042f00f125638f2529f2a2293f95ec8f4d6df4"
+    },
+    {
+      "dest": "pg-storage-switch.ps1",
+      "sha256": "fd51684d2ec09a75f0272743a44505ad6e8ac311f228a0c034c5f0c7b3853d91"
+    }
+  ],
+  "summaryDeploymentFiles": [
+    {
+      "dest": "app/dist/tools/entregas_pilot_server.js",
+      "sha256": "62b362e7bb4444b0f1263915f654299d1855dab3e76fc227c6d815e75af95943"
+    },
+    {
+      "dest": "app/tools/entregas_pilot_server.ts",
+      "sha256": "f6b94594bf4a777ac86f2c1e04ddfbb63ca410eba008e46e40d0661438aa8413"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/index.html",
+      "sha256": "d50ee891cf99d8d5895223ddb149770ff3d60a4cd9b30f2243590281c2f9fe25"
+    },
+    {
+      "dest": "app/src/entregas/ui/copiloto/source.js",
+      "sha256": "ece66b68f61fde52c3a83ecea1d383c479d4505015c21fd582452bbe5c128c23"
+    },
+    {
+      "dest": "pg-storage-switch.cjs",
+      "sha256": "8ab4799cc73f80ce2cb64dcf1173c84293c293c24b8ef691589d17e6c5812759"
+    },
+    {
+      "dest": "copiloto-source-smoke.cjs",
+      "sha256": "9f0db1e7b2beaaf13971cc042497ec7b0012603bb859cbd8f71cf6b655586390"
+    }
+  ],
+  "localChecks": {
+    "typescript": "PASS",
+    "sessionIsolation": 19,
+    "sourceStatusHttp": 8,
+    "governance": 14
+  },
+  "networkGuard": {
+    "verified": true,
+    "firewallRules": 258,
+    "ethernetExcluded": true,
+    "newNetworkRules": false
+  },
+  "sourceReader": {
+    "lastInspectedState": "RUNNING",
+    "postFixEventObservedDuringInitialInspection": false,
+    "observationScope": "initial_metadata_inventory_not_continuous_monitoring",
+    "latestObservedEventFileUtc": "2026-10-27T02:04:24.9431538Z",
+    "notModifiedThisMission": true
+  },
+  "limits": [
+    "Only empty simulated lab was switched; no production cutover or source migration",
+    "Native receipt schema/authority unavailable: authenticated batch returns 503 retryable before domain execution",
+    "New lab summary is simulated-only and rejects real/control/unknown/non-test configurations",
+    "Individual human identity and real order publication still pending",
+    "No Windows reboot, automatic startup or authenticated public-proxy proof",
+    "File backup timer no longer applies in PostgreSQL mode; PostgreSQL/off-host backup and recovery remain pending",
+    "GPS disabled and physical Android not proven"
+  ],
+  "harnessNotes": [
+    "Initial PowerShell harness waited on inherited background process/tree handles before running suites",
+    "Owned temporary clusters stopped; Node/file-descriptor harness completed 13 cases in a separate 55437 cluster",
+    "Original 55436 role credentials were not modified by those tests"
+  ]
+}

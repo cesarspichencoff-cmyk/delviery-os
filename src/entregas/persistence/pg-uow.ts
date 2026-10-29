@@ -7,8 +7,10 @@ import type {
   OutboxRepository,
   TripRecord,
   UnitOfWork,
+  InboundReceiptRepository,
 } from "./ports";
 import { ConcurrencyError } from "./ports";
+import { InboundReceiptConflictError, type DurableInboundReceipt } from "./inbound-receipt";
 import type {
   Trip,
   Delivery,
@@ -230,6 +232,7 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
   private readonly riderWrites = new Map<string, RiderWrite>();
   private eventWrites: DomainEvent[] = [];
   private outboxWrites: OutboxRecord[] = [];
+  private inboundReceiptWrite: DurableInboundReceipt | null = null;
   private outboxStatus = new Map<
     string,
     { kind: "published"; at: string } | { kind: "failed"; at: string; error: string }
@@ -241,6 +244,7 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
   readonly riders: RiderStateRepository;
   readonly events: EventStore;
   readonly outbox: OutboxRepository;
+  readonly inboundReceipts: InboundReceiptRepository;
 
   constructor(
     private readonly client: TransactionalSqlClient,
@@ -248,6 +252,11 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
   ) {
     if (!unitId.trim()) throw new Error("unit_id obrigatorio no PgEntregasUnitOfWork");
     const self = this;
+    this.inboundReceipts = {
+      hasStaged: () => this.inboundReceiptWrite !== null,
+      find: (eventId, key, commandId) => this.findInboundReceipts(eventId, key, commandId),
+      stage: (receipt) => this.stageInboundReceipt(receipt),
+    };
 
     this.trips = {
       async get(id) {
@@ -497,6 +506,52 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
     };
   }
 
+  /** Tres chaves independentes: evento, chave de retentativa e comando.
+   * A consulta nao substitui o indice UNIQUE nem a verificacao de identidade. */
+  async findInboundReceipts(eventId: string, key: string, commandId?: string): Promise<DurableInboundReceipt[]> {
+    const rows = await this.client.query<SqlRow>(
+      `SELECT unit_id,event_id,idempotency_key,fingerprint,actor_id,actor_role,
+              device_id,command_id,command_type,outcome,code,recorded_at
+         FROM entregas.inbound_receipt
+        WHERE unit_id=$1 AND (event_id=$2 OR idempotency_key=$3 OR
+          ($4::text IS NOT NULL AND command_id=$4))
+        ORDER BY event_id`,
+      [this.unitId,eventId,key,commandId ?? null],
+    );
+    return rows.map((r) => ({
+      unit_id: text(r.unit_id), event_id: text(r.event_id),
+      idempotency_key: text(r.idempotency_key), fingerprint: text(r.fingerprint),
+      actor_id: text(r.actor_id), actor_role: text(r.actor_role),
+      device_id: optText(r.device_id) ?? null, command_id: text(r.command_id),
+      command_type: text(r.command_type),
+      outcome: text(r.outcome) as DurableInboundReceipt["outcome"],
+      code: optText(r.code) ?? null, recorded_at: requiredIso(r.recorded_at),
+    }));
+  }
+
+  /** A fachada futura deve chamar isto ANTES de executar o dominio.
+   * O commit da propria ApplicationService inclui recibo + fato juntos. */
+  stageInboundReceipt(record: DurableInboundReceipt): void {
+    if (this.inboundReceiptWrite) {
+      throw new InboundReceiptConflictError("Apenas um evento de entrada por transacao");
+    }
+    if (record.unit_id !== this.unitId ||
+        !record.event_id.trim() || !record.idempotency_key.trim() ||
+        !/^[0-9a-f]{64}$/.test(record.fingerprint) ||
+        !record.actor_id.trim() || !record.command_id.trim() ||
+        !record.command_type.trim()) {
+      throw new Error("Recibo de entrada invalido para a unidade");
+    }
+    this.inboundReceiptWrite = { ...record };
+  }
+
+  hasPendingWrites(): boolean {
+    return this.tripWrites.size>0 || this.handoffWrites.size>0 ||
+      this.occurrenceWrites.size>0 || this.riderWrites.size>0 ||
+      this.eventWrites.length>0 || this.outboxWrites.length>0 ||
+      this.inboundReceiptWrite!==null || this.outboxStatus.size>0;
+  }
+
   private clearStage(): void {
     this.tripWrites.clear();
     this.handoffWrites.clear();
@@ -504,11 +559,32 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
     this.riderWrites.clear();
     this.eventWrites = [];
     this.outboxWrites = [];
+    this.inboundReceiptWrite = null;
     this.outboxStatus.clear();
   }
 
   async commit(): Promise<void> {
+    try {
     await this.client.transaction(async (tx) => {
+      // PRIMEIRA operacao da transacao. O indice unico arbitra a disputa
+      // entre conexoes/instancias; conflito cancela TODO fato + outbox.
+      // Um SELECT previo sozinho nao evita corrida TOCTOU.
+      if (this.inboundReceiptWrite) {
+        const r = this.inboundReceiptWrite;
+        const inserted = await tx.query<SqlRow>(
+          `INSERT INTO entregas.inbound_receipt
+            (unit_id,event_id,idempotency_key,fingerprint,actor_id,actor_role,
+             device_id,command_id,command_type,outcome,code,recorded_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           ON CONFLICT DO NOTHING RETURNING event_id`,
+          [r.unit_id,r.event_id,r.idempotency_key,r.fingerprint,r.actor_id,
+            r.actor_role,r.device_id,r.command_id,r.command_type,r.outcome,
+            r.code,r.recorded_at],
+        );
+        if (inserted.length !== 1) {
+          throw new InboundReceiptConflictError("Recibo ja confirmado por outra transacao");
+        }
+      }
       for (const { record, expected } of this.tripWrites.values()) {
         const t = record.trip;
         let ok = false;
@@ -746,7 +822,11 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
         }
       }
     });
-    this.clearStage();
+    } finally {
+      // Um INSERT conflitante ou uma falha tardia do dominio nunca podem
+      // deixar recibo/fato staged para o proximo comando da mesma UoW.
+      this.clearStage();
+    }
   }
 
   async rollback(): Promise<void> {

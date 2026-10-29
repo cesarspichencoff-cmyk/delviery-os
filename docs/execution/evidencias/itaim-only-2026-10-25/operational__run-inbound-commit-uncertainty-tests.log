@@ -1,0 +1,6 @@
+OK lost COMMIT response AFTER atomic store commit: ACK from confirmed receipt
+OK lost COMMIT response BEFORE commit: retry, never final reject
+OK committed but reread unavailable: retry, no unproven ACK
+OK file: lost response + reopening retains ACK and no duplicate event
+OK file: failure before commit leaves no durable ACK
+INBOUND_COMMIT_UNCERTAINTY: 5/5 OK (MEMORY+FILE FAULT-INJECTION)

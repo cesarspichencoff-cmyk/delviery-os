@@ -69,6 +69,8 @@ function syntheticTerm(over: Partial<LocationTerm> = {}): LocationTerm {
 function writeConfigs(opts: { captureEnabled: boolean; term: LocationTerm | null }): void {
   const cfgDir = join(workdir, "config");
   mkdirSync(cfgDir, { recursive: true });
+  // Configuracao explicita de ITAIM, sem coordenadas/geofence de campo.
+  writeFileSync(join(cfgDir, "entregas-unit-itaim.json"), JSON.stringify({ unit_id: "ITAIM" }));
   writeFileSync(
     join(workdir, "pilot.json"),
     JSON.stringify({
@@ -625,26 +627,28 @@ async function suiteCommandBatchAuthority(): Promise<void> {
   await startServer({ captureEnabled: true, term: syntheticTerm() });
   const tripId = "trip-batch-authority-1";
   const deliveryId = "delivery-batch-authority-1";
+  // Reusar exatamente a mesma mensagem, inclusive timestamp e corpo.
+  // Alterar um unico byte nao seria um teste fiel de replay.
+  const firstEvent = {
+    event_id: "evt-batch-create-1",
+    idempotency_key: "idem-batch-create-1",
+    command: {
+      type: "CreateTrip",
+      command_id: "cmd-batch-create-1",
+      occurred_at: new Date().toISOString(),
+      unit_id: "PINHEIROS",
+      trip_id: tripId,
+      courier_actor_id: "rid-1",
+      deliveries: [{ delivery_id: deliveryId, order_ref: "P-BATCH-AUTH-1" }],
+      actor: { actor_id: "admin-falso", role: "gerente" },
+    },
+  };
 
   await test("/api/events/batch atravessa ApplicationService e persiste trip_created", async () => {
     const r = await api("/api/events/batch", {
       method: "POST",
       token: OPS_TOKEN,
-      body: {
-        events: [{
-          event_id: "evt-batch-create-1",
-          command: {
-            type: "CreateTrip",
-            command_id: "cmd-batch-create-1",
-            occurred_at: new Date().toISOString(),
-            unit_id: "PINHEIROS",
-            trip_id: tripId,
-            courier_actor_id: "rid-1",
-            deliveries: [{ delivery_id: deliveryId, order_ref: "P-BATCH-AUTH-1" }],
-            actor: { actor_id: "admin-falso", role: "gerente" },
-          },
-        }],
-      },
+      body: { events: [firstEvent] },
     });
     assert.equal(r.status, 200);
     const results = r.json.results as Array<{ ok: boolean }>;
@@ -659,6 +663,164 @@ async function suiteCommandBatchAuthority(): Promise<void> {
     const timeline = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
     const entries = timeline.json.timeline as Array<Record<string, unknown>>;
     assert.ok(entries.some((x) => x.event_type === "trip_created"), "trip_created não chegou ao event log");
+  });
+
+  // Gate adversarial novo: reprovar enquanto replay fiel virar recusa.
+  // A plataforma/Android retenta em perda de resposta; repetir o mesmo
+  // event_id e command_id deve receber recibo positivo SEM reexecutar dominio.
+  await test("Q idempotencia: replay do mesmo event_id recebe recibo positivo e sem duplicar", async () => {
+    const payload = { events: [firstEvent] };
+    const timelineBefore = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), {token: OPS_TOKEN});
+    const beforeCount = (timelineBefore.json.timeline as unknown[]).length;
+    const r = await api("/api/events/batch", { method: "POST", token: OPS_TOKEN, body: payload });
+    assert.equal(r.status, 200);
+    const result = (r.json.results as Array<{event_id:string;ok:boolean;error?:string}>)[0];
+    assert.equal(result?.event_id, payload.events[0].event_id);
+    assert.equal(result?.ok, true, "mesmo event_id nao pode virar rejeicao permanente ao perder resposta HTTP");
+    const timelineAfter = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), {token: OPS_TOKEN});
+    assert.equal((timelineAfter.json.timeline as unknown[]).length, beforeCount, "replay nao pode duplicar dominio");
+  });
+
+  await test("Q idempotencia: ready-order consumida nao muda o fingerprint do replay", async () => {
+    const orderRef = "P-READY-REPLAY-CHANNEL-01";
+    const tripId = "trip-ready-replay-channel-01";
+    const event = {
+      event_id: "evt-ready-replay-channel-01",
+      idempotency_key: "idem-ready-replay-channel-01",
+      command: {
+        type: "CreateTrip", command_id: "cmd-ready-replay-channel-01",
+        occurred_at: "2026-10-20T12:34:56Z",
+        unit_id: "PINHEIROS", actor: {actor_id:"falso",role:"gerente"},
+        trip_id: tripId, courier_actor_id: "rid-1",
+        deliveries: [{ delivery_id:"delivery-ready-replay-01", order_ref: orderRef }],
+      },
+    };
+    const registered = await api("/api/ready-order", {
+      method:"POST", token:OPS_TOKEN,
+      body:{ order_ref:orderRef, label:"Pedido sintetico para idempotencia", channel:"proprio" },
+    });
+    assert.equal(registered.status,200);
+    assert.equal(registered.json.ok,true,JSON.stringify(registered.json));
+    const original = { events:[event] };
+    const created = await api("/api/events/batch", {
+      method:"POST", token:OPS_TOKEN, body:original,
+    });
+    const first = (created.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(first?.ok,true,JSON.stringify(first));
+    const snapshot = await api("/api/snapshot",{token:OPS_TOKEN});
+    assert.equal((snapshot.json.ready_orders as Array<{order_ref:string}>)
+      .some(x => x.order_ref === orderRef),false,"ready-order deveria ter sido consumida");
+    const before = await api("/api/trip/timeline?trip_id="+encodeURIComponent(tripId),
+      {token:OPS_TOKEN});
+    const eventCount = (before.json.timeline as unknown[]).length;
+    assert.ok(eventCount > 0);
+    const replay = await api("/api/events/batch", {
+      method:"POST", token:OPS_TOKEN, body:original,
+    });
+    const repeated = (replay.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(repeated?.ok,true,JSON.stringify(repeated));
+    assert.equal(repeated?.code,"REPLAY_APPLIED");
+    const after = await api("/api/trip/timeline?trip_id="+encodeURIComponent(tripId),
+      {token:OPS_TOKEN});
+    assert.equal((after.json.timeline as unknown[]).length,eventCount,
+      "replay nao pode duplicar dominio");
+    const tampered = {
+      ...event,
+      command: { ...event.command,
+        deliveries:[{ ...event.command.deliveries[0], order_ref:"P-ADULTERADO" }],
+      },
+    };
+    const changed = await api("/api/events/batch", {
+      method:"POST", token:OPS_TOKEN, body:{events:[tampered]},
+    });
+    const denied = (changed.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(denied?.ok,false,"payload alterado nao pode receber ACK");
+    assert.equal(denied?.code,"RECEIPT_COLLISION");
+    const final = await api("/api/trip/timeline?trip_id="+encodeURIComponent(tripId),
+      {token:OPS_TOKEN});
+    assert.equal((final.json.timeline as unknown[]).length,eventCount);
+  });
+
+  await test("Q isolamento: outro ator nao recebe ACK de recibo confirmado", async () => {
+    const before = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
+    const beforeCount = (before.json.timeline as unknown[]).length;
+    const response = await api("/api/events/batch", {
+      method: "POST", token: RIDER_TOKEN, body: { events: [firstEvent] },
+    });
+    const row = (response.json.results as Array<{event_id:string;ok:boolean;code?:string}>)[0];
+    assert.equal(response.status, 200);
+    assert.equal(row?.event_id, firstEvent.event_id);
+    assert.equal(row?.ok, false, "outro ator nao pode reutilizar o ACK");
+    assert.equal(row?.code, "RECEIPT_COLLISION");
+    const after = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
+    assert.equal((after.json.timeline as unknown[]).length, beforeCount, "outro ator alterou o dominio");
+  });
+
+  await test("Q isolamento: mesma chave HTTP com novo event_id nao recebe ACK", async () => {
+    const forgedTrip = "trip-batch-duplicate-key-forged";
+    const second = {
+      event_id: "evt-batch-second-key-forged",
+      idempotency_key: firstEvent.idempotency_key,
+      command: { ...firstEvent.command,
+        command_id: "cmd-batch-second-key-forged",
+        trip_id: forgedTrip,
+      },
+    };
+    const response = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN, body: { events: [second] },
+    });
+    const row = (response.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(response.status, 200);
+    assert.equal(row?.ok, false, "mesma chave nao autoriza outro event_id");
+    assert.equal(row?.code, "RECEIPT_COLLISION");
+    const snapshot = await api("/api/snapshot", { token: OPS_TOKEN });
+    assert.equal((snapshot.json.trips as Array<{trip_id:string}>).some(x => x.trip_id === forgedTrip), false);
+  });
+
+  await test("Q isolamento: command_id confirmado nao autoriza segundo evento", async () => {
+    const forgedTrip = "trip-batch-command-id-forged";
+    const second = {
+      event_id: "evt-batch-second-command-forged",
+      idempotency_key: "idem-batch-second-command-forged",
+      command: { ...firstEvent.command,
+        trip_id: forgedTrip,
+      },
+    };
+    const response = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN, body: { events: [second] },
+    });
+    const row = (response.json.results as Array<{ok:boolean;code?:string}>)[0];
+    assert.equal(response.status, 200);
+    assert.equal(row?.ok, false, "command_id ja aplicado nao pode ser reusado");
+    assert.equal(row?.code, "RECEIPT_COLLISION");
+    const snapshot = await api("/api/snapshot", { token: OPS_TOKEN });
+    assert.equal((snapshot.json.trips as Array<{trip_id:string}>).some(x => x.trip_id === forgedTrip), false);
+  });
+
+  await test("Q idempotencia: colisao event_id com comando diferente nao pode alterar dominio", async () => {
+    const alteredTripId = "trip-batch-replayed-id-altered-command";
+    const replay = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN,
+      body: {
+        events: [{
+          event_id: "evt-batch-create-1",
+          idempotency_key: "idem-batch-create-1",
+          command: {
+            type: "CreateTrip", command_id: "cmd-forged-reuse-event-id",
+            occurred_at: "2026-10-20T00:00:00Z", unit_id: "ITAIM",
+            trip_id: alteredTripId, courier_actor_id: "rid-1",
+            deliveries: [{ delivery_id: "delivery-forged-reuse", order_ref: "P-FORGED-REUSE" }],
+          },
+        }],
+      },
+    });
+    const receipt = (replay.json.results as Array<{event_id: string;ok: boolean}>)[0];
+    assert.equal(receipt?.ok, false, "event_id ja recebido nao pode aceitar outro payload");
+    const snapshot = await api("/api/snapshot", {token: OPS_TOKEN});
+    assert.equal(
+      (snapshot.json.trips as Array<{trip_id: string}>).some((x) => x.trip_id === alteredTripId),
+      false, "colisao event_id aplicou comando diferente",
+    );
   });
 
   await test("/api/events/batch não permite operador se declarar gerente", async () => {
@@ -733,6 +895,47 @@ async function suiteCommandBatchAuthority(): Promise<void> {
     assert.equal(snap.json.unit_id, "ITAIM");
   });
 
+  await stopServer();
+}
+
+/**
+ * Adversarial restart: o mesmo comando ja commitado nao pode reexecutar
+ * dominio mesmo apos perda da memoria do processo (commandIds).
+ */
+async function suiteReplayAfterRestart(): Promise<void> {
+  await startServer({ captureEnabled: true, term: syntheticTerm() });
+  const trip = "trip-restart-idempotency-synthetic";
+  const event = {
+    event_id: "evt-restart-idempotency-synthetic",
+    idempotency_key: "idem-restart-idempotency-synthetic",
+    command: {
+      type: "CreateTrip", command_id: "cmd-restart-idempotency-synthetic",
+      occurred_at: "2026-10-20T12:00:00Z", unit_id: "ITAIM",
+      trip_id: trip, courier_actor_id: "rid-1",
+      deliveries: [{ delivery_id: "delivery-restart-synthetic", order_ref: "ORDER-RESTART-SYNTHETIC" }],
+    },
+  };
+  const payload = { events: [event] };
+  const first = await api("/api/events/batch", {
+    method: "POST", token: OPS_TOKEN, body: payload,
+  });
+  assert.equal(first.status, 200);
+  assert.equal((first.json.results as Array<{ok: boolean}>)[0]?.ok, true);
+  const before = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(trip), { token: OPS_TOKEN });
+  const countBefore = (before.json.timeline as unknown[]).length;
+  await stopServer();
+  await startServer({ captureEnabled: true, term: syntheticTerm() });
+  await test("Q idempotencia: reboot + replay nao reaplica nem perde recibo", async () => {
+    const replay = await api("/api/events/batch", {
+      method: "POST", token: OPS_TOKEN, body: payload,
+    });
+    assert.equal(replay.status, 200);
+    assert.equal((replay.json.results as Array<{ok: boolean}>)[0]?.ok, true,
+      "replay fiel apos reinicio deveria recuperar comprovante positivo");
+    const after = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(trip), { token: OPS_TOKEN });
+    assert.equal((after.json.timeline as unknown[]).length, countBefore,
+      "replay apos restart duplicou eventos no dominio");
+  });
   await stopServer();
 }
 
@@ -961,6 +1164,7 @@ async function main(): Promise<void> {
     await suiteTermoLiberado();
     await suiteViagemReal();
     await suiteCommandBatchAuthority();
+    await suiteReplayAfterRestart();
     await suiteRiderMobile();
     await suiteHttps();
   } finally {

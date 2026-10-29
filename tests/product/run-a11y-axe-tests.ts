@@ -15,7 +15,9 @@
  *     npx tsx tests/product/run-a11y-axe-tests.ts
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import assert from "node:assert/strict";
 import type http from "node:http";
 import { chromium, type Browser } from "playwright";
 
@@ -88,6 +90,54 @@ void (async () => {
           }
           await page.goto(`${base}/${c.rota}`);
           await page.waitForSelector("#superficie[aria-busy='false'] > *", { timeout: 15000 });
+          // aria-busy=false atesta os dados, nao o fim do reveal. Medir no
+          // meio da interpolacao de opacity tornava o contraste dependente
+          // da velocidade do runner. Nao desabilitar motion nem regra axe.
+          await page.waitForFunction("document.fonts.status === 'loaded'", undefined, { timeout: 15000 });
+          const motionProbe = c.rota === "#/operacao-viva" && largura === 1440;
+          if (motionProbe) {
+            // Reproduzir deterministamente a janela transitoria no DOM real.
+            await page.locator(".ds-reveal").evaluateAll((nodes) => {
+              for (const node of nodes) {
+                (node as HTMLElement).style.animationDuration = "1500ms";
+                for (const animation of node.getAnimations()) {
+                  if (animation.effect?.getTiming().iterations !== Infinity) {
+                    animation.currentTime = 0;
+                    animation.play();
+                  }
+                }
+              }
+            });
+            const before = await page.locator(".ds-reveal").evaluateAll((nodes) =>
+              nodes.map((node) => Number(getComputedStyle(node).opacity)),
+            );
+            console.log(`A11Y_REVEAL_BEFORE: ${JSON.stringify(before)}`);
+            assert.ok(before.some((opacity) => opacity < 1), "controle precisa exercitar o reveal ativo");
+            if (process.env.RUNNER_TEMP) {
+              const dir = join(process.env.RUNNER_TEMP, "evidencias", "a11y");
+              mkdirSync(dir, { recursive: true });
+              await page.screenshot({ path: join(dir, "operacao-viva-before.png") });
+            }
+          }
+          await page.waitForFunction(`(() => {
+            const root = document.querySelector('#superficie');
+            return root && root.getAnimations({subtree:true}).every((animation) => {
+              const timing = animation.effect.getTiming();
+              return timing.iterations === Infinity ||
+                !['running','pending'].includes(animation.playState);
+            });
+          })()`, undefined, { timeout: 5000 });
+          if (motionProbe) {
+            const after = await page.locator(".ds-reveal").evaluateAll((nodes) =>
+              nodes.map((node) => Number(getComputedStyle(node).opacity)),
+            );
+            assert.ok(after.length > 0 && after.every((opacity) => opacity === 1),
+              "audit deve esperar a evidencia inteiramente revelada");
+            console.log(`A11Y_REVEAL_SETTLED: ${JSON.stringify(after)}`);
+            if (process.env.RUNNER_TEMP) await page.screenshot({
+              path: join(process.env.RUNNER_TEMP, "evidencias", "a11y", "operacao-viva-settled.png"),
+            });
+          }
           await page.addScriptTag({ path: AXE });
           // Em texto: o tsx injeta `__name` em funcoes nomeadas, e ele nao existe na pagina.
           const r = (await page.evaluate(`axe.run(document, { resultTypes: ["violations"] }).then((r) => ({
@@ -98,6 +148,23 @@ void (async () => {
           auditorias += 1;
           for (const v of r.v) problemas.push(`${c.nome} ${largura}px: ${v.id} (${v.impact}, ${v.n}) ${JSON.stringify(v.alvo)}`);
           console.log(`  ${r.v.length === 0 ? "ok" : "XX"}  ${c.nome} ${largura}px — ${r.v.length} violacao(oes)`);
+          if (motionProbe) {
+            const badge = page.locator(".ds-state").first();
+            const saved = await badge.getAttribute("style");
+            await badge.evaluate((node) => {
+              const element = node as HTMLElement;
+              element.style.setProperty("transition", "none", "important");
+              element.style.setProperty("color", "#bbbbbb", "important");
+              element.style.setProperty("background", "#ffffff", "important");
+            });
+            const killed = await page.evaluate(`axe.run(document, {
+              runOnly: {type:'rule',values:['color-contrast']}, resultTypes:['violations']
+            }).then(r=>r.violations.some(x=>x.id==='color-contrast'))`);
+            assert.equal(killed, true, "controle de baixo contraste final deve ser acusado");
+            if (saved === null) await badge.evaluate((node) => node.removeAttribute("style"));
+            else await badge.evaluate((node, style) => node.setAttribute("style", style), saved);
+            console.log("A11Y_LOW_CONTRAST_CONTROL: recusado depois do reveal");
+          }
         } finally {
           await ctx.close();
         }

@@ -393,3 +393,44 @@ body {
 .timeline .tl-row[data-confirms="true"] .tl-label { color: var(--ok, #6fd08c); font-weight: 600; }
 .timeline .tl-row[data-author="sistema"] .tl-label { color: var(--text-dim, #cfd6d8); }
 .timeline .shadow { color: var(--text-dim, #9aa4a8); font-style: italic; }
+
+/* Expedição: preparar → acompanhar → investigar. Mesmas ações e autoridade. */
+.dispatch-heading {display:flex;justify-content:space-between;align-items:end;gap:24px;padding:28px 32px 24px;max-width:1680px;width:100%;margin:auto}
+.dispatch-heading h1 {font-family:var(--font-editorial);font-size:38px;font-weight:400;line-height:1.15;margin:4px 0 8px}
+.dispatch-heading p {margin:0;color:var(--text-muted)}
+.dispatch-heading nav {display:flex;flex-wrap:wrap;gap:8px}
+.dispatch-heading a {color:var(--brand-action);border:1px solid var(--line-work);border-radius:999px;padding:10px 14px;font-size:13px;text-decoration:none;background:var(--surface-elevated)}
+.console-layout {width:100%;max-width:1680px;margin:0 auto;padding:0 32px 24px;grid-template-columns:minmax(260px,.95fr) minmax(280px,1fr) minmax(320px,1.2fr);gap:18px;align-items:start}
+.console-layout>.panel,.focus-surface {min-width:0;margin:0;border:1px solid var(--line-work);border-radius:16px;padding:20px;background:var(--surface-elevated)}
+.dispatch-ready {border-top:3px solid var(--brand-action)!important}
+.dispatch-trips {border-top:3px solid #8e978b!important}
+.focus-surface {min-height:0;background:var(--surface-secondary);border-top:3px solid #a98d60}
+.focus-panel {max-width:none}
+.focus-panel .title-sov {font-size:clamp(24px,2.3vw,31px);line-height:1.2}
+.support-grid {grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.support-grid>.panel {margin:0;min-width:0;padding:20px;background:var(--surface-work);box-shadow:none}
+.rail-title {font-size:24px;margin:6px 0 10px}
+.item {border-radius:10px;padding:12px;overflow-wrap:anywhere;box-shadow:none}
+.item.active {border-color:var(--brand-action);background:#eef3ed;box-shadow:inset 3px 0 var(--brand-action)}
+.item label {min-height:44px;align-items:center}
+.item input[type="checkbox"] {width:20px;height:20px;flex:0 0 20px;accent-color:var(--brand-action)}
+.item[data-focus] {cursor:pointer;transition:background 120ms ease,border-color 120ms ease}
+.item[data-focus]:hover {border-color:var(--brand-action)}
+.tabs {gap:6px}.tabs button {min-height:40px}
+.addr-chip {box-shadow:none;border-radius:8px;position:relative;margin-left:12px}
+.addr-chip::before {content:"";position:absolute;left:-13px;top:14px;width:7px;height:7px;border-radius:50%;background:var(--brand-action)}
+.address-seq {border-left:1px solid var(--line-work);padding-left:0;gap:8px}
+.loc-line,.loc-line[data-freshness="unknown"] {color:var(--text-muted)}
+.loc-line[data-freshness="current"] {color:#24603f}
+.loc-line[data-freshness="stale"],.loc-line[data-freshness="inaccurate"],.loc-line[data-freshness="offline"] {color:#795514}
+.loc-line[data-freshness="unavailable"],.loc-line[data-freshness="permission_denied"] {color:#963f32}
+:focus-visible {outline:3px solid #93651e;outline-offset:3px}
+@media(max-width:1150px) {.console-layout{grid-template-columns:repeat(2,minmax(0,1fr))}.focus-surface{grid-column:1/-1}.support-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dispatch-heading{align-items:start}}
+@media(max-width:700px) {.dispatch-heading{padding:20px 16px;display:block}.dispatch-heading nav{margin-top:16px}.console-layout{padding:0 16px 20px;grid-template-columns:minmax(0,1fr);gap:14px}.support-grid{grid-template-columns:minmax(0,1fr);gap:14px}.console-layout>.panel,.focus-surface,.support-grid>.panel{padding:16px}.shell-meta{justify-content:flex-start}.dispatch-heading h1{font-size:32px}}
+@media(prefers-reduced-motion:reduce) {.item[data-focus]{transition:none}}
+@media(max-width:700px) {
+  .dispatch-heading {padding:16px}
+  .dispatch-heading>div>p:last-child {display:none}
+  .dispatch-heading nav {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}
+  .dispatch-heading a {padding:8px;font-size:12px;border-radius:10px;text-align:center;display:flex;align-items:center;justify-content:center}
+}

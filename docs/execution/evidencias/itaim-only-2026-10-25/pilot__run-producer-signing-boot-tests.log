@@ -1,0 +1,9 @@
+
+=== PILOTO — BOOT COM CHAVE DE PRODUTOR (PROCESSO REAL) ===
+
+  ok  PSB1 chave pela metade recusa subir (78) sem ecoar segredo
+  ok  PSB2 chave que não é Ed25519 recusa subir (78)
+  ok  PSB3 sem chave sobe e declara outbox sem atestação
+  ok  PSB4 chave completa: outbox gravada pela API sai com pa1 verificável pela chave pública
+
+PRODUCER_SIGNING_BOOT: 4/4 PASS (BINARIO DE dist/, CHAVES FICTICIAS)

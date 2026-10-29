@@ -11,7 +11,7 @@
   <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO — dados simulados · módulo ENTREGAS · TATA (provisório)</div>
 
   <header class="shell-header">
-    <div class="shell-brand">ENTREGAS <span>console</span></div>
+    <div class="shell-brand">TATÁ <span>Delivery OS</span></div>
     <div class="shell-meta">
       <label class="sr-only" for="role">Papel</label>
       <select id="role" aria-label="Papel operacional">
@@ -24,12 +24,35 @@
     </div>
   </header>
 
+  <div class="dispatch-heading"><div><p class="label-meta">Expedição · Itaim</p><h1>Entregas</h1><p>Da saída ao retorno. Cada viagem com seu contexto.</p></div><nav aria-label="Ir para etapa"><a href="#ready-title">Preparar saída</a><a href="#trips-title">Acompanhar viagens</a><a href="#focus-title">Ver viagem em foco</a></nav></div>
   <main class="console-layout" id="main">
+      <section class="panel dispatch-ready" aria-labelledby="ready-title">
+        <p class="label-meta" id="ready-title">01 · Preparar saída</p>
+        <h2 class="rail-title">Prontos para sair</h2>
+        <p class="muted small">Marque pedidos e monte a viagem. No máximo <strong id="maxStops">—</strong> paradas (piloto).</p>
+        <div id="readyList" class="list" role="list"></div>
+        <button type="button" class="primary wide" id="btnCreateTrip">Iniciar viagem com motoboy da casa</button>
+        <p class="status-line" id="tripHint"></p>
+      </section>
+
+      <section class="panel dispatch-trips" aria-labelledby="trips-title">
+        <p class="label-meta" id="trips-title">02 · Acompanhar</p><h2 class="rail-title">Viagens da casa</h2>
+        <div class="tabs" role="tablist" aria-label="Filtro de viagens">
+          <button type="button" role="tab" data-filter="all" aria-selected="true">Todas</button>
+          <button type="button" role="tab" data-filter="preparando_saida">Preparação</button>
+          <button type="button" role="tab" data-filter="em_rota">Em rota</button>
+          <button type="button" role="tab" data-filter="pendencias">Pendências</button>
+        </div>
+        <div id="tripsList" class="list" role="list"></div>
+        <div id="emptyTrips" class="empty" hidden>Nenhuma viagem neste filtro.</div>
+      </section>
+
     <!-- Superfície dominante: foco da operação (sem mapa inventado) -->
     <section class="focus-surface" aria-labelledby="focus-title">
+      <p class="label-meta">03 · Viagem em foco</p>
       <div id="focusPanel" class="focus-panel">
         <div class="status-line" id="focusStatus"><span class="dot green"></span> Carregando…</div>
-        <h1 class="title-sov" id="focus-title">Operação</h1>
+        <h2 class="title-sov" id="focus-title" tabindex="-1">Operação</h2>
         <p class="sub-human" id="focusSub">Aguarde o carregamento.</p>
         <div id="focusDetail" class="focus-detail"></div>
         <div id="addressSeq" class="address-seq" hidden aria-label="Sequência de endereços da viagem"></div>
@@ -42,28 +65,7 @@
       </div>
     </section>
 
-    <aside class="side-rail" aria-label="Contexto operacional">
-      <section class="panel" aria-labelledby="ready-title">
-        <p class="label-meta" id="ready-title">Montagem</p>
-        <h2 class="rail-title">Prontos para sair</h2>
-        <p class="muted small">Marque pedidos e monte a viagem. No máximo <strong id="maxStops">—</strong> paradas (piloto).</p>
-        <div id="readyList" class="list" role="list"></div>
-        <button type="button" class="primary wide" id="btnCreateTrip">Iniciar viagem com motoboy da casa</button>
-        <p class="status-line" id="tripHint"></p>
-      </section>
-
-      <section class="panel" aria-labelledby="trips-title">
-        <p class="label-meta" id="trips-title">Viagens</p>
-        <div class="tabs" role="tablist" aria-label="Filtro de viagens">
-          <button type="button" role="tab" data-filter="all" aria-selected="true">Todas</button>
-          <button type="button" role="tab" data-filter="preparando_saida">Preparação</button>
-          <button type="button" role="tab" data-filter="em_rota">Em rota</button>
-          <button type="button" role="tab" data-filter="pendencias">Pendências</button>
-        </div>
-        <div id="tripsList" class="list" role="list"></div>
-        <div id="emptyTrips" class="empty" hidden>Nenhuma viagem neste filtro.</div>
-      </section>
-
+    <aside class="support-grid" aria-label="Apoio à expedição">
       <section class="panel" aria-labelledby="people-title">
         <p class="label-meta" id="people-title">Casa</p>
         <h2 class="rail-title">Motoboys</h2>
