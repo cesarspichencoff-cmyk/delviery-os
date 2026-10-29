@@ -533,14 +533,24 @@ test("signed attempt ID reused for another native order or station is rejected",
   assert.equal(r.print_authorized,false);
  }
 });
-test("valid signature cannot attach to an older or different native revision",()=>{
+test("signed witness preserves prior native revision as historical hazard, not current proof",()=>{
  const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
  x.history[0].native_snapshot_sha256="e".repeat(64);
  const r=linkedReview(x);
- assert.deepEqual(r.reasons,["SIGNED_WITNESS_NATIVE_REVISION_CONTRADICTED"]);
+ assert.deepEqual(r.reasons,["PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED"]);
  assert.equal(r.source_witness_signature_verified,true);
+ assert.equal(r.witnessed_journal_revision_matches_current_reader_claim,false);
+ assert.equal(r.witnessed_native_revision_independently_attested,false);
  assert.equal(r.witnessed_observation_requires_reconciliation,true);
  assert.equal(r.ready_for_operational_print,false);
+});
+test("malformed historical native revision cannot carry a signed attempt link",()=>{
+ const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()));
+ x.history[0].native_snapshot_sha256="not-a-valid-sha";
+ const r=linkedReview(x);
+ assert.deepEqual(r.reasons,["SIGNED_WITNESS_JOURNAL_REVISION_INVALID"]);
+ assert.equal(r.print_authorized,false);
+ assert.equal(r.automatic_retry_allowed,false);
 });
 test("signed spooler observation contradicts claimed proven no effect",()=>{
  const x=attachSignedAttempt(syntheticSourceWitness(linkedInput()),
