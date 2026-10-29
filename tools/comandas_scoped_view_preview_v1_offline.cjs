@@ -28,8 +28,8 @@ function projectScopedPreview(nativeProjection,sourceClaims){
  const parts=typeof n?.order_key==="string"?n.order_key.split("|"):[];
  const id=nativeProjection?.conference?.identifiers;
  const claimMatchesProjection=parts.length===4&&
-  typeof nativeProjection?.order_id==="string"&&
-  nativeProjection.order_id===parts[3]&&
+  typeof nativeProjection?.conference?.order_id==="string"&&
+  nativeProjection.conference.order_id===parts[3]&&
   typeof id?.teknisa==="string"&&id.teknisa===parts[3]&&
   typeof id?.ifood==="string"&&id.ifood===n.short_id;
  if(!claimMatchesProjection){
