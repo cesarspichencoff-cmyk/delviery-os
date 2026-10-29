@@ -113,6 +113,8 @@ jobs:
         run: node tools/verificar_comandas_shadow_station_board_v1_offline.cjs
       - name: Academy classification unknown code priority only (non-unique historical)
         run: node tools/verificar_comandas_packaging_classification_review_v1_offline.cjs
+      - name: Archive exact-byte classification versus routing coverage (no auto-classification)
+        run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
@@ -443,6 +445,8 @@ jobs:
         run: node tools/verificar_comandas_shadow_station_board_v1_offline.cjs
       - name: Academy classification unknown code priority only (non-unique historical)
         run: node tools/verificar_comandas_packaging_classification_review_v1_offline.cjs
+      - name: Archive exact-byte classification versus routing coverage (no auto-classification)
+        run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
