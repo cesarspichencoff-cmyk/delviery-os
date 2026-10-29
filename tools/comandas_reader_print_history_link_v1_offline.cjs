@@ -127,6 +127,19 @@ function reviewReaderPrintHistory(input){
   };
   if(!witnessed.length)
    return hold("SIGNED_WITNESS_ATTEMPT_NOT_IN_SCOPED_HISTORY",witnessFlags);
+  // A signed witness names ONE attempt, not merely an attempt ID appearing
+  // somewhere in an untrusted history. Duplicates, cross-order reuse and
+  // revisions with the same ID are unresolved, even if one row matches.
+  const attemptIdRows=Array.isArray(input.history)?input.history.filter(row=>
+   row && typeof row==="object" && !Array.isArray(row) &&
+   row.attempt_id===w.record.attempt_id
+  ):[];
+  if(witnessed.length!==1 || attemptIdRows.length!==1)
+   return hold("SIGNED_WITNESS_ATTEMPT_REUSED_OR_DUPLICATED",witnessFlags);
+  if(typeof witnessed[0].native_snapshot_sha256!=="string" ||
+     witnessed[0].native_snapshot_sha256.toLowerCase()!==
+       event.snapshot_hash.toLowerCase())
+   return hold("SIGNED_WITNESS_NATIVE_REVISION_CONTRADICTED",witnessFlags);
   if(witnessed.some(row=>typeof row.intent_fingerprint!=="string" ||
      row.intent_fingerprint.toLowerCase()!==w.record.intent_fingerprint.toLowerCase()))
    return hold("SIGNED_WITNESS_ATTEMPT_FINGERPRINT_CONTRADICTED",witnessFlags);
