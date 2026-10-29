@@ -99,6 +99,8 @@ jobs:
         run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
       - name: Existing Reader metadata diagnosis always remains HOLD (synthetic)
         run: node tools/verificar_tata_reader_itaim_metadata_review_v1_offline.cjs
+      - name: Real-shape sanitized Reader and shadow trend holds physical effects (offline)
+        run: node tools/verificar_comandas_live_aggregate_trend_v1_offline.cjs
       - name: TATA Comanda daily sequence candidate V2 no binding or paper authority
         run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
       - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
@@ -410,6 +412,8 @@ jobs:
         run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
       - name: Existing Reader metadata diagnosis always remains HOLD (synthetic)
         run: node tools/verificar_tata_reader_itaim_metadata_review_v1_offline.cjs
+      - name: Real-shape sanitized Reader and shadow trend holds physical effects (offline)
+        run: node tools/verificar_comandas_live_aggregate_trend_v1_offline.cjs
       - name: Existing Reader wrong-host fail-closed on disposable Windows CI only
         shell: pwsh
         run: |
