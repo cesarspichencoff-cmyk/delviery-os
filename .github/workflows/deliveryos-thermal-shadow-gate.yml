@@ -109,6 +109,8 @@ jobs:
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
       - name: TATA Comanda Reader revision bound to native day and window candidate
         run: node tools/verificar_comandas_native_window_revision_binding_v1_offline.cjs
+      - name: Kitchen station shadow board from bound preview (no printing)
+        run: node tools/verificar_comandas_shadow_station_board_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
@@ -435,6 +437,8 @@ jobs:
         run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
       - name: TATA Comanda Reader revision bound to native day and window candidate
         run: node tools/verificar_comandas_native_window_revision_binding_v1_offline.cjs
+      - name: Kitchen station shadow board from bound preview (no printing)
+        run: node tools/verificar_comandas_shadow_station_board_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
