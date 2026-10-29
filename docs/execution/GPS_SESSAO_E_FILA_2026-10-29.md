@@ -26,10 +26,20 @@ Commit remoto 526b3b62c89d303935f1cf2635fe8d930d838402: execução Android 40881
 
 ## Pendências que impedem 10/10 operacional
 
-- Compilar e executar os novos testes de sessão/fila no CI da revisão correspondente.
+- Executar o serviço com Fused real: os testes do coordenador e Room passaram, mas não substituem a prova física.
 - Provar captura com tela apagada, revogação, encerramento, perda/retorno de rede e recriação no aparelho real.
 - Integrar provedor alternativo para Android sem serviços Google; ainda não implementado.
 - Conectar os contextos de movimento/parada/proximidade à política adaptativa; não anunciar autonomia de bateria comprovada.
 - Validar login e acompanhamento no tablet e computador reais, com a origem HTTPS operacional.
 
 As correções ficam na branch de revisão, sem merge, deploy ou ativação automática em campo.
+
+## Resultado comprovado da revisão
+
+Código remoto `520bdac93b188a554abffee0d197531439c2e479`, árvore `c62ac9048164e1da0814c445e3efa6d0aa1944d5`:
+
+- Android: https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40913106975 — sucesso. Testes JVM/Room, prova JUnit, controles de empacotamento, compilação dos APKs de bancada e instrumentação, identidade/assinatura/integridade e publicação do artefato aprovados.
+- Produto: https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40913106972 — sucesso.
+- Instalação e uso físico: não realizados. APK gerado é de bancada, não declaração de homologação operacional.
+
+O P1 recebeu correção compilada e regressões do coordenador; a validação completa de ciclo do serviço no aparelho permanece aberta. Não declarar GPS 10/10 operacional.
