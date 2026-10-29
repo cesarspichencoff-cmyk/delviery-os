@@ -153,6 +153,8 @@ jobs:
         run: node tests/tata-reader/run-operator-http-tests.cjs
       - name: Composicao opt-in no servidor Entregas sem autoridade legada (LAB)
         run: node tests/tata-reader/run-operator-pilot-tests.cjs
+      - name: Pacote do leitor e Entregas conferido offline sem ativacao (LAB)
+        run: node tests/tata-reader/run-operator-package-preflight-tests.cjs
       - name: Leitura isolada preserva HTTP e termina trabalho lento (LAB)
         run: node tests/tata-reader/run-source-worker-tests.cjs
       - name: Identidade e vinculo de operador antecedem leitura (LAB)
