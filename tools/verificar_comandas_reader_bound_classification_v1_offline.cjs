@@ -71,8 +71,13 @@ held("modified product name from same code does not inherit classification",
 held("modified canonical product code fails exact claim join",
  d=>{d.claims[0].product_code="9.20.00.010.01"},
  "CLASSIFICATION_REVIEW_NOT_APPROVED");
-held("swapped item order cannot steal station",
- d=>{d.claims.reverse()},
+test("claims in reversed input order still bind to native item indices",()=>{
+ const d=sample();d.claims.reverse();
+ const out=call(d);assert.equal(out.status,"REVIEW_CANDIDATE_ONLY");
+ assert.deepEqual(out.review.entries.map(x=>x.source_item_index),[0,1]);
+});
+held("claims that reuse another source index are rejected",
+ d=>{d.claims[0].source_item_index=1},
  "CLASSIFICATION_REVIEW_NOT_APPROVED");
 held("changed quantity from same product fails",
  d=>{d.claims[0].quantity=3},
