@@ -88,3 +88,27 @@ A investigação B é **parcial** se apenas identificar fonte/callsite, mas falt
 4. Somente após prova suficiente, apresentar um piloto supervisionado com autorização **separada**, uma tentativa por via, prevenção de duplicação, reconciliação de backlog/reprint, observação física e rollback. Nenhuma impressão ou alteração é aprovada por este documento.
 
 **Efeitos desta atualização:** documentação exclusivamente; nenhum e-mail, pedido, arquivo de produção, serviço, configuração, sequência, impressora, spooler, SQL, fiscal, deploy ou merge alterado. `FIRST_NATIVE_DISPATCH=UNKNOWN`; `WORLD_PROVEN=false`; `PILOT=HOLD`.
+
+
+## 8. Confirmação humana da unidade e encaminhamento presencial — 29/10/2026
+
+**Confirmação recebida diretamente da gestão em 29/10/2026:** o computador identificado como `CAIXA_MOOCA` pertence operacionalmente à unidade **TATÁ Sushi Itaim**. A gestão também confirmou a possibilidade de viabilizar uma **verificação presencial, acompanhada por responsável autorizado, somente em leitura**. Registrar como `HUMAN_CONFIRMED_DEVICE_UNIT=ITAIM` e `ONSITE_READONLY_CHECK_FEASIBLE=YES_BY_HUMAN`; **não** transformar em prova independente da identidade técnica do host, sessão conectada, permissão de ler todo o equipamento, saúde atual do Reader ou autorização de escrita.
+
+**Prova técnica mais recente antes desta anotação:** HEAD `a261fb4db97c451b37e270aa57804c6b4d6bbfdd`, workflow [40832966333](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/40832966333) = **SUCCESS** (Linux 130/130, Windows 117/117), somente testes offline. A PR #127 segue **OPEN/DRAFT/HOLD**, sem merge, deploy ou papel. A confirmação humana resolve somente `DEVICE_UNIT_UNCONFIRMED_BY_MANAGEMENT`, não `FIRST_NATIVE_DISPATCH_UNKNOWN`.
+
+### Pré-voo presencial mínimo para a fonte já delimitada (B0)
+
+**Escopo inicial:** responsável fisicamente presente valida na própria máquina o nome do dispositivo e sua vinculação ao Itaim, sem divulgar nomes de usuário ou credenciais. Se permitido pelas regras locais, inspeciona **somente metadados/estado agregados já previstos** nestes quatro arquivos existentes; não cria nem altera arquivos:
+
+1. `C:\ProgramData\TataComandaReader\state\reader-heartbeat-v1.json` — existência, data de atualização, estado/versão do Reader.
+2. `C:\ProgramData\TataComandaReader\evidence\shadow-consumer-status.json` — estado agregado do consumidor; não publicar identificadores de pedidos.
+3. `C:\ProgramData\TataComandaReader\evidence\reporting-projector-status.json` — estado agregado da projeção, sem extrair conteúdo de comandas.
+4. `C:\ProgramData\TataComandaReader\state\production-service-state.json` — estado agregado do serviço de produção, sem iniciar/parar serviço.
+
+**Saída admissível:** para cada um, somente `PRESENT/MISSING/ACCESS_DENIED`, data de atualização, validade de JSON e campos agregados de saúde sem dados pessoais; registrar versão/identidade de host apenas de forma minimizada. Uma coleta é `B0_PROVEN` **somente após** revisão dos dados efetivamente observados e atuais, nunca por confirmação verbal de possibilidade. Se qualquer campo carregar pedido, cliente, endereço, observação, sessão ou segredo: não reproduzir o valor; parar a extração e registrar apenas `REDACTION_REQUIRED`. Não ler arquivo inexistente via técnica alternativa ou mexer em ACL.
+
+**A etapa B0 não prova o primeiro despacho de produção.** A investigação B1 (evento nativo `DLV_IFO` → primeira tentativa → praça/transporte/destino principal e backup) só ocorre com fonte e escopo de leitura explicitamente identificados, proteção de dados e autorização correspondente, evitando pedidos de nova via. A etapa C (piloto físico e qualquer mudança) continua separada.
+
+**Conector remoto:** a cota mensal anteriormente informada continua restrição. A disponibilidade/uso de outra máquina ou conta não será usada para contorná-la; a verificação presencial é uma operação local com responsável autorizado, não uma tentativa de reconexão por trás do bloqueio. Nenhuma visita, coleta, acesso, script local ou comando operacional foi executado por esta atualização documental.
+
+**Estado após esta anotação:** `UNIT=ITAIM_HUMAN_CONFIRMED`; `B0_ONSITE=NOT_YET_EXECUTED`; `READER_LIVE_HEALTH=UNKNOWN`; `FIRST_NATIVE_DISPATCH=UNKNOWN`; `PILOT=HOLD`; `PHYSICAL_PRINT=NOT_PROVEN`. Preservadas as duas vias de produção nativas, a conferência independente iFood somente no caixa, os controles de caixas/itens/seqüência e o isolamento fiscal. O canal de e-mail permanece fora do plano.
