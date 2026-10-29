@@ -52,7 +52,10 @@ function projectScopedPreview(nativeProjection,sourceClaims){
    ?base.conference
    :veto(base.conference,"CONFERENCE_INDEPENDENT_IFOOD_CROSSCHECK_HOLD");
  return {schema:SCHEMA,source_review:scope,
-  production,conference,effects:{
+  production,conference,
+  native_projection_identity_consistent:true,
+  native_snapshot_independently_bound_to_rendered_projection:false,
+  effects:{
    print:false,spooler_write:false,odhen_write:false,cut:false,
    ifood_request:false,sql_read:false,sequence_write:false
   },ready_for_operational_print:false};
