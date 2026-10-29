@@ -1,11 +1,18 @@
 "use strict";
 const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path");
+const {execFileSync}=require("node:child_process");
 const {SCHEMA,EFFECTS,joinClassificationGapsToPinnedRouting:join}=
  require("./comandas_packaging_route_crosscheck_v1_offline.cjs");
 const read=(n)=>fs.readFileSync(path.join(__dirname,"..","data",n));
 const archive=JSON.parse(read("comandas_packaging_classification_gaps_20261026_v1.json"));
-const routing=read("odhen_product_routing_compact_v1.json");
+// GitHub-hosted Windows may check out text as CRLF; the immutable Git blob
+// is byte-exact LF. Test the actual committed object, not a transformed
+// working-tree presentation. This runs ONLY in disposable CI checkout.
+const routing=execFileSync("git",["show",
+ "HEAD:data/odhen_product_routing_compact_v1.json"],{
+ cwd:path.join(__dirname,".."),windowsHide:true,maxBuffer:262144
+});
 let n=0;const test=(label,f)=>{f();console.log("PASS "+(++n)+" "+label)};
 function evaluate(snapshot,bytes,status,reason){
  const before=JSON.stringify(snapshot),b=Buffer.isBuffer(bytes)?Buffer.from(bytes):bytes;
@@ -16,7 +23,7 @@ function evaluate(snapshot,bytes,status,reason){
  for(const k of ["classification_proven","packaging_proven","station_live_proven",
   "printer_power_proven","first_dispatch_proven","operational_ready",
   "physical_print_authorized"])assert.equal(out[k],false,k);
- assert.equal(out.status,status);
+ assert.equal(out.status,status, out.reason);
  if(reason)assert.equal(out.reason,reason);
  assert.ok(!JSON.stringify(out).includes("CUSTOMER_PRIVATE"));
  return out;
