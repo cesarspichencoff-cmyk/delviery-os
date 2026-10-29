@@ -11,7 +11,7 @@ const native=archivedResult();
 const original=JSON.stringify(native);
 function fixture(){
  const x=unboundSourceFixture();
- const id=native.identifiers;
+ const id=native.conference?.identifiers;
  assert.ok(id&&typeof id.teknisa==="string"&&typeof id.ifood==="string");
  x.native.order_key="0001|01|SYNTHETIC_SALE|"+id.teknisa;
  x.native.short_id=id.ifood;
