@@ -67,6 +67,7 @@ async function refresh() {
     renderExpeditions();
     renderOcc();
     renderFocus();
+    refreshFocusLocation();
   } catch (e) {
     renderError($("errorBox"), e.message || "Falha ao carregar");
     $("statusLine").textContent = "Erro técnico";
@@ -162,7 +163,7 @@ function renderTrips() {
    Busca so' quando ha' viagem selecionada: sem foco, nada e' consultado. */
 const dispatchLocation = createDispatchLocation({
   fetchJson: async (url) => {
-    const r = await fetch(url);
+    const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
     return r.ok ? r.json() : null;
   },
   onRender: (st) => {
@@ -193,7 +194,7 @@ function renderFocus() {
     trips.find((t) => t.state === "preparando_saida") ||
     trips[0];
 
-  if (active) focusTripId = active.trip_id;
+  focusTripId = active ? active.trip_id : null;
 
   const panel = $("focusPanel");
   const status = $("focusStatus");
@@ -497,6 +498,8 @@ $("btnOcc").addEventListener("click", async () => {
 });
 
 $("role").addEventListener("change", async () => {
+  focusTripId = null;
+  dispatchLocation.setTrip(null);
   await api("/api/actor", {
     method: "POST",
     body: JSON.stringify({ actor_id: "ops-demo", role: $("role").value }),
@@ -515,3 +518,12 @@ document.querySelectorAll(".tabs [role=tab]").forEach((tab) => {
 });
 
 refresh();
+
+// Atualiza apenas a viagem em foco; ao ocultar a página, invalida o cache.
+setInterval(() => {
+  if (!document.hidden) refreshFocusLocation();
+}, 20000);
+document.addEventListener("visibilitychange", () => {
+  dispatchLocation.setTrip(null);
+  if (!document.hidden) refreshFocusLocation();
+});

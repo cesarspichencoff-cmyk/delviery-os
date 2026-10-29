@@ -393,7 +393,7 @@ async function screenTests(): Promise<void> {
     assert.equal(s.state().pending_confirmation, 1);
   });
 
-  await test("falha de rede não apaga a tela; só avisa", async () => {
+  await test("falha de rede invalida posição atual", async () => {
     let first = true;
     const s = create({
       fetchJson: async (url: string) => {
@@ -406,8 +406,77 @@ async function screenTests(): Promise<void> {
     first = false;
     await s.refresh("trip-1");
     const st = s.state();
-    assert.equal(st.freshness, "current", "o que já estava na tela continua");
+    assert.equal(st.freshness, "unknown");
+    assert.equal(st.usable, false);
+    assert.equal(st.last_point, undefined);
     assert.ok(String(st.error).length > 0, "mas o operador é avisado");
+  });
+
+  await test("limpar seleção invalida inclusive resposta em trânsito", async () => {
+    // Duas requisições; ambas devem ser ignoradas após limpar.
+    const pending: Array<(value: unknown) => void> = [];
+    const screen = create({ fetchJson: () => new Promise(r => pending.push(r)) });
+    const old = screen.refresh("trip-1");
+    await screen.refresh(null);
+    pending[0](locationResponse()); pending[1](timelineResponse());
+    await old;
+    assert.equal(screen.state().trip_id, null);
+    assert.equal(screen.state().last_point, undefined);
+    assert.deepEqual(screen.state().timeline, []);
+  });
+
+  await test("resposta lenta de outra viagem não sobrescreve foco novo", async () => {
+    const pending: Array<(value: unknown) => void> = [];
+    const s = create({ fetchJson: () => new Promise(r => pending.push(r)) });
+    const old = s.refresh("trip-1");
+    const latest = s.refresh("trip-2");
+    pending[2](locationResponse({ trip_id: "trip-2", point_count: 2 }));
+    pending[3]({ ok: true, timeline: [], arrivals: [] });
+    await latest;
+    pending[0](locationResponse()); pending[1](timelineResponse());
+    await old;
+    assert.equal(s.state().trip_id, "trip-2");
+    assert.equal(s.state().point_count, 2);
+    assert.deepEqual(s.state().timeline, []);
+  });
+
+  await test("posição em cache envelhece e deixa de ser atual sem consulta", async () => {
+    let clock = 0;
+    const s = create({ now: () => new Date(clock), fetchJson: async (url: string) =>
+      url.includes("/location") ? locationResponse() : timelineResponse() });
+    await s.refresh("trip-1");
+    clock = 31000;
+    assert.equal(s.state().usable, false);
+    assert.equal(s.state().freshness, "unknown");
+    assert.equal(s.state().last_point, undefined);
+    assert.equal(s.state().age_label, "há 1 min");
+  });
+
+  await test("erro tardio não apaga resposta da viagem nova", async () => {
+    let rejectOld: (e: Error) => void = () => {};
+    const s = create({ fetchJson: (url: string) => {
+      if (url.includes("trip-1")) return new Promise((_r, reject) => { rejectOld = reject; });
+      return Promise.resolve(url.includes("/location")
+        ? locationResponse({ trip_id: "trip-2" }) : timelineResponse());
+    } });
+    void s.refresh("trip-1");
+    await s.refresh("trip-2");
+    rejectOld(new Error("falha antiga"));
+    await new Promise(r => setTimeout(r, 0));
+    assert.equal(s.state().trip_id, "trip-2");
+    assert.equal(s.state().error, null);
+    assert.equal(s.state().usable, true);
+  });
+
+  await test("resposta negada ou de outra viagem não mantém coordenadas", async () => {
+    for (const response of [null, { ok: false }, locationResponse({ trip_id: "outra" })]) {
+      const s = create({ fetchJson: async (url: string) =>
+        url.includes("/location") ? response : timelineResponse() });
+      await s.refresh("trip-1");
+      assert.equal(s.state().usable, false);
+      assert.equal(s.state().last_point, undefined);
+      assert.ok(s.state().error);
+    }
   });
 
   await test("a linha renderizada nunca contém coordenada", async () => {
