@@ -9,7 +9,8 @@ function f(){return {
  device_unit:"ITAIM_HUMAN_CONFIRMED_NOT_INDEPENDENTLY_ATTESTED",
  host_matches_approved_name:true,root_directory_safe:true,
  files:NAMES.map(logical_name=>({logical_name,status:"PRESENT_METADATA_ONLY",
-  last_write_utc:stamp,age_minutes:1.2,clock_anomaly:false,length_bytes:100})),
+  last_write_utc:"2026-10-29T07:38:48.0000000Z",
+  age_minutes:1.2,clock_anomaly:false,length_bytes:100})),
  status:"HOLD",reader_service_running_proven:false,
  reader_content_valid_proven:false,native_first_dispatch_proven:false,
  printer_path_proven:false,physical_paper_proven:false,
@@ -34,11 +35,36 @@ let n=0;function check(name,v,expect){
 }
 check("all present is not health",f(),"FOUR_METADATA_PRESENT_NOT_SERVICE_HEALTH");
 const test=(label,mutation,expect)=>{const x=f();mutation(x);check(label,x,expect);};
-test("old metadata never proves current Reader",x=>x.files.forEach(o=>o.age_minutes=100000),"FOUR_METADATA_PRESENT_NOT_SERVICE_HEALTH");
+test("old metadata never proves current Reader",x=>x.files.forEach(o=>{
+ o.age_minutes=100000;
+ o.last_write_utc=new Date(Date.parse(stamp)-100000*60000).toISOString();
+}),"FOUR_METADATA_PRESENT_NOT_SERVICE_HEALTH");
 test("unavailable",x=>Object.assign(x.files[0],{status:"UNAVAILABLE",last_write_utc:null,age_minutes:null,clock_anomaly:null,length_bytes:null}),"FILE_ABSENT_OR_ACCESS_DENIED");
 test("unsafe parent",x=>Object.assign(x.files[2],{status:"BLOCKED_UNSAFE_PARENT",last_write_utc:null,age_minutes:null,clock_anomaly:null,length_bytes:null}),"UNSAFE_PATH_OR_REPARSE_POINT");
 test("zero-byte file",x=>x.files[3].length_bytes=0,"EMPTY_FILE_NOT_VALIDATED");
-test("clock anomaly",x=>{x.files[0].clock_anomaly=true;x.files[0].age_minutes=null;},"FILE_CLOCK_ANOMALY");
+test("clock anomaly",x=>{
+ x.files[0].last_write_utc="2026-10-29T07:41:00.0000000Z";
+ x.files[0].clock_anomaly=true;x.files[0].age_minutes=null;
+},"FILE_CLOCK_ANOMALY");
+test("false reported age rejected",x=>x.files[0].age_minutes=0,
+ "FILE_TIMESTAMP_AGE_FLAG_MISMATCH");
+test("false clock anomaly flag rejected",x=>{
+ x.files[0].last_write_utc="2026-10-29T07:41:00.0000000Z";
+ x.files[0].clock_anomaly=false;
+},"FILE_TIMESTAMP_AGE_FLAG_MISMATCH");
+test("clock anomaly flag on past modification rejected",x=>{
+ x.files[0].clock_anomaly=true;x.files[0].age_minutes=null;
+},"FILE_TIMESTAMP_AGE_FLAG_MISMATCH");
+test("impossible calendar date rejected",x=>{
+ x.files[0].last_write_utc="2026-02-30T07:38:48.0000000Z";
+},"FILE_METADATA_CONTRADICTION");
+test("impossible capture date rejected",x=>{
+ x.captured_at_utc="2026-02-30T07:40:00.0000000Z";
+},"UNTRUSTED_ENVELOPE_OR_EFFECT_CLAIM");
+test("sub-minute rounding permitted without claiming freshness",x=>{
+ x.files[0].last_write_utc="2026-10-29T07:39:57.0000000Z";
+ x.files[0].age_minutes=0;
+},"FOUR_METADATA_PRESENT_NOT_SERVICE_HEALTH");
 test("unapproved host",x=>{x.host_matches_approved_name=false;x.root_directory_safe=false;x.files=[];},"UNAPPROVED_HOST");
 test("wrong host contradiction",x=>{x.host_matches_approved_name=false;x.root_directory_safe=false;},"WRONG_HOST_WITH_UNEXPECTED_OBSERVATIONS");
 test("missing root",x=>{x.root_directory_safe=false;x.files=[];},"READER_ROOT_UNAVAILABLE_OR_UNSAFE");

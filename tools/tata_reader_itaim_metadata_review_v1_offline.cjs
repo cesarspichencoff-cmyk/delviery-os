@@ -20,9 +20,15 @@ const STATES=new Set(["PRESENT_METADATA_ONLY","UNAVAILABLE",
  "BLOCKED_UNSAFE_PARENT","BLOCKED_UNSAFE_FILE"]);
 const shape=(v,keys)=>v&&typeof v==="object"&&!Array.isArray(v)&&
  Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
-const utc=s=>typeof s==="string"&&
- /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,7}(?:Z|\+00:00)$/.test(s)&&
- Number.isFinite(Date.parse(s));
+// Date.parse alone normalizes impossible dates such as 2026-02-30.
+const utc=s=>{
+ if(typeof s!=="string"||
+   !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,7}(?:Z|\+00:00)$/.test(s))
+  return false;
+ const ms=Date.parse(s);
+ return Number.isFinite(ms)&&
+  new Date(ms).toISOString().slice(0,19)===s.slice(0,19);
+};
 function output(diagnosis,more={}){
  return {schema:SCHEMA,status:"HOLD",diagnosis,claim_consistent:false,
   host_name_claim_consistent:false,inspected_file_count:0,
@@ -65,6 +71,14 @@ function reviewItaimReaderMetadata(x){
        typeof f.age_minutes!=="number"||!Number.isFinite(f.age_minutes)||
        f.age_minutes<0))
     return output("FILE_METADATA_CONTRADICTION",{host_name_claim_consistent:true});
+   // Cross-check the capture/LastWriteTimeUTC pair, not just the caller's
+   // supplied age. The on-site PowerShell uses Math.Round(x,1), with
+   // midpoint-to-even semantics. Allow a 0.051-minute rounding envelope.
+   const actualAge=(Date.parse(x.captured_at_utc)-Date.parse(f.last_write_utc))/60000;
+   if(f.clock_anomaly!==(actualAge<0)||
+     (!f.clock_anomaly&&Math.abs(f.age_minutes-actualAge)>0.051))
+    return output("FILE_TIMESTAMP_AGE_FLAG_MISMATCH",{
+      host_name_claim_consistent:true});
   }else if(f.last_write_utc!==null||f.age_minutes!==null||
            f.clock_anomaly!==null||f.length_bytes!==null)
    return output("UNAVAILABLE_FILE_CLAIMS_TIMESTAMPS",{host_name_claim_consistent:true});
