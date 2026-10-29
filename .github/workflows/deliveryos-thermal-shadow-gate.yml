@@ -69,6 +69,8 @@ jobs:
           node tools/verificar_contrato_embalagem_v1_offline.cjs
       - name: Three-way physical box and resource coherence V6.4 (offline)
         run: node tools/verificar_coerencia_tres_vias_v64.js
+      - name: Three-way box count is consumable, not reusable (offline)
+        run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
       - name: Reconciled reader ingress and pinned Unified Kit Core V6.6 (offline)
         run: node tools/verificar_ingresso_leitor_v66.js
       - name: Single reviewed future candidate and operational HOLD V7.16
