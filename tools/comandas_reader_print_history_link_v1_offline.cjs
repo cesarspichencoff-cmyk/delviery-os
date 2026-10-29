@@ -136,10 +136,18 @@ function reviewReaderPrintHistory(input){
   ):[];
   if(witnessed.length!==1 || attemptIdRows.length!==1)
    return hold("SIGNED_WITNESS_ATTEMPT_REUSED_OR_DUPLICATED",witnessFlags);
-  if(typeof witnessed[0].native_snapshot_sha256!=="string" ||
-     witnessed[0].native_snapshot_sha256.toLowerCase()!==
-       event.snapshot_hash.toLowerCase())
-   return hold("SIGNED_WITNESS_NATIVE_REVISION_CONTRADICTED",witnessFlags);
+  // The signed witness binds one attempt ID and semantic intent, but does
+  // NOT contain a native revision hash. Prior attempts from older revisions
+  // are legitimate historical hazards; comparing them to the CURRENT Reader
+  // snapshot would erase evidence of an earlier print. Check shape only,
+  // leave independent revision custody unproven and never permit a retry.
+  const historicalRevision=witnessed[0].native_snapshot_sha256;
+  if(typeof historicalRevision!=="string" ||
+     !SHA.test(historicalRevision))
+   return hold("SIGNED_WITNESS_JOURNAL_REVISION_INVALID",witnessFlags);
+  witnessFlags.witnessed_journal_revision_matches_current_reader_claim=
+   historicalRevision.toLowerCase()===event.snapshot_hash.toLowerCase();
+  witnessFlags.witnessed_native_revision_independently_attested=false;
   if(witnessed.some(row=>typeof row.intent_fingerprint!=="string" ||
      row.intent_fingerprint.toLowerCase()!==w.record.intent_fingerprint.toLowerCase()))
    return hold("SIGNED_WITNESS_ATTEMPT_FINGERPRINT_CONTRADICTED",witnessFlags);
