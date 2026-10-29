@@ -63,6 +63,8 @@ jobs:
         run: node tools/verificar_agrupamento_conferencia_v62.js
       - name: Current packaging motor bridge V6.3 (offline, source-pinned)
         run: node tools/verificar_ponte_embalagem_v63.js
+      - name: Product code bound to classification and pinned Academia (offline)
+        run: node tools/verificar_comandas_source_bound_classification_v1_offline.cjs
       - name: Pinned Academy headless packaging contract V1 (Linux, fake bytes denied)
         run: |
           node --check tools/verificar_contrato_embalagem_v1_private_replay.cjs
@@ -380,6 +382,8 @@ jobs:
         run: npm run build
       - name: Three-way box accounting consumes unique physical boxes (Windows offline)
         run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
+      - name: Product code bound to classification and pinned Academia (Windows offline)
+        run: node tools/verificar_comandas_source_bound_classification_v1_offline.cjs
       - name: Three-view identity, archived tickets and Epson bytes V8.71 (offline; no print)
         run: |
           node tools/verificar_real_order_tickets_v46.js
