@@ -386,10 +386,11 @@ class SyncWorker(
             DeviceSession.limparCredencial(db)
             return retryOrYield()
         }
+        // Saldo após progresso não é falha esgotada: deve ter continuação,
+        // mesmo se o envio secundário de contagens falhou nesta execução.
+        if (gpsDrain.remaining) return Result.retry()
         // Other transient work (including GPS platform sync) retains bounded retry.
         if (retryable) return retryOrYield()
-        // Saldo após progresso não é falha esgotada: deve ter continuação.
-        if (gpsDrain.remaining) return Result.retry()
         if (pilotAuthorizationBlocked) return Result.failure()
         return Result.success()
     }
