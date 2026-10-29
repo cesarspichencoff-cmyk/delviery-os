@@ -111,7 +111,7 @@ denied("unknown source index cannot enter bridge",
  d=>{d.c[0].source_item_index=700},
  "REVIEW_CLAIM_NOT_EXACT_SOURCE_IDENTITY");
 test("no source or claim gives HOLD without leaking names",()=>{
- for(const s of [null,[],undefined]){const r=run(s,claims());
+ for(const s of [null,[],undefined]){const r=review(s,claims(),BLOB);
   assert.equal(r.status,"HOLD");
   assert.ok(!JSON.stringify(r).includes("BEBIDA FICTICIA"));
  }
