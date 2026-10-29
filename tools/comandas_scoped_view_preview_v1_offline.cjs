@@ -26,7 +26,7 @@ function projectScopedPreview(nativeProjection,sourceClaims){
  // native source, external iFood, latest revision or source snapshot hash.
  const n=sourceClaims?.native;
  const parts=typeof n?.order_key==="string"?n.order_key.split("|"):[];
- const id=nativeProjection?.identifiers;
+ const id=nativeProjection?.conference?.identifiers;
  const claimMatchesProjection=parts.length===4&&
   typeof nativeProjection?.order_id==="string"&&
   nativeProjection.order_id===parts[3]&&
