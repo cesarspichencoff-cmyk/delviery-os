@@ -378,6 +378,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: Three-way box accounting consumes unique physical boxes (Windows offline)
+        run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
       - name: Three-view identity, archived tickets and Epson bytes V8.71 (offline; no print)
         run: |
           node tools/verificar_real_order_tickets_v46.js
