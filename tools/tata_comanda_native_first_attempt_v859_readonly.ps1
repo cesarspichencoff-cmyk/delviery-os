@@ -171,6 +171,7 @@ $out=[ordered]@{
  observed_native_structural_review_candidates=0
  observed_native_note_parity_review_candidates=0
  observed_native_note_parity_conflicts=0
+ legacy_state_inapplicable_with_valid_native_review=0
  observed_native_revisions_authorized_for_print=$false
  native_first_production_dispatch_proven=$false
  paired_with_persisted_tata_sequence=0
@@ -246,16 +247,26 @@ try{
   }
   # Count real native 3/P/X, item 4 as REVIEW ONLY. Keep legacy A count and
   # sequence binding unmodified; neither native status proves print readiness.
-  if(Basic-Content $e $d 'OBSERVED_NATIVE_REVIEW_ONLY'){
+  $nativeStructural=Basic-Content $e $d 'OBSERVED_NATIVE_REVIEW_ONLY'
+  $nativeNotesValid=$false
+  if($nativeStructural){
    $out.observed_native_structural_review_candidates++
-   if(Note-Parity $e $d){
+   $nativeNotesValid=Note-Parity $e $d
+   if($nativeNotesValid){
     $out.observed_native_note_parity_review_candidates++
    }else{
     $out.observed_native_note_parity_conflicts++
    }
   }
   if(-not(Basic-Content $e $d 'LEGACY_A')){
-   $out.incomplete_essential_content++;continue
+   if($nativeStructural -and $nativeNotesValid){
+    # A native-state valid review is not a content defect merely because it
+    # is not eligible for the legacy A-only branch and sequence check.
+    $out.legacy_state_inapplicable_with_valid_native_review++
+   }else{
+    $out.incomplete_essential_content++
+   }
+   continue
   }
   if(-not (Note-Parity $e $d)){
    $out.note_parity_conflicts++
@@ -301,6 +312,9 @@ try{
  }
  if($out.observed_native_structural_review_candidates -gt 0){
   Flag 'OBSERVED_NATIVE_STATES_ARE_REVIEW_ONLY_NOT_PRINT_AUTHORITY'
+ }
+ if($out.legacy_state_inapplicable_with_valid_native_review -gt 0){
+  Flag 'LEGACY_A_CRITERION_NOT_APPLICABLE_TO_OBSERVED_NATIVE_STATE'
  }
  if($out.content_valid_but_sequence_missing -gt 0){
   Flag 'EXISTING_TATA_BINDING_MISSING_FOR_SOME_ORDERS'
