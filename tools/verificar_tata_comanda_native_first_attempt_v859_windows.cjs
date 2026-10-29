@@ -139,6 +139,49 @@ try{
   assert.equal(o.native_first_production_dispatch_proven,false);
   assert.equal(o.printing_authorized,false);
  });
+ test("valid native 3/P/X are not falsely marked as incomplete content",()=>{
+  for(const header of ["3","P","X"]){
+   const y=pair();
+   y.event.order.IDSTCOMANDA=header;
+   for(const item of y.event.order.items)item.IDSTPRCOMVEN="4";
+   write(y);
+   const o=run();
+   assert.equal(o.observed_native_structural_review_candidates,1);
+   assert.equal(o.observed_native_note_parity_review_candidates,1);
+   assert.equal(o.legacy_state_inapplicable_with_valid_native_review,1);
+   assert.equal(o.incomplete_essential_content,0);
+   assert.equal(o.basic_essential_content_candidates,0);
+   assert.equal(o.paired_with_persisted_tata_sequence,0);
+   assert.ok(o.blocking_codes.includes(
+    "LEGACY_A_CRITERION_NOT_APPLICABLE_TO_OBSERVED_NATIVE_STATE"));
+   assert.equal(o.printing_authorized,false);
+  }
+ });
+ test("actual native content defects are still counted as incomplete",()=>{
+  for(const defect of ["quantity","lost-note","canceled-item"]){
+   const y=pair();
+   y.event.order.IDSTCOMANDA="P";
+   for(const item of y.event.order.items)item.IDSTPRCOMVEN="4";
+   if(defect==="quantity")y.decision.items[0].quantity=888;
+   if(defect==="lost-note")y.decision.items[0].observations=[];
+   if(defect==="canceled-item")y.event.order.items[0].IDSTPRCOMVEN="6";
+   write(y);const o=run();
+   assert.equal(o.legacy_state_inapplicable_with_valid_native_review,0);
+   assert.equal(o.incomplete_essential_content,1);
+   assert.equal(o.paired_with_persisted_tata_sequence,0);
+   assert.equal(o.printing_authorized,false);
+  }
+ });
+ test("legacy A count remains separate and does not become real native evidence",()=>{
+  const y=pair();write(y);
+  const o=run();
+  assert.equal(o.legacy_state_inapplicable_with_valid_native_review,0);
+  assert.equal(o.observed_native_structural_review_candidates,0);
+  assert.equal(o.incomplete_essential_content,0);
+  assert.equal(o.basic_essential_content_candidates,1);
+  assert.equal(o.native_first_production_dispatch_proven,false);
+  assert.equal(o.printing_authorized,false);
+ });
  test("no binding reveals exact real blocker without inventing a sequence",()=>{
   const y=pair();y.sequence_state.bindings=[];write(y);
   const o=run();assert.equal(o.basic_essential_content_candidates,1);
