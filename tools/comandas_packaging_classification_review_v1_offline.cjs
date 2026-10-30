@@ -62,4 +62,75 @@ function prioritizeClassificationGaps(input){
   reader_current_attested:false,academia_candidate_promoted:false,
   effects:EFFECTS};
 }
-module.exports={SCHEMA,EFFECTS,prioritizeClassificationGaps};
+/**
+ * Future internal-catalog comparison: exact code/ID checks only.
+ * This accepts a caller-supplied, potentially self-declared catalog capture.
+ * No capture can, by itself, authorize identity, classification or printing.
+ * Do not output product names, internal CDPRODUTO or customer data.
+ */
+const CATALOG_SCHEMA="tata.comandas.itaim-catalog-identity-capture.v1.review-only";
+const CATALOG_REVIEW_SCHEMA="tata.comandas.catalog-identity-candidates.v1.review-only";
+const VALID_ID=/^[0-9]{1,20}$/;
+const dateOnly=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&
+ !Number.isNaN(Date.parse(x+"T00:00:00Z"))&&
+ new Date(x+"T00:00:00Z").toISOString().slice(0,10)===x;
+const cleanText=x=>typeof x==="string"&&x.length>0&&x.length<=160&&
+ x.trim()===x&&!/[\x00-\x1f\x7f]/.test(x);
+function catalogHold(reason){
+ return {schema:CATALOG_REVIEW_SCHEMA,status:"HOLD",reason,queue:[],
+  found_exact_candidates:null,missing_codes:null,ambiguous_codes:null,
+  independent_capture_attested:false,current_catalog_freshness_proven:false,
+  classification_approved:false,packaging_approved:false,
+  ready_for_operations:false,print_authorized:false,effects:EFFECTS};
+}
+function compareCandidateCatalogCapture(snapshot,capture){
+ const baseline=prioritizeClassificationGaps(snapshot);
+ if(baseline.status!=="HISTORICAL_PRIORITY_QUEUE_NOT_CLASSIFICATION")
+  return catalogHold("HISTORICAL_CLASSIFICATION_SNAPSHOT_NOT_VERIFIED");
+ if(!SHAPE(capture,["schema","source_kind","source_ref","store_id",
+     "store_unit","captured_local_date","entries"])||
+   capture.schema!==CATALOG_SCHEMA||
+   capture.source_kind!=="LOCAL_READ_ONLY_CAPTURE_CLAIM"||
+   !cleanText(capture.source_ref)||capture.store_id!=="0001"||
+   capture.store_unit!=="01"||!dateOnly(capture.captured_local_date)||
+   !Array.isArray(capture.entries)||capture.entries.length>1000)
+  return catalogHold("CATALOG_CAPTURE_SCOPE_OR_METADATA_INVALID");
+ const byCode=new Map(),byId=new Map();
+ for(const entry of capture.entries){
+  if(!SHAPE(entry,["CDPRODUTO","canonical_code","product_name","active"])||
+    !VALID_ID.test(entry.CDPRODUTO)||!CODE.test(entry.canonical_code)||
+    !cleanText(entry.product_name)||typeof entry.active!=="boolean")
+   return catalogHold("CATALOG_CAPTURE_ROW_INVALID");
+  const codeList=byCode.get(entry.canonical_code)||[];
+  codeList.push(entry);byCode.set(entry.canonical_code,codeList);
+  const codes=byId.get(entry.CDPRODUTO)||new Set();
+  codes.add(entry.canonical_code);byId.set(entry.CDPRODUTO,codes);
+ }
+ let found=0,missing=0,ambiguous=0;
+ const queue=baseline.queue.map(entry=>{
+  const matches=byCode.get(entry.canonical_code)||[];
+  let status;
+  if(!matches.length){status="CODE_ABSENT_IN_SUPPLIED_CAPTURE";missing++;}
+  else if(matches.length!==1||
+          matches.some(row=>byId.get(row.CDPRODUTO).size!==1)){
+   status="AMBIGUOUS_CODE_OR_NATIVE_PRODUCT_ID";ambiguous++;
+  }else if(matches[0].active!==true){
+   status="INACTIVE_IN_SUPPLIED_CAPTURE";
+  }else{status="EXACT_IDENTITY_CANDIDATE_ONLY";found++;}
+  return {canonical_code:entry.canonical_code,
+   historical_reason_occurrences:entry.reason_occurrences,
+   status,classification_status:"UNKNOWN_NOT_HOMOLOGATED",
+   station_status:"UNKNOWN_NOT_ATTESTED",
+   packaging_status:"UNKNOWN_NOT_EVALUATED"};
+ });
+ return {schema:CATALOG_REVIEW_SCHEMA,
+  status:"CATALOG_COMPARISON_REVIEW_ONLY",
+  reason:"SUPPLIED_CAPTURE_IS_NOT_INDEPENDENT_ATTESTATION_OR_APPROVAL",
+  queue,found_exact_candidates:found,missing_codes:missing,
+  ambiguous_codes:ambiguous,independent_capture_attested:false,
+  current_catalog_freshness_proven:false,classification_approved:false,
+  packaging_approved:false,ready_for_operations:false,
+  print_authorized:false,effects:EFFECTS};
+}
+module.exports={SCHEMA,EFFECTS,prioritizeClassificationGaps,
+ CATALOG_SCHEMA,CATALOG_REVIEW_SCHEMA,compareCandidateCatalogCapture};
