@@ -56,4 +56,14 @@ Um **registro de aprovação humana isolado** não equivale à captura de evidê
 - **Desconhecido:** catálogo vigente da loja, equivalências homologadas CDPRODUTO, destinos atuais/backup, evento independente do primeiro despacho `DLV_IFO` e saída física.
 - **Bloqueio de efeito:** sem merge, deploy, serviço, SQL de escrita, impressão, spooler, sequência TATÁ, mudança fiscal ou substituição de motor sem autorização específica.
 
-**Próxima confirmação humana que realmente acelera:** consentimento específico para **enviar a consulta técnica já rascunhada à Teknisa**, sobre primeiro despacho e supressão seletiva por origem, sem pedir alteração do ambiente. Essa consulta e esta matriz podem tramitar em paralelo.
+## Decisão humana prevalente — 29/10/2026 — SEM CONTATO COM A TEKNISA
+
+**Instrução direta de César:** “Não quero enviar nada para a teknisa já disse isso salva isso”.
+
+- **É proibido enviar ou propor envio à Teknisa** de e-mails, rascunhos, tickets, mensagens, chamadas ou qualquer contato externo referente a este projeto. **Não voltar a perguntar por autorização para esse contato**, pois a opção foi rejeitada explicitamente.
+- O rascunho anterior existente no Gmail permanece **NÃO ENVIADO**. Não abrir chamados nem contratar suporte; não executar ação junto ao fornecedor.
+- A investigação deve prosseguir **somente com fontes locais/repositório, documentação já disponível, testes offline, leituras legitimamente autorizadas e validação interna pela equipe TATÁ**. Respeitar bloqueios de acesso e não contornar proteções.
+- Se uma prova não puder ser obtida sem contato externo, registrar **UNKNOWN / HOLD** em vez de simular autorização ou usar inferências; propor alternativa interna. Contato só pode ser reconsiderado caso César **mude explicitamente essa decisão por iniciativa própria**.
+- Continuam bloqueados merge, deploy, SQL de escrita, mudanças em impressoras/serviços, sequência e impressão sem autorização específica.
+
+**Rota seguinte:** validar catálogos/códigos e observações atuais de forma interna; cruzar a versão pinada da Academia, realizar regressões isoladas e preservar o HOLD sobre a primeira impressão nativa até evidência autorizada.
