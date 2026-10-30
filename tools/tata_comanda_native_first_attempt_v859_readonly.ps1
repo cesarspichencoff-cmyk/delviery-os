@@ -56,11 +56,21 @@ function Valid-Quantity([object]$raw,[object]$qty){
   return ($n -gt 0 -and $n -le 999999 -and $n -eq [decimal]$qty)
  }catch{return $false}
 }
-function Basic-Content([object]$event,[object]$decision){
+function Basic-Content([object]$event,[object]$decision,
+                       [string]$statusMode='LEGACY_A'){
  try{
   $o=$event.order
   if($null -eq $o -or $null -eq $decision){return $false}
-  if($o.IDORGCMDVENDA -cne 'DLV_IFO' -or $o.IDSTCOMANDA -cne 'A' -or
+  # Native 3/P/X and item 4 are structural-review states, never production
+  # eligibility or a first-print event. Keep legacy A counts independent.
+  if($statusMode -ceq 'OBSERVED_NATIVE_REVIEW_ONLY'){
+   if(([string]$o.IDSTCOMANDA) -cnotmatch '^(3|P|X)$'){return $false}
+   $requiredItemStatus='4'
+  }elseif($statusMode -ceq 'LEGACY_A'){
+   if($o.IDSTCOMANDA -cne 'A'){return $false}
+   $requiredItemStatus='A'
+  }else{return $false}
+  if($o.IDORGCMDVENDA -cne 'DLV_IFO' -or
      ([string]$o.NRCOMANDAEXT) -cnotmatch '^[0-9]{1,12}$' -or
      $o.observation_scan_complete -cne $true -or
      $null -eq $o.observation_rows -or
@@ -73,7 +83,7 @@ function Basic-Content([object]$event,[object]$decision){
   for($i=0;$i -lt $raw.Count;$i++){
    $r=$raw[$i];$d=$lines[$i]
    if($null -eq $r -or $null -eq $d -or
-     $r.IDSTPRCOMVEN -cne 'A' -or
+     $r.IDSTPRCOMVEN -cne $requiredItemStatus -or
      $r.CDPRODUTO -cne $d.CDPRODUTO -or
      [int]$d.item_index -ne ($i+1) -or
      [string]::IsNullOrWhiteSpace([string]$d.product_name) -or
@@ -158,6 +168,12 @@ $out=[ordered]@{
  note_parity_verified_candidates=0
  note_parity_conflicts=0
  basic_essential_content_candidates=0
+ observed_native_structural_review_candidates=0
+ observed_native_note_parity_review_candidates=0
+ observed_native_note_parity_conflicts=0
+ legacy_state_inapplicable_with_valid_native_review=0
+ observed_native_revisions_authorized_for_print=$false
+ native_first_production_dispatch_proven=$false
  paired_with_persisted_tata_sequence=0
  content_valid_but_sequence_missing=0
  sequence_scope_collisions=0
@@ -226,9 +242,31 @@ try{
   if($e.schema -cne 'deliveryos.tata-reader-stable-order-event.v1' -or
      $d.schema -cne 'deliveryos.live-shadow-decision.v1' -or
      $d.ifood_sequence -cne $e.order.NRCOMANDAEXT -or
-     $d.teknisa_sequence -cne $e.order.NRCOMANDA -or
-     -not(Basic-Content $e $d)){
+     $d.teknisa_sequence -cne $e.order.NRCOMANDA){
     $out.incomplete_essential_content++;continue
+  }
+  # Count real native 3/P/X, item 4 as REVIEW ONLY. Keep legacy A count and
+  # sequence binding unmodified; neither native status proves print readiness.
+  $nativeStructural=Basic-Content $e $d 'OBSERVED_NATIVE_REVIEW_ONLY'
+  $nativeNotesValid=$false
+  if($nativeStructural){
+   $out.observed_native_structural_review_candidates++
+   $nativeNotesValid=Note-Parity $e $d
+   if($nativeNotesValid){
+    $out.observed_native_note_parity_review_candidates++
+   }else{
+    $out.observed_native_note_parity_conflicts++
+   }
+  }
+  if(-not(Basic-Content $e $d 'LEGACY_A')){
+   if($nativeStructural -and $nativeNotesValid){
+    # A native-state valid review is not a content defect merely because it
+    # is not eligible for the legacy A-only branch and sequence check.
+    $out.legacy_state_inapplicable_with_valid_native_review++
+   }else{
+    $out.incomplete_essential_content++
+   }
+   continue
   }
   if(-not (Note-Parity $e $d)){
    $out.note_parity_conflicts++
@@ -268,6 +306,15 @@ try{
  }
  if($out.note_parity_conflicts -gt 0){
   Flag 'ITEM_OR_ORDER_OBSERVATION_PARITY_FAILED'
+ }
+ if($out.observed_native_note_parity_conflicts -gt 0){
+  Flag 'OBSERVED_NATIVE_ITEM_OR_ORDER_NOTES_CONFLICT'
+ }
+ if($out.observed_native_structural_review_candidates -gt 0){
+  Flag 'OBSERVED_NATIVE_STATES_ARE_REVIEW_ONLY_NOT_PRINT_AUTHORITY'
+ }
+ if($out.legacy_state_inapplicable_with_valid_native_review -gt 0){
+  Flag 'LEGACY_A_CRITERION_NOT_APPLICABLE_TO_OBSERVED_NATIVE_STATE'
  }
  if($out.content_valid_but_sequence_missing -gt 0){
   Flag 'EXISTING_TATA_BINDING_MISSING_FOR_SOME_ORDERS'
