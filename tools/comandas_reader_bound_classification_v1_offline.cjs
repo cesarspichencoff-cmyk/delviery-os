@@ -90,4 +90,19 @@ function bindNativeReview(pair,claims,sourceBlob=PACKAGING_SOURCE_BLOB_V63){
   packaging_approved:false,first_native_dispatch_proven:false,
   production_ready:false,print_authorized:false,effects:EFFECTS};
 }
-module.exports={SCHEMA,RECEIPT_SCHEMA,EFFECTS,bindNativeReview};
+/** Re-evaluate before consuming a previously stored review-only receipt.
+ * Never promotes a claim to current catalog, packaging, station or print fact.
+ * All revision data must match AGAIN; hashes are not external attestations.
+ */
+function verifyReviewRevisionBinding(receipt,pair,claims,sourceBlob=PACKAGING_SOURCE_BLOB_V63){
+ if(!receipt||typeof receipt!=="object"||Array.isArray(receipt)||
+    Object.getPrototypeOf(receipt)!==Object.prototype)return false;
+ const now=bindNativeReview(pair,claims,sourceBlob);
+ const expected=now.revision_binding;
+ if(now.status!=="REVIEW_CANDIDATE_ONLY"||!expected)return false;
+ const keys=Object.keys(expected);
+ return Object.keys(receipt).length===keys.length&&
+  keys.every(k=>Object.hasOwn(receipt,k)&&receipt[k]===expected[k]);
+}
+module.exports={SCHEMA,RECEIPT_SCHEMA,EFFECTS,bindNativeReview,
+ verifyReviewRevisionBinding};
