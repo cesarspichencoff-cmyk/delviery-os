@@ -67,3 +67,17 @@ Um **registro de aprovação humana isolado** não equivale à captura de evidê
 - Continuam bloqueados merge, deploy, SQL de escrita, mudanças em impressoras/serviços, sequência e impressão sem autorização específica.
 
 **Rota seguinte:** validar catálogos/códigos e observações atuais de forma interna; cruzar a versão pinada da Academia, realizar regressões isoladas e preservar o HOLD sobre a primeira impressão nativa até evidência autorizada.
+
+
+## Implementação preparada — comparador interno de identidade (30/10/2026)
+
+- **Código candidato:** `tools/comandas_packaging_classification_review_v1_offline.cjs`, função `compareCandidateCatalogCapture`. Sua regressão foi incorporada ao verificador já existente `tools/verificar_comandas_packaging_classification_review_v1_offline.cjs` executado no CI Linux/Windows.
+- **Entrada 1:** lista histórica fixa dos 14 códigos, 82 ocorrências de motivo, 200 revisões não únicas.
+- **Entrada 2:** captura interna **fornecida e autorizada por um leitor legítimo** da unidade `0001/01`, com campos `schema=tata.comandas.itaim-catalog-identity-capture.v1.review-only`, `source_kind=LOCAL_READ_ONLY_CAPTURE_CLAIM`, `source_ref`, `store_id`, `store_unit`, `captured_local_date`, `entries` contendo `CDPRODUTO`, `canonical_code`, `product_name`, `active`.
+- **Saída:** somente código canônico e estado `EXACT_IDENTITY_CANDIDATE_ONLY`, `CODE_ABSENT_IN_SUPPLIED_CAPTURE`, `AMBIGUOUS_CODE_OR_NATIVE_PRODUCT_ID` ou `INACTIVE_IN_SUPPLIED_CAPTURE`; não exporta nomes ou IDs internos.
+- **Restrições:** mesmo 14/14 correspondências **não atestam a origem/captura atual**, família, praça, regra da Academia, caixas, sacolas, kits, configuração física, sequência ou primeiro despacho. Campos `independent_capture_attested`, `current_catalog_freshness_proven`, `classification_approved`, `packaging_approved`, `ready_for_operations` e `print_authorized` permanecem falsos sempre.
+- **Proteção:** unidade errada, alegação extra de aprovação, campos inválidos e conflitos entre códigos/IDs geram HOLD/ambiguidade, sem fallback por nome. Nenhum efeito em SQL, arquivos operacionais, impressora, spooler ou rede.
+
+**Situação de acesso:** CAIXA_MOOCA foi visto online em 30/10 e serviço `TataComandaReader` em execução; acesso do conector às pastas internas `shadow`/`state` retornou `EPERM`. Não houve obtenção do catálogo atual. Respeitar a negação e **não procurar rotas alternativas para contornar a restrição**. A nova ferramenta é preparação para evidência futura legitimamente autorizada, não uma prova de loja já concluída.
+
+**Contato externo:** permanece vedado conforme decisão humana acima.
