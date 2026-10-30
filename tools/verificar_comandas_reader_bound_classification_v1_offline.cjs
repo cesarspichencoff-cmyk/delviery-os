@@ -4,7 +4,8 @@ const {syntheticReaderPairV857:fixture}=
  require("./verificar_tata_comanda_reader_native_v857_offline.cjs");
 const {snapshotHash,decisionHash}=
  require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
-const {SCHEMA,RECEIPT_SCHEMA,EFFECTS,bindNativeReview:bind}=
+const {SCHEMA,RECEIPT_SCHEMA,EFFECTS,bindNativeReview:bind,
+ verifyReviewRevisionBinding:verifyBinding}=
  require("./comandas_reader_bound_classification_v1_offline.cjs");
 const {bridgeCurrentPackagingV63,PACKAGING_SOURCE_BLOB_V63:BLOB}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
@@ -116,6 +117,25 @@ test("changed asserted classification produces different receipt without approva
  assert.notEqual(second.revision_binding.binding_sha256,
   first.revision_binding.binding_sha256);
  assert.equal(second.classification_approved,false);
+});
+test("a stored review receipt is valid only against same Reader revision and claims",()=>{
+ const d=sample(),first=call(d);
+ assert.equal(verifyBinding(first.revision_binding,d.pair,d.claims),true);
+ const other=sample();other.pair.event.order.IDSTCOMANDA="P";refresh(other.pair);
+ assert.equal(verifyBinding(first.revision_binding,other.pair,other.claims),false);
+ assert.equal(verifyBinding(first.revision_binding,d.pair,
+  d.claims.map((x,i)=>i===0?{...x,family:"OUTRA_FAMILIA"}:x)),false);
+ assert.equal(verifyBinding(first.revision_binding,d.pair,d.claims,
+  "a".repeat(40)),false);
+});
+test("fake approved receipt, extra fields and missing evidence are rejected",()=>{
+ const d=sample(),r=call(d).revision_binding;
+ for(const fake of [null,{}, {...r,classification_approved:true},
+   {...r,print_authorized:true},{...r,extra:"forged"},
+   {...r,binding_sha256:"a".repeat(64)}])
+  assert.equal(verifyBinding(fake,d.pair,d.claims),false);
+ assert.equal(verifyBinding(r,null,d.claims),false);
+ assert.equal(verifyBinding(r,d.pair,null),false);
 });
 held("claims that reuse another source index are rejected",
  d=>{d.claims[0].source_item_index=1},
