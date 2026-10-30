@@ -98,7 +98,8 @@ function compareCandidateCatalogCapture(snapshot,capture){
  const byCode=new Map(),byId=new Map();
  for(const entry of capture.entries){
   if(!SHAPE(entry,["CDPRODUTO","canonical_code","product_name","active"])||
-    !VALID_ID.test(entry.CDPRODUTO)||!CODE.test(entry.canonical_code)||
+    typeof entry.CDPRODUTO!=="string"||!VALID_ID.test(entry.CDPRODUTO)||
+    typeof entry.canonical_code!=="string"||!CODE.test(entry.canonical_code)||
     !cleanText(entry.product_name)||typeof entry.active!=="boolean")
    return catalogHold("CATALOG_CAPTURE_ROW_INVALID");
   const codeList=byCode.get(entry.canonical_code)||[];
