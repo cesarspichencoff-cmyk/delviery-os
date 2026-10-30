@@ -4,7 +4,7 @@ const {syntheticReaderPairV857:fixture}=
  require("./verificar_tata_comanda_reader_native_v857_offline.cjs");
 const {snapshotHash,decisionHash}=
  require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
-const {SCHEMA,EFFECTS,bindNativeReview:bind}=
+const {SCHEMA,RECEIPT_SCHEMA,EFFECTS,bindNativeReview:bind}=
  require("./comandas_reader_bound_classification_v1_offline.cjs");
 const {bridgeCurrentPackagingV63,PACKAGING_SOURCE_BLOB_V63:BLOB}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
@@ -38,6 +38,18 @@ function call(d,blob=BLOB){
   "print_authorized"])assert.equal(out[k],false,k);
  if(out.review)
   assert.ok(out.review.entries.every(x=>x.station_proof==="UNKNOWN"));
+ if(out.status==="HOLD")assert.equal(out.revision_binding,null);
+ if(out.revision_binding){
+  assert.equal(out.revision_binding.schema,RECEIPT_SCHEMA);
+  for(const key of ["native_snapshot_sha256",
+   "native_decision_fingerprint_sha256","classification_claims_sha256",
+   "binding_sha256"])
+   assert.match(out.revision_binding[key],/^[a-f0-9]{64}$/);
+  assert.equal(out.revision_binding.packaging_motor_git_blob,BLOB);
+  assert.equal(out.revision_binding.source_independently_attested,false);
+  assert.equal(out.revision_binding.classification_approved,false);
+  assert.equal(out.revision_binding.print_authorized,false);
+ }
  return out;
 }
 function held(name,mut,expected){
@@ -52,6 +64,10 @@ test("synthetic Reader V2 exact revision binds two code-index-quantity claims ON
  assert.equal(out.item_count,2);
  assert.equal(out.native_pair_self_consistency_checked,true);
  assert.equal(out.exact_native_items_bound,true);
+ const again=call(sample());
+ assert.deepEqual(out.revision_binding,again.revision_binding);
+ assert.equal(out.revision_binding.native_snapshot_sha256,
+  sample().pair.event.snapshot_hash);
 });
 test("bound review cannot invoke motor to infer boxes and kits",()=>{
  const out=call(sample());let calls=0;
@@ -75,6 +91,31 @@ test("claims in reversed input order still bind to native item indices",()=>{
  const d=sample();d.claims.reverse();
  const out=call(d);assert.equal(out.status,"REVIEW_CANDIDATE_ONLY");
  assert.deepEqual(out.review.entries.map(x=>x.source_item_index),[0,1]);
+ assert.deepEqual(out.revision_binding,call(sample()).revision_binding);
+});
+test("new native revision with same item claims cannot reuse old receipt",()=>{
+ const d=sample(),first=call(d);
+ d.pair.event.order.IDSTCOMANDA="P";refresh(d.pair);
+ const second=call(d);
+ assert.equal(second.status,"REVIEW_CANDIDATE_ONLY");
+ assert.notEqual(second.revision_binding.binding_sha256,
+  first.revision_binding.binding_sha256);
+ assert.notEqual(second.revision_binding.native_snapshot_sha256,
+  first.revision_binding.native_snapshot_sha256);
+ assert.equal(second.revision_binding.classification_approved,false);
+});
+test("changed asserted classification produces different receipt without approval",()=>{
+ const d=sample(),first=call(d);
+ d.claims[0].family="OUTRA_FAMILIA";
+ const second=call(d);
+ assert.equal(second.status,"REVIEW_CANDIDATE_ONLY");
+ assert.equal(second.revision_binding.native_snapshot_sha256,
+  first.revision_binding.native_snapshot_sha256);
+ assert.notEqual(second.revision_binding.classification_claims_sha256,
+  first.revision_binding.classification_claims_sha256);
+ assert.notEqual(second.revision_binding.binding_sha256,
+  first.revision_binding.binding_sha256);
+ assert.equal(second.classification_approved,false);
 });
 held("claims that reuse another source index are rejected",
  d=>{d.claims[0].source_item_index=1},
