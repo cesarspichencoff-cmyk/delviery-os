@@ -2615,7 +2615,8 @@
     "verificado": [
       "real-trip-ui 1/10 -> 10/10 e mutacoes 12/12 (docs/execution/VIAGEM_REAL_INTERFACE_2026-10-31.md)",
       "C5 rider-offline 3/9 -> 10/10, mutacoes 9/9, JUnit CI 18 classes 0 falhas (docs/execution/COMANDOS_OFFLINE_NATIVOS_2026-10-31.md)",
-      "cadeia test:entregas 242 linhas OK, identica antes e depois"
+      "cadeia test:entregas 242 linhas OK, identica antes e depois",
+      "entrada por codigo pessoal no console e na rider-mobile: real-trip-ui 12/12 (docs/execution/LIBERACAO_V1_2026-10-31.md)"
     ],
     "nao_comprovado": [
       "tablet, caixa Mooca e Xiaomi fisicos",
@@ -2624,9 +2625,14 @@
       "mutacoes do Kotlin"
     ],
     "decisoes_pendentes_do_cesar": [
-      "posse da viagem no dominio: motoboy nao age na viagem de outro (implementado em branch; 'Ok pode continuar' em 31/10 nao e aprovacao de release)",
       "ligar offline_queue_enabled por ambiente",
-      "endereco do pedido na viagem para 'Abrir rota' (dado pessoal)"
+      "endereco do pedido na viagem para 'Abrir rota' (dado pessoal)",
+      "termo de localizacao publicavel",
+      "custodia da assinatura do APK de campo",
+      "codigos de acesso por pessoa"
+    ],
+    "decisoes_aprovadas_do_cesar": [
+      "2026-10-31: posse da viagem no dominio e escolha do motoboy no console aprovadas ('Sim, pode fazer o que for necessario para finalizar o projeto com 10/10 e eficiencia para liberar')"
     ]
   }
 }
