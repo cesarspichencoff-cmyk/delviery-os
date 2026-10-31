@@ -494,6 +494,39 @@ async function main(): Promise<void> {
       assert.equal(doCaixa.json.last_error, "UNKNOWN_INTERNAL_RIDER", `o caixa não vê o próprio erro: ${doCaixa.json.last_error}`);
     });
 
+    await prova("R11 console aberto sem código pede o código pessoal; errado não entra, certo entra", async () => {
+      const ctx = await browser!.newContext({ viewport: { width: 1024, height: 768 } });
+      const page = await ctx.newPage();
+      page.on("pageerror", (e) => errosDeScript.push(`/console/ sem sessão: ${e.message}`));
+      await page.goto(`${p.base}/console/`);
+      await page.waitForSelector("#accessGate:visible", { timeout: 8000 });
+      await page.fill("#accessCode", "codigo-que-nao-existe");
+      await page.click("#accessEnter");
+      await page.waitForFunction(() => /não reconhecido/i.test(document.getElementById("accessError")?.textContent || ""), null, { timeout: 5000 });
+      assert.equal(await page.isVisible("#accessGate"), true, "código errado fechou a entrada");
+      await page.fill("#accessCode", TOKEN.tablet);
+      await page.click("#accessEnter");
+      await page.waitForSelector("#readyList input[data-order]", { timeout: 8000 });
+      assert.equal(await page.isVisible("#accessGate"), false, "a entrada continuou aberta depois do código certo");
+      await ctx.close();
+    });
+
+    await prova("R12 tela do motoboy sem código pede o código; depois mostra a viagem dele; Sair volta a pedir", async () => {
+      const ctx = await browser!.newContext({ viewport: { width: 390, height: 844 } });
+      const page = await ctx.newPage();
+      page.on("pageerror", (e) => errosDeScript.push(`/rider-mobile/ sem sessão: ${e.message}`));
+      await page.goto(`${p.base}/rider-mobile/`);
+      await page.waitForSelector("#accessGate:visible", { timeout: 8000 });
+      await page.fill("#accessCode", TOKEN.rid2);
+      await page.click("#accessEnter");
+      await page.waitForFunction(() => (document.body.innerText || "").includes("P-202"), null, { timeout: 8000 });
+      await page.click("#accessLogout");
+      await page.waitForSelector("#accessGate:visible", { timeout: 8000 });
+      const guardado = await page.evaluate(() => localStorage.getItem("entregas_pilot_token"));
+      assert.equal(guardado, null, "Sair não apagou o código guardado no aparelho");
+      await ctx.close();
+    });
+
     await prova("R10 sem erro de script nas páginas", async () => {
       assert.deepEqual(errosDeScript, []);
     });
