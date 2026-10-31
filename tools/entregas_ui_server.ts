@@ -38,6 +38,15 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+/*
+ * O console escolhe o motoboy da casa pela lista do servidor (internal_riders).
+ * Na demonstração, o único motoboy é o da semente: rid-demo, "Carlos".
+ */
+async function demoSnapshot(): Promise<Record<string, unknown>> {
+  const snap = (await facade.snapshot()) as unknown as Record<string, unknown>;
+  return { ...snap, internal_riders: [{ rider_id: "rid-demo", label: "Carlos" }] };
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
   try {
@@ -74,7 +83,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
     if (url.pathname === "/api/snapshot" && req.method === "GET") {
-      return json(res, 200, await facade.snapshot());
+      return json(res, 200, await demoSnapshot());
     }
     if (url.pathname === "/api/actor" && req.method === "POST") {
       const body = JSON.parse(await readBody(req)) as {
@@ -82,14 +91,14 @@ const server = http.createServer(async (req, res) => {
         role: OperationalRole;
       };
       facade.setActor(body.actor_id, body.role);
-      return json(res, 200, await facade.snapshot());
+      return json(res, 200, await demoSnapshot());
     }
     if (url.pathname === "/api/connection" && req.method === "POST") {
       const body = JSON.parse(await readBody(req)) as {
         connection: "online" | "offline" | "syncing";
       };
       facade.setConnection(body.connection);
-      return json(res, 200, await facade.snapshot());
+      return json(res, 200, await demoSnapshot());
     }
     if (url.pathname === "/api/command" && req.method === "POST") {
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
@@ -106,7 +115,7 @@ const server = http.createServer(async (req, res) => {
         );
       }
       const result = await facade.execute(body as never);
-      const snap = await facade.snapshot();
+      const snap = await demoSnapshot();
       // 200 sempre: rejeição de domínio é negócio, não falha de rede/UI
       return json(res, 200, { result, snapshot: snap });
     }

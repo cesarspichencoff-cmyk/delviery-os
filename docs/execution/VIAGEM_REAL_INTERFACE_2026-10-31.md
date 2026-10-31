@@ -71,6 +71,23 @@ terminal em todos → R9; linha do tempo alheia → R3. A camada R4 com snapshot
 vermelha na primeira versão desta correção (a tela pintava antes de saber quem era o motoboy) e foi
 corrigida usando o ator do próprio snapshot.
 
+**CI no HEAD exato `a2df795d`:** produto
+[41158789335](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41158789335) e Android
+[41158789415](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41158789415), ambos
+`success`. Conferido passo a passo (o workflow tem `continue-on-error`): passo 42 "Primeira viagem
+real pela interface" e 43 "Ponte da rider-mobile" `success`; passo 14 (cluster PostgreSQL, com o
+fixture novo) `success`; passo 17 (P0 idempotência HTTP) `success`; gates finais P0 `skipped`.
+
+**Mutações antigas da ponte** (`test:entregas:rider-bridge:mutacoes`, fora do CI): **25/26, cegas 0**.
+MR4 passou ao gate da regra e foi acusado. **MS4** ("caminho absoluto de configuração ignorado") é
+acusado, mas não pela assinatura `term_not_publishable`: a suíte para antes, por timeout. O mesmo
+acontece em `fde3af8f`, antes das correções de produto — a assinatura envelheceu nos dias em que a
+suíte esteve morta. Pendente; não afrouxada.
+
+**Demo** (`tools/entregas_ui_server.ts`): o console passou a exigir a lista de motoboys do servidor;
+a demonstração declara o seu (`rid-demo`, "Carlos"). Conferido no Chromium: um motoboy
+pré-escolhido, viagem montada, sem erro de script.
+
 Reprodução: `npm run -s test:entregas:real-trip-ui` e `npm run -s test:entregas:real-trip-ui:mutacoes`
 (Chromium do Playwright do projeto; no contêiner sem a revisão 1228, `PLAYWRIGHT_BROWSERS_PATH`
 apontando links para a 1243).
