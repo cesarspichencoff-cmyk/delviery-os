@@ -72,7 +72,8 @@ function portaLivre(): Promise<number> {
 const TERMO_DE_TESTE = {
   version: "9.9.9-teste",
   material_version: "teste-1",
-  unit_id: "UNIDADE-TESTE",
+  // O boot ITAIM-only recusa termo de outra unidade (ITAIM_ONLY_TERM_UNIT_MISMATCH).
+  unit_id: "ITAIM",
   title: "TERMO DE TESTE — SEM VALOR LEGAL",
   body: "Texto sintético de teste. A localização é usada só durante a viagem ativa. SEM VALOR LEGAL.",
   effective_date: "2026-01-01",
@@ -107,8 +108,15 @@ async function subirPiloto(opcoes: { flagGps: boolean; termoPublicavel: boolean 
     ENTREGAS_DATA_DIR: join(dir, "dados"),
     ENTREGAS_TERM_CONFIG: join(dir, "termo.json"),
     ENTREGAS_GPS_FLAGS_CONFIG: join(dir, "flags.json"),
-    ENTREGAS_UNIT_CONFIG: join(dir, "sem-unidade.json"),
   };
+  // Cenário "sem unidade": desde o boot ITAIM-only (02554be4), arquivo de
+  // unidade DECLARADO e ausente é fatal — o piloto não subia e esta suíte
+  // morria antes do primeiro cenário. Sem unidade é não declarar; o padrão
+  // relativo à raiz precisa estar ausente para o cenário continuar sendo este.
+  delete (env as Record<string, string | undefined>).ENTREGAS_UNIT_CONFIG;
+  if (existsSync(join(RAIZ, "config", "entregas-unit-itaim.json"))) {
+    throw new Error("config/entregas-unit-itaim.json presente: o cenário sem unidade exige ausência");
+  }
   delete (env as Record<string, string | undefined>).ENTREGAS_BIND;
   delete (env as Record<string, string | undefined>).ENTREGAS_HTTPS;
   const separador = process.platform === "win32" ? ";" : ":";
@@ -136,11 +144,15 @@ async function subirPiloto(opcoes: { flagGps: boolean; termoPublicavel: boolean 
     }
     await new Promise((r) => setTimeout(r, 250));
   }
-  derrubar({ base, processo, dir, log });
+  await derrubar({ base, processo, dir, log });
   throw new Error(`piloto não subiu: ${log.join("").slice(-400)}`);
 }
 
-function derrubar(p: Piloto): void {
+async function derrubar(p: Piloto): Promise<void> {
+  const saiu =
+    p.processo.exitCode !== null || p.processo.signalCode !== null
+      ? Promise.resolve()
+      : new Promise<void>((ok) => p.processo.once("exit", () => ok()));
   try {
     if (p.processo.pid) {
       if (process.platform === "win32") {
@@ -152,7 +164,10 @@ function derrubar(p: Piloto): void {
   } catch {
     /* já saiu */
   }
-  rmSync(p.dir, { recursive: true, force: true });
+  // O piloto ainda grava em dados/ ao receber SIGTERM: apagar antes da saída
+  // dava ENOTEMPTY e derrubava a suíte depois do cenário A.
+  await Promise.race([saiu, new Promise((ok) => setTimeout(ok, 10_000))]);
+  rmSync(p.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
 async function comoConsole(p: Piloto, caminho: string, corpo: unknown, token = TOKEN_CONSOLE): Promise<Record<string, unknown>> {
@@ -372,7 +387,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
 
@@ -402,7 +417,7 @@ async function main(): Promise<void> {
         });
       } finally {
         await ctx.close();
-        derrubar(p);
+        await derrubar(p);
       }
     }
 
@@ -479,7 +494,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
 
@@ -553,7 +568,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
 
@@ -581,7 +596,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -603,7 +618,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -623,7 +638,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -641,7 +656,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
 
@@ -663,7 +678,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -683,7 +698,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -705,7 +720,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -727,7 +742,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
     {
@@ -750,7 +765,7 @@ async function main(): Promise<void> {
         });
         await ctx.close();
       } finally {
-        derrubar(p);
+        await derrubar(p);
       }
     }
   } finally {

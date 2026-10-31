@@ -25,6 +25,7 @@
     "test:entregas:rider-capture": "npx tsc && node dist/src/entregas/ui/run-rider-capture-tests.js",
     "test:entregas:rider-bridge": "npx tsx src/entregas/ui/run-rider-bridge-tests.ts",
     "test:entregas:rider-bridge:mutacoes": "npx tsx src/entregas/ui/run-rider-bridge-mutation-tests.ts",
+    "test:entregas:real-trip-ui": "npx tsx src/entregas/ui/run-real-trip-ui-tests.ts",
     "ui:entregas": "npx tsc && node dist/tools/entregas_ui_server.js",
     "ui:entregas:pilot": "npx tsc && node dist/tools/entregas_pilot_server.js",
     "test:entregas:pilot-gate": "npx tsc && node dist/src/entregas/pilot/run-pilot-gate-tests.js",
