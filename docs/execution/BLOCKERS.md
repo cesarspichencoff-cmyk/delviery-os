@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-20"
+  atualizado_em: "2026-10-31"
   state_basis: cd8ed14
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -480,6 +480,13 @@ corrompendo exatamente a ordenação que o servidor usa.
 nesta lista. A única superfície restante é uma capacidade futura explícita:
 **comandos offline nativos = NOT_IMPLEMENTED**, sem impacto no GPS offline já
 provado.
+
+> **SUCESSÃO 2026-10-31 (`docs/execution/VIAGEM_REAL_INTERFACE_2026-10-31.md`).** O caminho
+> online deixou de perder ou duplicar a ação depois de queda de rede: o corpo da intenção fica
+> congelado até o servidor responder e o novo toque reenvia a MESMA ação. Isso **não** fecha C5:
+> com o app fechado durante a queda, a intenção ainda se perde; `outbox_event` segue sem produtor.
+> Achado do mesmo dia, fechado: o contador de `command_id` por página fazia o segundo terminal
+> (tablet/caixa) e o app reaberto terem ação legítima recusada como `DUPLICATE_COMMAND`.
 
 ---
 
