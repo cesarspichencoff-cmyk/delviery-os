@@ -108,3 +108,10 @@ apontando links para a 1243).
 
 CI no HEAD exato desta branch; depois, com aprovação, levar o mesmo percurso ao tablet e ao Xiaomi
 no laboratório Mooca: dois terminais, um motoboy, saída→chegada→entrega→retorno, com queda de rede.
+
+## Continuação (31/10)
+
+César respondeu "Ok pode continuar" a este relatório. Registrado como autorização para seguir na
+branch isolada — **não** como aprovação de release da regra de posse nem da escolha de motoboy no
+console, que seguem como decisões dele antes de qualquer merge. A continuação fechou o C5 em
+`docs/execution/COMANDOS_OFFLINE_NATIVOS_2026-10-31.md`.

@@ -5,7 +5,7 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-20",
+    "atualizado_em": "2026-10-31",
     "state_basis": "990710189ab22b94a73192d495f4147ec1980b86",
     "observa": [
       "src/product/",
@@ -174,6 +174,12 @@
       "motivo": "A CAIXA nao e acessivel deste ambiente; instalar e reiniciar o servico real so com Desktop Commander e a autorizacao ja registrada.",
       "substituto": "causa raiz reproduzida em SQL Server 2022 (.NET 8); cutover inteiro executado com SCM simulado (7/7); prova em Windows real com SCM e host C# v2 reais preparada (job windows-real-scm)",
       "o_que_falta": "push autorizado para a prova Windows; V2 lido por uma pessoa; Plan e Apply na CAIXA com recibo publicado"
+    },
+    {
+      "item": "Comandos offline nativos no aparelho fisico",
+      "motivo": "C5 implementado e provado em navegador com ponte falsa e no JUnit do CI; nada rodou em aparelho.",
+      "substituto": "test:entregas:rider-offline 10/10 e mutacoes 9/9; OperationalEventRecorderTest no CI",
+      "o_que_falta": "Xiaomi em modo aviao na porta, com flag ligada em laboratorio de modo arquivo e chave de delegacao; conferir aplicacao unica no servidor"
     }
   ],
   "protegido_nao_tocar": {
@@ -2602,5 +2608,25 @@
     },
     "result": "Itaim available; Vila-Lab own pre0003 UNKNOWN unavailable; 401/403 guard; no writes",
     "limit": "Synthetic only. No real operator session, production RLS, operational data, merge/deploy/pilot."
+  },
+  "deliveryos_trip_identity_offline_20261031": {
+    "branch": "claude/deliveryos-v1-trip-identity-20261031",
+    "base": "5a705b5c283a326819c99297278f15ddc835f707",
+    "verificado": [
+      "real-trip-ui 1/10 -> 10/10 e mutacoes 12/12 (docs/execution/VIAGEM_REAL_INTERFACE_2026-10-31.md)",
+      "C5 rider-offline 3/9 -> 10/10, mutacoes 9/9, JUnit CI 18 classes 0 falhas (docs/execution/COMANDOS_OFFLINE_NATIVOS_2026-10-31.md)",
+      "cadeia test:entregas 242 linhas OK, identica antes e depois"
+    ],
+    "nao_comprovado": [
+      "tablet, caixa Mooca e Xiaomi fisicos",
+      "envio real com credencial delegada pela plataforma",
+      "fila do aparelho em PostgreSQL (sem recibo por unidade nao e anunciada)",
+      "mutacoes do Kotlin"
+    ],
+    "decisoes_pendentes_do_cesar": [
+      "posse da viagem no dominio: motoboy nao age na viagem de outro (implementado em branch; 'Ok pode continuar' em 31/10 nao e aprovacao de release)",
+      "ligar offline_queue_enabled por ambiente",
+      "endereco do pedido na viagem para 'Abrir rota' (dado pessoal)"
+    ]
   }
 }

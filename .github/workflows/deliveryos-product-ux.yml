@@ -179,6 +179,10 @@ jobs:
       # identidade de comando única e estável, posse da viagem e snapshot mínimo.
       - name: Primeira viagem real pela interface (2 terminais, motoboys) no Chromium
         run: npx tsx src/entregas/ui/run-real-trip-ui-tests.ts
+      # C5: a ação do motoboy sem rede entra na fila do aparelho e o servidor a
+      # aplica uma vez quando a rede volta; fila só anunciada quando aceitável.
+      - name: Comandos offline do motoboy (fila do aparelho, ponte falsa) no Chromium
+        run: npx tsx src/entregas/ui/run-rider-offline-commands-tests.ts
       # Estava fora de todo workflow e morta desde o boot ITAIM-only (25/10).
       - name: Ponte da rider-mobile com o Android (Q-018) no Chromium
         run: npx tsx src/entregas/ui/run-rider-bridge-tests.ts

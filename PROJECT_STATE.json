@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "claude/deliveryos-v1-trip-identity-20261031",
-  "checkpoint_type": "REAL_TRIP_UI_LOCAL_GREEN_CI_PENDING",
-  "state_basis_head": "30c7a2ead39031242af2c7edf9f2104beb8b0198",
+  "checkpoint_type": "C5_OFFLINE_COMMANDS_CI_GREEN_DEVICE_PENDING",
+  "state_basis_head": "ee36566b9d75204691e9ff22ff1839206d3d059b",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -92,9 +92,12 @@
     "Reader investigation and keyboard revalidation at c4804a7: product CI40783412158 and Android CI40783412208 both success. No host installation.",
     "2026-10-31 real UI proof on 5a705b5c: console in two fresh terminals + rider-mobile in Chromium vs real pilot failed 9/10: second terminal DUPLICATE_COMMAND (page counter ct-1), trips assigned to rid-demo, rider 2 saw rider 1 trip/order, domain accepted cross-rider departure, retry after lost response created a second action.",
     "2026-10-31 fix on claude/deliveryos-v1-trip-identity-20261031: crypto command identity frozen until server answer, console chooses configured internal rider, facade refuses unknown courier, domain assertOwnTrip, rider snapshot minimized, timeline of other trip 403, last error per actor. Real-trip UI 10/10 locally; test:entregas chain identical (242 OK).",
-    "2026-10-31 test:entregas:rider-bridge was outside every workflow and dead since 02554be4 (declared missing unit file, term of other unit, cleanup race). Harness-only fix: 31/31. E2 now proves the opposite of its old expectation (no cross-rider departure)."
+    "2026-10-31 test:entregas:rider-bridge was outside every workflow and dead since 02554be4 (declared missing unit file, term of other unit, cleanup race). Harness-only fix: 31/31. E2 now proves the opposite of its old expectation (no cross-rider departure).",
+    "2026-10-31 C5: outbox_event gained a producer (OperationalEventRecorder + bridge recordOperationalEvent). rider-offline 3/9 -> 10/10 with real pilot in file mode and fake bridge; mutations 9/9 zero blind; CI ee36566b product 41218396348 and Android 41218396357 success, JUnit 18 classes 211 tests 0 failures.",
+    "2026-10-31 /api/policies advertises offline_queue_enabled only with flag + durable receipts + delegation key; Mooca PostgreSQL mode keeps riders online until per-unit receipts exist.",
+    "2026-10-31 Cesar answered 'Ok pode continuar' to the real-trip report; recorded as permission to continue on the isolated branch, not as release approval of the ownership rule."
   ],
-  "next_action": "Get CI green on the exact HEAD of claude/deliveryos-v1-trip-identity-20261031 (product + Android). Then, with Cesar's authorization, run the same path physically in the Mooca lab: tablet + caixa consoles and one Xiaomi rider, departure->arrival->delivery->return with network loss. Native offline commands (BLOCKERS C5) remain the next code gap.",
+  "next_action": "Cesar decides: (1) ownership rule and console rider choice for release; (2) offline_queue_enabled per environment. Then authorized lab run: file mode + lab delegation key + flag on; tablet + caixa consoles and one Xiaomi rider; departure->arrival->delivery offline at the door, network back, server applies once. PostgreSQL offline needs per-unit receipts (0011) by separate approval.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -189,6 +192,15 @@
     "after": "10/10",
     "mutations": "src/entregas/ui/run-real-trip-ui-mutation-tests.ts (result in evidence doc)",
     "evidence": "docs/execution/VIAGEM_REAL_INTERFACE_2026-10-31.md",
-    "installed_anywhere": false
+    "installed_anywhere": false,
+    "c5_offline_commands": {
+      "suite": "src/entregas/ui/run-rider-offline-commands-tests.ts",
+      "before": "3/9",
+      "after": "10/10",
+      "mutations": "9/9 zero blind",
+      "android_junit_ci": "suites=18 tests=211 failures=0",
+      "evidence": "docs/execution/COMANDOS_OFFLINE_NATIVOS_2026-10-31.md",
+      "installed_anywhere": false
+    }
   }
 }

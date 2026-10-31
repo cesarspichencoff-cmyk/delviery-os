@@ -487,6 +487,14 @@ provado.
 > com o app fechado durante a queda, a intenção ainda se perde; `outbox_event` segue sem produtor.
 > Achado do mesmo dia, fechado: o contador de `command_id` por página fazia o segundo terminal
 > (tablet/caixa) e o app reaberto terem ação legítima recusada como `DUPLICATE_COMMAND`.
+>
+> **SUCESSÃO 2026-10-31, C5 (`docs/execution/COMANDOS_OFFLINE_NATIVOS_2026-10-31.md`).**
+> `outbox_event` ganhou produtor: `OperationalEventRecorder` + ponte `recordOperationalEvent`.
+> A rider-mobile usa a fila do aparelho **só quando o servidor a anuncia** (flag
+> `offline_queue_enabled` + recibos duráveis + chave de delegação). Provado: navegador 10/10 com
+> ponte falsa e piloto real em modo arquivo, mutações 9/9 sem cegas, JUnit no CI (18 classes, 0
+> falhas). **Não provado:** aparelho físico; envio real com credencial delegada; modo PostgreSQL
+> (sem recibo por unidade a fila não é anunciada e o motoboy segue online).
 
 ---
 
