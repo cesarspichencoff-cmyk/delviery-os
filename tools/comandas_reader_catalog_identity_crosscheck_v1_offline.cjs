@@ -70,10 +70,12 @@ function crosscheckReaderCatalogIdentity(pair,capture){
   const rows=byId.get(item.CDPRODUTO)||[];
   let state;
   if(!rows.length)state="NATIVE_PRODUCT_ID_ABSENT_IN_SUPPLIED_CAPTURE";
-  else if(rows.length!==1||byCode.get(item.canonical_code)?.length!==1)
+  else if(rows.length!==1)
    state="AMBIGUOUS_CATALOG_IDENTITY";
   else if(rows[0].canonical_code!==item.canonical_code)
    state="NATIVE_PRODUCT_CODE_CONFLICT";
+  else if(byCode.get(item.canonical_code)?.length!==1)
+   state="AMBIGUOUS_CATALOG_IDENTITY";
   else if(!rows[0].active)state="INACTIVE_IN_SUPPLIED_CAPTURE";
   else if(norm(rows[0].product_name)!==norm(item.product_name))
    state="PRODUCT_NAME_CONFLICT";
