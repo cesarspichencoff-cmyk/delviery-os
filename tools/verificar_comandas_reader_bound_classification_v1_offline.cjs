@@ -180,3 +180,6 @@ test("missing source, missing claim and source SHA drift hold without any printi
 });
 console.log("COMANDAS_READER_CLASSIFICATION_BINDING="+n+"/"+n+
  " NATIVE_PAIR_SELF_CONSISTENCY_ONLY NO_PRINT NO_LIVE_ATTESTATION");
+
+// Exact Reader CDPRODUTO -> internal catalog candidate (offline, no effects).
+require("./verificar_comandas_reader_catalog_identity_crosscheck_v1_offline.cjs");
