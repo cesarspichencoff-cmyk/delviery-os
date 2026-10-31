@@ -7,6 +7,7 @@ on:
       - integration/deliveryos-product-ux-android-20261009
       - integration/deliveryos-q025-review-20261009
       - review/deliveryos-v1-role-convergence-20261022
+      - claude/deliveryos-v1-trip-identity-20261031
   workflow_dispatch:
 permissions:
   contents: read

@@ -30,7 +30,7 @@ import { DomainError, type Delivery, type Handoff } from "../foundation/types";
 import { domainEventToPublic } from "../integration/public-event-builder";
 import type { UnitOfWork } from "../persistence/ports";
 import { canonicalInboundFingerprint, classifyInboundReceipt, InboundReceiptConflictError, InboundReceiptCommandIdCollisionError, type DurableInboundReceipt } from "../persistence/inbound-receipt";
-import { assertCan, requireActor, MANUAL_CLOSE_ROLES, type ActorContext } from "./auth";
+import { assertCan, assertOwnTrip, requireActor, MANUAL_CLOSE_ROLES, type ActorContext } from "./auth";
 import type { Command } from "./commands";
 import {
   openOccurrence,
@@ -371,6 +371,7 @@ export class EntregasApplicationService {
     cmd: Extract<Command, { type: "CreateTrip" }>,
   ): Promise<AppResult> {
     assertCan(cmd.actor, "trip_mutate");
+    assertOwnTrip(cmd.actor, cmd.courier_actor_id);
     const log = new InMemoryEventLog();
     const r = createTrip(log, {
       trip_id: cmd.trip_id,
@@ -391,6 +392,7 @@ export class EntregasApplicationService {
   ): Promise<AppResult> {
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     if (rec.trip.state !== "preparando_saida") {
       assertCan(cmd.actor, "add_after_start");
     } else {
@@ -425,6 +427,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "trip_mutate");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const agg: TripAggregate = {
       trip: rec.trip,
@@ -450,6 +453,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "trip_start");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const agg: TripAggregate = {
       trip: rec.trip,
@@ -505,6 +509,7 @@ export class EntregasApplicationService {
     assertCan(args.actor, "trip_start");
     const rec = await this.uow.trips.get(args.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(args.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const map = new Map(rec.deliveries.map((d) => [d.delivery_id, d]));
     const d = map.get(args.delivery_id);
@@ -552,6 +557,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "delivery_confirm");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const map = new Map(rec.deliveries.map((d) => [d.delivery_id, d]));
     const d = map.get(cmd.delivery_id);
@@ -584,6 +590,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "delivery_confirm");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const map = new Map(rec.deliveries.map((d) => [d.delivery_id, d]));
     const d = map.get(cmd.delivery_id);
@@ -612,6 +619,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "trip_return");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const agg: TripAggregate = {
       trip: rec.trip,
@@ -659,6 +667,7 @@ export class EntregasApplicationService {
     }
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const agg: TripAggregate = {
       trip: rec.trip,
@@ -856,6 +865,7 @@ export class EntregasApplicationService {
     cmd: Extract<Command, { type: "SetRiderPause" }>,
   ): Promise<AppResult> {
     requireActor(cmd.actor);
+    assertOwnTrip(cmd.actor, cmd.rider_id);
     let rider = await this.uow.riders.get(cmd.rider_id);
     if (!rider) {
       rider = createRiderState(cmd.rider_id, cmd.unit_id, cmd.occurred_at);
@@ -875,6 +885,7 @@ export class EntregasApplicationService {
     cmd: Extract<Command, { type: "SetRiderSupport" }>,
   ): Promise<AppResult> {
     requireActor(cmd.actor);
+    assertOwnTrip(cmd.actor, cmd.rider_id);
     let rider = await this.uow.riders.get(cmd.rider_id);
     if (!rider) {
       rider = createRiderState(cmd.rider_id, cmd.unit_id, cmd.occurred_at);
@@ -896,6 +907,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "delivery_confirm");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const map = new Map(rec.deliveries.map((d) => [d.delivery_id, d]));
     const d = map.get(cmd.delivery_id);
@@ -922,6 +934,7 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "trip_mutate");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
     const log = new InMemoryEventLog();
     const map = new Map(rec.deliveries.map((d) => [d.delivery_id, d]));
     const d = map.get(cmd.delivery_id);
@@ -953,6 +966,8 @@ export class EntregasApplicationService {
     assertCan(cmd.actor, "trip_mutate");
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
+    assertOwnTrip(cmd.actor, rec.trip.courier_actor_id);
+    assertOwnTrip(cmd.actor, cmd.courier_actor_id);
     if (rec.trip.state !== "preparando_saida") {
       return {
         ok: false,

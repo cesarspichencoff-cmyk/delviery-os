@@ -4,7 +4,7 @@
  * - Checkboxes acessíveis; Entregar bloqueado de verdade se faltar confirmação
  * Domínio: StartHandoff / ConfirmHandoff (intacto)
  */
-import { snapshot, command, renderError } from "../shared/client.js";
+import { snapshot, renderError, newCommandId, createPendingCommands } from "../shared/client.js";
 
 const $ = (id) => document.getElementById(id);
 const app = () => document.getElementById("app");
@@ -12,8 +12,9 @@ const app = () => document.getElementById("app");
 const STORAGE_SOUND = "entregas_ifood_sound";
 const ALERT_MS = 4500;
 const nowIso = () => new Date().toISOString();
-let seq = 1;
-const cid = (p) => `${p}-${seq++}`;
+const cid = (p) => newCommandId(p);
+// Toque repetido depois de queda de rede reenvia a MESMA ação (shared/client.js).
+const pending = createPendingCommands();
 
 /** @typedef {'ready'|'in_hand'|'checking'|'done'} OrderUiState */
 
@@ -646,18 +647,24 @@ async function fetchOrder(id) {
   const resp = $("fldResponsible");
   if (resp) o.responsible = resp.value.trim() || o.responsible;
   try {
-    const hid = `HO-${Date.now().toString(36)}`;
-    const res = await command({
-      type: "StartHandoff",
-      command_id: cid("hs"),
-      occurred_at: nowIso(),
-      unit_id: "demo-unit",
-      handoff_id: hid,
-      external_order_ref: o.platform_ref,
-      actor: { actor_id: "ops-demo", role: "operador_expedicao" },
-    });
+    let sent = null;
+    const res = await pending.run(
+      `hs:${o.platform_ref}`,
+      () => ({
+        type: "StartHandoff",
+        command_id: cid("hs"),
+        occurred_at: nowIso(),
+        unit_id: "demo-unit",
+        handoff_id: newCommandId("HO"),
+        external_order_ref: o.platform_ref,
+        actor: { actor_id: "ops-demo", role: "operador_expedicao" },
+      }),
+      (b) => { sent = b; },
+    );
     if (!res.result?.ok) throw new Error(res.result?.error || "falha");
-    o.expedition_id = hid;
+    // No reenvio, o corpo é o congelado da primeira tentativa: a expedição é
+    // a dela, não uma nova.
+    o.expedition_id = sent.handoff_id;
     o.state = "in_hand";
     o.just_ready = false;
     activeId = id;
@@ -692,7 +699,7 @@ async function deliverOrder(id) {
   }
   renderError($("errorBox"), null);
   try {
-    const res = await command({
+    const res = await pending.run(`hc:${o.expedition_id}`, () => ({
       type: "ConfirmHandoff",
       command_id: cid("hc"),
       occurred_at: nowIso(),
@@ -707,7 +714,7 @@ async function deliverOrder(id) {
       volumes: { expected: o.bags, delivered: o.bags },
       order_identified: true,
       actor: { actor_id: "ops-demo", role: "operador_expedicao" },
-    });
+    }));
     if (!res.result?.ok) {
       renderError($("errorBox"), res.result?.error || "Não foi possível concluir");
       return;

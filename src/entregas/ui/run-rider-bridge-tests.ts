@@ -96,15 +96,32 @@ interface Piloto {
   log: string[];
 }
 
-async function subirPiloto(opcoes: { flagGps: boolean; termoPublicavel: boolean }): Promise<Piloto> {
+async function subirPiloto(opcoes: {
+  flagGps: boolean;
+  termoPublicavel: boolean;
+  /** Outro motoboy da casa no cadastro (cópia do exemplo), para cenários de posse. */
+  outroMotoboy?: string;
+}): Promise<Piloto> {
   const dir = mkdtempSync(join(tmpdir(), "rider-bridge-"));
   const porta = await portaLivre();
+  let configPiloto = "config/entregas-pilot.example.json";
+  if (opcoes.outroMotoboy) {
+    const exemplo = JSON.parse(readFileSync(join(RAIZ, configPiloto), "utf8")) as { users: unknown[] };
+    exemplo.users.push({
+      actor_id: opcoes.outroMotoboy,
+      role: "motoboy_interno",
+      label: "Outro motoboy (teste)",
+      token: "CHANGE_ME_OTHER_RIDER_TOKEN",
+    });
+    configPiloto = join(dir, "pilot.json");
+    writeFileSync(configPiloto, JSON.stringify(exemplo));
+  }
   writeFileSync(join(dir, "termo.json"), JSON.stringify(opcoes.termoPublicavel ? TERMO_DE_TESTE : {}));
   writeFileSync(join(dir, "flags.json"), JSON.stringify({ gps_capture_enabled: opcoes.flagGps }));
   const env = {
     ...process.env,
     ENTREGAS_UI_PORT: String(porta),
-    ENTREGAS_PILOT_CONFIG: "config/entregas-pilot.example.json",
+    ENTREGAS_PILOT_CONFIG: configPiloto,
     ENTREGAS_DATA_DIR: join(dir, "dados"),
     ENTREGAS_TERM_CONFIG: join(dir, "termo.json"),
     ENTREGAS_GPS_FLAGS_CONFIG: join(dir, "flags.json"),
@@ -682,19 +699,35 @@ async function main(): Promise<void> {
       }
     }
     {
-      const p = await subirPiloto({ flagGps: true, termoPublicavel: true });
+      const p = await subirPiloto({ flagGps: true, termoPublicavel: true, outroMotoboy: "rid-outro" });
       try {
         await montarViagem(p, "T-DE-OUTRO", "rid-outro");
         await respostaNoServidor(p, "accepted");
         const { ctx, page } = await abrir(browser, p, { permissao: "concedida", concedeAoPedir: true });
-        await teste("E2 viagem de OUTRO motoboy: saída confirmada, e mesmo assim nada liga neste aparelho", async () => {
+        // Antes (5a705b5c) este cenário confirmava a saída da viagem de outro
+        // motoboy e só o portão do GPS segurava. Agora a viagem nem chega a
+        // este motoboy, o domínio recusa a saída por ele, e nada liga.
+        await teste("E2 viagem de OUTRO motoboy: não aparece, não sai por este motoboy, e nada liga neste aparelho", async () => {
           await esperarChamada(page, "recordTermAcknowledgement");
-          await confirmarSaida(page);
-          for (let i = 0; i < 30 && (await estadoDaViagem(p, "T-DE-OUTRO")) !== "em_rota"; i++) await pausa(100);
-          assert.equal(await estadoDaViagem(p, "T-DE-OUTRO"), "em_rota");
+          await pausa(800);
+          const naTela = await page.evaluate(() => document.body.innerText);
+          assert.ok(!naTela.includes("P-T-DE-OUTRO"), "a tela mostra o pedido da viagem de outro motoboy");
+          const r = await fetch(`${p.base}/api/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN_MOTOBOY}` },
+            body: JSON.stringify({
+              type: "ConfirmTripDeparture",
+              command_id: "dep-e2-invasor",
+              occurred_at: new Date().toISOString(),
+              unit_id: "ITAIM",
+              trip_id: "T-DE-OUTRO",
+            }),
+          });
+          const corpo = (await r.json()) as { result?: { ok?: boolean } };
+          assert.equal(corpo.result?.ok, false, "o domínio aceitou a saída da viagem de outro motoboy");
+          assert.equal(await estadoDaViagem(p, "T-DE-OUTRO"), "preparando_saida");
           await pausa(1000);
           assert.deepEqual(await chamadasDe(page, "startTripCapture"), []);
-          await page.waitForFunction(() => (document.getElementById("gpsStatus")?.textContent || "").includes("VIAGEM DE OUTRO MOTOBOY"), null, { timeout: 5000 });
         });
         await ctx.close();
       } finally {

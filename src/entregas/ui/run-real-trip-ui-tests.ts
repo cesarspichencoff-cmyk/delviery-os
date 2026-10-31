@@ -324,6 +324,10 @@ async function main(): Promise<void> {
       assert.equal(((s.json.handoffs ?? []) as unknown[]).length, 0, "motoboy vê expedições iFood");
       const riders = (s.json.riders ?? []) as Array<{ rider_id: string }>;
       assert.ok(riders.every((r) => r.rider_id === "rid-2"), `motoboy vê outros motoboys: ${riders.map((r) => r.rider_id).join(",")}`);
+      const alheia = await api(p, "/api/trip/timeline?trip_id=T-SEED-1", TOKEN.rid2);
+      assert.equal(alheia.status, 403, `linha do tempo da viagem de outro motoboy: ${alheia.status}`);
+      const propria = await api(p, "/api/trip/timeline?trip_id=T-SEED-2", TOKEN.rid2);
+      assert.equal(propria.status, 200, `linha do tempo da própria viagem: ${propria.status}`);
     });
 
     await prova("R4 a tela do motoboy 2 mostra a viagem DELE, não a do motoboy 1", async () => {
@@ -334,6 +338,24 @@ async function main(): Promise<void> {
       const pedidosNaTela = await m2.evaluate(() => document.body.innerText);
       assert.ok(!pedidosNaTela.includes("P-201"), "a tela do motoboy 2 mostra o pedido do motoboy 1");
       await m2.context().close();
+      // Segunda camada: mesmo que uma resposta mais larga chegue (servidor
+      // antigo, proxy, configuração errada), a página escolhe a viagem DELE.
+      const forjada = await paginaLogada(browser!, p, "/rider-mobile/", TOKEN.rid2, { width: 390, height: 844 });
+      await forjada.route("**/api/snapshot", async (route) => {
+        const real = await route.fetch();
+        const corpo = (await real.json()) as { trips?: ViagemSnap[] };
+        const alheia: ViagemSnap = {
+          trip_id: "T-FORJADA-OUTRO", state: "preparando_saida", courier_actor_id: "rid-1",
+          deliveries: [{ delivery_id: "D-P-FORJADO", order_ref: "P-FORJADO", state: "aguardando_saida" }],
+        };
+        await route.fulfill({ response: real, json: { ...corpo, trips: [alheia, ...(corpo.trips ?? [])] } });
+      });
+      await forjada.reload();
+      await forjada.waitForLoadState("networkidle");
+      await forjada.waitForTimeout(400);
+      const naTelaForjada = await forjada.evaluate(() => document.body.innerText);
+      assert.ok(!naTelaForjada.includes("P-FORJADO"), "com snapshot largo, a tela mostrou a viagem de outro motoboy");
+      await forjada.context().close();
     });
 
     await prova("R5 o domínio recusa motoboy confirmando a saída da viagem de outro, sem mudar o estado", async () => {
@@ -465,6 +487,11 @@ async function main(): Promise<void> {
       const res = r.json.result as { ok?: boolean; code?: string } | undefined;
       assert.equal(res?.ok, false, "viagem para motoboy inexistente foi aceita");
       assert.ok(!(await viagens(p)).some((t) => t.trip_id === "T-R9-FANTASMA"), "a viagem fantasma existe");
+      // O erro é do caixa. O tablet não pode recebê-lo como se fosse dele.
+      const doTablet = await api(p, "/api/snapshot", TOKEN.tablet);
+      assert.equal(doTablet.json.last_error ?? null, null, `o tablet recebeu o erro do caixa: ${doTablet.json.last_error}`);
+      const doCaixa = await api(p, "/api/snapshot", TOKEN.caixa);
+      assert.equal(doCaixa.json.last_error, "UNKNOWN_INTERNAL_RIDER", `o caixa não vê o próprio erro: ${doCaixa.json.last_error}`);
     });
 
     await prova("R10 sem erro de script nas páginas", async () => {

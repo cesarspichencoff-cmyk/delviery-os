@@ -302,6 +302,31 @@ function requestActor(tok: string): ActorContext | null {
   return user ? { actor_id: user.actor_id, role: user.role } : null;
 }
 
+/*
+ * Motoboys da casa: quem tem papel `motoboy_interno` na MESMA fonte de
+ * identidade que autentica (ambiente em nuvem, senão arquivo). Só `actor_id`
+ * e rótulo saem daqui — nunca token.
+ */
+function internalRiderRoster(): Array<{ rider_id: string; label: string }> {
+  const source: Array<{ actor_id: string; role: string; label?: string }> =
+    cloud.users.length ? cloud.users : cfg.users;
+  const seen = new Set<string>();
+  const roster: Array<{ rider_id: string; label: string }> = [];
+  for (const u of source) {
+    if (u.role !== "motoboy_interno" || seen.has(u.actor_id)) continue;
+    seen.add(u.actor_id);
+    roster.push({ rider_id: u.actor_id, label: (u.label || u.actor_id).trim() || u.actor_id });
+  }
+  return roster;
+}
+
+/** Snapshot da requisição: quem expede recebe a lista de motoboys da casa. */
+async function snapshotFor(actor: ActorContext | null): Promise<Record<string, unknown>> {
+  const snap = (await facade.snapshot()) as unknown as Record<string, unknown>;
+  if (!actor || actor.role === "motoboy_interno") return snap;
+  return { ...snap, internal_riders: internalRiderRoster() };
+}
+
 /** O termo so e apresentavel depois que o responsavel preenche os campos. */
 function termPublishable(): boolean {
   const body = buildPolicies({ flags: gpsFlags, term: activeTerm, unit: unitConfig }).body;
@@ -902,6 +927,12 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     if (url.pathname === "/api/trip/timeline" && req.method === "GET") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const tripId = (url.searchParams.get("trip_id") || "").trim();
+      if (actor.role === "motoboy_interno") {
+        // O snapshot do motoboy só traz as viagens dele: a linha do tempo de
+        // outra viagem não é dele para ler.
+        const own = (await facade.snapshot()).trips.some((t) => t.trip_id === tripId);
+        if (!own) return reply(403, { ok: false, human: "Esta viagem é de outro motoboy." });
+      }
       const events = await facade.listTripEvents(tripId);
       const timeline = buildTripTimeline(events);
       // Trava de runtime, nao so' de teste: timeline suja nao vai para a tela.
@@ -1067,7 +1098,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/snapshot" && req.method === "GET") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
-      return reply(200, await facade.snapshot());
+      return reply(200, await snapshotFor(actor));
     }
 
     if (url.pathname === "/api/ready-order" && req.method === "POST") {
@@ -1093,7 +1124,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         body.external_courier_ref = asExternalCourierRef(body.external_courier_ref);
       }
       const result = await facade.executeAs(actor, body as never);
-      const snap = await facade.snapshot();
+      const snap = await snapshotFor(actor);
       return reply(200, { result, snapshot: snap });
     }
 
@@ -1218,6 +1249,7 @@ async function startServer(): Promise<void> {
       ? fonteComAtestacaoDeProdutor(persistenceBackend.storage, assinanteDeProdutor)
       : persistenceBackend.storage,
     persistenceBackend.ready_orders,
+    { internalRiders: () => new Set(internalRiderRoster().map((r) => r.rider_id)) },
   );
   console.log(
     "[piloto] atestacao do produtor do feed: " +

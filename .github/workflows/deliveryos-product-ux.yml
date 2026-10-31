@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020, review/deliveryos-v1-role-convergence-20261022]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020, review/deliveryos-v1-role-convergence-20261022, claude/deliveryos-v1-trip-identity-20261031]
   workflow_dispatch:
 
 permissions:
@@ -175,6 +175,13 @@ jobs:
         run: node tests/tata-reader/run-source-status-http-tests.cjs --browser
       - name: Copiloto e Entregas no mesmo HTTP real + Chromium 390
         run: npx tsx tests/product/run-copiloto-entregas-http-browser.ts
+      # A viagem pela interface REAL: dois terminais de expedição e motoboys,
+      # identidade de comando única e estável, posse da viagem e snapshot mínimo.
+      - name: Primeira viagem real pela interface (2 terminais, motoboys) no Chromium
+        run: npx tsx src/entregas/ui/run-real-trip-ui-tests.ts
+      # Estava fora de todo workflow e morta desde o boot ITAIM-only (25/10).
+      - name: Ponte da rider-mobile com o Android (Q-018) no Chromium
+        run: npx tsx src/entregas/ui/run-rider-bridge-tests.ts
       - name: leitura da rua (view model + superficie)
         run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
       - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)

@@ -1,22 +1,102 @@
 /* Cliente UI ENTREGAS — só HTTP para facade; sem estado de domínio próprio */
 export async function api(path, opts = {}) {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
-    ...opts,
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+      ...opts,
+    });
+  } catch (cause) {
+    // Sem resposta HTTP: não se sabe se o servidor recebeu. Sem `payload`.
+    const err = new Error("Sem conexão com o servidor.");
+    err.transport = true;
+    err.cause = cause;
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.result?.error || data.error || res.statusText);
     err.payload = data;
+    err.status = res.status;
     throw err;
   }
   if (data.result && data.result.ok === false) {
     const raw = data.result.error || "Ação não concluída";
     const err = new Error(humanizeDomainError(raw));
     err.payload = data;
+    err.status = res.status;
     throw err;
   }
   return data;
+}
+
+/**
+ * Identidade de UMA ação humana. Única entre terminais e entre aberturas da
+ * página: o piloto recusa `command_id` repetido no processo inteiro, e o
+ * contador por página (`ct-1`, `dep-1`) recomeçava a cada carregamento — o
+ * segundo terminal e o app reaberto tinham ação legítima recusada como
+ * duplicada. Sem gerador seguro, falha: identidade adivinhável é pior.
+ */
+export function newCommandId(prefix, c = globalThis.crypto) {
+  const p = String(prefix || "cmd").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16) || "cmd";
+  if (c && typeof c.randomUUID === "function") return `${p}-${c.randomUUID()}`;
+  if (c && typeof c.getRandomValues === "function") {
+    const b = c.getRandomValues(new Uint8Array(16));
+    return `${p}-${Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("")}`;
+  }
+  throw new Error("Este navegador não gera identidade segura para a ação.");
+}
+
+/**
+ * Resposta que decide o destino da ação: o domínio respondeu, ou o servidor
+ * recusou o pedido (4xx). Sem resposta, ou 5xx sem resultado do domínio, não
+ * se sabe se a ação foi gravada — a nova tentativa precisa ser a MESMA ação.
+ */
+function definitive(e) {
+  if (!e || !e.payload) return false;
+  if (e.payload.result) return true;
+  return Number(e.status) >= 400 && Number(e.status) < 500;
+}
+
+/**
+ * Ações humanas pendentes, por intenção (`dep:<viagem>`, `cf:<viagem>:<parada>`).
+ * O corpo da intenção — command_id, ids gerados e horário do toque — fica
+ * congelado até o servidor responder. Toque repetido depois de queda de rede
+ * reenvia o mesmo corpo; se o primeiro já tinha sido gravado e só a resposta
+ * se perdeu, o piloto responde DUPLICATE_COMMAND para ESTE command_id, e isso
+ * é a confirmação de que a ação já estava registrada — não erro nem segunda ação.
+ */
+export function createPendingCommands(send = command) {
+  const pending = new Map();
+  return {
+    has: (key) => pending.has(key),
+    /** `seen(body)` recebe o corpo efetivamente enviado (o congelado, no reenvio). */
+    async run(key, build, seen) {
+      const resent = pending.has(key);
+      const body = resent ? pending.get(key) : build();
+      pending.set(key, body);
+      if (seen) seen(body);
+      try {
+        const res = await send(body);
+        pending.delete(key);
+        return res;
+      } catch (e) {
+        if (!definitive(e)) {
+          const err = new Error(
+            "Sem resposta do servidor. Toque de novo: a mesma ação é reenviada, sem duplicar.",
+          );
+          err.transport = true;
+          err.cause = e;
+          throw err;
+        }
+        pending.delete(key);
+        if (resent && e.payload?.result?.code === "DUPLICATE_COMMAND") {
+          return { result: { ok: true, already_registered: true }, snapshot: e.payload.snapshot };
+        }
+        throw e;
+      }
+    },
+  };
 }
 
 /** Traduz rejeições técnicas do domínio para português operacional */

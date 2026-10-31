@@ -31,6 +31,10 @@
         <h2 class="rail-title">Prontos para sair</h2>
         <p class="muted small">Marque pedidos e monte a viagem. No máximo <strong id="maxStops">—</strong> paradas (piloto).</p>
         <div id="readyList" class="list" role="list"></div>
+        <label class="rider-pick" id="riderPick" for="riderSelect" hidden>
+          <span class="label-meta">Motoboy da casa</span>
+          <select id="riderSelect" aria-label="Motoboy da casa para esta viagem"></select>
+        </label>
         <button type="button" class="primary wide" id="btnCreateTrip">Iniciar viagem com motoboy da casa</button>
         <p class="status-line" id="tripHint"></p>
       </section>

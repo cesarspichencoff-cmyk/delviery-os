@@ -274,6 +274,13 @@ async function main(): Promise<void> {
             label: "Ops Cluster",
             token: TOKEN,
           },
+          // A viagem só nasce para motoboy da casa cadastrado (UNKNOWN_INTERNAL_RIDER).
+          {
+            actor_id: "rider-cluster",
+            role: "motoboy_interno",
+            label: "Rider Cluster",
+            token: "tok-rider-cluster-sintetico",
+          },
         ],
         features: {
           demo_seed: false,

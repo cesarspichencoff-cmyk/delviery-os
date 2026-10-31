@@ -1,10 +1,11 @@
 import {
   snapshot,
-  command,
   api,
   chip,
   renderError,
   connectionState,
+  newCommandId,
+  createPendingCommands,
 } from "../shared/client.js";
 import {
   createDispatchLocation,
@@ -17,10 +18,11 @@ let snap = null;
 let filter = "all";
 let selected = new Set();
 let focusTripId = null;
-let seq = 1;
 
 const now = () => new Date().toISOString();
-const cid = (p) => `${p}-${seq++}`;
+const cid = (p) => newCommandId(p);
+// Toque repetido depois de queda de rede reenvia a MESMA ação (shared/client.js).
+const pending = createPendingCommands();
 
 /** Rótulos de endereço só a partir de dados conhecidos (order label) — sem coordenadas inventadas */
 function addressLabel(orderRef) {
@@ -33,8 +35,36 @@ function addressLabel(orderRef) {
 }
 
 function riderName(id) {
+  const known = (snap?.internal_riders || []).find((r) => r.rider_id === id);
+  if (known) return known.label;
   if (id === "rid-demo") return "Carlos";
   return id;
+}
+
+/**
+ * Motoboy da casa para a próxima viagem. A lista vem do servidor (mesma fonte
+ * que autentica). Um só: já vem escolhido. Mais de um: o operador escolhe —
+ * nenhum padrão silencioso decide por ele.
+ */
+function renderRiderPick() {
+  const sel = $("riderSelect");
+  const btn = $("btnCreateTrip");
+  if (!sel || !btn) return;
+  const roster = snap?.internal_riders || [];
+  const current = sel.value;
+  const options = roster.length > 1 ? [`<option value="">Escolha o motoboy</option>`] : [];
+  for (const r of roster) {
+    const label = String(r.label).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const id = String(r.rider_id).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    options.push(`<option value="${id}">${label}</option>`);
+  }
+  sel.innerHTML = options.join("");
+  if (roster.some((r) => r.rider_id === current)) sel.value = current;
+  $("riderPick").hidden = roster.length === 0;
+  btn.disabled = roster.length === 0;
+  if (roster.length === 0) {
+    $("tripHint").textContent = "Nenhum motoboy da casa cadastrado neste piloto.";
+  }
 }
 
 async function refresh() {
@@ -60,7 +90,10 @@ async function refresh() {
         : cs.mode === "pending_sync"
           ? `${roleLabel} · sincronização pendente (${snap.pending_sync || 0})`
           : `${roleLabel} · online`;
-    renderError($("errorBox"), snap.last_error);
+    // O erro de cada ação é mostrado pela própria ação. Repintar aqui o último
+    // erro do snapshot apagava o aviso de queda de rede e, antes de o erro ser
+    // por ator, mostrava em todo terminal o DUPLICATE_COMMAND de outro.
+    renderRiderPick();
     renderReady();
     renderTrips();
     renderRiders();
@@ -312,25 +345,25 @@ async function onTripAct(act, tripId) {
   renderError($("errorBox"), null);
   try {
     if (act === "depart") {
-      await command({
+      await pending.run(`dep:${tripId}`, () => ({
         type: "ConfirmTripDeparture",
         command_id: cid("dep"),
         occurred_at: now(),
         unit_id: "demo-unit",
         trip_id: tripId,
         actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-      });
+      }));
     } else if (act === "return") {
-      await command({
+      await pending.run(`ret:${tripId}`, () => ({
         type: "StartTripReturn",
         command_id: cid("ret"),
         occurred_at: now(),
         unit_id: "demo-unit",
         trip_id: tripId,
         actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-      });
+      }));
     } else if (act === "close") {
-      await command({
+      await pending.run(`cls:${tripId}`, () => ({
         type: "CloseTripManually",
         command_id: cid("cls"),
         occurred_at: now(),
@@ -338,12 +371,12 @@ async function onTripAct(act, tripId) {
         trip_id: tripId,
         reason: "Encerramento pelo console",
         actor: { actor_id: "lid-demo", role: "lider_delivery" },
-      });
+      }));
     } else if (act === "remove") {
       const t = snap.trips.find((x) => x.trip_id === tripId);
       const d = t?.deliveries.find((x) => x.active);
       if (!d) throw new Error("Nenhuma entrega ativa");
-      await command({
+      await pending.run(`rm:${tripId}:${d.delivery_id}`, () => ({
         type: "RemoveDeliveryFromTrip",
         command_id: cid("rm"),
         occurred_at: now(),
@@ -351,7 +384,7 @@ async function onTripAct(act, tripId) {
         trip_id: tripId,
         delivery_id: d.delivery_id,
         reason: "Remoção pelo console",
-      });
+      }));
     }
     await refresh();
   } catch (e) {
@@ -381,7 +414,7 @@ function renderRiders() {
     btn.addEventListener("click", async () => {
       try {
         if (btn.dataset.pause) {
-          await command({
+          await pending.run(`p:${btn.dataset.rider}`, () => ({
             type: "SetRiderPause",
             command_id: cid("p"),
             occurred_at: now(),
@@ -389,9 +422,9 @@ function renderRiders() {
             rider_id: btn.dataset.rider,
             paused: true,
             actor: { actor_id: btn.dataset.rider, role: "motoboy_interno" },
-          });
+          }));
         } else {
-          await command({
+          await pending.run(`s:${btn.dataset.rider}`, () => ({
             type: "SetRiderSupport",
             command_id: cid("s"),
             occurred_at: now(),
@@ -399,7 +432,7 @@ function renderRiders() {
             rider_id: btn.dataset.rider,
             support: true,
             actor: { actor_id: btn.dataset.rider, role: "motoboy_interno" },
-          });
+          }));
         }
         await refresh();
       } catch (e) {
@@ -445,7 +478,11 @@ $("btnCreateTrip").addEventListener("click", async () => {
     return;
   }
   const max = snap.policy.max_stops;
-  const tripId = `T-DEMO-${Date.now().toString(36)}`;
+  const rider = $("riderSelect")?.value || "";
+  if (!rider) {
+    renderError($("errorBox"), "Escolha o motoboy da casa para esta viagem.");
+    return;
+  }
   const deliveries = orders.map((order_ref) => {
     const entry = (snap.ready_orders || []).find((o) => o.order_ref === order_ref);
     return {
@@ -455,16 +492,22 @@ $("btnCreateTrip").addEventListener("click", async () => {
     };
   });
   try {
-    const res = await command({
-      type: "CreateTrip",
-      command_id: cid("ct"),
-      occurred_at: now(),
-      unit_id: "demo-unit",
-      trip_id: tripId,
-      courier_actor_id: "rid-demo",
-      deliveries,
-      actor: { actor_id: "ops-demo", role: $("role").value },
-    });
+    let sent = null;
+    const res = await pending.run(
+      `ct:${[...orders].sort().join(",")}:${rider}`,
+      () => ({
+        type: "CreateTrip",
+        command_id: cid("ct"),
+        occurred_at: now(),
+        unit_id: "demo-unit",
+        trip_id: newCommandId("T"),
+        courier_actor_id: rider,
+        deliveries,
+        actor: { actor_id: "ops-demo", role: $("role").value },
+      }),
+      (b) => { sent = b; },
+    );
+    const tripId = sent.trip_id;
     if (!res.result?.ok) {
       renderError($("errorBox"), res.result?.error || "Rejeitado");
     } else {
@@ -481,16 +524,16 @@ $("btnCreateTrip").addEventListener("click", async () => {
 
 $("btnOcc").addEventListener("click", async () => {
   try {
-    await command({
+    await pending.run("occ:demo", () => ({
       type: "CreateOccurrence",
       command_id: cid("occ"),
       occurred_at: now(),
       unit_id: "demo-unit",
-      occurrence_id: `OCC-${Date.now().toString(36)}`,
+      occurrence_id: newCommandId("OCC"),
       occurrence_type: "demo",
       report: "Relato simulado de demonstração",
       blocks_availability: false,
-    });
+    }));
     await refresh();
   } catch (e) {
     renderError($("errorBox"), e.payload?.result?.error || e.message);

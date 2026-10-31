@@ -273,9 +273,13 @@ mutacao({
 mutacao({
   id: "MR4",
   propriedade: "captura na viagem de OUTRO motoboy",
-  gate: "navegador",
+  // Desde 2026-10-31 a viagem de outro motoboy não chega à página (snapshot
+  // do motoboy) e o domínio recusa a saída por ele: no navegador, E2 prova
+  // essas duas camadas, e esta trava da regra passou a ser a terceira — quem
+  // a acusa é a prova da própria regra.
+  gate: "regra",
   edicoes: [{ arquivo: REGRA, de: '  if (trip.courier_actor_id !== actor.actor_id) return off("viagem_de_outro");\n', para: "" }],
-  assinatura: /XX {2}E2 /,
+  assinatura: /XX {2}R3 viagem de outro motoboy/,
 });
 mutacao({
   id: "MR5",

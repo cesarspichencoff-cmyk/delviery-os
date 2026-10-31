@@ -96,4 +96,16 @@ export function assertCan(
   }
 }
 
+/**
+ * Motoboy só age na PRÓPRIA viagem. Líder, gerente e sistema seguem agindo
+ * em nome dele pelo papel; o motoboy, pela posse. Sem esta trava, o papel
+ * bastava: um motoboy confirmava saída e entrega da viagem de outro, e a
+ * captura de GPS (que exige a viagem dele) ficava desligada sem ninguém saber.
+ */
+export function assertOwnTrip(actor: ActorContext, courierActorId: string): void {
+  if (actor.role === "motoboy_interno" && actor.actor_id !== String(courierActorId)) {
+    throw new AuthError("Esta viagem é de outro motoboy.");
+  }
+}
+
 export const MANUAL_CLOSE_ROLES = MANUAL_CLOSE;

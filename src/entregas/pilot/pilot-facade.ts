@@ -83,6 +83,15 @@ function canalProprioValidado(v: string | undefined): "proprio" | "app" | undefi
   return v === "proprio" || v === "app" ? v : undefined;
 }
 
+export interface PilotFacadeOptions {
+  /**
+   * Motoboys da casa cadastrados neste piloto (`actor_id` de quem tem papel
+   * `motoboy_interno`). Com a lista, viagem só nasce ou muda de dono para um
+   * deles. Sem ela (testes de domínio, demo), o comportamento antigo segue.
+   */
+  readonly internalRiders?: () => ReadonlySet<string>;
+}
+
 export class PilotApplicationFacade {
   private uow: UnitOfWork;
   private readonly storage: PilotUnitOfWorkSource;
@@ -101,6 +110,12 @@ export class PilotApplicationFacade {
   }
   private last_error: string | null = null;
   private last_human_error: string | null = null;
+  /**
+   * Último erro POR ATOR. O snapshot devolvia o último erro da casa a todo
+   * terminal: o tablet mostrava, como se fosse dele, o DUPLICATE_COMMAND do
+   * caixa — e o motoboy via erro técnico de quem expede.
+   */
+  private readonly lastErrorByActor = new Map<string, { error: string | null; human: string | null }>();
   private tripCache = new Map<string, TripAggregate>();
   private handoffCache = new Map<string, Handoff>();
   private occCache = new Map<string, Occurrence>();
@@ -115,6 +130,7 @@ export class PilotApplicationFacade {
     private readonly log: PilotLogger,
     storage?: PilotUnitOfWorkSource,
     readyOrders?: PilotReadyOrderStore,
+    private readonly options: PilotFacadeOptions = {},
   ) {
     mkdirSync(cfg.data_dir, { recursive: true });
     const defaultDataFile = join(cfg.data_dir, "store.json");
@@ -263,7 +279,15 @@ export class PilotApplicationFacade {
     this.commandTail = new Promise<void>((resolve) => { unlock = resolve; });
     await previous;
     try {
-      return await this.executeAsSerial(verifiedActor, cmd, inbound);
+      const result = await this.executeAsSerial(verifiedActor, cmd, inbound);
+      // Execução serializada: o último erro neste ponto é o deste ator.
+      if (verifiedActor) {
+        this.lastErrorByActor.set(verifiedActor.actor_id, {
+          error: this.last_error,
+          human: this.last_human_error,
+        });
+      }
+      return result;
     } finally {
       unlock();
     }
@@ -300,6 +324,19 @@ export class PilotApplicationFacade {
       actor: actor,
       unit_id: this.cfg.unit_id,
     } as Command;
+
+    // Viagem para quem não é motoboy da casa ficava sem dono real: o console
+    // montava tudo para `rid-demo`, e o motoboy de verdade nunca tinha GPS.
+    const riders = this.options.internalRiders?.();
+    if (riders && (full.type === "CreateTrip" || full.type === "AssignInternalRider") &&
+        !riders.has(String(full.courier_actor_id))) {
+      this.last_error = "UNKNOWN_INTERNAL_RIDER";
+      this.last_human_error = "Escolha um motoboy da casa cadastrado neste piloto.";
+      this.log.warn("command_failed", this.last_human_error, "UNKNOWN_INTERNAL_RIDER", {
+        actor_id: actor.actor_id, meta: { type: full.type },
+      });
+      return { ok: false, error: this.last_human_error, code: "UNKNOWN_INTERNAL_RIDER" };
+    }
 
     try {
       // A informacao de canal guardada na fila de pedidos prontos e mais
@@ -490,6 +527,44 @@ export class PilotApplicationFacade {
 
     const banner = resolveBanner(this.cfg);
 
+    // O motoboy recebe só o que é dele: a própria viagem e o próprio estado.
+    // Fila de prontos, expedições iFood, ocorrências e erros da casa são de
+    // outros terminais — e traziam rótulos com endereço de pedidos alheios.
+    const viewer = this.activeActor;
+    const rider = viewer?.role === "motoboy_interno" ? viewer.actor_id : null;
+    if (rider !== null) {
+      return {
+        ...this.snapshotBody(banner, trips, handoffRecords, occurrenceRecords, riderRecords, readyOrders),
+        trips: trips.filter((t) => t.courier_actor_id === rider),
+        handoffs: [],
+        occurrences: [],
+        riders: riderRecords
+          .filter((r) => String(r.rider_id) === rider)
+          .map((r) => ({
+            rider_id: String(r.rider_id),
+            availability: r.availability,
+            occurrence_blocking_availability: r.occurrence_blocking_availability,
+            active_trip_id: r.active_trip_id,
+          })),
+        ready_orders: [],
+      };
+    }
+    return this.snapshotBody(banner, trips, handoffRecords, occurrenceRecords, riderRecords, readyOrders);
+  }
+
+  private lastErrorFor(actor: ActorContext | null): { error: string | null; human: string | null } {
+    if (!actor) return { error: null, human: null };
+    return this.lastErrorByActor.get(actor.actor_id) ?? { error: null, human: null };
+  }
+
+  private snapshotBody(
+    banner: string,
+    trips: PilotSnapshot["trips"],
+    handoffRecords: Awaited<ReturnType<UnitOfWork["handoffs"]["list"]>>,
+    occurrenceRecords: Awaited<ReturnType<UnitOfWork["occurrences"]["list"]>>,
+    riderRecords: Awaited<ReturnType<UnitOfWork["riders"]["list"]>>,
+    readyOrders: Awaited<ReturnType<PilotReadyOrderStore["list"]>>,
+  ): PilotSnapshot {
     return {
       mode: "pilot",
       banner,
@@ -532,8 +607,8 @@ export class PilotApplicationFacade {
       })),
       connection: "online",
       pending_sync: 0,
-      last_error: this.last_error,
-      last_human_error: this.last_human_error,
+      last_error: this.lastErrorFor(this.activeActor).error,
+      last_human_error: this.lastErrorFor(this.activeActor).human,
       features: this.cfg.features,
     };
   }

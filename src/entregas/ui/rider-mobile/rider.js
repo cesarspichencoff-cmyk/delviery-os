@@ -1,10 +1,11 @@
 import {
   snapshot,
-  command,
   chip,
   renderError,
   connectionState,
   api,
+  newCommandId,
+  createPendingCommands,
 } from "../shared/client.js";
 import {
   createConsentScreen,
@@ -24,9 +25,10 @@ import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
-let seq = 1;
 const now = () => new Date().toISOString();
-const cid = (p) => `${p}-${seq++}`;
+const cid = (p) => newCommandId(p);
+// Toque repetido depois de queda de rede reenvia a MESMA ação (shared/client.js).
+const pending = createPendingCommands();
 
 /* ---------------- Captura nativa (Q-018) ----------------
  * A página decide quando PEDIR a captura (capture-rule.js) e mostra o que o
@@ -62,8 +64,15 @@ const POLL_MS = 15000;
 let pollTimer = null;
 
 function activeTrip() {
-  return (snap?.trips || []).find((t) =>
-    ["preparando_saida", "em_rota", "retornando"].includes(t.state),
+  // A viagem DESTE motoboy. O servidor já entrega só as dele; filtrar aqui
+  // também impede que uma resposta mais larga mostre a viagem de outro. O
+  // ator vem no próprio snapshot: `cap.me` chega depois da primeira pintura.
+  const quem = snap?.actor || cap.me;
+  const me = quem && quem.role === "motoboy_interno" ? quem.actor_id : null;
+  return (snap?.trips || []).find(
+    (t) =>
+      ["preparando_saida", "em_rota", "retornando"].includes(t.state) &&
+      (!me || t.courier_actor_id === me),
   );
 }
 
@@ -274,20 +283,20 @@ async function act(fn) {
 function actDepart(t) {
   return act(async () => {
     if (!confirm("Confirmar saída da loja?")) return;
-    await command({
+    await pending.run(`dep:${t.trip_id}`, () => ({
       type: "ConfirmTripDeparture",
       command_id: cid("dep"),
       occurred_at: now(),
       unit_id: "demo-unit",
       trip_id: t.trip_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-    });
+    }));
   });
 }
 
 function actArrive(t, s) {
   return act(async () => {
-    await command({
+    await pending.run(`arr:${t.trip_id}:${s.delivery_id}`, () => ({
       // "Cheguei" e' ato humano: relato, nao deteccao de sensor.
       type: "RecordArrivalReported",
       command_id: cid("arr"),
@@ -296,14 +305,14 @@ function actArrive(t, s) {
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-    });
+    }));
   });
 }
 
 function actConfirm(t, s) {
   return act(async () => {
     if (!confirm("Confirmar entrega ao cliente?")) return;
-    await command({
+    await pending.run(`cf:${t.trip_id}:${s.delivery_id}`, () => ({
       type: "ConfirmDelivery",
       command_id: cid("cf"),
       occurred_at: now(),
@@ -311,7 +320,7 @@ function actConfirm(t, s) {
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-    });
+    }));
   });
 }
 
@@ -327,7 +336,7 @@ $("btnNotFound").addEventListener("click", () =>
     if (s.state === "em_rota") {
       throw new Error("Registre a chegada (Cheguei) antes de informar cliente não encontrado.");
     }
-    await command({
+    await pending.run(`nf:${t.trip_id}:${s.delivery_id}`, () => ({
       type: "RecordCustomerNotFound",
       command_id: cid("nf"),
       occurred_at: now(),
@@ -335,25 +344,25 @@ $("btnNotFound").addEventListener("click", () =>
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-    });
+    }));
   }),
 );
 
 $("btnProblem").addEventListener("click", () =>
   act(async () => {
     const t = activeTrip();
-    await command({
+    await pending.run(`oc:${t?.trip_id ?? "sem-viagem"}`, () => ({
       type: "CreateOccurrence",
       command_id: cid("oc"),
       occurred_at: now(),
       unit_id: "demo-unit",
-      occurrence_id: `OCC-M-${Date.now().toString(36)}`,
+      occurrence_id: newCommandId("OCC-M"),
       occurrence_type: "campo",
       report: "Problema registrado pelo motoboy (demo)",
       blocks_availability: false,
       related_trip_id: t?.trip_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
-    });
+    }));
   }),
 );
 
