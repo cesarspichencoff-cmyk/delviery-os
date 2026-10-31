@@ -14,6 +14,9 @@
     <p id="connLine" class="muted conn" role="status">Conexão…</p>
   </header>
   <main id="main" class="m-main">
+    <!-- Fila do aparelho (C5): o que está guardado e o que o servidor recusou. -->
+    <p id="pendingLine" class="queue-line" role="status" hidden></p>
+    <p id="rejectedLine" class="queue-line queue-refused" role="alert" hidden></p>
     <div id="syncBar" class="sync-bar" hidden>
       <span class="dot dashed" aria-hidden="true"></span>
       <div>

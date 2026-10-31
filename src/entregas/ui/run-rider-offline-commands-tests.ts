@@ -82,6 +82,7 @@ async function subirPiloto(opcoes: { filaOffline: boolean; delegacao: boolean })
       banner: "TESTE AUTOMATIZADO",
       users: [
         { actor_id: "rid-1", role: "motoboy_interno", label: "Motoboy Um", token: TOKEN.motoboy },
+        { actor_id: "rid-2", role: "motoboy_interno", label: "Motoboy Dois", token: "tok-motoboy-2-off-sintetico" },
         { actor_id: "ops-1", role: "operador_expedicao", label: "Operador", token: TOKEN.ops },
         { actor_id: "ger-1", role: "gerente", label: "Gerente", token: TOKEN.gerente },
       ],
@@ -290,13 +291,14 @@ async function abrir(browser: Browser, p: Piloto, comFila: boolean): Promise<{ c
   return { ctx, page };
 }
 
-async function botaoPrimario(page: Page, contem: string): Promise<void> {
-  await page.waitForFunction((c) => {
-    const b = document.getElementById("btnPrimary") as HTMLButtonElement | null;
+async function botao(page: Page, id: string, contem: string): Promise<void> {
+  await page.waitForFunction(([i, c]) => {
+    const b = document.getElementById(i) as HTMLButtonElement | null;
     return !!b && !b.hidden && !b.disabled && (b.textContent || "").includes(c);
-  }, contem, { timeout: 10000 });
-  await page.click("#btnPrimary");
+  }, [id, contem], { timeout: 10000 });
+  await page.click(`#${id}`);
 }
+const botaoPrimario = (page: Page, contem: string) => botao(page, "btnPrimary", contem);
 
 type Fila = Array<{ event_id: string; idempotency_key: string; kind: string; state: string; command: Record<string, unknown>; last_error: string | null }>;
 async function filaDoAparelho(page: Page): Promise<Fila> {
@@ -347,7 +349,8 @@ async function main(): Promise<void> {
         });
 
         await prova("O2 ainda sem rede: chegada e entrega seguem pela tela e entram em ordem na fila", async () => {
-          await botaoPrimario(page, "Cheguei");
+          // "Cheguei" é a ação secundária da parada a caminho (a principal é "Abrir rota").
+          await botao(page, "btnSecondary", "Cheguei");
           await page.waitForTimeout(300);
           await botaoPrimario(page, "Confirmar entrega");
           await page.waitForTimeout(400);
@@ -393,6 +396,35 @@ async function main(): Promise<void> {
           const eventos = await eventosDaViagem(p, "T-OFF-1");
           const saidas = eventos.filter((e) => /trip_started|saida|departure/i.test(String(e.event_type ?? e.kind ?? "")));
           assert.equal(saidas.length, 1, `saídas na linha do tempo: ${saidas.length}`);
+        });
+        await prova("O9 ação guardada que o domínio recusa fica visível como recusada, não some nem vira sucesso", async () => {
+          const fechar = (trip: string) => api(p, "/api/command", TOKEN.gerente, {
+            type: "CloseTripManually", command_id: `cls-${trip}`, occurred_at: new Date().toISOString(),
+            unit_id: "ITAIM", trip_id: trip, reason: "Encerramento sintético",
+          });
+          assert.equal(((await fechar("T-OFF-1")).result as { ok?: boolean })?.ok, true, "fechar T-OFF-1");
+          await montarViagem(p, "T-OFF-2", ["P-OFF-3"]);
+          await page.reload();
+          await page.waitForLoadState("networkidle");
+          await ctx.setOffline(true);
+          await botaoPrimario(page, "Confirmar saída");
+          await page.waitForTimeout(400);
+          // Enquanto a saída esperava rede, o despacho passou a viagem a outro motoboy.
+          const reatribuir = await api(p, "/api/command", TOKEN.ops, {
+            type: "AssignInternalRider", command_id: "as-T-OFF-2", occurred_at: new Date().toISOString(),
+            unit_id: "ITAIM", trip_id: "T-OFF-2", courier_actor_id: "rid-2",
+          });
+          assert.equal((reatribuir.result as { ok?: boolean })?.ok, true, `reatribuir: ${JSON.stringify(reatribuir.result)}`);
+          await ctx.setOffline(false);
+          await sincronizar(page);
+          const ultima = (await filaDoAparelho(page)).slice(-1)[0];
+          assert.equal(ultima.kind, "ConfirmTripDeparture");
+          assert.equal(ultima.state, "rejected", `estado da saída recusada: ${ultima.state} (${ultima.last_error})`);
+          await page.waitForFunction(() => {
+            const el = document.getElementById("rejectedLine") as HTMLElement | null;
+            return !!el && !el.hidden && /recusad/i.test(el.textContent || "");
+          }, null, { timeout: 8000 });
+          assert.equal((await viagem(p, "T-OFF-2"))?.state !== "em_rota", true, "a saída recusada mudou a viagem");
         });
         await ctx.close();
       } finally {

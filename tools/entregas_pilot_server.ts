@@ -753,7 +753,14 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/policies" && req.method === "GET") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
-      const r = buildPolicies({ flags: gpsFlags, term: activeTerm, unit: unitConfig });
+      // A fila do aparelho só é anunciada quando o lote de eventos pode ser
+      // aceito: recibos duráveis (modo arquivo; PostgreSQL ainda sem recibo
+      // por unidade) e chave para verificar a credencial delegada do aparelho.
+      const r = buildPolicies({
+        flags: gpsFlags, term: activeTerm, unit: unitConfig,
+        device_events_accepted:
+          Boolean(persistenceBackend?.native_inbound_receipts.available) && pilotDelegationPublicKey !== null,
+      });
       return reply(r.status, r.body);
     }
 

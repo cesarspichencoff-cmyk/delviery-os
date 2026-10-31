@@ -111,6 +111,8 @@ class EntregasJsBridge(
         fun receiptJson(acknowledgementId: String): String
         fun requestSyncNow()
         fun applyServerPoliciesJson(json: String): String
+        fun recordOperationalEventJson(json: String): String
+        fun operationalEventsJson(): String
     }
 
     @JavascriptInterface
@@ -156,4 +158,17 @@ class EntregasJsBridge(
     @JavascriptInterface
     fun applyServerPolicies(json: String?): String =
         handler.applyServerPoliciesJson(json.orEmpty())
+
+    /**
+     * Ação do motoboy para a fila do aparelho (C5). O Kotlin guarda, em ordem e
+     * com identidade estável, e o SyncWorker envia; quem julga a transição é o
+     * domínio no servidor. A página só usa isto quando o servidor anuncia a fila.
+     */
+    @JavascriptInterface
+    fun recordOperationalEvent(json: String?): String =
+        handler.recordOperationalEventJson(json.orEmpty())
+
+    /** O que está guardado no aparelho e em que estado — sem o corpo do comando. */
+    @JavascriptInterface
+    fun operationalEvents(): String = handler.operationalEventsJson()
 }

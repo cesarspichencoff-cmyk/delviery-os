@@ -60,13 +60,20 @@ export function buildPolicies(args: {
   term: LocationTerm;
   unit: UnitConfigLoad;
   policy?: GpsPolicy;
+  /**
+   * O servidor consegue confirmar evento do aparelho com recibo durável E
+   * verificar a credencial delegada com que o aparelho o envia. Falso: a fila
+   * do aparelho não é anunciada, mesmo com a flag — guardar no celular uma ação
+   * que o servidor não pode aceitar seria prometer envio que não acontece.
+   */
+  device_events_accepted?: boolean;
 }): DeviceApiResponse {
   const publishable = isPublishable(args.term);
   return ok({
     api_version: DEVICE_API_VERSION,
     flags: {
       gps_capture_enabled: args.flags.gps_capture_enabled,
-      offline_queue_enabled: args.flags.offline_queue_enabled,
+      offline_queue_enabled: args.flags.offline_queue_enabled && args.device_events_accepted !== false,
       gps_return_detection_enabled: args.flags.gps_return_detection_enabled,
     },
     term: {

@@ -28,6 +28,8 @@ export const NATIVE_METHODS = [
   "receipt",
   "syncNow",
   "applyServerPolicies",
+  "recordOperationalEvent",
+  "operationalEvents",
 ];
 
 /** O mínimo para a captura. Ponte sem isso é aplicativo antigo, não ponte. */
@@ -72,6 +74,13 @@ export function detectNativeBridge(win = globalThis) {
       openAppSettings: () => (typeof n.openAppSettings === "function" ? n.openAppSettings() : undefined),
       startTripCapture: (tripId) => n.startTripCapture(String(tripId)),
       stopTripCapture: () => n.stopTripCapture(),
+      // Fila do aparelho (C5). Aplicativo anterior não tem: a página segue online.
+      recordOperationalEvent:
+        typeof n.recordOperationalEvent === "function"
+          ? (envelope) => parse(n.recordOperationalEvent(JSON.stringify(envelope)))
+          : null,
+      operationalEvents:
+        typeof n.operationalEvents === "function" ? () => parse(n.operationalEvents()) : null,
     },
   };
 }

@@ -26,6 +26,7 @@ import br.com.tata.entregas.location.TripLocationService
 import br.com.tata.entregas.location.locationServicesEnabled
 import br.com.tata.entregas.notify.TripNotification
 import br.com.tata.entregas.sync.DeviceSession
+import br.com.tata.entregas.sync.OperationalEventRecorder
 import br.com.tata.entregas.sync.SyncScheduler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -274,6 +275,20 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             onSuccess = { JSONObject().put("ok", true).toString() },
             onFailure = { JSONObject().put("ok", false).put("error", "politica_invalida").toString() },
         )
+    }
+
+    /**
+     * Fila do aparelho (C5): grava a intenção no Room e pede envio. Sem rede, o
+     * WorkManager espera a conexão; a intenção já está salva no aparelho.
+     */
+    override fun recordOperationalEventJson(json: String): String = runBlocking {
+        val r = OperationalEventRecorder.record(db, json, System.currentTimeMillis())
+        if (r is OperationalEventRecorder.Result.Recorded) SyncScheduler.requestNow(this@MainActivity)
+        OperationalEventRecorder.toJson(r)
+    }
+
+    override fun operationalEventsJson(): String = runBlocking {
+        OperationalEventRecorder.recentJson(db)
     }
 
     override fun onDestroy() {

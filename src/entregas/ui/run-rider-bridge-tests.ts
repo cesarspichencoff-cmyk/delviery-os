@@ -326,6 +326,9 @@ function scriptDaPonte(cfg: ConfigDaPonte | null, comSessao = true): string {
       stopTripCapture: () => { chamar("stopTripCapture"); estado.viagem = null;
         postar({ type: "service_state", foreground_service_running: false, notification_visible: false, bound_trip_id: null, stop_reason: "trip_ended" }); },
       syncNow: () => chamar("syncNow"),
+      recordOperationalEvent: (json) => { const o = JSON.parse(json); chamar("recordOperationalEvent", o);
+        return JSON.stringify({ ok: true, event_id: o.event_id, duplicate: false }); },
+      operationalEvents: () => JSON.stringify([]),
     };
   })();`;
 }

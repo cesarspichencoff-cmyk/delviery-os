@@ -172,6 +172,10 @@ interface OutboxEventDao {
 
     @Query("SELECT IFNULL(MAX(sequenceLocal), 0) FROM outbox_event")
     suspend fun maxSequence(): Long
+
+    /** Últimas intenções do aparelho, para a página mostrar o que está guardado. */
+    @Query("SELECT * FROM outbox_event ORDER BY sequenceLocal DESC LIMIT :limit")
+    suspend fun recent(limit: Int): List<OutboxEventEntity>
 }
 
 @Dao
@@ -248,6 +252,16 @@ abstract class EntregasDatabase : RoomDatabase() {
             )
         }
         inserted
+    }
+
+    /**
+     * Reserva a sequência e grava a intenção do motoboy na MESMA transação (C5).
+     * Inserção IGNORE (mesmo event_id) não consome sequência; o lote do
+     * SyncWorker segue esta ordem, que é a ordem dos toques.
+     */
+    suspend fun insertOutboxSequenced(event: OutboxEventEntity): Long = withTransaction {
+        val next = outbox().maxSequence() + 1L
+        outbox().insert(event.copy(sequenceLocal = next))
     }
 
     companion object {

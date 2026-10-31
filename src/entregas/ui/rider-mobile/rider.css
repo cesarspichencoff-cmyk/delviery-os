@@ -60,6 +60,25 @@ body.mobile {
   overflow-x: hidden;
 }
 
+/* Fila do aparelho (C5): guardado é neutro tracejado; recusado é âmbar. */
+.queue-line {
+  margin: 0 0 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px dashed var(--line-work);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.queue-line[hidden] {
+  display: none;
+}
+.queue-refused {
+  border-style: solid;
+  border-color: var(--attention);
+}
+
 /* 360px: aviso e títulos não estouram */
 .sync-bar {
   max-width: 100%;

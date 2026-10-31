@@ -76,6 +76,157 @@ function activeTrip() {
   );
 }
 
+/* ---------------- Fila do aparelho (C5) ----------------
+ * Com a fila ANUNCIADA pelo servidor (flag + recibos duráveis + delegação) e a
+ * ponte nova, toda ação do motoboy entra primeiro no Room, com event_id
+ * estável, e o SyncWorker a envia ao /api/events/batch. Sem anúncio — ou
+ * aplicativo anterior —, segue online, com reenvio idêntico (shared/client.js). */
+const OPEN_STATES = new Set(["pending", "failed", "sending"]);
+let queuePoll = null;
+let queueSeen = "";
+
+function deviceQueueOn() {
+  return !!(
+    native &&
+    native.recordOperationalEvent &&
+    native.operationalEvents &&
+    cap.policies &&
+    cap.policies.flags &&
+    cap.policies.flags.offline_queue_enabled === true
+  );
+}
+
+function deviceEvents() {
+  if (!native || !native.operationalEvents) return [];
+  const list = native.operationalEvents();
+  return Array.isArray(list) ? list : [];
+}
+
+/** A mesma chave das ações: toque repetido numa intenção pendente não vira outra. */
+function intentKey(e) {
+  const trip = e.trip_id || "sem-viagem";
+  switch (e.kind) {
+    case "ConfirmTripDeparture":
+      return `dep:${trip}`;
+    case "RecordArrivalReported":
+      return `arr:${trip}:${e.delivery_id}`;
+    case "ConfirmDelivery":
+      return `cf:${trip}:${e.delivery_id}`;
+    case "RecordCustomerNotFound":
+      return `nf:${trip}:${e.delivery_id}`;
+    case "CreateOccurrence":
+      return `oc:${trip}`;
+    default:
+      return `?:${e.event_id}`;
+  }
+}
+
+function queueOnDevice(key, build) {
+  if (deviceEvents().some((e) => OPEN_STATES.has(e.state) && intentKey(e) === key)) {
+    return { result: { ok: true, queued: true, already_queued: true } };
+  }
+  const command = build();
+  const event_id = newCommandId("ev");
+  const r = native.recordOperationalEvent({ event_id, idempotency_key: event_id, command });
+  if (!r || r.ok !== true) throw new Error("Não foi possível guardar a ação neste aparelho. Tente de novo.");
+  scheduleQueuePoll();
+  return { result: { ok: true, queued: true } };
+}
+
+/** Uma ação do motoboy: fila do aparelho quando anunciada; senão, online. */
+function perform(key, build) {
+  return deviceQueueOn() ? queueOnDevice(key, build) : pending.run(key, build);
+}
+
+/**
+ * A viagem como o motoboy a deixou: o que está guardado no aparelho por cima
+ * do que o servidor já aceitou. Marcado — nada aqui é confirmação do domínio,
+ * e a captura de GPS continua lendo só a viagem do servidor.
+ */
+function withDeviceIntents(trip) {
+  if (!trip || !deviceQueueOn()) return trip;
+  const open = deviceEvents()
+    .filter((e) => OPEN_STATES.has(e.state) && e.trip_id === trip.trip_id)
+    .sort((a, b) => (a.sequence_local || 0) - (b.sequence_local || 0));
+  if (!open.length) return trip;
+  const t = { ...trip, deliveries: trip.deliveries.map((d) => ({ ...d })) };
+  for (const e of open) {
+    const d = e.delivery_id ? t.deliveries.find((x) => x.delivery_id === e.delivery_id) : null;
+    if (e.kind === "ConfirmTripDeparture" && t.state === "preparando_saida") {
+      t.state = "em_rota";
+      t._pendingDeparture = true;
+    } else if (e.kind === "RecordArrivalReported" && d) {
+      d.state = "chegada_detectada";
+      d._pending = "arrive";
+    } else if (e.kind === "ConfirmDelivery" && d) {
+      d.state = "entregue_confirmado";
+      d._pending = "confirm";
+    } else if (e.kind === "RecordCustomerNotFound" && d) {
+      d.state = "cliente_nao_encontrado";
+      d._pending = "notfound";
+    }
+  }
+  return t;
+}
+
+function renderDeviceQueue(serverTrip) {
+  const line = $("pendingLine");
+  const rejected = $("rejectedLine");
+  if (!line || !rejected) return;
+  if (!deviceQueueOn()) {
+    line.hidden = true;
+    line.textContent = "";
+    rejected.hidden = true;
+    rejected.textContent = "";
+    return;
+  }
+  const events = deviceEvents();
+  const open = events.filter((e) => OPEN_STATES.has(e.state));
+  if (open.length) {
+    const failed = open.some((e) => e.state === "failed");
+    const n = open.length === 1 ? "1 ação guardada" : `${open.length} ações guardadas`;
+    line.textContent = `${n} neste aparelho, aguardando envio${failed ? " — a última tentativa não chegou ao servidor" : ""}.`;
+    line.hidden = false;
+  } else {
+    line.hidden = true;
+    line.textContent = "";
+  }
+  // Recusa do domínio é terminal e visível: não some e não vira sucesso. Vale
+  // para a viagem ativa e para a ação mais recente do aparelho — a viagem pode
+  // ter sido encerrada pelo console enquanto a ação esperava rede.
+  const maisRecente = events.reduce(
+    (a, e) => (!a || (e.sequence_local || 0) > (a.sequence_local || 0) ? e : a),
+    null,
+  );
+  const recusa =
+    (serverTrip && events.find((e) => e.state === "rejected" && e.trip_id === serverTrip.trip_id)) ||
+    (maisRecente && maisRecente.state === "rejected" ? maisRecente : null);
+  if (recusa) {
+    const motivo = String(recusa.last_error || "sem motivo informado").replace(/^dominio_recusou:\s*/, "");
+    rejected.textContent = `Ação recusada pelo servidor: ${motivo}`;
+    rejected.hidden = false;
+  } else {
+    rejected.hidden = true;
+    rejected.textContent = "";
+  }
+  if (open.length) scheduleQueuePoll();
+}
+
+/** Enquanto há algo guardado, relê a fila; quando ela anda, relê o domínio. */
+function scheduleQueuePoll() {
+  if (queuePoll) return;
+  queuePoll = setTimeout(() => {
+    queuePoll = null;
+    const sig = deviceEvents()
+      .map((e) => `${e.event_id}:${e.state}`)
+      .join("|");
+    const changed = sig !== queueSeen;
+    queueSeen = sig;
+    if (changed) refresh().catch(() => render());
+    else render();
+  }, 1500);
+}
+
 /**
  * Parada atual na sequência:
  * - primeira ativa não confirmada / não removida
@@ -118,6 +269,12 @@ function addressHint(orderRef) {
 
 async function refresh() {
   snap = await snapshot();
+  render();
+}
+
+/** Pinta a partir do último snapshot e das intenções guardadas no aparelho. */
+function render() {
+  if (!snap) return;
   // Uma única fonte: snap.connection + pending_sync (nunca misturar com outro canal)
   const cs = connectionState(snap.connection, snap.pending_sync || 0);
   const offline = cs.mode === "offline";
@@ -145,10 +302,13 @@ async function refresh() {
   // Link secundário só em offline real — não em sync pendente online
   $("btnSyncNow").hidden = !offline;
 
-  const t = activeTrip();
+  // GPS segue o DOMÍNIO (saída aceita no servidor), nunca a intenção guardada.
+  const serverTrip = activeTrip();
+  syncCapture(serverTrip);
+  const t = withDeviceIntents(serverTrip);
   const s = currentStop(t);
   const phase = stopPhase(t, s);
-  syncCapture(t);
+  renderDeviceQueue(serverTrip);
 
   // Reset actions
   const primary = $("btnPrimary");
@@ -200,7 +360,7 @@ async function refresh() {
     // A caminho → Abrir rota (soberana). Cheguei disponível para registrar chegada.
     // NÃO mostrar Cliente não encontrado.
     $("stageRail").innerHTML = `<span class="stage on">A caminho</span><span class="stage">No local</span><span class="stage">Entregar</span>`;
-    $("stopMeta").textContent = `Parada ${order} de ${total}`;
+    $("stopMeta").textContent = `Parada ${order} de ${total}${t._pendingDeparture ? " · saída guardada no aparelho" : ""}`;
     $("stopTitle").textContent = addressHint(s.order_ref);
     $("stopSub").textContent = `Pedido ${s.order_ref}`;
     $("stopCard").hidden = false;
@@ -228,14 +388,17 @@ async function refresh() {
   } else if (phase === "arrived") {
     // Chegada registrada → Confirmar entrega; Cliente não encontrado aplicável
     $("stageRail").innerHTML = `<span class="stage done">A caminho</span><span class="stage done">Cheguei</span><span class="stage on">Entregar</span>`;
-    $("stopMeta").textContent = `Parada ${order} de ${total} · chegada registrada`;
+    $("stopMeta").textContent =
+      s._pending === "arrive"
+        ? `Parada ${order} de ${total} · chegada guardada no aparelho`
+        : `Parada ${order} de ${total} · chegada registrada`;
     $("stopTitle").textContent = addressHint(s.order_ref);
     $("stopSub").textContent = "Entregue o pedido e confirme quando o cliente receber.";
     $("stopCard").hidden = false;
     $("stopCard").className = "card stop-card edge-green";
     $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
       <div class="meta">${chip(s.state)}</div>
-      <div class="mark">CHEGADA REGISTRADA</div>`;
+      <div class="mark">${s._pending === "arrive" ? "CHEGADA GUARDADA · AGUARDANDO ENVIO" : "CHEGADA REGISTRADA"}</div>`;
     $("nextLine").textContent = "";
 
     primary.hidden = false;
@@ -273,8 +436,15 @@ function openRoute(s) {
 async function act(fn) {
   renderError($("errorBox"), null);
   try {
-    await fn();
-    await refresh();
+    const res = await fn();
+    try {
+      await refresh();
+    } catch (e) {
+      // Guardada no aparelho e sem rede para reler o domínio: mostra a
+      // intenção guardada, sem erro — a ação não falhou.
+      if (res?.result?.queued && e?.transport) render();
+      else throw e;
+    }
   } catch (e) {
     renderError($("errorBox"), e.payload?.result?.error || e.message);
   }
@@ -283,7 +453,7 @@ async function act(fn) {
 function actDepart(t) {
   return act(async () => {
     if (!confirm("Confirmar saída da loja?")) return;
-    await pending.run(`dep:${t.trip_id}`, () => ({
+    return perform(`dep:${t.trip_id}`, () => ({
       type: "ConfirmTripDeparture",
       command_id: cid("dep"),
       occurred_at: now(),
@@ -296,7 +466,7 @@ function actDepart(t) {
 
 function actArrive(t, s) {
   return act(async () => {
-    await pending.run(`arr:${t.trip_id}:${s.delivery_id}`, () => ({
+    return perform(`arr:${t.trip_id}:${s.delivery_id}`, () => ({
       // "Cheguei" e' ato humano: relato, nao deteccao de sensor.
       type: "RecordArrivalReported",
       command_id: cid("arr"),
@@ -312,7 +482,7 @@ function actArrive(t, s) {
 function actConfirm(t, s) {
   return act(async () => {
     if (!confirm("Confirmar entrega ao cliente?")) return;
-    await pending.run(`cf:${t.trip_id}:${s.delivery_id}`, () => ({
+    return perform(`cf:${t.trip_id}:${s.delivery_id}`, () => ({
       type: "ConfirmDelivery",
       command_id: cid("cf"),
       occurred_at: now(),
@@ -326,7 +496,7 @@ function actConfirm(t, s) {
 
 $("btnNotFound").addEventListener("click", () =>
   act(async () => {
-    const t = activeTrip();
+    const t = withDeviceIntents(activeTrip());
     const s = currentStop(t);
     if (!t || !s) throw new Error("Sem parada");
     // Só permitido após chegada (UI); domínio valida o restante
@@ -336,7 +506,7 @@ $("btnNotFound").addEventListener("click", () =>
     if (s.state === "em_rota") {
       throw new Error("Registre a chegada (Cheguei) antes de informar cliente não encontrado.");
     }
-    await pending.run(`nf:${t.trip_id}:${s.delivery_id}`, () => ({
+    return perform(`nf:${t.trip_id}:${s.delivery_id}`, () => ({
       type: "RecordCustomerNotFound",
       command_id: cid("nf"),
       occurred_at: now(),
@@ -351,7 +521,7 @@ $("btnNotFound").addEventListener("click", () =>
 $("btnProblem").addEventListener("click", () =>
   act(async () => {
     const t = activeTrip();
-    await pending.run(`oc:${t?.trip_id ?? "sem-viagem"}`, () => ({
+    return perform(`oc:${t?.trip_id ?? "sem-viagem"}`, () => ({
       type: "CreateOccurrence",
       command_id: cid("oc"),
       occurred_at: now(),
@@ -557,6 +727,8 @@ async function initCapture() {
     cap.initializing = false;
   }
   if (cap.ready) syncCapture(activeTrip());
+  // Políticas lidas: a fila do aparelho pode estar anunciada — repinta com ela.
+  if (snap) render();
 }
 
 /** O registro é do servidor; o Kotlin guarda a cópia e confere o aparelho. */
