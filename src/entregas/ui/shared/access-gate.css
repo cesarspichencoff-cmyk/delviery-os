@@ -1,0 +1,33 @@
+/* Entrada por código pessoal (shared/access-gate.js). */
+.access-gate {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 26rem;
+  margin: 1.25rem auto;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--line-work);
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+.access-gate h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.access-gate input {
+  min-height: 44px;
+  font-size: 1rem;
+}
+.access-gate button {
+  min-height: 44px;
+}
+.access-error {
+  margin: 0;
+  min-height: 1.2em;
+  color: var(--attention);
+}
+.access-logout {
+  min-height: 36px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+}

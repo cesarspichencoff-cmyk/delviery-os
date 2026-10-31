@@ -7,6 +7,7 @@ import {
   newCommandId,
   createPendingCommands,
 } from "../shared/client.js";
+import { ensureAccess } from "../shared/access-gate.js";
 import {
   createDispatchLocation,
   renderLocationLine,
@@ -90,6 +91,8 @@ async function refresh() {
         : cs.mode === "pending_sync"
           ? `${roleLabel} · sincronização pendente (${snap.pending_sync || 0})`
           : `${roleLabel} · online`;
+    // No piloto o papel vem do código de quem entrou: o seletor é da demonstração.
+    if (snap.session_required === true) $("role").hidden = true;
     // O erro de cada ação é mostrado pela própria ação. Repintar aqui o último
     // erro do snapshot apagava o aviso de queda de rede e, antes de o erro ser
     // por ator, mostrava em todo terminal o DUPLICATE_COMMAND de outro.
@@ -560,7 +563,14 @@ document.querySelectorAll(".tabs [role=tab]").forEach((tab) => {
   });
 });
 
-refresh();
+// Sem código guardado, a entrada aparece e nada é buscado antes dela.
+ensureAccess({
+  gateBefore: $("main"),
+  hideWhileLocked: true,
+  logoutIn: document.querySelector(".shell-meta"),
+}).then((actor) => {
+  if (actor) refresh();
+});
 
 // Atualiza apenas a viagem em foco; ao ocultar a página, invalida o cache.
 setInterval(() => {

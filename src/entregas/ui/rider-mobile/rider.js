@@ -22,6 +22,7 @@ import {
   permissionFromStatus,
 } from "./native-bridge.js";
 import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
+import { ensureAccess } from "../shared/access-gate.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -809,4 +810,11 @@ if (native) {
   // login do piloto existir. A autorização do aparelho depende desse valor.
   void initCapture();
 }
-refresh().catch((e) => renderError($("errorBox"), e.message));
+// Sem código guardado, a entrada aparece no topo; a identidade do aparelho
+// continua visível (o responsável a cadastra antes do primeiro acesso).
+ensureAccess({
+  gateBefore: $("main").firstElementChild,
+  logoutIn: document.querySelector(".m-header"),
+}).then((actor) => {
+  if (actor) refresh().catch((e) => renderError($("errorBox"), e.message));
+});
