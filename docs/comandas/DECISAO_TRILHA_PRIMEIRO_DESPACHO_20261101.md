@@ -49,3 +49,29 @@ Mesmo com `READONLY_SOURCE_TRACE_PROVEN`, ainda faltam sequência TATÁ de três
 **Situação:** `FIRST_NATIVE_DISPATCH=UNKNOWN`; `NATIVE_PRINT_TRANSPORT_ACTIVE=UNKNOWN`; `PERSISTED_SEQUENCE_V2=UNKNOWN`; `LIVE_PRINT_AUTHORIZED=false`; `PILOT=HOLD`.
 
 **Ações realizadas para esta decisão:** pesquisa pública, leitura de material versionado, revisão e novos testes offline. **Não realizados:** acesso ao host, captura de pedidos, mudança de acesso, download/instalação de ferramenta, contato com Teknisa, envio de e-mail, SQL, serviço, spooler, impressão, merge ou deploy.
+
+
+## Refinamento de 01/11 — primeiro verificar vínculo pelo Retail sem segredo (B0.5)
+
+Uma fonte oficial já disponível descreve duas superfícies administrativas pré-existentes **para a integração**, com potencial de reduzir a busca no host antes de recorrer a observação de processos:
+
+1. **Retail → Parametrização → Vendas → Parâmetros de Gestão de Vendas → Parâmetros de Integração e Aplicativos**, projeto iFood: o manual mostra abas **Projeto**, **Unidades Participantes** e **Mapeamento de Produto**. Só interessa **identificador de projeto (IFO)** e vínculo de unidade; **não** abrir credenciais, token, detalhes de pedidos ou cadastro de consumidor.
+2. **Retail → Parametrização → Vendas → Integração → Cadastro de Integração**, identificador `IFO`, aba **Unidade**: o manual da Teknisa descreve a opção **Utiliza Loja e Caixa do Vendedor Padrão** e, se desabilitada, uma associação individual de loja e caixa por unidade. Visualizar o estado, sem clicar em Editar, Salvar ou qualquer comando; **não abrir a aba Token**. O exemplo do manual usa filial fictícia 0005 e interface de 2021, **não prova** a localização ou a configuração atual da filial Itaim em 2026.
+
+**Por que este B0.5 antecede B1:** a cadeia de primeira impressão depende de saber qual PDV/caixa efetivamente recebe o pedido iFood da unidade. Se a associação ativa for diversa daquela suposta pelo Reader, qualquer investigação de primeiro despacho em outro host produzirá falso negativo. A inspeção de interface é mais estreita do que habilitar log de impressão, monitor ou capturar rede.
+
+**Escopo e validade:** rota **apenas planejada**, não executada; nenhum login ou clique foi feito. Requer sessão legítima já autorizada, profissional presente e permissão específica de visualizar a configuração; caso a interface atual não exponha o vínculo, haja restrição de acesso, ou a informação seja ambígua, permanecer `UNKNOWN`. Registrar somente: unidade exibida, se integração `IFO` aparece vinculada, se a fonte de loja/caixa é padrão ou específica, identificador mínimo de loja/caixa quando permitido, versão/data da observação, e eventual desvio entre unidade confirmada e Reader; **não capturar tela completa com segredos**. A origem do parâmetro `IDIMPPEDPROD` é compartilhada com mesa/balcão, logo não alterá-lo.
+
+**Fonte:** [Manual Integração Teknisa × iFood 4.2.0, páginas impressas 18–23](https://ead.teknisa.com/wp-content/uploads/2025/11/Manual-Integracao-Teknisa-iFood.pdf). A descrição de caminhos é **documentação de produto**, não observação na máquina.
+
+### Conjunto mínimo de evidências após B0.5
+
+- **Vínculo comprovado da integração:** `IFO`/unidade/loja/caixa em fonte autorizada + identidade técnica do host.
+- **Transição comprovada do pedido:** uma chave composta nativa e uma revisão estável lidas por via permitida; sem ID curto como chave única.
+- **Primeira tentativa comprovada:** componente+hash/versão+callsite e entrada realmente executada, diferenciada de impressão manual e reimpressão; ponte, PHP direto ou arquivo/serviço explicitamente indicado.
+- **Destino e efeito:** praça/backup independentes da hipótese, sem interpretar API `cupom impresso`, status do Windows ou `202` como papel.
+- **Operação:** sequência TATÁ atômica, exclusividade, rollback, teste físico e aceite humano precisam de autorização posterior; nenhum item anterior os autoriza.
+
+**Caminho escolhido:** B0.5 (vínculo de integração por interface legítima) → B1 (observação nativa pontual, previamente autorizada) → validação de efeito e sequência → piloto físico expressamente autorizado. Se B0.5 não estiver acessível, não contornar permissão; voltar a `UNKNOWN` e solicitar autorização para **uma fonte específica**, nunca acesso genérico ao host ou monitor permanente.
+
+**Dois atalhos desqualificados:** (a) repetir a mesma busca literal em 133 PHP já revisados; (b) repetir o acesso aos quatro arquivos do Reader que retornaram `EPERM` com outra conta/ferramenta. Nenhum dos dois muda a falta de prova do primeiro despacho. 
