@@ -84,3 +84,12 @@ O mesmo manual lista em **Problemas Frequentes → Caixa sincronizador não enco
 Se houver permissão legítima de **visualizar** essa tela no escopo B0.5, registrar apenas a presença do vínculo e do parâmetro (quando visível, sem dados sensíveis); jamais ativar/desativar sincronização, acessar áreas protegidas ou inferir qual processo efetivamente imprime apenas pelo valor da opção. Isso ajuda a escolher corretamente o alvo de B1 e evita repetir busca negativa no host errado.
 
 **Fonte delimitada:** Manual oficial de Integração Teknisa × iFood 4.2.0, seção 7a (página impressa 26). A edição do manual não comprova a instalação nem os parâmetros atuais do Itaim.
+
+
+## Atualização de evidência — ramo obrigatório Vendedor Padrão → Caixa (01/11/2026)
+
+A leitura adicional do manual oficial identificou um elo que faltava à ficha inicial **B0.5**: quando `Utiliza Loja e Caixa do Vendedor Padrão = SIM`, o manual requer localizar o **Vendedor Padrão** em `Parâmetros de Gestão de Vendas → Delivery` **e verificar a associação desse vendedor** em `Cadastro de Caixa → Unidade+Loja → Parâmetros → Vendedores Associados` (seções **3.a e 3.d**, além de **5.b**). **Não é correto escolher um caixa apenas pelo nome do computador, pelo destino de entrega ou pela flag de sincronização.** Se não houver uma associação inequívoca, `B05_MAPPING_AMBIGUOUS_HOLD`.
+
+Quando `Utiliza Loja e Caixa do Vendedor Padrão = NÃO`, loja e caixa são atribuídos por unidade na integração. Se os dados estiverem visíveis apenas na aba **Token** ou exigirem editar configuração, a checagem **para** sem abrir o segredo. A flag **Realiza sincronização com Delivery Centralizado** é pista de arquitetura, **não prova identidade de processo ou emissor**.
+
+**Procedimento enxuto, sem efeito e sem conteúdo de cliente:** [Ficha B0.5 — origem IFO Itaim](FICHA_B05_ORIGEM_IFO_ITAIM_SOMENTE_LEITURA_20261101.md). Essa ficha identifica precisamente o próximo B1 e evita repetir buscas em fontes que não geram a primeira via. `B05_UNVERIFIED` até observação atual legitimamente autorizada; nenhum dado de configuração do Itaim foi obtido por esta pesquisa.
