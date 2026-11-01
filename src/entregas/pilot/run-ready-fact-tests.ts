@@ -34,6 +34,7 @@ import type { DomainEvent } from "../foundation/types";
 import { EntregasApplicationService } from "../operational/application-service";
 import { MemoryUnitOfWork } from "../persistence/memory-uow";
 import { openFileUnitOfWork } from "../persistence/file-store";
+import { canonicalInboundFingerprint, type DurableInboundReceipt } from "../persistence/inbound-receipt";
 import type { UnitOfWork } from "../persistence/ports";
 import type { PilotConfig } from "./pilot-config";
 import { PilotApplicationFacade } from "./pilot-facade";
@@ -83,6 +84,8 @@ function cfg(dir: string, modo: PilotConfig["source_mode"] | null = "simulated")
     users: [
       { actor_id: "ops-1", role: "operador_expedicao", label: "Ops", token: "tok-ops" },
       { actor_id: "rid-1", role: "motoboy_interno", label: "Rider", token: "tok-rider" },
+      { actor_id: "ops-2", role: "operador_expedicao", label: "Ops 2", token: "tok-ops-2" },
+      { actor_id: "rid-2", role: "motoboy_interno", label: "Rider 2", token: "tok-rider-2" },
     ],
     features: {
       demo_seed: false,
@@ -112,7 +115,7 @@ function abrir(
     createPilotLogger(dir),
     opts.storage,
     ready,
-    { internalRiders: () => new Set(["rid-1"]) },
+    { internalRiders: () => new Set(["rid-1", "rid-2"]) },
   );
   return { dir, facade, ready };
 }
@@ -244,7 +247,7 @@ async function main(): Promise<void> {
     assert.equal(f.object_id, "D1");
     assert.equal(f.payload.trip_id, "T1");
     assert.equal(f.payload.order_ref, "P-1");
-    assert.equal(f.idempotency_key, "delivery_ready:T1:D1");
+    assert.equal(f.idempotency_key, `delivery_ready:${UNIT}:P-1:${t0}`, "a chave é por REGISTRO (unidade + pedido + instante)");
     const timeline = buildTripTimeline(await p.facade.listTripEvents("T1"));
     const linha = timeline.find((e) => e.event_type === "delivery_ready");
     assert.ok(linha, "a linha do tempo da viagem não mostra o pronto");
@@ -256,19 +259,32 @@ async function main(): Promise<void> {
     assert.ok(ordem.indexOf("trip_created") < ordem.indexOf("trip_started"));
   });
 
-  await teste("F2 registro de pronto não é conclusão de produção; identidade de quem registrou não é inventada", async () => {
+  await teste("F2 quem registrou o pronto (sessão) fica no actor_id; não é quem montou a viagem nem quem preparou", async () => {
     const p = abrir(dir("f2"));
-    await registrar(p, "P-2");
+    await registrar(p, "P-2"); // sessão tok-ops = ops-1
+    const fila = (await p.ready.list()).find((o) => o.order_ref === "P-2");
+    assert.deepEqual(fila?.registered_by, { actor_id: "ops-1", role: "operador_expedicao" },
+      "a fila não guardou a sessão que registrou");
     await sleep(5);
-    assert.equal((await criarViagem(p, "T2", [{ delivery_id: "D2", order_ref: "P-2" }])).ok, true);
+    const ops2 = { actor_id: "ops-2", role: "operador_expedicao" as const };
+    const r = await p.facade.executeAs(ops2, {
+      type: "CreateTrip", command_id: "ct-T2", occurred_at: new Date().toISOString(), unit_id: UNIT,
+      trip_id: "T2", courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "D2", order_ref: "P-2" }], actor: ops2,
+    });
+    assert.equal(r.ok, true, r.error);
     const f = (await prontos(p.dir))[0];
     assert.ok(f, "sem delivery_ready");
+    assert.equal(f!.actor_id, "ops-1", "o ato de registrar é de ops-1, não de quem montou a viagem");
     assert.equal(f!.payload.ready_kind, "registro_expedicao");
     assert.equal(f!.payload.production_completed_at, null);
-    assert.equal(f!.payload.registered_by, null, "a fila nunca guardou quem registrou: tem de ficar UNKNOWN");
-    assert.equal(f!.actor_id, undefined, "o ator da viagem não é quem registrou o pronto");
+    assert.equal(f!.payload.prepared_by, null, "quem registrou não é quem preparou: preparo fica UNKNOWN");
     assert.equal(f!.origin, "ops_console");
     assert.equal(f!.clock_trust, "trusted");
+    const pub = (await openFileUnitOfWork(join(p.dir, "store.json")).outbox.all())
+      .filter((x) => x.event.event_type === "delivery_ready");
+    assert.equal(pub.length, 1);
+    assert.equal(JSON.stringify(pub[0]).includes("ops-1"), false, "identidade do operador vazou para o evento público");
   });
 
   await teste("F3 reinício do piloto: o instante continua disponível, com o mesmo event_id e sem duplicar", async () => {
@@ -310,7 +326,7 @@ async function main(): Promise<void> {
     const f = (await prontos(p.dir)).find((e) => e.object_id === "D4b");
     assert.ok(f, "AddDeliveryToTrip não gravou o pronto");
     assert.equal(f!.occurred_at, t4b);
-    assert.equal(f!.idempotency_key, "delivery_ready:T4:D4b");
+    assert.equal(f!.idempotency_key, `delivery_ready:${UNIT}:P-4b:${t4b}`);
   });
 
   await teste("F5 sem registro na fila não há fato: nenhuma associação inventada", async () => {
@@ -481,6 +497,141 @@ async function main(): Promise<void> {
     assert.equal(fatos[0]!.occurred_at, t0);
   });
 
+  await teste("C1 arquivo: dois operadores consomem o mesmo pronto ao mesmo tempo — uma viagem, um fato, a outra recusada", async () => {
+    const d = dir("c1");
+    const p = abrir(d);
+    const t0 = await registrar(p, "P-C1");
+    await sleep(5);
+    const a = { actor_id: "ops-1", role: "operador_expedicao" as const };
+    const b = { actor_id: "ops-2", role: "operador_expedicao" as const };
+    const montar = (trip: string, entrega: string, rider: string, ator: typeof a) => p.facade.executeAs(ator, {
+      type: "CreateTrip", command_id: `ct-${trip}`, occurred_at: new Date().toISOString(), unit_id: UNIT,
+      trip_id: trip, courier_actor_id: asInternalRiderActorId(rider),
+      deliveries: [{ delivery_id: entrega, order_ref: "P-C1" }], actor: ator,
+    });
+    const rs = await Promise.all([montar("TC1A", "DC1A", "rid-1", a), montar("TC1B", "DC1B", "rid-2", b)]);
+    assert.equal(rs.filter((r) => r.ok).length, 1, `as duas montagens passaram: ${JSON.stringify(rs.map((r) => [r.ok, r.code]))}`);
+    assert.equal(rs.find((r) => !r.ok)!.code, "READY_ALREADY_CONSUMED");
+    const fatos = (await prontos(d)).filter((e) => e.payload.order_ref === "P-C1");
+    assert.equal(fatos.length, 1);
+    assert.equal(fatos[0]!.occurred_at, t0);
+    const viagens = await openFileUnitOfWork(join(d, "store.json")).trips.list();
+    const ativas = viagens.flatMap((v) => v.deliveries).filter((e) => e.order_ref === "P-C1" && e.active);
+    assert.equal(ativas.length, 1, `o pedido está em ${ativas.length} entregas ativas`);
+    assert.equal((await p.ready.list()).some((o) => o.order_ref === "P-C1"), false);
+  });
+
+  await teste("F16 armazenamento em arquivo recusa o MESMO registro em duas entregas, mesmo sem a fachada", async () => {
+    const d = dir("f16");
+    const uow = openFileUnitOfWork(join(d, "store.json"));
+    const svc = new EntregasApplicationService(uow, createPilotPolicy(), "simulated");
+    const registro = [{ order_ref: "P-16", registered_at: "2026-11-01T10:00:00.000Z" }];
+    const montar = (trip: string, entrega: string, rider: string) => svc.execute({
+      type: "CreateTrip", command_id: `svc-${trip}`, occurred_at: "2026-11-01T10:05:00.000Z", unit_id: UNIT,
+      trip_id: trip, courier_actor_id: asInternalRiderActorId(rider),
+      deliveries: [{ delivery_id: entrega, order_ref: "P-16" }],
+      actor: { actor_id: "ops-1", role: "operador_expedicao" },
+    } as never, undefined, undefined, registro);
+    const r1 = await montar("T16A", "D16A", "rid-1");
+    assert.equal(r1.ok, true, r1.error);
+    const r2 = await montar("T16B", "D16B", "rid-2");
+    assert.equal(r2.ok, false, "o mesmo registro virou duas entregas");
+    assert.equal(r2.code, "READY_ALREADY_CONSUMED");
+    const duravel = openFileUnitOfWork(join(d, "store.json"));
+    assert.equal(await duravel.trips.get("T16B"), null, "a viagem perdedora ficou gravada");
+    assert.equal((await duravel.events.listAll()).filter((e) => e.event_type === "delivery_ready").length, 1);
+  });
+
+  await teste("F17 falha depois do commit + reinício + reenvio idêntico do evento autenticado: replay confirmado, um fato, fila reconciliada", async () => {
+    const d = dir("f17");
+    const fila = new FilaComFalhaNaRemocao(new FilePilotReadyOrderStore(join(d, "ready_orders.json")));
+    const p = abrir(d, { ready: fila });
+    const t0 = await registrar(p, "P-17");
+    await sleep(5);
+    const ator = { actor_id: "ops-1", role: "operador_expedicao" as const };
+    const cmd = {
+      type: "CreateTrip", command_id: "ct-inbound-17", occurred_at: new Date().toISOString(), unit_id: UNIT,
+      trip_id: "T17", courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "D17", order_ref: "P-17" }], actor: ator,
+    };
+    const envelope = { event_id: "ev-17", idempotency_key: "idem-17", device_id: null };
+    fila.armado = true;
+    await p.facade.executeAs(ator, cmd, envelope); // commit feito; limpeza da fila cai
+    assert.equal((await prontos(d)).length, 1, "o commit aconteceu: o fato precisa estar no log");
+    const p2 = abrir(d); // reinício; a fila ainda lista P-17
+    assert.equal((await p2.ready.list()).some((o) => o.order_ref === "P-17"), true, "pré-condição: fila velha");
+    const r2 = await p2.facade.executeAs(ator, cmd, envelope);
+    assert.equal(r2.ok, true, `${r2.code} ${r2.error}`);
+    assert.equal(r2.code, "REPLAY_APPLIED", "o reenvio do próprio evento tem de ser confirmado, não recusado");
+    const fatos = await prontos(d);
+    assert.equal(fatos.length, 1);
+    assert.equal(fatos[0]!.occurred_at, t0);
+    assert.equal((await p2.ready.list()).some((o) => o.order_ref === "P-17"), false, "a fila velha não foi reconciliada");
+  });
+
+  await teste("F18 o mesmo registro pelo caminho com recibo: recusa DEFINITIVA, nunca resultado incerto para reenviar", async () => {
+    const d = dir("f18");
+    const uow = openFileUnitOfWork(join(d, "store.json"));
+    const svc = new EntregasApplicationService(uow, createPilotPolicy(), "simulated");
+    const registro = [{ order_ref: "P-18", registered_at: "2026-11-01T11:00:00.000Z" }];
+    const ator = { actor_id: "ops-1", role: "operador_expedicao" as const };
+    const comando = (trip: string, entrega: string, rider: string) => ({
+      type: "CreateTrip", command_id: `svc-${trip}`, occurred_at: "2026-11-01T11:05:00.000Z", unit_id: UNIT,
+      trip_id: trip, courier_actor_id: asInternalRiderActorId(rider),
+      deliveries: [{ delivery_id: entrega, order_ref: "P-18" }], actor: ator,
+    });
+    const recibo = (cmd: ReturnType<typeof comando>, ev: string): DurableInboundReceipt => ({
+      unit_id: UNIT, event_id: ev, idempotency_key: `idem-${ev}`, actor_id: ator.actor_id, actor_role: ator.role,
+      device_id: null, command_id: cmd.command_id, command_type: cmd.type,
+      fingerprint: canonicalInboundFingerprint({ event_id: ev, idempotency_key: `idem-${ev}`,
+        command: cmd as unknown as Record<string, unknown>, unit_id: UNIT, actor_id: ator.actor_id,
+        actor_role: ator.role, device_id: null }),
+      outcome: "applied", code: null, recorded_at: "2026-11-01T11:05:01.000Z",
+    });
+    const c1 = comando("T18A", "D18A", "rid-1");
+    const r1 = await svc.execute(c1 as never, recibo(c1, "ev18a"), c1 as never, registro);
+    assert.equal(r1.ok, true, `${r1.code} ${r1.error}`);
+    const c2 = comando("T18B", "D18B", "rid-2");
+    const r2 = await svc.execute(c2 as never, recibo(c2, "ev18b"), c2 as never, registro);
+    assert.equal(r2.ok, false);
+    assert.equal(r2.code, "READY_ALREADY_CONSUMED", `veio ${r2.code}: o aparelho reenviaria para sempre`);
+    assert.notEqual(r2.retryable, true);
+    assert.equal((await openFileUnitOfWork(join(d, "store.json")).events.listAll())
+      .filter((e) => e.event_type === "delivery_ready").length, 1);
+  });
+
+  await teste("F14 reenvio do mesmo comando depois do sucesso: confirmação de já registrado, sem segundo fato", async () => {
+    const d = dir("f14");
+    const p = abrir(d);
+    const t0 = await registrar(p, "P-14");
+    await sleep(5);
+    const corpo = [{ delivery_id: "D14", order_ref: "P-14" }];
+    assert.equal((await criarViagem(p, "T14", corpo)).ok, true);
+    const r2 = await criarViagem(p, "T14", corpo);
+    assert.equal(r2.ok, false);
+    assert.equal(r2.code, "DUPLICATE_COMMAND");
+    const fatos = await prontos(d);
+    assert.equal(fatos.length, 1);
+    assert.equal(fatos[0]!.occurred_at, t0);
+  });
+
+  await teste("F15 reenvio do mesmo comando depois do reinício: recusado pelo domínio, fato e instante intactos", async () => {
+    const d = dir("f15");
+    const p = abrir(d);
+    const t0 = await registrar(p, "P-15");
+    await sleep(5);
+    const corpo = [{ delivery_id: "D15", order_ref: "P-15" }];
+    assert.equal((await criarViagem(p, "T15", corpo)).ok, true);
+    const antes = await prontos(d);
+    const p2 = abrir(d); // reinício: a memória de command_id se perde
+    const r2 = await criarViagem(p2, "T15", corpo);
+    assert.equal(r2.ok, false, "o reenvio depois do reinício criou outra viagem");
+    const depois = await prontos(d);
+    assert.equal(depois.length, 1);
+    assert.equal(depois[0]!.event_id, antes[0]!.event_id);
+    assert.equal(depois[0]!.occurred_at, t0);
+  });
+
   await provasPostgres();
   await provaDeProcesso();
 
@@ -497,7 +648,7 @@ async function main(): Promise<void> {
 async function provasPostgres(): Promise<void> {
   const url = process.env.DELIVERYOS_PG_URL?.trim();
   if (!url) {
-    console.log("  PULADO PostgreSQL: DELIVERYOS_PG_URL ausente — as provas P1-P3 NAO rodaram");
+    console.log("  PULADO PostgreSQL: DELIVERYOS_PG_URL ausente — as provas P1-P5, C3a e C3b NAO rodaram");
     return;
   }
   const { createPgClient } = await import("../../platform/persistence/sql-client");
@@ -521,7 +672,7 @@ async function provasPostgres(): Promise<void> {
     const storage: PilotUnitOfWorkSource = { kind: "external", open: () => new PgEntregasUnitOfWork(a, PGUNIT) };
     const ready = new PgPilotReadyOrderStore(a, PGUNIT);
     const facade = () => new PilotApplicationFacade(pgCfg, createPilotLogger(pgDir), storage, ready,
-      { internalRiders: () => new Set(["rid-1"]) });
+      { internalRiders: () => new Set(["rid-1", "rid-2"]) });
 
     await teste("P1 PostgreSQL: viagem, entrega, fato e consumo da fila na MESMA transação", async () => {
       const f = facade();
@@ -570,7 +721,7 @@ async function provasPostgres(): Promise<void> {
         return u;
       } };
       const ff = new PilotApplicationFacade(pgCfg, createPilotLogger(pgDir), falhando, ready,
-        { internalRiders: () => new Set(["rid-1"]) });
+        { internalRiders: () => new Set(["rid-1", "rid-2"]) });
       ff.login("tok-ops");
       const r = await ff.execute({
         type: "CreateTrip", command_id: `pg-ct3-${sufixo}`, occurred_at: new Date().toISOString(), unit_id: PGUNIT,
@@ -613,6 +764,88 @@ async function provasPostgres(): Promise<void> {
       assert.equal(n[0]!.n, "1", "o fato duplicou no PG");
       assert.equal((await ready.list()).some((o) => o.order_ref === ref), false, "a linha velha ficou na fila");
     });
+    // Dois "processos": conexões, UoWs e fachadas separadas sobre o mesmo banco.
+    const b = await createPgClient({ url, max: 2 });
+    function barreira(n: number) {
+      let chegaram = 0;
+      let abrir!: () => void;
+      const aberta = new Promise<void>((r) => { abrir = r; });
+      return { chegar: async () => { chegaram += 1; if (chegaram >= n) abrir(); await aberta; } };
+    }
+    class FilaComBarreira implements PilotReadyOrderStore {
+      constructor(private readonly base: PilotReadyOrderStore, private readonly bar: { chegar: () => Promise<void> }) {}
+      async list(): Promise<PilotReadyOrder[]> { const l = await this.base.list(); await this.bar.chegar(); return l; }
+      add(o: PilotReadyOrder) { return this.base.add(o); }
+      removeByOrderRefs(r: readonly string[]) { return this.base.removeByOrderRefs(r); }
+    }
+    const processo = (cli: typeof a, fila: PilotReadyOrderStore) => new PilotApplicationFacade(pgCfg, createPilotLogger(pgDir),
+      { kind: "external", open: () => new PgEntregasUnitOfWork(cli, PGUNIT) }, fila,
+      { internalRiders: () => new Set(["rid-1", "rid-2"]) });
+    const montarPg = (f: PilotApplicationFacade, ator: { actor_id: string; role: "operador_expedicao" }, trip: string, entrega: string, rider: string, ref: string) =>
+      f.executeAs(ator, {
+        type: "CreateTrip", command_id: `pg-${trip}`, occurred_at: new Date().toISOString(), unit_id: PGUNIT,
+        trip_id: trip, courier_actor_id: asInternalRiderActorId(rider),
+        deliveries: [{ delivery_id: entrega, order_ref: ref }], actor: ator,
+      });
+    const contarFatos = async (ref: string) => Number((await admin.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM entregas.domain_event WHERE unit_id=$1 AND event_type='delivery_ready'
+         AND payload->>'order_ref'=$2`, [PGUNIT, ref]))[0]!.n);
+    const contarAtivas = async (ref: string) => Number((await admin.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM entregas.delivery d JOIN entregas.trip t ON t.trip_id=d.trip_id
+        WHERE t.unit_id=$1 AND d.order_ref=$2 AND d.active`, [PGUNIT, ref]))[0]!.n);
+    const opsA = { actor_id: "ops-1", role: "operador_expedicao" as const };
+    const opsB = { actor_id: "ops-2", role: "operador_expedicao" as const };
+
+    await teste("C3a PostgreSQL: dois processos com o MESMO registro em mãos — uma transação vence, a outra é recusada", async () => {
+      const ref = `PG-${sufixo}-C3A`;
+      const f0 = facade();
+      f0.login("tok-ops");
+      assert.equal((await f0.registerReadyOrder(ref, "Pedido corrida", "proprio")).ok, true);
+      const t0 = (await ready.list()).find((o) => o.order_ref === ref)!.created_at;
+      await sleep(5);
+      const bar = barreira(2);
+      const fA = processo(a, new FilaComBarreira(new PgPilotReadyOrderStore(a, PGUNIT), bar));
+      const fB = processo(b, new FilaComBarreira(new PgPilotReadyOrderStore(b, PGUNIT), bar));
+      const rs = await Promise.all([
+        montarPg(fA, opsA, `PGTA-${sufixo}`, `PGDA-${sufixo}`, "rid-1", ref),
+        montarPg(fB, opsB, `PGTB-${sufixo}`, `PGDB-${sufixo}`, "rid-2", ref),
+      ]);
+      assert.equal(rs.filter((r) => r.ok).length, 1, `resultado: ${JSON.stringify(rs.map((r) => [r.ok, r.code, r.error]))}`);
+      assert.equal(rs.find((r) => !r.ok)!.code, "READY_ALREADY_CONSUMED");
+      assert.equal(await contarFatos(ref), 1, "o fato duplicou no PG");
+      assert.equal(await contarAtivas(ref), 1, "o pedido ficou em duas entregas ativas");
+      const fato = await admin.query<{ occurred_at: Date }>(
+        `SELECT occurred_at FROM entregas.domain_event WHERE unit_id=$1 AND event_type='delivery_ready' AND payload->>'order_ref'=$2`,
+        [PGUNIT, ref]);
+      assert.equal(new Date(fato[0]!.occurred_at).toISOString(), t0);
+    });
+
+    await teste("C3b PostgreSQL: o segundo processo chega depois do commit do primeiro — recusado, não vira pedido avulso", async () => {
+      const ref = `PG-${sufixo}-C3B`;
+      const f0 = facade();
+      f0.login("tok-ops");
+      assert.equal((await f0.registerReadyOrder(ref, "Pedido tardio", "proprio")).ok, true);
+      await sleep(5);
+      const fA = processo(a, new PgPilotReadyOrderStore(a, PGUNIT));
+      const fB = processo(b, new PgPilotReadyOrderStore(b, PGUNIT));
+      const ra = await montarPg(fA, opsA, `PGTC-${sufixo}`, `PGDC-${sufixo}`, "rid-1", ref);
+      assert.equal(ra.ok, true, ra.error);
+      const rb = await montarPg(fB, opsB, `PGTD-${sufixo}`, `PGDD-${sufixo}`, "rid-2", ref);
+      assert.equal(rb.ok, false, "o pedido já despachado entrou numa segunda viagem como avulso");
+      assert.equal(rb.code, "READY_ALREADY_CONSUMED");
+      assert.equal(await contarFatos(ref), 1);
+      assert.equal(await contarAtivas(ref), 1);
+    });
+
+    await teste("P5 PostgreSQL: a fila não tem onde guardar quem registrou — actor_id fica UNKNOWN, nunca o montador", async () => {
+      const ref = `PG-${sufixo}-1`;
+      const linhas = await admin.query<{ actor_id: string | null }>(
+        `SELECT actor_id FROM entregas.domain_event WHERE unit_id=$1 AND event_type='delivery_ready' AND payload->>'order_ref'=$2`,
+        [PGUNIT, ref]);
+      assert.equal(linhas.length, 1);
+      assert.equal(linhas[0]!.actor_id, null);
+    });
+    await (b as { close?: () => Promise<void> }).close?.();
     rmSync(pgDir, { recursive: true, force: true });
   } finally {
     await (a as { close?: () => Promise<void> }).close?.();
@@ -630,7 +863,10 @@ async function provaDeProcesso(): Promise<void> {
   const { createServer } = await import("node:net");
   const { existsSync, mkdirSync, writeFileSync } = await import("node:fs");
   const RAIZ = process.cwd();
-  const tok = { caixa: "tok-caixa-pronto-sintetico", rid: "tok-rid-pronto-sintetico" };
+  const tok = {
+    caixa: "tok-caixa-pronto-sintetico", tablet: "tok-tablet-pronto-sintetico",
+    rid: "tok-rid-pronto-sintetico", rid2: "tok-rid2-pronto-sintetico",
+  };
   const porta = await new Promise<number>((ok, falha) => {
     const s = createServer();
     s.once("error", falha);
@@ -645,6 +881,8 @@ async function provaDeProcesso(): Promise<void> {
     users: [
       { actor_id: "ops-caixa-1", role: "operador_expedicao", label: "Caixa", token: tok.caixa },
       { actor_id: "rid-1", role: "motoboy_interno", label: "Motoboy Um", token: tok.rid },
+      { actor_id: "ops-tablet-1", role: "operador_expedicao", label: "Tablet", token: tok.tablet },
+      { actor_id: "rid-2", role: "motoboy_interno", label: "Motoboy Dois", token: tok.rid2 },
     ],
     features: { demo_seed: false, demo_controls: false, map_poc: false, gps_production: false,
       auto_assignment: false, copiloto: false, shell: false },
@@ -744,6 +982,25 @@ async function provaDeProcesso(): Promise<void> {
       assert.equal(pronto[0]!.at, t0);
       const ordem = (tl.json.timeline as Linha[]).map((l) => l.event_type);
       assert.ok(ordem.indexOf("delivery_ready") < ordem.indexOf("trip_started"), ordem.join(","));
+    });
+    await teste("H3 processo real: caixa e tablet pedem ao mesmo tempo a viagem do MESMO pronto — uma viagem, um fato", async () => {
+      const reg = await api("/api/ready-order", tok.caixa, { order_ref: "H-3", label: "Pedido H-3", channel: "proprio" });
+      assert.equal(reg.status, 200);
+      await sleep(5);
+      const pedir = (token: string, trip: string, entrega: string, rider: string) => api("/api/command", token, {
+        type: "CreateTrip", command_id: `ct-${trip}`, occurred_at: new Date().toISOString(), unit_id: "ITAIM",
+        trip_id: trip, courier_actor_id: rider, deliveries: [{ delivery_id: entrega, order_ref: "H-3" }],
+      });
+      const rs = await Promise.all([pedir(tok.caixa, "TH3A", "DH3A", "rid-1"), pedir(tok.tablet, "TH3B", "DH3B", "rid-2")]);
+      const res = rs.map((r) => r.json.result as { ok?: boolean; code?: string });
+      assert.equal(res.filter((r) => r?.ok).length, 1, `as duas viagens passaram: ${JSON.stringify(res)}`);
+      assert.equal(res.find((r) => !r?.ok)?.code, "READY_ALREADY_CONSUMED");
+      const snap = await api("/api/snapshot", tok.caixa);
+      const viagens = (snap.json.trips ?? []) as Array<{ trip_id: string; deliveries: Array<{ order_ref: string; state: string }> }>;
+      const comH3 = viagens.filter((v) => v.deliveries.some((e) => e.order_ref === "H-3"));
+      assert.equal(comH3.length, 1, `H-3 em ${comH3.length} viagens`);
+      const tl = await api(`/api/trip/timeline?trip_id=${comH3[0]!.trip_id}`, tok.caixa);
+      assert.equal((tl.json.timeline as Linha[]).filter((l) => l.event_type === "delivery_ready").length, 1);
     });
   } finally {
     if (pr) await derrubar(pr);
