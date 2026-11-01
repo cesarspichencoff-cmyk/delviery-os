@@ -55,14 +55,25 @@ try{
   assert.equal(o.basic_essential_content_candidates,1);
   assert.equal(o.note_parity_verified_candidates,1);
   assert.equal(o.note_parity_conflicts,0);
-  assert.equal(o.paired_with_persisted_tata_sequence,1,
-   JSON.stringify({sequence_state_status:o.sequence_state_status,
-    bindings:o.sequence_bindings_total,
-    content_valid_but_sequence_missing:o.content_valid_but_sequence_missing,
-    sequence_scope_collisions:o.sequence_scope_collisions,
-    blocking_codes:o.blocking_codes}));
+  assert.equal(o.paired_with_persisted_tata_sequence,0,
+   "V1 short-key identity cannot prove strong native persisted binding");
+  assert.equal(o.legacy_v1_short_key_matches_unattested,1);
+  assert.equal(o.sequence_state_status,
+   "LEGACY_V1_STRUCTURALLY_VALID_NOT_STRONG_KEY");
+  assert.ok(o.blocking_codes.includes(
+   "LEGACY_V1_SHORT_KEY_CANNOT_ATTEST_NATIVE_FULL_IDENTITY"));
   assert.equal(o.sequence_bindings_total,1);
   assert.equal(o.content_valid_but_sequence_missing,0);
+ });
+ test("legacy V1 duplicate cannot count as a strong persisted binding",()=>{
+  const y=pair();
+  y.sequence_state.bindings.push({...y.sequence_state.bindings[0]});
+  write(y);
+  const o=run();
+  assert.equal(o.paired_with_persisted_tata_sequence,0);
+  assert.equal(o.legacy_v1_short_key_matches_unattested,0);
+  assert.equal(o.content_valid_but_sequence_missing,1);
+  assert.equal(o.printing_authorized,false);
  });
  test("real native 3/P/X with item 4 is counted as shadow-only evidence",()=>{
   for(const header of ["3","P","X"]){
