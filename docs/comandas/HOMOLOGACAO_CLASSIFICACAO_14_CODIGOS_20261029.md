@@ -81,3 +81,16 @@ Um **registro de aprovação humana isolado** não equivale à captura de evidê
 **Situação de acesso:** CAIXA_MOOCA foi visto online em 30/10 e serviço `TataComandaReader` em execução; acesso do conector às pastas internas `shadow`/`state` retornou `EPERM`. Não houve obtenção do catálogo atual. Respeitar a negação e **não procurar rotas alternativas para contornar a restrição**. A nova ferramenta é preparação para evidência futura legitimamente autorizada, não uma prova de loja já concluída.
 
 **Contato externo:** permanece vedado conforme decisão humana acima.
+
+
+## Ponte de integridade — Reader e classificação na mesma revisão (31/10/2026)
+
+O comparador de catálogo e o recibo de classificação não são duas fontes independentes de aprovação. A nova função `convergeReaderCatalogClassification`, no arquivo `tools/comandas_reader_catalog_identity_crosscheck_v1_offline.cjs`, **reavalia o mesmo par Reader V2** nas duas checagens e exige simultaneamente:
+
+- `CDPRODUTO`, código canônico e nome normalizado ligados a **todas** as linhas da revisão, sem ausência, duplicidade, inatividade ou conflito;
+- alegações de classificação com índice, código, nome e quantidade exatos para a mesma revisão;
+- recibo de revisão presente e coerente com a decisão do Reader.
+
+Se qualquer condição falhar, retorna `HOLD`, sem recibo reaproveitável. Mesmo quando tudo coincide, o estado é apenas `JOINT_SELF_CONSISTENCY_REVIEW_ONLY`, com `catalog_independently_attested=false`, `classification_approved=false`, `packaging_approved=false` e `print_authorized=false`. O resultado público contém somente quantidade de linhas e digest do recibo, nunca IDs internos, nomes de clientes, observações ou dados integrais do pedido.
+
+**Prova incluída:** seis novos testes de junção positiva/rejeições no verificador já executado pela CI Linux e Windows. Os testes usam exclusivamente dados sintéticos. Esta ponte **não** valida o catálogo atual, não altera o motor da Academia e não transforma o relatório histórico de 05/10 em fonte atual. Continua necessária a captura autorizada e verificável de classificação vigente antes de produzir caixas, sacolas, kits ou papel.
