@@ -25,6 +25,13 @@ function projectHumanRulesForReader(pair,catalogCapture){
  let cross;
  try{cross=crosscheckReaderCatalogIdentity(pair,catalogCapture);}
  catch{return result("HOLD","INVALID_OR_UNTRUSTED_INPUT");}
+ // Identity matching alone is not enough when native order or item
+ // instructions still need disposition. Do not emit a production-role
+ // candidate while an allergy, omission or general note is unclassified.
+ if(pair?.event?.order?.observation_rows?.length>0||
+    pair?.decision?.order_observations?.length>0||
+    pair?.decision?.items?.some(x=>x.observations?.length>0))
+  return result("HOLD","NATIVE_OBSERVATIONS_REQUIRE_EXPLICIT_DISPOSITION");
  if(cross.status!=="IDENTITY_CANDIDATES_REVIEW_ONLY")
   return result("HOLD","NATIVE_OR_CATALOG_SCOPE_HOLD");
  if(cross.unresolved_count!==0||
