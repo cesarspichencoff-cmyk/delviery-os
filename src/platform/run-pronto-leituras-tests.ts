@@ -439,6 +439,15 @@ async function main(): Promise<void> {
       idempotency_key: "y", payload: { event_id: "e", event_type: "trip_started" } } as never));
   });
 
+  await teste("H2 o runtime assíncrono de verdade liga o consumidor (sem ele, as mensagens iriam para dead-letter)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const fonte = readFileSync(join(__dirname, "bin", "async-runtime.ts"), "utf8")
+      .split("\n").map((l) => l.replace(/(^|\s)\/\/.*$/, "$1")).join("\n");
+    const bloco = /const OUTBOX_HANDLERS[^=]*=\s*\{([\s\S]*?)\};/.exec(fonte)?.[1] ?? "";
+    assert.match(bloco, /\.\.\.ponteOperacaoViva\.handlers/, "a Operação Viva saiu do runtime");
+    assert.match(bloco, /\.\.\.montarHandlersDaTrajetoriaDoPronto\(\)/, "o consumidor dos fatos da entrega não está ligado");
+  });
+
   await fluxoIsolado();
 
   const total = passed + failures.length;
