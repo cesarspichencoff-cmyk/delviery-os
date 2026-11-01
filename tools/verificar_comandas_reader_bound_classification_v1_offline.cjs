@@ -212,3 +212,6 @@ console.log("COMANDAS_READER_CLASSIFICATION_BINDING="+n+"/"+n+
 
 // Exact Reader CDPRODUTO -> internal catalog candidate (offline, no effects).
 require("./verificar_comandas_reader_catalog_identity_crosscheck_v1_offline.cjs");
+
+// Native observation inventory: source-bound, privacy-safe, review-only.
+require("./verificar_comandas_reader_observation_triage_v1_offline.cjs");
