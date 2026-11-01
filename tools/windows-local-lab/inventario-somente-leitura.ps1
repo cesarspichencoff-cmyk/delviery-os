@@ -42,6 +42,11 @@ $relatorio = [ordered]@{
 $relatorio.windows = Tentar { $o = Get-CimInstance Win32_OperatingSystem; [pscustomobject]@{ caption = $o.Caption; versao = $o.Version; ultimo_boot = $o.LastBootUpTime.ToUniversalTime().ToString('o') } }
 $relatorio.node = Tentar { $n = Get-Command node.exe -ErrorAction Stop; [pscustomobject]@{ caminho = $n.Source; versao = (& $n.Source --version) } }
 $relatorio.wsl_presente = [bool](Get-Command wsl.exe -ErrorAction SilentlyContinue)
+# Ferramenta do certificado de laboratorio do ensaio fisico: so a presenca
+$relatorio.openssl = [ordered]@{
+  no_path = [bool](Get-Command openssl.exe -ErrorAction SilentlyContinue)
+  do_git = [bool](Test-Path -LiteralPath 'C:\Program Files\Git\usr\bin\openssl.exe')
+}
 
 # Instalacao do app: build carimbado e arquivos esperados (sem abrir os privados)
 $relatorio.build = Tentar {

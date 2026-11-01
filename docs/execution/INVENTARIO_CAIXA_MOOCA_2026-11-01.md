@@ -65,4 +65,6 @@ Ele responde, sem alterar nada:
 - serviço PostgreSQL;
 - presença dos arquivos privados (sem abri-los);
 - WSL presente ou não;
+- `openssl` presente ou não, no PATH ou no Git para Windows (o certificado de laboratório do ensaio físico
+  depende dele);
 - saúde local (`/ready`, `/api/health`).
