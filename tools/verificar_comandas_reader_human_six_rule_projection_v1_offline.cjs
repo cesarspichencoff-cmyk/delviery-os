@@ -143,7 +143,7 @@ test("hot kitchen Shimeji keeps sealed 650 separate from food temperature",()=>{
  const h=require("../data/comandas_cesar_clarificacoes_20261101_review_only.json")
   .product_rules.find(x=>x.code==="9.10.00.050.00");
  const x=sample();
- x.pair.event.order.items[0].CDARVPROD=h.code.replace(/\\./g,"");
+ x.pair.event.order.items[0].CDARVPROD=h.code.split(".").join("");
  x.pair.decision.items[0].canonical_code=h.code;
  x.pair.decision.items[0].product_name=h.label;
  x.capture.entries[0].canonical_code=h.code;
