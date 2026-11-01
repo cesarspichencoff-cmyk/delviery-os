@@ -58,3 +58,12 @@ O B1 não substitui a sequência TATÁ de 3 dígitos persistida sob chave forte,
 A interface documentada usa exemplos e prints históricos de outra unidade. A documentação **não comprova os valores ou a disponibilidade real** do Retail do Itaim em 2026. Se a UI for diferente, não improvisar ações de configuração.
 
 **Estado:** `B05_UNVERIFIED`; `FIRST_NATIVE_DISPATCH=UNKNOWN`; `PR_DRAFT_HOLD=true`; `PHYSICAL_PRINT_NOT_PROVEN=true`. **Nenhuma consulta, escrita, login ou impressão executados por este arquivo.**
+
+
+## Validador offline da transcrição — 01/11/2026
+
+O contrato `tools/comandas_ifo_retail_mapping_v1_offline.cjs` e sua suíte `tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs` verificam **somente dados de demonstração ou transcrição futura explicitamente autorizada**; não consultam a interface da Teknisa nem contêm credenciais. A verificação exige ramo `DEFAULT_SELLER` ou `PER_UNIT` consistente, exatamente **um** caixa candidato por associação da filial, códigos no formato permitido, loja compatível com o Reader (`0001/01`) e flag declarada de sincronização não desconhecida. Ausência de vendedor, dois caixas associados, loja divergente, campos desconhecidos ou informações sensíveis embutidas produzem `HOLD`.
+
+Mesmo para uma transcrição sintética completa, o máximo é `MAPPING_CANDIDATE_REVIEW_ONLY`: a fonte é declarada por quem preencheu, **não foi autenticada independentemente**, e não comprova que a integração esteja ativa, qual host faz a primeira tentativa nem se houve impressão. O validador não emite número de caixa ou vendedor como resultado e preserva `can_print=false`, `can_authorize_cutover=false` e `live_native_first_dispatch_proven=false` em todos os caminhos. A integração na CI verifica apenas a regressão de código no Linux e Windows.
+
+**Limite importante:** a regra de uma associação única é condição conservadora de seleção de **um candidato para investigação**, não alegação de que o Retail real proíba caixas múltiplos. Se existirem vários, o procedimento deve descobrir a regra legítima que determina a origem, não selecionar arbitrariamente a primeira opção nem alterar o cadastro.
