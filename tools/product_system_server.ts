@@ -25,6 +25,8 @@ import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
 import { conferenceBrainVM } from "../src/product/viewmodels/conference-vm";
 import { copilotoVM } from "../src/product/viewmodels/copiloto-vm";
 import { GRUPOS, MODULOS, UNIDADES } from "../src/product/viewmodels/modulos";
+import { observarFilaDoPiloto } from "../src/platform/leitura/fila-do-piloto";
+import { lerProntosDeEntregas, type DeclaracaoDaFila } from "../src/platform/leitura/prontos-de-entregas";
 import {
   montarCadeiaDemo,
   montarEntregasDemo,
@@ -109,6 +111,22 @@ const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
  * Visibilidade de um id NAO substitui autorizacao, fonte ou medicao real.
  */
 const UNIDADE_LEITURA_PILOTO = (process.env.DELIVERYOS_PRODUCT_READ_UNIT || "").trim();
+/**
+ * Q-028 — o observador local da fila. Este servidor roda na mesma máquina do
+ * piloto (é a máquina do leitor TATA) e lê a saída mínima da fila com uma
+ * identidade de MÁQUINA, exclusivamente de leitura (`observador_fila`). O
+ * endereço precisa ser loopback ou HTTPS: o token nunca viaja em claro pela rede.
+ */
+const URL_FILA_PILOTO = (process.env.DELIVERYOS_FILA_PILOTO_URL || "").trim();
+const TOKEN_FILA_PILOTO = (process.env.DELIVERYOS_FILA_PILOTO_TOKEN || "").trim();
+function motivoDoObservadorDaFila(): string | null {
+  if (!URL_FILA_PILOTO || !TOKEN_FILA_PILOTO) return "observador_da_fila_nao_configurado";
+  let alvo: URL;
+  try { alvo = new URL(URL_FILA_PILOTO); } catch { return "endereco_do_piloto_invalido"; }
+  const loopback = ["127.0.0.1", "localhost", "[::1]"].includes(alvo.hostname);
+  if (alvo.protocol === "https:" || (alvo.protocol === "http:" && loopback)) return null;
+  return "endereco_do_piloto_sem_tls";
+}
 const UNIDADES_NAVEGACAO = URL_PLATAFORMA && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_LEITURA_PILOTO)
   ? [...UNIDADES, { unit_id: UNIDADE_LEITURA_PILOTO,
       nome: `Leitura da plataforma · ${UNIDADE_LEITURA_PILOTO}`,
@@ -590,6 +608,28 @@ export async function criarServidor(): Promise<http.Server> {
             });
           })
           .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
+        return;
+      }
+      if (p === "/api/entregas/prontos") {
+        // Estado atual (fila + fatos) e trajetória do pronto. A fila vem do
+        // observador local, por loopback; os fatos, da conexão que este
+        // servidor já tem. Nenhuma tela usa isto ainda: mostrar no Copiloto é
+        // a exceção visual que espera decisão. Ausência nunca vira zero.
+        const unidade = ESCOPO_SHADOW?.unit_id ||
+          (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || UNIDADE_LEITURA_PILOTO || "";
+        if (!/^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(unidade)) return json(res, 400, { erro: "unidade_obrigatoria" });
+        if (!clientePlataforma) {
+          return json(res, 200, { disponivel: false, motivo: "integracao_pendente", unit_id: unidade });
+        }
+        const motivo = motivoDoObservadorDaFila();
+        const fila: Promise<DeclaracaoDaFila> = motivo
+          ? Promise.resolve({ origem: "observacao_do_piloto", indisponivel: motivo })
+          : observarFilaDoPiloto({ url_base: URL_FILA_PILOTO, token: TOKEN_FILA_PILOTO, prazo_ms: 2_000 });
+        void fila
+          .then((declaracao) => lerProntosDeEntregas(clientePlataforma, { agora: new Date(), unit_id: unidade, fila: declaracao }))
+          .then((r) => json(res, 200, { disponivel: true, unit_id: unidade, ...r }))
+          // Nunca o erro cru do driver (traria host ou caminho): só a ausência.
+          .catch(() => json(res, 200, { disponivel: false, motivo: "indisponivel", unit_id: unidade }));
         return;
       }
       if (p === "/api/historico") {
