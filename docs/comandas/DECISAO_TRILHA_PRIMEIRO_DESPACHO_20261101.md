@@ -1,0 +1,51 @@
+# TATÁ Comandas — decisão técnica: encontrar o primeiro despacho sem duplicar vias
+
+**Data:** 01/11/2026 · **Unidade:** Itaim (`0001/01`) · **PR:** #127 DRAFT/HOLD · **Tipo:** pesquisa pública + revisão dos arquivos do projeto, **sem acesso operacional novo**.
+
+## Resposta objetiva
+
+**Caminho preferencial: provar a origem nativa `DLV_IFO` → geração da comanda ForSale → callsite da primeira solicitação de produção → transporte ativo → destino e backup.** Usar inicialmente somente código/artefatos já existentes e, quando houver autorização específica e mecanismo legítimo, leitura passiva e minimizada de uma ocorrência natural. Não tentar localizar o evento por status, número curto, título no spooler nem por criação de uma segunda via.
+
+**Não há prova hoje** do componente/versão de primeira tentativa em produção, do seu transporte efetivo, da exclusividade do emissor antigo, da sequência TATÁ V2 persistida ou do efeito físico. Esta decisão não libera implantação nem captura em host.
+
+## Por que essa rota venceu
+
+### Evidência de fonte oficial, delimitada
+
+1. [Teknisa — APIs do Retail](https://www.teknisa.com/api) descreve `POST /order` como captação de **pré-pedido** que depende de caixa PDV para virar venda. `/orderStatus` informa rótulos `em produção` e `cupom impresso`, mas não fornece a identidade causal da primeira chamada de impressão, a praça, o backup ou prova de papel.
+2. [Teknisa — Manual de Integração iFood v4.2.0](https://ead.teknisa.com/wp-content/uploads/2025/11/Manual-Integracao-Teknisa-iFood.pdf), página impressa **3**, declara que a integração vai autonomamente até a **geração da comanda ForSale**. Não diz que a geração da comanda é a chamada de impressão de produção e não demonstra o runtime desta loja.
+3. [Teknisa — Retail delivery](https://www.teknisa.com/produtos/retail/delivery) descreve pedido entrando no PDV e seguindo à produção, um modelo geral, não o callsite exato do Itaim.
+4. [Microsoft — PrintService evento 307](https://learn.microsoft.com/en-us/answers/questions/1332280/identify-printer-usage-statistics-in-a-certain-ser): útil para trabalhos que passam pelo Windows PrintService quando o log está habilitado; **não captura necessariamente impressões diretas** nem identifica o pedido ForSale nativo e tampouco atesta papel.
+5. [Microsoft — Sysmon](https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events) e [Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon): podem detalhar processo, origem, conexões e atividade de arquivo, **mas geram telemetria de sistema**, potencialmente sensível, e requerem disponibilização/configuração/captura autorizada. Não são primeira escolha nem comprovam papel isoladamente.
+
+### Evidência local já preservada na PR
+
+- `docs/comandas/TOPOLOGIA_EVENTO_IMPRESSAO_ORIGEM_NATIVA_20261026.md`: `Account::order` após `commit` inicia a via de **mesa**, `GeneralFunctions::reprintPedido` é **reimpressão**, `ImpressaoDelivery` em `Venda.php` é **relatório pós-venda**. Busca em **133 arquivos PHP** encontrou `DLV_IFO` apenas no cabeçalho do relatório; isso **não** prova inexistência de integração fora desse universo.
+- `docs/comandas/AUDITORIA_TRANSPORTE_NATIVO_TEK_IMPRESSAO_20261027.md`: três trilhas condicionais da Teknisa: `UTILIZA_IMPRESSAO_PONTE` HTTP `/print`; `UTILIZA_IMPRESSAO_PHP` porta direta; `impressaoDelphi` arquivo/serviço. A ponte Odhen tem fila própria, caminho Epson DLL e backup possível. O modo efetivo da primeira via `DLV_IFO` continua **UNKNOWN**.
+- `docs/comandas/AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md`: GP iFood HTTP e Gestor iFood IPC são dois caminhos próprios, separados do nativo Teknisa. Presença/ACK não é uso real nem papel.
+- `data/tata_reader_passive_print_log_source_proof_20261005_v1.json` + `data/tata_reader_passive_print_metadata_observation_20261005_v1.json`: sete logs IMP observados encerraram a gravação **antes** da abertura da comanda de referência. O teste `verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs` exclui esses logs como prova do despacho **dessa comanda** sem concluir que impressão não ocorreu.
+- `tools/comandas_native_first_dispatch_correlation_v1_offline.cjs` já valida consistência de alegações Reader/primeira tentativa/journal; suas flags de fonte independente permanecem falsas.
+
+## Decisão de sequência (custo, risco e poder de prova)
+
+| Ordem | Fonte/método | O que pode resolver | Limite e decisão |
+|---|---|---|---|
+| **1 — agora** | Busca nos arquivos, hashes, contratos e código já obtidos | Refinar hipóteses, excluir falsos gatilhos e identificar função de destino | **Aprovado para revisão offline.** Não autentica runtime |
+| **2 — primeiro gate vivo, não executado** | B0 presencial/legítimo de somente leitura dos quatro agregados do Reader **já delimitados**, com identidade do host e ACL respeitada | Saúde atual, compatibilidade de versão e condições de inspeção | Exige permissão e canal legítimos; `EPERM` e cota anteriores **não devem ser contornados**. B0 não identifica first dispatch |
+| **3 — gate vivo específico, não autorizado** | B1, **fonte nativa de integração previamente identificada**, metadados minimizados da chamada de primeira produção e correlação de **uma ocorrência natural** pela chave `CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA`, revisão e praça | Pode provar o elo entre a comanda e um pedido de primeira tentativa, quando acompanhado de custódia independente | Exige aprovação de fonte, aparelho, alcance, identidade, privacidade e meio de leitura. Não buscar payload integral ou credenciais |
+| **4 — auxiliar, somente se B1 justificar** | Log Windows PrintService **já habilitado** ou log nativo Odhen existente, observando apenas metadados autorizados | Identificar eventual caminho de fila e destino/backup | Não usar como única prova nem extrapolar para Epson DLL/porta direta. Não habilitar log/alterar fila sem autorização |
+| **5 — último recurso** | Instrumentação temporária direcionada (ex.: Procmon/Sysmon), se necessária | Correlacionar processo e chamada quando não houver logs preexistentes suficientes | **Não executar agora**: envolve coleta nova, risco de dados sensíveis/custo operacional; aprovação separada, janela, filtro mínimo, retenção, STOP e rollback |
+
+### Critérios de saída de B1
+
+A evidência precisa vincular **a mesma revisão** da comanda `DLV_IFO`, um callsite **efetivamente invocado**, a primeira tentativa distinta de reprint, uma praça/destino principal, backup conhecido e um evento compatível na mesma janela. A origem do código (hash/versão), a identidade da unidade e a custódia dos registros têm de ser independentes das simples alegações do consumidor. Sem isso: `FIRST_NATIVE_DISPATCH=UNKNOWN`.
+
+O efeito de papel **não** se prova por `/orderStatus`, `IDSTCOMANDA`, `NRCOMANDAEXT`, `FosExp.exe`, `printOrderReply`, resposta JSON `status:202`, `PrintService/307` nem timestamps aproximados. Os dois tickets de **produção** continuam exclusivamente ligados aos itens/quantidades/observações nativos da Teknisa; a comparação independente iFood × Teknisa afeta **somente a conferência**. Não selecionar impressora pelo horário, não desligar parâmetro compartilhado `IDIMPPEDPROD`, não presumir que `NUL` intercepte Epson nativa ou que desativar GP desative o Gestor.
+
+### Portão posterior — separado
+
+Mesmo com `READONLY_SOURCE_TRACE_PROVEN`, ainda faltam sequência TATÁ de três dígitos **persistida sob chave nativa forte e relida**, reconciliação de cancelamento/retry, produção sem duplicidade, identidade de duas praças e uma conferência, preservação fiscal/mesa/balcão, autorização humana expressa e teste físico supervisionado. A observação da operação não pode liberar efeitos automaticamente.
+
+**Situação:** `FIRST_NATIVE_DISPATCH=UNKNOWN`; `NATIVE_PRINT_TRANSPORT_ACTIVE=UNKNOWN`; `PERSISTED_SEQUENCE_V2=UNKNOWN`; `LIVE_PRINT_AUTHORIZED=false`; `PILOT=HOLD`.
+
+**Ações realizadas para esta decisão:** pesquisa pública, leitura de material versionado, revisão e novos testes offline. **Não realizados:** acesso ao host, captura de pedidos, mudança de acesso, download/instalação de ferramenta, contato com Teknisa, envio de e-mail, SQL, serviço, spooler, impressão, merge ou deploy.
