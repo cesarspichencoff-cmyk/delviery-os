@@ -123,3 +123,6 @@ test("invalid or missing native pair holds with no exported data",()=>{
  }
 });
 console.log("COMANDAS_NATIVE_OBSERVATION_TRIAGE="+n+"/"+n+" REVIEW_ONLY NO_PRINT");
+
+// Scoped review proposals only; receipt never approves or prints.
+require("./verificar_comandas_reader_observation_disposition_proposals_v1_offline.cjs");
