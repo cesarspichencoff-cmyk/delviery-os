@@ -7,8 +7,9 @@
  * Mutação que não entrou no disco não conta; gate que nem rodou não conta;
  * reprovar por outra prova significa que a propriedade não estava defendida.
  * Toda mutação é restaurada byte a byte (sha256), também em SIGINT/SIGTERM.
- * As provas de PostgreSQL ficam fora daqui (DELIVERYOS_PG_URL é removida): o
- * gate de mutação mede as provas de arquivo e de processo.
+ * Com DELIVERYOS_PG_URL, as provas de PostgreSQL entram em toda rodada; a
+ * mutação da arbitragem do PostgreSQL (MR20) EXIGE o banco — sem ele, ela é
+ * contada como não medida, nunca como aprovada.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -53,7 +54,6 @@ function limparPilotos(): void {
 
 function rodar(): { ok: boolean; saida: string } {
   const env = { ...process.env };
-  delete env.DELIVERYOS_PG_URL;
   const [bin, args]: [string, string[]] =
     process.platform === "win32"
       ? ["cmd.exe", ["/d", "/s", "/c", "npx.cmd", "tsx", "src/entregas/pilot/run-ready-fact-tests.ts"]]
@@ -147,7 +147,10 @@ function mutacao(o: { id: string; propriedade: string; edicoes: Edicao[]; prova:
 const SVC = "src/entregas/operational/application-service.ts";
 const FAC = "src/entregas/pilot/pilot-facade.ts";
 const TL = "src/entregas/pilot/trip-timeline.ts";
-const ALVOS = [SVC, FAC, TL] as const;
+const FS = "src/entregas/persistence/file-store.ts";
+const PG = "src/entregas/persistence/pg-uow.ts";
+const ALVOS = [SVC, FAC, TL, FS, PG] as const;
+const COM_PG = Boolean(process.env.DELIVERYOS_PG_URL?.trim());
 const HASH_INICIAL = new Map(ALVOS.map((a) => [a, sha(readFileSync(join(raiz, a), "utf8"))]));
 
 console.log("\n=== Mutações do pronto vira fato ===\n");
@@ -161,7 +164,7 @@ console.log("\n1. O FATO EXISTE, NA ENTREGA, COM O INSTANTE ORIGINAL");
 mutacao({
   id: "MR1", prova: "F1",
   propriedade: "CreateTrip volta a não gravar o pronto",
-  edicoes: [{ arquivo: SVC, de: "    this.logReady(log, cmd.trip_id, cmd.deliveries, ready);\n", para: "" }],
+  edicoes: [{ arquivo: SVC, de: "    this.logReady(log, cmd.unit_id, cmd.trip_id, cmd.deliveries, ready);\n", para: "" }],
 });
 mutacao({
   id: "MR2", prova: "F1",
@@ -180,15 +183,15 @@ mutacao({
 });
 mutacao({
   id: "MR5", prova: "F1",
-  propriedade: "chave idempotente por pedido, não por viagem e entrega",
-  edicoes: [{ arquivo: SVC, de: "        idempotency_key: `delivery_ready:${trip_id}:${d.delivery_id}`,\n",
-    para: "        idempotency_key: `delivery_ready:${d.order_ref}`,\n" }],
+  propriedade: "chave idempotente por entrega, não por registro: o mesmo registro cabe em duas entregas",
+  edicoes: [{ arquivo: SVC, de: "        idempotency_key: `delivery_ready:${unit_id}:${d.order_ref}:${reg.registered_at}`,\n",
+    para: "        idempotency_key: `delivery_ready:${trip_id}:${d.delivery_id}`,\n" }],
 });
 mutacao({
   id: "MR6", prova: "F4",
   propriedade: "AddDeliveryToTrip volta a perder o instante",
   edicoes: [{ arquivo: SVC,
-    de: "    this.logReady(\n      log,\n      cmd.trip_id,\n      [{ delivery_id: cmd.delivery_id, order_ref: cmd.order_ref }],\n      ready,\n    );\n",
+    de: "    this.logReady(\n      log,\n      cmd.unit_id,\n      cmd.trip_id,\n      [{ delivery_id: cmd.delivery_id, order_ref: cmd.order_ref }],\n      ready,\n    );\n",
     para: "" }],
 });
 
@@ -200,8 +203,8 @@ mutacao({
 });
 mutacao({
   id: "MR8", prova: "F2",
-  propriedade: "identidade de quem registrou inventada",
-  edicoes: [{ arquivo: SVC, de: "          registered_by: null,\n", para: "          registered_by: \"ops-1\",\n" }],
+  propriedade: "identidade de quem registrou vaza para o evento público",
+  edicoes: [{ arquivo: SVC, de: "          prepared_by: null,\n", para: "          prepared_by: null,\n          registered_by: reg.registered_by_actor_id,\n" }],
 });
 
 console.log("\n3. SEM ASSOCIAÇÃO INVENTADA, SÓ O RELÓGIO DO SERVIDOR");
@@ -227,13 +230,14 @@ console.log("\n4. FALHA, RECUPERAÇÃO E DUPLICIDADE");
 mutacao({
   id: "MR12", prova: "F7",
   propriedade: "fila consumida antes do commit: a falha de gravação perde o instante",
-  edicoes: [{ arquivo: FAC, de: "        const consumidos = await this.registrosJaConsumidos(ready);\n",
-    para: "        await this.readyOrders.removeByOrderRefs(ready.map((r) => r.order_ref));\n        const consumidos = await this.registrosJaConsumidos(ready);\n" }],
+  edicoes: [{ arquivo: FAC, de: "        const bloqueio = await this.bloqueiosDeConsumo(\n",
+    para: "        await this.readyOrders.removeByOrderRefs(ready.map((r) => r.order_ref));\n        const bloqueio = await this.bloqueiosDeConsumo(\n" }],
 });
 mutacao({
   id: "MR13", prova: "F8",
   propriedade: "fila velha depois de queda deixa o mesmo registro sair em segunda viagem",
-  edicoes: [{ arquivo: FAC, de: "        if (consumidos.length) {\n", para: "        if (false && consumidos.length) {\n" }],
+  edicoes: [{ arquivo: FAC, de: "        if (bloqueio.filaVelha.length || bloqueio.jaConsumidos.length) {\n",
+    para: "        if (bloqueio.jaConsumidos.length) {\n" }],
 });
 
 console.log("\n5. PRIVACIDADE E MODO");
@@ -253,8 +257,62 @@ mutacao({
     para: "        correlation_id: agg.trip.trip_id,\n        source_mode: this.publicSourceMode ?? \"real\",\n" }],
 });
 
-console.log("\n6. RESTAURAÇÃO");
-teste("os três alvos voltaram byte a byte à origem", () => {
+console.log("\n6. CONSUMO EXCLUSIVO, AUTOR E REENVIO");
+mutacao({
+  id: "MR16", prova: "F2",
+  propriedade: "o ato de registrar é atribuído a quem montou a viagem",
+  edicoes: [{ arquivo: FAC, de: "                  ? { registered_by_actor_id: o.registered_by.actor_id }\n",
+    para: "                  ? { registered_by_actor_id: actor.actor_id }\n" }],
+});
+mutacao({
+  id: "MR17", prova: "F2",
+  propriedade: "quem registrou passa a ser apresentado como quem preparou",
+  edicoes: [{ arquivo: SVC, de: "          prepared_by: null,\n", para: "          prepared_by: reg.registered_by_actor_id ?? null,\n" }],
+});
+mutacao({
+  id: "MR18", prova: "C1",
+  propriedade: "pedido já levado por outro operador entra como avulso numa segunda viagem",
+  edicoes: [{ arquivo: FAC, de: "        if (bloqueio.filaVelha.length || bloqueio.jaConsumidos.length) {\n",
+    para: "        if (bloqueio.filaVelha.length) {\n" }],
+});
+mutacao({
+  id: "MR19", prova: "F16",
+  propriedade: "armazenamento em arquivo aceita o mesmo registro em duas entregas",
+  edicoes: [{ arquivo: FS, de: "          if (e.event_type === \"delivery_ready\" &&\n",
+    para: "          if (false && e.event_type === \"delivery_ready\" &&\n" }],
+});
+if (COM_PG) {
+  mutacao({
+    id: "MR20", prova: "C3a",
+    propriedade: "PostgreSQL deixa duas transações confirmarem o mesmo registro",
+    edicoes: [{ arquivo: PG, de: "        if (e.event_type === \"delivery_ready\" && gravado.length === 0) {\n",
+      para: "        if (false) {\n" }],
+  });
+} else {
+  falhas.push("MR20 — NAO MEDIDA: exige DELIVERYOS_PG_URL (arbitragem entre processos no PostgreSQL)");
+  console.log("  XX  MR20 — não medida: sem DELIVERYOS_PG_URL");
+}
+mutacao({
+  id: "MR21", prova: "F15",
+  propriedade: "criar viagem com id existente volta a sobrescrever no arquivo",
+  edicoes: [{ arquivo: FS, de: "        if ((expected === null || expected === undefined) && cur) {\n",
+    para: "        if (false && cur) {\n" }],
+});
+mutacao({
+  id: "MR22", prova: "F13",
+  propriedade: "o reenvio do próprio comando é tratado como rival e recusado",
+  edicoes: [{ arquivo: FAC, de: "      const propria = typeof trip_id === \"string\" && proprias.has(`${trip_id}\\u0000${e.object_id}`);\n",
+    para: "      const propria = false;\n" }],
+});
+mutacao({
+  id: "MR23", prova: "F18",
+  propriedade: "registro já consumido vira resultado incerto e o aparelho reenvia para sempre",
+  edicoes: [{ arquivo: SVC, de: "          !(e instanceof Error && e.name === \"ReadyRegistrationConsumedError\")) {\n",
+    para: "          true) {\n" }],
+});
+
+console.log("\n7. RESTAURAÇÃO");
+teste("todos os alvos voltaram byte a byte à origem", () => {
   for (const a of ALVOS) {
     assert.equal(sha(readFileSync(join(raiz, a), "utf8")), HASH_INICIAL.get(a), `${a} não voltou à origem`);
   }
