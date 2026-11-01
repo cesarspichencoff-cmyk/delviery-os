@@ -379,6 +379,18 @@ async function main(): Promise<void> {
     if (r.ok) assert.equal(r.evento.event_type, "trip_started");
   });
 
+  await teste("A5 sinal delivery_ready solto, sem a semântica de registro, continua sem equivalência segura (contrato dos LAB do CI)", () => {
+    for (const payload of [{ lab_only: true }, { order_ref: "P-1" }, { order_ref: "P-1", ready_kind: "producao_concluida" }]) {
+      const r = adaptarEventoPublicoEntregas(publico("delivery_ready", { delivery_id: undefined, payload }));
+      assert.equal(r.ok, false, JSON.stringify(payload));
+      if (!r.ok) assert.equal(r.motivo, "tipo_sem_equivalencia_segura", JSON.stringify(payload));
+    }
+    const comSemantica = adaptarEventoPublicoEntregas(publico("delivery_ready", { delivery_id: undefined,
+      payload: { order_ref: "P-1", ready_kind: "registro_expedicao" } }));
+    assert.equal(comSemantica.ok, false);
+    if (!comSemantica.ok) assert.equal(comSemantica.motivo, "delivery_id_ausente");
+  });
+
   await teste("K1 contrato: os dois tipos têm contrato, o envelope adaptado passa no portão e o payload no schema", () => {
     const com = tiposComContrato();
     assert.ok(com.includes("delivery_ready"), "delivery_ready sem contrato na plataforma");
@@ -461,7 +473,7 @@ async function fluxoIsolado(): Promise<void> {
   const { EntregasLiveConsumer } = await import("./runtime/entregas-live-consumer");
   const { lerRealidadeDeEntregas } = await import("./leitura/realidade-de-entregas");
   const { montarPonteDaOperacaoViva } = await import("./runtime/handler-operacao-viva");
-  const { AsyncWorker } = await import("./runtime/async-worker");
+  const { AsyncRuntime } = await import("./runtime/async-worker");
 
   const db = await bancoIsolado(url, undefined, "pronto_leituras");
   const dir = mkdtempSync(join(tmpdir(), "pronto-leituras-"));
@@ -495,7 +507,7 @@ async function fluxoIsolado(): Promise<void> {
       piloto.executeAs(ator, { ...c, unit_id: UNIT, occurred_at: new Date().toISOString(), actor: ator });
     assert.equal((await cmd({ type: "CreateTrip", command_id: "w-ct", trip_id: "T1", courier_actor_id: asInternalRiderActorId("rid-1"),
       deliveries: [{ delivery_id: "DA", order_ref: "A" }, { delivery_id: "DD", order_ref: "D" }] }, ops)).ok, true);
-    await sleep(20);
+    await sleep(1100); // trecho de F mensuravel em segundos
     assert.equal((await cmd({ type: "AddDeliveryToTrip", command_id: "w-add", trip_id: "T1", delivery_id: "DF",
       order_ref: "F", planned_stop_order: 3 }, ops)).ok, true);
     await sleep(20);
@@ -542,6 +554,8 @@ async function fluxoIsolado(): Promise<void> {
       assert.equal(por.get("A")?.registrado_em, instante.get("A"), "o instante original do registro mudou no caminho");
       assert.ok((por.get("A")?.associacao_ate_saida_s ?? -1) >= 0);
       assert.equal(por.get("F")?.situacao, "saiu");
+      assert.ok(Date.parse(por.get("F")!.associado_em) > Date.parse(por.get("A")!.associado_em), "F foi associado depois de A");
+      assert.equal(por.get("F")?.saiu_em, por.get("A")?.saiu_em, "A e F saíram na mesma viagem");
       assert.ok((por.get("F")?.associacao_ate_saida_s ?? -1) < (por.get("A")?.associacao_ate_saida_s ?? -1),
         "F foi acrescentado depois: seu trecho associação → saída é menor que o de A");
       assert.equal(por.get("D")?.situacao, "retirado_antes_da_saida");
@@ -563,7 +577,7 @@ async function fluxoIsolado(): Promise<void> {
     await teste("W4 consumidor assíncrono drena as mensagens novas sem dead-letter", async () => {
       const C = await consumidor();
       const ponte = montarPonteDaOperacaoViva();
-      const worker = new AsyncWorker({
+      const worker = new AsyncRuntime({
         identity: { version: "teste", commit: "teste", instance_id: "teste" } as never,
         outbox: new PgOutboxRepository(db.cliente), jobs: new PgJobRepository(db.cliente),
         outboxHandlers: { ...ponte.handlers, ...C.montarHandlersDaTrajetoriaDoPronto() }, jobHandlers: {},
