@@ -47,3 +47,15 @@ A matriz minimizada `data/comandas_historical_human_scope_overlap_20261014_revie
 4. Só considerar efeito físico em operação após autorização específica e evidência de primeiro despacho/rota, impressão e sequência reais.
 
 **Restrições permanentes:** PR DRAFT; sem contato com a Teknisa; sem bypass de ACL, instalação, deploy, merge, impressão, spooler, escrita SQL ou alteração do leitor. As pastas `shadow` e `state` seguem protegidas; este arquivo foi obtido numa área separada já acessível ao conector.
+
+## Segunda fonte local — identidade nativa de 05/10
+
+A investigação autorizada e somente em leitura encontrou, na área de piloto do CAIXA_MOOCA, o arquivo `shadow-v2/product-identity-cache-v1.json`, com schema `deliveryos.product-identity-cache.v1` e data interna de captura `2026-10-05T15:27:33.4357828-03:00`. O arquivo contém 554 linhas de catálogo e SHA-256 `37e92fc87ea1d141cbaca32216564ac22ee469e6c3dde478f10d8e0351daf4f3`.
+
+A conferência local cruzou os 14 códigos canônicos do arquivo de pendências de 26/10, verificando `canonical`, `CDPRODUTO` e `NMPRODUTO`, **sem exportar os IDs**. Resultado: **14/14 códigos com exatamente uma linha**, **14 IDs nativos distintos entre os selecionados**, **14/14 nomes equivalentes após normalização de acentos/espaços/caixa**. A fonte original foi lida no computador, não reconstruída a partir da lista do projeto.
+
+A evidência minimizada está em `data/comandas_historical_native_identity_lineage_20261005_review_only.json`. Associando apenas os nomes dos oito casos já validados historicamente em 14/10, identificam-se 62 de 82 ocorrências históricas de bloqueios; as seis ausências nominais somam 20. **Ocorrências são motivos de bloqueio em revisões, não pedidos únicos.**
+
+Limite incontornável desta fonte: o cache de 05/10 **não traz campo de situação ativo/inativo**, não prova a atualização dos IDs em 31/10 nem atesta a autenticidade de origem independente. O verificador atual de catálogo exige `active` explícito e não deve receber `true` inventado para fazer a amostra passar. Também não há homologação de praça, embalagem, distribuição de caixas/sacolas/kits, primeira impressão ou destino de impressora. O novo registro mantém esses estados falsos ou `UNKNOWN`.
+
+**Próximo portão com maior valor:** obter legitimamente uma captura atual com revisão, unidade, vínculo código→ID e situação ativa; comparar com a linha-base de 05/10. Mudança de ID, código, nome ou estado deve bloquear e demandar revisão, sem inventar alias. Não repetir a César os ajustes de ACL já tentados; não contornar as pastas protegidas.
