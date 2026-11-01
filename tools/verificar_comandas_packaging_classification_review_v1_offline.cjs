@@ -185,5 +185,50 @@ test("even empty catalog capture is a bounded review with all codes missing",()=
  assert.equal(out.missing_codes,14);
  assert.equal(out.ready_for_operations,false);
 });
+// Only a historical, exact-name scoped comparison: no ID, code, station,
+// live catalog, bag/kit or print approval can be inferred from A* references.
+const historical=JSON.parse(fs.readFileSync(path.join(__dirname,"..",
+ "data/comandas_historical_human_scope_overlap_20261014_review_only.json"),"utf8"));
+test("14 archived product labels correlate to 8 exact past rule scopes without current approval",()=>{
+ assert.equal(historical.schema,
+  "tata.comandas.historical-human-product-scope-overlap.v1.review-only");
+ assert.equal(historical.source_recorded_date,"2026-10-14");
+ assert.equal(historical.source_status,
+  "HUMAN_APPROVALS_CAPTURED_NOT_CONSUMER_INTEGRATED");
+ assert.equal(historical.source_sha256,
+  "7fdf9513d6979c28e640045f861d64513d7e563c20307fa6e70a6f13f7ac072d");
+ assert.equal(historical.entries.length,14);
+ assert.equal(new Set(historical.entries.map(e=>e.canonical_code)).size,14);
+ assert.deepEqual(historical.entries.map(e=>e.canonical_code).sort(),
+  source.entries.map(e=>e.canonical_code).sort());
+ assert.equal(historical.rules_matched_by_name_only,8);
+ assert.equal(historical.no_exact_name_match,6);
+ assert.equal(historical.entries.filter(e=>e.archived_human_record_id).length,8);
+ for(const key of ["authoritative_current_catalog","native_product_id_join_proven",
+  "human_rule_currently_revalidated","station_approved","packaging_approved",
+  "print_authorized"])assert.equal(historical[key],false,key);
+ for(const e of historical.entries){
+  assert.equal(e.current_code_id_binding_proven,false);
+  assert.equal(e.current_rule_approved,false);
+  assert.equal(e.print_authorized,false);
+  assert.equal(e.match_kind,
+   e.archived_human_record_id?"EXACT_LABEL_ONLY_HISTORICAL":
+   "NOT_IN_HISTORICAL_PRODUCT_RULE_SCOPE");
+ }
+});
+test("old similarly named cookie may not stand in for Cookie Pistache",()=>{
+ const cookie=historical.entries.find(e=>e.canonical_code==="8.20.11.002.00");
+ assert.equal(cookie.observed_reader_label,"COOKIE PISTACHE");
+ assert.equal(cookie.archived_human_record_id,null);
+ assert.equal(cookie.current_code_id_binding_proven,false);
+ assert.equal(cookie.print_authorized,false);
+});
+test("historical rule A3 is shared by exactly two distinct labels, never a shared code",()=>{
+ const a3=historical.entries.filter(e=>e.archived_human_record_id==="A3");
+ assert.equal(a3.length,2);
+ assert.deepEqual(a3.map(e=>e.observed_reader_label).sort(),
+  ["TARTAR DE ATUM SPICY","TUNA SHISSO TARTAR"]);
+ assert.notEqual(a3[0].canonical_code,a3[1].canonical_code);
+});
 console.log("COMANDAS_CLASSIFICATION_GAP_QUEUE="+n+"/"+n+
  " HISTORIC_ONLY NO_CATALOG_FACT NO_PRINT");
