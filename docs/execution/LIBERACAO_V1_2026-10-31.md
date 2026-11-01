@@ -91,6 +91,6 @@ Nada, por decisão de 01/11. O que segue abaixo está dentro, ainda **não imple
 | Termo | Preenchido com razão social informada (TATÁ Sushi), CNPJ e canal de contato; retenção: trajeto 7 dias, eventos 90 dias; publicável no servidor real (hash `e023c816fa4c`). Arquivo só no host (tem telefone) |
 | Backup | Pasta no próprio computador do piloto, de preferência dentro do OneDrive (sai da loja sem custo novo). Cópia diária criptografada; cópias com trajeto apagadas em 7 dias; eventos 90 dias. A implementar, junto com o apagamento do trajeto no servidor |
 | 0011 do Foxxy | Fica por último (decisão do César) |
-| Toqan (work.toqan.ai) | Fonte de CONTEXTO do iFood (receita semanal, avaliações, sugestões), gerada por IA com aviso de erro: entra como ambiente rotulado "Toqan · IA", nunca como fato de pedido nem como foco. Radar de 2 em 2 minutos por mensagem não é base para fato operacional |
-| Espelhamento de pedidos iFood | Primeiro pelo TATÁ Comandas (PDV), se o iFood cai sozinho no Teknisa; depois API oficial; tela do Gestor por último |
+| Toqan (work.toqan.ai) | **Decisão do César (01/11): construir o radar de 2 em 2 minutos.** Risco de bloqueio da conta aceito por ele; o radar tem cadência configurável, para sozinho em erro/bloqueio e guarda cada resposta para auditoria. O conteúdo entra rotulado "Toqan · IA" (inferência): aparece na tela e pode gerar alerta "a conferir", nunca vira fato de pedido. Antes de construir: teste das 4 perguntas sobre "agora" comparadas com o Gestor |
+| Espelhamento de pedidos iFood | Gestor por leitura de tela no caixa (cliente, status iFood, entregador), a cada 2 minutos, sem clicar no Gestor; TATÁ Comandas para itens e horário; API oficial se surgir credencial |
 
