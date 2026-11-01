@@ -1,9 +1,10 @@
 # Homologação da V1 — candidato integrado e teste físico (01/11/2026)
 
-Branch **local** `claude/deliveryos-v1-candidato-homologacao-20261101`, sobre `249b734e` (publicada, CI
-`41326925117` verde no SHA exato). Sem push, merge, deploy, instalação, serviço novo ou mudança em banco
-operacional. Home, Copiloto e Entregas não foram reescritos. Toqan segue isolado (fora desta linha). O
-bloqueio de dados reais de 20/10 continua: o `source-ingest` não grava `real`, e nada aqui o ativa.
+Branch `claude/deliveryos-v1-candidato-homologacao-20261101`, sobre `249b734e` (CI `41326925117` verde no
+SHA exato). Publicada em 01/11 com autorização específica, só esta branch; CI `41340717833` verde no SHA
+`e53d12e0` (§4). Sem merge, deploy, instalação, serviço novo ou mudança em banco operacional. Home,
+Copiloto e Entregas não foram reescritos. Toqan segue isolado (fora desta linha). O bloqueio de dados
+reais de 20/10 continua: o `source-ingest` não grava `real`, e nada aqui o ativa.
 
 ## 1. O candidato
 
@@ -114,6 +115,28 @@ nova**.
 **Reaproveitado do CI, não refeito.** Run `41326925117` no SHA `249b734e`, 76 passos verdes; 71 e 72
 foram pulados e **não contam como aprovados**. Inclui a cadeia real com aparelho lógico e papéis
 mínimos, os laboratórios de atestação, ITAIM-only, recibos, os navegadores e a acessibilidade.
+
+**CI do candidato.** Run `41340717833`, evento push, SHA `e53d12e0` conferido no checkout dos dois jobs,
+`GITHUB_TOKEN` só com leitura:
+
+- `product-ux`: 79 passos verdes. Os passos 74 e 75 (guardas P0 que só rodam quando algo falha) foram
+  pulados e **não contam como aprovados**.
+- `tata-weekly-service-windows`: 7/7.
+
+Marcadores lidos no log, sem `PULADO` nas suítes do candidato:
+
+| Prova | Resultado |
+|---|---|
+| Autenticação do observador | `OBSERVADOR_FILA` 7/7 (H1–H3 com o processo real do piloto) |
+| Isolamento de permissões e integração Entregas → plataforma → Copiloto | `CADEIA_V1_INTEGRADA` 9/9 (binários de `dist/` e PostgreSQL efêmero) |
+| Encaminhador TLS do ensaio | `TLS_ENCAMINHADOR` 7/7 |
+| Inventário só de leitura no Windows PowerShell 5.1 | `INVENTARIO_SOMENTE_LEITURA_PASS comandos=62` |
+| Fatos e fila | `READY_FACT` 29/29 · `PRONTO_LEITURAS` 26/26 · `READY_QUEUE_OBSERVATION` 11/11 · `FILA_OBSERVADA` 14/14 · `FILA_OBSERVADA_PROCESSOS` 8/8 · `CUSTO_FILA_OBSERVADA` 10/10 |
+| Copiloto no mesmo banco | `PILOT_COPILOTO_OUTBOX_E2E_LAB` 13/13 · `PRODUCER_ATTESTATION_PG_COPILOTO_LAB` 27/27 · `ENTREGAS_SERVIDOR_PG` 13/13 |
+| Cadeia real e governança | `CADEIA_REAL_GREEN` · governança `PASS` · `SEM_FAIL_NOVO: OK` |
+
+O único `PULADO` do log é o `S12_RLS_PULADO` da suíte do servidor com PostgreSQL. Ele existe desde
+`75e6637b` (15/10), este candidato não toca no arquivo, e ele **não é prova de RLS**.
 
 ## 5. Q-026 — sem arquitetura nova
 

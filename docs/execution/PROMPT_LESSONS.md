@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: lessons
   superseded_by: null
-  atualizado_em: "2026-10-09"
+  atualizado_em: "2026-11-01"
   state_basis: 953a3fb
 ---
 
@@ -1134,3 +1134,14 @@ sustentava os dois arquivos. Um controle negativo verde é um controle cego.
 **A regra.** Ao registrar exceção nova numa guarda por caminho, a lista executável cobre só o que nenhuma
 exceção anterior cobre; o resto da mudança fica escrito (classe, missão, rollback), não contado. E rode
 TODOS os controles negativos da guarda depois, não só o novo: foi o controle antigo que acusou.
+
+## L60 — Grupo separado de permissão não abre porta que outro grupo bloqueia
+
+**O que quase passou.** A proposta de ensaio (`4d70d1ab`) abria `5443`/`8443` ao celular com um grupo de
+firewall separado, "deixando o guard intocado". O guard instala `DeliveryOS-Lab-OtherTCP`, que bloqueia em
+`wt0` todo TCP fora da 5193, e no Windows bloqueio explícito vence permissão. No dia, o celular não chegaria
+ao host, e a suspeita cairia sobre TLS ou NetBird. Foi achado relendo o `netbird-guard.ps1` antes de pedir a
+autorização, não em campo.
+
+**A regra.** Antes de propor mudança de rede num host com guard, ler as regras de **bloqueio** que ele
+instala e dizer qual delas a mudança atravessa. "Intocado" só vale se nenhuma regra de bloqueio cobre a porta.

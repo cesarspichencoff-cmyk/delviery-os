@@ -12,7 +12,13 @@ São duas etapas em sequência: a sintética primeiro, a física só se a sinté
 
 **Pré-condição.** Rodar `tools/windows-local-lab/inventario-somente-leitura.ps1` no CAIXA_MOOCA. Ele não muda
 nada. Sem esse retrato do estado atual (build, portas, peers, firewall, WSL), não se instala nada. O retrato é
-comparado de novo depois da reversão.
+comparado de novo depois da reversão. Junto dele, três conferências, também só de leitura:
+
+- o recibo de confirmação do guard (`netbird-guard-committed.json`) presente e nenhuma tarefa de reversão do
+  guard pendente. Sem o recibo, o `Watchdog` desfaria a proteção e desconectaria o NetBird no meio do ensaio;
+- `netbird-guard.ps1 -Mode Verify` passando antes de qualquer troca;
+- o host alcançando o próprio IP do `wt0` na 5193 (o inventário mede). É o caminho do encaminhador do piloto,
+  e passou em 26/10 com o guard ativo (`remote-smoke.cjs`, em `MOOCA_ACESSO_REMOTO_2026-10-26.md`).
 
 ## 1. Teste puramente sintético
 
@@ -40,15 +46,17 @@ Só depois de a etapa 1 passar.
 
 ## 3. Mudanças temporárias de rede e serviços
 
-Todas são desfeitas no fim.
+Todas são desfeitas no fim. Corrigido depois do commit `4d70d1ab`: aquela versão previa um grupo de firewall
+separado, só de permissão, que não abriria nada (L60 em `PROMPT_LESSONS.md`).
 
 | Tipo | Mudança | Etapa |
 |---|---|---|
 | Serviços | Parar os processos atuais (crítico, assíncrono, piloto) pelos PIDs registrados e subir os do ensaio, nas mesmas portas: piloto em `100.107.78.202:5193` (para o proxy), crítico em `127.0.0.1:8080`, assíncrono, `source-ingest` e apresentação em `127.0.0.1:5290` | 1 e 2 |
 | Flags | Etapa 1: GPS desligado. Etapa 2: `gps_capture_enabled: true`, `offline_queue_enabled: true`, retorno em sombra | 1 e 2 |
-| NetBird | Inscrever o Xiaomi como peer, com política só celular → host nas duas portas TLS do ensaio. O serviço de proxy e o login dele não mudam | 2 |
-| Firewall | Um grupo **separado e temporário** em `wt0`, só para o IP do celular, nas portas `5443` (piloto) e `8443` (plataforma). O grupo do guard fica intocado. Enquanto o celular for peer, o `Verify` do guard acusa a topologia (esperado e anotado) | 2 |
-| TLS | CA de laboratório gerada no host (a chave privada não sai dele), com certificado para o IP do overlay. `tls-encaminhador.cjs` faz `5443` → piloto e `8443` → crítico: o equivalente do `socat` da bancada, provado 7/7 | 2 |
+| NetBird | Inscrever o Xiaomi como peer, com chave de inscrição individual e política só celular → host em `5443` e `8443`. O serviço de proxy e o login dele não mudam | 2 |
+| Firewall | O guard **bloqueia** em `wt0` todo TCP fora da 5193 (regra `DeliveryOS-Lab-OtherTCP`, portas `1-5192,5194-65535`). No Windows, bloqueio explícito vence permissão: um grupo separado só de permissão não abriria nada. A mudança mínima repete o padrão que o guard usa na 5193: (a) estreitar essa regra para `1-5192,5194-5442,5444-8442,8444-65535`; (b) num grupo temporário próprio, bloquear `5443`/`8443` para toda origem que não seja o IP do celular no NetBird; (c) permitir só esse IP, só o `node.exe`, só o IP do host em `wt0`. Nenhuma outra regra muda: a 5193 e os proxies ficam como estão | 2 |
+| Verificação | Durante a janela, o `Verify` do guard reprova, e isso é esperado: dono da 5193 (etapas 1 e 2), terceiro peer e regra alterada (etapa 2). Fica anotado. Depois da reversão, ele tem de passar | 1 e 2 |
+| TLS | CA de laboratório gerada no host (a chave privada não sai dele), com certificado para o IP do overlay. `tls-encaminhador.cjs`, escutando só no IP do `wt0`, faz `100.107.78.202:5443` → `100.107.78.202:5193` (piloto) e `100.107.78.202:8443` → `127.0.0.1:8080` (crítico): o equivalente do `socat` da bancada, provado 7/7 | 2 |
 
 Nada toca a Ethernet, o roteador ou o proxy público.
 
@@ -87,7 +95,8 @@ Nada toca a Ethernet, o roteador ou o proxy público.
 - Copiloto mostrando simulado como real.
 
 **Parada local pré-autorizada:** retirar a permissão de localização, modo avião, encerrar a viagem no console,
-ou `gps_capture_enabled: false`.
+`gps_capture_enabled: false`, ou parar os dois encaminhadores TLS (o celular perde o acesso na hora; o tablet
+segue pelo proxy).
 
 **Janela:** tem horário fixo de fim. O que não terminar fica `NOT_RUN`.
 
@@ -95,10 +104,11 @@ ou `gps_capture_enabled: false`.
 
 1. `gps_capture_enabled: false` e encerrar a viagem aberta.
 2. Parar os processos e os encaminhadores do ensaio.
-3. Remover o grupo de firewall do celular.
+3. Remover o grupo temporário do celular e devolver `DeliveryOS-Lab-OtherTCP` exatamente a `1-5192,5194-65535`.
 4. Tirar o celular do NetBird e revogar o aparelho.
 5. Subir de volta o ambiente atual (`local-control.cjs start`, `switch-pilot.ps1 -Mode Remote`).
-6. `netbird-guard.ps1 -Mode Verify` precisa passar: dois peers, três escutas, regras íntegras.
+6. `netbird-guard.ps1 -Mode Verify` precisa passar: dois peers, três escutas e o mesmo digest das 258 regras
+   gravado em 26/10. O digest cobre portas, origens, ação e programa: a regra devolvida com outro valor reprova.
 7. Extrair a evidência, descartar o banco e os papéis do ensaio, apagar a pasta de dados.
 8. Rodar o inventário de novo e comparar com o de antes.
 
@@ -110,6 +120,6 @@ A pré-condição (rodar o inventário) não é autorização de mudança. As au
 |---|---|---|
 | 1 | Instalar o SHA validado em pasta própria no CAIXA_MOOCA e, na janela, trocar os processos atuais pelos do ensaio (inclui o `source-ingest` `simulated` com atestação exigida e a apresentação em loopback) | 1 |
 | 2 | Banco isolado: criar `deliveryos_ensaio_v1`, migrar, aplicar os papéis, registrar a chave `simulated` e o ator; descartar ao final | 1 |
-| 3 | Rede do celular: Xiaomi como peer do NetBird, grupo de firewall temporário só para ele em `5443`/`8443`, CA de laboratório no celular e encaminhador TLS. O proxy público fica intocado | 2 |
+| 3 | Rede do celular: Xiaomi como peer do NetBird (inscrição individual); no firewall, durante a janela, estreitar a regra de bloqueio do guard em `5443`/`8443` e liberar essas duas portas só para o IP do celular; CA de laboratório no celular e encaminhador TLS. O proxy público e a regra da 5193 ficam intocados | 2 |
 | 4 | Aparelho e dados: APK de depuração com as URLs do ensaio; pré-vínculo; GPS com as coordenadas reais do voluntário sob o termo publicável, instância `simulated`, banco isolado descartado depois da evidência (ou guardado até 7 dias) | 2 |
 | 5 | Pessoas e janela (portão A): voluntário, responsáveis, horário e parada de emergência pré-autorizada | 2 |
