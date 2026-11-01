@@ -55,3 +55,22 @@ Merge, deploy, instalação, mudança de serviço ou spooler, troca de rota, res
 - GitHub Actions do HEAD `c8b883178f490db192bf459f07e1927c3afa9264`: Linux 140/140 e Windows 128/128, ambos SUCCESS (workflow #41265250145).
 - **Proven:** leitura e integridade de fontes históricas e regressões sintéticas/offline.
 - **Unknown/HOLD:** catálogo atual, situação ativa, homologação por linha, rota efetiva, sequência real, primeira expedição e impressão física.
+
+## Atualização prioritária — esclarecimento direto recebido em 01/11/2026
+
+**Esta atualização prevalece sobre a seção anterior que identificava seis perguntas humanas futuras como pendentes.** César respondeu às seis regras; **não pedir confirmação novamente** apenas porque não há catálogo atual.
+
+| Código | Produto | Regra humana explícita | Referencial e limite |
+| --- | --- | --- | --- |
+| `9.10.00.050.00` | Shimeji e Shitake | Cozinha; entrada quente; **650 selada** | Mesma configuração do Shimeji. Não presumir quantidade de caixas/kits sem prova de referência |
+| `9.10.05.070.00` | Ceviche | Praça **Sushi Quentes**; **item frio**; 650 selada | Mesmo tratamento do Tuna Shiso; praça e temperatura são campos diferentes |
+| `9.10.05.050.00` | Tartar de Salmão | Praça **Sushi Quentes**; **item frio**; 650 selada | Mesmo tratamento do Tuna Shiso; não herdar outras variantes ou quantidades |
+| `8.00.00.010.00` | Água Mineral com Gás | Sai do bar | Mesma configuração do refrigerante; regras de canudo ainda não foram especificadas |
+| `9.15.00.070.00` | Salmão/Atum 2 Pessoas | Praça dos **Combinados** | Mesmo tratamento do Salmão para 2 Pessoas; não inventar caixas, kits ou sacolas a partir do nome |
+| `8.20.11.002.00` | Cookie Pistache | **Somente comanda de conferência; nenhuma nova via de produção** | Diretriz para o novo fluxo, sem desativar ou alterar automaticamente a impressão nativa/legada |
+
+**Artefato preservado:** `data/comandas_cesar_clarificacoes_20261101_review_only.json`. A fonte é confirmação humana operacional atual para os seis casos **exatos**, mas não é captura de catálogo ativo nem prova da praça física, não autoriza modificar rota ou printer. O módulo `tools/comandas_cesar_clarificacoes_20261101_review_only.cjs` exige correspondência exata entre código e nome antes de registrar um candidato e mantém `print_authorized=false`; nove grupos de testes estão encadeados à regressão Linux/Windows.
+
+**Diferença técnica que ainda importa:** localizar uma captura atual autorizada com `CDPRODUTO`, código, nome, status ativo, versão e unidade, e verificar no motor vigente as referências Shimeji, Tuna Shiso, Refrigerante e Salmão para 2 Pessoas. Só então integrar as regras à classificação operacional em sandbox. Mesmo concluído isso, primeira impressão física, supressão de via legada e sequência TATÁ permanecem **bloqueadas até autorização distinta**. Não confundir “Cookie Pistache não tem nova via de produção” com autorização para modificar a configuração de impressoras existentes.
+
+**Decisão:** as seis validações de classificação de César estão **CAPTURED**, a integração está **CODE_CANDIDATE_ONLY**, a aplicação operacional está **HOLD**. Não contatar a Teknisa.
