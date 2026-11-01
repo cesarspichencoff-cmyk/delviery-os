@@ -38,6 +38,22 @@ test("combined for two has two historical destinations; others one",()=>{
  assert.equal(combo.historical_target_count,2);
  assert.ok(routes.pairs.filter(x=>x!==combo).every(x=>x.historical_target_count===1));
 });
+test("all fourteen historical gap codes have 13 routes and one scoped absence",()=>{
+ const counts=routes.historical_gap_route_count_by_code;
+ assert.equal(Object.keys(counts).length,14);
+ assert.deepEqual(Object.keys(counts).sort(),archived.entries.map(x=>x.canonical_code).sort());
+ assert.equal(routes.historical_gap_codes_total,14);
+ assert.equal(routes.historical_gap_codes_with_route,13);
+ assert.equal(routes.historical_gap_codes_without_route,1);
+ assert.equal(routes.historical_gap_codes_one_target,10);
+ assert.equal(routes.historical_gap_codes_two_targets,3);
+ assert.equal(Object.values(counts).filter(v=>v===0).length,1);
+ assert.equal(Object.values(counts).filter(v=>v===1).length,10);
+ assert.equal(Object.values(counts).filter(v=>v===2).length,3);
+ assert.equal(counts["8.20.11.002.00"],0);
+ for(const pair of routes.pairs)
+  assert.equal(counts[pair.product_code],pair.historical_target_count);
+});
 test("cookie Pistache is absent historically and conference-only is not paper permission",()=>{
  assert.deepEqual(routes.absent_target_codes,["8.20.11.002.00"]);
  const cookie=index.get("8.20.11.002.00");
