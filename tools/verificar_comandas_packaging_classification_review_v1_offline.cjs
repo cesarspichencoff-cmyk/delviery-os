@@ -246,3 +246,6 @@ test("historical Reader identity 14 codes are unique and never current approval"
 });
 console.log("COMANDAS_CLASSIFICATION_GAP_QUEUE="+n+"/"+n+
  " HISTORIC_ONLY NO_CATALOG_FACT NO_PRINT");
+
+// Six explicitly confirmed current human rule scopes; no production effect.
+require("./verificar_comandas_cesar_clarificacoes_20261101_offline.cjs");
