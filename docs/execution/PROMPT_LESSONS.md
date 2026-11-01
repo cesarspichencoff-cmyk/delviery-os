@@ -1145,3 +1145,17 @@ autorização, não em campo.
 
 **A regra.** Antes de propor mudança de rede num host com guard, ler as regras de **bloqueio** que ele
 instala e dizer qual delas a mudança atravessa. "Intocado" só vale se nenhuma regra de bloqueio cobre a porta.
+
+## L61 — A topologia da cadeia de teste não é a do host
+
+**O que quase passou.** Depois da L60, a proposta de ensaio ainda tinha três passos que funcionavam na
+cadeia integrada e falhariam no CAIXA_MOOCA. (1) Subir os processos pelo `local-control.cjs`, que aponta fixo
+para `deliveryos_lab`: o ensaio gravaria no banco atual. (2) Dar senha ao `deliveryos_source_ingest`, que o
+mesmo lançador já tinha deixado com direitos em `deliveryos_lab`. (3) Observar a fila em
+`http://127.0.0.1:5193`, quando no modo Remote o piloto escuta só no IP do `wt0` e a apresentação recusa
+HTTP fora do loopback (I9). Na cadeia de teste, tudo fica em loopback, com banco e papéis próprios, e por
+isso os três passavam.
+
+**A regra.** Antes de propor um passo no host, ler a ferramenta do host que ele usa (lançador, papéis,
+guarda) e conferir endereço, banco e papel contra o que ela fixa. Um caminho novo entra provado, como o T8
+do encaminhador.

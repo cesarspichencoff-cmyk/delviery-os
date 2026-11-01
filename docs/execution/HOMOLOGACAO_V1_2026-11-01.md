@@ -135,6 +135,10 @@ Marcadores lidos no log, sem `PULADO` nas suítes do candidato:
 | Copiloto no mesmo banco | `PILOT_COPILOTO_OUTBOX_E2E_LAB` 13/13 · `PRODUCER_ATTESTATION_PG_COPILOTO_LAB` 27/27 · `ENTREGAS_SERVIDOR_PG` 13/13 |
 | Cadeia real e governança | `CADEIA_REAL_GREEN` · governança `PASS` · `SEM_FAIL_NOVO: OK` |
 
+Depois desse run entrou o T8 no gate do encaminhador: a apresentação observa a fila através dele só com a
+CA de laboratório, que é o caminho do modo Remote. O gate passa a ter 8 verificações, no CI do commit
+seguinte.
+
 O único `PULADO` do log é o `S12_RLS_PULADO` da suíte do servidor com PostgreSQL. Ele existe desde
 `75e6637b` (15/10), este candidato não toca no arquivo, e ele **não é prova de RLS**.
 
@@ -168,19 +172,22 @@ O roteiro já existe e não foi reescrito:
 | F13 fim remoto com o aparelho offline | limite declarado: a captura segue até confirmar | decisão de aceitar no ensaio |
 | F14 Android 14, processo morto | AVD parcial | aparelho físico (Xiaomi: bateria e início automático) |
 
-O lançador do host (`tools/windows-local-lab/local-control.cjs`) já sobe crítico, assíncrono e piloto
-com papéis mínimos e `simulated`. Para a cadeia completa faltam dois processos, com o mesmo ambiente da
-prova I1–I9:
+O lançador do host (`tools/windows-local-lab/local-control.cjs`) sobe crítico, assíncrono e piloto com
+papéis mínimos e `simulated`, mas aponta fixo para `deliveryos_lab`: **não serve para o ensaio**, que roda
+os cinco processos no banco isolado, com papéis próprios (`ENSAIO_SUPERVISIONADO_V1` §3 e §4). Para a
+cadeia completa entram dois processos, com o mesmo ambiente da prova I1–I9:
 
 - **`source-ingest`**:
   - `DELIVERYOS_ENTREGAS_SOURCE_INGEST_ENABLED=true`;
   - `DELIVERYOS_ENTREGAS_PRODUCER_ATTESTATION=required`;
   - arquivo do piloto, estado e chave de parada;
-  - papel `deliveryos_source_ingest`.
+  - o papel de ingestão do ensaio (no job oficial, `deliveryos_source_ingest`).
 - **Apresentação**:
-  - `DELIVERYOS_DATABASE_URL` com `deliveryos_leitura`;
+  - `DELIVERYOS_DATABASE_URL` com o papel de leitura do ensaio (no oficial, `deliveryos_leitura`);
   - `DELIVERYOS_PRODUCT_READ_UNIT=ITAIM`;
-  - `DELIVERYOS_FILA_PILOTO_URL=http://127.0.0.1:5193`;
+  - `DELIVERYOS_FILA_PILOTO_URL`: `http://127.0.0.1:5193` só se o piloto escutar em loopback. No modo
+    Remote do host ele escuta só no IP do `wt0`, então é `https://100.107.78.202:5443` (encaminhador TLS),
+    com `NODE_EXTRA_CA_CERTS` na CA do ensaio (T8 do gate do encaminhador);
   - `DELIVERYOS_FILA_PILOTO_TOKEN`.
 
 ## 7. O que exige a autorização do César para o teste físico

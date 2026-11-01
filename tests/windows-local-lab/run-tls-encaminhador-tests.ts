@@ -9,11 +9,12 @@
  * Authorization passa intacto (TCP puro, nada interpretado); sem a CA, recusa; HTTP
  * puro na porta TLS falha; certificado com nome errado é recusado pelo cliente; escuta
  * em 0.0.0.0 é recusada; destino fora do ar fecha a conexão sem travar e volta quando
- * o destino volta; nada do conteúdo vai para o log.
+ * o destino volta; nada do conteúdo vai para o log. E a observação da fila pela
+ * apresentação (módulo de dist/) passa pelo encaminhador só com a CA de laboratório.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer as criarHttp, request as pedirHttp, type Server } from "node:http";
 import { request as pedirHttps } from "node:https";
 import { createServer as criarTcp } from "node:net";
@@ -85,8 +86,10 @@ async function main(): Promise<void> {
   const portaTls = await portaLivre();
   const TOKEN = "tok-sintetico-do-aparelho-0123456789";
   let destino: Server | null = null;
+  let observacoesRecebidas = 0;
   const subirDestino = async () => {
     destino = criarHttp((req, res) => {
+      if (req.url === "/api/ready-orders/observation") observacoesRecebidas += 1;
       let n = 0; req.on("data", (d: Buffer) => (n += d.length));
       req.on("end", () => { res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ metodo: req.method, caminho: req.url, autorizacao: req.headers.authorization ?? null, bytes: n })); });
@@ -149,6 +152,45 @@ async function main(): Promise<void> {
       await subirDestino();
       const r = await https(portaTls, { ca, token: TOKEN });
       assert.equal(r.status, 200);
+    });
+
+    // No host, o piloto do modo Remote escuta só no IP do wt0 (o guard exige), e a apresentação
+    // recusa mandar o token por HTTP fora do loopback (I9). O caminho do ensaio é este mesmo
+    // encaminhador, com a CA de laboratório dada ao processo da apresentação por NODE_EXTRA_CA_CERTS.
+    await teste("T8 a apresentação observa a fila pelo encaminhador: com a CA de laboratório chega com o token; sem ela, fila indisponível e nada chega ao piloto", async () => {
+      const modulo = join(RAIZ, "dist/src/platform/leitura/fila-do-piloto.js");
+      assert.ok(existsSync(modulo), `módulo ausente em ${modulo} — rode npm run build:platform`);
+      const codigo = [
+        "const { observarFilaDoPiloto } = require(process.argv[1]);",
+        "observarFilaDoPiloto({ url_base: process.argv[2], token: process.env.OBS_TOKEN || '', prazo_ms: 3000 })",
+        "  .then((r) => process.stdout.write(JSON.stringify(r)), (e) => process.stdout.write(JSON.stringify({ lancou: String(e) })));",
+      ].join("\n");
+      // Assíncrono de propósito: o "piloto" deste teste roda neste processo, e um spawnSync
+      // travaria o laço que precisa responder (a observação estouraria o prazo).
+      const observar = async (comCa: boolean): Promise<Record<string, unknown>> => {
+        const env: NodeJS.ProcessEnv = { ...process.env, OBS_TOKEN: TOKEN };
+        for (const k of ["NODE_EXTRA_CA_CERTS", "NODE_USE_ENV_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"]) delete env[k];
+        if (comCa) env.NODE_EXTRA_CA_CERTS = join(dir, "ca.pem");
+        const filho = spawn(process.execPath, ["-e", codigo, modulo, `https://127.0.0.1:${portaTls}`], { env, stdio: ["ignore", "pipe", "pipe"] });
+        let saida = ""; let erro = "";
+        filho.stdout?.on("data", (d: Buffer) => (saida += d.toString()));
+        filho.stderr?.on("data", (d: Buffer) => (erro += d.toString()));
+        const codigoSaida = await new Promise<number | null>((ok) => {
+          const limite = setTimeout(() => filho.kill("SIGKILL"), 15_000);
+          filho.once("exit", (c) => { clearTimeout(limite); ok(c); });
+        });
+        assert.equal(codigoSaida, 0, `o processo da observação falhou: ${erro.slice(-300)}`);
+        return JSON.parse(saida) as Record<string, unknown>;
+      };
+      const antes = observacoesRecebidas;
+      const comCa = await observar(true);
+      assert.equal(comCa.indisponivel, undefined, `fila indisponível com a CA: ${String(comCa.indisponivel)}`);
+      const eco = comCa.observacao as { metodo: string; caminho: string; autorizacao: string };
+      assert.deepEqual([eco.metodo, eco.caminho, eco.autorizacao], ["GET", "/api/ready-orders/observation", `Bearer ${TOKEN}`]);
+      assert.equal(observacoesRecebidas, antes + 1);
+      const semCa = await observar(false);
+      assert.deepEqual(semCa, { origem: "observacao_do_piloto", indisponivel: "piloto_inalcancavel" });
+      assert.equal(observacoesRecebidas, antes + 1, "um pedido sem a CA chegou ao piloto");
     });
 
     await teste("T7 nada do conteúdo vai para o log do encaminhador", async () => {

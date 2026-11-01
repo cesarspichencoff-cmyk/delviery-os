@@ -51,12 +51,12 @@ separado, só de permissão, que não abriria nada (L60 em `PROMPT_LESSONS.md`).
 
 | Tipo | Mudança | Etapa |
 |---|---|---|
-| Serviços | Parar os processos atuais (crítico, assíncrono, piloto) pelos PIDs registrados e subir os do ensaio, nas mesmas portas: piloto em `100.107.78.202:5193` (para o proxy), crítico em `127.0.0.1:8080`, assíncrono, `source-ingest` e apresentação em `127.0.0.1:5290`. Os do ensaio sobem com os binários de `dist/` e as mesmas variáveis da cadeia integrada (`run-cadeia-v1-integrada-tests.ts`), apontando para `deliveryos_ensaio_v1`. **O `local-control.cjs` não serve para isso:** ele aponta fixo para `deliveryos_lab` | 1 e 2 |
+| Serviços | Parar os processos atuais (crítico, assíncrono, piloto) pelos PIDs registrados e subir os do ensaio, nas mesmas portas: piloto em `100.107.78.202:5193` (para o proxy), crítico em `127.0.0.1:8080`, assíncrono, `source-ingest` e apresentação em `127.0.0.1:5290`. Os do ensaio sobem com os binários de `dist/` e as mesmas variáveis da cadeia integrada (`run-cadeia-v1-integrada-tests.ts`), apontando para `deliveryos_ensaio_v1` com os papéis do ensaio. **O `local-control.cjs` não serve para isso:** ele aponta fixo para `deliveryos_lab`. A apresentação observa a fila por `https://100.107.78.202:5443`, com `NODE_EXTRA_CA_CERTS` apontando para a CA do ensaio: no modo Remote o piloto não escuta em loopback, e a apresentação recusa mandar o token por HTTP fora dele (I9). Provado pelo T8 do gate do encaminhador | 1 e 2 |
 | Flags | Etapa 1: GPS desligado. Etapa 2: `gps_capture_enabled: true`, `offline_queue_enabled: true`, retorno em sombra | 1 e 2 |
 | NetBird | Inscrever o Xiaomi como peer, com chave de inscrição individual e política só celular → host em `5443` e `8443`. O serviço de proxy e o login dele não mudam | 2 |
 | Firewall | O guard **bloqueia** em `wt0` todo TCP fora da 5193 (regra `DeliveryOS-Lab-OtherTCP`, portas `1-5192,5194-65535`). No Windows, bloqueio explícito vence permissão: um grupo separado só de permissão não abriria nada. A mudança mínima repete o padrão que o guard usa na 5193: (a) estreitar essa regra para `1-5192,5194-5442,5444-8442,8444-65535`; (b) num grupo temporário próprio, bloquear `5443`/`8443` para toda origem que não seja o IP do celular no NetBird; (c) permitir só esse IP, só o `node.exe`, só o IP do host em `wt0`. Nenhuma outra regra muda: a 5193 e os proxies ficam como estão | 2 |
 | Verificação | Durante a janela, o `Verify` do guard reprova, e isso é esperado: dono da 5193 (etapas 1 e 2), terceiro peer e regra alterada (etapa 2). Fica anotado. Depois da reversão, ele tem de passar | 1 e 2 |
-| TLS | CA de laboratório gerada no host (a chave privada não sai dele), com certificado para o IP do overlay. Gera-se com o `openssl` do host; o inventário mostra se existe (o Git para Windows traz um). Sem ele, o passo TLS fica `NOT_RUN`: a chave não é gerada fora do host. `tls-encaminhador.cjs`, escutando só no IP do `wt0`, faz `100.107.78.202:5443` → `100.107.78.202:5193` (piloto) e `100.107.78.202:8443` → `127.0.0.1:8080` (crítico): o equivalente do `socat` da bancada, provado 7/7 | 2 |
+| TLS | CA de laboratório gerada no host (a chave privada não sai dele), com certificado para o IP do overlay. Gera-se com o `openssl` do host; o inventário mostra se existe (o Git para Windows traz um). Sem ele, a fila no Copiloto e a etapa 2 ficam `NOT_RUN`: a chave não é gerada fora do host. `tls-encaminhador.cjs` escuta só no IP do `wt0`. Na etapa 1, `100.107.78.202:5443` → `100.107.78.202:5193` (piloto), usado só pela apresentação, dentro do host. Na etapa 2 entra `100.107.78.202:8443` → `127.0.0.1:8080` (crítico), e o celular passa a usar os dois. É o equivalente do `socat` da bancada, provado 8/8 | 1 e 2 |
 
 Nada toca a Ethernet, o roteador ou o proxy público.
 
@@ -66,12 +66,12 @@ Nada toca a Ethernet, o roteador ou o proxy público.
 |---|---|
 | Banco `deliveryos_ensaio_v1` no PostgreSQL do host | dono `deliveryos_owner`; `deliveryos_lab` intocado |
 | Migrations 0001–0010 | binário oficial `migrate.js` |
-| Papéis | `papeis_minimos.sql` e `papel_leitura_produto.sql` aplicados só nesse banco. O primeiro só cria papel que não existe e não altera nenhum: os papéis da instalação atual seguem com as senhas de hoje. Pelo `local-control.cjs`, o `deliveryos_source_ingest` já existe no cluster sem senha e sem uso; ganha uma senha gerada no host só para o ensaio. O `deliveryos_leitura` é novo. Nenhum dos dois ganha nada em `deliveryos_lab` |
+| Papéis | Como na cadeia integrada (verde no CI): `papeis_minimos.sql` e `papel_leitura_produto.sql` aplicados só nesse banco, com os nomes trocados por cinco papéis próprios do ensaio (sufixo `_ensaio_v1`) e senhas geradas no host. Nenhum papel existente é usado nem alterado. Não se reaproveita `deliveryos_source_ingest`: o `local-control.cjs migrate` já lhe deu direitos em `deliveryos_lab`, e uma senha nova abriria a escrita no banco atual durante a janela. Os papéis do ensaio não têm direito nenhum lá |
 | Unidade e ator | ITAIM e o motoboy voluntário, com identificador opaco, sem nome |
 | Chave do produtor | rito `admin:entregas:producer` (plano + fingerprint), só `simulated` |
 | Aparelho (etapa 2) | rito `admin:entregas:device` (plano + fingerprint) |
 | Fatos | só `simulated`, só nesse banco |
-| No fim | extrair a evidência agregada (contagens, hashes, latência, buracos de sequência); `DROP DATABASE deliveryos_ensaio_v1`; `DROP ROLE deliveryos_leitura`; o `deliveryos_source_ingest` volta a ficar sem senha (`PASSWORD NULL`), como estava, e não é removido |
+| No fim | extrair a evidência agregada (contagens, hashes, latência, buracos de sequência); `DROP DATABASE deliveryos_ensaio_v1`; `DROP ROLE` dos cinco papéis do ensaio. Os papéis existentes saem como entraram |
 
 ## 5. Condições para encerrar e reverter
 
@@ -95,8 +95,8 @@ Nada toca a Ethernet, o roteador ou o proxy público.
 - Copiloto mostrando simulado como real.
 
 **Parada local pré-autorizada:** retirar a permissão de localização, modo avião, encerrar a viagem no console,
-`gps_capture_enabled: false`, ou parar os dois encaminhadores TLS (o celular perde o acesso na hora; o tablet
-segue pelo proxy).
+`gps_capture_enabled: false`, ou parar os dois encaminhadores TLS (o celular perde o acesso na hora e o Copiloto
+passa a declarar a fila indisponível; o tablet segue pelo proxy).
 
 **Janela:** tem horário fixo de fim. O que não terminar fica `NOT_RUN`.
 
@@ -109,8 +109,7 @@ segue pelo proxy).
 5. Subir de volta o ambiente atual (`local-control.cjs start`, `switch-pilot.ps1 -Mode Remote`).
 6. `netbird-guard.ps1 -Mode Verify` precisa passar: dois peers, três escutas e o mesmo digest das 258 regras
    gravado em 26/10. O digest cobre portas, origens, ação e programa: a regra devolvida com outro valor reprova.
-7. Extrair a evidência, descartar o banco, remover o `deliveryos_leitura`, devolver o `deliveryos_source_ingest` a
-   sem senha e apagar a pasta de dados.
+7. Extrair a evidência, descartar o banco e os cinco papéis do ensaio e apagar a pasta de dados.
 8. Rodar o inventário de novo e comparar com o de antes.
 
 ## 6. O que ainda exige a autorização do César
@@ -119,8 +118,8 @@ A pré-condição (rodar o inventário) não é autorização de mudança. As au
 
 | # | Autorização | Etapa |
 |---|---|---|
-| 1 | Instalar o SHA validado em pasta própria no CAIXA_MOOCA e, na janela, trocar os processos atuais pelos do ensaio (inclui o `source-ingest` `simulated` com atestação exigida e a apresentação em loopback) | 1 |
-| 2 | Banco isolado: criar `deliveryos_ensaio_v1`, migrar, aplicar os papéis nesse banco, criar o `deliveryos_leitura` e dar senha ao `deliveryos_source_ingest` (hoje sem senha e sem uso; volta a sem senha no fim), registrar a chave `simulated` e o ator; descartar tudo ao final | 1 |
-| 3 | Rede do celular: Xiaomi como peer do NetBird (inscrição individual); no firewall, durante a janela, estreitar a regra de bloqueio do guard em `5443`/`8443` e liberar essas duas portas só para o IP do celular; CA de laboratório no celular e encaminhador TLS. O proxy público e a regra da 5193 ficam intocados | 2 |
+| 1 | Instalar o SHA validado em pasta própria no CAIXA_MOOCA e, na janela, trocar os processos atuais pelos do ensaio (inclui o `source-ingest` `simulated` com atestação exigida, a apresentação em loopback e o encaminhador TLS da fila na 5443, com a CA de laboratório gerada no host) | 1 |
+| 2 | Banco isolado: criar `deliveryos_ensaio_v1`, migrar, criar nele os cinco papéis próprios do ensaio (com sufixo, como a cadeia integrada; nenhum papel existente muda), registrar a chave `simulated` e o ator; descartar banco e papéis ao final | 1 |
+| 3 | Rede do celular: Xiaomi como peer do NetBird (inscrição individual); no firewall, durante a janela, estreitar a regra de bloqueio do guard em `5443`/`8443` e liberar essas duas portas só para o IP do celular; CA de laboratório no celular e o encaminhador da plataforma (8443). O proxy público e a regra da 5193 ficam intocados | 2 |
 | 4 | Aparelho e dados: APK de depuração com as URLs do ensaio; pré-vínculo; GPS com as coordenadas reais do voluntário sob o termo publicável, instância `simulated`, banco isolado descartado depois da evidência (ou guardado até 7 dias) | 2 |
 | 5 | Pessoas e janela (portão A): voluntário, responsáveis, horário e parada de emergência pré-autorizada | 2 |
