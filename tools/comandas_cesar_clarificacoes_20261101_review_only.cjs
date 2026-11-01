@@ -15,6 +15,7 @@ const valid=x=>typeof x==="string"&&x.length>0&&x.length<=160&&
  !/[\x00-\x1f\x7f]/.test(x);
 function hold(reason){return {schema:SCHEMA,status:"HOLD",reason,
  rule_code:null,stated_area:null,stated_item_temperature:null,
+ stated_container:null,stated_reference:null,
  proposed_conference_only:false,catalog_identity_proven:false,
  active_product_proven:false,physical_route_proven:false,
  packaging_proven:false,print_authorized:false,effects:NO_EFFECTS};}
@@ -32,6 +33,8 @@ function reviewHumanRuleItem(item){
   reason:"REQUIRES_CURRENT_NATIVE_ID_ACTIVE_STATION_ROUTING_AND_MOTOR_PROOF",
   rule_code:rule.code,stated_area:rule.stated_area,
   stated_item_temperature:rule.stated_item_temperature,
+  stated_container:rule.stated_container,
+  stated_reference:rule.stated_reference,
   proposed_conference_only:rule.new_production_ticket_policy===
    "NO_NEW_PRODUCTION_TICKET",
   catalog_identity_proven:false,active_product_proven:false,
