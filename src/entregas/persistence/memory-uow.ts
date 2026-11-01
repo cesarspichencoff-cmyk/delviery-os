@@ -9,7 +9,7 @@ import type {
   UnitOfWork,
   InboundReceiptRepository,
 } from "./ports";
-import { ConcurrencyError } from "./ports";
+import { ConcurrencyError, ReadyRegistrationConsumedError } from "./ports";
 import { InboundReceiptConflictError, InboundReceiptCommandIdCollisionError, type DurableInboundReceipt } from "./inbound-receipt";
 import type { Handoff, DomainEvent } from "../foundation/types";
 import type { Occurrence } from "../operational/occurrence";
@@ -78,6 +78,9 @@ export class MemoryUnitOfWork implements UnitOfWork {
       },
       async save(record, expected) {
         const cur = self.staged.trips.get(record.trip.trip_id);
+        if (expected === null && cur) {
+          throw new ConcurrencyError(`Trip ${record.trip.trip_id} ja existe`);
+        }
         if (expected !== null && (cur?.version ?? 0) !== expected) {
           throw new ConcurrencyError("Trip version conflict");
         }
@@ -135,6 +138,12 @@ export class MemoryUnitOfWork implements UnitOfWork {
     };
     this.events = {
       async append(ev) {
+        for (const e of ev) {
+          if (e.event_type === "delivery_ready" &&
+              self.staged.events.some((x) => x.idempotency_key === e.idempotency_key)) {
+            throw new ReadyRegistrationConsumedError(e.idempotency_key);
+          }
+        }
         self.staged.events.push(...ev.map((event) => structuredClone(event)));
       },
       async listByObject(t, id) {

@@ -69,6 +69,8 @@ export interface ReadyRegistration {
   /** `created_at` original da fila: instante do REGISTRO, nao da producao. */
   readonly registered_at: string;
   readonly channel?: string;
+  /** Sessao que registrou o pronto, quando a fila guardou. Nunca quem preparou. */
+  readonly registered_by_actor_id?: string;
 }
 
 function instanteCanonico(v: unknown): v is string {
@@ -302,8 +304,11 @@ export class EntregasApplicationService {
       // Uma resposta de COMMIT pode se perder depois de a transacao ja
       // estar persistida. O ACK depende de prova de recibo confirmado,
       // nunca de inferencia sobre a excecao ou de stage local.
+      // Registro de pronto ja consumido e recusa DEFINITIVA (a transacao caiu
+      // inteira), nunca resultado incerto para reenviar.
       if (receipt && !(e instanceof DomainError) &&
-          !(e instanceof Error && e.name === "AuthError")) {
+          !(e instanceof Error && e.name === "AuthError") &&
+          !(e instanceof Error && e.name === "ReadyRegistrationConsumedError")) {
         try {
           const persisted = await this.uow.inboundReceipts.find(
             receipt.event_id,receipt.idempotency_key,receipt.command_id);
@@ -328,7 +333,10 @@ export class EntregasApplicationService {
             error:"Resultado transacional incerto; reenviar o mesmo evento sem alterar a chave" };
         }
       }
-      const msg = e instanceof Error ? e.message : String(e);
+      const pronto = e instanceof Error && e.name === "ReadyRegistrationConsumedError";
+      const msg = pronto
+        ? "Este pedido pronto ja entrou em outra viagem. Se precisar sair de novo, registre-o como pronto outra vez."
+        : e instanceof Error ? e.message : String(e);
       const code =
         e instanceof InboundReceiptConflictError
           ? "RECEIPT_CONFLICT_RECHECK"
@@ -338,7 +346,9 @@ export class EntregasApplicationService {
             ? "AUTH"
             : e instanceof Error && e.name === "ConcurrencyError"
               ? "CONCURRENCY"
-              : "ERROR";
+              : pronto
+                ? "READY_ALREADY_CONSUMED"
+                : "ERROR";
       return { ok: false, error: msg, code,
         retryable: code === "RECEIPT_CONFLICT_RECHECK" ? true : undefined };
     }
@@ -407,6 +417,7 @@ export class EntregasApplicationService {
    */
   private logReady(
     log: InMemoryEventLog,
+    unit_id: string,
     trip_id: string,
     deliveries: ReadonlyArray<{ delivery_id: string; order_ref: string }>,
     ready: readonly ReadyRegistration[] | undefined,
@@ -430,15 +441,20 @@ export class EntregasApplicationService {
         event_type: "delivery_ready",
         occurred_at: reg.registered_at,
         origin: "ops_console",
+        // Quem registrou: a sessao guardada pela fila. Ausente fica ausente;
+        // o ator que monta a viagem nunca e atribuido ao registro.
+        ...(reg.registered_by_actor_id !== undefined ? { actor_id: reg.registered_by_actor_id } : {}),
         clock_trust: "trusted",
-        idempotency_key: `delivery_ready:${trip_id}:${d.delivery_id}`,
+        // Uma chave por REGISTRO: o mesmo registro em duas entregas colide no
+        // armazenamento (indice unico no PostgreSQL) e a segunda cai inteira.
+        idempotency_key: `delivery_ready:${unit_id}:${d.order_ref}:${reg.registered_at}`,
         payload: {
           trip_id,
           order_ref: d.order_ref,
           ...(reg.channel !== undefined ? { channel: reg.channel } : {}),
           ready_kind: "registro_expedicao",
           production_completed_at: null,
-          registered_by: null,
+          prepared_by: null,
         },
       });
     }
@@ -461,7 +477,7 @@ export class EntregasApplicationService {
       initial_deliveries: cmd.deliveries,
     });
     if (!r.ok) return { ok: false, error: r.error.message, code: r.error.code };
-    this.logReady(log, cmd.trip_id, cmd.deliveries, ready);
+    this.logReady(log, cmd.unit_id, cmd.trip_id, cmd.deliveries, ready);
     await this.saveAgg(r.state, null, log);
     return { ok: true, trip: r.state };
   }
@@ -499,6 +515,7 @@ export class EntregasApplicationService {
     if (!r.ok) return { ok: false, error: r.error.message, code: r.error.code };
     this.logReady(
       log,
+      cmd.unit_id,
       cmd.trip_id,
       [{ delivery_id: cmd.delivery_id, order_ref: cmd.order_ref }],
       ready,

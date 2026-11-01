@@ -29,7 +29,7 @@ import type {
   UnitOfWork,
   InboundReceiptRepository,
 } from "./ports";
-import { ConcurrencyError } from "./ports";
+import { ConcurrencyError, ReadyRegistrationConsumedError } from "./ports";
 import { InboundReceiptCommandIdCollisionError, type DurableInboundReceipt } from "./inbound-receipt";
 import type { Trip, Delivery, Handoff, DomainEvent } from "../foundation/types";
 import type { Occurrence } from "../operational/occurrence";
@@ -196,6 +196,11 @@ export class FileUnitOfWork implements UnitOfWork {
       },
       async save(record, expected) {
         const cur = self.dirty.trips[record.trip.trip_id];
+        if ((expected === null || expected === undefined) && cur) {
+          // Mesma regra do PostgreSQL (INSERT ... ON CONFLICT DO NOTHING):
+          // criar viagem com id existente nao sobrescreve a viagem nem a versao.
+          throw new ConcurrencyError(`Trip ${record.trip.trip_id} ja existe`);
+        }
         if (expected !== null && expected !== undefined) {
           const v = cur?.version ?? 0;
           if (v !== expected) {
@@ -263,6 +268,12 @@ export class FileUnitOfWork implements UnitOfWork {
     };
     this.events = {
       async append(events) {
+        for (const e of events) {
+          if (e.event_type === "delivery_ready" &&
+              self.dirty.events.some((x) => x.idempotency_key === e.idempotency_key)) {
+            throw new ReadyRegistrationConsumedError(e.idempotency_key);
+          }
+        }
         self.dirty.events.push(...events);
       },
       async listByObject(object_type, object_id) {

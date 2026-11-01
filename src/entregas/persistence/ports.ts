@@ -80,4 +80,16 @@ export class ConcurrencyError extends Error {
   }
 }
 
+/**
+ * O mesmo registro de pronto (unidade + pedido + instante original) so pode
+ * virar UMA entrega. A chave idempotente do `delivery_ready` e por registro;
+ * repeti-la e a prova de que outro operador ou processo ja o consumiu.
+ */
+export class ReadyRegistrationConsumedError extends Error {
+  constructor(readonly idempotencyKey: string) {
+    super("registro de pronto ja consumido: " + idempotencyKey);
+    this.name = "ReadyRegistrationConsumedError";
+  }
+}
+
 export type { EntregasPublicEvent };

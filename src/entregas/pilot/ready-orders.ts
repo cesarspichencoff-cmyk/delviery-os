@@ -15,6 +15,12 @@ export interface PilotReadyOrder {
   label: string;
   channel?: string;
   created_at: string;
+  /**
+   * Sessao que registrou o pronto. Arquivo e memoria guardam; a tabela
+   * `entregas.ready_order` (0007) nao tem coluna para isso, entao o
+   * PostgreSQL devolve ausente — nunca um ator inventado.
+   */
+  registered_by?: { actor_id: string; role: string };
 }
 
 export interface PilotReadyOrderStore {

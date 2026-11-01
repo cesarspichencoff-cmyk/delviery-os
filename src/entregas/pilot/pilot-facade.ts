@@ -96,6 +96,13 @@ export interface PilotFacadeOptions {
   readonly internalRiders?: () => ReadonlySet<string>;
 }
 
+/** Entrega que ainda leva o pedido a um cliente: nao pode ganhar gemea. */
+const ENTREGA_EM_ANDAMENTO: ReadonlySet<string> = new Set([
+  "aguardando_saida",
+  "em_rota",
+  "chegada_detectada",
+]);
+
 export class PilotApplicationFacade {
   private uow: UnitOfWork;
   private readonly storage: PilotUnitOfWorkSource;
@@ -257,6 +264,8 @@ export class PilotApplicationFacade {
       label,
       channel,
       created_at: new Date().toISOString(),
+      // A sessao autenticada e quem registra; nunca o corpo da requisicao.
+      registered_by: { actor_id: this.activeActor.actor_id, role: this.activeActor.role },
     });
     if (added.duplicate) {
       this.log.warn("duplicate_order", "Pedido já estava na fila de prontos.", order_ref);
@@ -383,14 +392,32 @@ export class PilotApplicationFacade {
                 order_ref: o.order_ref,
                 registered_at: o.created_at,
                 ...(o.channel !== undefined ? { channel: o.channel } : {}),
+                ...(o.registered_by?.actor_id
+                  ? { registered_by_actor_id: o.registered_by.actor_id }
+                  : {}),
               }];
         });
-        const consumidos = await this.registrosJaConsumidos(ready);
-        if (consumidos.length) {
+        const bloqueio = await this.bloqueiosDeConsumo(
+          deliveries.map((d) => d.order_ref),
+          ready,
+          new Set(deliveries.map((d) => `${full.trip_id}\u0000${d.delivery_id}`)),
+        );
+        if (bloqueio.filaVelhaPropria.length) {
+          // O proprio comando ja consumiu este registro (reenvio depois de
+          // queda): a linha velha sai da fila e o recibo/dominio decide o
+          // reenvio — replay confirmado ou viagem ja existente, nunca 2o fato.
+          await this.readyOrders.removeByOrderRefs(bloqueio.filaVelhaPropria);
+          ready = ready.filter((r) => !bloqueio.filaVelhaPropria.includes(r.order_ref));
+        }
+        if (bloqueio.filaVelha.length || bloqueio.jaConsumidos.length) {
           // Fila velha: queda entre o commit da viagem e a limpeza, ou outro
-          // terminal ja usou este registro. O fato duravel prova; a linha sai
-          // da fila e o mesmo registro nao sai numa segunda viagem.
-          await this.readyOrders.removeByOrderRefs(consumidos);
+          // terminal ja usou este registro. Pedido fora da fila cujo registro
+          // ja virou entrega em andamento: outro operador o levou. O fato
+          // duravel prova os dois; a linha velha sai da fila e o mesmo
+          // registro nao sai numa segunda viagem.
+          if (bloqueio.filaVelha.length) {
+            await this.readyOrders.removeByOrderRefs(bloqueio.filaVelha);
+          }
           this.last_error = "READY_ALREADY_CONSUMED";
           this.last_human_error =
             "Este pedido pronto ja entrou em outra viagem. Se precisar sair de novo, registre-o como pronto outra vez.";
@@ -518,23 +545,53 @@ export class PilotApplicationFacade {
    * dado sensivel acontecem em trip-timeline.ts.
    */
   /**
-   * Registro de pronto que ja virou fato numa entrega anterior. O par exato
-   * pedido + instante original prova o consumo; nada e inferido por pedido so.
+   * Bloqueios de consumo do pronto, provados pelo fato duravel:
+   *  - fila velha: o MESMO registro (pedido + instante original) ja virou fato;
+   *  - pedido fora da fila cujo registro ja virou entrega em andamento: outro
+   *    operador o levou, e outra entrega seria despacho em dobro.
+   * Pedido que nunca passou pela fila segue como antes: sem fato, sem bloqueio.
    */
-  private async registrosJaConsumidos(
+  private async bloqueiosDeConsumo(
+    pedidos: readonly string[],
     ready: readonly ReadyRegistration[],
-  ): Promise<string[]> {
-    if (!ready.length) return [];
+    /** `viagem\0entrega` do proprio comando: fato dele e reenvio, nao rival. */
+    proprias: ReadonlySet<string>,
+  ): Promise<{ filaVelha: string[]; filaVelhaPropria: string[]; jaConsumidos: string[] }> {
+    const naFila = new Set(ready.map((r) => r.order_ref));
     const chaves = new Set(ready.map((r) => `${r.order_ref}\u0000${r.registered_at}`));
-    const consumidos = new Set<string>();
+    const foraDaFila = new Set(pedidos.filter((p) => !naFila.has(p)));
+    if (!chaves.size && !foraDaFila.size) {
+      return { filaVelha: [], filaVelhaPropria: [], jaConsumidos: [] };
+    }
+    const filaVelha = new Set<string>();
+    const filaVelhaPropria = new Set<string>();
+    const candidatos: Array<{ ref: string; trip_id: string; delivery_id: string }> = [];
     for (const e of await this.uow.events.listAll()) {
       if (e.event_type !== "delivery_ready") continue;
       const ref = (e.payload as { order_ref?: unknown }).order_ref;
-      if (typeof ref === "string" && chaves.has(`${ref}\u0000${e.occurred_at}`)) {
-        consumidos.add(ref);
+      if (typeof ref !== "string") continue;
+      const trip_id = (e.payload as { trip_id?: unknown }).trip_id;
+      const propria = typeof trip_id === "string" && proprias.has(`${trip_id}\u0000${e.object_id}`);
+      if (chaves.has(`${ref}\u0000${e.occurred_at}`)) (propria ? filaVelhaPropria : filaVelha).add(ref);
+      if (foraDaFila.has(ref) && typeof trip_id === "string" && !propria) {
+        candidatos.push({ ref, trip_id, delivery_id: e.object_id });
       }
     }
-    return [...consumidos];
+    const jaConsumidos = new Set<string>();
+    for (const c of candidatos) {
+      if (jaConsumidos.has(c.ref)) continue;
+      const rec = await this.uow.trips.get(c.trip_id);
+      const entrega = rec?.deliveries.find((d) => d.delivery_id === c.delivery_id);
+      if (rec && entrega?.active && rec.trip.state !== "encerrada" &&
+          ENTREGA_EM_ANDAMENTO.has(entrega.state)) {
+        jaConsumidos.add(c.ref);
+      }
+    }
+    return {
+      filaVelha: [...filaVelha],
+      filaVelhaPropria: [...filaVelhaPropria].filter((r) => !filaVelha.has(r)),
+      jaConsumidos: [...jaConsumidos],
+    };
   }
 
   async listTripEvents(trip_id: string) {

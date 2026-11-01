@@ -9,7 +9,7 @@ import type {
   UnitOfWork,
   InboundReceiptRepository,
 } from "./ports";
-import { ConcurrencyError } from "./ports";
+import { ConcurrencyError, ReadyRegistrationConsumedError } from "./ports";
 import { InboundReceiptConflictError, type DurableInboundReceipt } from "./inbound-receipt";
 import type {
   Trip,
@@ -757,13 +757,14 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
       }
 
       for (const e of this.eventWrites) {
-        await tx.query(
+        const gravado = await tx.query(
           `INSERT INTO entregas.domain_event
             (event_id,unit_id,object_type,object_id,event_type,occurred_at,recorded_at,
              synced_at,origin,device_id,actor_id,idempotency_key,payload,clock_trust,
              contract_version)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15)
-           ON CONFLICT (idempotency_key) DO NOTHING`,
+           ON CONFLICT (idempotency_key) DO NOTHING
+           RETURNING event_id`,
           [
             e.event_id,this.unitId,e.object_type,e.object_id,e.event_type,
             e.occurred_at,e.recorded_at,e.synced_at ?? null,e.origin,e.device_id ?? null,
@@ -771,6 +772,13 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
             e.clock_trust,e.contract_version,
           ],
         );
+        // O indice unico de idempotency_key e o arbitro entre processos: a
+        // segunda transacao com o mesmo registro de pronto espera a primeira
+        // e, depois do commit dela, nao insere nada. Isso derruba a transacao
+        // inteira (viagem e entrega inclusive) em vez de duplicar o despacho.
+        if (e.event_type === "delivery_ready" && gravado.length === 0) {
+          throw new ReadyRegistrationConsumedError(e.idempotency_key);
+        }
       }
 
       for (const r of this.outboxWrites) {
