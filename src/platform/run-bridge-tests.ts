@@ -90,9 +90,11 @@ test("um envelope bem formado é aceito", () => {
   assert.equal(checkEvent(fato()).ok, true);
 });
 
-test("os onze tipos do catálogo estão declarados", () => {
-  assert.equal(EVENT_TYPES.length, 11);
-  for (const t of ["trip_created", "gps_batch_received", "trip_closed", "order_state_changed"]) {
+test("os treze tipos do catálogo estão declarados", () => {
+  // 13 desde a leitura do pronto: delivery_ready e delivery_removed (fatos da
+  // entrega com contrato próprio; a Operação Viva não os consome).
+  assert.equal(EVENT_TYPES.length, 13);
+  for (const t of ["trip_created", "gps_batch_received", "trip_closed", "order_state_changed", "delivery_ready", "delivery_removed"]) {
     assert.ok((EVENT_TYPES as readonly string[]).includes(t), `tipo ausente: ${t}`);
   }
 });

@@ -15,8 +15,8 @@
  * obrigatória por construção: o escritor recebe um cliente com `transaction` e
  * não há caminho que não passe por ela.
  *
- * **2. Aceitar o que não tem para onde ir.** `checkEvent` aceita os onze tipos
- * declarados, mas só nove têm consumidor. Um dos outros dois, gravado hoje,
+ * **2. Aceitar o que não tem para onde ir.** `checkEvent` aceita os treze tipos
+ * declarados, mas só onze têm consumidor. Um dos outros dois, gravado hoje,
  * entraria na outbox, não acharia handler, e queimaria as tentativas até
  * dead-letter — um ciclo invisível que só aparece quando alguém vai olhar a
  * fila. Roteabilidade é verificada ANTES de gravar.
