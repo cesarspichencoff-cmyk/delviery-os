@@ -166,14 +166,14 @@ teste("a suíte está verde sem mutação", () => {
 console.log("\n1. ESTADO ATUAL: NÃO MISTURAR, NÃO DUPLICAR, AUSÊNCIA NÃO É ZERO");
 mutacao({ id: "ML1", prova: "R2", propriedade: "linha velha da fila conta de novo junto com o fato",
   edicoes: [{ arquivo: L, de: "      if (consumidos.has(chaveDoRegistro(pedido, r))) { velhas += 1; continue; }\n", para: "" }] });
-mutacao({ id: "ML2", prova: "R3", propriedade: "fila indisponível vira zero",
-  edicoes: [{ arquivo: L, de: "      total: null, mais_antigo_desde: null, pedidos: [] };\n", para: "      total: 0, mais_antigo_desde: null, pedidos: [] };\n" }] });
+mutacao({ id: "ML2", prova: "R3", propriedade: "fila indisponível vira fila vazia observada (zero)",
+  edicoes: [{ arquivo: L, de: "    na_fila = { estado: \"indisponivel\", motivo: entrada.fila.motivo, origem, observado_em,\n",
+    para: "    na_fila = { estado: \"observado\", motivo: null, origem, observado_em,\n" }] });
 mutacao({ id: "ML3", prova: "R3", propriedade: "fatos indisponíveis viram 'nada aguardando'",
   edicoes: [{ arquivo: L, de: "    aguardando_saida = { estado: \"indisponivel\", motivo: entrada.eventos.motivo, grupos: [] };\n",
     para: "    aguardando_saida = { estado: \"observado\", motivo: null, grupos: [] };\n" }] });
-mutacao({ id: "ML12", prova: "R1", propriedade: "a fila, que não tem modo, passa a se declarar real",
-  edicoes: [{ arquivo: L, de: "      estado: \"observado\", motivo: null, source_mode: \"nao_declarado\", total: pedidos.length,\n",
-    para: "      estado: \"observado\", motivo: null, source_mode: \"real\" as \"nao_declarado\", total: pedidos.length,\n" }] });
+mutacao({ id: "ML12", prova: "R1", propriedade: "a linha da fila sem modo passa a se declarar real",
+  edicoes: [{ arquivo: L, de: "        ? l.source_mode : \"nao_declarado\";\n", para: "        ? l.source_mode : \"real\";\n" }] });
 
 console.log("\n2. TRAJETÓRIA: RETIRADA, ACRÉSCIMO, RELÓGIO, ORDEM");
 mutacao({ id: "ML4", prova: "R5", propriedade: "entrega retirada antes da saída herda a saída da viagem",

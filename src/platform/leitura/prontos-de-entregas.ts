@@ -3,8 +3,17 @@
  *
  *  1. ESTADO ATUAL — o que está esperando AGORA.
  *     - na fila: registrado como pronto e ainda não associado. Evidência: a
- *       própria fila (`entregas.ready_order`). A fila não guarda modo, então o
- *       grupo é `nao_declarado` — nunca vira real.
+ *       própria fila, de ORIGEM DECLARADA — a saída mínima do piloto
+ *       (`fonteDaObservacaoDoPiloto`, o caminho do modo arquivo) ou a tabela
+ *       `entregas.ready_order` quando ela é a autoridade da unidade. Sem
+ *       origem declarada, a fila é INDISPONÍVEL: a tabela existe em todo banco
+ *       da plataforma e, vazia, viraria um zero falso para quem roda em arquivo.
+ *       Cada linha traz o modo declarado no registro; sem modo, o grupo é
+ *       `nao_declarado` — nunca vira real. A idade da observação é declarada e
+ *       nunca vira instante de pedido.
+ *     - consistência: a marca da observação (último fato publicado entre os
+ *       tipos lidos aqui) presente no event log = fatos em dia com a fila;
+ *       ausente = atrasados; sem marca = desconhecida.
  *     - aguardando saída: já numa entrega de viagem que ainda não saiu.
  *       Evidência: fatos duráveis (`delivery_ready` sem `trip_started` da
  *       viagem e sem `delivery_removed` da entrega).
@@ -28,21 +37,60 @@
  */
 import type { SqlClient, TransactionalSqlClient } from "../persistence/sql-client";
 import { SOURCE_MODES, type SourceMode } from "../contracts/event-catalog";
+import { TOLERANCIA_DO_RELOGIO_MS } from "../contracts/relogio";
 
-export const LEITURA_DO_PRONTO_VERSAO = "prontos-de-entregas@1.0.0";
+export const LEITURA_DO_PRONTO_VERSAO = "prontos-de-entregas@2.0.0";
 
 /** Tipos que a leitura usa. A Operação Viva não consome os dois primeiros. */
 export const TIPOS_DA_LEITURA_DO_PRONTO: readonly string[] = ["delivery_ready", "delivery_removed", "trip_started"];
+
+/** Modo de uma linha da fila: o declarado no registro, ou não declarado. */
+export type ModoDaLinha = SourceMode | "nao_declarado";
 
 export interface LinhaDaFilaDePronto {
   readonly order_ref: string;
   readonly registered_at: string;
   readonly channel?: string | null;
+  /** Ausente = não declarado (a tabela PostgreSQL não guarda modo). */
+  readonly source_mode?: ModoDaLinha;
+}
+
+/** De onde a fila foi lida. */
+export interface OrigemDaFila {
+  readonly sistema: string;
+  readonly armazenamento: string;
+  readonly processo_iniciado_em: string | null;
 }
 
 export type FonteDaFila =
-  | { readonly disponivel: true; readonly linhas: readonly LinhaDaFilaDePronto[] }
-  | { readonly disponivel: false; readonly motivo: string };
+  | {
+      readonly disponivel: true;
+      readonly linhas: readonly LinhaDaFilaDePronto[];
+      readonly origem?: OrigemDaFila;
+      readonly observado_em?: string;
+      /**
+       * `event_id` do último fato publicado pela origem entre os tipos lidos
+       * aqui. `null` = nada publicado ainda; ausente = a origem não informa.
+       */
+      readonly marca_dos_fatos?: string | null;
+      /** Conferido pelo leitor no banco (busca pela chave): a marca já chegou? */
+      readonly marca_ingerida?: boolean;
+    }
+  | {
+      readonly disponivel: false;
+      readonly motivo: string;
+      readonly origem?: OrigemDaFila;
+      readonly observado_em?: string;
+    };
+
+/** Como quem chama declara a origem da fila da unidade. */
+export type DeclaracaoDaFila =
+  | { readonly origem: "observacao_do_piloto"; readonly observacao: unknown }
+  /** A observação não pôde ser obtida (rede, prazo, credencial): ausência declarada. */
+  | { readonly origem: "observacao_do_piloto"; readonly indisponivel: string }
+  | { readonly origem: "postgres" };
+
+export type ConsistenciaDosFatos = "fatos_em_dia" | "fatos_atrasados" | "desconhecida";
 
 export interface FatoDoPronto {
   readonly event_id: string;
@@ -110,17 +158,28 @@ export interface EntregaAguardandoSaida {
 }
 
 export interface EstadoAtualDoPronto {
-  readonly contrato: "estado-atual-do-pronto@1";
+  readonly contrato: "estado-atual-do-pronto@2";
   readonly unit_id: string;
   readonly lido_em: string;
+  /**
+   * Um grupo por modo declarado no registro. Não existe total único: ele
+   * somaria real com simulado. Observada e vazia = `observado` sem grupos.
+   */
   readonly na_fila: {
     readonly estado: "observado" | "indisponivel";
     readonly motivo: string | null;
-    readonly source_mode: "nao_declarado";
-    readonly total: number | null;
-    readonly mais_antigo_desde: string | null;
-    readonly pedidos: readonly PedidoNaFila[];
+    readonly origem: OrigemDaFila | null;
+    readonly observado_em: string | null;
+    readonly idade_da_observacao_s: number | null;
+    readonly grupos: readonly {
+      readonly source_mode: ModoDaLinha;
+      readonly total: number;
+      readonly mais_antigo_desde: string | null;
+      readonly pedidos: readonly PedidoNaFila[];
+    }[];
   };
+  /** A fila e os fatos falam do mesmo momento? Decidido pela marca da origem. */
+  readonly consistencia_dos_fatos: ConsistenciaDosFatos;
   readonly aguardando_saida: {
     readonly estado: "observado" | "indisponivel";
     readonly motivo: string | null;
@@ -373,12 +432,17 @@ export function lerEstadoAtualDoPronto(entrada: {
   let na_fila: EstadoAtualDoPronto["na_fila"];
   let fila_velha: number | null = null;
   const naFilaPorPedido = new Map<string, number[]>();
+  const origem = entrada.fila.origem ?? null;
+  const observado_em = entrada.fila.observado_em ?? null;
+  const observado = ms(observado_em);
+  const idade = observado === null || agora === null ? null : Math.max(0, segundos(observado, agora));
   if (!entrada.fila.disponivel) {
-    na_fila = { estado: "indisponivel", motivo: entrada.fila.motivo, source_mode: "nao_declarado",
-      total: null, mais_antigo_desde: null, pedidos: [] };
+    na_fila = { estado: "indisponivel", motivo: entrada.fila.motivo, origem, observado_em,
+      idade_da_observacao_s: idade, grupos: [] };
   } else {
     let velhas = 0;
-    const pedidos: { order_ref: string; registrado_em: string; registrado: number; espera_s: number | null }[] = [];
+    type Pedido = { order_ref: string; registrado_em: string; registrado: number; espera_s: number | null };
+    const porModo = new Map<ModoDaLinha, Pedido[]>();
     for (const l of entrada.fila.linhas) {
       const r = ms(l.registered_at);
       const pedido = texto(l.order_ref);
@@ -387,15 +451,24 @@ export function lerEstadoAtualDoPronto(entrada: {
       lista.push(r);
       naFilaPorPedido.set(pedido, lista);
       if (consumidos.has(chaveDoRegistro(pedido, r))) { velhas += 1; continue; }
-      pedidos.push({ order_ref: pedido, registrado_em: l.registered_at, registrado: r, espera_s: espera(r) });
+      // Só um modo do vocabulário vale; qualquer outra coisa é não declarado.
+      const modo: ModoDaLinha = l.source_mode !== undefined && (SOURCE_MODES as readonly string[]).includes(l.source_mode)
+        ? l.source_mode : "nao_declarado";
+      const doModo = porModo.get(modo) ?? [];
+      // A espera conta do REGISTRO; o instante da consulta não é instante do pedido.
+      doModo.push({ order_ref: pedido, registrado_em: l.registered_at, registrado: r, espera_s: espera(r) });
+      porModo.set(modo, doModo);
     }
-    pedidos.sort((a, b) => a.registrado - b.registrado || a.order_ref.localeCompare(b.order_ref));
     // A contagem de fila velha só é afirmável quando os fatos foram lidos.
     fila_velha = entrada.eventos.disponivel ? velhas : null;
+    const ordem = (m: ModoDaLinha) => (m === "nao_declarado" ? SOURCE_MODES.length : SOURCE_MODES.indexOf(m));
     na_fila = {
-      estado: "observado", motivo: null, source_mode: "nao_declarado", total: pedidos.length,
-      mais_antigo_desde: pedidos[0]?.registrado_em ?? null,
-      pedidos: pedidos.map(({ order_ref, registrado_em, espera_s }) => ({ order_ref, registrado_em, espera_s })),
+      estado: "observado", motivo: null, origem, observado_em, idade_da_observacao_s: idade,
+      grupos: [...porModo.keys()].sort((a, b) => ordem(a) - ordem(b)).map((modo) => {
+        const pedidos = porModo.get(modo)!.sort((a, b) => a.registrado - b.registrado || a.order_ref.localeCompare(b.order_ref));
+        return { source_mode: modo, total: pedidos.length, mais_antigo_desde: pedidos[0]?.registrado_em ?? null,
+          pedidos: pedidos.map(({ order_ref, registrado_em, espera_s }) => ({ order_ref, registrado_em, espera_s })) };
+      }),
     };
   }
 
@@ -437,15 +510,134 @@ export function lerEstadoAtualDoPronto(entrada: {
   }
 
   return {
-    contrato: "estado-atual-do-pronto@1",
+    contrato: "estado-atual-do-pronto@2",
     unit_id: entrada.unit_id,
     lido_em: entrada.agora,
     na_fila,
+    consistencia_dos_fatos: consistenciaDosFatos(entrada.unit_id, entrada.fila, entrada.eventos),
     aguardando_saida,
     retirados_sem_novo_registro: retirados,
     fila_velha,
     nenhuma_acao_executada: true,
   };
+}
+
+/**
+ * A fila e os fatos falam do mesmo momento? A origem informa a marca (último
+ * fato publicado entre os tipos lidos aqui, lida DEPOIS da fila). Presente no
+ * event log: todo pedido que saiu da fila, e toda saída ou retirada anterior,
+ * já chegou — os fatos estão em dia. Ausente: atrasados, e quem lê fica
+ * sabendo que um pedido pode estar entre os dois. Sem marca: desconhecida.
+ */
+function consistenciaDosFatos(unit_id: string, fila: FonteDaFila, eventos: FonteDosFatos): ConsistenciaDosFatos {
+  if (!fila.disponivel || !eventos.disponivel) return "desconhecida";
+  if (fila.marca_dos_fatos === undefined) return "desconhecida";
+  if (fila.marca_dos_fatos === null) return "fatos_em_dia";
+  const marca = fila.marca_dos_fatos;
+  const chegou = fila.marca_ingerida ?? eventos.eventos.some((e) => e.event_id === marca && e.unit_id === unit_id);
+  return chegou ? "fatos_em_dia" : "fatos_atrasados";
+}
+
+/* ------------------------------------------------------------------ *
+ * A saída mínima do piloto como fonte da fila                          *
+ * ------------------------------------------------------------------ */
+
+export const OBSERVACAO_DA_FILA_SCHEMA = "deliveryos.ready-queue-observation.v1";
+const CHAVES_DA_OBSERVACAO = ["availability", "entries", "facts_watermark", "invalid_entries", "observed_at",
+  "origin", "reason", "schema", "total", "unit_id"];
+const CHAVES_DA_ORIGEM = ["process_started_at", "storage_backend", "system"];
+const CHAVES_DA_LINHA = ["channel", "order_ref", "registered_at", "source_mode"];
+const CHAVES_DA_MARCA = ["availability", "covered_types", "last_event_id"];
+/** A marca só vale se cobre exatamente os tipos que esta leitura usa. */
+const TIPOS_COBERTOS_PELA_MARCA = ["delivery_ready", "delivery_removed", "trip_started"];
+
+function objeto(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** `null` = conjunto exato; senão, o motivo da recusa. */
+function chavesExatas(v: Record<string, unknown>, esperadas: readonly string[]): "campos_nao_permitidos" | "observacao_invalida" | null {
+  const ks = Object.keys(v);
+  if (ks.some((k) => !esperadas.includes(k))) return "campos_nao_permitidos";
+  if (esperadas.some((k) => !Object.prototype.hasOwnProperty.call(v, k))) return "observacao_invalida";
+  return null;
+}
+
+const MOTIVO_SEGURO = /^[a-z][a-z0-9_]{0,63}$/;
+
+/**
+ * Valida a saída mínima do piloto e a transforma em fonte da fila.
+ *
+ * Falha FECHADA: um campo fora da lista (rótulo, autor, snapshot) derruba a
+ * observação inteira, porque aceitar "o resto" seria aceitar que o piloto
+ * mandou o que não devia. Outra unidade, observação no futuro além da
+ * tolerância do relógio, linha com modo fora do vocabulário ou total que não
+ * bate: indisponível, com motivo. Nada do objeto recebido é repassado — a
+ * fonte é montada campo a campo.
+ */
+export function fonteDaObservacaoDoPiloto(observacao: unknown, opcoes: { unit_id: string; agora: string }): FonteDaFila {
+  const recusa = (motivo: string): FonteDaFila => ({ disponivel: false, motivo });
+  if (!objeto(observacao) || observacao.schema !== OBSERVACAO_DA_FILA_SCHEMA) return recusa("observacao_invalida");
+  const topo = chavesExatas(observacao, CHAVES_DA_OBSERVACAO);
+  if (topo) return recusa(topo);
+  if (observacao.unit_id !== opcoes.unit_id) return recusa("unidade_divergente");
+  const o = observacao.origin;
+  if (!objeto(o)) return recusa("observacao_invalida");
+  const doOrigem = chavesExatas(o, CHAVES_DA_ORIGEM);
+  if (doOrigem) return recusa(doOrigem);
+  if (o.system !== "entregas-pilot" || typeof o.storage_backend !== "string" || !o.storage_backend
+      || ms(o.process_started_at) === null) return recusa("observacao_invalida");
+  const origem: OrigemDaFila = { sistema: "entregas-pilot", armazenamento: o.storage_backend,
+    processo_iniciado_em: new Date(ms(o.process_started_at)!).toISOString() };
+  const observado = ms(observacao.observed_at);
+  const agora = ms(opcoes.agora);
+  if (observado === null || agora === null) return recusa("observacao_invalida");
+  if (observado - agora > TOLERANCIA_DO_RELOGIO_MS) return { disponivel: false, motivo: "observacao_no_futuro", origem };
+  const observado_em = new Date(observado).toISOString();
+
+  if (observacao.availability === "unavailable") {
+    const motivo = typeof observacao.reason === "string" && MOTIVO_SEGURO.test(observacao.reason)
+      ? observacao.reason : "fila_indisponivel_na_origem";
+    return { disponivel: false, motivo, origem, observado_em };
+  }
+  if (observacao.availability !== "available" || !Array.isArray(observacao.entries)) return recusa("observacao_invalida");
+  const linhas: LinhaDaFilaDePronto[] = [];
+  for (const e of observacao.entries) {
+    if (!objeto(e)) return recusa("linha_invalida");
+    const daLinha = chavesExatas(e, CHAVES_DA_LINHA);
+    if (daLinha === "campos_nao_permitidos") return recusa(daLinha);
+    if (daLinha) return recusa("linha_invalida");
+    const order_ref = texto(e.order_ref);
+    const registrado = ms(e.registered_at);
+    const modoValido = e.source_mode === null || (SOURCE_MODES as readonly unknown[]).includes(e.source_mode);
+    const canalValido = e.channel === null || typeof e.channel === "string";
+    if (!order_ref || registrado === null || !modoValido || !canalValido) return recusa("linha_invalida");
+    linhas.push({
+      order_ref,
+      registered_at: new Date(registrado).toISOString(),
+      channel: e.channel as string | null,
+      source_mode: e.source_mode === null ? "nao_declarado" : e.source_mode as SourceMode,
+    });
+  }
+  if (observacao.total !== linhas.length) return recusa("observacao_invalida");
+
+  const m = observacao.facts_watermark;
+  if (!objeto(m)) return recusa("observacao_invalida");
+  const daMarca = chavesExatas(m, CHAVES_DA_MARCA);
+  if (daMarca) return recusa(daMarca);
+  const cobre = Array.isArray(m.covered_types)
+    && TIPOS_COBERTOS_PELA_MARCA.every((t) => (m.covered_types as unknown[]).includes(t));
+  let marca_dos_fatos: string | null | undefined;
+  if (m.availability === "available" && cobre && (m.last_event_id === null || (typeof m.last_event_id === "string" && m.last_event_id))) {
+    marca_dos_fatos = m.last_event_id as string | null;
+  } else if (m.availability === "available" || m.availability === "unavailable") {
+    // Marca indisponível, ou que não cobre o que esta leitura usa: consistência desconhecida.
+    marca_dos_fatos = undefined;
+  } else {
+    return recusa("observacao_invalida");
+  }
+  return { disponivel: true, linhas, origem, observado_em,
+    ...(marca_dos_fatos !== undefined ? { marca_dos_fatos } : {}) };
 }
 
 /* ------------------------------------------------------------------ *
@@ -484,14 +676,29 @@ async function lerFatos(tx: SqlClient, unit_id: string): Promise<FonteDosFatos> 
 
 /**
  * Lê fila e fatos na MESMA transação somente-leitura e devolve as duas
- * leituras. A fila é lida sem `label` (pode ter endereço). Se a fila não puder
- * ser lida (papel sem permissão, tabela ausente), ela sai indisponível — os
- * fatos continuam valendo, e nada vira zero.
+ * leituras.
+ *
+ * A fila vem da origem DECLARADA por quem chama:
+ *  - `observacao_do_piloto`: validada antes de abrir a transação; a marca é
+ *    conferida no event log pela chave (`event_id`), sem varrer nada;
+ *  - `postgres`: a tabela `entregas.ready_order`, sem `label` (pode ter
+ *    endereço), lida só quando ela é declarada a autoridade da unidade;
+ *  - nenhuma: indisponível. A tabela existe em todo banco da plataforma, e
+ *    lê-la sem saber se a unidade roda em arquivo publicaria um zero falso.
+ * Fila ilegível não derruba os fatos, e nada vira zero.
  */
 export async function lerProntosDeEntregas(
   cliente: TransactionalSqlClient,
-  opcoes: { agora: Date; unit_id: string },
+  opcoes: { agora: Date; unit_id: string; fila?: DeclaracaoDaFila },
 ): Promise<{ estado_atual: EstadoAtualDoPronto; trajetoria: TrajetoriaDoPronto }> {
+  const agora = opcoes.agora.toISOString();
+  const declarada = opcoes.fila;
+  let observada: FonteDaFila | null = null;
+  if (declarada?.origem === "observacao_do_piloto") {
+    observada = "indisponivel" in declarada
+      ? { disponivel: false, motivo: MOTIVO_SEGURO.test(declarada.indisponivel) ? declarada.indisponivel : "observacao_indisponivel" }
+      : fonteDaObservacaoDoPiloto(declarada.observacao, { unit_id: opcoes.unit_id, agora });
+  }
   const { fila, eventos } = await cliente.transaction(async (tx) => {
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
     let eventos: FonteDosFatos;
@@ -504,28 +711,55 @@ export async function lerProntosDeEntregas(
       eventos = { disponivel: false, motivo: `event_log_indisponivel:${classe(e)}` };
     }
     let fila: FonteDaFila;
-    await tx.query("SAVEPOINT leitura_fila");
-    try {
-      const linhas = await tx.query(
-        `SELECT order_ref, channel, created_at FROM entregas.ready_order WHERE unit_id = $1`,
-        [opcoes.unit_id],
-      );
-      await tx.query("RELEASE SAVEPOINT leitura_fila");
-      fila = {
-        disponivel: true,
-        linhas: linhas.map((l) => ({
-          order_ref: String(l.order_ref),
-          registered_at: iso(l.created_at),
-          channel: l.channel === null || l.channel === undefined ? null : String(l.channel),
-        })),
-      };
-    } catch (e) {
-      await tx.query("ROLLBACK TO SAVEPOINT leitura_fila");
-      fila = { disponivel: false, motivo: `fila_indisponivel:${classe(e)}` };
+    if (observada) {
+      fila = observada;
+      if (observada.disponivel && typeof observada.marca_dos_fatos === "string" && eventos.disponivel) {
+        await tx.query("SAVEPOINT leitura_marca");
+        try {
+          const achou = await tx.query(
+            `SELECT 1 FROM platform.event_log WHERE event_id = $1 AND unit_id = $2`,
+            [observada.marca_dos_fatos, opcoes.unit_id],
+          );
+          await tx.query("RELEASE SAVEPOINT leitura_marca");
+          fila = { ...observada, marca_ingerida: achou.length > 0 };
+        } catch {
+          await tx.query("ROLLBACK TO SAVEPOINT leitura_marca");
+          // Sem conferir a marca não se afirma consistência: some a marca.
+          const { marca_dos_fatos: _m, ...semMarca } = observada;
+          fila = semMarca;
+        }
+      }
+    } else if (declarada?.origem === "postgres") {
+      await tx.query("SAVEPOINT leitura_fila");
+      try {
+        const lido = await tx.query(`SELECT now() AS lido_em`);
+        const linhas = await tx.query(
+          `SELECT order_ref, channel, created_at FROM entregas.ready_order WHERE unit_id = $1`,
+          [opcoes.unit_id],
+        );
+        await tx.query("RELEASE SAVEPOINT leitura_fila");
+        fila = {
+          disponivel: true,
+          origem: { sistema: "entregas.ready_order", armazenamento: "postgres", processo_iniciado_em: null },
+          observado_em: iso(lido[0]?.lido_em),
+          // A tabela não guarda modo: cada linha é `nao_declarado`.
+          linhas: linhas.map((l) => ({
+            order_ref: String(l.order_ref),
+            registered_at: iso(l.created_at),
+            channel: l.channel === null || l.channel === undefined ? null : String(l.channel),
+            source_mode: "nao_declarado" as const,
+          })),
+        };
+      } catch (e) {
+        await tx.query("ROLLBACK TO SAVEPOINT leitura_fila");
+        fila = { disponivel: false, motivo: `fila_indisponivel:${classe(e)}`,
+          origem: { sistema: "entregas.ready_order", armazenamento: "postgres", processo_iniciado_em: null } };
+      }
+    } else {
+      fila = { disponivel: false, motivo: "origem_da_fila_nao_declarada" };
     }
     return { fila, eventos };
   });
-  const agora = opcoes.agora.toISOString();
   return {
     estado_atual: lerEstadoAtualDoPronto({ unit_id: opcoes.unit_id, agora, fila, eventos }),
     trajetoria: lerTrajetoriaDoPronto({ unit_id: opcoes.unit_id, eventos }),

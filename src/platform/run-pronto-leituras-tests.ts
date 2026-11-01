@@ -166,9 +166,10 @@ async function main(): Promise<void> {
     const fatos = [pronto({ id: "A", trip: "T1", entrega: "DA", pedido: "A", registro: "10:01", associacao: "10:05" })];
     const atual = L.lerEstadoAtualDoPronto({ unit_id: UNIT, agora: H("10:10"), fila: fila([["B", "10:02"], ["C", "10:03"]]), eventos: eventos(fatos) });
     assert.equal(atual.na_fila.estado, "observado");
-    assert.equal(atual.na_fila.total, 2);
-    assert.deepEqual(atual.na_fila.pedidos.map((p) => p.order_ref), ["B", "C"]);
-    assert.equal(atual.na_fila.source_mode, "nao_declarado", "a fila não carrega modo: nunca vira real");
+    // A linha sem modo declarado fica no grupo `nao_declarado`: nunca vira real.
+    assert.deepEqual(atual.na_fila.grupos.map((g) => g.source_mode), ["nao_declarado"], "a fila sem modo virou outro modo");
+    assert.equal(grupo(atual.na_fila.grupos, "nao_declarado")?.total, 2);
+    assert.deepEqual(grupo(atual.na_fila.grupos, "nao_declarado")?.pedidos.map((p) => p.order_ref), ["B", "C"]);
     const g = grupo(atual.aguardando_saida.grupos, "simulated");
     assert.equal(g?.total, 1);
     assert.equal(g?.entregas[0]?.order_ref, "A");
@@ -186,7 +187,7 @@ async function main(): Promise<void> {
     const fatos = [pronto({ id: "A", trip: "T1", entrega: "DA", pedido: "A", registro: "10:01", associacao: "10:05" })];
     const atual = L.lerEstadoAtualDoPronto({ unit_id: UNIT, agora: H("10:10"),
       fila: fila([["A", "10:01"], ["B", "10:02"]]), eventos: eventos(fatos) });
-    assert.deepEqual(atual.na_fila.pedidos.map((p) => p.order_ref), ["B"]);
+    assert.deepEqual(grupo(atual.na_fila.grupos, "nao_declarado")?.pedidos.map((p) => p.order_ref), ["B"]);
     assert.equal(atual.fila_velha, 1);
     assert.equal(grupo(atual.aguardando_saida.grupos, "simulated")?.total, 1);
   });
@@ -196,12 +197,13 @@ async function main(): Promise<void> {
     const semFila = L.lerEstadoAtualDoPronto({ unit_id: UNIT, agora: H("10:10"),
       fila: { disponivel: false, motivo: "fila_indisponivel_no_modo_arquivo" }, eventos: eventos([]) });
     assert.equal(semFila.na_fila.estado, "indisponivel");
-    assert.equal(semFila.na_fila.total, null);
+    assert.deepEqual(semFila.na_fila.grupos, [], "fila indisponível ganhou grupo (zero inventado)");
     assert.equal(semFila.fila_velha, null);
     const semFatos = L.lerEstadoAtualDoPronto({ unit_id: UNIT, agora: H("10:10"),
       fila: fila([]), eventos: { disponivel: false, motivo: "event_log_indisponivel" } });
-    assert.equal(semFatos.na_fila.total, 0);
+    // Fila lida e vazia: observada, sem grupos — zero OBSERVADO.
     assert.equal(semFatos.na_fila.estado, "observado");
+    assert.deepEqual(semFatos.na_fila.grupos, []);
     assert.equal(semFatos.aguardando_saida.estado, "indisponivel");
     assert.deepEqual(semFatos.aguardando_saida.grupos, []);
     const traj = L.lerTrajetoriaDoPronto({ unit_id: UNIT, eventos: { disponivel: false, motivo: "event_log_indisponivel" } });
@@ -552,9 +554,11 @@ async function fluxoIsolado(): Promise<void> {
     const L = await leituras().catch(() => null);
     await teste("W2 leituras sobre o banco isolado: fila = B e C; nada aguardando saída; D retirado; A e F com trajetória", async () => {
       assert.ok(L, "módulo de leituras ausente");
-      const r = await L!.lerProntosDeEntregas(db.cliente, { agora: new Date(), unit_id: UNIT });
-      assert.deepEqual(r.estado_atual.na_fila.pedidos.map((p) => p.order_ref).sort(), ["B", "C"]);
-      assert.equal(r.estado_atual.na_fila.total, 2);
+      // Este piloto roda em PostgreSQL: a tabela é a autoridade, e isso é DECLARADO.
+      const r = await L!.lerProntosDeEntregas(db.cliente, { agora: new Date(), unit_id: UNIT, fila: { origem: "postgres" } });
+      const nd = grupo(r.estado_atual.na_fila.grupos, "nao_declarado");
+      assert.deepEqual(nd?.pedidos.map((p) => p.order_ref).sort(), ["B", "C"]);
+      assert.equal(nd?.total, 2);
       assert.equal(grupo(r.estado_atual.aguardando_saida.grupos, "simulated")?.total ?? 0, 0);
       assert.equal(grupo(r.estado_atual.retirados_sem_novo_registro.grupos, "simulated")?.total, 1);
       const t = grupo(r.trajetoria.grupos, "simulated")!.entregas;
