@@ -41,6 +41,7 @@
     "test:entregas:observador-fila": "npx tsx src/entregas/pilot/run-observador-fila-tests.ts",
     "test:platform:cadeia-v1": "npx tsx src/platform/run-cadeia-v1-integrada-tests.ts",
     "test:platform:q028:mutacoes": "npx tsx src/platform/run-q028-mutation-tests.ts",
+    "test:ensaio:tls-encaminhador": "npx tsx tests/windows-local-lab/run-tls-encaminhador-tests.ts",
     "ui:entregas": "npx tsc && node dist/tools/entregas_ui_server.js",
     "ui:entregas:pilot": "npx tsc && node dist/tools/entregas_pilot_server.js",
     "test:entregas:pilot-gate": "npx tsc && node dist/src/entregas/pilot/run-pilot-gate-tests.js",

@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020, review/deliveryos-v1-role-convergence-20261022, claude/deliveryos-v1-trip-identity-20261031, claude/deliveryos-pronto-vira-fato-20261101, claude/deliveryos-pronto-leituras-20261101]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012, candidate/copiloto-entregas-unified-shadow-20261012, test/deliveryos-copiloto-browser-sharedpg-20261015, test/deliveryos-scoped-api-lab-20261015, test/deliveryos-operator-session-rls-lab-20261015, test/deliveryos-feed-consumer-e2e-lab-20261020, candidate/deliveryos-opus55-runtime-20261020, candidate/deliveryos-v1-home-provenance-combined-20261020, review/deliveryos-v1-role-convergence-20261022, claude/deliveryos-v1-trip-identity-20261031, claude/deliveryos-pronto-vira-fato-20261101, claude/deliveryos-pronto-leituras-20261101, claude/deliveryos-v1-candidato-homologacao-20261101]
   workflow_dispatch:
 
 permissions:
@@ -29,6 +29,9 @@ jobs:
       - name: Criacao, troca e restauracao atomicas no Windows PowerShell 5.1
         shell: powershell
         run: .\tests\tata-reader\run-weekly-install-atomic-tests.ps1 -InstallerPath .\tools\windows-local-lab\install-weekly-service.ps1
+      - name: Inventario do computador do ensaio e somente leitura no Windows PowerShell 5.1
+        shell: powershell
+        run: .\tests\windows-local-lab\run-inventario-somente-leitura-tests.ps1 -ScriptPath .\tools\windows-local-lab\inventario-somente-leitura.ps1
   product-ux:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -206,6 +209,12 @@ jobs:
         run: npx tsx src/platform/run-fila-observada-processos-tests.ts
       - name: Custo da fila observada com historico crescente (medido)
         run: npx tsx src/platform/run-fila-observada-custo-tests.ts
+      - name: Observador da fila - papel de maquina so de leitura no piloto real (Q-028)
+        run: npx tsx src/entregas/pilot/run-observador-fila-tests.ts
+      - name: Cadeia integrada da V1 - fila, Entregas, plataforma e Copiloto com identidade e queda de rede (dist/ + PostgreSQL)
+        run: npx tsx src/platform/run-cadeia-v1-integrada-tests.ts
+      - name: Encaminhador TLS de ensaio (equivalente ao socat da bancada, CA de laboratorio)
+        run: npx tsx tests/windows-local-lab/run-tls-encaminhador-tests.ts
       - name: leitura da rua (view model + superficie)
         run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
       - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)
