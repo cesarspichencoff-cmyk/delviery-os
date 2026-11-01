@@ -76,7 +76,7 @@
       "enum": [
         "trip_created", "trip_started", "gps_batch_received", "arrival_detected",
         "delivery_confirmed", "occurrence_created", "trip_return_started",
-        "trip_returned", "trip_closed"
+        "trip_returned", "trip_closed", "delivery_ready", "delivery_removed"
       ]
     },
 
@@ -198,6 +198,52 @@
         "replay": "seguro", "obrigatorios_extra": ["trip_id"]
       },
       "type": "object", "properties": {}
+    },
+
+    "delivery_ready": {
+      "_contrato": {
+        "nome": "delivery_ready", "versao": "delivery_ready@1.0.0",
+        "produtor": "src/platform/ingest/entregas-shadow-adapter.ts (adaptarEventoPublicoEntregas), a partir da outbox publica de Entregas; o piloto grava o fato na MESMA transacao em que o pedido entra na entrega",
+        "consumidores": ["src/platform/leitura/prontos-de-entregas.ts — trajetoria registro -> associacao -> saida; separa o que ja esta em viagem do que ainda esta na fila", "src/platform/runtime/handler-trajetoria-pronto.ts — reconhece a mensagem sem projetar viagem"],
+        "idempotency_key": "entregas-public:delivery_ready:<unidade>:<pedido>:<instante do registro> — uma chave por REGISTRO de pronto",
+        "classificacao": "operacional; sem rotulo, endereco ou autor",
+        "retencao_meses": 3,
+        "replay": "seguro; nao altera estado da viagem; occurred_at e o instante ORIGINAL do registro, public_recorded_at o da associacao",
+        "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object",
+      "required": ["source_event_type", "public_recorded_at", "delivery_id", "order_ref", "ready_kind"],
+      "properties": {
+        "source_event_type": { "type": "string", "enum": ["delivery_ready"] },
+        "public_recorded_at": { "type": "string", "minLength": 20 },
+        "delivery_id": { "type": "string", "minLength": 1 },
+        "order_ref": { "type": "string", "minLength": 1 },
+        "ready_kind": { "type": "string", "enum": ["registro_expedicao"] },
+        "channel": { "type": "string" },
+        "entregas_contract_version": { "type": "string" }
+      }
+    },
+
+    "delivery_removed": {
+      "_contrato": {
+        "nome": "delivery_removed", "versao": "delivery_removed@1.0.0",
+        "produtor": "src/platform/ingest/entregas-shadow-adapter.ts (adaptarEventoPublicoEntregas), a partir da outbox publica de Entregas",
+        "consumidores": ["src/platform/leitura/prontos-de-entregas.ts — a entrega retirada nao herda a saida da viagem", "src/platform/runtime/handler-trajetoria-pronto.ts — reconhece a mensagem sem projetar viagem"],
+        "idempotency_key": "entregas-public:<idempotency_key da outbox publica>",
+        "classificacao": "operacional; sem motivo livre nem autor",
+        "retencao_meses": 3,
+        "replay": "seguro; nao altera estado da viagem",
+        "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object",
+      "required": ["source_event_type", "public_recorded_at", "delivery_id", "order_ref"],
+      "properties": {
+        "source_event_type": { "type": "string", "enum": ["delivery_removed"] },
+        "public_recorded_at": { "type": "string", "minLength": 20 },
+        "delivery_id": { "type": "string", "minLength": 1 },
+        "order_ref": { "type": "string", "minLength": 1 },
+        "entregas_contract_version": { "type": "string" }
+      }
     }
   },
 

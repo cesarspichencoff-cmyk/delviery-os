@@ -21,6 +21,7 @@ import { createPgClient } from "../persistence/sql-client";
 import { PgJobRepository, PgOutboxRepository } from "../persistence/pg-repositories";
 import { AsyncRuntime, type JobHandler, type OutboxHandler } from "../runtime/async-worker";
 import { montarPonteDaOperacaoViva } from "../runtime/handler-operacao-viva";
+import { montarHandlersDaTrajetoriaDoPronto } from "../runtime/handler-trajetoria-pronto";
 import { montarEspinhaDeInteligencia } from "../runtime/intelligence-spine";
 import { INTELLIGENCE_SPINE_INTERVAL_MS } from "../runtime/intelligence-retention";
 import { reconstruirNoBoot, resumoDaMemoria } from "../runtime/replay-no-boot";
@@ -37,7 +38,12 @@ import { reconstruirNoBoot, resumoDaMemoria } from "../runtime/replay-no-boot";
  * código a fazia: o worker reiniciado começava vazio.
  */
 const ponteOperacaoViva = montarPonteDaOperacaoViva();
-const OUTBOX_HANDLERS: Record<string, OutboxHandler> = { ...ponteOperacaoViva.handlers };
+// Fatos da entrega (delivery_ready, delivery_removed) têm dono próprio: sem
+// ele iriam para dead-letter. Nenhum deles passa pela Operação Viva.
+const OUTBOX_HANDLERS: Record<string, OutboxHandler> = {
+  ...ponteOperacaoViva.handlers,
+  ...montarHandlersDaTrajetoriaDoPronto(),
+};
 const JOB_HANDLERS: Record<string, JobHandler> = {};
 
 function dormir(ms: number): Promise<void> {

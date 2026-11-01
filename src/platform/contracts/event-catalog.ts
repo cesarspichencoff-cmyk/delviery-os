@@ -38,6 +38,10 @@ export const EVENT_TYPES = [
   "trip_return_started",
   "trip_returned",
   "trip_closed",
+  // Fatos DA ENTREGA vindos da outbox publica de Entregas. Nenhum deles muda o
+  // estado da viagem: a Operacao Viva nao os consome (TIPOS_DA_OPERACAO_VIVA).
+  "delivery_ready",
+  "delivery_removed",
   "source_event_received",
   "order_state_changed",
 ] as const;

@@ -88,7 +88,9 @@ test("o validador cobre TODA palavra-chave usada no schema", () => {
 test("só recebem contrato os tipos com produtor ou consumidor real", () => {
   const com = tiposComContrato();
   const sem = tiposSemContrato();
-  assert.equal(com.length, 9, `esperava 9 tipos com contrato, achei ${com.length}`);
+  // 11 desde a leitura do pronto: delivery_ready e delivery_removed, fatos da
+  // entrega com produtor (adaptador da outbox publica) e consumidor (leitura).
+  assert.equal(com.length, 11, `esperava 11 tipos com contrato, achei ${com.length}`);
   assert.deepEqual(sem, ["order_state_changed", "source_event_received"]);
   // E os dois conjuntos juntos precisam dar exatamente o que o runtime aceita.
   assert.deepEqual([...com, ...sem].sort(), [...EVENT_TYPES].sort());
