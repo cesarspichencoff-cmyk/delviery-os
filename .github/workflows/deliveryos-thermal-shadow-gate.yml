@@ -135,6 +135,8 @@ jobs:
         run: node tools/verificar_comandas_ifood_installed_print_channels_v1_offline.cjs
       - name: TATA Comanda marketplace preorder and ForSale first native production lineage
         run: node tools/verificar_comandas_native_first_dispatch_lineage_v1_offline.cjs
+      - name: IFO Retail to native Loja/Caixa review must fail closed without live evidence
+        run: node tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs
       - name: Archived IMP logs must not prove a native first dispatch (no effects)
         run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
@@ -477,6 +479,8 @@ jobs:
         run: node tools/verificar_comandas_ifood_installed_print_channels_v1_offline.cjs
       - name: TATA Comanda marketplace preorder and ForSale first native production lineage
         run: node tools/verificar_comandas_native_first_dispatch_lineage_v1_offline.cjs
+      - name: IFO Retail to native Loja/Caixa review must fail closed without live evidence
+        run: node tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs
       - name: Archived IMP logs must not prove a native first dispatch (no effects)
         run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
