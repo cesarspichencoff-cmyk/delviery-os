@@ -114,6 +114,13 @@ export function planTataSequence(
 
     if (bindingScope !== scopeId) continue;
 
+    // A trimmed identifier must not hide a second persisted binding or
+    // silently convert an inconsistent record into the requested order.
+    if (binding.scope_id !== bindingScope ||
+        binding.teknisa_order_id !== bindingOrder) {
+      blocking.add("NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY");
+    }
+
     // An existing number is not a trustworthy reprint binding just
     // because its order key matches. Validate the persisted format and
     // policy before ever reusing it or allocating another number.
