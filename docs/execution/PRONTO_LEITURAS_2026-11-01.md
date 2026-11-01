@@ -141,6 +141,12 @@ Resultado:
 
 ## 5. O que não está provado, e pendências
 
+> **Remissão (01/11, etapa seguinte):** o primeiro item abaixo foi tratado em
+> `FILA_OBSERVADA_2026-11-01.md`. A saída mínima do piloto entrega a fila do modo arquivo, e a leitura só
+> aceita fila de origem declarada. A mesma etapa achou e fechou um zero falso que este texto não via: sem
+> origem declarada, a tabela vazia era lida como fila vazia observada. O texto original segue abaixo, como
+> registro.
+
 - **A fila do modo arquivo não é visível para a plataforma.** O piloto de campo roda em arquivo, e
   nesse caso a parte "na fila" sai como indisponível na plataforma (honesto, nunca zero). Só no
   PostgreSQL compartilhado a fila é lida.
