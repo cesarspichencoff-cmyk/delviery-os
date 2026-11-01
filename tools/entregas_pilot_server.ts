@@ -549,12 +549,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
    */
   const token = extractToken(req, url);
   const origem = req.socket.remoteAddress || "desconhecida";
-  if (token && accessThrottle.blocked(origem, token)) {
+  // Só código HUMANO conta: credencial de máquina (delegada pt1. do SyncWorker,
+  // token de aparelho nas rotas /api/device/) tem verificação própria e não
+  // pode travar o celular por "errar" um código que nem é de pessoa.
+  const codigoHumano = Boolean(token) && !/^pt1\./i.test(token) && !url.pathname.startsWith("/api/device/");
+  if (codigoHumano && accessThrottle.blocked(origem, token)) {
     res.writeHead(429, { "Content-Type": "application/json; charset=utf-8", ...corsHeaders(req.headers.origin) });
     return res.end(JSON.stringify({ ok: false, human: MUITAS_TENTATIVAS }));
   }
   const actor = requestActor(token);
-  if (token) {
+  if (codigoHumano) {
     if (actor) accessThrottle.success(origem, token);
     else accessThrottle.failure(origem);
   }
