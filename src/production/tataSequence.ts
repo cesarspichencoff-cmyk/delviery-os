@@ -119,6 +119,8 @@ export function planTataSequence(
     // policy before ever reusing it or allocating another number.
     if (
       !validPolicy(state.policy) ||
+      typeof binding.tata_sequence !== "string" ||
+      binding.tata_sequence !== bindingSequence ||
       !/^[0-9]+$/.test(bindingSequence) ||
       bindingSequence.length !== state.policy.width ||
       Number(bindingSequence) < state.policy.min_value ||
