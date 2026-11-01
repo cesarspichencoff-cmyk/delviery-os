@@ -249,3 +249,6 @@ console.log("COMANDAS_CLASSIFICATION_GAP_QUEUE="+n+"/"+n+
 
 // Six explicitly confirmed current human rule scopes; no production effect.
 require("./verificar_comandas_cesar_clarificacoes_20261101_offline.cjs");
+
+// Review-only six-rule projection for exact Reader revision and claimed catalog.
+require("./verificar_comandas_reader_human_six_rule_projection_v1_offline.cjs");
