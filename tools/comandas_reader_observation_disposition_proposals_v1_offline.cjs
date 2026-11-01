@@ -74,4 +74,19 @@ function reviewObservationProposals(pair,proposals){
  return output("PROPOSALS_CAPTURED_NOT_APPROVED",
   "HUMAN_IDENTITY_AND_NOTE_DISPOSITION_NOT_ATTESTED",counts,receipt);
 }
-module.exports={SCHEMA,NO_EFFECTS,reviewObservationProposals};
+/**
+ * Re-check a previously captured informational receipt against the CURRENT
+ * paired Reader revision and complete proposals. A matching digest still
+ * proves neither operator identity nor approval. Never unlock printing.
+ */
+function verifyObservationProposalReceipt(receipt,pair,proposals){
+ if(typeof receipt!=="string"||!/^[a-f0-9]{64}$/.test(receipt))
+  return false;
+ const current=reviewObservationProposals(pair,proposals);
+ return current.status==="PROPOSALS_CAPTURED_NOT_APPROVED"&&
+  current.review_claim_receipt_sha256===receipt&&
+  current.print_authorized===false&&
+  current.human_review_proven===false;
+}
+module.exports={SCHEMA,NO_EFFECTS,reviewObservationProposals,
+ verifyObservationProposalReceipt};
