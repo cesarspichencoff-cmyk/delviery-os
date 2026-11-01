@@ -115,6 +115,17 @@ function correlateNativeFirstDispatch(input){
  // contains exactly one matching row.
  if(input.history.filter(r=>r.attempt_id===c.attempt_id).length>1)
   return result("HOLD","FIRST_DISPATCH_ATTEMPT_ID_REUSED_ACROSS_SCOPE",scope);
+ // A semantic print-intent fingerprint must identify this order, station,
+ // native revision and operational day. An identical fingerprint elsewhere
+ // cannot become independent proof for either candidate. This check is
+ // global across the supplied journal, not only the candidate's station.
+ const fingerprintCollision=input.history.some(r=>
+  r.intent_fingerprint===c.intent_fingerprint &&
+  (r.order_key!==e.order_key || r.station_code!==c.station_code ||
+   r.operational_date!==day ||
+   r.native_snapshot_sha256!==e.snapshot_hash));
+ if(fingerprintCollision)
+  return result("HOLD","FIRST_DISPATCH_INTENT_FINGERPRINT_REUSED_ACROSS_SCOPE",scope);
  const r=rows[0];
  if(r.attempt_id!==c.attempt_id||
     r.intent_fingerprint!==c.intent_fingerprint||
