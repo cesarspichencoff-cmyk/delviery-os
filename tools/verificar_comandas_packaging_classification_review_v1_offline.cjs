@@ -252,3 +252,6 @@ require("./verificar_comandas_cesar_clarificacoes_20261101_offline.cjs");
 
 // Review-only six-rule projection for exact Reader revision and claimed catalog.
 require("./verificar_comandas_reader_human_six_rule_projection_v1_offline.cjs");
+
+// Historical 30-Sep target-set equivalence: evidence only, never printer authority.
+require("./verificar_comandas_historical_route_reference_20260930_offline.cjs");
