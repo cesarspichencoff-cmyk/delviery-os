@@ -18,6 +18,10 @@ const refresh=p=>{
 };
 function sample(){
  const pair=fixture();
+ // Clean fixture is the ONLY one eligible for classification-review receipt.
+ pair.event.order.observation_rows=[];
+ pair.decision.order_observations=[];
+ pair.decision.items.forEach(x=>x.observations=[]);
  pair.event.order.IDSTCOMANDA="3";
  pair.event.order.items.forEach(x=>x.IDSTPRCOMVEN="4");
  refresh(pair);
@@ -147,8 +151,33 @@ held("tampered native quantity without hash fails",
  d=>{d.pair.event.order.items[0].QTPRODCOMVEN="3.000"},
  "READER_PAIR_NOT_SELF_CONSISTENT");
 held("native observation changed without hash fails",
- d=>{d.pair.event.order.observation_rows[0].value="TAMPERED"},
+ d=>{d.pair.event.order.observation_rows.push({
+  source_field:"DSOBSCOMANDA",value:"TAMPERED",
+  scope_hint:"order",join_proven:true});},
  "READER_PAIR_NOT_SELF_CONSISTENT");
+held("complete item allergy/omission note requires classified disposition",
+ d=>{
+  const item=d.pair.event.order.items[0];
+  d.pair.event.order.observation_rows.push({
+   source_field:"DSOBSPEDDIGCMD",value:"ALERGIA A AMENDOIM",
+   scope_hint:"item",join_proven:true,item_index:0,CDPRODUTO:item.CDPRODUTO
+  });
+  d.pair.decision.items[0].observations.push({
+   source_field:"DSOBSPEDDIGCMD",value:"ALERGIA A AMENDOIM"
+  });
+  refresh(d.pair);
+ },"NATIVE_OBSERVATIONS_REQUIRE_EXPLICIT_DISPOSITION");
+held("complete general order note requires explicit disposition",
+ d=>{
+  d.pair.event.order.observation_rows.push({
+   source_field:"DSOBSCOMANDA",value:"ENTREGA NA PORTARIA",
+   scope_hint:"order",join_proven:true
+  });
+  d.pair.decision.order_observations.push({
+   source_field:"DSOBSCOMANDA",value:"ENTREGA NA PORTARIA"
+  });
+  refresh(d.pair);
+ },"NATIVE_OBSERVATIONS_REQUIRE_EXPLICIT_DISPOSITION");
 held("order state 4 is refused despite recomputed self-consistent hashes",
  d=>{d.pair.event.order.IDSTCOMANDA="4";refresh(d.pair)},
  "READER_PAIR_NOT_SELF_CONSISTENT");
