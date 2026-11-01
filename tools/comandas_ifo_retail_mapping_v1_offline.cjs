@@ -62,8 +62,9 @@ function reviewIfoRetailMapping(input){
    return result("HOLD","MAPPING_BRANCHES_CONTRADICT");
   candidates=m.per_unit.filter(x=>x.filial===it.filial);
  }else{
-  if(m.per_unit.length!==0||
-     !only(m.default_seller,["filial","seller"])||
+  if(m.per_unit.length!==0)
+   return result("HOLD","MAPPING_BRANCHES_CONTRADICT");
+  if(!only(m.default_seller,["filial","seller"])||
      m.default_seller.filial!==it.filial||
      !code(m.default_seller.seller))
    return result("HOLD","DEFAULT_SELLER_NOT_SCOPED_OR_BRANCH_CONTRADICTED");
