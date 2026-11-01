@@ -67,6 +67,8 @@ jobs:
       # A API de aparelho e executada contra dist/tools/entregas_pilot_server.js:
       # compilar ANTES do teste, sem duplicar o build no workflow.
       - run: npm run -s build:platform
+      - name: Limite de tentativas de codigo de acesso (codigos curtos do piloto)
+        run: npx tsx src/entregas/pilot/run-access-throttle-tests.ts
       - name: ITAIM-only - recusar boot para unidade/config incorreta
         run: npx tsx src/entregas/pilot/run-itaim-boot-tests.ts
       - name: Processos de teste - concluir escrita de encerramento antes da limpeza

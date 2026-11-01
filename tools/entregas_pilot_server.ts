@@ -70,6 +70,10 @@ import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
 import { classifyQuality } from "../src/entregas/gps/validate";
 import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
 import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
+import { createAccessThrottle, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
+
+// Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
+const accessThrottle = createAccessThrottle();
 
 const tataSourceStatus = criarLeitorStatusTata(process.env);
 const operatorRuntime = createOperatorPilotRuntime(process.env);
@@ -544,7 +548,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
    * entrado antes. Aqui nao ha caminho que pule esta linha.
    */
   const token = extractToken(req, url);
+  const origem = req.socket.remoteAddress || "desconhecida";
+  if (token && accessThrottle.blocked(origem, token)) {
+    res.writeHead(429, { "Content-Type": "application/json; charset=utf-8", ...corsHeaders(req.headers.origin) });
+    return res.end(JSON.stringify({ ok: false, human: MUITAS_TENTATIVAS }));
+  }
   const actor = requestActor(token);
+  if (token) {
+    if (actor) accessThrottle.success(origem, token);
+    else accessThrottle.failure(origem);
+  }
   return facade.withActor(actor, async () => {
 
   /*
@@ -599,9 +612,14 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/session" && req.method === "POST") {
       const body = JSON.parse(await readBody(req)) as { token?: string };
+      const tentativa = body.token || "";
+      const origemLogin = req.socket.remoteAddress || "desconhecida";
+      if (accessThrottle.blocked(origemLogin, tentativa)) return reply(429, { ok: false, human: MUITAS_TENTATIVAS });
       // login() valida e registra a entrada; o vinculo desta requisicao ja'
       // foi feito no topo do handler e nao depende deste corpo.
-      const result = facade.login(body.token || "");
+      const result = facade.login(tentativa);
+      if (result.ok) accessThrottle.success(origemLogin, tentativa);
+      else accessThrottle.failure(origemLogin);
 
       return reply(result.ok ? 200 : 401, result);
     }

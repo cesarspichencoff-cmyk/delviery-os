@@ -165,8 +165,16 @@ android {
             // TLS estrito: mesma configuração do release, sem exceção para
             // certificado local. O piloto fala com servidor real ou não fala.
             manifestPlaceholders["networkSecurityConfig"] = "@xml/network_security_config"
-            // Assinatura NÃO configurada: nenhuma chave privada no repositório.
-            signingConfig = null
+            // Nenhuma chave privada no repositório (que é público). A chave de
+            // campo vem só do ambiente — segredos do GitHub no workflow de
+            // liberação. Sem as quatro variáveis, a variante sai sem assinatura.
+            val pilotKeystore = System.getenv("ENTREGAS_PILOT_KEYSTORE")
+            signingConfig = if (pilotKeystore.isNullOrBlank()) null else signingConfigs.create("pilotField") {
+                storeFile = file(pilotKeystore)
+                storePassword = System.getenv("ENTREGAS_PILOT_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ENTREGAS_PILOT_KEY_ALIAS")
+                keyPassword = System.getenv("ENTREGAS_PILOT_KEY_PASSWORD")
+            }
         }
         release {
             isMinifyEnabled = true

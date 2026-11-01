@@ -527,6 +527,22 @@ async function main(): Promise<void> {
       await ctx.close();
     });
 
+    await prova("R13 cinco códigos errados travam a origem: o certo não é conferido, quem já entrou segue", async () => {
+      const entrar = async (codigo: string) => (await fetch(`${p.base}/api/session`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: codigo }),
+      })).status;
+      // A origem é a mesma das provas anteriores (R11 já errou uma vez): o
+      // contador soma. Exige-se recusa simples primeiro e trava em até 5 erros.
+      const respostas: number[] = [];
+      for (let i = 0; i < 6 && respostas[respostas.length - 1] !== 429; i++) respostas.push(await entrar(`errado-${i}`));
+      assert.equal(respostas[0], 401, `primeiro erro: ${respostas.join(",")}`);
+      assert.equal(respostas[respostas.length - 1], 429, `sem trava depois de ${respostas.length} erros: ${respostas.join(",")}`);
+      assert.ok(respostas.length <= 5, `trava só depois de ${respostas.length} erros`);
+      assert.equal(await entrar("tok-motoboy-4-sintetico"), 429, "código certo conferido durante a trava (oráculo)");
+      const jaEntrou = await api(p, "/api/snapshot", TOKEN.gerente);
+      assert.equal(jaEntrou.status, 200, "terminal que já tinha entrado caiu com a trava");
+    });
+
     await prova("R10 sem erro de script nas páginas", async () => {
       assert.deepEqual(errosDeScript, []);
     });
