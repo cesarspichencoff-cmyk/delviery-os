@@ -116,4 +116,48 @@ test("old untrusted capture date does not become live proof",()=>{
  assert.equal(r.catalog_current_independently_attested,false);
  assert.equal(r.live_product_status_proven,false);
 });
+test("all six exact human rules bind to their intended source lines only",()=>{
+ const human=require("../data/comandas_cesar_clarificacoes_20261101_review_only.json");
+ for(const h of human.product_rules){
+  const x=sample();
+  const index=h.code==="8.20.11.002.00"?1:0;
+  x.pair.event.order.items[index].CDARVPROD=h.code.replace(/\./g,"");
+  x.pair.decision.items[index].canonical_code=h.code;
+  x.pair.decision.items[index].product_name=h.label;
+  x.capture.entries[index].canonical_code=h.code;
+  x.capture.entries[index].product_name=h.label;
+  refresh(x.pair);
+  const r=audit(x);
+  assert.equal(r.status,"ALL_ITEMS_EXACT_REVIEW_ONLY",h.code);
+  assert.equal(r.items[index].stated_area,h.stated_area,h.code);
+  assert.equal(r.items[index].item_temperature,h.stated_item_temperature,h.code);
+  assert.equal(r.items[index].decision_kind,
+   h.code==="8.20.11.002.00"?
+    "CONFERENCE_ONLY_CANDIDATE":"PRODUCTION_ROUTE_CANDIDATE");
+  assert.match(r.review_receipt_sha256,/^[a-f0-9]{64}$/);
+ }
+});
+test("receipt binds source, capture and rule version yet grants no authority",()=>{
+ const x=sample(),a=audit(x),b=audit(x);
+ assert.equal(a.review_receipt_sha256,b.review_receipt_sha256);
+ x.capture.source_ref="SYNTHETIC_REVISED_SOURCE";
+ const c=audit(x);
+ assert.notEqual(a.review_receipt_sha256,c.review_receipt_sha256);
+ x.capture.source_ref="SYNTHETIC_UNATTESTED_NOT_LIVE";
+ x.capture.captured_local_date="2026-10-05";
+ const d=audit(x);
+ assert.notEqual(a.review_receipt_sha256,d.review_receipt_sha256);
+ x.capture.entries.reverse();
+ const e=audit(x);
+ assert.equal(e.review_receipt_sha256,d.review_receipt_sha256);
+ assert.equal(e.production_print_authorized,false);
+});
+test("held projections cannot reuse a stale receipt",()=>{
+ const x=sample(),ok=audit(x);
+ x.capture.entries[0].active=false;
+ const hold=audit(x);
+ assert.equal(hold.status,"HOLD");
+ assert.equal(hold.review_receipt_sha256,null);
+ assert.notEqual(ok.review_receipt_sha256,hold.review_receipt_sha256);
+});
 console.log("COMANDAS_HUMAN_RULE_READER_JOIN="+count+"/"+count+" REVIEW_ONLY NO_PRINT");
