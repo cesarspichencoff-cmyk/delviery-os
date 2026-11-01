@@ -68,6 +68,7 @@ const VALID_ROLES = [
   "operador_expedicao",
   "motoboy_interno",
   "sistema",
+  "observador_fila",
 ] as const;
 
 /** Marcadores de exemplo que jamais podem virar credencial real. */
@@ -75,6 +76,13 @@ const PLACEHOLDER_TOKENS = ["CHANGE_ME", "TROQUE", "EXEMPLO", "SEU_TOKEN", "TODO
 
 /** Tamanho mínimo de token para exposição remota. */
 const MIN_REMOTE_TOKEN_LENGTH = 24;
+
+/**
+ * Credencial de MÁQUINA (o observador da fila, Q-028) é segredo gerado, não
+ * código para digitar: 32+ caracteres sempre, também em local.
+ */
+export const MIN_MACHINE_TOKEN_LENGTH = 32;
+export const MACHINE_ROLES: readonly string[] = ["observador_fila"];
 
 function bool(v: string | undefined, dflt: boolean): boolean {
   if (v === undefined || v.trim() === "") return dflt;
@@ -192,6 +200,12 @@ export function loadCloudConfig(env: Record<string, string | undefined>): CloudC
       issues.push({
         variable: "ENTREGAS_USERS",
         message: `token de exemplo para ${u.actor_id} — troque antes de expor`,
+      });
+    }
+    if (MACHINE_ROLES.includes(u.role) && u.token.length < MIN_MACHINE_TOKEN_LENGTH) {
+      issues.push({
+        variable: "ENTREGAS_USERS",
+        message: `token de máquina de ${u.actor_id} (observador_fila) curto demais (mínimo ${MIN_MACHINE_TOKEN_LENGTH})`,
       });
     }
     if (remote && u.token.length < MIN_REMOTE_TOKEN_LENGTH) {

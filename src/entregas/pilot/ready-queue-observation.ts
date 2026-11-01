@@ -27,8 +27,11 @@ export const READY_QUEUE_OBSERVATION_SCHEMA = "deliveryos.ready-queue-observatio
 /** Os tipos cuja publicação a marca cobre: os que o estado atual do pronto lê. */
 export const FACTS_WATERMARK_TYPES: readonly string[] = ["delivery_ready", "delivery_removed", "trip_started"];
 
-/** Os mesmos papéis das leituras do Copiloto no piloto (`/api/copiloto/*`). */
-export const READY_QUEUE_OBSERVER_ROLES: readonly string[] = ["gerente", "lider_delivery"];
+/**
+ * Gerente e líder (os papéis das leituras do Copiloto no piloto) e o papel de
+ * máquina do observador local (Q-028), que só chega a esta saída.
+ */
+export const READY_QUEUE_OBSERVER_ROLES: readonly string[] = ["gerente", "lider_delivery", "observador_fila"];
 
 const MODOS: readonly string[] = ["real", "simulated", "control"];
 

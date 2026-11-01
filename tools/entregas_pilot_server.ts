@@ -564,6 +564,18 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     if (actor) accessThrottle.success(origem, token);
     else accessThrottle.failure(origem);
   }
+  /*
+   * Q-028 — o observador local é identidade de MÁQUINA, exclusivamente de
+   * leitura: chega a UMA rota, só com GET e sem parâmetro. Recusado aqui, antes
+   * de qualquer outra regra, em toda outra rota ou método — inclusive as que
+   * entregariam o snapshot a um papel que não fosse motoboy.
+   */
+  if (actor?.role === "observador_fila" &&
+      !(req.method === "GET" && url.pathname === "/api/ready-orders/observation" && !url.search)) {
+    res.writeHead(403, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
+      ...corsHeaders(req.headers.origin) });
+    return res.end(JSON.stringify({ ok: false, code: "observer_read_only" }));
+  }
   return facade.withActor(actor, async () => {
 
   /*
@@ -672,7 +684,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
      */
     if (url.pathname === "/api/ready-orders/observation") {
       if (!actor) return reply(401, { ok: false, code: "session_required" });
-      if (!["gerente", "lider_delivery"].includes(actor.role))
+      if (!["gerente", "lider_delivery", "observador_fila"].includes(actor.role))
         return reply(403, { ok: false, code: "manager_required" });
       if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
       if (url.search) return reply(400, { ok: false, code: "no_query_parameters" });

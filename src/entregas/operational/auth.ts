@@ -9,7 +9,13 @@ export type OperationalRole =
   | "lider_delivery"
   | "gerente"
   | "sistema"
-  | "integracao_futura";
+  | "integracao_futura"
+  /**
+   * Papel de MÁQUINA, exclusivamente de leitura: o observador local da fila
+   * (Q-028). Não está em nenhuma lista de `assertCan` — o domínio recusa toda
+   * ação — e o piloto só o deixa chegar a `GET /api/ready-orders/observation`.
+   */
+  | "observador_fila";
 
 export interface ActorContext {
   /** Identificador operacional opaco — sem PII */

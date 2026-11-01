@@ -42,6 +42,17 @@ export interface PilotConfig {
   };
 }
 
+/** Os papéis de `OperationalRole`: nenhum outro entra pelo arquivo. */
+const PAPEIS_DO_ARQUIVO: readonly string[] = [
+  "operador_expedicao",
+  "motoboy_interno",
+  "lider_delivery",
+  "gerente",
+  "sistema",
+  "integracao_futura",
+  "observador_fila",
+];
+
 export function loadPilotConfig(path?: string): PilotConfig {
   const p =
     path ||
@@ -64,6 +75,20 @@ export function loadPilotConfig(path?: string): PilotConfig {
     );
   }
   if (!raw.users?.length) throw new Error("Config piloto: users obrigatório");
+  // Papel desconhecido não pode virar leitor privilegiado: o snapshot so
+  // minimiza para motoboy, e um papel inventado recebia tudo.
+  for (const u of raw.users) {
+    if (!PAPEIS_DO_ARQUIVO.includes(String(u.role))) {
+      throw new Error(`Config piloto: papel desconhecido "${String(u.role)}" para ${u.actor_id}`);
+    }
+    if (u.role === "observador_fila" &&
+        (typeof u.token !== "string" || u.token.length < 32 ||
+         /CHANGE_ME|TROQUE|EXEMPLO|SEU_TOKEN|TODO/i.test(u.token))) {
+      throw new Error(
+        `Config piloto: token de máquina de ${u.actor_id} (observador_fila) precisa de 32+ caracteres gerados, sem marcador de exemplo`,
+      );
+    }
+  }
   if (raw.users.some((u) => !u.token || u.token.startsWith("CHANGE_ME"))) {
     console.warn(
       "[piloto] AVISO: tokens CHANGE_ME ainda presentes — troque antes do uso real.",
