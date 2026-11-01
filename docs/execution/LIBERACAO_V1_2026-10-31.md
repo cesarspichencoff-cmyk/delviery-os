@@ -83,3 +83,14 @@ Nada, por decisão de 01/11. O que segue abaixo está dentro, ainda **não imple
 | 3 | Cadência de GPS por movimento | ligar parado/em movimento/retorno à política já existente | JVM + medição de bateria no aparelho (sem promessa antes) |
 | 4 | Celular sem Google Play | provedor `LocationManager` com os mesmos portões | JVM + um aparelho sem Google Play |
 | 5 | iFood | acesso ao Gestor no caixa (sombra por leitura de tela já preparada em 29/10) ou credencial oficial | amostra minimizada, sem duplicar, ligada ao pedido Teknisa |
+
+## 8. Decisões de 01/11 (continuação)
+
+| Tema | Decisão / registro |
+|---|---|
+| Termo | Preenchido com razão social informada (TATÁ Sushi), CNPJ e canal de contato; retenção: trajeto 7 dias, eventos 90 dias; publicável no servidor real (hash `e023c816fa4c`). Arquivo só no host (tem telefone) |
+| Backup | Pasta no próprio computador do piloto, de preferência dentro do OneDrive (sai da loja sem custo novo). Cópia diária criptografada; cópias com trajeto apagadas em 7 dias; eventos 90 dias. A implementar, junto com o apagamento do trajeto no servidor |
+| 0011 do Foxxy | Fica por último (decisão do César) |
+| Toqan (work.toqan.ai) | Fonte de CONTEXTO do iFood (receita semanal, avaliações, sugestões), gerada por IA com aviso de erro: entra como ambiente rotulado "Toqan · IA", nunca como fato de pedido nem como foco. Radar de 2 em 2 minutos por mensagem não é base para fato operacional |
+| Espelhamento de pedidos iFood | Primeiro pelo TATÁ Comandas (PDV), se o iFood cai sozinho no Teknisa; depois API oficial; tela do Gestor por último |
+
