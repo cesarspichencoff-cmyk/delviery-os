@@ -447,7 +447,42 @@ async function main(): Promise<void> {
     assert.equal(fatos.length, 0, "o serviço inventou um pronto sem fila");
   });
 
+  await teste("F12 instante corrompido na fila: recusa visível, sem viagem e sem fato reformatado", async () => {
+    const d = dir("f12");
+    const p = abrir(d);
+    await p.ready.add({ order_ref: "P-12", label: "Pedido P-12", created_at: "01/11/2026 10:00" });
+    const r = await criarViagem(p, "T12", [{ delivery_id: "D12", order_ref: "P-12" }]);
+    assert.equal(r.ok, false, "a viagem foi aceita com o instante da fila corrompido: o pronto seria perdido ou reformatado");
+    assert.equal(r.code, "PRECONDITION_FAILED");
+    assert.equal((await prontos(d)).length, 0);
+    assert.equal(await openFileUnitOfWork(join(d, "store.json")).trips.get("T12"), null, "viagem gravada sem o fato");
+    assert.equal((await p.ready.list()).some((o) => o.order_ref === "P-12"), true, "a fila perdeu o registro");
+  });
+
+  await teste("F13 evento autenticado (recibo durável): fato gravado uma vez, reenvio idêntico é replay sem duplicar", async () => {
+    const d = dir("f13");
+    const p = abrir(d);
+    const t0 = await registrar(p, "P-13");
+    await sleep(5);
+    const ator = { actor_id: "ops-1", role: "operador_expedicao" as const };
+    const cmd = {
+      type: "CreateTrip", command_id: "ct-inbound-13", occurred_at: new Date().toISOString(), unit_id: UNIT,
+      trip_id: "T13", courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "D13", order_ref: "P-13" }], actor: ator,
+    };
+    const envelope = { event_id: "ev-13", idempotency_key: "idem-13", device_id: null };
+    const r1 = await p.facade.executeAs(ator, cmd, envelope);
+    assert.equal(r1.ok, true, `${r1.code} ${r1.error}`);
+    const r2 = await p.facade.executeAs(ator, cmd, envelope);
+    assert.equal(r2.ok, true, `${r2.code} ${r2.error}`);
+    assert.equal(r2.code, "REPLAY_APPLIED");
+    const fatos = await prontos(d);
+    assert.equal(fatos.length, 1);
+    assert.equal(fatos[0]!.occurred_at, t0);
+  });
+
   await provasPostgres();
+  await provaDeProcesso();
 
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
   const total = passed + failures.length;
@@ -551,10 +586,168 @@ async function provasPostgres(): Promise<void> {
       assert.ok(fila, "fila consumida apesar da falha");
       assert.equal(fila!.created_at, t0);
     });
+    await teste("P4 PostgreSQL: linha velha do mesmo registro na fila é reconciliada e não sai em segunda viagem", async () => {
+      const ref = `PG-${sufixo}-1`;
+      const linhas = await admin.query<{ occurred_at: Date }>(
+        `SELECT occurred_at FROM entregas.domain_event WHERE unit_id=$1 AND event_type='delivery_ready'
+           AND payload->>'order_ref'=$2`, [PGUNIT, ref]);
+      assert.equal(linhas.length, 1, "pré-condição: o fato de P1 não existe no PG");
+      const t0 = linhas[0]!.occurred_at;
+      // Outro terminal com a lista antiga: a linha do MESMO registro reaparece.
+      await admin.query(
+        `INSERT INTO entregas.ready_order(unit_id,order_ref,label,channel,created_at) VALUES ($1,$2,'velha','proprio',$3)`,
+        [PGUNIT, ref, new Date(t0).toISOString()]);
+      const f = facade();
+      f.login("tok-ops");
+      const r = await f.execute({
+        type: "CreateTrip", command_id: `pg-ct4-${sufixo}`, occurred_at: new Date().toISOString(), unit_id: PGUNIT,
+        trip_id: `PGT4-${sufixo}`, courier_actor_id: asInternalRiderActorId("rid-1"),
+        deliveries: [{ delivery_id: `PGD4-${sufixo}`, order_ref: ref }],
+        actor: { actor_id: "ops-1", role: "operador_expedicao" },
+      });
+      assert.equal(r.ok, false, "o mesmo registro saiu em duas viagens");
+      assert.equal(r.code, "READY_ALREADY_CONSUMED");
+      const n = await admin.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM entregas.domain_event WHERE unit_id=$1 AND event_type='delivery_ready'
+           AND payload->>'order_ref'=$2`, [PGUNIT, ref]);
+      assert.equal(n[0]!.n, "1", "o fato duplicou no PG");
+      assert.equal((await ready.list()).some((o) => o.order_ref === ref), false, "a linha velha ficou na fila");
+    });
     rmSync(pgDir, { recursive: true, force: true });
   } finally {
     await (a as { close?: () => Promise<void> }).close?.();
     await (admin as { close?: () => Promise<void> }).close?.();
+  }
+}
+
+/**
+ * O processo REAL do piloto, pela rota HTTP que o console usa: registrar,
+ * montar, sair, ler a linha do tempo; derrubar o processo; subir OUTRO sobre os
+ * mesmos arquivos e ler de novo.
+ */
+async function provaDeProcesso(): Promise<void> {
+  const { spawn } = await import("node:child_process");
+  const { createServer } = await import("node:net");
+  const { existsSync, mkdirSync, writeFileSync } = await import("node:fs");
+  const RAIZ = process.cwd();
+  const tok = { caixa: "tok-caixa-pronto-sintetico", rid: "tok-rid-pronto-sintetico" };
+  const porta = await new Promise<number>((ok, falha) => {
+    const s = createServer();
+    s.once("error", falha);
+    s.listen(0, "127.0.0.1", () => { const a = s.address(); s.close(() => ok(typeof a === "object" && a ? a.port : 0)); });
+  });
+  const dir = mkdtempSync(join(tmpdir(), "ready-fact-processo-"));
+  mkdirSync(join(dir, "dados"), { recursive: true });
+  writeFileSync(join(dir, "pilot.json"), JSON.stringify({
+    mode: "pilot", unit_id: "ITAIM", unit_name: "UNIDADE DE TESTE", timezone: "America/Sao_Paulo",
+    port: porta, bind: "127.0.0.1", data_dir: join(dir, "dados"), max_stops: 5, banner: "TESTE AUTOMATIZADO",
+    source_mode: "simulated",
+    users: [
+      { actor_id: "ops-caixa-1", role: "operador_expedicao", label: "Caixa", token: tok.caixa },
+      { actor_id: "rid-1", role: "motoboy_interno", label: "Motoboy Um", token: tok.rid },
+    ],
+    features: { demo_seed: false, demo_controls: false, map_poc: false, gps_production: false,
+      auto_assignment: false, copiloto: false, shell: false },
+    backup: { auto_interval_minutes: 600, retain_count: 2, dir: join(dir, "backups") },
+  }));
+  writeFileSync(join(dir, "flags.json"), JSON.stringify({ gps_capture_enabled: false }));
+  writeFileSync(join(dir, "termo.json"), JSON.stringify({}));
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    ENTREGAS_UI_PORT: String(porta),
+    ENTREGAS_PILOT_CONFIG: join(dir, "pilot.json"),
+    ENTREGAS_DATA_DIR: join(dir, "dados"),
+    ENTREGAS_TERM_CONFIG: join(dir, "termo.json"),
+    ENTREGAS_GPS_FLAGS_CONFIG: join(dir, "flags.json"),
+  };
+  delete env.ENTREGAS_UNIT_CONFIG;
+  delete env.ENTREGAS_BIND;
+  delete env.ENTREGAS_HTTPS;
+  if (existsSync(join(RAIZ, "config", "entregas-unit-itaim.json"))) {
+    console.log("  PULADO processo: config/entregas-unit-itaim.json presente — H1/H2 NAO rodaram");
+    return;
+  }
+  const sep = process.platform === "win32" ? ";" : ":";
+  const tsxCli = (process.env.PATH ?? "").split(sep).map((b) => join(b, "..", "tsx", "dist", "cli.mjs"))
+    .find((c) => existsSync(c));
+  if (!tsxCli) throw new Error("tsx_cli_nao_localizado_no_path");
+  const base = `http://127.0.0.1:${porta}`;
+  type Proc = import("node:child_process").ChildProcess;
+  const log: string[] = [];
+  const subir = async (): Promise<Proc> => {
+    const pr = spawn(process.execPath, [tsxCli, "tools/entregas_pilot_server.ts"], {
+      cwd: RAIZ, env, stdio: ["ignore", "pipe", "pipe"], detached: process.platform !== "win32",
+    });
+    pr.stdout?.on("data", (d) => log.push(String(d)));
+    pr.stderr?.on("data", (d) => log.push(String(d)));
+    for (let i = 0; i < 160; i++) {
+      try { if ((await fetch(`${base}/api/health`)).ok) return pr; } catch { /* subindo */ }
+      await sleep(250);
+    }
+    throw new Error(`piloto não subiu: ${log.join("").slice(-500)}`);
+  };
+  const derrubar = async (pr: Proc): Promise<void> => {
+    if (pr.exitCode !== null || pr.signalCode !== null) return;
+    const saiu = new Promise<void>((ok) => pr.once("exit", () => ok()));
+    try { if (pr.pid) process.kill(process.platform === "win32" ? pr.pid : -pr.pid, "SIGTERM"); } catch { /* saiu */ }
+    await Promise.race([saiu, sleep(10_000)]);
+  };
+  const api = async (caminho: string, token: string, corpo?: unknown) => {
+    const r = await fetch(`${base}${caminho}`, {
+      method: corpo === undefined ? "GET" : "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: corpo === undefined ? undefined : JSON.stringify(corpo),
+    });
+    const t = await r.text();
+    return { status: r.status, json: (t ? JSON.parse(t) : {}) as Record<string, unknown> };
+  };
+  type Linha = { at: string; event_type: string; label: string; author: string; object_id: string };
+  let pr: Proc | null = null;
+  let t0 = "";
+  try {
+    pr = await subir();
+    await teste("H1 processo real: pronto por HTTP, viagem e saída; a rota da linha do tempo devolve o instante original", async () => {
+      const reg = await api("/api/ready-order", tok.caixa, { order_ref: "H-1", label: "Pedido H-1 · Rua Sintética 9", channel: "proprio" });
+      assert.equal(reg.status, 200);
+      const fila = JSON.parse(readFileSync(join(dir, "dados", "ready_orders.json"), "utf8")) as { orders: PilotReadyOrder[] };
+      t0 = fila.orders.find((o) => o.order_ref === "H-1")!.created_at;
+      await sleep(25);
+      const ct = await api("/api/command", tok.caixa, {
+        type: "CreateTrip", command_id: "ct-h1", occurred_at: new Date().toISOString(), unit_id: "ITAIM",
+        trip_id: "TH1", courier_actor_id: "rid-1", deliveries: [{ delivery_id: "DH1", order_ref: "H-1" }],
+      });
+      assert.equal((ct.json.result as { ok?: boolean })?.ok, true, JSON.stringify(ct.json));
+      const dep = await api("/api/command", tok.rid, {
+        type: "ConfirmTripDeparture", command_id: "dep-h1", occurred_at: new Date().toISOString(),
+        unit_id: "ITAIM", trip_id: "TH1",
+      });
+      assert.equal((dep.json.result as { ok?: boolean })?.ok, true, JSON.stringify(dep.json));
+      const tl = await api("/api/trip/timeline?trip_id=TH1", tok.caixa);
+      assert.equal(tl.status, 200);
+      const linhas = tl.json.timeline as Linha[];
+      const pronto = linhas.filter((l) => l.event_type === "delivery_ready");
+      assert.equal(pronto.length, 1, JSON.stringify(linhas.map((l) => l.event_type)));
+      assert.equal(pronto[0]!.at, t0);
+      assert.equal(pronto[0]!.object_id, "DH1");
+      assert.equal(pronto[0]!.label, "Pronto registrado pela expedição");
+      assert.equal(JSON.stringify(tl.json).includes("Rua Sintética"), false, "endereço do rótulo vazou na rota");
+    });
+    await derrubar(pr);
+    pr = null;
+    pr = await subir();
+    await teste("H2 processo real reiniciado sobre os mesmos arquivos: o mesmo instante, uma vez só", async () => {
+      assert.ok(t0, "H1 não capturou o instante");
+      const tl = await api("/api/trip/timeline?trip_id=TH1", tok.caixa);
+      assert.equal(tl.status, 200);
+      const pronto = (tl.json.timeline as Linha[]).filter((l) => l.event_type === "delivery_ready");
+      assert.equal(pronto.length, 1);
+      assert.equal(pronto[0]!.at, t0);
+      const ordem = (tl.json.timeline as Linha[]).map((l) => l.event_type);
+      assert.ok(ordem.indexOf("delivery_ready") < ordem.indexOf("trip_started"), ordem.join(","));
+    });
+  } finally {
+    if (pr) await derrubar(pr);
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 

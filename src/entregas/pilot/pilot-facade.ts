@@ -16,7 +16,11 @@ import {
   createFilePilotReadyOrderStore,
   type PilotReadyOrderStore,
 } from "./ready-orders";
-import { EntregasApplicationService, type AppResult } from "../operational/application-service";
+import {
+  EntregasApplicationService,
+  type AppResult,
+  type ReadyRegistration,
+} from "../operational/application-service";
 import type { ActorContext, OperationalRole } from "../operational/auth";
 import type { Command } from "../operational/commands";
 import type { TripAggregate } from "../foundation/trip-machine";
@@ -343,10 +347,12 @@ export class PilotApplicationFacade {
       // confiavel que o campo enviado pelo navegador. A interface legada
       // pode omitir channel, portanto o guarda do dominio isolado nao basta.
       let validated = full;
+      let ready: ReadyRegistration[] | undefined;
       if (full.type === "CreateTrip" || full.type === "AddDeliveryToTrip") {
-        const stored = new Map(
-          (await this.readyOrders.list()).map((o) => [o.order_ref, o.channel]),
+        const fila = new Map(
+          (await this.readyOrders.list()).map((o) => [o.order_ref, o]),
         );
+        const stored = new Map([...fila].map(([ref, o]) => [ref, o.channel]));
         const deliveries =
           full.type === "CreateTrip" ? full.deliveries : [full];
         for (const delivery of deliveries) {
@@ -366,6 +372,33 @@ export class PilotApplicationFacade {
               code: this.last_error,
             };
           }
+        }
+        // O instante do pronto vem da fila do SERVIDOR, nunca do corpo: o
+        // created_at original do registro, sem segundo horario.
+        ready = deliveries.flatMap((d) => {
+          const o = fila.get(d.order_ref);
+          return o === undefined
+            ? []
+            : [{
+                order_ref: o.order_ref,
+                registered_at: o.created_at,
+                ...(o.channel !== undefined ? { channel: o.channel } : {}),
+              }];
+        });
+        const consumidos = await this.registrosJaConsumidos(ready);
+        if (consumidos.length) {
+          // Fila velha: queda entre o commit da viagem e a limpeza, ou outro
+          // terminal ja usou este registro. O fato duravel prova; a linha sai
+          // da fila e o mesmo registro nao sai numa segunda viagem.
+          await this.readyOrders.removeByOrderRefs(consumidos);
+          this.last_error = "READY_ALREADY_CONSUMED";
+          this.last_human_error =
+            "Este pedido pronto ja entrou em outra viagem. Se precisar sair de novo, registre-o como pronto outra vez.";
+          this.log.warn("command_failed", this.last_human_error, "READY_ALREADY_CONSUMED", {
+            actor_id: actor.actor_id,
+            meta: { type: full.type },
+          });
+          return { ok: false, error: this.last_human_error, code: "READY_ALREADY_CONSUMED" };
         }
         if (full.type === "CreateTrip") {
           validated = {
@@ -418,8 +451,8 @@ export class PilotApplicationFacade {
       // Comando legado continua no servico da fachada, sem recibo artificial.
       // A rota HTTP usa a UoW exclusiva e um recibo atomico por evento.
       const result = inbound
-        ? await service.execute(validated, receipt, full)
-        : await this.svc.execute(validated);
+        ? await service.execute(validated, receipt, full, ready)
+        : await this.svc.execute(validated, undefined, undefined, ready);
       if (inbound) this.reloadStore();
       if (!result.ok) {
         this.last_error = result.error ?? "rejeitado";
@@ -484,6 +517,26 @@ export class PilotApplicationFacade {
    * Devolve o log cru; a traducao para linguagem de operacao e a limpeza de
    * dado sensivel acontecem em trip-timeline.ts.
    */
+  /**
+   * Registro de pronto que ja virou fato numa entrega anterior. O par exato
+   * pedido + instante original prova o consumo; nada e inferido por pedido so.
+   */
+  private async registrosJaConsumidos(
+    ready: readonly ReadyRegistration[],
+  ): Promise<string[]> {
+    if (!ready.length) return [];
+    const chaves = new Set(ready.map((r) => `${r.order_ref}\u0000${r.registered_at}`));
+    const consumidos = new Set<string>();
+    for (const e of await this.uow.events.listAll()) {
+      if (e.event_type !== "delivery_ready") continue;
+      const ref = (e.payload as { order_ref?: unknown }).order_ref;
+      if (typeof ref === "string" && chaves.has(`${ref}\u0000${e.occurred_at}`)) {
+        consumidos.add(ref);
+      }
+    }
+    return [...consumidos];
+  }
+
   async listTripEvents(trip_id: string) {
     const all = await this.uow.events.listAll();
     const rec = await this.uow.trips.get(trip_id);

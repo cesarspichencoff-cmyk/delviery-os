@@ -188,6 +188,10 @@ jobs:
       # Estava fora de todo workflow e morta desde o boot ITAIM-only (25/10).
       - name: Ponte da rider-mobile com o Android (Q-018) no Chromium
         run: npx tsx src/entregas/ui/run-rider-bridge-tests.ts
+      # O instante do registro de pronto sobrevive a viagem e ao reinicio:
+      # arquivo, PostgreSQL do job e processo real do piloto.
+      - name: Pronto vira fato (delivery_ready duravel, linha do tempo, reinicio)
+        run: npx tsx src/entregas/pilot/run-ready-fact-tests.ts
       - name: leitura da rua (view model + superficie)
         run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
       - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)

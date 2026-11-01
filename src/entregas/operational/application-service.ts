@@ -59,6 +59,24 @@ export interface AppResult {
   rider?: RiderOperationalState;
 }
 
+/**
+ * Registro de pronto lido pelo SERVIDOR na fila do piloto no momento em que o
+ * pedido entra na viagem. Nunca vem do corpo do comando: o navegador nao fala
+ * pelo relogio da fila.
+ */
+export interface ReadyRegistration {
+  readonly order_ref: string;
+  /** `created_at` original da fila: instante do REGISTRO, nao da producao. */
+  readonly registered_at: string;
+  readonly channel?: string;
+}
+
+function instanteCanonico(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  const t = Date.parse(v);
+  return Number.isFinite(t) && new Date(t).toISOString() === v;
+}
+
 // A chave da fila e o repositorio de recibos, o mesmo objeto compartilhado
 // pelas UoWs decoradas. Diferentes wrappers da mesma UoW nao podem executar
 // comandos simultaneamente sobre o mesmo stage. Isto NAO e lock multi-processo.
@@ -76,16 +94,23 @@ export class EntregasApplicationService {
     private readonly publicSourceMode?: EntregasSourceMode,
   ) {}
 
-  async execute(cmd: Command, receipt?: DurableInboundReceipt, receivedCommand?: Command): Promise<AppResult> {
+  async execute(
+    cmd: Command,
+    receipt?: DurableInboundReceipt,
+    receivedCommand?: Command,
+    readyRegistrations?: readonly ReadyRegistration[],
+  ): Promise<AppResult> {
     // Captura snapshot antes da primeira espera: o chamador nao pode mudar
     // o pedido apos fingerprint e antes do I/O da transacao.
     let commandSnapshot: Command;
     let receiptSnapshot: DurableInboundReceipt | undefined;
     let receivedSnapshot: Command | undefined;
+    let readySnapshot: readonly ReadyRegistration[] | undefined;
     try {
       commandSnapshot = structuredClone(cmd);
       receiptSnapshot = receipt === undefined ? undefined : structuredClone(receipt);
       receivedSnapshot = receivedCommand === undefined ? undefined : structuredClone(receivedCommand);
+      readySnapshot = readyRegistrations === undefined ? undefined : structuredClone(readyRegistrations);
     } catch {
       return { ok:false, code:"INVALID_COMMAND",
         error:"Comando nao pode ser convertido em snapshot seguro" };
@@ -97,7 +122,7 @@ export class EntregasApplicationService {
     executionTailByReceiptStore.set(sharedStageKey, current);
     await predecessor;
     try {
-      return await this.executeSerial(commandSnapshot, receiptSnapshot, receivedSnapshot);
+      return await this.executeSerial(commandSnapshot, receiptSnapshot, receivedSnapshot, readySnapshot);
     } finally {
       release();
       if (executionTailByReceiptStore.get(sharedStageKey) === current) {
@@ -106,7 +131,12 @@ export class EntregasApplicationService {
     }
   }
 
-  private async executeSerial(cmd: Command, receipt?: DurableInboundReceipt, received?: Command): Promise<AppResult> {
+  private async executeSerial(
+    cmd: Command,
+    receipt?: DurableInboundReceipt,
+    received?: Command,
+    ready?: readonly ReadyRegistration[],
+  ): Promise<AppResult> {
     try {
       if (this.quarantinedStage) {
         return { ok:false, code:"STAGE_QUARANTINED",
@@ -218,9 +248,9 @@ export class EntregasApplicationService {
       const result = await (async (): Promise<AppResult> => {
       switch (cmd.type) {
         case "CreateTrip":
-          return await this.createTrip(cmd);
+          return await this.createTrip(cmd, ready);
         case "AddDeliveryToTrip":
-          return await this.addDelivery(cmd);
+          return await this.addDelivery(cmd, ready);
         case "RemoveDeliveryFromTrip":
           return await this.removeDelivery(cmd);
         case "ConfirmTripDeparture":
@@ -367,8 +397,56 @@ export class EntregasApplicationService {
     await this.uow.commit();
   }
 
+  /**
+   * O pronto vira fato na MESMA escrita da entrega: viagem, entrega, este
+   * evento, a outbox e, em PostgreSQL, o consumo da fila (trigger da 0008)
+   * confirmam ou caem juntos. Ligado a ENTREGA porque e por `delivery_id` que a
+   * linha do tempo encontra os eventos. Instante = `created_at` original da
+   * fila; registro de pronto nao e producao concluida; quem registrou nunca
+   * foi guardado pela fila e fica null. Sem registro, sem fato.
+   */
+  private logReady(
+    log: InMemoryEventLog,
+    trip_id: string,
+    deliveries: ReadonlyArray<{ delivery_id: string; order_ref: string }>,
+    ready: readonly ReadyRegistration[] | undefined,
+  ): void {
+    if (!ready?.length) return;
+    const porPedido = new Map(ready.map((r) => [r.order_ref, r]));
+    for (const d of deliveries) {
+      const reg = porPedido.get(d.order_ref);
+      if (!reg) continue;
+      if (!instanteCanonico(reg.registered_at)) {
+        // Recusa visivel: sem instante fiel nao ha fato, e reformatar seria
+        // fabricar um segundo horario.
+        throw new DomainError(
+          "PRECONDITION_FAILED",
+          `Registro de pronto de ${d.order_ref} sem instante valido na fila`,
+        );
+      }
+      log.append({
+        object_type: "delivery",
+        object_id: d.delivery_id,
+        event_type: "delivery_ready",
+        occurred_at: reg.registered_at,
+        origin: "ops_console",
+        clock_trust: "trusted",
+        idempotency_key: `delivery_ready:${trip_id}:${d.delivery_id}`,
+        payload: {
+          trip_id,
+          order_ref: d.order_ref,
+          ...(reg.channel !== undefined ? { channel: reg.channel } : {}),
+          ready_kind: "registro_expedicao",
+          production_completed_at: null,
+          registered_by: null,
+        },
+      });
+    }
+  }
+
   private async createTrip(
     cmd: Extract<Command, { type: "CreateTrip" }>,
+    ready?: readonly ReadyRegistration[],
   ): Promise<AppResult> {
     assertCan(cmd.actor, "trip_mutate");
     assertOwnTrip(cmd.actor, cmd.courier_actor_id);
@@ -383,12 +461,14 @@ export class EntregasApplicationService {
       initial_deliveries: cmd.deliveries,
     });
     if (!r.ok) return { ok: false, error: r.error.message, code: r.error.code };
+    this.logReady(log, cmd.trip_id, cmd.deliveries, ready);
     await this.saveAgg(r.state, null, log);
     return { ok: true, trip: r.state };
   }
 
   private async addDelivery(
     cmd: Extract<Command, { type: "AddDeliveryToTrip" }>,
+    ready?: readonly ReadyRegistration[],
   ): Promise<AppResult> {
     const rec = await this.uow.trips.get(cmd.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
@@ -417,6 +497,12 @@ export class EntregasApplicationService {
       this.policy,
     );
     if (!r.ok) return { ok: false, error: r.error.message, code: r.error.code };
+    this.logReady(
+      log,
+      cmd.trip_id,
+      [{ delivery_id: cmd.delivery_id, order_ref: cmd.order_ref }],
+      ready,
+    );
     await this.saveAgg(r.state, rec.version, log);
     return { ok: true, trip: r.state };
   }

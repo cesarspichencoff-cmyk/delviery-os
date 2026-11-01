@@ -36,6 +36,8 @@ export interface TimelineEntry {
  * "arrival_reported" — e deixando explícito quem observou.
  */
 const LABELS: Record<string, { label: string; author: TimelineAuthor }> = {
+  // Registro feito pela expedicao na fila de prontos; nao afirma producao concluida.
+  delivery_ready: { label: "Pronto registrado pela expedição", author: "operacao" },
   trip_created: { label: "Viagem montada", author: "operacao" },
   delivery_added: { label: "Pedido adicionado à viagem", author: "operacao" },
   delivery_removed: { label: "Pedido retirado da viagem", author: "operacao" },
