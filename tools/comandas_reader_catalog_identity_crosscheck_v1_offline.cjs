@@ -96,6 +96,7 @@ function crosscheckReaderCatalogIdentity(pair,capture){
  * native pair. Neither self-declared proof may promote the other.
  * Keep exact product details and observations out of the combined result.
  */
+const {createHash}=require("node:crypto");
 const {bindNativeReview}=require("./comandas_reader_bound_classification_v1_offline.cjs");
 const CONVERGENCE_SCHEMA="tata.comandas.reader-catalog-classification-convergence.v1.review-only";
 function convergeReaderCatalogClassification(pair,capture,claims){
@@ -106,6 +107,7 @@ function convergeReaderCatalogClassification(pair,capture,claims){
  }catch{
   return {schema:CONVERGENCE_SCHEMA,status:"HOLD",
    reasons:["INTEGRATION_INPUT_INVALID"],receipt_sha256:null,
+   catalog_capture_sha256:null,
    identity_match_count:0,unresolved_line_count:null,
    catalog_independently_attested:false,classification_approved:false,
    packaging_approved:false,ready_for_operational_print:false,
@@ -122,13 +124,31 @@ function convergeReaderCatalogClassification(pair,capture,claims){
    classification.exact_native_items_bound!==true)
   reasons.push("CLASSIFICATION_CLAIMS_NOT_BOUND_TO_READER");
  const hold=reasons.length>0;
+ // Bind the complete *claimed* catalog snapshot as well as the Reader
+ // classification receipt; neither SHA constitutes trusted provenance.
+ // Stable order prevents harmless reordering from changing the digest.
+ const sha=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
+ const catalogDigest=hold?null:sha({
+  schema:capture.schema,source_kind:capture.source_kind,
+  source_ref:capture.source_ref,store_id:capture.store_id,
+  store_unit:capture.store_unit,captured_local_date:capture.captured_local_date,
+  entries:capture.entries.map(row=>[
+   row.CDPRODUTO,row.canonical_code,row.product_name,row.active
+  ]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))
+ });
+ const combinedDigest=hold?null:sha({
+  schema:CONVERGENCE_SCHEMA,
+  reader_classification_receipt:classification.revision_binding.binding_sha256,
+  claimed_catalog_digest:catalogDigest
+ });
  return {schema:CONVERGENCE_SCHEMA,
   status:hold?"HOLD":"JOINT_SELF_CONSISTENCY_REVIEW_ONLY",
   reasons:hold?reasons:[
    "NATIVE_PAIR_AND_CATALOG_ARE_NOT_INDEPENDENTLY_ATTESTED",
    "CLASSIFICATION_CLAIMS_ARE_NOT_APPROVAL"
   ],
-  receipt_sha256:hold?null:classification.revision_binding.binding_sha256,
+  receipt_sha256:combinedDigest,
+  catalog_capture_sha256:catalogDigest,
   identity_match_count:hold?0:catalog.candidate_count,
   unresolved_line_count:catalog.unresolved_count??null,
   catalog_independently_attested:false,classification_approved:false,
