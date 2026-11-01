@@ -99,12 +99,12 @@ test("native canceled item never generates a triage inventory",()=>{
  const p=sample();p.event.order.items[0].IDSTPRCOMVEN="6";refresh(p);
  assert.equal(call(p).status,"HOLD");
 });
-test("out-of-scope shop is HOLD even for an otherwise joined note",()=>{
+test("out-of-scope shop cannot create a note triage queue",()=>{
  const p=sample();p.event.order.CDLOJA="02";
  p.event.order_key="0001|02|0000349281|0000348850";
  p.decision.order_key=p.event.order_key;refresh(p);
- // This triage validates self-consistency; it does NOT attest Itaim itself.
- const r=call(p);assert.equal(r.status,"TRIAGE_PENDING");
+ const r=call(p);assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"NOT_ITAIM_SCOPE");
  assert.equal(r.print_authorized,false);
 });
 test("native revision change P to X cannot reuse an inventory binding",()=>{
