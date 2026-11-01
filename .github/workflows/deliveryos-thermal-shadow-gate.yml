@@ -121,6 +121,8 @@ jobs:
         run: node tools/verificar_comandas_packaging_classification_review_v1_offline.cjs
       - name: Archive exact-byte classification versus routing coverage (no auto-classification)
         run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
+      - name: Existing 554-code native catalog versus 463-route archived reconciliation (HOLD)
+        run: node tools/verificar_comandas_catalogos_existentes_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
@@ -459,6 +461,8 @@ jobs:
         run: node tools/verificar_comandas_packaging_classification_review_v1_offline.cjs
       - name: Archive exact-byte classification versus routing coverage (no auto-classification)
         run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
+      - name: Existing 554-code native catalog versus 463-route archived reconciliation (HOLD)
+        run: node tools/verificar_comandas_catalogos_existentes_v1_offline.cjs
       - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
         run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
       - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
