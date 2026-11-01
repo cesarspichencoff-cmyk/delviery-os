@@ -91,4 +91,49 @@ function crosscheckReaderCatalogIdentity(pair,capture){
   approved_family_station:false,packaging_approved:false,
   ready_for_operational_print:false,print_authorized:false,effects:EFFECTS};
 }
-module.exports={SCHEMA,EFFECTS,crosscheckReaderCatalogIdentity};
+/**
+ * The catalog ID test and classification claim test must cover the SAME
+ * native pair. Neither self-declared proof may promote the other.
+ * Keep exact product details and observations out of the combined result.
+ */
+const {bindNativeReview}=require("./comandas_reader_bound_classification_v1_offline.cjs");
+const CONVERGENCE_SCHEMA="tata.comandas.reader-catalog-classification-convergence.v1.review-only";
+function convergeReaderCatalogClassification(pair,capture,claims){
+ let catalog,classification;
+ try{
+  catalog=crosscheckReaderCatalogIdentity(pair,capture);
+  classification=bindNativeReview(pair,claims);
+ }catch{
+  return {schema:CONVERGENCE_SCHEMA,status:"HOLD",
+   reasons:["INTEGRATION_INPUT_INVALID"],receipt_sha256:null,
+   identity_match_count:0,unresolved_line_count:null,
+   catalog_independently_attested:false,classification_approved:false,
+   packaging_approved:false,ready_for_operational_print:false,
+   print_authorized:false,effects:EFFECTS};
+ }
+ const reasons=[];
+ if(catalog.status!=="IDENTITY_CANDIDATES_REVIEW_ONLY")
+  reasons.push("CATALOG_IDENTITY_CAPTURE_HOLD");
+ else if(catalog.unresolved_count!==0||
+   catalog.candidate_count!==classification.item_count)
+  reasons.push("NATIVE_CATALOG_IDENTITY_COVERAGE_NOT_EXACT");
+ if(classification.status!=="REVIEW_CANDIDATE_ONLY"||
+   !classification.revision_binding||
+   classification.exact_native_items_bound!==true)
+  reasons.push("CLASSIFICATION_CLAIMS_NOT_BOUND_TO_READER");
+ const hold=reasons.length>0;
+ return {schema:CONVERGENCE_SCHEMA,
+  status:hold?"HOLD":"JOINT_SELF_CONSISTENCY_REVIEW_ONLY",
+  reasons:hold?reasons:[
+   "NATIVE_PAIR_AND_CATALOG_ARE_NOT_INDEPENDENTLY_ATTESTED",
+   "CLASSIFICATION_CLAIMS_ARE_NOT_APPROVAL"
+  ],
+  receipt_sha256:hold?null:classification.revision_binding.binding_sha256,
+  identity_match_count:hold?0:catalog.candidate_count,
+  unresolved_line_count:catalog.unresolved_count??null,
+  catalog_independently_attested:false,classification_approved:false,
+  packaging_approved:false,ready_for_operational_print:false,
+  print_authorized:false,effects:EFFECTS};
+}
+module.exports={SCHEMA,EFFECTS,crosscheckReaderCatalogIdentity,
+ CONVERGENCE_SCHEMA,convergeReaderCatalogClassification};
