@@ -47,7 +47,74 @@ try{
  Check ((Get-Content -LiteralPath $statePath -Raw|ConvertFrom-Json).bindings.Count -eq 0) 'BINDING_SHOULD_REMAIN_EMPTY'
  Check ((Get-FileHash -LiteralPath $statePath -Algorithm SHA256).Hash -eq $before) 'SECOND_PREVIEW_WROTE'
  Write-Output 'PASS repeated preview never becomes persisted binding'
- Write-Output 'TATA_SEQUENCE_WRITER_PREVIEW_HOLD=3/3 OFFLINE ONLY'
+ # Simulate a previously persisted binding exclusively in this disposable
+ # runner-owned fixture. No real register state or service is accessed.
+ $bound=[ordered]@{schema='deliveryos.tata-sequence-state.v1';
+  policy=[ordered]@{width=3;min_value=1;max_value=999};
+  next_value=2;bindings=@()}
+ $canonical=[pscustomobject]@{
+  scope_id='STORE:0001|DATE:2026-10-25'
+  teknisa_order_id='FAKE-ORDER-001'
+  tata_sequence='001'
+ }
+ $bound.bindings=@($canonical)
+ [IO.File]::WriteAllText($statePath,($bound|ConvertTo-Json -Depth 12),
+  [Text.UTF8Encoding]::new($false))
+ $before=(Get-FileHash -LiteralPath $statePath -Algorithm SHA256).Hash
+ $reuse=Invoke-Writer
+ Check ($reuse.exit -eq 0) 'VALID_REUSE_EXIT_FAILED'
+ Check ($reuse.result.status -eq 'DRY_RUN_REUSE_READY_NO_WRITE') 'VALID_REUSE_BLOCKED'
+ Check ([string]$reuse.result.assignment.tata_sequence -eq '001') 'VALID_REUSE_NUMBER_CHANGED'
+ Check (-not [bool]$reuse.result.write_performed) 'VALID_REUSE_WROTE'
+ Check ((Get-FileHash -LiteralPath $statePath -Algorithm SHA256).Hash -eq $before) 'VALID_REUSE_STATE_CHANGED'
+ Write-Output 'PASS unique canonical persisted binding can preview same reprint'
+
+ $cases=@(
+  [pscustomobject]@{
+   label='identical duplicated state rows'
+   records=@($canonical,$canonical)
+   expected='DUPLICATE_ORDER_SEQUENCE_BINDING:FAKE-ORDER-001'
+  },
+  [pscustomobject]@{
+   label='whitespace in persisted order ID'
+   records=@([pscustomobject]@{
+    scope_id=$canonical.scope_id;teknisa_order_id='FAKE-ORDER-001 ';tata_sequence='001'
+   })
+   expected='NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY'
+  },
+  [pscustomobject]@{
+   label='whitespace in persisted scope'
+   records=@([pscustomobject]@{
+    scope_id='STORE:0001|DATE:2026-10-25 ';teknisa_order_id=$canonical.teknisa_order_id
+    tata_sequence='001'
+   })
+   expected='NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY'
+  },
+  [pscustomobject]@{
+   label='whitespace in persisted number'
+   records=@([pscustomobject]@{
+    scope_id=$canonical.scope_id;teknisa_order_id=$canonical.teknisa_order_id
+    tata_sequence='001 '
+   })
+   expected='INVALID_EXISTING_TATA_SEQUENCE_FORMAT_OR_RANGE'
+  }
+ )
+ foreach($case in $cases){
+  $bound.bindings=@($case.records)
+  [IO.File]::WriteAllText($statePath,($bound|ConvertTo-Json -Depth 12),
+   [Text.UTF8Encoding]::new($false))
+  $before=(Get-FileHash -LiteralPath $statePath -Algorithm SHA256).Hash
+  $blocked=Invoke-Writer
+  Check ($blocked.exit -eq 7) ('INVALID_STATE_EXIT_NOT_BLOCKED:'+ $case.label)
+  Check ($blocked.result.status -eq 'BLOCKED_NO_WRITE') ('INVALID_STATE_STATUS:'+ $case.label)
+  Check (@($blocked.result.blocking_reasons) -contains $case.expected) ('INVALID_STATE_REASON:'+ $case.label)
+  Check ($null -eq $blocked.result.assignment) ('INVALID_STATE_ASSIGNED:'+ $case.label)
+  Check (-not [bool]$blocked.result.write_performed) ('INVALID_STATE_WROTE:'+ $case.label)
+  Check (-not(Test-Path -LiteralPath ($statePath+'.lock'))) ('INVALID_STATE_LOCK:'+ $case.label)
+  Check ((Get-FileHash -LiteralPath $statePath -Algorithm SHA256).Hash -eq $before) ('INVALID_STATE_CHANGED:'+ $case.label)
+  Write-Output ('PASS ' + $case.label + ' refused without writing')
+ }
+ Write-Output 'TATA_SEQUENCE_WRITER_PREVIEW_HOLD=8/8 OFFLINE ONLY'
 }finally{
  if(Test-Path -LiteralPath $fixtureRoot){Remove-Item -LiteralPath $fixtureRoot -Recurse -Force}
 }
