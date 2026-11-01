@@ -162,6 +162,11 @@ prova I1–I9:
 
 ## 7. O que exige a autorização do César para o teste físico
 
+> **Substituída (01/11)** pela proposta única `ENSAIO_SUPERVISIONADO_V1_2026-11-01.md` §6, com 5 autorizações.
+> O César vetou enfraquecer o login do proxy, e o item 6 abaixo (exceção no proxy) saiu: o celular entra como
+> peer do NetBird. Sai também o item 7a (APK assinado por tag): a etapa física usa o APK de depuração. O
+> item 9 (push) foi feito com a autorização de 01/11. A lista abaixo fica como registro.
+
 1. **Instalar o candidato no computador do ensaio.** Rollback: voltar o build anterior sem restaurar dados
    por cima (`LIBERACAO_V1` §5).
 2. **Modo e armazenamento do teste:**
