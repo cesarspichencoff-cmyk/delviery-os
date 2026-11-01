@@ -185,6 +185,26 @@ assert.equal(validPersistedReprint.reused_existing,true);
 assert.equal(validPersistedReprint.assignment.tata_sequence,"037");
 assert.equal(validPersistedReprint.effects.print,false);
 
+// Whitespace in a persisted scope/order key is NOT a harmless alias:
+// otherwise duplicate bindings can evade the exact-match duplicate gate.
+for (const mutation of [
+  b=>({...b,teknisa_order_id:"18452 "}),
+  b=>({...b,scope_id:" SCOPE-EXPLICITO"}),
+  b=>({...b,scope_id:"SCOPE-EXPLICITO "}),
+]) {
+  const damaged = {
+    ...duplicatedPersistedState,
+    bindings:[mutation(duplicatedPersistedState.bindings[0])]
+  };
+  for(const order of ["18452","18453"]){
+    const attempted=Tata.planTataSequence(damaged,"SCOPE-EXPLICITO",order);
+    assert.equal(attempted.ready,false,"noncanonical persisted identity");
+    assert.equal(attempted.assignment,null);
+    assert.ok(attempted.blocking_reasons.includes(
+      "NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY"
+    ));
+  }
+}
 const existingCollision = Tata.planTataSequence(
   {
     schema: "deliveryos.tata-sequence-state.v1",
