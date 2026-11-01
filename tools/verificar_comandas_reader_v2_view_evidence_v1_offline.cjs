@@ -757,8 +757,10 @@ test("reused first-dispatch attempt across orders or stations and day contradict
 });
 test("separate stations with separate attempt identities remain claims, never physical proof",()=>{
  const x=correlatedDispatchInput();
+ // Independent physical stations must not share one semantic print intent.
  x.history.push({...x.history[0],station_code:"00002",
-  attempt_id:"attempt:separate_station_0002"});
+  attempt_id:"attempt:separate_station_0002",
+  intent_fingerprint:"b".repeat(64)});
  const r=dispatchCheck(x,"CORRELATED_CLAIMS_REVIEW_ONLY",
   "DISPATCH_AND_JOURNAL_ARE_NOT_INDEPENDENT_SOURCE_ATTESTATION");
  assert.equal(r.journal_first_attempt_correlated,true);
