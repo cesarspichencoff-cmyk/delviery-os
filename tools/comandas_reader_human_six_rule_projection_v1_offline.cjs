@@ -44,6 +44,8 @@ function projectHumanRulesForReader(pair,catalogCapture){
     ?"CONFERENCE_ONLY_CANDIDATE":"PRODUCTION_ROUTE_CANDIDATE",
    stated_area:human.stated_area,
    item_temperature:human.stated_item_temperature,
+   stated_container:human.stated_container,
+   stated_reference:human.stated_reference,
    source_revision_sha256:pair.event.snapshot_hash,
    route_currently_proven:false,production_print_authorized:false,
    conference_print_authorized:false
@@ -68,7 +70,7 @@ function projectHumanRulesForReader(pair,catalogCapture){
   claimed_catalog_sha256:digest(claimedCatalog),
   human_rule_scope_sha256:digest(sourceRules),
   item_roles:items.map(i=>[i.item_index,i.decision_kind,i.stated_area,
-   i.item_temperature])
+   i.item_temperature,i.stated_container,i.stated_reference])
  });
  return {...result("ALL_ITEMS_EXACT_REVIEW_ONLY",
   "SELF_DECLARED_CAPTURE_NOT_CURRENT_OR_INDEPENDENT_ATTESTATION",items),
