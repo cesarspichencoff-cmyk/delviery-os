@@ -3,7 +3,8 @@ const assert=require("node:assert/strict");
 const {syntheticReaderPairV857}=require("./verificar_tata_comanda_reader_native_v857_offline.cjs");
 const {snapshotHash,decisionHash}=require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
 const {triageReaderObservations}=require("./comandas_reader_observation_triage_v1_offline.cjs");
-const {SCHEMA,NO_EFFECTS,reviewObservationProposals:review}=
+const {SCHEMA,NO_EFFECTS,reviewObservationProposals:review,
+ verifyObservationProposalReceipt:verifyReceipt}=
  require("./comandas_reader_observation_disposition_proposals_v1_offline.cjs");
 let count=0;
 function test(label,fn){fn();console.log("PASS "+(++count)+" "+label);}
@@ -147,6 +148,53 @@ test("canceled item, foreign store and unpaired source never make review claims"
  y.decision.order_key=y.event.order_key;refresh(y);
  assert.equal(call(y,claims(fixture())).status,"HOLD");
  assert.equal(call(null,[]).status,"HOLD");
+});
+test("informational receipt re-checks same native Reader and complete proposals",()=>{
+ const p=fixture(),c=claims(p),r=call(p,c);
+ assert.equal(verifyReceipt(r.review_claim_receipt_sha256,p,c),true);
+ assert.equal(verifyReceipt(r.review_claim_receipt_sha256,p,[...c].reverse()),true);
+ assert.equal(r.human_review_proven,false);
+ assert.equal(r.print_authorized,false);
+});
+test("a previous receipt fails on revised source text even with valid native hashes",()=>{
+ const p=fixture(),c=claims(p),receipt=call(p,c).review_claim_receipt_sha256;
+ p.event.order.observation_rows[0].value="INSTRUCAO ALTERADA";
+ p.decision.items[0].observations[0].value="INSTRUCAO ALTERADA";
+ refresh(p);
+ assert.equal(verifyReceipt(receipt,p,c),false);
+ const next=claims(p),r=call(p,next);
+ assert.equal(verifyReceipt(r.review_claim_receipt_sha256,p,next),true);
+ assert.notEqual(receipt,r.review_claim_receipt_sha256);
+});
+test("changing suggested destination or reviewer-claim invalidates receipt",()=>{
+ const p=fixture(),c=claims(p),receipt=call(p,c).review_claim_receipt_sha256;
+ const route=c.map(x=>({...x}));
+ route[0].proposed_disposition="PROPOSE_CONFERENCE";
+ assert.equal(verifyReceipt(receipt,p,route),false);
+ const actor=c.map(x=>({...x}));
+ actor[0].reviewer_claim_ref="ALTERNATIVE_CLAIM";
+ assert.equal(verifyReceipt(receipt,p,actor),false);
+ assert.equal(verifyReceipt(receipt,p,c),true);
+});
+test("invalid, inflated and absent receipts can never be verified",()=>{
+ const p=fixture(),c=claims(p),receipt=call(p,c).review_claim_receipt_sha256;
+ for(const fake of [null,undefined,{},[],42,"",receipt.toUpperCase(),
+  receipt.slice(0,63),receipt+"x","f".repeat(64)])
+  assert.equal(verifyReceipt(fake,p,c),false);
+ assert.equal(verifyReceipt(receipt,null,c),false);
+ assert.equal(verifyReceipt(receipt,p,c.slice(0,2)),false);
+});
+test("no notes and canceled native sources cannot reuse an old proposal receipt",()=>{
+ const p=fixture(),c=claims(p),receipt=call(p,c).review_claim_receipt_sha256;
+ p.event.order.observation_rows=[];
+ p.decision.order_observations=[];
+ p.decision.items.forEach(x=>x.observations=[]);
+ refresh(p);
+ assert.equal(verifyReceipt(receipt,p,c),false);
+ assert.equal(verifyReceipt(receipt,p,[]),false);
+ const canceled=fixture();
+ canceled.event.order.items[0].IDSTPRCOMVEN="6";refresh(canceled);
+ assert.equal(verifyReceipt(receipt,canceled,claims(fixture())),false);
 });
 console.log("COMANDAS_OBSERVATION_DISPOSITION_PROPOSALS="+count+"/"+count+
  " REVIEW_ONLY NO_APPROVAL NO_PRINT");
