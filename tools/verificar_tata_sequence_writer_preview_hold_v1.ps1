@@ -118,3 +118,6 @@ try{
 }finally{
  if(Test-Path -LiteralPath $fixtureRoot){Remove-Item -LiteralPath $fixtureRoot -Recurse -Force}
 }
+# Prior expected blocked inner powershell.exe exits are nonzero by design.
+# A successful verifier must clear the inherited native-process exit code.
+exit 0
