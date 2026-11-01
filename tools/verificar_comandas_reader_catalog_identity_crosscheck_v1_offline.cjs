@@ -7,7 +7,11 @@ const {CATALOG_SCHEMA}=require("./comandas_packaging_classification_review_v1_of
 let count=0;
 function run(name,fn){fn();count++;console.log("PASS "+count+" "+name)}
 function base(){
- const pair=fixture();pair.event.order.IDSTCOMANDA="3";
+ const pair=fixture();
+ pair.event.order.observation_rows=[];
+ pair.decision.order_observations=[];
+ pair.decision.items.forEach(x=>x.observations=[]);
+ pair.event.order.IDSTCOMANDA="3";
  pair.event.order.items.forEach(i=>i.IDSTPRCOMVEN="4");
  rehash(pair);
  const catalog={schema:CATALOG_SCHEMA,source_kind:"LOCAL_READ_ONLY_CAPTURE_CLAIM",
@@ -124,6 +128,22 @@ run("classification claim from another quantity fails despite complete catalog",
  assert.equal(r.status,"HOLD");
  assert.ok(r.reasons.includes("CLASSIFICATION_CLAIMS_NOT_BOUND_TO_READER"));
  assert.equal(r.receipt_sha256,null);
+});
+run("observation-bearing revision cannot converge to classification",()=>{
+ const x=base();
+ x.pair.event.order.observation_rows.push({
+  source_field:"DSOBSPEDDIGCMD",value:"SEM CEBOLINHA",
+  scope_hint:"item",join_proven:true,item_index:0,
+  CDPRODUTO:x.pair.event.order.items[0].CDPRODUTO
+ });
+ x.pair.decision.items[0].observations.push({
+  source_field:"DSOBSPEDDIGCMD",value:"SEM CEBOLINHA"
+ });
+ rehash(x.pair);
+ const r=integrated(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.receipt_sha256,null);
+ assert.equal(r.print_authorized,false);
 });
 run("canceled native source remains HOLD despite catalog and signed-looking claims",()=>{
  const x=base();x.pair.event.order.items[0].IDSTPRCOMVEN="6";rehash(x.pair);
