@@ -192,6 +192,20 @@ jobs:
       # arquivo, PostgreSQL do job e processo real do piloto.
       - name: Pronto vira fato (delivery_ready duravel, linha do tempo, reinicio)
         run: npx tsx src/entregas/pilot/run-ready-fact-tests.ts
+      - name: Contratos de eventos e ponte (tipos declarados e catalogo)
+        run: |
+          npx tsx src/platform/run-event-contract-tests.ts
+          npx tsx src/platform/run-bridge-tests.ts
+      - name: Leituras do pronto (estado atual x trajetoria, fluxo PostgreSQL isolado)
+        run: npx tsx src/platform/run-pronto-leituras-tests.ts
+      - name: Saida minima da fila no piloto (campos, papel, falha, marca, processo real)
+        run: npx tsx src/entregas/pilot/run-ready-queue-observation-tests.ts
+      - name: Fila observada pela plataforma (origem declarada, atraso, PostgreSQL)
+        run: npx tsx src/platform/run-fila-observada-tests.ts
+      - name: Fila e fatos do pronto com processos reais (dist/ + PostgreSQL)
+        run: npx tsx src/platform/run-fila-observada-processos-tests.ts
+      - name: Custo da fila observada com historico crescente (medido)
+        run: npx tsx src/platform/run-fila-observada-custo-tests.ts
       - name: leitura da rua (view model + superficie)
         run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
       - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)
