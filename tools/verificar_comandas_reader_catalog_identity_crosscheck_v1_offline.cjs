@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const {syntheticReaderPairV857:fixture}=require("./verificar_tata_comanda_reader_native_v857_offline.cjs");
 const {snapshotHash,decisionHash}=require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
-const {crosscheckReaderCatalogIdentity:check}=require("./comandas_reader_catalog_identity_crosscheck_v1_offline.cjs");
+const {crosscheckReaderCatalogIdentity:check,convergeReaderCatalogClassification:converge}=require("./comandas_reader_catalog_identity_crosscheck_v1_offline.cjs");
 const {CATALOG_SCHEMA}=require("./comandas_packaging_classification_review_v1_offline.cjs");
 let count=0;
 function run(name,fn){fn();count++;console.log("PASS "+count+" "+name)}
@@ -75,5 +75,67 @@ run("invalid or absent native pair and catalog are denied",()=>{
  const x=base();
  assert.equal(check(null,x.catalog).status,"HOLD");
  assert.equal(check(x.pair,null).status,"HOLD");
+});
+function claims(p){
+ return p.decision.items.map((i,j)=>({
+  source_item_index:j,product_code:i.canonical_code,
+  product_name:i.product_name,quantity:i.quantity,
+  family:"dupla",station:"sushi",review_required:false,
+  review_source_ref:"SYNTHETIC_REVIEW_CLAIM"
+ }));
+}
+function integrated(x,cs=claims(x.pair)){
+ const before=JSON.stringify(x),previous=JSON.stringify(cs);
+ const result=converge(x.pair,x.catalog,cs);
+ assert.equal(JSON.stringify(x),before);
+ assert.equal(JSON.stringify(cs),previous);
+ assert.equal(result.print_authorized,false);
+ assert.equal(result.classification_approved,false);
+ assert.equal(result.catalog_independently_attested,false);
+ assert.equal(result.packaging_approved,false);
+ assert.equal(result.ready_for_operational_print,false);
+ assert.equal(JSON.stringify(result).includes("COMBINADO SUSHI"),false);
+ assert.equal(JSON.stringify(result).includes("0000001111"),false);
+ return result;
+}
+run("joint source identity and classification remain review only",()=>{
+ const x=base(),r=integrated(x);
+ assert.equal(r.status,"JOINT_SELF_CONSISTENCY_REVIEW_ONLY");
+ assert.equal(r.identity_match_count,2);
+ assert.match(r.receipt_sha256,/^[a-f0-9]{64}$/);
+});
+run("missing catalog row vetoes any otherwise valid classification receipt",()=>{
+ const x=base();x.catalog.entries.pop();
+ const r=integrated(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.receipt_sha256,null);
+ assert.ok(r.reasons.includes("NATIVE_CATALOG_IDENTITY_COVERAGE_NOT_EXACT"));
+});
+run("name conflict on one product vetoes all joint revision promotion",()=>{
+ const x=base();x.catalog.entries[0].product_name="OUTRO PRODUTO";
+ const r=integrated(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.identity_match_count,0);
+ assert.equal(r.receipt_sha256,null);
+});
+run("classification claim from another quantity fails despite complete catalog",()=>{
+ const x=base(),cs=claims(x.pair);cs[0].quantity++;
+ const r=integrated(x,cs);
+ assert.equal(r.status,"HOLD");
+ assert.ok(r.reasons.includes("CLASSIFICATION_CLAIMS_NOT_BOUND_TO_READER"));
+ assert.equal(r.receipt_sha256,null);
+});
+run("canceled native source remains HOLD despite catalog and signed-looking claims",()=>{
+ const x=base();x.pair.event.order.items[0].IDSTPRCOMVEN="6";rehash(x.pair);
+ const r=integrated(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.receipt_sha256,null);
+});
+run("same catalog and claims for revised native state require distinct receipt",()=>{
+ const x=base(),a=integrated(x);
+ x.pair.event.order.IDSTCOMANDA="P";rehash(x.pair);
+ const b=integrated(x);
+ assert.equal(b.status,"JOINT_SELF_CONSISTENCY_REVIEW_ONLY");
+ assert.notEqual(a.receipt_sha256,b.receipt_sha256);
 });
 console.log("READER_CATALOG_IDENTITY="+count+"/"+count+" REVIEW_ONLY");
