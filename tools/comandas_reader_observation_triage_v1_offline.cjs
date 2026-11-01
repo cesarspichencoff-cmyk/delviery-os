@@ -27,6 +27,8 @@ function triageReaderObservations(pair){
  catch{return result("HOLD","INVALID_NATIVE_REVISION");}
  if(assessed.status!=="NATIVE_PAIR_CONSISTENT_REVIEW_ONLY")
   return result("HOLD","NATIVE_PAIR_NOT_SELF_CONSISTENT");
+ if(pair.event.order.CDFILIAL!=="0001"||pair.event.order.CDLOJA!=="01")
+  return result("HOLD","NOT_ITAIM_SCOPE");
  const observations=pair.event.order.observation_rows;
  if(observations.length>601)return result("HOLD","TOO_MANY_NOTES");
  const items=pair.event.order.items;
