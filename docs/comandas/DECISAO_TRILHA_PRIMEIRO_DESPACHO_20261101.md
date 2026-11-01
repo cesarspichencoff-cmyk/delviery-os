@@ -75,3 +75,12 @@ Uma fonte oficial já disponível descreve duas superfícies administrativas pr�
 **Caminho escolhido:** B0.5 (vínculo de integração por interface legítima) → B1 (observação nativa pontual, previamente autorizada) → validação de efeito e sequência → piloto físico expressamente autorizado. Se B0.5 não estiver acessível, não contornar permissão; voltar a `UNKNOWN` e solicitar autorização para **uma fonte específica**, nunca acesso genérico ao host ou monitor permanente.
 
 **Dois atalhos desqualificados:** (a) repetir a mesma busca literal em 133 PHP já revisados; (b) repetir o acesso aos quatro arquivos do Reader que retornaram `EPERM` com outra conta/ferramenta. Nenhum dos dois muda a falta de prova do primeiro despacho. 
+
+
+### Teste de hipótese que pode mudar o host investigado
+
+O mesmo manual lista em **Problemas Frequentes → Caixa sincronizador não encontrado** a opção **Sincronização com Delivery → Realiza sincronização com Delivery Centralizado** dentro de **Cadastro de Caixa** (parâmetros da Frente de Caixa 3). O manual orienta a alterá-la em caso de erro; **aqui não há diagnóstico de erro nem autorização de alteração**. A opção é citada somente como pista: caso a integração atual esteja ligada a outro caixa ou a sincronização centralizada, o rastro do primeiro emissor pode não estar no computador chamado `CAIXA_MOOCA`, apesar de esse equipamento pertencer ao Itaim.
+
+Se houver permissão legítima de **visualizar** essa tela no escopo B0.5, registrar apenas a presença do vínculo e do parâmetro (quando visível, sem dados sensíveis); jamais ativar/desativar sincronização, acessar áreas protegidas ou inferir qual processo efetivamente imprime apenas pelo valor da opção. Isso ajuda a escolher corretamente o alvo de B1 e evita repetir busca negativa no host errado.
+
+**Fonte delimitada:** Manual oficial de Integração Teknisa × iFood 4.2.0, seção 7a (página impressa 26). A edição do manual não comprova a instalação nem os parâmetros atuais do Itaim.
