@@ -230,5 +230,19 @@ test("historical rule A3 is shared by exactly two distinct labels, never a share
   ["TARTAR DE ATUM SPICY","TUNA SHISSO TARTAR"]);
  assert.notEqual(a3[0].canonical_code,a3[1].canonical_code);
 });
+const identityHistory=JSON.parse(fs.readFileSync(path.join(__dirname,"..",
+ "data/comandas_historical_native_identity_lineage_20261005_review_only.json"),"utf8"));
+test("historical Reader identity 14 codes are unique and never current approval",()=>{
+ assert.equal(identityHistory.source_records,554);
+ assert.equal(identityHistory.selected_rows,14);
+ assert.equal(identityHistory.unique_native_product_ids,14);
+ assert.equal(identityHistory.entries.length,14);
+ assert.deepEqual(identityHistory.entries.map(e=>e.canonical_code).sort(),
+  source.entries.map(e=>e.canonical_code).sort());
+ assert.ok(identityHistory.entries.every(e=>e.active_status==="UNKNOWN"));
+ assert.ok(identityHistory.entries.every(e=>e.print_authorized===false));
+ assert.equal(identityHistory.independent_live_catalog_attested,false);
+ assert.equal(identityHistory.classification_approved,false);
+});
 console.log("COMANDAS_CLASSIFICATION_GAP_QUEUE="+n+"/"+n+
  " HISTORIC_ONLY NO_CATALOG_FACT NO_PRINT");
