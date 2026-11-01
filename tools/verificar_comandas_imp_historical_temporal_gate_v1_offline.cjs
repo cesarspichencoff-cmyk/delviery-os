@@ -20,7 +20,7 @@ function report(reason,stats=null){
   return {schema:SCHEMA,status:"HOLD",reason,stats,...DENIAL,effects:NO_EFFECTS};
 }
 const tzStamp=v=>typeof v==="string"&&
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,7}-03:00$/.test(v)&&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?-03:00$/.test(v)&&
   Number.isFinite(Date.parse(v))&&
   // For the observed Oct 2026 Itaim offset, convert to local clock
   // by subtracting three hours from UTC, rather than assuming host TZ.
