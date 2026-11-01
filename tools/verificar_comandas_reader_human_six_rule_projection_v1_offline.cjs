@@ -17,6 +17,9 @@ function refresh(pair){
 }
 function sample(){
  const pair=syntheticReaderPairV857();
+ pair.event.order.observation_rows=[];
+ pair.decision.order_observations=[];
+ pair.decision.items.forEach(x=>x.observations=[]);
  pair.event.order.IDSTCOMANDA="3";
  pair.event.order.items.forEach((row,i)=>{
   row.IDSTPRCOMVEN="4";
@@ -67,6 +70,38 @@ test("Ceviche maps Sushi Quentes as physically cold; cookie conference candidate
 test("missing item in supplied catalog holds the entire order",()=>{
  const x=sample();x.capture.entries.pop();
  assert.equal(audit(x).status,"HOLD");
+});
+test("full native item allergy note holds before production role",()=>{
+ const x=sample();
+ const id=x.pair.event.order.items[0].CDPRODUTO;
+ x.pair.event.order.observation_rows.push({
+  source_field:"DSOBSPEDDIGCMD",value:"ALERGIA A CAMARAO",
+  scope_hint:"item",join_proven:true,item_index:0,CDPRODUTO:id
+ });
+ x.pair.decision.items[0].observations.push({
+  source_field:"DSOBSPEDDIGCMD",value:"ALERGIA A CAMARAO"
+ });
+ refresh(x.pair);
+ const r=audit(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.reason,"NATIVE_OBSERVATIONS_REQUIRE_EXPLICIT_DISPOSITION");
+ assert.equal(r.items.length,0);
+ assert.equal(r.review_receipt_sha256,null);
+});
+test("complete general order note blocks classification and cookie role",()=>{
+ const x=sample();
+ x.pair.event.order.observation_rows.push({
+  source_field:"DSOBSCOMANDA",value:"SEM MOLHO",
+  scope_hint:"order",join_proven:true
+ });
+ x.pair.decision.order_observations.push({
+  source_field:"DSOBSCOMANDA",value:"SEM MOLHO"
+ });
+ refresh(x.pair);
+ const r=audit(x);
+ assert.equal(r.status,"HOLD");
+ assert.equal(r.items.length,0);
+ assert.equal(r.review_receipt_sha256,null);
 });
 test("wrong native ID under exact name and code cannot match",()=>{
  const x=sample();x.capture.entries[0].CDPRODUTO="9999999999";
