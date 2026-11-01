@@ -105,3 +105,6 @@ test("malformed null/array/empty requests fail closed",()=>{
 });
 console.log("COMANDAS_FIRST_NATIVE_DISPATCH_LINEAGE_V1="+n+"/"+n+
  " PREORDER_NOT_PRINT FORSALE_NOT_FIRST_DISPATCH PAPER_UNPROVEN ZERO_EFFECTS");
+
+// Cross-scope print-intent uniqueness: synthetic review, no execution or prints.
+require("./verificar_comandas_first_dispatch_fingerprint_scope_v1_offline.cjs");
