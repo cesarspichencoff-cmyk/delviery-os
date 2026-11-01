@@ -180,3 +180,6 @@ test("null and malformed inputs fail closed",()=>{
 });
 console.log("COMANDAS_SEQUENCE_V2_RECONCILIATION_V1="+n+"/"+n+
  " 001_IS_ONLY_CANDIDATE NO_BIND NO_PRINT STRONG_KEY_NOT_YET_PROVEN");
+
+// Strong four-part Reader identity, store unit + date: review-only migration gate.
+require("./verificar_comandas_strong_key_sequence_v2_offline.cjs");
