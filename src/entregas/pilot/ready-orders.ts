@@ -21,6 +21,13 @@ export interface PilotReadyOrder {
    * PostgreSQL devolve ausente — nunca um ator inventado.
    */
   registered_by?: { actor_id: string; role: string };
+  /**
+   * Modo do piloto NO REGISTRO (`real`, `simulated` ou `control`). Arquivo e
+   * memoria guardam; a tabela `entregas.ready_order` nao tem coluna, entao o
+   * PostgreSQL devolve ausente. Ausente = nao declarado, nunca real. Trocar o
+   * modo do piloto depois nao reclassifica registro antigo.
+   */
+  source_mode?: "real" | "simulated" | "control";
 }
 
 export interface PilotReadyOrderStore {

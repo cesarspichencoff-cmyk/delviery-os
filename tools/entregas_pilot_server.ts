@@ -408,6 +408,8 @@ function canonicalRoutePoints(raw: unknown, tripId: string): GPSPoint[] {
 }
 
 const routeAuditFile = join(dataDir, "route-access.jsonl");
+/** Inicio deste processo: identifica a origem de uma observacao entre reinicios. */
+const PROCESS_STARTED_AT = new Date().toISOString();
 const ROOT = join(process.cwd(), "src", "entregas", "ui");
 const banner = resolveBanner(cfg);
 
@@ -661,6 +663,26 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         operational_order_total: null, no_action_executed: true });
     }
 
+
+    /*
+     * Saida minima da fila de prontos para quem observa (gerente e lider): a
+     * mesma porta do snapshot, sem rotulo, sem autor, com unidade, origem,
+     * instante, disponibilidade e modo declarado no registro. Sem parametro
+     * nenhum: a unidade e a do piloto, e token na URL nao e aceito aqui.
+     */
+    if (url.pathname === "/api/ready-orders/observation") {
+      if (!actor) return reply(401, { ok: false, code: "session_required" });
+      if (!["gerente", "lider_delivery"].includes(actor.role))
+        return reply(403, { ok: false, code: "manager_required" });
+      if (req.method !== "GET") return reply(405, { ok: false, code: "read_only" });
+      if (url.search) return reply(400, { ok: false, code: "no_query_parameters" });
+      const r = await facade.observeReadyQueue({
+        storage_backend: persistenceBackend!.kind,
+        process_started_at: PROCESS_STARTED_AT,
+      });
+      if (!r.ok) return reply(r.code === "session_required" ? 401 : 403, { ok: false, code: r.code });
+      return reply(200, r.observation);
+    }
 
     /* ---------------- API do aparelho Android ---------------- */
 

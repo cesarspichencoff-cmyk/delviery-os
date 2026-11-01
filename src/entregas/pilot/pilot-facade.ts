@@ -14,8 +14,17 @@ import {
 } from "./pilot-storage";
 import {
   createFilePilotReadyOrderStore,
+  type PilotReadyOrder,
   type PilotReadyOrderStore,
 } from "./ready-orders";
+import {
+  buildReadyQueueObservation,
+  FACTS_WATERMARK_TYPES,
+  READY_QUEUE_OBSERVER_ROLES,
+  type FactsWatermarkRead,
+  type ReadyQueueObservation,
+  type ReadyQueueRead,
+} from "./ready-queue-observation";
 import {
   EntregasApplicationService,
   type AppResult,
@@ -266,6 +275,9 @@ export class PilotApplicationFacade {
       created_at: new Date().toISOString(),
       // A sessao autenticada e quem registra; nunca o corpo da requisicao.
       registered_by: { actor_id: this.activeActor.actor_id, role: this.activeActor.role },
+      // Modo do piloto NESTE registro. Sem modo configurado, fica ausente
+      // (nao declarado) — nunca real por omissao.
+      ...(this.cfg.source_mode ? { source_mode: this.cfg.source_mode } : {}),
     });
     if (added.duplicate) {
       this.log.warn("duplicate_order", "Pedido já estava na fila de prontos.", order_ref);
@@ -603,6 +615,77 @@ export class PilotApplicationFacade {
         (e.object_type === "trip" && e.object_id === trip_id) ||
         (e.object_type === "delivery" && deliveryIds.has(e.object_id)),
     );
+  }
+
+  /**
+   * Saida minima da fila para quem OBSERVA (gerente e lider). Mesma porta do
+   * snapshot, outra projecao: sem rotulo, sem autor, com unidade, origem,
+   * instante, disponibilidade e modo declarado por registro.
+   *
+   * A fila e lida PRIMEIRO e a marca (ultimo fato publicado entre os tipos que
+   * o estado atual le) DEPOIS: todo pedido que saiu da fila antes da leitura ja
+   * tem o fato ate a marca. Nada aqui le viagens, ocorrencias ou motoboys. Com backend externo
+   * a marca exigiria varrer a outbox inteira; ela sai indisponivel, declarada.
+   */
+  async observeReadyQueue(origin: {
+    storage_backend: string;
+    process_started_at: string;
+  }): Promise<
+    | { ok: true; observation: ReadyQueueObservation }
+    | { ok: false; code: "session_required" | "manager_required" }
+  > {
+    const viewer = this.activeActor;
+    if (!viewer) return { ok: false, code: "session_required" };
+    if (!READY_QUEUE_OBSERVER_ROLES.includes(viewer.role)) {
+      return { ok: false, code: "manager_required" };
+    }
+    // Na MESMA fila dos comandos: a leitura cai entre dois comandos, nunca no
+    // meio de um. Sem isso, a marca podia apontar um fato ainda nao commitado.
+    const previous = this.commandTail;
+    let unlock!: () => void;
+    this.commandTail = new Promise<void>((resolve) => { unlock = resolve; });
+    await previous;
+    let read: ReadyQueueRead;
+    let observed_at: string;
+    let watermark: FactsWatermarkRead = { ok: false };
+    try {
+      try {
+        const orders: PilotReadyOrder[] = await this.readyOrders.list();
+        read = { ok: true, orders };
+      } catch {
+        // O erro bruto (caminho, trecho do arquivo) nao sai: so o motivo.
+        read = { ok: false, reason: "ready_queue_unreadable" };
+      }
+      observed_at = new Date().toISOString();
+      if (this.storage.kind === "file") {
+        try {
+          const outbox = await this.uow.outbox.all();
+          let last: string | null = null;
+          for (let i = outbox.length - 1; i >= 0; i -= 1) {
+            if (FACTS_WATERMARK_TYPES.includes(outbox[i].event.event_type)) {
+              last = outbox[i].event.event_id;
+              break;
+            }
+          }
+          watermark = { ok: true, last_event_id: last };
+        } catch {
+          watermark = { ok: false };
+        }
+      }
+    } finally {
+      unlock();
+    }
+    return {
+      ok: true,
+      observation: buildReadyQueueObservation({
+        unit_id: this.cfg.unit_id,
+        storage_backend: origin.storage_backend,
+        process_started_at: origin.process_started_at,
+        observed_at,
+        read,
+        watermark,
+      }),
+    };
   }
 
   async snapshot(): Promise<PilotSnapshot> {
