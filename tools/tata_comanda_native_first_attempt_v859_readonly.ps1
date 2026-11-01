@@ -175,6 +175,7 @@ $out=[ordered]@{
  observed_native_revisions_authorized_for_print=$false
  native_first_production_dispatch_proven=$false
  paired_with_persisted_tata_sequence=0
+ legacy_v1_short_key_matches_unattested=0
  content_valid_but_sequence_missing=0
  sequence_scope_collisions=0
  sequence_state_status='UNKNOWN'
@@ -218,7 +219,7 @@ try{
       [int]$sequence.policy.min_value -ne 1 -or
       [int]$sequence.policy.max_value -ne 999 -or
       $null -eq $sequence.bindings){throw 'STATE_POLICY_INVALID'}
-   $out.sequence_state_status='STRUCTURALLY_VALID_NOT_AUTHENTICATED'
+   $out.sequence_state_status='LEGACY_V1_STRUCTURALLY_VALID_NOT_STRONG_KEY'
    $out.sequence_bindings_total=@($sequence.bindings|Where-Object{$null -ne $_}).Count
   }catch{$sequence=$null;$out.sequence_state_status='INVALID_OR_UNREADABLE';
    Flag 'TATA_SEQUENCE_STATE_INVALID_OR_UNREADABLE'}
@@ -298,7 +299,10 @@ try{
       $_.tata_sequence -ceq $bound}).Count -gt 0){
    $out.sequence_scope_collisions++;continue
   }
-  $out.paired_with_persisted_tata_sequence++
+  # V1 scope only identifies store+day+short NRCOMANDA. It cannot prove
+  # unique CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA ownership or atomic
+  # persistence; reserve the 'paired' counter for future strong-key evidence.
+  $out.legacy_v1_short_key_matches_unattested++
  }
  if($out.scanned_events -eq 0){Flag 'NO_READABLE_EVENTS'}
  if($out.basic_essential_content_candidates -eq 0){
@@ -320,6 +324,9 @@ try{
   Flag 'EXISTING_TATA_BINDING_MISSING_FOR_SOME_ORDERS'
  }
  if($out.sequence_scope_collisions -gt 0){Flag 'SEQUENCE_COLLISION_IN_SAMPLE'}
+ if($out.legacy_v1_short_key_matches_unattested -gt 0){
+  Flag 'LEGACY_V1_SHORT_KEY_CANNOT_ATTEST_NATIVE_FULL_IDENTITY'
+ }
  if($out.last_event_age_minutes -gt 60){Flag 'LATEST_READER_EVENT_STALE'}
  $out.status='READONLY_DIAGNOSTIC_ONLY'
 }catch{
