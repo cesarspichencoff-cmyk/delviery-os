@@ -74,3 +74,21 @@ Merge, deploy, instalação, mudança de serviço ou spooler, troca de rota, res
 **Diferença técnica que ainda importa:** localizar uma captura atual autorizada com `CDPRODUTO`, código, nome, status ativo, versão e unidade, e verificar no motor vigente as referências Shimeji, Tuna Shiso, Refrigerante e Salmão para 2 Pessoas. Só então integrar as regras à classificação operacional em sandbox. Mesmo concluído isso, primeira impressão física, supressão de via legada e sequência TATÁ permanecem **bloqueadas até autorização distinta**. Não confundir “Cookie Pistache não tem nova via de produção” com autorização para modificar a configuração de impressoras existentes.
 
 **Decisão:** as seis validações de classificação de César estão **CAPTURED**, a integração está **CODE_CANDIDATE_ONLY**, a aplicação operacional está **HOLD**. Não contatar a Teknisa.
+
+
+## Reconciliação das rotas históricas — leitura passiva de 01/11
+
+A pasta autorizada de piloto no CAIXA_MOOCA contém `shadow-v2/routing.json`, **capturado em 30/09/2026** (463 produtos, hash SHA-256 `7084771026ca54f10069f02e0babcaa00f9c7666484cbaf80ec1ecdcdcaa165d`). As chaves de `products` são **códigos canônicos**, não `CDPRODUTO`; consultar esse objeto pelo ID nativo daria ausência falsa. Não converter ausência histórica em falta real atual.
+
+Recalculei os conjuntos de destinos por código no computador, sem publicar os identificadores de impressora:
+- Shimeji e Shitake (`9.10.00.050.00`) e Shimeji (`9.10.00.010.00`): mesmo conjunto de **um** destino;
+- Ceviche (`9.10.05.070.00`) e Tuna Shisso Tartar (`9.10.05.060.00`): mesmo conjunto de **um** destino;
+- Tartar de Salmão (`9.10.05.050.00`) e Tuna Shisso Tartar: mesmo conjunto de **um** destino;
+- Água com Gás (`8.00.00.010.00`) e Coca-Cola 350ml (`8.00.05.000.00`): mesmo conjunto de **um** destino;
+- Salmão/Atum 2 Pessoas (`9.15.00.070.00`) e Combinado Salmão 2 Pessoas (`9.15.00.076.00`): mesmo conjunto de **dois** destinos.
+
+No conjunto dos 14 códigos historicamente pendentes: **13 tinham destinos** (10 de um destino e três de dois); apenas Cookie Pistache (`8.20.11.002.00`) estava ausente. César já determinou que esse cookie **não cria nova via de produção**, somente conferência. A ausência no mapa histórico não comprova que ele tenha a conferência configurada no ambiente atual.
+
+O resultado minimizado foi preservado em `data/comandas_historical_routing_reference_20260930_review_only.json`, com testes executados na CI por `tools/verificar_comandas_historical_route_reference_20260930_offline.cjs`.
+
+**Efeito na rota de finalização:** as cinco equivalências de destino de 30/09 coincidem com a intenção humana de 01/11. Falta verificar **mapa vigente**, integração ativa com o Reader, controle de duplicidade em relação ao iFood legado, sequência persistida e o primeiro despacho físico. Não há autorização para trocar destinos ou imprimir; `current_routing_proven=false`, `print_authorized=false`. O motor histórico categoriza 650 selada com temperatura padrão fria; isso não revoga a decisão humana de Shimeji e Shitake como entrada **quente** na 650 selada. Tipo de recipiente e temperatura do alimento devem permanecer independentes.
