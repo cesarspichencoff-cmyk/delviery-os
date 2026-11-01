@@ -32,25 +32,30 @@ jobs:
             if [ -z "${!v}" ]; then echo "::error::falta $v (segredo/variavel do projeto)"; exit 1; fi
           done
           case "$BASE$PLAT" in *http://*) echo "::error::endereco sem HTTPS"; exit 1;; esac
-      - name: APK pilot assinado (chave decodificada so no runner)
+      - name: APK pilot (sem assinatura no build) assinado no runner com zipalign + apksigner
         working-directory: android
         env:
           KS: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_B64 }}
-          ENTREGAS_PILOT_KEYSTORE_PASSWORD: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_PASSWORD }}
-          ENTREGAS_PILOT_KEY_ALIAS: ${{ secrets.ENTREGAS_PILOT_KEY_ALIAS }}
-          ENTREGAS_PILOT_KEY_PASSWORD: ${{ secrets.ENTREGAS_PILOT_KEY_PASSWORD }}
+          KSP: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ENTREGAS_PILOT_KEY_ALIAS }}
+          KP: ${{ secrets.ENTREGAS_PILOT_KEY_PASSWORD }}
           BASE: ${{ vars.ENTREGAS_PILOT_BASE_URL }}
           PLAT: ${{ vars.ENTREGAS_PILOT_PLATFORM_URL }}
         run: |
           set -euo pipefail
-          export ENTREGAS_PILOT_KEYSTORE="$RUNNER_TEMP/campo.jks"
-          printf '%s' "$KS" | base64 -d > "$ENTREGAS_PILOT_KEYSTORE"
-          trap 'rm -f "$ENTREGAS_PILOT_KEYSTORE"' EXIT
+          # O build.gradle.kts continua sem nenhuma config de assinatura (guarda
+          # estrutural): a assinatura acontece aqui, com a chave só no runner.
+          ks="$RUNNER_TEMP/campo.jks"
+          printf '%s' "$KS" | base64 -d > "$ks"
+          trap 'rm -f "$ks"' EXIT
           bash ./gradlew --no-daemon --console=plain :app:assemblePilot -Pentregas.baseUrl="$BASE" -Pentregas.platformUrl="$PLAT"
-          apk=$(ls app/build/outputs/apk/pilot/*.apk | head -n 1)
-          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
-          "$signer" verify --print-certs "$apk" | grep -i "certificate SHA-256" | head -1
-          mkdir -p "$RUNNER_TEMP/campo" && cp "$apk" "$RUNNER_TEMP/campo/"
+          unsigned=$(ls app/build/outputs/apk/pilot/*.apk | head -n 1)
+          tools=$(dirname "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)")
+          mkdir -p "$RUNNER_TEMP/campo"
+          out="$RUNNER_TEMP/campo/entregas-pilot-campo.apk"
+          "$tools/zipalign" -p -f 4 "$unsigned" "$RUNNER_TEMP/alinhado.apk"
+          "$tools/apksigner" sign --ks "$ks" --ks-key-alias "$KA" --ks-pass env:KSP --key-pass env:KP --out "$out" "$RUNNER_TEMP/alinhado.apk"
+          "$tools/apksigner" verify --print-certs "$out" | grep -i "certificate SHA-256" | head -1
           (cd "$RUNNER_TEMP/campo" && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
