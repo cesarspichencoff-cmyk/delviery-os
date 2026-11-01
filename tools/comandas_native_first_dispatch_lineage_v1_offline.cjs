@@ -22,7 +22,14 @@ const NON_TRIGGER=[
  "IFOOD_GP_HTTP_PRINT",
  "IFOOD_GESTOR_IPC_PRINT",
  "ODHEN_BRIDGE_QUEUE_ACK",
- "WINDOWS_PRINTED_JOB_STATUS"
+ "WINDOWS_PRINTED_JOB_STATUS",
+ // External status or platform instrumentation is NOT the first native
+ // production-dispatch callsite, even when it refers to an actual print job.
+ "TEKNISA_ORDERSTATUS_CUPOM_IMPRESSO",
+ "RETAIL_PRODUCT_IMPRIME_PRODUCAO_FLAG",
+ "WINDOWS_PRINTSERVICE_EVENT_307",
+ "SYSMON_PROCESS_OR_NETWORK_EVENT",
+ "PROCMON_OBSERVED_FILE_NETWORK_ACTIVITY"
 ];
 function result(status,reason,more={}){
  return {schema:SCHEMA,status,reason,effects:EFFECTS,
