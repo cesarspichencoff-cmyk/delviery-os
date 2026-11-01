@@ -43,6 +43,15 @@ function bindNativeReview(pair,claims,sourceBlob=PACKAGING_SOURCE_BLOB_V63){
  if(!Array.isArray(decision.items)||decision.items.length<1||
     decision.items.length>200)
   return reason("NATIVE_ITEM_SET_INVALID");
+ // An intact Reader observation is not a classified production instruction.
+ // Do not replace an allergy, omission or general note with [] and report
+ // a successful item classification. A later, separately attested disposition
+ // gate is required; this review bridge deliberately does not invent one.
+ if(order.observation_rows.length>0||
+    decision.order_observations.length>0||
+    decision.items.some(x=>x.observations.length>0))
+  return {...reason("NATIVE_OBSERVATIONS_REQUIRE_EXPLICIT_DISPOSITION"),
+   native_pair_self_consistency_checked:true};
  const sources=decision.items.map((x,i)=>({
   item_index:i,product_code:x.canonical_code,
   product_name:x.product_name,quantity:x.quantity,
