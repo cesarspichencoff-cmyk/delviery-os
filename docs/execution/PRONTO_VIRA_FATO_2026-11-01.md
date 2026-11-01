@@ -130,6 +130,8 @@ O instante de pronto continua disponível depois da criação da viagem e do rei
 | `access-throttle` | verde |
 | PostgreSQL: `ready-order` cluster · `pg-uow` cluster · cluster de dois pilotos · cutover de armazenamento | **7/7 · 8/8 · 6/6 · 7/7** |
 | `test:platform:governanca` · `run-sem-fail-novo` | GREEN · OK (m1-bridge 40 PASS, C6 preservado) |
+| Despacho canônico piloto → plataforma em PostgreSQL | **6/6** |
+| `test:platform` | 1 falha **anterior**: `pilot-delegation-issuer.ts` importa Entregas por fora da fronteira autorizada. A saída é idêntica na base `66e9181b` e no HEAD (comparada linha a linha); o arquivo mudou pela última vez em `eabf8ff8`, antes desta entrega |
 
 **Zero falha nova.** A primeira rodada das três suítes de navegador falhou por **ambiente**: o
 Playwright procurou o Chromium 1228 e o contêiner tem o 1243. Rodadas de novo no mesmo commit, com
