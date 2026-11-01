@@ -14,6 +14,14 @@ operacional, instalação, gasto, deploy, merge ou push. Esta nota não declara 
 - **SPORE não foi encontrado em lugar nenhum.** As quatro ocorrências em `tata-academia` são falso
   positivo ("prova**sPorE**dicao"). Não inventei uma definição e **não apliquei SPORE**. A pergunta
   virou `Q-027` (`PAUSE`).
+- **Correção (01/11, depois da revisão):** a frase acima estava errada. Foi uma falha de
+  recuperação de contexto: a busca cobriu só a branch `main` do clone local de `vertice-runtime.`, e a
+  branch canônica `vertice-active` não tinha sido baixada. Lá estão `VERTICE_ENTRY.md`,
+  `docs/VERTICE_SPORE_GLOBAL_DISCOVERY_0.2.md` e `registry/catalog/spore_global_discovery.json`.
+  SPORE Global Discovery 0.2 está em `SHADOW_READ_ONLY`: serve para descobrir e planejar, e não
+  autoriza incorporar nem executar tecnologia externa. O Difference Check do §2 corresponde à etapa
+  de mesmo nome do SPORE. Ele foi feito à mão, sem rotear o catálogo, e sem nada baixado ou executado.
+  `Q-027` foi respondida por essa evidência, com o histórico mantido.
 - **Referências externas.** A política de rede desta sessão bloqueou os sites oficiais (fresh.technology,
   developers.google.com, nightlies.apache.org, precitaste.com, developers.deliverect.com, arxiv.org).
   Só três páginas foram lidas por inteiro, todas no GitHub: Flink "time", Flink "generating watermarks"
