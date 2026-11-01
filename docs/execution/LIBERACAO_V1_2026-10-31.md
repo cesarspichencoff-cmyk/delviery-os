@@ -21,10 +21,10 @@ software já prova, o que o César decide, como configurar o piloto e como fazer
 |---|---|
 | Motoboy só age e só vê a própria viagem; console escolhe o motoboy da casa | **Aprovado em 31/10** ("Sim, pode fazer o que for necessário…") |
 | Ligar `offline_queue_enabled` no ambiente do ensaio | Recomendado: ligar no piloto em **modo arquivo** (abaixo). Em PostgreSQL, a fila não é anunciada até existir recibo por unidade (0011 + papel por unidade, aprovação à parte) |
-| Termo de localização publicável (campos legais, retenção) | Pendente — sem ele o GPS não liga, por desenho |
-| Custódia da assinatura do APK de campo | Pendente (`ANDROID_PREPARACAO_2026-10-26.md`) |
-| Códigos de acesso por pessoa (tablet, caixa, cada motoboy) | Pendente — o responsável gera e entrega pessoalmente; nunca código compartilhado |
-| Endereço do pedido na viagem para "Abrir rota" | Pendente — dado pessoal (LGPD); hoje o motoboy usa a comanda |
+| Termo de localização publicável | **Aprovado em 01/11** ("1 sim"). Falta só preencher os campos legais reais: razão social, CNPJ, canal e responsável de contato, dias de retenção — não inventados |
+| Custódia da assinatura do APK de campo | **No projeto** (01/11), nos segredos criptografados do GitHub — nunca em arquivo (repositório público). `tools/android_gerar_chave_campo.sh` gera a chave; o workflow `deliveryos-android-field-release.yml` (tag `entregas-campo-*`) assina e publica com SHA-256 |
+| Códigos de acesso | **Definidos em 01/11**, um por terminal (tablet, caixa, motoboy). Vão só no `pilot.json` do host, nunca no repositório. Como são curtos, o servidor trava a origem após 5 erros em 15 min (sem conferir o código durante a trava); credencial de máquina não conta |
+| Endereço, iFood, fila offline em PostgreSQL, celular sem Google Play, cadência de GPS por movimento | **Dentro da V1** (01/11) — ver seção 7 |
 
 ## 3. Configuração do piloto para o ensaio (modo arquivo, offline disponível)
 
@@ -72,5 +72,14 @@ e sobe quando a fila voltar a ser aceita.
 
 ## 6. O que continua fora da V1
 
-iFood (Gestor/API) · fila offline em PostgreSQL (recibo por unidade) · provedor sem Google Play ·
-cadência adaptativa de GPS ligada ao contexto (autonomia de bateria não declarada) · endereço na viagem.
+Nada, por decisão de 01/11. O que segue abaixo está dentro, ainda **não implementado**.
+
+## 7. Itens trazidos para a V1 em 01/11 — ordem e dependência
+
+| Ordem | Item | O que exige | Prova de pronto |
+|---|---|---|---|
+| 1 | Endereço do pedido na viagem ("Abrir rota") | rótulo do pedido acompanha a parada só para o motoboy dono e quem expede | navegador: motoboy vê o próprio endereço, outro motoboy não |
+| 2 | Fila offline em PostgreSQL (Mooca) | recibo por unidade (0011) + papel por unidade com RLS; a 0011 original está no Foxxy (SHA256 `CFE5D40D…`) | PG descartável com papel por unidade + piloto anunciando a fila |
+| 3 | Cadência de GPS por movimento | ligar parado/em movimento/retorno à política já existente | JVM + medição de bateria no aparelho (sem promessa antes) |
+| 4 | Celular sem Google Play | provedor `LocationManager` com os mesmos portões | JVM + um aparelho sem Google Play |
+| 5 | iFood | acesso ao Gestor no caixa (sombra por leitura de tela já preparada em 29/10) ou credencial oficial | amostra minimizada, sem duplicar, ligada ao pedido Teknisa |

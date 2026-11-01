@@ -2625,14 +2625,15 @@
       "mutacoes do Kotlin"
     ],
     "decisoes_pendentes_do_cesar": [
-      "ligar offline_queue_enabled por ambiente",
-      "endereco do pedido na viagem para 'Abrir rota' (dado pessoal)",
-      "termo de localizacao publicavel",
-      "custodia da assinatura do APK de campo",
-      "codigos de acesso por pessoa"
+      "campos legais do termo (razao social, CNPJ, contato, retencao)",
+      "0011 original do Foxxy ou aprovacao de nova migracao versionada"
     ],
     "decisoes_aprovadas_do_cesar": [
-      "2026-10-31: posse da viagem no dominio e escolha do motoboy no console aprovadas ('Sim, pode fazer o que for necessario para finalizar o projeto com 10/10 e eficiencia para liberar')"
+      "2026-10-31: posse da viagem no dominio e escolha do motoboy no console aprovadas ('Sim, pode fazer o que for necessario para finalizar o projeto com 10/10 e eficiencia para liberar')",
+      "2026-11-01: termo de localizacao aprovado ('1 sim'); faltam campos legais reais",
+      "2026-11-01: chave do APK de campo no projeto (segredos do GitHub, nunca arquivo)",
+      "2026-11-01: codigos curtos por terminal (so no host) + limite de tentativas",
+      "2026-11-01: endereco, iFood, fila offline em PostgreSQL, sem Google Play e cadencia por movimento entram na V1"
     ]
   }
 }
