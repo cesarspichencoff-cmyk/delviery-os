@@ -85,7 +85,7 @@ function reviewIfoRetailMapping(input){
   return result("HOLD","CENTRAL_DELIVERY_SETTING_NOT_OBSERVED",checked);
  return result("MAPPING_CANDIDATE_REVIEW_ONLY",
   "TRANSCRIBED_MAPPING_COHERENT_BUT_NEITHER_LIVE_RETAIL_NOR_DISPATCH_ATTESTED",{
-   ...checked,scoped_retail_loan_cashbox_candidate_present:true,
+   ...checked,scoped_retail_loja_cashbox_candidate_present:true,
    next_gate:"SOURCE_AUTHORIZED_UI_ATTESTATION_THEN_NATIVE_FIRST_DISPATCH_READONLY"
   });
 }
