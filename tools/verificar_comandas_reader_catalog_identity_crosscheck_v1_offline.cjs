@@ -131,6 +131,30 @@ run("canceled native source remains HOLD despite catalog and signed-looking clai
  assert.equal(r.status,"HOLD");
  assert.equal(r.receipt_sha256,null);
 });
+run("catalog capture provenance change yields a distinct joint receipt",()=>{
+ const x=base(),a=integrated(x);
+ x.catalog.source_ref="SYNTHETIC_CAPTURE_REVISION_2";
+ const b=integrated(x);
+ assert.equal(b.status,"JOINT_SELF_CONSISTENCY_REVIEW_ONLY");
+ assert.notEqual(a.catalog_capture_sha256,b.catalog_capture_sha256);
+ assert.notEqual(a.receipt_sha256,b.receipt_sha256);
+});
+run("reordering identical catalog records leaves joint digest stable",()=>{
+ const x=base(),a=integrated(x);
+ x.catalog.entries.reverse();
+ const b=integrated(x);
+ assert.equal(b.status,"JOINT_SELF_CONSISTENCY_REVIEW_ONLY");
+ assert.equal(a.catalog_capture_sha256,b.catalog_capture_sha256);
+ assert.equal(a.receipt_sha256,b.receipt_sha256);
+});
+run("new capture date invalidates old joint receipt even if items match",()=>{
+ const x=base(),a=integrated(x);
+ x.catalog.captured_local_date="2026-10-31";
+ const b=integrated(x);
+ assert.equal(b.status,"JOINT_SELF_CONSISTENCY_REVIEW_ONLY");
+ assert.notEqual(a.receipt_sha256,b.receipt_sha256);
+ assert.equal(b.catalog_freshness_proven,undefined);
+});
 run("same catalog and claims for revised native state require distinct receipt",()=>{
  const x=base(),a=integrated(x);
  x.pair.event.order.IDSTCOMANDA="P";rehash(x.pair);
