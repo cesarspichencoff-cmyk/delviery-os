@@ -8,7 +8,8 @@
  *                                   window comes from the NATIVE order time
  *     L3 items/notes/motor          native same-snapshot join + proven identities
  *                                   + pinned Academy motor (V6.6 ingress, V6.3 bridge)
- *     L4 three views                existing V4.5 tickets + V4.6 render
+ *     L4 three views                existing V4.5 tickets + V4.8 render (Figma
+ *                                   V4.4/V4.3 layout over V4.6 semantics)
  *     L5 sequence                   only a LIVE_ATTESTED binding of this order and
  *                                   Itaim day shows a TATÁ number; PREVIEW and
  *                                   lab numbers are reported, never printed
@@ -23,7 +24,8 @@ const {projectExpectedRouting}=require("../dist/src/shadow/expectedRouting.js");
 const {compileJoinedReaderIngressV66}=require("../dist/src/production/readerIngressV66.js");
 const {projectTicketsFromCurrentPackagingV63,PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
-const {renderOperationalTicketsProofV46}=require("../dist/src/production/operationalTicketEscposV46.js");
+// Figma V4.4/V4.3 layout (César 02/11) with V4.6 semantics and vetoes inherited.
+const {renderOperationalTicketsFigmaV48}=require("../dist/src/production/operationalTicketEscposFigmaV48.js");
 const N=require("../dist/src/production/nativeReaderChainV1.js");
 
 const SCHEMA="tata.comandas.native-chain.v1.offline";
@@ -179,7 +181,7 @@ function runNativeChainV1(i){
  L.L3=layer(projected.tickets?"NATIVE_CONTENT_PROVEN":"HOLD",projected.coherence_reasons||[],
   {join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog,kit_rule:kitRuleRef});
  if(!projected.tickets){L.L4=layer("HOLD",["MOTOR_PROJECTION_NOT_READY"],{views:[]});return out();}
- const t=projected.tickets,r=renderOperationalTicketsProofV46(t);
+ const t=projected.tickets,r=renderOperationalTicketsFigmaV48(t);
  const views=[...t.production.map((p,k)=>({kind:"PRODUCAO",station:p.station,
    semantic_ready:p.ready_for_semantic_preview,lines:p.boxes.reduce((s,b)=>s+b.items.length,0)+
     p.items_without_proven_box.length,render:r.production[k]})),

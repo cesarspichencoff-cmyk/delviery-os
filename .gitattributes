@@ -16,6 +16,7 @@ src/production/kitchenDependencies.ts -text
 src/production/nativeReaderChainV1.ts -text
 src/production/tataSequence.ts -text
 src/production/operationalTicketEscposV46.ts -text
+src/production/operationalTicketEscposFigmaV48.ts -text
 src/production/operationalTicketsV45.ts -text
 src/production/packagingCoherenceV64.ts -text
 src/production/pinnedUnifiedKitsV66.ts -text

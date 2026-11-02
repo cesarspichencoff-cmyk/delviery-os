@@ -42,6 +42,11 @@
       "bytes": 27951
     },
     {
+      "path": "src/production/operationalTicketEscposFigmaV48.ts",
+      "git_blob": "3f544d370cfdef40e6ff1ba09a6fd10c6e6532b4",
+      "bytes": 11470
+    },
+    {
       "path": "src/production/operationalTicketEscposV46.ts",
       "git_blob": "2dd18d2d0a150cf0088787e5b1cb1da358589d99",
       "bytes": 18154
@@ -88,8 +93,8 @@
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "bbcb38f2eff110fb567721bd7a4237d3a765a9f3",
-      "bytes": 12892
+      "git_blob": "e7d958edc5ee4916e72e8e458bf711127fb41b7a",
+      "bytes": 13062
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",

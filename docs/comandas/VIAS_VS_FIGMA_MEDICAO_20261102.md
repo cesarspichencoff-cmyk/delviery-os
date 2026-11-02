@@ -4,6 +4,40 @@
 (duas de produção e a conferência) contra os mestres do Figma, e confere o conteúdo de cada via.
 Nada foi impresso, instalado ou enviado a dispositivo.
 
+## Atualização — renderizador V4.8 alinhado ao Figma (decisão do César, 02/11)
+
+César escolheu alinhar a prévia ESC/POS aos mestres em vez de aprovar o modo texto. A cadeia passou a
+usar `src/production/operationalTicketEscposFigmaV48.ts`: layout novo sobre a semântica da V4.6, que
+fica intacta com suas travas históricas (V7.2 e outras). Cada motivo não-de-layout da V4.6 (prontidão,
+caixa, quantidade, plano de nota, identidade das três vias, vetos global e de conferência) é herdado: a
+via V4.8 só tem bytes quando a V4.6 teria. Medição refeita com o mesmo conteúdo dos mestres `30:3` e
+`20:9`, portão `verificar_comandas_papel_virtual_escpos_v1_offline.cjs` (12/12).
+
+| # | V4.6 | V4.8 medida | Mestre |
+|---|---|---|---|
+| D1 | divisor 48,05 mm | **72,07 mm** (48 colunas) | 72,0 mm |
+| D2 | sem divisor entre caixas | **divisor depois de cada caixa** | idem |
+| D3 | `Op.` em 22,5–40,5 mm | **54,05–72,07 mm**, termina na borda | coluna direita até 72 mm |
+| D4 | `1 CAIXA \| 1 PRODUTO` | **removida** (redundante; sem decisão humana registrada) | não existe |
+| D5 | `FINALIZAÇÃO: CONFERIR FICHA VALIDADA` fixa | **removida** (sem decisão humana; nunca impressa) | não existe na conferência |
+| D6 | `TESTE - NAO PRODUZIR` | `SIMULAÇÃO · NÃO PRODUZIR` nas três vias | só na produção |
+| D7 | `PRODUCAO SUSHI` 3,0 mm | **`SUSHI` 1×2 negrito, 6,01 mm** | 6,1 mm |
+| D8 | `CONFERENCIA` fonte B | **`CONFERÊNCIA`** fonte A negrito | idem |
+| D9 | `IFOOD 5487 \| TEKNISA 1234` | **`iFood #5487  \|  TEKNISA 1234  \|  19:45`** | texto idêntico |
+| D10 | sem descritor | sem descritor | `· COMBINADO FECHADO` |
+| D11 | observação regular | **negrito na produção**, regular na conferência | idem |
+| D12 | `SACOLA: A DEFINIR` … | **`Sacola: a conferir  \|  Kit: a conferir`** / **`Acomp.: 1 Gari  \|  1 Tare`** | texto idêntico |
+| D13 | TATÁ 2×2, 6,01 mm = altura do item | **3×3, 9,01 mm**, o maior elemento | caixa de 9,5 mm |
+
+Ficam abertos: D6 (a faixa de simulação continua nas três vias enquanto a cadeia for sombra), D10
+(descritor da caixa, sem dado provado nas vias), a coluna da quantidade (nome em 4,5 mm contra 8,5 mm no
+mestre) e as formas das letras, que só uma folha Epson supervisionada confirma. A via COZINHA com caixa
+própria segue sem quadro mestre equivalente (`UNKNOWN`).
+
+Pedido real 9627 em V4.8 (com observações de teste e número 037 sintético): COZINHA 449 B / 64,6 mm;
+DELIVERY SUSHI 1 768 B / 102,9 mm; CONFERÊNCIA 1.326 B / 138,9 mm. Sem número TATÁ atestado continuam
+0 bytes, mas a prévia agora mostra iFood e Teknisa.
+
 ## Como foi medido
 
 | | |
