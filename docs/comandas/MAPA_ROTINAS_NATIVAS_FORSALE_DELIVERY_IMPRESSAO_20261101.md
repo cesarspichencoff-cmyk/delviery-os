@@ -75,3 +75,21 @@ A enumeração estritamente passiva da **tabela de exports de funções compilad
 **Impacto real:** deixou de ser correto descrever a cadeia como ausência completa de importações entre o delivery e a impressão. Existe uma **dependência compilada de símbolos GPE**, que deve ser tratada como um novo nível de indireção. **Não promover para cadeia causal `FosSinc → GPE → FosImp` nem afirmar que o `GPE` executa impressão:** seu export identificado é um dado, não uma função em `CODE`. Primeira via, exclusividade e papel continuam desconhecidos.
 
 **Próximo experimento seguro de maior valor:** somente quando houver canal legitimamente autorizado para vínculo IFO e telemetria da primeira tentativa, testar se uma revisão real usa esse caminho sem coletar conteúdo de pedido/cliente. Observações de `spoolsv/307`, cabeçalhos contendo `iFood`, ou leitura de arquivo PE não substituem essa prova. Nenhum serviço, print, token, pedido, chamada nativa, SQL, fila, driver ou configuração foi modificado.
+
+## Auditoria dos slots GPE por referências à IAT — 01/11/2026
+
+Investigação somente leitura dos arquivos PE do `CAIXA_MOOCA`, sem executar código, abrir memória de outro processo, alterar configuração ou exportar bytes do sistema:
+
+- `PKG_DLV00100.bpl` importa `@Gpe00002@ImprimeEntrega` e apresenta **cinco referências** do tipo `MOV`/load candidato à respectiva entrada na *Import Address Table* (RVAs `0x2EF6E`, `0x35408`, `0x3546A`, `0x354E4`, `0x35519`).
+- No mesmo módulo, `@Gpe00002@DisparaImpressaoNaoFiscal` apresenta **três referências** do tipo load candidato (RVAs `0x233CE`, `0x236B2`, `0x238C4`).
+- `PKG_IMP00001.bpl` apresenta **duas referências** de load candidato a `@Gpe00002@DisparaImpressaoNaoFiscal` (RVAs `0x817D`, `0x8957`).
+- `PKG_IMP00000.bpl` **não apresentou importação direta desses símbolos específicos** na enumeração PE consultada.
+
+O detector verificou a coincidência com os quatro bytes de endereço da IAT e opcode anterior. **Não** realizou decodificação completa x86, análise de fluxo de controle, resolução do valor em runtime nem observou chamada real; portanto são **candidatos estáticos**, sujeitos a falsos positivos e a código inalcançável. Nesse recorte não apareceu padrão direto `CALL [IAT]` ou atribuição `MOV [IAT], reg`; isso **não elimina chamadas indiretas**, inicialização do callback, outra biblioteca ou outros processos. **Uma referência ao slot não é o preenchimento do slot, nem o primeiro despacho IFO.**
+
+**Nova barreira de integridade no código:** `tools/comandas_native_first_dispatch_lineage_v1_offline.cjs` agora classifica expressamente importação PE, slot BSS GPE, referência estática à IAT, export de função, literal de módulo e agregados de fila Windows como **não-gatilhos**. Cada categoria tem teste via iterador `NON_TRIGGER` no verificador já encadeado à CI Linux/Windows. Essa mudança previne a promoção acidental de capacidade estática em prova operacional.
+
+**Bloqueio do acesso remoto respeitado:** a tentativa de classificar apenas metadados dos arquivos-fonte `ImpressaoPedido.php` e `odhen-perifericos/src/IMP/index.js` foi bloqueada pela política da ferramenta. Nenhum dado foi retornado; não houve repetição com rota equivalente, alteração de ACL, exportação do conteúdo ou uso de credenciais. Estado da leitura: `NOT_ACCESSIBLE_ON_THIS_TOOL_PATH`, não `SOURCE_ABSENT`.
+
+**Próxima prova ainda decisiva:** configuração Retail `IFO→0001/01→caixa` por interface já autenticada e fonte de primeira tentativa `DLV_IFO` vinculada à revisão nativa, praça e efeito. Nenhuma destas provas foi obtida. Não contatar fornecedor, não alterar caixa/serviços/impressoras, não autorizar piloto ou merge pela presença dos símbolos.
+
