@@ -5,10 +5,10 @@ package br.com.tata.entregas.location
  * confirmou uma nova linha E a identidade da viagem ainda é a mesma.
  *
  * Uma duplicata (-1L), inserção sem identidade (0L) ou sessão já encerrada
- * não autoriza nova publicação. Falhas do Room devem propagar como erro;
+ * não autoriza nova publicação. Localização mock tampouco pode aparecer como real. Falhas do Room devem propagar como erro;
  * nunca são convertidas em confirmação fictícia.
  */
 internal object DurableLocationPublication {
-    fun mayPublish(insertedRowId: Long, sameActiveSession: Boolean): Boolean =
-        insertedRowId > 0L && sameActiveSession
+    fun mayPublish(insertedRowId: Long, sameActiveSession: Boolean, isMock: Boolean = false): Boolean =
+        insertedRowId > 0L && sameActiveSession && !isMock
 }
