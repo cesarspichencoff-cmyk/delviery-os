@@ -36,3 +36,6 @@ data/production_printer_calibration_registry_v1.json -text
 data/non_production_delivery_items_v1.json -text
 data/comandas_catalog_equivalence_v1.json -text
 data/comandas_kit_rules_human_v1.json -text
+src/production/tataSequenceAttestationV1.ts -text
+tools/comandas_strong_key_sequence_v2_review_only.cjs -text
+data/tata_sequence_attesters_v1.json -text

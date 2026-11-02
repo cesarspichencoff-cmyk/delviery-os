@@ -27,6 +27,7 @@ const {projectTicketsFromCurrentPackagingV63,PACKAGING_SOURCE_BLOB_V63,PACKAGING
 // Figma V4.4/V4.3 layout (César 02/11) with V4.6 semantics and vetoes inherited.
 const {renderOperationalTicketsFigmaV48}=require("../dist/src/production/operationalTicketEscposFigmaV48.js");
 const N=require("../dist/src/production/nativeReaderChainV1.js");
+const {inspectStrongKeySequence}=require("./comandas_strong_key_sequence_v2_review_only.cjs");
 
 const SCHEMA="tata.comandas.native-chain.v1.offline";
 const EFFECTS=Object.freeze({sql:false,host:false,network:false,spooler:false,
@@ -68,7 +69,10 @@ function layer(status,reasons,extra={}){
  *  motor_source            bytes of the pinned Academy motor
  *  kit_rules               optional data/comandas_kit_rules_human_v1.json (exact compositions)
  *  sequence_binding        optional level claim {level,persisted,attested_independently,
- *                          order_key,scope_id,tata_sequence}
+ *                          order_key,scope_id,tata_sequence,attestation?}
+ *  sequence_attesters      trusted attester set (data/tata_sequence_attesters_v1.json)
+ *  sequence_ledger_day     the store day ledger read back (V2 state), rechecked here
+ *  now_s                   clock for the attestation window
  */
 function runNativeChainV1(i){
  const L={};
@@ -94,7 +98,14 @@ function runNativeChainV1(i){
   period?[]:["NATIVE_ORDER_TIME_NOT_STORE_LOCAL"],{window:period,order_local_hm:hm,
    legacy_service_state_ignored_for_content:cls.legacy_service_state});
  // L3 ── items, notes, motor (content)
- const sequence=N.sequenceVerdictV1(i.sequence_binding,e);
+ // The day ledger the caller read back is re-inspected with the SAME V2 policy
+ // (contiguous, one number per order) before any number can be used.
+ const ledgerDay=i.sequence_ledger_day;
+ const inspection=ledgerDay?inspectStrongKeySequence({pair:{event:e,decision:d},state:ledgerDay}):null;
+ const v2Scope="STORE:"+e.order.CDFILIAL+"/"+e.order.CDLOJA+"|DATE:"+(day??"");
+ const sequence=N.sequenceVerdictV1(i.sequence_binding,e,{attesters:i.sequence_attesters,now_s:i.now_s,
+  ledger:inspection?{inspection_status:inspection.status,review_binding_number:inspection.review_binding_number??null,
+   rows:(Array.isArray(ledgerDay.bindings)?ledgerDay.bindings:[]).filter(b=>b&&b.scope_id===v2Scope)}:null});
  const pinned=loadPinnedMotor(i.motor_source);
  if(!pinned.motor){L.L3=layer("HOLD",[pinned.reason]);return out();}
  // Catalog-equivalence identity (never "human"): only for an item the

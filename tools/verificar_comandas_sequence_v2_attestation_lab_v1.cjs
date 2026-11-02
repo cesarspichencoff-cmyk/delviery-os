@@ -130,9 +130,9 @@ try{
   assert.ok(r(forged).includes("ANCHOR_INVALID"));
   assert.ok(r(anchors("PRODUCTION_ITAIM"),att.expires_at_s+1).includes("WINDOW_INVALID"));
   assert.ok(r(anchors("PRODUCTION_ITAIM"),att.issued_at_s-1).includes("WINDOW_INVALID"));
-  assert.ok(r(anchors("PRODUCTION_ITAIM"),undefined).includes("CLOCK_MISSING"));
+  assert.ok(A.verifyTataSequenceAttestationV1(att,anchors("PRODUCTION_ITAIM"),undefined).reasons.includes("CLOCK_MISSING"));
   const long=resign(att,{expires_at_s:att.issued_at_s+40*3600});
-  assert.ok(r(anchors("PRODUCTION_ITAIM")).length===0);
+  assert.deepEqual(r(anchors("PRODUCTION_ITAIM")),[]);
   assert.ok(A.verifyTataSequenceAttestationV1(long,anchors("PRODUCTION_ITAIM"),NOW).reasons.includes("WINDOW_INVALID"));
  });
  test("ledger recheck at use: growth is fine, rewritten history or a moved number is refused",()=>{

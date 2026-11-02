@@ -82,4 +82,5 @@ function exportLabStateV2(db){
   bindings:rows.map(r=>({scope_id:r.scope.replace(/^STORE:([^|]+)\|([^|]+)\|DATE:/,"STORE:$1/$2|DATE:"),
    native_order_key:r.order_key,tata_sequence:String(r.seq).padStart(3,"0")}))};
 }
-module.exports={SCHEMA,EFFECTS,previewNativeSequenceV2,bindNativeRevisionInLabV2,exportLabStateV2};
+module.exports={SCHEMA,EFFECTS,previewNativeSequenceV2,bindNativeRevisionInLabV2,exportLabStateV2,
+ eligibleNativeRevisionV2:eligible};

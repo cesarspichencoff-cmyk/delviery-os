@@ -2,6 +2,7 @@ import type { DeliveryProductionJoin, JoinedOperationalItem } from "./deliveryPr
 import type { ProvenReaderProductV66 } from "./readerIngressV66";
 import { buildDailyStoreTataSequenceScope, DAILY_STORE_TATA_SEQUENCE_RULE } from "./tataSequence";
 import type { MotorInterfaceV63, MotorKitOutputV63 } from "./currentPackagingBridgeV63";
+import { verifyTataSequenceAttestationV1, tataLedgerDayDigestV1 } from "./tataSequenceAttestationV1";
 
 /**
  * Native Reader chain V1 — the missing link between ONE native Teknisa
@@ -487,7 +488,17 @@ export interface TataSequenceVerdictV1 {
  * new revision of the same order keep the number, a canceled order's number
  * is never recycled. Scope comes from tataSequence.ts, not from a new format.
  */
-export function sequenceVerdictV1(binding: unknown, event: NativeReaderEventV1): TataSequenceVerdictV1 {
+/** What the caller re-checked OUTSIDE the claim: the trusted attester set,
+ * its clock, and the store day ledger read back and inspected with the V2
+ * policy (status + the order's number) plus that day's rows. */
+export interface SequenceVerdictOptionsV1 {
+  attesters?: unknown;
+  now_s?: number;
+  ledger?: { inspection_status: string; review_binding_number: string | null;
+    rows: Array<{ native_order_key: string; tata_sequence: string }> } | null;
+}
+export function sequenceVerdictV1(binding: unknown, event: NativeReaderEventV1,
+  options: SequenceVerdictOptionsV1 = {}): TataSequenceVerdictV1 {
   const time = storeLocalTimeV1(event?.order?.DTHRABERMESA);
   const scope = time ? buildDailyStoreTataSequenceScope({
     store_id: clean(event.order.CDFILIAL) + "|" + clean(event.order.CDLOJA),
@@ -513,5 +524,24 @@ export function sequenceVerdictV1(binding: unknown, event: NativeReaderEventV1):
   if (level === "PREVIEW") return verdict(level, null, seq, "TATA_SEQUENCE_PREVIEW_ONLY_NOT_PERSISTED");
   if (level === "CANDIDATE_PERSISTED_IN_LAB")
     return verdict(level, null, seq, "TATA_SEQUENCE_LAB_ONLY_NOT_LIVE_ATTESTED");
+  // LIVE_ATTESTED: flags are not proof. A signed statement from a trusted,
+  // non-writer attester, a clock, and the day ledger rechecked are required.
+  const attestation = (b as { attestation?: unknown }).attestation;
+  const check = verifyTataSequenceAttestationV1(attestation, options.attesters, options.now_s);
+  if (!check.ok || !check.statement)
+    return verdict(null, null, null, "TATA_SEQUENCE_ATTESTATION_REFUSED:" + check.reasons.join(","));
+  const st = check.statement;
+  if (st.order_key !== event.order_key || st.scope_id !== scope || st.tata_sequence !== seq)
+    return verdict(null, null, null, "TATA_SEQUENCE_ATTESTATION_SCOPE_MISMATCH");
+  const ledger = options.ledger;
+  if (!ledger || !Array.isArray(ledger.rows)) return verdict(null, null, null, "TATA_SEQUENCE_LEDGER_NOT_RECHECKED");
+  if (ledger.inspection_status !== "STRONG_KEY_PRESENT_IN_SUPPLIED_STATE_NOT_ATTESTED" ||
+      ledger.review_binding_number !== seq)
+    return verdict(null, null, null, "TATA_SEQUENCE_LEDGER_DISAGREES");
+  // The day keeps growing; the attested prefix 001..rows must be unchanged.
+  if (tataLedgerDayDigestV1(ledger.rows, st.ledger_day_rows) !== st.ledger_day_digest)
+    return verdict(null, null, null, "TATA_SEQUENCE_LEDGER_HISTORY_CHANGED");
+  if (check.scope !== "PRODUCTION_ITAIM")
+    return verdict("CANDIDATE_PERSISTED_IN_LAB", null, seq, "TATA_SEQUENCE_ATTESTED_IN_ISOLATION_NOT_LIVE");
   return verdict(level, seq, null, null);
 }

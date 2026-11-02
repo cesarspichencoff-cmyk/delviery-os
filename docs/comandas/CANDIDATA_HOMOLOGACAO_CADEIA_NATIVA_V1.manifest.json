@@ -38,8 +38,8 @@
     },
     {
       "path": "src/production/nativeReaderChainV1.ts",
-      "git_blob": "caae7af1d7316579f9d16c0c5d31ce3d160d3080",
-      "bytes": 27951
+      "git_blob": "de4275aaf06ba6badbcff118da25fe7d1651a8bc",
+      "bytes": 29967
     },
     {
       "path": "src/production/operationalTicketEscposFigmaV48.ts",
@@ -87,19 +87,29 @@
       "bytes": 11913
     },
     {
+      "path": "src/production/tataSequenceAttestationV1.ts",
+      "git_blob": "50975782d6db85b42eabcf698dbf8f0ff7a1dcc4",
+      "bytes": 8205
+    },
+    {
       "path": "src/shadow/expectedRouting.ts",
       "git_blob": "e17d55a053098f532aae74fef45e4f04c0d2fb9a",
       "bytes": 7578
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "e7d958edc5ee4916e72e8e458bf711127fb41b7a",
-      "bytes": 13062
+      "git_blob": "dd9ac72af37102be527800b04f6884cbf77fe2dc",
+      "bytes": 14053
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",
       "git_blob": "9b7419aee2d0226701f072f0738bb9381523a223",
       "bytes": 7639
+    },
+    {
+      "path": "tools/comandas_strong_key_sequence_v2_review_only.cjs",
+      "git_blob": "f767d5dc7b3253b3e0c23b6c66828f3d9924b026",
+      "bytes": 5336
     },
     {
       "path": "tools/comandas_view_source_scope_v1_offline.cjs",
@@ -162,6 +172,11 @@
       "path": "data/comandas_kit_rules_human_v1.json",
       "git_blob": "8099d8bfae12c4b4c8bc8538388fd7db4b774fb6",
       "bytes": 2219
+    },
+    {
+      "path": "data/tata_sequence_attesters_v1.json",
+      "git_blob": "732aa4673be9be5eba84562e45456d46c812d76e",
+      "bytes": 466
     }
   ],
   "node_builtins": [
