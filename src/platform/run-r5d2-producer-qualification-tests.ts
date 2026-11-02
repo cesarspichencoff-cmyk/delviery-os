@@ -64,6 +64,10 @@ const ler = (p: string): string => readFileSync(join(raiz, p), "utf8");
 /** Codigo sem comentario: uma frase que PROIBE algo nao pode reprovar a guarda. */
 const semComentario = (s: string): string =>
   s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+// Uma propriedade explicitamente false nao e um coletor ativo.
+// A excecao e estreita: um uso concreto de spooler ou Get-PrintJob continua proibido.
+const semCapacidadeNegada = (s: string): string =>
+  semComentario(s).replace(/\bspooler\s*:\s*false\b/gi, "");
 const sha = (s: string): string => createHash("sha256").update(s).digest("hex");
 const ARTEFATOS = [
   "src/product/eventos/portas-produtores.ts",
@@ -336,7 +340,7 @@ teste("Q11 nenhum probe contra fonte externa foi executado, e a recusa esta decl
       // continua proibido de acessar os coletores identificados.
       .filter((l) =>
         /Get-PrintJob|puppeteer|spooler/i.test(
-          semComentario(ler(l.split("\\").join("/"))),
+          semCapacidadeNegada(ler(l.split("\\").join("/"))),
         ),
       );
   } catch {
@@ -348,6 +352,9 @@ teste("Q11 nenhum probe contra fonte externa foi executado, e a recusa esta decl
   assert.doesNotMatch(semComentario("/* não usa spooler */ const localOnly = true;"), proibido);
   assert.match(semComentario("const cmd = 'Get-PrintJob';"), proibido);
   assert.match(semComentario("const service = 'spooler';"), proibido);
+  assert.doesNotMatch(semCapacidadeNegada("const effects = { spooler:false };"), proibido);
+  assert.match(semCapacidadeNegada("const effects = { spooler:true };"), proibido);
+  assert.match(semCapacidadeNegada("const effects = { spooler:false }; const service = 'spooler';"), proibido);
   assert.deepEqual(capturadores, [], `apareceu capturador vivo: ${capturadores.join(", ")}`);
 });
 
