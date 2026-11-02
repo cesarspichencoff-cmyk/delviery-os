@@ -1,5 +1,7 @@
 # Consulta técnica direcionada — primeira via nativa iFood/ForSale no Itaim
 
+**Status atual:** SUSPENSA por decisão expressa de César. Não enviar e não usar contato com a Teknisa como dependência do projeto. Minuta histórica não enviada; investigação passa a ser interna, somente leitura e com a fronteira operacional preservada.
+
 **Status:** minuta técnica NÃO ENVIADA, nenhum acesso remoto ou alteração de configuração autorizado.
 **Destinatário sugerido somente após aprovação humana:** suporte responsável pela integração marketplace Odhen Retail / iFood da Teknisa. A documentação pública da integração informa `delivery@teknisa.com` para solicitações de integração; confirmar com o contato comercial antes de usar em incidente.
 
