@@ -23,7 +23,7 @@ A documentação mostra `Cadastro de Caixa → Parâmetros → Frente de Caixa �
 
 **C — Como delimitar o próximo alvo?**
 
-Com `IFO`, unidade, loja, caixa, vínculo de vendedor quando aplicável e sincronização apenas **observados**, o próximo alvo é o **componente/serviço de integração legitimamente identificado para aquele caixa**, a localizar por fonte de instalação/versão permitida. Não presumir `FosExp.exe`, `Account::order`, `ImpressaoDelivery`, Gestor iFood, GP iFood ou uma fila Windows como primeiro despacho só porque estão instalados.
+Com `IFO`, unidade, loja, caixa e vínculo de vendedor quando aplicável **observados** (sincronização centralizada é verificação adicional opcional), o próximo alvo é o **componente/serviço de integração legitimamente identificado para aquele caixa**, a localizar por fonte de instalação/versão permitida. Não presumir `FosExp.exe`, `Account::order`, `ImpressaoDelivery`, Gestor iFood, GP iFood ou uma fila Windows como primeiro despacho só porque estão instalados.
 
 ## Registro mínimo sem dados pessoais
 
@@ -62,7 +62,7 @@ A interface documentada usa exemplos e prints históricos de outra unidade. A do
 
 ## Validador offline da transcrição — 01/11/2026
 
-O contrato `tools/comandas_ifo_retail_mapping_v1_offline.cjs` e sua suíte `tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs` verificam **somente dados de demonstração ou transcrição futura explicitamente autorizada**; não consultam a interface da Teknisa nem contêm credenciais. A verificação exige ramo `DEFAULT_SELLER` ou `PER_UNIT` consistente, exatamente **um** caixa candidato por associação da filial, códigos no formato permitido, loja compatível com o Reader (`0001/01`) e flag declarada de sincronização não desconhecida. Ausência de vendedor, dois caixas associados, loja divergente, campos desconhecidos ou informações sensíveis embutidas produzem `HOLD`.
+O contrato `tools/comandas_ifo_retail_mapping_v1_offline.cjs` e sua suíte `tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs` verificam **somente dados de demonstração ou transcrição futura explicitamente autorizada**; não consultam a interface da Teknisa nem contêm credenciais. A verificação exige ramo `DEFAULT_SELLER` ou `PER_UNIT` consistente, exatamente **um** caixa candidato por associação da filial, códigos no formato permitido, loja compatível com o Reader (`0001/01`). O indicador de sincronização centralizada pode permanecer `UNKNOWN` sem bloquear **somente a revisão da associação**: sua ausência continua impedindo afirmar topologia e primeiro emissor. Ausência de vendedor, dois caixas associados, loja divergente, campos desconhecidos ou informações sensíveis embutidas produzem `HOLD`.
 
 Mesmo para uma transcrição sintética completa, o máximo é `MAPPING_CANDIDATE_REVIEW_ONLY`: a fonte é declarada por quem preencheu, **não foi autenticada independentemente**, e não comprova que a integração esteja ativa, qual host faz a primeira tentativa nem se houve impressão. O validador não emite número de caixa ou vendedor como resultado e preserva `can_print=false`, `can_authorize_cutover=false` e `live_native_first_dispatch_proven=false` em todos os caminhos. A integração na CI verifica apenas a regressão de código no Linux e Windows.
 
