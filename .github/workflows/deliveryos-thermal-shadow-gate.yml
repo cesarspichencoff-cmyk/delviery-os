@@ -163,6 +163,8 @@ jobs:
         run: node tools/verificar_comandas_papel_virtual_escpos_v1_offline.cjs
       - name: Shadow homologation candidate measured closure is pinned (no print capability)
         run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
+      - name: Closed executable shadow pair-replay bundle (no live host, no print)
+        run: node tools/verificar_comandas_shadow_bundle_v1.cjs
       - name: Private real-catalog replay parses and skips without the Academy checkout
         run: node tools/comandas_replay_real_privado_p0.cjs
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
@@ -529,6 +531,8 @@ jobs:
         run: node tools/verificar_comandas_papel_virtual_escpos_v1_offline.cjs
       - name: Shadow homologation candidate measured closure is pinned (no print capability)
         run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
+      - name: Closed executable shadow pair-replay bundle (no live host, no print)
+        run: node tools/verificar_comandas_shadow_bundle_v1.cjs
       - name: Private real-catalog replay parses and skips without the Academy checkout
         run: node tools/comandas_replay_real_privado_p0.cjs
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
