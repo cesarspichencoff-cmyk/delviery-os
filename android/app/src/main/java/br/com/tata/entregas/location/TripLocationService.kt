@@ -110,8 +110,9 @@ class TripLocationService : Service() {
                     deviceId = deviceId,
                     capturedOffline = !NetworkState.isOnline(this@TripLocationService),
                 )
-                persist(point, session)
-                Bridge.publishLocation(point, location.time)
+                // Só a escrita Room confirmada autoriza exibir o ponto como atual.
+                // A publicação dentro do mutex não atravessa STOP nem troca de viagem.
+                persist(point, session, location.time)
             }
             reevaluateCadence()
         }
@@ -375,7 +376,7 @@ class TripLocationService : Service() {
         if (next.context != currentDecision?.context) requestUpdates(next)
     }
 
-    private fun persist(point: CanonicalGpsPoint, session: CaptureSessionLifecycle.Session) {
+    private fun persist(point: CanonicalGpsPoint, session: CaptureSessionLifecycle.Session, timeMs: Long) {
         // O callback chega no mainLooper em ordem. UNDISPATCHED entra na fila
         // do mutex nessa mesma ordem antes de devolver o controle ao callback.
         // O mutex preserva a ordem observada; o Room, por sua vez, reserva a
@@ -410,13 +411,14 @@ class TripLocationService : Service() {
                     nowMs,
                 )
                 // IGNORE de pointId repetido não consome número da sequência.
-                if (inserted == -1L) return@withLock
+                if (inserted <= 0L) return@withLock
                 val pending = db.gpsPoints().pendingCount()
                 // Pontos já observados continuam duráveis após STOP, mas sua
                 // conclusão não pode ressuscitar notificação nem alterar B.
-                if (sessions.isCurrent(session)) {
+                if (DurableLocationPublication.mayPublish(inserted, sessions.isCurrent(session))) {
                     lastAccuracyM = point.accuracyM
                     pendingSync = pending
+                    Bridge.publishLocation(point, timeMs)
                     updateNotification()
                 }
                 SyncScheduler.requestNow(this@TripLocationService)
