@@ -143,6 +143,8 @@ jobs:
         run: node tools/verificar_comandas_strong_key_sequence_v2_offline.cjs
       - name: TATA number V2 on native revisions, lab level only (race, crash, cancel, gap, untrusted day)
         run: node tools/verificar_comandas_sequence_v2_native_lab_v1.cjs
+      - name: TATA number attestation protocol in isolation (separate Ed25519 attester, read-only ledger)
+        run: node tools/verificar_comandas_sequence_v2_attestation_lab_v1.cjs
       - name: Archived IMP logs must not prove a native first dispatch (no effects)
         run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
@@ -507,6 +509,8 @@ jobs:
         run: node tools/verificar_comandas_strong_key_sequence_v2_offline.cjs
       - name: TATA number V2 on native revisions, lab level only (race, crash, cancel, gap, untrusted day)
         run: node tools/verificar_comandas_sequence_v2_native_lab_v1.cjs
+      - name: TATA number attestation protocol in isolation (separate Ed25519 attester, read-only ledger)
+        run: node tools/verificar_comandas_sequence_v2_attestation_lab_v1.cjs
       - name: Archived IMP logs must not prove a native first dispatch (no effects)
         run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
