@@ -32,3 +32,21 @@ A enumeração estritamente passiva da **tabela de exports de funções compilad
 4. Em paralelo, preservar a prévia digital offline como entrega sem efeito; sequência TATÁ V2 persistente, exclusividade, corte da via legada e piloto em papel continuam fora do escopo.
 
 **Efeito desta inspeção: zero em produção.** Nenhum contato com fornecedor, nenhuma alteração de parâmetros, serviço, impressoras, banco, processos, fiscal, sequência, deploy ou merge. **Rota confirmada apenas até `STATIC_COMPILED_EXPORTS_IDENTIFIED`.**
+
+## Teste adversarial de referências cruzadas e origem da via (01/11/2026)
+
+**Método:** leitura local de bytes somente no `CAIXA_MOOCA`, interpretando a estrutura PE32 (`ImageBase`, RVA, seções `CODE`, `.idata`, exports) e detectando padrões estáticos `PUSH imm32` / `MOV reg, imm32` que contêm endereços de literais exatos `DLV_IFO`/`iFood`. Não houve execução ou instrumentação de processo. Trata-se de **heurística de instrução**, não disassembly validada por início de instrução ou grafo de chamadas completo; coincidências e referências a mensagens/cabeçalhos são possíveis.
+
+| Binário | Referências em CODE identificadas por padrão | Região entre exports (limite superior não é fim comprovado da função) | Interpretação segura |
+|---|---|---|---|
+| `PKG_IMP00000.bpl` | `DLV_IFO`: `0xF4AF`; `iFood`: `0xF4BE` | entre `TrdmImpressoras.Cabecalho_Pedido_Brasil` `0xEF60` e `Cabecalho_Pedido_Colombia` `0x10060` | **Pista de formatação/cabeçalho**, não demonstra disparador de primeira produção |
+| `PKG_DLV00100.bpl` | `DLV_IFO`: `0x2C524`, `0x2CE37`, `0x2FC89`; `iFood`: `0x2CE46` | duas primeiras e `iFood` entre `TfrmVisualizacao.ImpPedido_Entrega` `0x2BD34` e `cdsPedidosORIGEMGetText` `0x2FC50`; terceira depois de `cdsPedidosORIGEMGetText` | **Pista de via de entrega e exibição de origem**, não atestado de produção |
+| `FosSinc.exe` | `DLV_IFO`: `0x12A42`, `0x134BB`, `0x13A68` e uma segunda referência a um desses endereços; `iFood`: `0x13A77`, `0x195BE` | executável não possui export directory para relacionar RVAs a nome de função | pista de processamento de origem iFood, sem atribuição à primeira via |
+
+**Correção de rumo:** a presença de `DLV_IFO` no `PKG_IMP00000` e das APIs `StartDocPrinterA`/`WritePrinter` no mesmo binário **não une esses pontos em uma função**, muito menos prova um caminho `IFO→primeiro despacho`. O agrupamento estático aponta prioritariamente para **cabeçalho impresso**. Os textos `iFood` do `PKG_DLV00100` caem em região associada à **impressão de entrega**, não à função `ImpPedido_Producao` do módulo legado. A hipótese inicial de ligação causal fica **enfraquecida**, não reforçada, por essa observação. A rota equivalente de repetir busca por literais foi encerrada para não confundir metadado de origem com disparo.
+
+**Revisão do estado do Windows:** o provedor de eventos `Microsoft-Windows-PrintService/Operational` atribui os 58 eventos 307 de uma amostra de 30 minutos ao processo `spoolsv`. É a identidade do emissor do evento, não a identidade do cliente do spooler. Uma pesquisa somente de **nomes de provedores** do Windows não encontrou fonte dedicada ForSale/Odhen/Teknisa nesta amostra; `Microsoft-Windows-RetailDemo` não é o produto Odhen Retail e não foi aberto. Nenhum payload de evento foi exportado. Não insistir na mesma rota como prova causal.
+
+**CI base anterior:** run `41374598005` no commit `de4b7660` concluiu **success**, Linux 143/143 e Windows 131/131. Uma modificação documental posterior requer seu próprio status de commit; não transferir automaticamente esse sucesso para qualquer HEAD novo.
+
+**Próxima evidência material, fora desta auditoria estática:** identificar **qual caixa lógico IFO da loja 0001/01** tem a integração, e registrar com autorização específica uma revisão nativa vinculada à chamada efetiva `ImpPedido_Producao` ou ao mecanismo correspondente — não ao cabeçalho/entrega. Se a informação estiver em tela/configuração com ACL ou os eventos forem sensíveis, respeitar o bloqueio. Nenhuma autorização de instalação, logs novos, chamadas diretas de função, impressão, ativação de equipamento, alteração de rota, merge ou deploy foi obtida. `FIRST_NATIVE_DISPATCH=UNKNOWN`, `PILOT=HOLD`.
