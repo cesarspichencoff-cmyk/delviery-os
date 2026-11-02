@@ -300,6 +300,40 @@ test("a converted or malformed native clock has no Itaim window or day: L2 and L
  }
  assert.deepEqual(N.storeLocalTimeV1("2026-10-04T22:58:50.0000000"),{day:"2026-10-04",hm:"22:58"});
 });
+test("native item notes stay intact: own station and conference, verbatim, never elsewhere; a general note HOLDs",()=>{
+ const {planAnnotationV67}=require("../dist/src/production/annotationLinePlanV67.js");
+ const live={level:"LIVE_ATTESTED",persisted:true,attested_independently:true,order_key:real.order_key,
+  scope_id:"STORE:0001|01|DATE:2026-10-04",tata_sequence:"037"};
+ const note=(o,field,value,i)=>({source_field:field,value,scope_hint:"item",join_proven:true,
+  item_index:i,CDPRODUTO:o.items[i].CDPRODUTO});
+ // 0 COMBINADO KIDS (3 closed boxes, Sushi 1) · 1 EDAMAME (Cozinha) · 3 SUSHI DE UNAGUI (Sushi 1);
+ // the same note in DSOBS* and TXPRODCOMVEN must print once, not twice.
+ const ev=event(o=>({...o,observation_rows:[note(o,"DSOBSPEDDIGCMD","sem cebolinha",0),
+  note(o,"DSOBSDESCIT","MOLHO A PARTE",1),note(o,"TXPRODCOMVEN","SEM TARE",3),note(o,"DSOBSPEDDIGCMD","SEM TARE",3)]}));
+ const r=chain(ev,consume(ev),{sequence_binding:live});
+ assert.deepEqual([r.layers.L3.status,r.layers.L4?.status],["NATIVE_CONTENT_PROVEN","THREE_VIEWS_VIRTUAL"],
+  JSON.stringify([r.layers.L3.reasons,r.layers.L4?.reasons]));
+ const view=st=>r.views.find(v=>v.station===st).text_trace.split("\n");
+ const [kitchen,sushi,conf]=[view("COZINHA"),view("DELIVERY SUSHI 1"),view("CONFERENCIA")];
+ const count=(lines,s)=>lines.filter(l=>l===s).length;
+ const printed=raw=>planAnnotationV67("OBS",raw.toLocaleUpperCase("pt-BR")).lines.map(l=>l.text);
+ for(const [raw,product,own,other] of [["sem cebolinha","1  COMBINADO KIDS",sushi,kitchen],
+  ["MOLHO A PARTE","1  EDAMAME",kitchen,sushi],["SEM TARE","1  SUSHI DE UNAGUI",sushi,kitchen]]){
+  const boxes=count(own,product);assert.ok(boxes>=1,product);
+  for(const l of printed(raw)){
+   assert.equal(count(own,l),boxes,raw+" in own station, once per box of its product");
+   assert.equal(count(conf,l),count(conf,product),raw+" in the conference with its product");
+   assert.equal(count(other,l),0,raw+" never in the other station");
+  }
+ }
+ assert.ok(r.views.every(v=>v.escpos_bytes>0));
+ // General note (DSOBSCOMANDA): may carry payment text; V7.6/V7.7 keep it
+ // blocked until a per-note human disposition. Never dropped, never printed.
+ const g=event(o=>({...o,observation_rows:[{source_field:"DSOBSCOMANDA",value:"TROCO PARA 100",scope_hint:"order",join_proven:true}]}));
+ const rg=chain(g,consume(g),{sequence_binding:live});
+ assert.equal(rg.layers.L4.status,"HOLD");assert.ok(rg.layers.L4.reasons.includes("ORDER_OBSERVATION_RELEVANCE_UNPROVEN_0"));
+ assert.deepEqual(rg.views,[]);
+});
 test("pinned motor bytes are enforced before any projection",()=>{
  const r=runNativeChainV1({event:real,decision,routing,printer_map:printers,calibration,
   motor_source:Buffer.concat([MOTOR,Buffer.from("\n")])});
