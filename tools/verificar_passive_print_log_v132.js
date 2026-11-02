@@ -186,4 +186,50 @@ const missing = Tail.planPassiveTail(initial.next_checkpoint, null);
 assert.equal(missing.decision, "SOURCE_MISSING");
 assert.ok(missing.blocking_reasons.includes("SOURCE_UNAVAILABLE"));
 
+// Document-kind guard. The same Odhen LogIMP files carry more than the
+// delivery report: the archived 2026-10-04 IMP census observed "Pedido" and
+// "Mesa" labels, and the production generator can print "COMANDA.: DLV_<N>".
+// A production or table ticket must never be projected as a delivery report,
+// even under a profile someone labelled REAL_SAMPLE_PROVEN with framing proven.
+// Synthetic text only; no real ticket content.
+const provenLabelledProfile = {
+  ...profile,
+  id: "adversarial-proven-label",
+  proof: "REAL_SAMPLE_PROVEN",
+  full_block_framing_proven: true,
+  order_id: /(?:PEDIDO|COMANDA\.?):\s*(?:DLV_)?(?<pedido>\d+)/i,
+};
+for (const nonDeliveryBlock of [
+  ["Pedido: 170515", "Mesa: 12", "1 x Uramaki de Salmao", "* SEM CEBOLINHA"],
+  ["COMANDA.: DLV_170516", "2 x Sashimi de Salmao", "* SEM GERGELIM"],
+]) {
+  const confused = Passive.projectPassivePrintBlock(nonDeliveryBlock.join("\r\n"), provenLabelledProfile);
+  assert.equal(confused.ready_for_live_shadow, false,
+    "non-delivery ticket projected as delivery report: " + JSON.stringify(confused.blocking_reasons));
+  assert.ok(confused.blocking_reasons.includes("DOCUMENT_KIND_NOT_PROVEN"));
+  assert.equal(Passive.passivePrintProjectionToOdhenRaw(confused).observation_scan_complete, false);
+}
+const headerProfile = {
+  ...provenLabelledProfile,
+  id: "adversarial-header-required",
+  document_kind_header: /^\s*Relatorio De Entrega\s*$/im,
+};
+const productionUnderHeaderProfile = Passive.projectPassivePrintBlock(
+  ["COMANDA.: DLV_170517", "1 x Hot Roll"].join("\r\n"), headerProfile);
+assert.equal(productionUnderHeaderProfile.ready_for_live_shadow, false);
+assert.ok(productionUnderHeaderProfile.blocking_reasons.includes("DOCUMENT_KIND_NOT_DELIVERY_REPORT"));
+const twoReports = Passive.projectPassivePrintBlock([
+  "Relatorio De Entrega", "PEDIDO: 170518", "1 x Hot Roll",
+  "Relatorio De Entrega", "1 x Temaki de Salmao",
+].join("\r\n"), headerProfile);
+assert.equal(twoReports.ready_for_live_shadow, false);
+assert.ok(twoReports.blocking_reasons.includes("MULTIPLE_DOCUMENT_HEADERS"));
+const deliveryUnderHeaderProfile = Passive.projectPassivePrintBlock([
+  "Relatorio De Entrega", "PEDIDO: 170519", "1 x Hot Roll", "OBS.: PORTARIA",
+].join("\r\n"), headerProfile);
+assert.equal(deliveryUnderHeaderProfile.blocking_reasons.includes("DOCUMENT_KIND_NOT_DELIVERY_REPORT"), false);
+assert.equal(deliveryUnderHeaderProfile.blocking_reasons.includes("DOCUMENT_KIND_NOT_PROVEN"), false);
+assert.equal(deliveryUnderHeaderProfile.source_contract.document_kind, "DELIVERY_REPORT_HEADER_MATCHED");
+assert.equal(projection.source_contract.document_kind, "DOCUMENT_KIND_NOT_PROVEN");
+
 console.log("passive-print-log-v132: ok");
