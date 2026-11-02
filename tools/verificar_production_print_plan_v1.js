@@ -812,6 +812,89 @@ completedAndPlanned.history=[
 assertOrderReview(completedAndPlanned,"HOLD",
  "PRIOR_PLANNED_ATTEMPT_NOT_RECONCILED");
 
+// Cross-scope journal identity. An attempt ID is one physical-submission
+// identity: it cannot belong to two order/station/day scopes. Before this
+// guard, a physically confirmed row under ANOTHER scope that reused this
+// order's attempt ID left the diagnostic as a clean review candidate, while
+// the downstream first-dispatch correlation already rejected the same journal.
+const shaD="d".repeat(64);
+const OTHER_ORDER="0001|01|0000349282|0000348852";
+for(const [label,changes] of [
+ ["another order",{order_key:OTHER_ORDER}],
+ ["another station of the same order",{station_code:"00002"}],
+ ["another order and station",{order_key:OTHER_ORDER,station_code:"00002"}]
+]){
+ const x=scopedBase();x.history=[
+  orderRow("PROVEN_NO_EFFECT_FAILURE"),
+  orderRow("PHYSICALLY_CONFIRMED",{...changes,
+   native_snapshot_sha256:shaD,intent_fingerprint:shaD})];
+ assertOrderReview(x,"HOLD","ATTEMPT_ID_REUSED_ACROSS_ORDER_STATION_DAY_SCOPE");
+ // Row order must not decide whether the reuse is visible.
+ const y=scopedBase();y.history=[...x.history].reverse();
+ assertOrderReview(y,"HOLD","ATTEMPT_ID_REUSED_ACROSS_ORDER_STATION_DAY_SCOPE");
+ assert.ok(label);
+}
+{
+ // Same attempt ID on the same order+station but another day stays HOLD.
+ const x=scopedBase();x.history=[
+  orderRow("PROVEN_NO_EFFECT_FAILURE"),
+  orderRow("PROVEN_NO_EFFECT_FAILURE",{operational_date:"2026-10-19"})];
+ const output=decideProductionOrderRevisionReviewV1(x);
+ assert.equal(output.verdict,"HOLD");
+}
+{
+ // Reuse between two OTHER scopes poisons the journal custody as a whole.
+ const x=scopedBase();x.history=[
+  orderRow("PHYSICALLY_CONFIRMED",{order_key:OTHER_ORDER,attempt_id:"B7",
+   native_snapshot_sha256:shaD,intent_fingerprint:shaD}),
+  orderRow("PLANNED",{order_key:"0001|01|0000349283|0000348853",
+   attempt_id:"B7",native_snapshot_sha256:shaD,intent_fingerprint:shaD})];
+ assertOrderReview(x,"HOLD","ATTEMPT_ID_REUSED_ACROSS_ORDER_STATION_DAY_SCOPE");
+}
+// The CURRENT print intent recorded under another scope is a fingerprint
+// collision. It may be a mis-keyed row for this very order; never call the
+// order a clean candidate while that row exists. Hex case is not identity.
+for(const fp of [shaC,shaC.toUpperCase()]){
+ for(const changes of [
+  {order_key:OTHER_ORDER},
+  {station_code:"00002"},
+  {order_key:OTHER_ORDER,station_code:"00002",native_snapshot_sha256:shaD}
+ ]){
+  const x=scopedBase();x.history=[
+   orderRow("PROVEN_NO_EFFECT_FAILURE"),
+   orderRow("PHYSICALLY_CONFIRMED",{...changes,attempt_id:"B7",
+    intent_fingerprint:fp})];
+  assertOrderReview(x,"HOLD","PRINT_INTENT_FINGERPRINT_REUSED_ACROSS_SCOPE");
+ }
+}
+{
+ // Stronger same-scope vetoes keep precedence over the collision reason.
+ const x=scopedBase();x.history=[
+  orderRow("PHYSICALLY_CONFIRMED"),
+  orderRow("PLANNED",{order_key:OTHER_ORDER,attempt_id:"B7",
+   intent_fingerprint:shaC})];
+ assertOrderReview(x,"HOLD","PRIOR_PHYSICAL_EFFECT_SAME_ORDER_STATION");
+}
+{
+ // Over-blocking control: unrelated scopes with DISTINCT attempt IDs and
+ // DISTINCT fingerprints must not manufacture a collision.
+ const x=scopedBase();x.history=[
+  orderRow("PROVEN_NO_EFFECT_FAILURE"),
+  orderRow("PHYSICALLY_CONFIRMED",{order_key:OTHER_ORDER,attempt_id:"B7",
+   native_snapshot_sha256:shaD,intent_fingerprint:shaD}),
+  orderRow("PHYSICALLY_CONFIRMED",{station_code:"00002",attempt_id:"B8",
+   native_snapshot_sha256:shaD,intent_fingerprint:"e".repeat(64)})];
+ assertOrderReview(x,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
+  "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
+}
+{
+ // Exact duplicate rows of one attempt in one scope are not cross-scope reuse.
+ const x=scopedBase();x.history=[
+  orderRow("PROVEN_NO_EFFECT_FAILURE"),orderRow("PROVEN_NO_EFFECT_FAILURE")];
+ assertOrderReview(x,"REVIEW_CANDIDATE_NO_PRINT_AUTHORITY",
+  "HISTORY_CLAIM_IS_NOT_INDEPENDENT_ATTESTATION");
+}
+
 assert.deepEqual(plan.effects, {
   print: false,
   spooler_write: false,

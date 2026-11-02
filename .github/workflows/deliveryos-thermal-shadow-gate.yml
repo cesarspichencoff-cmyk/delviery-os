@@ -145,6 +145,8 @@ jobs:
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
         run: node tools/verificar_production_print_plan_v1.js
+      - name: TATA Comanda one journal three review layers reject cross-scope attempt and intent reuse
+        run: node tools/verificar_comandas_journal_scope_cross_layer_v1_offline.cjs
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
         run: node tools/verificar_production_service_matrix_v1.js
       - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
@@ -491,6 +493,8 @@ jobs:
         run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
       - name: TATA Comanda production planner regression without shift-selected printers
         run: node tools/verificar_production_print_plan_v1.js
+      - name: TATA Comanda one journal three review layers reject cross-scope attempt and intent reuse
+        run: node tools/verificar_comandas_journal_scope_cross_layer_v1_offline.cjs
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
         run: node tools/verificar_production_service_matrix_v1.js
       - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch

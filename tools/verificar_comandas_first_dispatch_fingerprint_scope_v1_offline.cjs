@@ -96,6 +96,24 @@ test("same fingerprint for another native revision never reuses the first intent
  const r=inspect(x);
  assert.equal(r.reason,"FIRST_DISPATCH_INTENT_FINGERPRINT_REUSED_ACROSS_SCOPE");
 });
+test("uppercase hex of the same fingerprint elsewhere is still a collision",()=>{
+ // A SHA-256 is the same identity in either hex case and the input regex
+ // accepts both. A case-sensitive comparison let a physically confirmed row
+ // for another order hide behind uppercase and reach CORRELATED.
+ for(const changes of [
+  {order_key:"0001|01|0000349282|0000348852",native_snapshot_sha256:ALT_SHA},
+  {station_code:"BAR"},
+  {station_code:"BAR",native_snapshot_sha256:ALT_SHA.toUpperCase()}
+ ]){
+  const x=sample();x.history.push({
+   ...x.history[0],...changes,attempt_id:"CASE_ATTEMPT_2",
+   intent_fingerprint:SHA.toUpperCase(),state:"PHYSICALLY_CONFIRMED"
+  });
+  const r=inspect(x);
+  assert.equal(r.status,"HOLD");
+  assert.equal(r.reason,"FIRST_DISPATCH_INTENT_FINGERPRINT_REUSED_ACROSS_SCOPE");
+ }
+});
 test("same fingerprint from another day is not the original candidate",()=>{
  const x=sample();x.history.push({
   ...x.history[0],station_code:"BAR",attempt_id:"DAY_ATTEMPT_2",
