@@ -124,6 +124,11 @@ function reconcile(input){
   matches.push({
    opaqueRef:token(short,r.nativeKey),status:"CANDIDATE_REVIEW_ONLY",
    itemLines:r.items.length,itemUnits:r.items.reduce((sum,it)=>sum+it.quantity,0),
+   itemRefs:r.items.map(it=>({
+    opaqueItemRef:token(short,r.nativeKey+"|"+it.index+"|"+it.productCode),
+    itemIndex:it.index,quantity:it.quantity,
+    operationalState:"UNKNOWN",nativeItemStatusSemantics:"UNVERIFIED"
+   })),
    itemProgress:"UNKNOWN",nativeStatusSemantics:"UNKNOWN",externalStatusSemantics:"UNVERIFIED",
    sourceRevisionSelfReported:true,uuidJoinProven:false,physicalReady:false,
    // No names, prices, phone, address, order number or real native key returned.
