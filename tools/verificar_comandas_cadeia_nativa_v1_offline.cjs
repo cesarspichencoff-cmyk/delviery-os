@@ -44,11 +44,24 @@ put("app-data.json",{products:[]});
 put("routing.json",routing);put("printer-map.json",printers);
 put("non-production.json",load("non_production_delivery_items_v1.json"));
 put("human-order-overrides-v1.json",{schema:"deliveryos.human-exact-order-overrides.v1",orders:[]});
+// Real archived revision 9092 (02/10, 23:02:07, header X, items 4). Its
+// combo 9.15.00.030.00 deliberately gets NO alias: the consumer leaves it
+// CLASSIFICATION_UNKNOWN (pair routes are stripped before its COMB bridge).
+const read9092=load("tata_reader_real_read_success_20261003_v1.json");
+const route9092=load("tata_reader_real_order_expected_route_direct_identity_20261004_v1.json");
+const items9092=read9092.observed_items.map(x=>({NRPRODCOMVEN:x.NRPRODCOMVEN,CDPRODUTO:x.CDPRODUTO,
+ CDARVPROD:route9092.items.find(r=>r.sql_cdproduto===x.CDPRODUTO).cdarvprod_raw,
+ QTPRODCOMVEN:x.QTPRODCOMVEN,IDSTPRCOMVEN:x.IDSTPRCOMVEN}));
+const equivalence=load("comandas_catalog_equivalence_v1.json");
 put("product-identity-cache-v1.json",{schema:"deliveryos.product-identity-cache.v1",
- rows:read.observed_items.map(x=>({CDPRODUTO:x.CDPRODUTO,canonical:canon(x.CDARVPROD),NMPRODUTO:names[canon(x.CDARVPROD)]}))});
+ rows:[...read.observed_items.map(x=>({CDPRODUTO:x.CDPRODUTO,canonical:canon(x.CDARVPROD),NMPRODUTO:names[canon(x.CDARVPROD)]})),
+  ...read9092.observed_items.map((x,i)=>({CDPRODUTO:x.CDPRODUTO,canonical:canon(items9092[i].CDARVPROD),NMPRODUTO:x.NMPRODUTO.trim()}))]});
 put("product-aliases-v1.json",{schema:"deliveryos.academia-live-product-aliases.v1",
- aliases:read.observed_items.map(x=>({live_name:names[canon(x.CDARVPROD)],canonical_code:canon(x.CDARVPROD),
-  classification:{...CLASS[canon(x.CDARVPROD)],review_required:false}}))});
+ aliases:[...read.observed_items.map(x=>({live_name:names[canon(x.CDARVPROD)],canonical_code:canon(x.CDARVPROD),
+  classification:{...CLASS[canon(x.CDARVPROD)],review_required:false}})),
+  // TEST alias mirroring the private replay (Academy exact name "Temaki de Barriga de Salmão").
+  {live_name:"TEMAKI DE BARRIGA DE SALMAO",canonical_code:"9.60.00.010.00",
+   classification:{family:"enrolado",subfamily:"temaki",station:"enrolados",review_required:false}}]});
 
 // Installed watcher Read-ServiceState against the legacy 2026-10-14 file.
 function legacyService(opened){
@@ -57,11 +70,11 @@ function legacyService(opened){
  return b.length?{service:null,evidence:"UNKNOWN",source_ref:null,blockers:b}
   :{service:"DINNER",evidence:"HUMAN_CONFIRMED_RULE",source_ref:"legacy-14-10",blockers:[]};
 }
-function event(mut=x=>x){
- const o=read.observed_order;
+function event(mut=x=>x,src={o:read.observed_order,items:read.observed_items}){
+ const o=src.o;
  const order=mut({CDFILIAL:o.CDFILIAL,CDLOJA:o.CDLOJA,NRVENDAREST:o.NRVENDAREST,NRCOMANDA:o.NRCOMANDA,
   NRCOMANDAEXT:o.NRCOMANDAEXT,IDORGCMDVENDA:o.IDORGCMDVENDA,IDSTCOMANDA:o.IDSTCOMANDA,
-  DTHRABERMESA:o.DTHRABERMESA,items:structuredClone(read.observed_items),
+  DTHRABERMESA:o.DTHRABERMESA,items:structuredClone(src.items),
   observation_scan_complete:true,observation_rows:[]});
  const s=legacyService(order.DTHRABERMESA);
  return {schema:"deliveryos.tata-reader-stable-order-event.v1",
@@ -147,10 +160,55 @@ test("outside documented hours: destinations HOLD, proven content is NOT erased"
  assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN");
  assert.equal(r.layers.L4.status,"HOLD");
  assert.ok(r.layers.L4.reasons.includes("OUTSIDE_REPORTED_DELIVERY_HOURS"));
- // Real archived 9092 opened 23:02:07, after the documented 23:00 end.
- assert.equal(require("./comandas_window_station_select_v1_offline.cjs").windowOf("2026-10-02","23:02"),
-  "OUTSIDE_REPORTED_WINDOW");
  assert.deepEqual(r.views,[]);
+});
+const ev9092=(mut=x=>x)=>event(mut,{o:read9092.observed_order,items:items9092});
+const real9092=ev9092(),decision9092=consume(real9092);
+test("real 9092 at 23:02 is dinner (César 02/11); the hour never hides its product HOLD",()=>{
+ assert.equal(real9092.order.DTHRABERMESA.slice(11,16),"23:02");
+ assert.ok(decision9092.blocking_reasons.includes("CLASSIFICATION_UNKNOWN_9.15.00.030.00"));
+ const r=chain(real9092,decision9092);
+ assert.equal(r.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+ assert.equal(r.layers.L2.status,"NATIVE_ORDER_TIME_WINDOW");
+ assert.equal(r.layers.L2.window,"DINNER_CANDIDATE");
+ assert.equal(r.layers.L3.status,"HOLD");
+ assert.ok(r.layers.L3.reasons.includes("CLASSIFICATION_UNKNOWN_9.15.00.030.00"));
+ assert.deepEqual(r.views,[]);
+});
+test("catalog equivalence resolves 9.15.00.030.00; 9092 then holds ONLY on the unjudged kit rule",()=>{
+ const r=chain(real9092,decision9092,{catalog_equivalence:equivalence});
+ assert.deepEqual(r.layers.L3.catalog_resolution.resolved,["EQ-9.15.00.030.00"]);
+ assert.equal(r.layers.L3.catalog_resolution.motor_rerun,true);
+ assert.equal(r.layers.L3.status,"HOLD");
+ assert.deepEqual(r.layers.L3.reasons,
+  ["MOTOR_KITS_NOT_FACT:Combinado + avulsos fora dos limites julgados: temaki:3."]);
+ assert.deepEqual(r.views,[]);
+});
+test("differential: combo 2p + 2 temakis (a judged kit rule) flows to three dinner views",()=>{
+ const two=ev9092(o=>({...o,items:o.items.map(x=>x.CDPRODUTO==="0000001641"?{...x,QTPRODCOMVEN:"2.000"}:x)}));
+ const r=chain(two,consume(two),{catalog_equivalence:equivalence});
+ assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN",JSON.stringify(r.layers.L3.reasons));
+ assert.equal(r.layers.L4.status,"THREE_VIEWS_VIRTUAL",JSON.stringify(r.layers.L4.reasons));
+ assert.deepEqual(r.views.map(v=>v.station),["DELIVERY SUSHI 1","DELIVERY SUSHI 2","CONFERENCIA"]);
+ assert.ok(r.views[0].text_trace.includes("C1  CAIXA 1500\n1  COMB SUSHI + SASHIMI ESPECIAL 2 P"));
+ assert.ok(r.views[1].text_trace.includes("C1  CAIXA 750\n2  TEMAKI DE BARRIGA DE SALMAO"));
+ assert.ok(r.views[2].text_trace.includes("1 SACOLA G | 1 KIT P/2 | 1 KIT SIMPLES"));
+ assert.equal((r.views[2].text_trace.match(/Op\. ________/g)||[]).length,2);
+ assert.ok(r.views.every(v=>v.escpos_bytes===0));
+});
+test("catalog equivalence guards: exact native match only, no override, ambiguity and bad records refused",()=>{
+ const rec=equivalence.records[0];
+ const run=recs=>N.resolveCatalogEquivalenceV1(real9092,decision9092,recs,decision9092.blocking_reasons);
+ for(const bad of [{native_cdproduto:"0000009999"},{native_name:"COMB SASHIMI + SUSHI ESPECIAL 2 P"},
+  {canonical_code:"9.15.00.040.00"}])
+  assert.deepEqual(run([{...rec,...bad}]).resolved,[]);
+ assert.deepEqual(run([rec,{...rec,id:"EQ-DUP"}]).refused,["CATALOG_EQUIVALENCE_AMBIGUOUS:9.15.00.030.00"]);
+ assert.ok(run([{...rec,academy_entry_ids:["only_one"]}]).refused.includes("CATALOG_EQUIVALENCE_RECORD_INVALID"));
+ // A proven classification is never replaced, even by a record for that code.
+ const kids={...rec,id:"EQ-KIDS",canonical_code:"9.80.00.010.00",native_cdproduto:"0000001705",native_name:"COMBINADO KIDS"};
+ assert.deepEqual(N.resolveCatalogEquivalenceV1(real,decision,[kids],decision.blocking_reasons).resolved,[]);
+ assert.equal(JSON.stringify(chain(real,decision,{catalog_equivalence:{records:[kids]}}).views),JSON.stringify(out.views));
+ assert.equal(rec.not_a_human_confirmation,true);
 });
 test("cancellation: header 4 and item 6 stop at L1",()=>{
  for(const mut of [o=>({...o,IDSTCOMANDA:"4"}),

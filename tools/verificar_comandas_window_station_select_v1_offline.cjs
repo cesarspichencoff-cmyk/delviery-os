@@ -80,8 +80,31 @@ test("dinner 22:59 chooses Delivery Sushi2 only for rolls",()=>{
  ok(projection(["00006","00004"],"9.50.00.000.00"),
   evidence("2026-10-27","22:59","ENROLADOS","9.50.00.000.00"),["00004"]);
 });
-test("23:00 has no implied extra shift",()=>{
- hold(projection(),evidence("2026-10-27","23:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
+// César, 02/11 (PR #135 comment 6571478013): an order whose NATIVE time is
+// after 23:00 on the same civil day "segue para as impressoras" of dinner.
+// No tolerance cut-off, no new shift: 23:00-23:59 stays dinner; 00:00 of the
+// next civil day does NOT inherit the previous night.
+test("dinner continues 22:59-23:59 of the same civil day (combinados -> Delivery Sushi1)",()=>{
+ for(const hm of ["22:59","23:00","23:02","23:59"])
+  ok(projection(),evidence("2026-10-27",hm),["00003"]);
+});
+test("dinner after 23:00 keeps rolls on Delivery Sushi2 and never on Balcao2",()=>{
+ for(const hm of ["23:00","23:02","23:59"])
+  ok(projection(["00006","00004"],"9.50.00.000.00"),
+   evidence("2026-10-27",hm,"ENROLADOS","9.50.00.000.00"),["00004"]);
+});
+test("independent kitchen route keeps its own destination after 23:00",()=>{
+ ok(projection(["00002"],"9.10.00.080.00"),
+  evidence("2026-10-27","23:30","INDEPENDENT","9.10.00.080.00"),["00002"]);
+});
+test("unproven station after 23:00 still holds; the hour never hides it",()=>{
+ hold(projection(),evidence("2026-10-27","23:02","UNKNOWN"),"PRODUCT_STATION_EXCEPTION_OR_UNKNOWN_0");
+});
+test("00:00 of the next civil day does not inherit the previous dinner",()=>{
+ hold(projection(),evidence("2026-10-28","00:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
+ assert.equal(windowOf("2026-10-28","00:00"),"OUTSIDE_REPORTED_WINDOW");
+ assert.equal(windowOf("2026-10-27","23:59"),"DINNER_CANDIDATE");
+ assert.equal(windowOf("2026-10-27","17:59"),"OUTSIDE_REPORTED_WINDOW");
 });
 test("9:00 outside cannot silently print at lunch or dinner",()=>{
  hold(projection(),evidence("2026-10-27","09:00"),"OUTSIDE_REPORTED_DELIVERY_HOURS");
