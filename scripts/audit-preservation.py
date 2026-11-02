@@ -237,6 +237,7 @@ print("CORE_REVIEW_QUEUE", json.dumps([
     for p in sorted(missing, key=lambda x:x["number"], reverse=True)
     if decision_lane(p) == "CORE_REVIEW"
 ], ensure_ascii=False))
+print("OTHER_REVIEW_QUEUE", json.dumps([{"pr":p["number"], "title":p.get("title")} for p in sorted(missing, key=lambda x:x["number"], reverse=True) if decision_lane(p) == "OTHER_REVIEW"], ensure_ascii=False))
 print("MAIN_ONLY_PATHS", json.dumps([x["path"] for x in main_only]))
 if skipped or api_status != "COMPLETE" or unknown:
     print("INVENTORY_PARTIAL: review report; never declare COMPLETE.")
