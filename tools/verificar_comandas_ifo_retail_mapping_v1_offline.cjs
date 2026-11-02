@@ -43,9 +43,19 @@ test("single explicit unit-store-cashier mapping produces only review candidate"
  perUnit,candidate);
 test("centralized YES does not prove the dispatcher host",()=>{
  const x=baseline();x.centralized="YES";return x;},candidate);
-test("unknown centralized setting blocks promotion",()=>{
+test("unknown centralized setting still allows mapping-only review",()=>{
  const x=baseline();x.centralized="UNKNOWN";return x;
-},hold("CENTRAL_DELIVERY_SETTING_NOT_OBSERVED"));
+},candidate);
+test("unknown centralized sync does not infer a live dispatcher or print",()=>{
+ const x=perUnit();x.centralized="UNKNOWN";
+ const r=review(x);
+ assert.equal(r.status,"MAPPING_CANDIDATE_REVIEW_ONLY");
+ assert.equal(r.centralized_delivery_flag_claim,"UNKNOWN");
+ assert.equal(r.real_cashbox_or_dispatcher_host_identified,false);
+ assert.equal(r.live_native_first_dispatch_proven,false);
+ assert.equal(r.can_print,false);
+ return x;
+},candidate);
 test("unknown mapping mode never chooses a branch",()=>{
  const x=baseline();x.integration.mapping_mode="UNKNOWN";return x;
 },hold("IFO_MAPPING_MODE_NOT_OBSERVED"));
