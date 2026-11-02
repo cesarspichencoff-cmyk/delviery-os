@@ -1,5 +1,12 @@
 # TATÁ Comandas — cadeia nativa completa e candidata de homologação (02/11/2026)
 
+> **Atualizado pela rodada 2 (mesmo dia, HEAD `1390b56`):** o 9092 das 23:02 agora está no jantar
+> (decisão do César); `9.15.00.030.00` foi resolvido por equivalência de catálogo e o 9092 segura **só**
+> na regra de kit `combinado 2p + 3 temakis`; a sequência TATÁ ganhou os níveis PREVIEW /
+> CANDIDATE_PERSISTED_IN_LAB / LIVE_ATTESTED; observação de item deixou de travar a cadeia; as três vias
+> foram medidas contra o Figma (`VIAS_VS_FIGMA_MEDICAO_20261102.md`). A candidata tem agora 23 + 6
+> arquivos. As linhas abaixo sobre janela das 23h, alias e revisão visual descrevem o estado anterior.
+
 **Base:** `b9026ac` (PR #131, intocada). **Branch:** `audit/comandas-native-chain-20261102`. **Estado:** DRAFT · HOLD · nenhum efeito físico.
 **Missão:** revisão adversarial PR #131 comentário 6570127632 (rota P0–P4) sobre o checkpoint da issue #102.
 **Host:** `CAIXA_MOOCA` = computador físico do caixa Itaim (César, 22/10). Sem acesso a ele nesta sessão; nada foi lido ou alterado lá.
