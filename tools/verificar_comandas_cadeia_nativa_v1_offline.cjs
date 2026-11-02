@@ -334,6 +334,43 @@ test("native item notes stay intact: own station and conference, verbatim, never
  assert.equal(rg.layers.L4.status,"HOLD");assert.ok(rg.layers.L4.reasons.includes("ORDER_OBSERVATION_RELEVANCE_UNPROVEN_0"));
  assert.deepEqual(rg.views,[]);
 });
+test("three-view content contract: ids on every view, each product in exactly one station, conference complete",()=>{
+ const live={level:"LIVE_ATTESTED",persisted:true,attested_independently:true,order_key:real.order_key,
+  scope_id:"STORE:0001|01|DATE:2026-10-04",tata_sequence:"037"};
+ const r=chain(real,decision,{sequence_binding:live});
+ const native=new Map(decision.items.map(x=>[x.product_name.toLocaleUpperCase("pt-BR"),x.quantity]));
+ const itemsOf=v=>v.text_trace.split("\n").map(l=>/^(\d+)  (.+)$/.exec(l)).filter(Boolean)
+  .map(m=>({qty:Number(m[1]),name:m[2]}));
+ const sum=(list,name)=>list.filter(x=>x.name===name).reduce((n,x)=>n+x.qty,0);
+ const production=r.views.filter(v=>v.kind==="PRODUCAO"),conf=r.views.find(v=>v.kind==="CONFERENCIA");
+ // iFood + Teknisa + TATÁ (synthetic LIVE claim) identical on the three views.
+ for(const v of r.views){
+  assert.ok(v.text_trace.includes("IFOOD 9627 | TEKNISA 0000348850 | 22:58"),v.station);
+  assert.equal(v.text_trace.trim().split("\n").at(-1),"037",v.station);
+ }
+ for(const [name,qty] of native){
+  // Every production product sits in exactly ONE station view, with its full quantity.
+  const holders=production.filter(v=>sum(itemsOf(v),name)>0);
+  assert.equal(holders.length,1,name+" must be in exactly one station view");
+  assert.equal(sum(itemsOf(holders[0]),name),qty,name+" quantity in its station");
+  // The conference carries every product with its full quantity.
+  assert.equal(sum(itemsOf(conf),name),qty,name+" quantity in the conference");
+ }
+ // Nothing foreign: no line in any view that is not a native product.
+ for(const v of r.views)for(const x of itemsOf(v))assert.ok(native.has(x.name),v.station+": "+x.name);
+ // One operator field per physical box; box numbering is contiguous C1..Cn.
+ const boxes=conf.text_trace.split("\n").filter(l=>/^C\d+  CAIXA /.test(l));
+ assert.deepEqual(boxes.map(l=>l.split(" ")[0]),boxes.map((_,i)=>"C"+(i+1)));
+ assert.ok(boxes.every(l=>l.endsWith("  Op. ________")));
+ assert.equal((conf.text_trace.match(/Op\. ________/g)||[]).length,boxes.length);
+ // The exact bytes decode with the known command set and fit the 72 mm width.
+ const P=require("./comandas_papel_virtual_escpos_v1_offline.cjs");
+ for(const v of r.views){
+  const lay=P.layoutVirtualPaperV1(v.escpos);
+  assert.deepEqual([lay.errors,lay.overflow,v.escpos.length],[[],[],v.escpos_bytes],v.station);
+  assert.equal(require("node:crypto").createHash("sha256").update(Buffer.from(v.escpos)).digest("hex"),v.escpos_sha256);
+ }
+});
 test("pinned motor bytes are enforced before any projection",()=>{
  const r=runNativeChainV1({event:real,decision,routing,printer_map:printers,calibration,
   motor_source:Buffer.concat([MOTOR,Buffer.from("\n")])});

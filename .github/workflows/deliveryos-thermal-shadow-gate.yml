@@ -157,6 +157,8 @@ jobs:
         run: node tools/verificar_comandas_print_provenance_v1_offline.cjs
       - name: Native chain real revision 9627 through V2 consumer, pinned motor and three virtual views
         run: node tools/verificar_comandas_cadeia_nativa_v1_offline.cjs
+      - name: Virtual paper from the exact ESC/POS bytes, measured against Figma V4.4/V4.3 (no device)
+        run: node tools/verificar_comandas_papel_virtual_escpos_v1_offline.cjs
       - name: Shadow homologation candidate measured closure is pinned (no print capability)
         run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
       - name: Private real-catalog replay parses and skips without the Academy checkout
@@ -519,6 +521,8 @@ jobs:
         run: node tools/verificar_comandas_print_provenance_v1_offline.cjs
       - name: Native chain real revision 9627 through V2 consumer, pinned motor and three virtual views
         run: node tools/verificar_comandas_cadeia_nativa_v1_offline.cjs
+      - name: Virtual paper from the exact ESC/POS bytes, measured against Figma V4.4/V4.3 (no device)
+        run: node tools/verificar_comandas_papel_virtual_escpos_v1_offline.cjs
       - name: Shadow homologation candidate measured closure is pinned (no print capability)
         run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
       - name: Private real-catalog replay parses and skips without the Academy checkout

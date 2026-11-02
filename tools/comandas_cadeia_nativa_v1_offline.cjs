@@ -177,6 +177,9 @@ function runNativeChainV1(i){
    lines:t.conference.boxes.reduce((s,b)=>s+b.items.length,0),render:r.conference}]
   .map(v=>({kind:v.kind,station:v.station,semantic_ready:v.semantic_ready,lines:v.lines,
    render_blockers:v.render.blocking_reasons,escpos_bytes:v.render.byte_count,
+   // The exact bytes (virtual: nothing is sent) so layout can be measured
+   // from what a printer would receive, not from the text trace.
+   escpos:[...v.render.bytes],escpos_sha256:sha(Buffer.from(v.render.bytes)),
    text_trace_sha256:sha(Buffer.from(v.render.text_trace)),text_trace:v.render.text_trace}));
  L.L4=layer(views.length>=2&&views.every(v=>v.semantic_ready)?"THREE_VIEWS_VIRTUAL":"HOLD",
   views.flatMap(v=>v.semantic_ready?[]:["VIEW_NOT_SEMANTICALLY_READY:"+v.station]),
