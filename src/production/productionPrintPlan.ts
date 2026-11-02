@@ -214,68 +214,68 @@ function validatedOrderObservations(
   return accepted;
 }
 
+function calibrationClaimPresent(value: string): boolean {
+  const normalized = clean(value).toUpperCase();
+  return normalized.length > 0 && normalized !== "UNKNOWN";
+}
+
 function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
   const c = entry.calibration;
   return (
-    clean(c.actual_device_variant) !== "UNKNOWN" &&
+    calibrationClaimPresent(c.actual_device_variant) &&
     typeof c.actual_media_width_mm === "number" &&
+    Number.isFinite(c.actual_media_width_mm) &&
+    c.actual_media_width_mm > 0 &&
     typeof c.printable_width_dots === "number" &&
-    clean(c.transport_selected) !== "UNKNOWN" &&
-    clean(c.character_mode) !== "UNKNOWN" &&
-    clean(c.accent_test) !== "UNKNOWN" &&
-    clean(c.cutter_test) !== "UNKNOWN" &&
-    clean(c.feed_after_cut_test) !== "UNKNOWN" &&
-    clean(c.bold_double_size_legibility) !== "UNKNOWN" &&
-    clean(c.density_legibility) !== "UNKNOWN" &&
-    clean(c.paperout_observation) !== "UNKNOWN" &&
-    clean(c.cover_open_observation) !== "UNKNOWN" &&
-    clean(c.offline_observation) !== "UNKNOWN" &&
-    clean(c.spooler_job_observation) !== "UNKNOWN" &&
-    clean(c.one_physical_ticket_proof) !== "UNKNOWN"
+    Number.isInteger(c.printable_width_dots) &&
+    c.printable_width_dots > 0 &&
+    calibrationClaimPresent(c.transport_selected) &&
+    calibrationClaimPresent(c.character_mode) &&
+    calibrationClaimPresent(c.accent_test) &&
+    calibrationClaimPresent(c.cutter_test) &&
+    calibrationClaimPresent(c.feed_after_cut_test) &&
+    calibrationClaimPresent(c.bold_double_size_legibility) &&
+    calibrationClaimPresent(c.density_legibility) &&
+    calibrationClaimPresent(c.paperout_observation) &&
+    calibrationClaimPresent(c.cover_open_observation) &&
+    calibrationClaimPresent(c.offline_observation) &&
+    calibrationClaimPresent(c.spooler_job_observation) &&
+    calibrationClaimPresent(c.one_physical_ticket_proof)
   );
 }
 
-const SERVICE_ALTERNATIVE_GROUPS = [
-  { key: "SUSHI_1", lunch: "00009", dinner: "00003" },
-  { key: "SUSHI_2", lunch: "00006", dinner: "00004" },
+/** Legacy printer pairs have NOT been proved to be lunch/dinner switches.
+ * Current native evidence shows distinct production roles. If both codes are
+ * assigned to one item, refuse BOTH unproved destinations; preserve other
+ * independently routed destinations solely for diagnostic preview.
+ * A source service value never authorizes picking one physical printer.
+ */
+const UNPROVEN_DUAL_PRODUCTION_ROLES = [
+  { key: "SUSHI_1", codes: ["00009", "00003"] },
+  { key: "SUSHI_2", codes: ["00006", "00004"] },
 ] as const;
 
 function selectTargetsForService(
   targets: ExpectedRoutingTarget[],
-  service: ProductionService | null,
+  _service: ProductionService | null,
   itemIndex: number,
   blocking: Set<string>,
 ): ExpectedRoutingTarget[] {
   let selected = [...targets];
-
-  for (const group of SERVICE_ALTERNATIVE_GROUPS) {
-    const codes = new Set<string>([group.lunch, group.dinner]);
-    const present = selected.filter((target) => codes.has(target.printer_code));
-    if (present.length < 2) continue;
-
-    if (!service) {
-      blocking.add(
-        `SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_${itemIndex}_${group.key}`,
-      );
-      selected = selected.filter((target) => !codes.has(target.printer_code));
-      continue;
-    }
-
-    const activePrinterCode =
-      service === "LUNCH" ? group.lunch : group.dinner;
-    selected = selected.filter(
-      (target) =>
-        !codes.has(target.printer_code) ||
-        target.printer_code === activePrinterCode,
-    );
+  for (const group of UNPROVEN_DUAL_PRODUCTION_ROLES) {
+    const present = selected.filter((target) =>
+      (group.codes as readonly string[]).includes(target.printer_code));
+    if (new Set(present.map(target=>target.printer_code)).size < 2) continue;
+    blocking.add(`${group.key}_DUAL_PRODUCTION_ROLE_UNPROVEN_ITEM_${itemIndex}`);
+    selected = selected.filter((target) =>
+      !(group.codes as readonly string[]).includes(target.printer_code));
   }
-
   return selected;
 }
 
 function normalizedPrepComponents(
   components: ProductionTicketItemMetadata["prep_components"],
-): string {
+): Array<Array<string | number>> {
   return [...(components ?? [])]
     .map((component) => [
       clean(component.component_key),
@@ -283,9 +283,8 @@ function normalizedPrepComponents(
       Number(component.quantity),
       clean(component.unit),
       component.proof,
-    ].join("~"))
-    .sort()
-    .join("|");
+    ])
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 }
 
 function stableSemanticKeyMaterial(input: {
@@ -300,36 +299,35 @@ function stableSemanticKeyMaterial(input: {
   orderObservations: string[];
   lines: PlannedProductionLine[];
 }): string {
-  const lines = input.lines
-    .map((line) => [
-      line.item_index,
-      line.product_code ?? "",
-      line.product_name,
-      line.quantity,
-      line.mount_group_id ?? "",
-      line.box_label ?? "",
-      line.item_observations.join(" | "),
-      normalizedPrepComponents(line.prep_components),
-    ].join("~"))
-    .join("||");
+  // V3 replaces delimiter joins: user notes, product names and component
+  // labels may legitimately contain ~, | and ::. The V2 join could make
+  // different semantic tickets share one fingerprint and suppress a revision.
+  // This version is deliberately incompatible with any historical V2 key.
+  const lines = input.lines.map((line) => [
+    line.item_index,
+    line.product_code,
+    line.product_name,
+    line.quantity,
+    line.mount_group_id,
+    line.box_label,
+    [...line.item_observations],
+    normalizedPrepComponents(line.prep_components),
+  ]);
 
-  return [
-    "production-ticket-v2",
+  // The service label is not a proven print route or content revision.
+  // It must not change the intent identity for otherwise identical tickets.
+  return JSON.stringify([
+    "production-ticket-v3-canonical-json",
     input.orderId,
-    input.target.printer_code,
-    input.target.printer_name,
-    input.target.printer_ip,
+    [input.target.printer_code, input.target.printer_name, input.target.printer_ip],
     input.templateVersion,
-    input.serviceResolution.service ?? "UNRESOLVED",
-    input.serviceResolution.evidence,
-    input.serviceResolution.source_ref ?? "",
     input.ifoodSequence,
     input.teknisaSequence,
     input.tataSequence,
-    input.orderTime ?? "",
-    input.orderObservations.join(" | "),
+    input.orderTime,
+    [...input.orderObservations],
     lines,
-  ].join("::");
+  ]);
 }
 
 function fingerprintSemanticIntent(material: string): string {
@@ -339,9 +337,10 @@ function fingerprintSemanticIntent(material: string): string {
 /**
  * Builds one logical ticket intent per resolved active production station.
  *
- * Configured lunch/dinner alternatives are mutually exclusive. If both
- * alternatives exist for one item, service must be supplied explicitly; this
- * planner never infers service from the clock.
+ * Printer codes historically labeled as lunch/dinner alternatives are
+ * NOT proved mutually exclusive by shift. If both appear on the SAME sold
+ * item, this planner refuses those ambiguous destinations regardless of a
+ * service label; only source-attested physical roles could change that gate.
  *
  * It deliberately does NOT render bytes and never authorizes a physical effect.
  * Product routing authority comes from ExpectedRoutingProjection. Printer
