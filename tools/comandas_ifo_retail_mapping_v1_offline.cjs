@@ -42,7 +42,8 @@ function reviewIfoRetailMapping(input){
     it.project!=="IFO"||it.filial!=="0001"||
     !["DEFAULT_SELLER","PER_UNIT","UNKNOWN"].includes(it.mapping_mode))
   return result("HOLD","IFO_INTEGRATION_AND_ITAIM_SCOPE_UNKNOWN");
- if(!["YES","NO","UNKNOWN"].includes(input.centralized))
+ const centralized=input.centralized===undefined?"UNKNOWN":input.centralized;
+ if(!["YES","NO","UNKNOWN"].includes(centralized))
   return result("HOLD","CENTRAL_DELIVERY_SETTING_UNKNOWN_FORMAT");
  const m=input.mapping;
  if(!only(m,["per_unit","default_seller","seller_cashboxes"])||
@@ -56,11 +57,11 @@ function reviewIfoRetailMapping(input){
   return result("HOLD","IFO_MAPPING_ROW_INVALID");
  if(it.mapping_mode==="UNKNOWN")
   return result("HOLD","IFO_MAPPING_MODE_NOT_OBSERVED");
- let candidates=[];
+ let eligible=[];
  if(it.mapping_mode==="PER_UNIT"){
   if(m.default_seller!==null||m.seller_cashboxes.length!==0)
    return result("HOLD","MAPPING_BRANCHES_CONTRADICT");
-  candidates=m.per_unit.filter(x=>x.filial===it.filial);
+  eligible=m.per_unit.filter(x=>x.filial===it.filial);
  }else{
   if(m.per_unit.length!==0)
    return result("HOLD","MAPPING_BRANCHES_CONTRADICT");
@@ -68,20 +69,23 @@ function reviewIfoRetailMapping(input){
      m.default_seller.filial!==it.filial||
      !code(m.default_seller.seller))
    return result("HOLD","DEFAULT_SELLER_NOT_SCOPED_OR_BRANCH_CONTRADICTED");
-  candidates=m.seller_cashboxes.filter(x=>
+  eligible=m.seller_cashboxes.filter(x=>
    x.filial===it.filial&&x.seller===m.default_seller.seller);
  }
+ // A native Reader order is scoped to CDFILIAL=0001/CDLOJA=01. A different
+ // shop belonging to the same filial must not manufacture a cashbox collision.
+ // Still refuse two eligible cashboxes in *this exact shop*.
+ const candidates=eligible.filter(x=>x.loja==="01");
  const count=candidates.length;
  const checked={mapping_branch_reviewed:it.mapping_mode,
-  retail_candidate_count:count,centralized_delivery_flag_claim:input.centralized};
+  retail_candidate_count:count,centralized_delivery_flag_claim:centralized};
  if(count===0)
-  return result("HOLD","IFO_RETAIL_CASHBOX_ASSOCIATION_MISSING",checked);
+  return result("HOLD",eligible.length===0
+   ?"IFO_RETAIL_CASHBOX_ASSOCIATION_MISSING"
+   :"IFO_RETAIL_LOJA_CONFLICTS_WITH_READER_NATIVE_SCOPE",checked);
  if(count!==1)
   return result("HOLD","IFO_RETAIL_CASHBOX_ASSOCIATION_AMBIGUOUS",checked);
- // Reader's observed native store scope is CDFILIAL=0001/CDLOJA=01.
- // The Retail cashier may not be this host; the codes below are NOT exported.
- if(candidates[0].loja!=="01")
-  return result("HOLD","IFO_RETAIL_LOJA_CONFLICTS_WITH_READER_NATIVE_SCOPE",checked);
+ // No candidate store/cashbox codes are exported or treated as host identity.
  // The centralized-sync flag is a separate topology clue, NOT a
  // prerequisite to identifying a unit/store/cashbox mapping candidate.
  // Do not force access to another protected Retail screen just for this flag.
