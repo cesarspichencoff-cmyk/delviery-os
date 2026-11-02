@@ -1,0 +1,103 @@
+{
+  "schema": "tata.comandas.cesar-operational-clarifications-20261101.v1.review-only",
+  "recorded_local_date": "2026-11-01",
+  "origin": "CESAR_DIRECT_CHAT_THIS_TURN",
+  "store_scope": "ITAIM_0001_01",
+  "scope_kind": "EXACT_CANONICAL_CODE_AND_READER_LABEL_HISTORICAL_REFERENCE",
+  "human_rule_capture": "CAPTURED",
+  "human_confirmation_repeated_required": false,
+  "product_rules": [
+    {
+      "code": "9.10.00.050.00",
+      "label": "SHIMEJI E SHITAKE",
+      "stated_area": "COZINHA",
+      "stated_family": "ENTRADA_QUENTE",
+      "stated_item_temperature": "QUENTE",
+      "stated_container": "650_SELADA",
+      "stated_reference": "SHIMEJI",
+      "new_production_ticket_policy": "BY_PROVEN_KITCHEN_ROUTE",
+      "conference_ticket_policy": "UNCHANGED",
+      "notes": "Somente configuração comprovada do Shimeji; não inferir kits, quantidade de caixas ou rota física."
+    },
+    {
+      "code": "9.10.05.070.00",
+      "label": "CEVICHE",
+      "stated_area": "SUSHI_QUENTES",
+      "stated_family": "ITEM_FRIO",
+      "stated_item_temperature": "FRIO",
+      "stated_container": "650_SELADA",
+      "stated_reference": "TUNA SHISO",
+      "new_production_ticket_policy": "BY_PROVEN_SUSHI_QUENTES_ROUTE",
+      "conference_ticket_policy": "UNCHANGED",
+      "notes": "Nome da praça não transforma a temperatura do item; não supor caixa por unidade ou mistura de produtos."
+    },
+    {
+      "code": "9.10.05.050.00",
+      "label": "TARTAR DE SALMAO",
+      "stated_area": "SUSHI_QUENTES",
+      "stated_family": "ITEM_FRIO",
+      "stated_item_temperature": "FRIO",
+      "stated_container": "650_SELADA",
+      "stated_reference": "TUNA SHISO",
+      "new_production_ticket_policy": "BY_PROVEN_SUSHI_QUENTES_ROUTE",
+      "conference_ticket_policy": "UNCHANGED",
+      "notes": "Não extrapolar quantidades, complementos e agrupamentos além do referencial efetivamente comprovado."
+    },
+    {
+      "code": "8.00.00.010.00",
+      "label": "AGUA MINERAL C/GAS - UN",
+      "stated_area": "BAR",
+      "stated_family": "BEBIDA",
+      "stated_item_temperature": "UNKNOWN",
+      "stated_container": "SAME_AS_REFERENT_UNVERIFIED",
+      "stated_reference": "REFRIGERANTE",
+      "new_production_ticket_policy": "BY_PROVEN_BAR_ROUTE",
+      "conference_ticket_policy": "UNCHANGED",
+      "notes": "Não deduzir canudo, kit ou caixa; tratar saída do bar conforme referencial específico autorizado."
+    },
+    {
+      "code": "9.15.00.070.00",
+      "label": "SALMAO/ATUM 2 PESSOAS",
+      "stated_area": "COMBINADOS",
+      "stated_family": "COMBINADO_2_PESSOAS",
+      "stated_item_temperature": "UNKNOWN",
+      "stated_container": "SAME_AS_REFERENT_UNVERIFIED",
+      "stated_reference": "SALMAO PARA 2 PESSOAS",
+      "new_production_ticket_policy": "BY_PROVEN_COMBINADOS_ROUTE",
+      "conference_ticket_policy": "UNCHANGED",
+      "notes": "Não preencher caixas, kits, sacolas ou distribuição sem evidência exata do produto referência."
+    },
+    {
+      "code": "8.20.11.002.00",
+      "label": "COOKIE PISTACHE",
+      "stated_area": "CONFERENCIA",
+      "stated_family": "CONFERENCIA_APENAS",
+      "stated_item_temperature": "UNKNOWN",
+      "stated_container": "NOT_STATED",
+      "stated_reference": null,
+      "new_production_ticket_policy": "NO_NEW_PRODUCTION_TICKET",
+      "conference_ticket_policy": "REQUIRED",
+      "notes": "Não criar via de produção na camada candidata; não alterar automaticamente impressão nativa/legada ou configuração de impressoras."
+    }
+  ],
+  "source_ref_integrity": "HUMAN_DECLARATION_NOT_INDEPENDENT_CURRENT_CATALOG_PROOF",
+  "catalog_active_status_confirmed": false,
+  "current_native_id_confirmed": false,
+  "referent_current_configuration_verified": false,
+  "station_route_currently_verified": false,
+  "packaging_motor_current_pin_verified": false,
+  "kit_and_bag_composition_verified": false,
+  "first_native_dispatch_proven": false,
+  "physical_test_authorized": false,
+  "operational_deployed": false,
+  "print_authorized": false,
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "sql_write": false,
+    "service_change": false,
+    "sequence_write": false,
+    "deploy": false,
+    "merge": false
+  }
+}

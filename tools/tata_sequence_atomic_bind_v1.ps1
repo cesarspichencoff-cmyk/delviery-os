@@ -109,6 +109,14 @@ function Build-Plan($State,[string]$Scope,[string]$OrderId) {
       $blocking.Add("INVALID_EXISTING_SEQUENCE_BINDING")
       continue
     }
+    # Never trim an inconsistent persisted identity into a valid replay.
+    if ([string]$binding.scope_id -cne $bScope -or
+        [string]$binding.teknisa_order_id -cne $bOrder) {
+      $blocking.Add("NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY")
+    }
+    if ([string]$binding.tata_sequence -cne $bSeq) {
+      $blocking.Add("INVALID_EXISTING_TATA_SEQUENCE_FORMAT_OR_RANGE")
+    }
     if ($bSeq -notmatch '^\d{3}$') {
       $blocking.Add("INVALID_EXISTING_TATA_SEQUENCE_FORMAT:" + $bSeq)
       continue
@@ -136,6 +144,8 @@ function Build-Plan($State,[string]$Scope,[string]$OrderId) {
   })
 
   if ($existing.Count -gt 1) {
+    # Identical persisted rows also break the unique durable binding proof.
+    $blocking.Add("DUPLICATE_ORDER_SEQUENCE_BINDING:" + $OrderId)
     $unique = @($existing | ForEach-Object { Clean ([string]$_.tata_sequence) } | Select-Object -Unique)
     if ($unique.Count -gt 1) {
       $blocking.Add("ORDER_BOUND_TO_MULTIPLE_TATA_SEQUENCES:" + $OrderId)
@@ -257,14 +267,17 @@ try {
     throw "COMMIT_AUTHORIZATION_ID_REQUIRED"
   }
 
-  $lockPath = $StatePath + ".lock"
-  $lock = [IO.File]::Open(
-    $lockPath,
-    [IO.FileMode]::OpenOrCreate,
-    [IO.FileAccess]::ReadWrite,
-    [IO.FileShare]::None
-  )
+  # Safety hold: a caller-supplied AuthorizationId proves nothing about a
+  # separate human approval or the Windows security principal. This draft
+  # writer MUST NOT commit until a trusted, independently controlled
+  # authorization and process-custody boundary is implemented and tested.
+  if ($Commit) {
+    throw "COMMIT_DISABLED_NO_INDEPENDENT_AUTHORIZATION_GATE"
+  }
 
+  # DRY_RUN must never create even a .lock file at the live state path.
+  # Since committing is disabled above, hash-before/hash-after is sufficient
+  # for an advisory plan; it never authorizes actual sequence allocation.
   $beforeSha = Get-Sha256 $StatePath
   $result.state_sha256_before = $beforeSha
   $result.effects.local_state_read = $true
