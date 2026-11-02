@@ -199,7 +199,7 @@ unknown = [x for x in pr_statuses if x["history"] not in ("NOT_ANCESTOR_OF_CANDI
 summary = [
     "# DeliveryOS — auditoria de preservação (automática; SEM liberação)",
     "",
-    f"HEAD candidato: \`{REFS['candidate']}\`",
+    f"HEAD candidato: `{REFS['candidate']}`",
     f"Arquivos: **{report['candidate_files']}**; arquivos UTF-8 lidos integralmente: **{all_utf8}**;",
     f"linhas examinadas por hash: **{all_lines}**; linhas nos arquivos classificados por extensão: **{code_lines}**.",
     f"Binários/não UTF-8: **{binary_count}**; ignorados, ausentes ou divergentes: **{skipped}**.",
@@ -216,5 +216,27 @@ summary.extend(["","## Limite", "A varredura registra cada linha de texto sem an
 print(json.dumps({"files":len(file_inventory),"line_scanned":all_lines,"skipped":skipped,
                   "prs":len(prs),"non_ancestor_prs":len(missing),"unknown_prs":len(unknown),
                   "main_only":len(main_only),"api_status":api_status}))
+# Print a bounded decision queue for CI readers. It is NOT a merge recommendation.
+def decision_lane(pr):
+    title = str(pr.get("title") or "").lower()
+    if "comanda" in title or "termic" in title or "térmic" in title or "epson" in title or "v7." in title:
+        return "OTHER_PRODUCT_COMANDAS"
+    if "q-026" in title or "q026" in title or "mvcc" in title or "cursor" in title:
+        return "RESEARCH_Q026"
+    if any(t in title for t in ("gps", "android", "entregas", "copiloto", "seguran", "autoriz", "rls", "piloto", "source", "gestor")):
+        return "CORE_REVIEW"
+    return "OTHER_REVIEW"
+
+by_lane = {}
+for pr in missing:
+    lane = decision_lane(pr)
+    by_lane[lane] = by_lane.get(lane, 0) + 1
+print("NON_ANCESTOR_BY_LANE", json.dumps(by_lane, ensure_ascii=False))
+print("CORE_REVIEW_QUEUE", json.dumps([
+    {"pr":p["number"], "commits":p.get("unique_commit_count"), "title":p.get("title")}
+    for p in sorted(missing, key=lambda x:x["number"], reverse=True)
+    if decision_lane(p) == "CORE_REVIEW"
+], ensure_ascii=False))
+print("MAIN_ONLY_PATHS", json.dumps([x["path"] for x in main_only]))
 if skipped or api_status != "COMPLETE" or unknown:
     print("INVENTORY_PARTIAL: review report; never declare COMPLETE.")
