@@ -70,4 +70,50 @@ class LocationBackendSelectorTest {
             playServicesAvailable = false, gpsEnabled = false, networkEnabled = false,
             coarseGranted = false,
         ))
+
+    @Test fun fusedFailureUsesNativeGpsEvenIfGoogleServicesAppearAvailable() =
+        expectAfterFailure(LocationBackend.SYSTEM_GPS, base)
+
+    @Test fun fusedFailureFallsBackToNetworkWithCoarseOnly() =
+        expectAfterFailure(LocationBackend.SYSTEM_NETWORK, base.copy(fineGranted = false))
+
+    @Test fun fusedFailureNoNativeProviderFailsClosed() =
+        expectAfterFailure(LocationBackend.UNAVAILABLE, base.copy(
+            gpsEnabled = false, networkEnabled = false,
+        ))
+
+    @Test fun fusedFailureCannotEscalateCoarseToGps() =
+        expectAfterFailure(LocationBackend.UNAVAILABLE, base.copy(
+            fineGranted = false, networkEnabled = false,
+        ))
+
+    @Test fun fusedFailureOnRevokedPermissionFailsClosed() =
+        expectAfterFailure(LocationBackend.UNAVAILABLE, base.copy(
+            fineGranted = false, coarseGranted = false,
+        ))
+
+    @Test fun fusedFailureCannotRetryGoogleEvenWhenAvailable() {
+        for (fine in listOf(false, true)) {
+            for (coarse in listOf(false, true)) {
+                for (gps in listOf(false, true)) {
+                    for (network in listOf(false, true)) {
+                        val c = base.copy(
+                            fineGranted = fine, coarseGranted = coarse,
+                            gpsEnabled = gps, networkEnabled = network,
+                        )
+                        val target = LocationBackendSelector.afterFusedFailure(c)
+                        assert(target != LocationBackend.GOOGLE_FUSED) {
+                            "Native recovery cannot choose Google again"
+                        }
+                        assertEquals(target, LocationBackendSelector.afterFusedFailure(
+                            c.copy(playServicesAvailable = false),
+                        ))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun expectAfterFailure(expected: LocationBackend, c: LocationCapabilities) =
+        assertEquals(expected, LocationBackendSelector.afterFusedFailure(c))
 }
