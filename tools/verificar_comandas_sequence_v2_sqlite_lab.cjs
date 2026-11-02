@@ -34,6 +34,13 @@ try{
  assert.equal(x.status,"HOLD");ok("wrong native shop rejected");
  x=bindSyntheticSequence(db,{...inp("VENDA1","CMD4"),lab_context:"PRODUCTION"});
  assert.equal(x.status,"HOLD");ok("operational context forbidden");
+ const wrongPath=new DatabaseSync(path.join(tmp,"unauthorized-name.sqlite"),{timeout:0});
+ try{
+  assert.throws(()=>createSyntheticTables(wrongPath),/SYNTHETIC_DB_LOCATION_REQUIRED/);
+  assert.equal(bindSyntheticSequence(wrongPath,inp("VENDA1","CMD4")).reason,
+   "SYNTHETIC_DB_LOCATION_REQUIRED");
+  ok("reject non-designated SQLite path before touching tables");
+ }finally{wrongPath.close()}
  peer=new DatabaseSync(dbPath,{timeout:0});
  db.exec("BEGIN IMMEDIATE");
  x=bindSyntheticSequence(peer,inp("VENDA1","CMD5"));
