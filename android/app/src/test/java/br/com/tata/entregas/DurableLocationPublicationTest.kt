@@ -48,6 +48,17 @@ class DurableLocationPublicationTest {
         assertTrue(DurableLocationPublication.mayPublish(7L, s.isCurrent(current)))
     }
 
+    @Test fun simulatedPointNeverPublishesEvenAfterSuccessfulRoomInsert() {
+        assertFalse(DurableLocationPublication.mayPublish(9L, true, isMock = true))
+        assertFalse(DurableLocationPublication.mayPublish(9L, false, isMock = true))
+    }
+
+    @Test fun authenticPointRequiresDurabilityAndSameSession() {
+        assertTrue(DurableLocationPublication.mayPublish(9L, true, isMock = false))
+        assertFalse(DurableLocationPublication.mayPublish(-1L, true, isMock = false))
+        assertFalse(DurableLocationPublication.mayPublish(9L, false, isMock = false))
+    }
+
     @Test fun largeInsertedRowIdAllowedOnlyCurrentSession() {
         assertFalse(DurableLocationPublication.mayPublish(Long.MAX_VALUE, false))
         assertTrue(DurableLocationPublication.mayPublish(Long.MAX_VALUE, true))
