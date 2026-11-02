@@ -22,6 +22,10 @@ const scope=x=>"STORE:"+x.pair.event.order.CDFILIAL+"/"+x.pair.event.order.CDLOJ
  "|DATE:"+x.pair.event.order.DTHRABERMESA.slice(0,10);
 const binding=(x,number="001")=>({scope_id:scope(x),
  native_order_key:x.pair.event.order_key,tata_sequence:number});
+const priorBindings=(x,count)=>Array.from({length:count},(_,i)=>({
+ scope_id:scope(x),native_order_key:"0001|01|HISTSALE"+i+"|HISTCMD"+i,
+ tata_sequence:String(i+1).padStart(3,"0")
+}));
 function read(x){
  const before=JSON.stringify(x),r=inspect(x);
  assert.equal(JSON.stringify(x),before,"no source mutation");
@@ -53,7 +57,7 @@ test("v1 short NRCOMANDA identity can never become V2 provenance",()=>{
  assert.equal(r.reason,"LEGACY_SHORT_KEY_STATE_REQUIRES_INDEPENDENT_MIGRATION");
 });
 test("same full-key in supplied state is NOT independently persisted proof",()=>{
- const x=fixture();x.state.bindings=[binding(x,"007")];
+ const x=fixture();x.state.bindings=[...priorBindings(x,6),binding(x,"007")];
  const r=read(x);
  assert.equal(r.status,"STRONG_KEY_PRESENT_IN_SUPPLIED_STATE_NOT_ATTESTED");
  assert.equal(r.candidate_reuses_supplied_binding,true);
@@ -84,6 +88,22 @@ test("other day resets the proposal without reusing its binding",()=>{
  const r=read(x);
  assert.equal(r.status,"STRONG_KEY_CANDIDATE_NOT_PERSISTED");
  assert.equal(r.hypothetical_next_value,"001");
+});
+test("daily sequence with 002 as first binding is HOLD, not silently continued",()=>{
+ const x=fixture();x.state.bindings=[binding(x,"002")];
+ assert.equal(read(x).reason,"V2_DAILY_SEQUENCE_GAP_OR_NONCONTIGUOUS");
+});
+test("missing middle binding cannot be hidden by max+1",()=>{
+ const x=fixture();x.state.bindings=[...priorBindings(x,1),binding(x,"003")];
+ assert.equal(read(x).reason,"V2_DAILY_SEQUENCE_GAP_OR_NONCONTIGUOUS");
+});
+test("first 001 of new day unaffected by historical gaps in older day",()=>{
+ const x=fixture();const b=binding(x,"099");
+ b.scope_id=b.scope_id.replace("2026-10-20","2026-10-19");
+ x.state.bindings=[b];
+ const v=read(x);
+ assert.equal(v.status,"STRONG_KEY_CANDIDATE_NOT_PERSISTED");
+ assert.equal(v.hypothetical_next_value,"001");
 });
 test("same full-key duplicated even with same 001 is blocked",()=>{
  const x=fixture();x.state.bindings=[binding(x),binding(x)];
@@ -117,8 +137,8 @@ test("impossible date, malformed policy and unsupported schema are refused",()=>
  assert.equal(read(z).reason,"V2_STATE_OR_POLICY_INVALID");
 });
 test("999 exhausts current scope, not other day or store",()=>{
- const x=fixture();x.state.bindings=[{...binding(x,"999"),
-  native_order_key:x.pair.event.order_key.replace("0000349281","0000349282")}];
+ const x=fixture();x.state.bindings=[...priorBindings(x,998),{
+  ...binding(x,"999"),native_order_key:"0001|01|HISTSALE999|HISTCMD999"}];
  assert.equal(read(x).reason,"V2_SEQUENCE_EXHAUSTED");
 });
 test("canceled item, foreign shop or stale Reader fingerprint never get a candidate",()=>{
