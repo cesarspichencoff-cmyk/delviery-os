@@ -146,3 +146,23 @@ Há **duas rotas independentes de descoberta**, que podem ser pesquisadas simult
 **C3 — valor sem papel:** continuar com prévia digital isolada e renderizador existente para revisão de quantidade, observação, praça e conteúdo, sem vínculo automático com produção. Avaliar eventual piloto adicionando apenas conferência depois de verificar o papel nativo, sem criar terceira emissão apenas por hipótese. Nenhuma saída física ou numeração persistida sem aceite posterior.
 
 **Lacuna declarada:** IFO_REAL_MAPPING=UNKNOWN; FIRST_NATIVE_DISPATCH=UNKNOWN; ATOMIC_TATA_SEQUENCE=UNPROVEN; PHYSICAL_PRINT=NOT_PROVEN; PRINTSERVICE_ONLY=INSUFFICIENT; PILOT=HOLD. A PR permanece isolada; proibição de merge, serviço, filas, impressões, SQL, fiscal, captura de tráfego, segredos e alterações de Retail.
+
+### Evidência nova de importações nativas PE — principal pista do callsite
+
+Uma leitura estática limitada à **tabela de importações de arquivos binários já instalados** no CAIXA_MOOCA, sem executar/decompilar ou exportar conteúdos, confirmou:
+
+| Binário local | Importação real de DLL | Funções de impressão confirmadas na tabela de importações | Outros indícios por busca de literais locais |
+|---|---|---|---|
+| FosImp.exe | winspool.drv | OpenPrinterA, StartDocPrinterA, WritePrinter, EndDocPrinter, GetPrinterA, ClosePrinter | marcador FosImp; não identificados iFood/IFO/DLV_IFO nessa lista de marcadores |
+| PKG_IMP00000.bpl | winspool.drv | OpenPrinterA, StartDocPrinterA, WritePrinter, EndDocPrinter, GetPrinterA, ClosePrinter | marcadores iFood, IFO e DLV_IFO |
+| FosSinc.exe | não foi identificada importação direta de winspool.drv | nenhuma dessas seis APIs em sua lista de importação direta | marcadores iFood, DLV_IFO e IFO |
+| FosExp.exe | não foi identificada importação direta de winspool.drv | nenhuma dessas seis APIs em sua lista de importação direta | marcador IFO |
+| Pkg_Dlv00000.bpl | não foi identificada importação direta de winspool.drv | nenhuma dessas seis APIs em sua lista de importação direta | marcador IFO |
+
+**Distinção de confiabilidade:** os marcadores por busca de literais nos bytes são indícios de referências embarcadas; para os dois primeiros arquivos, a existência de importações winspool foi **confirmada independentemente por leitura da estrutura PE**, incluindo a enumeração das seis funções. A ausência de uma API importada diretamente não descarta carregamento dinâmico ou uso de biblioteca intermediária.
+
+**Hipótese operacional priorizada, ainda não comprovada:** FosSinc (marcadores da integração iFood) e PKG_IMP/FosImp (APIs de envio ao spooler Windows) merecem investigação de ligação. Não foi provado que FosSinc chama PKG_IMP, que FosImp carrega PKG_IMP, que algum deles recebe a revisão nativa ou que originou qualquer evento 307. A inspeção de módulos do processo FosImp retornou acesso negado; esse bloqueio foi respeitado.
+
+**Identidade de bytes desta amostra:** FosImp.exe SHA-256 ACB10F7B0F6BC5531FA3A36C1036F9A49973426E2F95930F6E2BE5166910570B; PKG_IMP00000.bpl SHA-256 5D2B1B672867FB78B71B1A4BAA185E4754C57ED4A253FEF8C5C7CFFA68646D49; FosSinc.exe SHA-256 EED7C1C11A6DDC5A8E9A9D327DAC91744AE6534478CD5505ADAE975D438BA401. Esses fingerprints vinculam o achado estático a arquivos concretos, não à execução de uma comanda.
+
+**Resultado:** CANDIDATE_PRINT_API_COMPONENTS_IDENTIFIED; NATIVE_IFO_CALLSITE_EXECUTION=UNKNOWN; NO_PRINT=TRUE. O próximo método precisa obter evidência do **vínculo causal de uma revisão com a chamada e a praça** por mecanismo legítimo e minimizado; não reiniciar a inspeção indiscriminada ou promover PE import em prova de uso.
