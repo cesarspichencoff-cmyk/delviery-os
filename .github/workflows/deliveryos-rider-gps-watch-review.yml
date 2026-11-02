@@ -1,0 +1,31 @@
+name: DeliveryOS rider GPS watcher review
+on:
+  pull_request:
+    branches:
+      - claude/deliveryos-v1-candidato-homologacao-20261101
+    paths:
+      - 'src/entregas/ui/rider-mobile/gps-status.js'
+      - 'tests/product/run-rider-gps-watch-generation-tests.cjs'
+      - '.github/workflows/deliveryos-rider-gps-watch-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rider-gps-watch-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  rider-gps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: GPS watch generation and delayed callback behavior
+        run: node tests/product/run-rider-gps-watch-generation-tests.cjs
+      - name: Existing rider capture regression
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc --noEmit
+          npx tsx src/entregas/ui/run-rider-capture-tests.ts

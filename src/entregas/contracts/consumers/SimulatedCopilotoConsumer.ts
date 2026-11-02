@@ -119,9 +119,54 @@ export class SimulatedCopilotoConsumer {
     this.isolated.length = 0;
   }
 
-  /** Correlação por trip_id — ordenação local daquela Trip no que foi consumido */
-  eventsForTrip(trip_id: string): EntregasPublicEvent[] {
-    return this.appliedOrder.filter((e) => e.trip_id === trip_id);
+  /**
+   * Correlacao somente por contratos publicos; nunca ler o dominio Entregas.
+   * Eventos de chegada/entrega carregam delivery_id, sem trip_id obrigatorio.
+   * Aresta delivery_added fornece a relacao observada; unidade e source_mode
+   * particionam a identidade. Atribuicao ambigua e rejeitada.
+   */
+  eventsForTrip(
+    trip_id: string,
+    scope?: { unit_id: string; source_mode?: EntregasPublicEvent["source_mode"] },
+  ): EntregasPublicEvent[] {
+    // A trip_id collision across store/mode must not merge operational histories.
+    const keyScope = (e: EntregasPublicEvent) =>
+      JSON.stringify([e.unit_id, e.source_mode ?? null]);
+    const scopes = new Set(this.appliedOrder
+      .filter(e => e.trip_id === trip_id).map(keyScope));
+    const requested = scope
+      ? JSON.stringify([scope.unit_id, scope.source_mode ?? null])
+      : scopes.size === 1 ? [...scopes][0] : null;
+    if (requested === null || !scopes.has(requested)) return [];
+    const scopedEvents = this.appliedOrder.filter(e => keyScope(e) === requested);
+    const owners = new Map<string, Set<string>>();
+    const key = (event: EntregasPublicEvent): string =>
+      JSON.stringify([event.unit_id, event.source_mode ?? null, event.delivery_id]);
+    for (const event of scopedEvents) {
+      if (event.event_type !== "delivery_added" || !event.trip_id || !event.delivery_id) continue;
+      const k = key(event);
+      const seen = owners.get(k) ?? new Set<string>();
+      seen.add(event.trip_id);
+      owners.set(k, seen);
+    }
+    // Nao inferir vinculo retroativo: o registro publico da aresta precisa
+    // preceder o evento da entrega. A ambiguidade global continua fail-closed.
+    const linkedSoFar = new Map<string, Set<string>>();
+    return scopedEvents.filter((event) => {
+      if (event.event_type === "delivery_added" && event.trip_id && event.delivery_id) {
+        const k = key(event);
+        const seen = linkedSoFar.get(k) ?? new Set<string>();
+        seen.add(event.trip_id);
+        linkedSoFar.set(k, seen);
+      }
+      if (event.trip_id) return event.trip_id === trip_id;
+      if (!event.delivery_id) return false;
+      const k = key(event);
+      const allOwners = owners.get(k);
+      const precedingOwners = linkedSoFar.get(k);
+      return allOwners?.size === 1 && allOwners.has(trip_id) &&
+        precedingOwners?.size === 1 && precedingOwners.has(trip_id);
+    });
   }
 
   reset(): void {
