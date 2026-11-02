@@ -114,6 +114,28 @@ export function planTataSequence(
 
     if (bindingScope !== scopeId) continue;
 
+    // A trimmed identifier must not hide a second persisted binding or
+    // silently convert an inconsistent record into the requested order.
+    if (binding.scope_id !== bindingScope ||
+        binding.teknisa_order_id !== bindingOrder) {
+      blocking.add("NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY");
+    }
+
+    // An existing number is not a trustworthy reprint binding just
+    // because its order key matches. Validate the persisted format and
+    // policy before ever reusing it or allocating another number.
+    if (
+      !validPolicy(state.policy) ||
+      typeof binding.tata_sequence !== "string" ||
+      binding.tata_sequence !== bindingSequence ||
+      !/^[0-9]+$/.test(bindingSequence) ||
+      bindingSequence.length !== state.policy.width ||
+      Number(bindingSequence) < state.policy.min_value ||
+      Number(bindingSequence) > state.policy.max_value
+    ) {
+      blocking.add("INVALID_EXISTING_TATA_SEQUENCE_FORMAT_OR_RANGE");
+    }
+
     const priorOrder = bindingBySequence.get(bindingSequence);
     if (priorOrder && priorOrder !== bindingOrder) {
       blocking.add(`EXISTING_TATA_SEQUENCE_COLLISION:${bindingSequence}`);
@@ -135,6 +157,9 @@ export function planTataSequence(
   );
 
   if (duplicateOrderBindings.length > 1) {
+    // Even identical repeated rows break the one-persisted-binding proof.
+    // Do not silently choose the first or treat a duplicate as a reprint.
+    blocking.add(`DUPLICATE_ORDER_SEQUENCE_BINDING:${teknisaOrderId}`);
     const unique = new Set(duplicateOrderBindings.map((binding) => binding.tata_sequence));
     if (unique.size > 1) {
       blocking.add(`ORDER_BOUND_TO_MULTIPLE_TATA_SEQUENCES:${teknisaOrderId}`);

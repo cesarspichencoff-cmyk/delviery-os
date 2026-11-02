@@ -310,7 +310,7 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
       const source = sources.find((s) => s.item_index === line.item_index);
       if (!source || canon(source.product_name) !== canon(line.product_name) ||
           source.quantity !== line.quantity ||
-          (source.product_code && line.product_code && source.product_code !== line.product_code)) {
+          (source.product_code ?? null) !== (line.product_code ?? null)) {
         localReasons.add("PRODUCTION_SOURCE_MISMATCH:" + line.item_index);
       }
       const chosen = source ?? {
@@ -362,8 +362,12 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     }
     // Proven source-based packing allocation is required; the station label
     // alone does not establish which item belongs in a physical box.
+    // An item name can contain "|" or ";". The legacy delimiter-based
+    // signature admitted false matches between ONE product and MULTIPLE
+    // different products. Preserve tuple and array boundaries structurally.
     const signature = (items: Array<{ name: string; quantity: number }>): string =>
-      items.map((x) => canon(x.name) + "|" + x.quantity).sort().join(";");
+      JSON.stringify(items.map((x) => [canon(x.name), x.quantity])
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
     for (const [groupId, box] of boxes) {
       const stationLines = sourceLinesByGroup.get(groupId) ?? [];
       const wanted = signature(stationLines.map((x) => ({ name: x.product_name, quantity: x.quantity })));
@@ -517,8 +521,33 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     if (name !== "GARI" && name !== "WASABI" && name !== "TARE") continue;
     accompanimentMap.set(name, (accompanimentMap.get(name) ?? 0) + complement.quantity);
   }
+  // Quantity and completeness of packaging evidence are independent of
+  // per-item box membership. A complete-looking box layout is not a proven
+  // conference ticket if the resource motor still lacks bags/kits.
   if (!bags.length) warnings.add("BAG_SIZE_OR_COUNT_NOT_PROVEN");
   if (input.packaging_plan?.has_unknown) warnings.add("PACKAGING_ENGINE_UNKNOWN");
+  const packingUnknownPrefixes = ["PACKAGING_", "BAG_", "EXACT_BAG_", "KIT_"];
+  const packingUnknown = input.resource_projection.unknowns.some((reason) =>
+    packingUnknownPrefixes.some((prefix) => reason.startsWith(prefix)));
+  if (packingUnknown) {
+    reasons.add("PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE");
+    warnings.add("DATA_INTEGRITY:PACKAGING_RESOURCE_EVIDENCE_INCOMPLETE");
+  }
+  const nonIntegralResources = [...bags, ...kits].some((resource) =>
+    !Number.isSafeInteger(resource.quantity) || resource.quantity <= 0);
+  if (nonIntegralResources) {
+    reasons.add("BAG_OR_KIT_QUANTITY_NOT_WHOLE");
+    warnings.add("DATA_INTEGRITY:BAG_OR_KIT_QUANTITY_NOT_WHOLE");
+  }
+  const exactBagCount = input.packaging_plan?.bags?.exact_bag_count;
+  const exactBagStatus = input.packaging_plan?.bags?.exact_bag_count_status;
+  if (typeof exactBagCount !== "number" ||
+      !Number.isSafeInteger(exactBagCount) || exactBagCount < 1 ||
+      exactBagStatus !== "FACT" ||
+      bags.reduce((count, bag) => count + bag.quantity, 0) !== exactBagCount) {
+    reasons.add("EXACT_BAG_ALLOCATION_NOT_PROVEN");
+    warnings.add("DATA_INTEGRITY:EXACT_BAG_ALLOCATION_NOT_PROVEN");
+  }
   for (const unknown of input.resource_projection.unknowns) warnings.add("RESOURCE_UNKNOWN:" + unknown);
   const unallocated = [...remaining.values()].map((s) => itemFromSource(s, aliases, reasons));
   for (const issue of reasons) warnings.add("DATA_INTEGRITY:" + issue);
@@ -533,8 +562,26 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     : null;
   // Conference needs an evidenced packaging plan and full allocation.
   // A readable fallback trace is diagnostic, not semantic approval.
-  const conferenceReady = reasons.size === 0 && input.packaging_plan !== null &&
-    input.packaging_plan.has_unknown === false && remaining.size === 0;
+  // A declared packaging group may be invalid or unallocated while every
+  // real item is incidentally covered by other groups. Remaining.size===0
+  // alone cannot certify the COMPLETE packing plan.
+  const packagingCoverageWarnings = [
+    "NON_BOXED_ITEM_MEMBERSHIP_NOT_PROVEN:",
+    "BOX_GROUP_NOT_PROVEN_OR_NOT_ALLOCATED:",
+    "AMBIGUOUS_OR_MISSING_BOX_ITEM:",
+    "PACKAGING_ROLE_NOT_CONFIRMED:",
+    "CLOSED_COMBO_CANNOT_SHARE_BOX:",
+    "PER_BOX_ITEM_ALLOCATION_UNKNOWN:",
+  ];
+  const packagingCoverageUnproven = [...warnings].some((warning) =>
+    packagingCoverageWarnings.some((prefix) => warning.startsWith(prefix)));
+  if (packagingCoverageUnproven) {
+    reasons.add("PACKAGING_GROUP_COVERAGE_NOT_PROVEN");
+    warnings.add("DATA_INTEGRITY:PACKAGING_GROUP_COVERAGE_NOT_PROVEN");
+  }
+  const conferenceReady = reasons.size === 0 && input.packaging_plan != null &&
+    input.packaging_plan.has_unknown === false && remaining.size === 0 &&
+    !packagingCoverageUnproven;
   const conference: ConferenceTicketV45 = {
     order_id: input.order_id,
     identifiers: conferenceIdentifiers,
