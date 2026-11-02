@@ -82,7 +82,10 @@ class TripLocationService : Service() {
         }
     }
 
-    private lateinit var fused: FusedLocationProviderClient
+    // Android sem Google não deve nem criar o cliente GMS ao iniciar o serviço.
+    private val fused: FusedLocationProviderClient by lazy(LazyThreadSafetyMode.NONE) {
+        LocationServices.getFusedLocationProviderClient(this)
+    }
     private lateinit var db: EntregasDatabase
     // Lifecycle, callbacks e conclusões de Tasks compartilham o main thread.
     // Room suspende sem bloquear; apenas o HTTP bloqueante vai para IO.
@@ -223,7 +226,6 @@ class TripLocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        fused = LocationServices.getFusedLocationProviderClient(this)
         db = EntregasDatabase.get(this)
         TripNotification.ensureChannel(this)
     }
