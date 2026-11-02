@@ -93,3 +93,35 @@ A leitura adicional do manual oficial identificou um elo que faltava à ficha in
 Quando `Utiliza Loja e Caixa do Vendedor Padrão = NÃO`, loja e caixa são atribuídos por unidade na integração. Se os dados estiverem visíveis apenas na aba **Token** ou exigirem editar configuração, a checagem **para** sem abrir o segredo. A flag **Realiza sincronização com Delivery Centralizado** é pista de arquitetura, **não prova identidade de processo ou emissor**.
 
 **Procedimento enxuto, sem efeito e sem conteúdo de cliente:** [Ficha B0.5 — origem IFO Itaim](FICHA_B05_ORIGEM_IFO_ITAIM_SOMENTE_LEITURA_20261101.md). Essa ficha identifica precisamente o próximo B1 e evita repetir buscas em fontes que não geram a primeira via. `B05_UNVERIFIED` até observação atual legitimamente autorizada; nenhum dado de configuração do Itaim foi obtido por esta pesquisa.
+
+
+## Rota de destravamento revisada — evidência paralela + entrega incremental sem papel (01/11/2026)
+
+### Nova evidência real, delimitada
+
+- Em \`CAIXA_MOOCA\`, a lista de processos contém \`Fos\`, \`FosImp\`, \`FosSinc\` e \`FosExp\`, todos em execução na observação local. Isso é mais forte que apenas encontrar binários instalados, mas ainda **não** demonstra o callsite \`DLV_IFO\` ou uma primeira tentativa.
+- A instalação Odhen Periféricos contém \`version.json\` com \`5.8.2\` (declaração do pacote, não identidade de instância nem confirmação do transporte ativo).
+- \`Get-WinEvent -ListLog Microsoft-Windows-PrintService/Operational\` retornou **IsEnabled=True**, **RecordCount=2058** e **MaximumSizeInBytes=1052672**. **Só metadados do canal** foram lidos: nenhum registro/evento, nome de documento, usuário, endereço, spooler ou pedido foi acessado. A capacidade pequena impede prometer retenção de eventos até uma investigação futura. Canal habilitado não prova que os envios da Teknisa passem pelo spooler.
+- A conexão do navegador da sessão atual **não estava disponível** para ler a interface Retail: Browser exigiu contexto da extensão conectada; Opera informou conector desconectado. Não houve tentativa de login por outro canal ou de ultrapassar ACL.
+- O manual oficial *Teknisa × iFood 4.2.0* descreve recebimento até geração de comanda ForSale, enquanto a documentação da *Order API* menciona envio à cozinha. **São integrações/documentos distintos**; não converter a segunda descrição em prova do evento iFood/IFO desta unidade.
+- A review oficial Retail agosto/2025 descreve alteração de timing para **pedidos TAA Mobile em dinheiro**, imprimindo cozinha após cupom fiscal. Esse caso **não é a origem iFood**; serve como alerta para não presumir gatilho universal de impressão por código de status ou nome de executável.
+
+### Romper a dependência sequencial sem relaxar prova
+
+Há **duas rotas independentes de descoberta**, que podem ser pesquisadas simultaneamente em vez de repetir testes de classificação:
+
+**Rota A — fonte administrativa/fornecedor:** identificar \`IFO\` + filial \`0001\` + loja \`01\` + caixa, via interface Retail legítima; \`Vendedor Padrão → Vendedores Associados\` quando essa for a configuração. Se a tela estiver inacessível, solicitar ao suporte Teknisa a identificação documental exata do caixa, do componente que gera primeira impressão, do transporte e de uma **supressão de produção exclusiva IFO** que preserve mesa/balcão/fiscal. Resposta do suporte é prova de contrato/versão declarada; o runtime da unidade ainda exige verificação.
+
+**Rota B — observação pontual de evento natural, somente depois de autorização de fonte e privacidade:** o canal PrintService já habilitado é um **candidato auxiliar**, não um leitor de origem nativa. Uma observação real válida teria de ligar a chave/revisão nativa \`CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA\` a uma tentativa de **primeira produção** (não relatório de entrega, reprint ou cupom fiscal), com componente, praça/destino/backup e fonte autenticada, sem payload de cliente. Se evento 307 não expuser chave causal ou se o trabalho for TCP/arquivo/Epson direto, registrar **INDETERMINATE**. Nunca correlacionar só por hora ou inventar identidade pelo nome da fila. Não habilitar log, ampliar retenção, consultar eventos históricos ou instrumentar processos sem autorização específica.
+
+**A/B não são atalho de autorização:** evidência causal do evento e evidência do caixa lógico têm de convergir antes de suprimir qualquer via; nenhuma observação isolada habilita impressão, mudança de configuração, sequência ou deploy.
+
+### Entrega incremental útil enquanto B1 está pendente
+
+**Etapa D0 — conferência digital em sombra, sem papel:** reaproveitar o modelo existente \`tools/comandas_shadow_station_board_v1_offline.cjs\` e as prévias com escopo da conferência; não criar outro motor e não supor que estão ligados ao Reader vivo. Objetivo: demonstrar visualmente roteiro por praça, revisão, quantidades e observações apenas quando a fonte nativa e a classificação estiverem válidas; conciliação independente iFood fica em painel de conferência, em estado **PENDENTE** quando faltar. Esse modo não atribui \`001\` real, não inicia trabalho de produção, não muda o ForSale e não gera impressão. A implantação em dispositivo operacional requer autorização separada, fonte de leitura legítima e política de privacidade.
+
+**Etapa D1 — hipótese de implantação de menor efeito, apenas após prova física da linha de base:** se os tickets nativos já cumprirem as duas vias de produção e **não houver** via de conferência equivalente, uma primeira homologação futura **poderia preservar integralmente o emissor nativo** e adicionar apenas a conferência, com uma única emissão autorizada/observada. Não assumir que as duas vias nativas já existem ou são corretas; sem contagem de papel, destino, conteúdo e deduplicação atestados, D1 permanece **HOLD**. A ausência de conciliação iFood bloqueia **somente a conferência**.
+
+**Etapa D2 — substituição controlada da produção TATÁ:** somente após comprovar supressão seletiva de vias nativas IFO sem afetar outras origens e fallback, implementar sequência TATÁ V2 atômica com chave forte e releitura, idempotência por revisão/praça, dois tickets de produção + um de conferência, reversão testada e piloto físico supervisionado. Não usar \`IDIMPPEDPROD\`, \`IDIMPAUTENTREG\` ou mudanças globais de fila como interruptor geral.
+
+**Decisão atual:** buscar A e preparar escopo B sem ativar B; D0 somente em revisão isolada. \`IFO_RETAIL_LIVE_MAPPING=UNKNOWN\`, \`NATIVE_FIRST_DISPATCH=UNKNOWN\`, \`D1=HOLD\`, \`D2=HOLD\`. Sem mudança operacional no caixa, sem captura de eventos, sem mensagem enviada ao fornecedor, sem merge ou deploy.
