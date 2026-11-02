@@ -1,0 +1,62 @@
+# Recertification of actual current code after inspecting Foxxy's uncommitted historical tests.
+# NO legacy migration 0011, no grants, deploy, physical device, secrets or host access.
+name: DeliveryOS Foxxy security recertification (isolated)
+on:
+  pull_request:
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - 'src/platform/auth/**'
+      - 'src/platform/run-pilot-delegation-issuer-tests.ts'
+      - 'src/platform/run-pilot-delegation-route-tests.ts'
+      - 'src/platform/runtime/rota-delegacao-piloto.ts'
+      - 'src/entregas/pilot/delegated-authorization.ts'
+      - 'src/entregas/pilot/delegated-http-authorization.ts'
+      - 'src/entregas/persistence/**'
+      - 'src/entregas/operational/run-inbound-commit-uncertainty-tests.ts'
+      - 'deploy/sql/papeis_minimos.sql'
+      - 'docs/execution/FOXXY_SECURITY_TEST_CONVERGENCE_20261102.md'
+      - '.github/workflows/deliveryos-foxxy-security-recert.yml'
+  push:
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - 'src/platform/auth/**'
+      - 'src/platform/run-pilot-delegation-issuer-tests.ts'
+      - 'src/platform/run-pilot-delegation-route-tests.ts'
+      - 'src/platform/runtime/rota-delegacao-piloto.ts'
+      - 'src/entregas/pilot/delegated-authorization.ts'
+      - 'src/entregas/pilot/delegated-http-authorization.ts'
+      - 'src/entregas/persistence/**'
+      - 'src/entregas/operational/run-inbound-commit-uncertainty-tests.ts'
+      - 'deploy/sql/papeis_minimos.sql'
+      - '.github/workflows/deliveryos-foxxy-security-recert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foxxy-source-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install locked dependencies, no deployment
+        run: npm ci --no-audit --no-fund
+      - name: Verify current TypeScript interfaces
+        run: npx tsc --noEmit
+      - name: Issuer current API - device, unit, actor, token, expiry and revocation
+        run: npx tsx src/platform/run-pilot-delegation-issuer-tests.ts
+      - name: Real route adapter current API - authenticated registry and independent verifier
+        run: npx tsx src/platform/run-pilot-delegation-route-tests.ts
+      - name: Inbound receipts current API - atomicity, collision, old-writer and restore guards
+        run: npx tsx src/entregas/persistence/run-inbound-receipt-tests.ts
+      - name: Inbound ambiguous commit current API - fail-closed synthetic suite
+        run: npx tsx src/entregas/operational/run-inbound-commit-uncertainty-tests.ts
+      - name: Static non-promotion gate - no historical broad PG role grants
+        run: node tests/product/run-inbound-receipt-integration-presence-gate.cjs
