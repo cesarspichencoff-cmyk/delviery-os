@@ -29,7 +29,18 @@ const NON_TRIGGER=[
  "RETAIL_PRODUCT_IMPRIME_PRODUCAO_FLAG",
  "WINDOWS_PRINTSERVICE_EVENT_307",
  "SYSMON_PROCESS_OR_NETWORK_EVENT",
- "PROCMON_OBSERVED_FILE_NETWORK_ACTIVITY"
+ "PROCMON_OBSERVED_FILE_NETWORK_ACTIVITY",
+ // Static Delphi PE evidence (imports, BSS callback slots, code xrefs,
+ // export names) proves only compiled capability, never that a native
+ // production call occurred for a specific DLV_IFO revision.
+ "FORSALE_PE_IMPORTED_PRINT_SYMBOL",
+ "FORSALE_GPE_BSS_CALLBACK_SLOT",
+ "FORSALE_GPE_IAT_CODE_REFERENCE",
+ "FORSALE_PRODUCTION_FUNCTION_EXPORTED",
+ "FORSALE_PRINT_MODULE_STATIC_LITERAL",
+ "FORSALE_STATIC_SOURCE_METHOD_NAME",
+ // A spooler aggregate cannot prove first native dispatch.
+ "WINDOWS_PRINT_QUEUE_AGGREGATE"
 ];
 function result(status,reason,more={}){
  return {schema:SCHEMA,status,reason,effects:EFFECTS,
