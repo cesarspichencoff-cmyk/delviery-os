@@ -40,7 +40,13 @@ const NON_TRIGGER=[
  "FORSALE_PRINT_MODULE_STATIC_LITERAL",
  "FORSALE_STATIC_SOURCE_METHOD_NAME",
  // A spooler aggregate cannot prove first native dispatch.
- "WINDOWS_PRINT_QUEUE_AGGREGATE"
+ "WINDOWS_PRINT_QUEUE_AGGREGATE",
+ // Direct E8 callsites observed in UI button event handlers are manual/
+ // report paths, not proof of automatic native marketplace dispatch.
+ "FORSALE_MANUAL_PRODUCTION_BUTTON_CALL",
+ "FORSALE_MANUAL_DELIVERY_BUTTON_CALL",
+ "FORSALE_OPEN_ORDER_REPORT_PRINT_HANDLER",
+ "FORSALE_CASH_CLOSE_PRINT_REFERENCE"
 ];
 function result(status,reason,more={}){
  return {schema:SCHEMA,status,reason,effects:EFFECTS,
