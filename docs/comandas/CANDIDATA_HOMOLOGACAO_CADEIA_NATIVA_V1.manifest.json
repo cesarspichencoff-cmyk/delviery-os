@@ -38,8 +38,8 @@
     },
     {
       "path": "src/production/nativeReaderChainV1.ts",
-      "git_blob": "fe7875f4da5a502d1c545b01e9dc0ced12576008",
-      "bytes": 21781
+      "git_blob": "6a1808331bb217cf19d044d493c3429c42585ded",
+      "bytes": 22650
     },
     {
       "path": "src/production/operationalTicketEscposV46.ts",
@@ -88,8 +88,8 @@
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "c7f54e32075f90688dbd1152c373cb3dd387fd00",
-      "bytes": 11656
+      "git_blob": "e902223d08a0729f10a4e6c3fe128cec0b9ff6f7",
+      "bytes": 11920
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",

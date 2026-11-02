@@ -189,6 +189,22 @@ export function joinNativeReaderSnapshotV1(
   };
 }
 
+/**
+ * Per-item notes for the production print plan, from the SAME native join.
+ * Mirrors the V6.6 ingress source rule exactly (delivery DSOBS* first, then
+ * TXPRODCOMVEN, first spelling kept, duplicates by the same normalization
+ * dropped), so plan, ingress and tickets compare equal lists. Without this
+ * every revision with an item note held at PRODUCTION_CUSTOMER_OBSERVATION_DIVERGENCE.
+ */
+export function nativeTicketItemsV1(join: DeliveryProductionJoin | null): Array<{ item_index: number; item_observations: string[] }> {
+  return (join?.items ?? []).map((item) => {
+    const unique: string[] = [];
+    for (const raw of [...(item.delivery_observacoes ?? []), ...(item.tx_prod_com_ven ?? [])])
+      if (!unique.some((x) => norm(x) === norm(raw))) unique.push(raw);
+    return { item_index: item.delivery_item_index, item_observations: unique };
+  });
+}
+
 export interface CatalogEquivalenceRecordV1 {
   id: string;
   canonical_code: string;

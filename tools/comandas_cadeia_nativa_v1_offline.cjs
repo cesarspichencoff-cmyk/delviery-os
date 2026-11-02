@@ -146,10 +146,13 @@ function runNativeChainV1(i){
   store_unit:e.order.CDLOJA,timestamp_origin:"TEKNISA_ORDER_SOURCE_CLAIM",
   snapshot_sha256:e.snapshot_hash,source_ref:"native-event:"+e.snapshot_hash.slice(0,16),
   order_local_day:day,order_local_hm:hm,item_roles:roles};
+ // Item notes ride with their item; a general note keeps relevance UNKNOWN
+ // (it may carry payment text) and the plan holds it, as V7.6/V7.7 require.
  const context={tata_sequence:sequence.number||NO_SEQUENCE,
   teknisa_sequence:e.order.NRCOMANDA,ifood_sequence:e.order.NRCOMANDAEXT,order_time:hm,
-  template_version:"production-ticket-v2-shadow",ticket_items:[],
-  order_observations:join.join.order_observations.map(v=>({value:v,scope:"ORDER",proof:"NATIVE_SOURCE"}))};
+  template_version:"production-ticket-v2-shadow",ticket_items:N.nativeTicketItemsV1(join.join),
+  order_observations:join.join.order_observations.map(v=>({value:v,
+   source_ref:"native-event:"+e.snapshot_hash.slice(0,16)+":DSOBSCOMANDA",relevance:"UNKNOWN",proof:"REAL_OBSERVED"}))};
  const review=planWindowReview(projection,claim,context,i.calibration);
  if(!review.plan||!review.plan.ready_for_shadow_payload){
   L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog});
