@@ -264,7 +264,11 @@ export function decideProductionOrderRevisionReviewV1(
     return result("LATEST_NATIVE_REVISION_OR_CANCELLATION_UNRECONCILED");
   if (!Array.isArray(input.history) || input.history.length > 5000)
     return result("ORDER_STATION_ATTEMPT_HISTORY_INVALID");
-  const attempts = new Map<string, string>();
+  // An attempt ID is ONE physical-submission identity across the whole
+  // supplied journal, matching the downstream first-dispatch correlation.
+  // Keying it by order/station/day let a row of another scope reuse this
+  // order's attempt ID while the diagnostic still reported a clean candidate.
+  const attempts = new Map<string, { scope: string; signature: string }>();
   for (const item of input.history) {
     if (!item || typeof item !== "object" || Array.isArray(item) ||
         !validOrderKey(item.order_key) || !validStation(item.station_code) ||
@@ -274,17 +278,19 @@ export function decideProductionOrderRevisionReviewV1(
         !validAttempt(item.attempt_id) ||
         !KNOWN_ATTEMPT_STATES.has(item.state))
       return result("ORDER_STATION_ATTEMPT_HISTORY_INVALID");
-    const key = JSON.stringify([
-      item.order_key, item.station_code, item.operational_date, item.attempt_id,
+    const scope = JSON.stringify([
+      item.order_key, item.station_code, item.operational_date,
     ]);
     const signature = JSON.stringify([
       item.native_snapshot_sha256.toLowerCase(),
       item.intent_fingerprint.toLowerCase(), item.state,
     ]);
-    const previous = attempts.get(key);
-    if (previous !== undefined && previous !== signature)
+    const previous = attempts.get(item.attempt_id);
+    if (previous !== undefined && previous.scope !== scope)
+      return result("ATTEMPT_ID_REUSED_ACROSS_ORDER_STATION_DAY_SCOPE");
+    if (previous !== undefined && previous.signature !== signature)
       return result("ORDER_STATION_ATTEMPT_IDENTITY_CONTRADICTED");
-    attempts.set(key, signature);
+    attempts.set(item.attempt_id, { scope, signature });
   }
   // A pending planned attempt can be concurrently submitted or replayed
   // after an unobserved crash. Content revisions do not erase that risk.
@@ -307,6 +313,17 @@ export function decideProductionOrderRevisionReviewV1(
     item.state === "SPOOLER_OBSERVED" ||
     item.state === "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"))
     return result("PRIOR_EFFECT_UNKNOWN_SAME_ORDER_STATION");
+  // The CURRENT intent recorded under another order/station/day is a
+  // fingerprint collision (possibly a mis-keyed row of this very order).
+  // Same-scope printed/unknown vetoes above keep precedence. Hex case is
+  // not identity: the hashes are compared case-insensitively.
+  const currentIntent = input.intent_fingerprint.toLowerCase();
+  if (input.history.some(item =>
+    item.intent_fingerprint.toLowerCase() === currentIntent &&
+    (item.order_key !== input.order_key ||
+     item.station_code !== input.station_code ||
+     item.operational_date !== input.operational_date)))
+    return result("PRINT_INTENT_FINGERPRINT_REUSED_ACROSS_SCOPE");
   if (relevant.some(item =>
     item.native_snapshot_sha256.toLowerCase() ===
       input.native_snapshot_sha256.toLowerCase() &&

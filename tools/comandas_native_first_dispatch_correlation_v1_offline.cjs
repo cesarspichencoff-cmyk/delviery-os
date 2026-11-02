@@ -125,11 +125,14 @@ function correlateNativeFirstDispatch(input){
  // native revision and operational day. An identical fingerprint elsewhere
  // cannot become independent proof for either candidate. This check is
  // global across the supplied journal, not only the candidate's station.
+ // SHA-256 hex is case-insensitive (SHA accepts both cases): an exact
+ // string match let an uppercase copy elsewhere bypass this collision veto.
+ const fp=c.intent_fingerprint.toLowerCase(),snap=e.snapshot_hash.toLowerCase();
  const fingerprintCollision=input.history.some(r=>
-  r.intent_fingerprint===c.intent_fingerprint &&
+  r.intent_fingerprint.toLowerCase()===fp &&
   (r.order_key!==e.order_key || r.station_code!==c.station_code ||
    r.operational_date!==day ||
-   r.native_snapshot_sha256!==e.snapshot_hash));
+   r.native_snapshot_sha256.toLowerCase()!==snap));
  if(fingerprintCollision)
   return result("HOLD","FIRST_DISPATCH_INTENT_FINGERPRINT_REUSED_ACROSS_SCOPE",scope);
  // Even matching claim + journal row is self-reported and cannot attest the
