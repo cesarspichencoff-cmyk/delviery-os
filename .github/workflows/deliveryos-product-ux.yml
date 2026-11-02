@@ -144,6 +144,12 @@ jobs:
         run: npx tsx src/entregas/pilot/run-producer-signing-boot-tests.ts
       - name: real declarado e isolado pelo consumer (LAB de fronteira)
         run: npx tsx tests/product/run-entregas-source-provenance-boundary-lab-tests.ts
+      - name: Ligacao publica Trip e Delivery com isolamento por unidade e modo
+        run: npx tsx src/entregas/integration/run-gate-close-tests.ts
+      - name: GPS navegador - gerações, viagem e captura sem callbacks atrasados
+        run: |
+          node tests/product/run-rider-gps-watch-generation-tests.cjs
+          npx tsx src/entregas/ui/run-rider-capture-tests.ts
       - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
         run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
       - name: Copiloto normaliza pedidos pelo motor TATA sem promover historico a live
