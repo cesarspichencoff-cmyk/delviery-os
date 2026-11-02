@@ -79,8 +79,63 @@ test("measured differences (doc table D1-D13) stay exactly as measured until re-
  const seq=L.sushi.lines.find(l=>l.text==="006"),item=line(L.sushi,"1  COMBINADO SALMÃO 1 PESSOA");
  assert.deepEqual([mm(seq.height),mm(item.height)],[6.01,6.01]);       // D13 TATÁ not taller than items
 });
+// ── V4.8: the renderer aligned to the masters (César, 02/11/2026). Same fixtures.
+const F=require("../dist/src/production/operationalTicketEscposFigmaV48.js");
+const sushi48=F.renderProductionTicketFigmaV48(sushi30_3),conf48=F.renderConferenceTicketFigmaV48(conf20_9);
+const L48={sushi:P.layoutVirtualPaperV1(sushi48.bytes),conf:P.layoutVirtualPaperV1(conf48.bytes)};
+const T48=k=>L48[k].lines.map(l=>l.text);
+test("V4.8 renders the masters' content with zero blockers inside 72 mm, one command set",()=>{
+ for(const [k,p] of [["sushi",sushi48],["conf",conf48]]){
+  assert.deepEqual(p.blocking_reasons,[],k);assert.ok(p.byte_count>0,k);
+  assert.deepEqual([L48[k].errors,L48[k].overflow],[[],[]],k);
+  assert.equal(p.ready_for_operational_print,false);
+ }
+});
+test("V4.8 closes D1-D3: 72 mm dividers after every box, Op. ending at the right edge",()=>{
+ const div=L48.conf.lines.find(l=>/^-+$/.test(l.text));
+ assert.deepEqual([mm(div.width),div.text.length],[mm(576),48]);                         // D1
+ const t=T48("conf"),c1=t.indexOf("C1  CAIXA 750"+" ".repeat(23)+"Op. ________"),c2=t.findIndex(x=>/^C2  CAIXA 750 +Op\. ________$/.test(x));
+ assert.ok(c1>=0&&c2>c1,"box lines");
+ assert.equal(t.slice(c1,c2).filter(x=>x==="-".repeat(48)).length,1);                      // D2
+ const op=L48.conf.lines[c1];assert.deepEqual([op.x+op.width,mm(op.x+op.width-12*12)],[576,54.05]); // D3
+});
+test("V4.8 closes D4/D5/D8/D9/D12: master texts, no lines the master lacks",()=>{
+ assert.ok(!T48("conf").some(x=>/^1 CAIXA \||FINALIZAÇÃO/.test(x)));                       // D4 D5
+ assert.equal(T48("conf")[1],"CONFERÊNCIA");                                                  // D8
+ assert.ok(T48("sushi").includes("iFood #5487  |  TEKNISA 1234  |  19:45"));                 // D9 = master 30:3
+ assert.ok(T48("conf").includes("iFood #3921  |  TEKNISA 17864  |  19:42"));
+ assert.ok(T48("conf").includes("Sacola: a conferir  |  Kit: a conferir"));                 // D12 = master 20:9
+ assert.ok(T48("conf").includes("Acomp.: 1 Gari  |  1 Tare"));
+});
+test("V4.8 closes D7/D11/D13: praça 1x2 bold, production notes bold, TATÁ 3x3 the tallest",()=>{
+ const st=L48.sushi.lines[1];
+ assert.deepEqual([st.text,st.runs[0].hmul,st.runs[0].bold,mm(st.height)],["SUSHI",2,true,6.01]); // D7 master 6.1 mm
+ for(const t of ["OBS: SEM CEBOLINHA","AGUARDAR COZINHA: 2X EBITEN"])
+  assert.equal(L48.sushi.lines.find(l=>l.text===t).runs[0].bold,true,t);                       // D11
+ assert.equal(L48.conf.lines.find(l=>l.text==="OBS: SEM CEBOLINHA").runs[0].bold,false);
+ for(const k of ["sushi","conf"]){
+  const seq=L48[k].lines.find(l=>l.text==="006");
+  assert.deepEqual([seq.align,seq.x+seq.width,seq.runs[0].wmul,seq.runs[0].hmul,mm(seq.height)],["RIGHT",576,3,3,9.01],k); // D13 master 9.5 mm
+  assert.ok(L48[k].lines.every(l=>l===seq||l.height<seq.height),k);
+ }
+});
+test("V4.8 keeps every fact of the source: ids, boxes, items, notes, resources, number",()=>{
+ const want=["SIMULAÇÃO · NÃO PRODUZIR","SUSHI","C1  CAIXA 750","1  COMBINADO SALMÃO 1 PESSOA","C2  CAIXA 750",
+  "2  URAMAKI EBITEN ESPECIAL (8)","OBS: SEM CEBOLINHA","AGUARDAR COZINHA: 2X EBITEN","006"];
+ assert.deepEqual(T48("sushi").filter(x=>x&&!/^-+$/.test(x)&&!/^iFood/.test(x)),want);
+ assert.ok(["1  COMBINADO SALMÃO 1 PESSOA","2  URAMAKI SKIN (8)","OBS: SEM CEBOLINHA","006"].every(x=>T48("conf").includes(x)));
+});
+test("V4.8 inherits every V4.6 semantic veto: no number or an unready view gives zero bytes",()=>{
+ const noNumber=F.renderProductionTicketFigmaV48({...sushi30_3,identifiers:{...sushi30_3.identifiers,tata:"SEM"}});
+ assert.deepEqual([noNumber.byte_count,noNumber.blocking_reasons.includes("TATA_SEQUENCE_NOT_PROVEN")],[0,true]);
+ assert.ok(noNumber.text_trace.includes("iFood #5487  |  TEKNISA 1234  |  19:45"),"ids stay visible in the preview");
+ const unready=F.renderOperationalTicketsFigmaV48({ready_for_semantic_preview:false,blocking_reasons:["X"],
+  production:[sushi30_3],conference:conf20_9});
+ assert.ok([...unready.production,unready.conference].every(v=>v.byte_count===0&&
+  v.blocking_reasons.includes("GLOBAL_SOURCE_SEMANTIC_BLOCKED")));
+});
 test("virtual paper declares no physical effect",()=>{
  assert.deepEqual(L.sushi.effects,{print:false,spooler:false,device:false,network:false,file_write:false});
  assert.ok(L.sushi.assumptions.includes("GLYPHS_NOT_EPSON_BITMAPS"));
 });
-console.log("COMANDAS_VIRTUAL_PAPER_V1="+n+"/"+n+" FIGMA_30_3_20_9_MEASURED DEVIATIONS_PINNED NO_DEVICE");
+console.log("COMANDAS_VIRTUAL_PAPER_V1="+n+"/"+n+" FIGMA_30_3_20_9_MEASURED V46_DEVIATIONS_PINNED V48_ALIGNED NO_DEVICE");

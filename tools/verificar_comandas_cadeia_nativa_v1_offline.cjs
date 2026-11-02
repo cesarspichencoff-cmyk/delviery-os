@@ -130,7 +130,7 @@ test("native chain: real revision -> three virtual views, dinner routes Sushi 1 
   ["PRODUCAO:COZINHA","PRODUCAO:DELIVERY SUSHI 1","CONFERENCIA:CONFERENCIA"]);
  const conf=out.views[2].text_trace;
  assert.equal((conf.match(/Op\. ________/g)||[]).length,6);
- assert.ok(conf.includes("1 SACOLA G | 3 KIT KIDS | 1 KIT QUENTE"));
+ assert.ok(conf.includes("Sacola: 1 G  |  3 Kit Kids  |  1 Kit Quente"));
  assert.ok(out.views[1].text_trace.includes("C3  CAIXA 750"));
  assert.ok(out.views[1].text_trace.includes("SUSHI DE UNAGUI"));
  assert.equal(out.layers.L4.conference_ifood_crosscheck,"HOLD");
@@ -192,7 +192,7 @@ test("differential: combo 2p + 2 temakis (a judged kit rule) flows to three dinn
  assert.deepEqual(r.views.map(v=>v.station),["DELIVERY SUSHI 1","DELIVERY SUSHI 2","CONFERENCIA"]);
  assert.ok(r.views[0].text_trace.includes("C1  CAIXA 1500\n1  COMB SUSHI + SASHIMI ESPECIAL 2 P"));
  assert.ok(r.views[1].text_trace.includes("C1  CAIXA 750\n2  TEMAKI DE BARRIGA DE SALMAO"));
- assert.ok(r.views[2].text_trace.includes("1 SACOLA G | 1 KIT P/2 | 1 KIT SIMPLES"));
+ assert.ok(r.views[2].text_trace.includes("Sacola: 1 G  |  1 Kit p/2  |  1 Kit Simples"));
  assert.equal((r.views[2].text_trace.match(/Op\. ________/g)||[]).length,2);
  assert.ok(r.views.every(v=>v.escpos_bytes===0));
 });
@@ -340,7 +340,7 @@ test("sequence levels: only LIVE_ATTESTED for this order and Itaim day reaches p
  // Synthetic LIVE claim (no producer exists): only then a number appears, on all three views.
  const ok=chain(real,decision,{sequence_binding:live});
  assert.deepEqual([ok.layers.L5.status,ok.layers.L5.tata_number,ok.layers.L5.sequence_level],["BOUND","037","LIVE_ATTESTED"]);
- assert.ok(ok.views.every(v=>v.text_trace.includes("IFOOD 9627 | TEKNISA")&&/\b037\b/.test(v.text_trace)));
+ assert.ok(ok.views.every(v=>v.text_trace.includes("iFood #9627  |  TEKNISA")&&/\b037\b/.test(v.text_trace)));
  // The number belongs to the ORDER: a new native revision (header X -> P,
  // other snapshot) keeps it; the contract never renumbers a revision.
  const rev=event(o=>({...o,IDSTCOMANDA:"P"}));
@@ -389,6 +389,12 @@ test("native item notes stay intact: own station and conference, verbatim, never
   }
  }
  assert.ok(r.views.every(v=>v.escpos_bytes>0));
+ // Figma: notes bold on production views (master 30:3), regular on the conference (20:9).
+ const P=require("./comandas_papel_virtual_escpos_v1_offline.cjs");
+ for(const v of r.views){
+  const notes=P.layoutVirtualPaperV1(v.escpos).lines.filter(l=>/^OBS: /.test(l.text));
+  assert.ok(notes.length>0&&notes.every(l=>l.runs[0].bold===(v.kind==="PRODUCAO")),v.station);
+ }
  // General note (DSOBSCOMANDA): may carry payment text; V7.6/V7.7 keep it
  // blocked until a per-note human disposition. Never dropped, never printed.
  const g=event(o=>({...o,observation_rows:[{source_field:"DSOBSCOMANDA",value:"TROCO PARA 100",scope_hint:"order",join_proven:true}]}));
@@ -407,7 +413,7 @@ test("three-view content contract: ids on every view, each product in exactly on
  const production=r.views.filter(v=>v.kind==="PRODUCAO"),conf=r.views.find(v=>v.kind==="CONFERENCIA");
  // iFood + Teknisa + TATÁ (synthetic LIVE claim) identical on the three views.
  for(const v of r.views){
-  assert.ok(v.text_trace.includes("IFOOD 9627 | TEKNISA 0000348850 | 22:58"),v.station);
+  assert.ok(v.text_trace.includes("iFood #9627  |  TEKNISA 0000348850  |  22:58"),v.station);
   assert.equal(v.text_trace.trim().split("\n").at(-1),"037",v.station);
  }
  for(const [name,qty] of native){
@@ -425,12 +431,32 @@ test("three-view content contract: ids on every view, each product in exactly on
  assert.deepEqual(boxes.map(l=>l.split(" ")[0]),boxes.map((_,i)=>"C"+(i+1)));
  assert.ok(boxes.every(l=>l.endsWith("  Op. ________")));
  assert.equal((conf.text_trace.match(/Op\. ________/g)||[]).length,boxes.length);
+ // Figma V4.4/V4.3 layout (César 02/11): full-width dividers, one after every
+ // box (conference included), Op. in the right column, the station name alone,
+ // no lines the approved masters do not have, the master's shadow banner.
+ const FULL="-".repeat(48);
+ for(const v of r.views){
+  const lines=v.text_trace.split("\n");
+  assert.equal(lines[0],"SIMULAÇÃO · NÃO PRODUZIR",v.station);
+  assert.ok(!lines.some(l=>/^-+$/.test(l)&&l!==FULL),v.station+": every divider spans 48 columns");
+  for(let k=1;k<lines.length;k++)if(/^C\d+  CAIXA /.test(lines[k])&&!/^C1  /.test(lines[k]))
+   assert.equal(lines.slice(0,k).reverse().find(l=>/^C\d+  CAIXA |^-+$/.test(l)),FULL,v.station+": divider between boxes");
+ }
+ assert.deepEqual(production.map(v=>v.text_trace.split("\n")[1]),["COZINHA","DELIVERY SUSHI 1"]);
+ assert.equal(conf.text_trace.split("\n")[1],"CONFERÊNCIA");
+ assert.ok(boxes.every(l=>l.length===48),"Op. ends at the right edge");
+ assert.ok(!/1 CAIXA \||FINALIZAÇÃO: CONFERIR FICHA VALIDADA/.test(conf.text_trace));
  // The exact bytes decode with the known command set and fit the 72 mm width.
  const P=require("./comandas_papel_virtual_escpos_v1_offline.cjs");
  for(const v of r.views){
   const lay=P.layoutVirtualPaperV1(v.escpos);
   assert.deepEqual([lay.errors,lay.overflow,v.escpos.length],[[],[],v.escpos_bytes],v.station);
   assert.equal(require("node:crypto").createHash("sha256").update(Buffer.from(v.escpos)).digest("hex"),v.escpos_sha256);
+  // The TATÁ number is the largest element; item names are 1x2 bold.
+  const seq=lay.lines.find(l=>l.text==="037"),items=lay.lines.filter(l=>/^\d+  /.test(l.text));
+  assert.ok(seq&&items.length&&items.every(l=>seq.height>l.height&&l.runs[0].hmul===2&&l.runs[0].bold),v.station);
+  assert.ok(lay.lines.every(l=>l===seq||l.height<seq.height),v.station+": nothing as tall as the TATÁ number");
+  if(v.kind==="PRODUCAO"){const st=lay.lines[1];assert.deepEqual([st.runs[0].hmul,st.runs[0].bold],[2,true]);}
  }
 });
 test("pinned motor bytes are enforced before any projection",()=>{
