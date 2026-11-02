@@ -151,6 +151,12 @@ jobs:
         run: node tools/verificar_passive_print_log_v132.js
       - name: Print field matrix, content-free census, LogIMP metadata reconciliation and read-only runner
         run: node tools/verificar_comandas_print_provenance_v1_offline.cjs
+      - name: Native chain real revision 9627 through V2 consumer, pinned motor and three virtual views
+        run: node tools/verificar_comandas_cadeia_nativa_v1_offline.cjs
+      - name: Shadow homologation candidate measured closure is pinned (no print capability)
+        run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
+      - name: Private real-catalog replay parses and skips without the Academy checkout
+        run: node tools/comandas_replay_real_privado_p0.cjs
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
         run: node tools/verificar_production_service_matrix_v1.js
       - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
@@ -503,6 +509,12 @@ jobs:
         run: node tools/verificar_passive_print_log_v132.js
       - name: Print field matrix, content-free census, LogIMP metadata reconciliation and read-only runner
         run: node tools/verificar_comandas_print_provenance_v1_offline.cjs
+      - name: Native chain real revision 9627 through V2 consumer, pinned motor and three virtual views
+        run: node tools/verificar_comandas_cadeia_nativa_v1_offline.cjs
+      - name: Shadow homologation candidate measured closure is pinned (no print capability)
+        run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
+      - name: Private real-catalog replay parses and skips without the Academy checkout
+        run: node tools/comandas_replay_real_privado_p0.cjs
       - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
         run: node tools/verificar_production_service_matrix_v1.js
       - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
