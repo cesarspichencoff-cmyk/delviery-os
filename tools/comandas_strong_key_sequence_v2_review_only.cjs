@@ -80,6 +80,12 @@ function inspectStrongKeySequence(input){
  }
  const scope="STORE:"+o.CDFILIAL+"/"+o.CDLOJA+"|DATE:"+sourceDay;
  const scoped=state.bindings.filter(b=>b.scope_id===scope);
+ // The daily counter is a gap-free append-only ledger. A missing 001,
+ // a deleted intermediate number or an altered persisted number cannot be
+ // papered over by choosing max+1. Canceled orders keep their bindings.
+ const orderedNumbers=scoped.map(b=>Number(b.tata_sequence)).sort((a,b)=>a-b);
+ if(orderedNumbers.some((number,index)=>number!==index+1))
+  return verdict("HOLD","V2_DAILY_SEQUENCE_GAP_OR_NONCONTIGUOUS");
  const matches=scoped.filter(b=>b.native_order_key===orderKey);
  if(matches.length>1)return verdict("HOLD","V2_DUPLICATE_ORDER_BINDING");
  if(matches.length===1)return verdict(
