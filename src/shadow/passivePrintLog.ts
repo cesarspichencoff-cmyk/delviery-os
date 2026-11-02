@@ -8,6 +8,13 @@ export interface PrintLogRegexProfile {
   id: string;
   proof: PrintLogProfileProof;
   full_block_framing_proven: boolean;
+  /**
+   * Literal header that proves the block IS a delivery report (source:
+   * `Relatorio De Entrega` in ImpressaoDelivery). The same LogIMP files also
+   * carry production and table tickets; without this header a block is never
+   * projected as a delivery report.
+   */
+  document_kind_header?: RegExp;
   order_id: RegExp;
   external_order_id?: RegExp;
   emission?: RegExp;
@@ -39,6 +46,7 @@ export interface PassivePrintProjection {
   items: PassivePrintItem[];
   order_observations: string[];
   source_contract: {
+    document_kind: "DELIVERY_REPORT_HEADER_MATCHED" | "DOCUMENT_KIND_NOT_PROVEN" | "DOCUMENT_KIND_NOT_DELIVERY_REPORT";
     item_observation_provenance: "MERGED_PRINT_TEXT";
     order_observation_provenance: "PRINT_ORDER_OBS";
     nr_venda_rest: "ABSENT_FROM_SOURCE";
@@ -111,6 +119,19 @@ export function projectPassivePrintBlock(
   if (orderIdCount > 1) blocking.add("MULTIPLE_PRINTED_ORDER_IDS");
   if (profile.proof !== "REAL_SAMPLE_PROVEN") blocking.add("PRINT_PROFILE_NOT_REAL_SAMPLE_PROVEN");
   if (!profile.full_block_framing_proven) blocking.add("PRINT_BLOCK_FRAMING_NOT_PROVEN");
+
+  // Document kind before content: the source contract below (merged item
+  // observations, no TXPRODCOMVEN) is true only of the delivery report.
+  let documentKind: PassivePrintProjection["source_contract"]["document_kind"];
+  if (!profile.document_kind_header) {
+    documentKind = "DOCUMENT_KIND_NOT_PROVEN";
+    blocking.add("DOCUMENT_KIND_NOT_PROVEN");
+  } else {
+    const headers = countMatches(profile.document_kind_header, rawBlock);
+    documentKind = headers === 0 ? "DOCUMENT_KIND_NOT_DELIVERY_REPORT" : "DELIVERY_REPORT_HEADER_MATCHED";
+    if (headers === 0) blocking.add("DOCUMENT_KIND_NOT_DELIVERY_REPORT");
+    if (headers > 1) blocking.add("MULTIPLE_DOCUMENT_HEADERS");
+  }
 
   const items: PassivePrintItem[] = [];
   const orderObservations: string[] = [];
@@ -201,6 +222,7 @@ export function projectPassivePrintBlock(
     items,
     order_observations: orderObservations,
     source_contract: {
+      document_kind: documentKind,
       item_observation_provenance: "MERGED_PRINT_TEXT",
       order_observation_provenance: "PRINT_ORDER_OBS",
       nr_venda_rest: "ABSENT_FROM_SOURCE",
