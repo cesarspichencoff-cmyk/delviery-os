@@ -103,15 +103,15 @@ class TripLocationService : Service() {
     private var callback: LocationCallback? = null
     private var systemListener: LocationListener? = null
 
-    private fun selectBackend(manager: LocationManager?): LocationBackend {
+    private fun selectBackend(manager: LocationManager?, nativeOnly: Boolean = false): LocationBackend {
         if (manager == null) return LocationBackend.UNAVAILABLE
-        val play = runCatching {
+        val play = !nativeOnly && runCatching {
             GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) ==
                 ConnectionResult.SUCCESS
         }.getOrDefault(false)
         val gps = runCatching { manager.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false)
         val net = runCatching { manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) }.getOrDefault(false)
-        return LocationBackendSelector.select(LocationCapabilities(
+        val capabilities = LocationCapabilities(
             playServicesAvailable = play,
             gpsEnabled = gps,
             networkEnabled = net,
@@ -119,7 +119,9 @@ class TripLocationService : Service() {
                 PackageManager.PERMISSION_GRANTED,
             coarseGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED,
-        ))
+        )
+        return if (nativeOnly) LocationBackendSelector.afterFusedFailure(capabilities)
+            else LocationBackendSelector.select(capabilities)
     }
 
     private fun requestSystemUpdates(
@@ -446,7 +448,19 @@ class TripLocationService : Service() {
                         fused.removeLocationUpdates(callback)
                     }
                 }.addOnFailureListener {
-                    if (sessions.isCurrent(registration)) stopBecause("falha_inscricao_localizacao", session)
+                    if (!sessions.isCurrent(registration)) return@addOnFailureListener
+                    // O GMS foi encontrado, mas falhou ao inscrever o callback.
+                    // Tentar apenas o backend nativo com permissão vigente.
+                    // A remoção do Fused anterior deve terminar primeiro.
+                    val manager = getSystemService(LocationManager::class.java)
+                    val native = selectBackend(manager, nativeOnly = true)
+                    if (manager != null &&
+                        (native == LocationBackend.SYSTEM_GPS ||
+                         native == LocationBackend.SYSTEM_NETWORK)) {
+                        requestSystemUpdates(manager, native, decision, session)
+                    } else {
+                        stopBecause("falha_inscricao_localizacao", session)
+                    }
                 }
             } catch (e: SecurityException) {
                 stopBecause("permissao_revogada", session)
