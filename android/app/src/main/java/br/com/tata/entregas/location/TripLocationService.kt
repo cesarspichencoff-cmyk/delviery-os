@@ -218,7 +218,8 @@ class TripLocationService : Service() {
 
         override fun onLocationAvailability(availability: LocationAvailability) {
             if (!sessions.isCurrent(registration)) return
-            freshness = if (availability.isLocationAvailable) "current" else "unavailable"
+            // Provider disponível NÃO é evidência de ponto persistido. Só Room confirma "current".
+            if (!availability.isLocationAvailable) freshness = "unavailable"
             Bridge.publishServiceState(serviceStateJson())
             updateNotification()
         }
@@ -510,6 +511,14 @@ class TripLocationService : Service() {
     }
 
     private fun persist(point: CanonicalGpsPoint, session: CaptureSessionLifecycle.Session, timeMs: Long) {
+        // Localização simulada nunca entra na outbox e nunca se apresenta como real.
+        if (point.isMock) {
+            if (sessions.isCurrent(session)) {
+                freshness = "unavailable"
+                updateNotification()
+            }
+            return
+        }
         // O callback chega no mainLooper em ordem. UNDISPATCHED entra na fila
         // do mutex nessa mesma ordem antes de devolver o controle ao callback.
         // O mutex preserva a ordem observada; o Room, por sua vez, reserva a
@@ -548,8 +557,9 @@ class TripLocationService : Service() {
                 val pending = db.gpsPoints().pendingCount()
                 // Pontos já observados continuam duráveis após STOP, mas sua
                 // conclusão não pode ressuscitar notificação nem alterar B.
-                if (DurableLocationPublication.mayPublish(inserted, sessions.isCurrent(session))) {
+                if (DurableLocationPublication.mayPublish(inserted, sessions.isCurrent(session), point.isMock)) {
                     lastAccuracyM = point.accuracyM
+                    freshness = "current"
                     pendingSync = pending
                     Bridge.publishLocation(point, timeMs)
                     updateNotification()
