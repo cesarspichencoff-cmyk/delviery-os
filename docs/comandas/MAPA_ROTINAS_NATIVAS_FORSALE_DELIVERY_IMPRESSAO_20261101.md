@@ -93,3 +93,34 @@ O detector verificou a coincidência com os quatro bytes de endereço da IAT e o
 
 **Próxima prova ainda decisiva:** configuração Retail `IFO→0001/01→caixa` por interface já autenticada e fonte de primeira tentativa `DLV_IFO` vinculada à revisão nativa, praça e efeito. Nenhuma destas provas foi obtida. Não contatar fornecedor, não alterar caixa/serviços/impressoras, não autorizar piloto ou merge pela presença dos símbolos.
 
+
+## Rastreamento negativo de disparos manuais e relatórios — 02/11/2026
+
+**Escopo:** análise estritamente estática dos bytes do PE32 instalado no `CAIXA_MOOCA`, sem execução das funções, pedido real, memória de processo, impressora, configuração, acesso fiscal ou mudança de serviço. Essa investigação não implica autorização de reprodução do ambiente, instrumentação ou emissão física.
+
+### 1. Separação de UI manual e produção automática
+
+O método compilado `Cli_dlv00999.TdtmImpressao.ImpPedido_Producao` de `Pkg_Dlv00000.bpl`, RVA `0xD79DC`, recebeu **um candidato de chamada relativa direta `E8 rel32`** na seção `CODE`: site `0xD90BD`. O endereço da chamada fica entre as entradas exportadas `Cli_dlv00200.TfrmProducao.btnImprimirClick` (RVA `0xD9008`) e `btnConcluirClick`. Os nomes da região correspondem a um evento de botão de imprimir, **não a um emissor de chegada automática IFO**.
+
+A rotina separada `Cli_dlv00999.TdtmImpressao.ImpPedido_Entrega` (RVA `0xD6828`) recebeu também **um candidato de chamada relativa direta**, no RVA `0xF6C0F`, entre os exports `Cli_dlv00800.TfrmControleSaidaEnt.bldImpEntregaClick` e `dbgControlEntregaDrawColumnCell`. Esse é outro indício de evento manual para entrega/controle de saída, não da primeira via de cozinha.
+
+**Rigor:** a busca inspecionou candidatos de opcode `E8` com deslocamento relativo para o RVA exportado. Não houve disassembly instrução a instrução nem reconstrução de limites reais de cada função; `E8` dentro de dados ou código não alcançável pode gerar falsos positivos. Mesmo uma chamada direta compilada válida **não prova que ela tenha sido executada**. As contagens de uma chamada direta por rotina não descartam ponteiros, métodos virtuais, outro módulo, scripts ou serviços.
+
+### 2. Classificação das referências GPE já encontradas
+
+Atribuição de cada RVA à vizinhança de exports mais próxima, que **não determina limite comprovado de função**:
+
+| Módulo | RVAs das referências estáticas à IAT GPE | Export anterior mais próximo | Interpretação restrita |
+|---|---|---|---|
+| `PKG_DLV00100.bpl` | `0x2EF6E` (`ImprimeEntrega`) | `ImpPedido_Entrega` | Possível uso em geração/saída de entrega |
+| `PKG_DLV00100.bpl` | `0x35408`, `0x3546A`, `0x354E4`, `0x35519` (`ImprimeEntrega`) | `btnImpRelPedAbeClick` | Região de evento de botão de relatório de pedido aberto |
+| `PKG_DLV00100.bpl` | `0x233CE`, `0x236B2`, `0x238C4` (`DisparaImpressaoNaoFiscal`) | `FechaContaNormal` | Região de fechamento de conta; não confundir com primeiro despacho automático |
+| `PKG_IMP00001.bpl` | `0x817D`, `0x8957` (`DisparaImpressaoNaoFiscal`) | `TrdmImpExpKds.FechaContaNormal` | Outra região de fechamento de conta, ainda não atestada em runtime |
+
+Isso **reduz a prioridade da hipótese de que as referências GPE acima sejam a origem do primeiro despacho IFO**. Não demonstra ausência de caminho automático em `FosSinc`, `FosImp` ou outras bibliotecas, nem afirma que toda impressão de produção é manual.
+
+### 3. Proteção versionada contra falso positivo
+
+O verificador `tools/comandas_native_first_dispatch_lineage_v1_offline.cjs` passou a rejeitar adicionalmente `FORSALE_MANUAL_PRODUCTION_BUTTON_CALL`, `FORSALE_MANUAL_DELIVERY_BUTTON_CALL`, `FORSALE_OPEN_ORDER_REPORT_PRINT_HANDLER` e `FORSALE_CASH_CLOSE_PRINT_REFERENCE` como tipos de evento que atestariam a primeira tentativa **automática** de produção IFO. O verificador já exercita todos os `NON_TRIGGER` por tabela em Linux e Windows. Essa proteção **não exige que o fornecedor entre em contato** e não causa qualquer efeito físico.
+
+**Estado remanescente:** `IFO_CASHBOX_MAPPING=UNKNOWN`; `AUTOMATIC_NATIVE_FIRST_DISPATCH=UNKNOWN`; `GPE_CALLBACK_VALUE=UNKNOWN`; `PHYSICAL_PRINT=NOT_PROVEN`; `PILOT=HOLD`. Provas necessárias continuam sendo a associação Retail legítima da integração e uma tentativa real com revisão, praça e destino observados. A rota de UI/manual foi despriorizada por evidência, não por suposição.
