@@ -320,8 +320,31 @@ test("primeira inscrição no Fused não corre contra remove assíncrono", () =>
     "primeira inscrição precisa registrar sem remove prévio");
   assert.match(svc, /removeLocationUpdates\(previous\)\.addOnCompleteListener[\s\S]{0,200}removed\.isSuccessful\) register\(\)/,
     "troca de cadência precisa esperar remove terminar antes de registrar de novo");
-  assert.match(svc, /addOnFailureListener\s*\{\s*if \(sessions\.isCurrent\(registration\)\) stopBecause\("falha_inscricao_localizacao", session\)/,
-    "falha assíncrona de inscrição não pode deixar serviço ativo sem GPS");
+  // Android sem GMS: a falha assíncrona deve fazer fallback nativo
+  // COM autorização vigente; se não houver backend, encerrar a captura.
+  const failureAt = svc.indexOf(".addOnFailureListener {");
+  const failureEnd = svc.indexOf("} catch (e: SecurityException)", failureAt);
+  assert.ok(failureAt > 0 && failureEnd > failureAt,
+    "caminho da falha assíncrona do Fused deve existir");
+  const fallback = svc.slice(failureAt, failureEnd);
+  assert.match(fallback, /if \(!sessions\.isCurrent\(registration\)\) return@addOnFailureListener/,
+    "falha tardia não pode reativar uma viagem encerrada");
+  assert.match(fallback, /selectBackend\(manager, nativeOnly = true\)/,
+    "falha do GMS deve reavaliar disponibilidade e permissão nativas");
+  assert.match(fallback, /requestSystemUpdates\(manager, native, decision, session\)/,
+    "fallback precisa inscrever o backend nativo sob sessão válida");
+  assert.match(fallback, /else\s*\{\s*stopBecause\("falha_inscricao_localizacao", session\)/,
+    "sem backend nativo o serviço deve parar, nunca anunciar GPS ativo");
+  const systemUpdates = svc.slice(svc.indexOf("private fun requestSystemUpdates("),
+    svc.indexOf("private fun createCallback("));
+  assert.match(systemUpdates, /manager\.requestLocationUpdates\(/,
+    "fallback deve realmente registrar listener do Android");
+  assert.match(systemUpdates, /catch \(e: SecurityException\)\s*\{\s*stopBecause\("permissao_revogada", session\)/,
+    "falha de permissão no fallback exige parada");
+  assert.match(systemUpdates, /catch \(e: IllegalArgumentException\)\s*\{\s*stopBecause\("provedor_localizacao_indisponivel", session\)/,
+    "provedor nativo inválido exige parada");
+  assert.match(systemUpdates, /removeLocationUpdates\(previousFused\)\.addOnCompleteListener/,
+    "remoção do callback Fused anterior deve preceder inscrição nativa");
 });
 
 test("stop remove o callback do Fused e limpa a viagem ativa", () => {
