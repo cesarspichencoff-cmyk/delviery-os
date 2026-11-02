@@ -21,6 +21,9 @@ check("matches short id on same unit and local day",defaultResult.counts.candida
 check("does not promote simulation",defaultResult.status==="SIMULATION_ONLY");
 check("opaque reference hides raw ids",!JSON.stringify(defaultResult).includes("4821")&&!JSON.stringify(defaultResult).includes("0001|01|"));
 check("items quantity is two not pieces",defaultResult.matches[0].itemLines===1&&defaultResult.matches[0].itemUnits===2);
+check("one opaque item reference per native product line",defaultResult.matches[0].itemRefs.length===1&&defaultResult.matches[0].itemRefs[0].itemIndex===1);
+check("item reference preserves quantity without product/customer IDs",defaultResult.matches[0].itemRefs[0].quantity===2&&/^[0-9a-f]{24}$/.test(defaultResult.matches[0].itemRefs[0].opaqueItemRef));
+check("item state is unknown even with native status 4",defaultResult.matches[0].itemRefs[0].operationalState==="UNKNOWN"&&defaultResult.matches[0].itemRefs[0].nativeItemStatusSemantics==="UNVERIFIED");
 check("real item progress never inferred from native P or 4",defaultResult.matches[0].itemProgress==="UNKNOWN"&&defaultResult.matches[0].physicalReady===false);
 check("never authorizes printing, dispatch, ready, delivery",!defaultResult.readyForCopilot&&!defaultResult.printAuthorized&&!defaultResult.deliveryEventsEnabled&&Object.values(defaultResult.effects).every(v=>v===false));
 check("mapping remains unverified",!defaultResult.merchantVerified&&defaultResult.reasons.includes("STORE_MAPPING_NOT_INDEPENDENTLY_ATTESTED"));
