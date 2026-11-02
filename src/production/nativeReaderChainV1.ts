@@ -1,6 +1,7 @@
 import type { DeliveryProductionJoin, JoinedOperationalItem } from "./deliveryProductionJoin";
 import type { ProvenReaderProductV66 } from "./readerIngressV66";
 import { buildDailyStoreTataSequenceScope, DAILY_STORE_TATA_SEQUENCE_RULE } from "./tataSequence";
+import type { MotorInterfaceV63, MotorKitOutputV63 } from "./currentPackagingBridgeV63";
 
 /**
  * Native Reader chain V1 — the missing link between ONE native Teknisa
@@ -335,6 +336,98 @@ export function stationWindowCategoryV1(station: string | null | undefined): "CO
   if (s === "ENROLADOS") return "ENROLADOS";
   if (s === "COZINHA QUENTES" || s === "BEBIDAS" || s === "BAR") return "INDEPENDENT_IF_UNPAIRED";
   return "UNKNOWN";
+}
+
+/**
+ * Human kit decisions for an EXACT composition the pinned motor does not
+ * judge (data/comandas_kit_rules_human_v1.json, César in PR #135 comment
+ * 6582963189). Applies only to one line of the recorded combo (code,
+ * CDPRODUTO, native name, quantity 1) plus proven temaki lines whose units
+ * equal temaki_units, and nothing else. A motor FACT always wins; a
+ * different motor FACT is a conflict. Never generalized.
+ */
+export interface HumanKitRuleV1 {
+  id: string;
+  combo: { canonical_code: string; native_cdproduto: string; native_name: string; quantity: 1 };
+  temaki_units: number;
+  kits: Array<{ kit: string; quantidade: number }>;
+  evidence: "HUMAN_CONFIRMED_RULE";
+  decided_by: string; decided_on: string; source_ref: string;
+}
+export interface HumanKitRuleResolutionV1 {
+  rule: HumanKitRuleV1 | null;
+  reason: string | null;
+  composition: Array<{ name: string; quantity: number }>;
+}
+const HUMAN_KIT_LABELS = new Set(["Kit p/1", "Kit p/2", "Kit Simples"]);
+function validHumanKitRule(r: unknown): r is HumanKitRuleV1 {
+  const x = r as Partial<HumanKitRuleV1> | null;
+  return !!x && typeof x === "object" && typeof x.id === "string" && x.id.length > 0 && x.id.length <= 80 &&
+    !!x.combo && /^\d\.\d{2}\.\d{2}\.\d{3}\.\d{2}$/.test(String(x.combo.canonical_code)) &&
+    /^\d{10}$/.test(String(x.combo.native_cdproduto)) && !!clean(x.combo.native_name) && x.combo.quantity === 1 &&
+    Number.isSafeInteger(x.temaki_units) && x.temaki_units! >= 1 && x.temaki_units! <= 20 &&
+    Array.isArray(x.kits) && x.kits.length > 0 &&
+    x.kits.every((k) => HUMAN_KIT_LABELS.has(String(k?.kit)) && Number.isSafeInteger(k?.quantidade) && k.quantidade > 0) &&
+    x.evidence === "HUMAN_CONFIRMED_RULE" && !!clean(x.source_ref) && !!clean(x.decided_by) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(x.decided_on));
+}
+const kitKey = (kits: ReadonlyArray<{ kit: string; quantidade: number }>) =>
+  JSON.stringify(kits.map((k) => [String(k.kit), k.quantidade]).sort());
+const compositionKey = (list: ReadonlyArray<{ name: unknown; quantity: unknown }>) =>
+  JSON.stringify(list.map((x) => [norm(x.name), Number(x.quantity)]).sort());
+
+export function resolveHumanKitRuleV1(
+  decision: NativeDecisionV1, resolution: CatalogResolutionV1 | undefined,
+  rules: unknown, motorKits: { status?: string; kits?: Array<{ kit: string; quantidade: number }> } | null | undefined,
+): HumanKitRuleResolutionV1 {
+  const none = (reason: string | null = null): HumanKitRuleResolutionV1 => ({ rule: null, reason, composition: [] });
+  const list = Array.isArray(rules) ? rules : [];
+  if (!list.length) return none();
+  if (!list.every(validHumanKitRule)) return none("HUMAN_KIT_RULE_RECORD_INVALID");
+  const byIndex = new Map((resolution?.resolved ?? []).map((r) => [r.item_index, r]));
+  const items = (decision.items ?? []).map((raw) => {
+    const r = byIndex.get(raw.item_index);
+    return r ? { ...raw, classification: r.classification, classification_source: r.classification_source } : raw;
+  });
+  const proven = (x: DecisionItem) => !!x.classification && x.classification.review_required === false &&
+    !!clean(x.classification_source) && !!clean(x.classification.station) && !!clean(x.classification.family);
+  const matches = (list as HumanKitRuleV1[]).filter((rule) => {
+    const combo = items.filter((x) => x.canonical_code === rule.combo.canonical_code);
+    if (combo.length !== 1) return false;
+    const c = combo[0];
+    if (c.CDPRODUTO !== rule.combo.native_cdproduto || c.quantity !== 1 ||
+        norm(c.product_name) !== norm(rule.combo.native_name) || !proven(c)) return false;
+    const others = items.filter((x) => x !== c);
+    if (!others.length || !others.every((x) => proven(x) && norm(x.classification?.subfamily) === "TEMAKI")) return false;
+    return others.reduce((n, x) => n + x.quantity, 0) === rule.temaki_units;
+  });
+  if (!matches.length) return none();
+  if (matches.length > 1) return none("HUMAN_KIT_RULE_AMBIGUOUS");
+  const rule = matches[0];
+  if (motorKits?.status === "FACT")
+    return kitKey(motorKits.kits ?? []) === kitKey(rule.kits) ? none() : none("HUMAN_KIT_RULE_CONFLICTS_WITH_MOTOR");
+  return { rule, reason: null, composition: items.map((x) => ({ name: x.product_name, quantity: x.quantity })) };
+}
+
+/** The pinned motor, unchanged, except kitVerdict for the ONE approved
+ * composition when the motor itself gives no FACT. Anything else delegates. */
+export function withHumanKitRuleV1(motor: MotorInterfaceV63, applied: HumanKitRuleResolutionV1): MotorInterfaceV63 {
+  const rule = applied.rule;
+  if (!rule) return motor;
+  const approved = compositionKey(applied.composition);
+  return {
+    packComanda: (entries) => motor.packComanda(entries),
+    kitVerdict: (entries) => {
+      const own = motor.kitVerdict(entries);
+      if (own?.status === "FACT") return own;
+      if (compositionKey(entries.map((e) => ({ name: e.product?.nome, quantity: e.quantity }))) !== approved) return own;
+      const decided: MotorKitOutputV63 & { why: string; source: string } = {
+        status: "FACT", kits: rule.kits.map((k) => ({ ...k })),
+        why: "HUMAN_CONFIRMED_RULE:" + rule.id, source: rule.source_ref,
+      };
+      return decided;
+    },
+  };
 }
 
 /**

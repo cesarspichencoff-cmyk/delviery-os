@@ -34,3 +34,4 @@ data/odhen_product_routing_compact_v1.json -text
 data/production_printer_calibration_registry_v1.json -text
 data/non_production_delivery_items_v1.json -text
 data/comandas_catalog_equivalence_v1.json -text
+data/comandas_kit_rules_human_v1.json -text

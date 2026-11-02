@@ -100,7 +100,8 @@ function main(){
    const out=runNativeChainV1({event,decision,routing,printer_map:printers,
     calibration:load("production_printer_calibration_registry_v1.json"),
     motor_source:academy["lib/packaging-current.js"],
-    catalog_equivalence:equivalenceVerified?equivalence:{records:[]}});
+    catalog_equivalence:equivalenceVerified?equivalence:{records:[]},
+    kit_rules:load("comandas_kit_rules_human_v1.json")});
    report.push({order:id,native_header:order.IDSTCOMANDA,
     native_item_states:[...new Set(items.map(x=>x.IDSTPRCOMVEN))],lines:items.length,
     consumer:{ready:decision.ready,content_blockers:cls.content,
@@ -109,6 +110,7 @@ function main(){
     layers:Object.fromEntries(Object.entries(out.layers).map(([k,l])=>[k,{status:l.status,reasons:l.reasons}])),
     window:out.layers.L2?.window??null,
     catalog_resolution:out.layers.L3?.catalog_resolution??null,
+    kit_rule:out.layers.L3?.kit_rule?.id??null,
     views:out.views.map(v=>({kind:v.kind,station:v.station,lines:v.lines,escpos_bytes:v.escpos_bytes,
      text_trace_sha256:v.text_trace_sha256}))});
   }

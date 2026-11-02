@@ -64,6 +64,7 @@ function layer(status,reasons,extra={}){
  *  routing, printer_map    committed Retail routing (compact) + printer registry
  *  calibration             production printer calibration registry
  *  motor_source            bytes of the pinned Academy motor
+ *  kit_rules               optional data/comandas_kit_rules_human_v1.json (exact compositions)
  *  sequence_binding        optional level claim {level,persisted,attested_independently,
  *                          order_key,scope_id,tata_sequence}
  */
@@ -98,7 +99,7 @@ function runNativeChainV1(i){
  // consumer named CLASSIFICATION_UNKNOWN_<code>, on an exact native match.
  const resolution=N.resolveCatalogEquivalenceV1(e,d,
   i.catalog_equivalence?.records??[],d.blocking_reasons);
- let motorPackaging=null;const motorReasons=[];
+ let motorPackaging=null,kitRule=null;const motorReasons=[];
  if(resolution.motor_rerun_required){
   // The consumer never ran the motor for this revision: run the SAME pinned
   // bytes here; its own verdict replaces the explained packaging blockers.
@@ -111,7 +112,12 @@ function runNativeChainV1(i){
   if(pack.has_unknown)motorReasons.push("MOTOR_PACKAGING_UNKNOWN");
   if(pack.bags?.size_status!=="FACT"||pack.bags?.exact_bag_count_status!=="FACT")
    motorReasons.push("MOTOR_BAG_NOT_FACT");
-  if(kits?.status!=="FACT")motorReasons.push("MOTOR_KITS_NOT_FACT:"+String(kits?.why||"").slice(0,160));
+  if(kits?.status!=="FACT"){
+   // César's exact kit decisions fill ONLY a composition the motor leaves unjudged.
+   kitRule=N.resolveHumanKitRuleV1(d,resolution,i.kit_rules?.rules??[],kits);
+   if(kitRule.reason)motorReasons.push(kitRule.reason);
+   if(!kitRule.rule)motorReasons.push("MOTOR_KITS_NOT_FACT:"+String(kits?.why||"").slice(0,160));
+  }
  }
  const ids=N.nativeIdentitiesV1(d,resolution,motorPackaging);
  const explained=new Set(resolution.explained_blockers);
@@ -119,12 +125,14 @@ function runNativeChainV1(i){
  const join=N.joinNativeReaderSnapshotV1(e,d,routes);
  const catalog={resolved:resolution.resolved.map(x=>x.record_id),
   motor_rerun:resolution.motor_rerun_required,refused:resolution.refused};
+ const kitRuleRef=kitRule?.rule?{id:kitRule.rule.id,evidence:kitRule.rule.evidence,
+  source_ref:kitRule.rule.source_ref,kits:kitRule.rule.kits}:null;
  const contentReasons=[...cls.content.filter(b=>!explained.has(b)),...resolution.refused,
   ...motorReasons,...join.reasons,...ids.held.map(x=>"CLASSIFICATION_NOT_PROVEN_ITEM:"+(x+1))];
  if(contentReasons.length||!period){
   // Content may be fine while the window is not: say so instead of a bare HOLD.
   L.L3=layer("HOLD",[...contentReasons,...(period?[]:["L2_WINDOW_NOT_ESTABLISHED"])],
-   {join:join.provenance,catalog_resolution:catalog});
+   {join:join.provenance,catalog_resolution:catalog,kit_rule:kitRuleRef});
   L.L4=layer("HOLD",["CONTENT_NOT_PROVEN"],{views:[]});
   L.L5=layer("HOLD",[sequence.reason||"CONTENT_NOT_PROVEN"],{...sequenceLayer(sequence),tata_number:null});
   return out();
@@ -155,7 +163,7 @@ function runNativeChainV1(i){
    source_ref:"native-event:"+e.snapshot_hash.slice(0,16)+":DSOBSCOMANDA",relevance:"UNKNOWN",proof:"REAL_OBSERVED"}))};
  const review=planWindowReview(projection,claim,context,i.calibration);
  if(!review.plan||!review.plan.ready_for_shadow_payload){
-  L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog});
+  L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog,kit_rule:kitRuleRef});
   L.L4=layer("HOLD",[...(review.reasons||[]),...(review.plan?.blocking_reasons||[])],
    {views:[],window:review.period??period,suppressed:review.suppressed??[]});
   L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],sequenceLayer(sequence));
@@ -163,11 +171,13 @@ function runNativeChainV1(i){
  }
  const ingress=compileJoinedReaderIngressV66(join.join,review.plan,ids.identities);
  if(ingress.status!=="ALIGNED"){
-  L.L3=layer("HOLD",ingress.blockers,{join:join.provenance});return out();
+  L.L3=layer("HOLD",ingress.blockers,{join:join.provenance,kit_rule:kitRuleRef});return out();
  }
- const projected=projectTicketsFromCurrentPackagingV63(ingress.input,ingress.entries,pinned.motor,pinned.blob);
+ // Same pinned motor; only the approved composition's kit verdict is filled.
+ const bridgeMotor=kitRule?.rule?N.withHumanKitRuleV1(pinned.motor,kitRule):pinned.motor;
+ const projected=projectTicketsFromCurrentPackagingV63(ingress.input,ingress.entries,bridgeMotor,pinned.blob);
  L.L3=layer(projected.tickets?"NATIVE_CONTENT_PROVEN":"HOLD",projected.coherence_reasons||[],
-  {join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog});
+  {join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog,kit_rule:kitRuleRef});
  if(!projected.tickets){L.L4=layer("HOLD",["MOTOR_PROJECTION_NOT_READY"],{views:[]});return out();}
  const t=projected.tickets,r=renderOperationalTicketsProofV46(t);
  const views=[...t.production.map((p,k)=>({kind:"PRODUCAO",station:p.station,
