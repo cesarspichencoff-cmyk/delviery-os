@@ -8,6 +8,21 @@ const EFFECTS=Object.freeze({disposable_sqlite_write:true,
  network:false,retail_write:false,fiscal:false,service_change:false,
  deploy:false,merge:false});
 const ORDER=/^0001\|01\|TEST_[A-Z0-9_]{1,40}\|TEST_[A-Z0-9_]{1,40}$/;
+const os=require("node:os"),path=require("node:path");
+/** No accidental access to an existing store DB even if invoked from scripts. */
+function isDisposable(db){
+ try{
+  const location=db.location();
+  if(location===null)return true; // :memory:
+  if(typeof location!=="string")return false;
+  const dir=path.resolve(path.dirname(location));
+  const tmp=path.resolve(os.tmpdir())+path.sep;
+  return dir.startsWith(tmp)&&
+   path.basename(dir).startsWith("comandas-atomic-test-")&&
+   path.basename(location)==="synthetic-only.sqlite";
+ }catch{return false;}
+}
+
 function validDay(d){
  if(typeof d!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
  const parsed=new Date(d+"T00:00:00Z");
@@ -21,6 +36,7 @@ function hold(reason,extra={}){
   automatic_retry_allowed:false,effects:EFFECTS,...extra};
 }
 function createSyntheticTables(db){
+ if(!isDisposable(db))throw Error("SYNTHETIC_DB_LOCATION_REQUIRED");
  db.exec("CREATE TABLE IF NOT EXISTS test_tata_seq_head("+
   "scope TEXT PRIMARY KEY,highest INTEGER NOT NULL CHECK(highest BETWEEN 0 AND 999));"+
   "CREATE TABLE IF NOT EXISTS test_tata_seq_bind("+
@@ -33,6 +49,7 @@ function createSyntheticTables(db){
  return {schema:SCHEMA,status:"SYNTHETIC_TABLES_PREPARED",effects:EFFECTS};
 }
 function bindSyntheticSequence(db,input){
+ if(!isDisposable(db))return hold("SYNTHETIC_DB_LOCATION_REQUIRED");
  if(!input||input.lab_context!=="EPHEMERAL_CI_FIXTURE_ONLY"||
     input.store!=="0001|01"||!validDay(input.date)||
     typeof input.native_order_key!=="string"||
