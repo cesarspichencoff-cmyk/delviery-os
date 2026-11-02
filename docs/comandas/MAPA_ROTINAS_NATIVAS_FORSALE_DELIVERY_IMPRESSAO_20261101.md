@@ -50,3 +50,28 @@ A enumeração estritamente passiva da **tabela de exports de funções compilad
 **CI base anterior:** run `41374598005` no commit `de4b7660` concluiu **success**, Linux 143/143 e Windows 131/131. Uma modificação documental posterior requer seu próprio status de commit; não transferir automaticamente esse sucesso para qualquer HEAD novo.
 
 **Próxima evidência material, fora desta auditoria estática:** identificar **qual caixa lógico IFO da loja 0001/01** tem a integração, e registrar com autorização específica uma revisão nativa vinculada à chamada efetiva `ImpPedido_Producao` ou ao mecanismo correspondente — não ao cabeçalho/entrega. Se a informação estiver em tela/configuração com ACL ou os eventos forem sensíveis, respeitar o bloqueio. Nenhuma autorização de instalação, logs novos, chamadas diretas de função, impressão, ativação de equipamento, alteração de rota, merge ou deploy foi obtida. `FIRST_NATIVE_DISPATCH=UNKNOWN`, `PILOT=HOLD`.
+
+## Descoberta de ligação PE por biblioteca intermediária — GPE (01/11/2026)
+
+**Falha de hipótese corrigida:** a busca anterior só procurava importações diretas com nomes `PKG_IMP`, `PKG_DLV` ou `Fos`, e por isso **não detectou** a importação de uma camada compartilhada chamada `Pkg_Gpe00002.bpl`. A investigação estática posterior resolveu o nome do DLL **e o nome do símbolo na tabela de imports PE** de `PKG_DLV00100.bpl`; não é uma correspondência apenas por texto no binário.
+
+### Fonte e vínculo exatos
+
+- **`PKG_DLV00100.bpl` (24/08/2026; SHA-256 `40A1EFE58FE1916E39AE040CB746B74714F414142FE762D7272F01FBC32F968E`) importa de `Pkg_Gpe00002.bpl` os símbolos `@Gpe00002@DisparaImpressaoNaoFiscal` e `@Gpe00002@ImprimeEntrega`, além de outros símbolos de controle, fiscal e caixa.** O primeiro símbolo foi confirmado em um import descriptor PE, não deduzido pelo nome do arquivo.
+- **`Pkg_Gpe00002.bpl` (24/08/2026; 183.296 bytes; SHA-256 `A4CE70CEAA564BF6D94409E69EB48CF7F166C1691C7978855FD32A9C138D321A`) exporta essas referências como dados da seção `BSS`, não endereços `CODE` executáveis.** `@Gpe00002@DisparaImpressaoNaoFiscal` está em `RVA 0x10190`, `@Gpe00002@DisparaImpNaoFiscalDlv` em `0x10194`, `@Gpe00002@DisparaImprimeCancProduto` em `0x10198`, `@Gpe00002@ImprimeEntrega` em `0x101E8`, `@Gpe00002@DisparaImpPedExpKDS` em `0x101F4`. Na arquitetura PE32, o espaçamento consecutivo de quatro bytes dos três primeiros é **compatível** com slots de ponteiros/callbacks compartilhados, mas a assinatura/valor atribuído em runtime não foi lida.
+- **`PKG_IMP00001.bpl` (29/12/2025) também importa `@Gpe00002@DisparaImpressaoNaoFiscal`.** Em contraste, `PKG_IMP00000.bpl` importa a biblioteca GPE para outras referências, mas **não esse símbolo específico** na lista de importações estáticas examinadas. Sua exportação própria `@Cli_imp00000@DisparaImpressaoNaoFiscal` está na seção `CODE` e **não deve ser confundida** com o dado `@Gpe00002@DisparaImpressaoNaoFiscal`.
+- `FosSinc.exe`, `FosImp.exe` e `Pkg_Dlv00000.bpl` **não** apresentaram importação PE direta de `Pkg_Gpe00002.bpl` na amostra examinada. A ausência de importação explícita não descarta uso indireto por package dinâmico, outro processo ou serviço.
+
+### O que a prova resolve, e o que falta
+
+| Elo | Situação |
+|---|---|
+| `PKG_DLV00100` → `Pkg_Gpe00002` (import estático de símbolo) | **COMPROVADO nos bytes dos arquivos instalados** |
+| `Pkg_Gpe00002` expõe símbolo de impressão como slot de dados `BSS` | **COMPROVADO**; interpretação como ponteiro de função = **inferência técnica** |
+| `PKG_IMP00000` oferece implementação compilada de nome semelhante e imports WinSpool | **COMPROVADO como capacidade estática**, sem provar que preenche o slot GPE |
+| Valor corrente do slot/callback GPE e módulo que o preenche | **DESCONHECIDO**; não ler memória protegida nem contornar ACL |
+| Alguma revisão `DLV_IFO` passa por esse callback e emite a primeira via de cozinha | **DESCONHECIDO**, sem vínculo caixa IFO + evento real + praça/backup |
+
+**Impacto real:** deixou de ser correto descrever a cadeia como ausência completa de importações entre o delivery e a impressão. Existe uma **dependência compilada de símbolos GPE**, que deve ser tratada como um novo nível de indireção. **Não promover para cadeia causal `FosSinc → GPE → FosImp` nem afirmar que o `GPE` executa impressão:** seu export identificado é um dado, não uma função em `CODE`. Primeira via, exclusividade e papel continuam desconhecidos.
+
+**Próximo experimento seguro de maior valor:** somente quando houver canal legitimamente autorizado para vínculo IFO e telemetria da primeira tentativa, testar se uma revisão real usa esse caminho sem coletar conteúdo de pedido/cliente. Observações de `spoolsv/307`, cabeçalhos contendo `iFood`, ou leitura de arquivo PE não substituem essa prova. Nenhum serviço, print, token, pedido, chamada nativa, SQL, fila, driver ou configuração foi modificado.
