@@ -1,0 +1,39 @@
+name: DeliveryOS — audit immutable work preservation
+
+on:
+  pull_request:
+    branches:
+      - claude/deliveryos-v1-candidato-homologacao-20261101
+    paths:
+      - 'scripts/audit-preservation.py'
+      - '.github/workflows/deliveryos-preservation-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  inventory-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout audit branch, with full Git lineage
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Fetch PR heads for historical ancestry (no repository writes)
+        run: git fetch --no-tags origin '+refs/pull/*/head:refs/remotes/pr/*'
+      - name: Inspect pinned trees, every text line and PR ancestry
+        env:
+          GH_READ_TOKEN: ${{ github.token }}
+        run: python3 scripts/audit-preservation.py
+      - name: Publish audit-only evidence for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deliveryos-work-preservation-audit
+          path: audit-results/
+          retention-days: 14
+          if-no-files-found: warn
