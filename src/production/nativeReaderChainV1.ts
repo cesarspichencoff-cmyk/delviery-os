@@ -1,5 +1,6 @@
 import type { DeliveryProductionJoin, JoinedOperationalItem } from "./deliveryProductionJoin";
 import type { ProvenReaderProductV66 } from "./readerIngressV66";
+import { buildDailyStoreTataSequenceScope, DAILY_STORE_TATA_SEQUENCE_RULE } from "./tataSequence";
 
 /**
  * Native Reader chain V1 — the missing link between ONE native Teknisa
@@ -318,4 +319,90 @@ export function stationWindowCategoryV1(station: string | null | undefined): "CO
   if (s === "ENROLADOS") return "ENROLADOS";
   if (s === "COZINHA QUENTES" || s === "BEBIDAS" || s === "BAR") return "INDEPENDENT_IF_UNPAIRED";
   return "UNKNOWN";
+}
+
+/**
+ * Store-local opening time of ONE native revision. Teknisa writes
+ * DTHRABERMESA as a plain local datetime (observed "2026-10-02T23:02:07.0000000").
+ * A "Z", an offset or any other shape means the value was converted somewhere
+ * and the Itaim day/clock is ambiguous: null (HOLD), never a guess.
+ */
+const STORE_LOCAL_TS = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,7})?$/;
+export interface StoreLocalTimeV1 { day: string; hm: string }
+export function storeLocalTimeV1(raw: unknown): StoreLocalTimeV1 | null {
+  if (typeof raw !== "string") return null;
+  const m = STORE_LOCAL_TS.exec(raw);
+  if (!m) return null;
+  const [y, mo, d, h, mi, s] = m.slice(1, 7).map(Number);
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d ||
+      h > 23 || mi > 59 || s > 59) return null;
+  return { day: `${m[1]}-${m[2]}-${m[3]}`, hm: `${m[4]}:${m[5]}` };
+}
+
+/**
+ * TATÁ number levels, never merged:
+ *   PREVIEW                     computed from a supplied state; nothing stored
+ *   CANDIDATE_PERSISTED_IN_LAB  bound and read back in a disposable lab DB
+ *   LIVE_ATTESTED               real store state + independent attestation;
+ *                               NO producer exists yet
+ * Each level fixes its two flags; a claim whose flags disagree is refused.
+ */
+export type TataSequenceLevelV1 = "PREVIEW" | "CANDIDATE_PERSISTED_IN_LAB" | "LIVE_ATTESTED";
+const LEVEL_FLAGS_V1: Readonly<Record<TataSequenceLevelV1, readonly [boolean, boolean]>> = {
+  PREVIEW: [false, false],
+  CANDIDATE_PERSISTED_IN_LAB: [true, false],
+  LIVE_ATTESTED: [true, true],
+};
+export interface TataSequenceBindingClaimV1 {
+  level: TataSequenceLevelV1; persisted: boolean; attested_independently: boolean;
+  order_key: string; scope_id: string; tata_sequence: string;
+}
+export interface TataSequenceVerdictV1 {
+  /** accepted level of the claim; null when absent or refused */
+  level: TataSequenceLevelV1 | null;
+  /** ONLY for LIVE_ATTESTED: the number that may reach paper */
+  number: string | null;
+  /** PREVIEW / lab number: reported for review, never printed */
+  candidate_number: string | null;
+  /** daily scope of THIS revision (tataSequence.ts), null if the day is not trusted */
+  scope_id: string | null;
+  reason: string | null;
+  rule_ref: string;
+}
+
+/**
+ * The TATÁ number belongs to the ORDER (four-part native key) inside its
+ * store-local day — César, issue #102 and PR #135: 001 at the first order of
+ * each Itaim day, lunch and dinner share one sequence, replay / reprint / a
+ * new revision of the same order keep the number, a canceled order's number
+ * is never recycled. Scope comes from tataSequence.ts, not from a new format.
+ */
+export function sequenceVerdictV1(binding: unknown, event: NativeReaderEventV1): TataSequenceVerdictV1 {
+  const time = storeLocalTimeV1(event?.order?.DTHRABERMESA);
+  const scope = time ? buildDailyStoreTataSequenceScope({
+    store_id: clean(event.order.CDFILIAL) + "|" + clean(event.order.CDLOJA),
+    operational_date: time.day,
+  }).scope_id : null;
+  const verdict = (level: TataSequenceLevelV1 | null, number: string | null,
+    candidate: string | null, reason: string | null): TataSequenceVerdictV1 => ({
+    level, number, candidate_number: candidate, scope_id: scope, reason,
+    rule_ref: DAILY_STORE_TATA_SEQUENCE_RULE.source_ref,
+  });
+  if (!scope) return verdict(null, null, null, "SOURCE_LOCAL_DAY_NOT_TRUSTED");
+  if (!binding || typeof binding !== "object" || Array.isArray(binding))
+    return verdict(null, null, null, "TATA_SEQUENCE_NOT_BOUND");
+  const b = binding as Partial<TataSequenceBindingClaimV1>;
+  const level = typeof b.level === "string" &&
+    Object.prototype.hasOwnProperty.call(LEVEL_FLAGS_V1, b.level) ? b.level : null;
+  const flags = level ? LEVEL_FLAGS_V1[level] : null;
+  if (!level || !flags || b.persisted !== flags[0] || b.attested_independently !== flags[1])
+    return verdict(null, null, null, "TATA_SEQUENCE_BINDING_NOT_ATTESTED");
+  const seq = typeof b.tata_sequence === "string" ? b.tata_sequence : "";
+  if (b.order_key !== event.order_key || b.scope_id !== scope || !/^\d{3}$/.test(seq) || seq === "000")
+    return verdict(null, null, null, "TATA_SEQUENCE_BINDING_SCOPE_MISMATCH");
+  if (level === "PREVIEW") return verdict(level, null, seq, "TATA_SEQUENCE_PREVIEW_ONLY_NOT_PERSISTED");
+  if (level === "CANDIDATE_PERSISTED_IN_LAB")
+    return verdict(level, null, seq, "TATA_SEQUENCE_LAB_ONLY_NOT_LIVE_ATTESTED");
+  return verdict(level, seq, null, null);
 }

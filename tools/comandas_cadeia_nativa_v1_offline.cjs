@@ -9,8 +9,9 @@
  *     L3 items/notes/motor          native same-snapshot join + proven identities
  *                                   + pinned Academy motor (V6.6 ingress, V6.3 bridge)
  *     L4 three views                existing V4.5 tickets + V4.6 render
- *     L5 sequence                   only a persisted, attested binding shows a
- *                                   TATÁ number; otherwise no number and HOLD
+ *     L5 sequence                   only a LIVE_ATTESTED binding of this order and
+ *                                   Itaim day shows a TATÁ number; PREVIEW and
+ *                                   lab numbers are reported, never printed
  *
  * Reuses existing modules only; it adds the native join and the layer matrix.
  * No SQL, host, spooler, queue, sequence write or print. Outputs are virtual.
@@ -44,17 +45,14 @@ function loadPinnedMotor(source){
   return {motor:null,reason:"PINNED_ACADEMY_MOTOR_EXPORTS_ABSENT"};
  return {motor,blob:gitBlob(bytes)};
 }
-// A binding shows a number ONLY when persisted AND independently attested for
-// this exact revision. No attestation protocol exists yet, so today every
-// binding is refused; the field exists so the gate is explicit, not implicit.
-function sequenceVerdict(binding,event){
- if(!binding)return {number:null,reason:"TATA_SEQUENCE_NOT_BOUND"};
- if(binding.persisted!==true||binding.attested_independently!==true)
-  return {number:null,reason:"TATA_SEQUENCE_BINDING_NOT_ATTESTED"};
- if(binding.order_key!==event.order_key||binding.snapshot_sha256!==event.snapshot_hash||
-    !/^\d{3}$/.test(String(binding.tata_sequence))||binding.tata_sequence==="000")
-  return {number:null,reason:"TATA_SEQUENCE_BINDING_SCOPE_MISMATCH"};
- return {number:binding.tata_sequence,reason:null};
+// L5 levels (N.sequenceVerdictV1): only LIVE_ATTESTED for this order and its
+// Itaim day puts a number on paper. No LIVE_ATTESTED producer exists yet, so
+// today the number never reaches the context; PREVIEW / lab numbers are
+// reported as candidate_number for review only.
+function sequenceLayer(sequence){
+ return {tata_number:sequence.number,sequence_level:sequence.level,
+  candidate_number:sequence.candidate_number,sequence_scope:sequence.scope_id,
+  sequence_rule_ref:sequence.rule_ref};
 }
 function layer(status,reasons,extra={}){
  return {status,reasons:[...new Set(reasons)].sort(),...extra};
@@ -66,7 +64,8 @@ function layer(status,reasons,extra={}){
  *  routing, printer_map    committed Retail routing (compact) + printer registry
  *  calibration             production printer calibration registry
  *  motor_source            bytes of the pinned Academy motor
- *  sequence_binding        optional persisted binding claim
+ *  sequence_binding        optional level claim {level,persisted,attested_independently,
+ *                          order_key,scope_id,tata_sequence}
  */
 function runNativeChainV1(i){
  const L={};
@@ -84,13 +83,15 @@ function runNativeChainV1(i){
   independent_source_attested:false});
  // L2 ── watcher state: the daily service-state is not a content source
  const cls=N.classifyConsumerBlockersV1(d.blocking_reasons,e.blockers);
- const [day,clock]=String(e.order.DTHRABERMESA).split("T");
- const hm=(clock||"").slice(0,5),period=windowOf(day,hm);
+ // Store-local clock only: a converted ("Z"/offset) or malformed time has no
+ // trustworthy Itaim window or day, so it HOLDs instead of being guessed.
+ const local=N.storeLocalTimeV1(e.order.DTHRABERMESA);
+ const day=local?.day??null,hm=local?.hm??null,period=local?windowOf(day,hm):null;
  L.L2=layer(!period?"HOLD":period==="OUTSIDE_REPORTED_WINDOW"?"OUTSIDE_DOCUMENTED_WINDOW":"NATIVE_ORDER_TIME_WINDOW",
-  period?[]:["NATIVE_ORDER_TIME_INVALID"],{window:period,order_local_hm:hm,
+  period?[]:["NATIVE_ORDER_TIME_NOT_STORE_LOCAL"],{window:period,order_local_hm:hm,
    legacy_service_state_ignored_for_content:cls.legacy_service_state});
  // L3 ── items, notes, motor (content)
- const sequence=sequenceVerdict(i.sequence_binding,e);
+ const sequence=N.sequenceVerdictV1(i.sequence_binding,e);
  const pinned=loadPinnedMotor(i.motor_source);
  if(!pinned.motor){L.L3=layer("HOLD",[pinned.reason]);return out();}
  // Catalog-equivalence identity (never "human"): only for an item the
@@ -121,9 +122,11 @@ function runNativeChainV1(i){
  const contentReasons=[...cls.content.filter(b=>!explained.has(b)),...resolution.refused,
   ...motorReasons,...join.reasons,...ids.held.map(x=>"CLASSIFICATION_NOT_PROVEN_ITEM:"+(x+1))];
  if(contentReasons.length||!period){
-  L.L3=layer("HOLD",contentReasons,{join:join.provenance,catalog_resolution:catalog});
+  // Content may be fine while the window is not: say so instead of a bare HOLD.
+  L.L3=layer("HOLD",[...contentReasons,...(period?[]:["L2_WINDOW_NOT_ESTABLISHED"])],
+   {join:join.provenance,catalog_resolution:catalog});
   L.L4=layer("HOLD",["CONTENT_NOT_PROVEN"],{views:[]});
-  L.L5=layer("HOLD",[sequence.reason||"CONTENT_NOT_PROVEN"],{tata_number:null});
+  L.L5=layer("HOLD",[sequence.reason||"CONTENT_NOT_PROVEN"],{...sequenceLayer(sequence),tata_number:null});
   return out();
  }
  // L4 ── destinations by native time + reviewed station rule, then three views
@@ -152,7 +155,7 @@ function runNativeChainV1(i){
   L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog});
   L.L4=layer("HOLD",[...(review.reasons||[]),...(review.plan?.blocking_reasons||[])],
    {views:[],window:review.period??period,suppressed:review.suppressed??[]});
-  L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],{tata_number:sequence.number});
+  L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],sequenceLayer(sequence));
   return out();
  }
  const ingress=compileJoinedReaderIngressV66(join.join,review.plan,ids.identities);
@@ -178,7 +181,7 @@ function runNativeChainV1(i){
    // iFood x Teknisa belongs to the CONFERENCE only; production never waits on it.
    conference_ifood_crosscheck:native.source_review?.conference?.status??"UNKNOWN"});
  L.L5=layer(sequence.number?"BOUND":"HOLD",sequence.number?[]:[sequence.reason],
-  {tata_number:sequence.number,physical_bytes_require_number:true});
+  {...sequenceLayer(sequence),physical_bytes_require_number:true});
  return out();
 }
 module.exports={SCHEMA,EFFECTS,NO_SEQUENCE,runNativeChainV1,loadPinnedMotor};

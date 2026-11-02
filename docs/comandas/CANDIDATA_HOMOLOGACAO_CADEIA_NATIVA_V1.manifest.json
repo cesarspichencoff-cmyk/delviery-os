@@ -38,8 +38,8 @@
     },
     {
       "path": "src/production/nativeReaderChainV1.ts",
-      "git_blob": "a311c7c6bfc96aa69ea08a0ca229680db7acbfb0",
-      "bytes": 17125
+      "git_blob": "fe7875f4da5a502d1c545b01e9dc0ced12576008",
+      "bytes": 21781
     },
     {
       "path": "src/production/operationalTicketEscposV46.ts",
@@ -77,14 +77,19 @@
       "bytes": 18197
     },
     {
+      "path": "src/production/tataSequence.ts",
+      "git_blob": "49d8b7e843a6a0072052055fc246bb0f8ffbcb90",
+      "bytes": 11913
+    },
+    {
       "path": "src/shadow/expectedRouting.ts",
       "git_blob": "e17d55a053098f532aae74fef45e4f04c0d2fb9a",
       "bytes": 7578
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "93a84b79a57c7002c62b06a6375aa34d76b9c042",
-      "bytes": 11417
+      "git_blob": "c7f54e32075f90688dbd1152c373cb3dd387fd00",
+      "bytes": 11656
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",

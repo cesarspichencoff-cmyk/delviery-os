@@ -14,6 +14,7 @@ src/production/currentPackagingBridgeV63.ts -text
 src/production/deliveryProductionJoin.ts -text
 src/production/kitchenDependencies.ts -text
 src/production/nativeReaderChainV1.ts -text
+src/production/tataSequence.ts -text
 src/production/operationalTicketEscposV46.ts -text
 src/production/operationalTicketsV45.ts -text
 src/production/packagingCoherenceV64.ts -text
