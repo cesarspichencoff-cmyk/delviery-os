@@ -139,6 +139,10 @@ jobs:
         run: node tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs
       - name: Synthetic-only atomic strong-key TATA sequence V2 SQLite lab
         run: node tools/verificar_comandas_sequence_v2_sqlite_lab.cjs
+      - name: TATA number V2 strong key keeps daily 001 and refuses gaps (review only)
+        run: node tools/verificar_comandas_strong_key_sequence_v2_offline.cjs
+      - name: TATA number V2 on native revisions, lab level only (race, crash, cancel, gap, untrusted day)
+        run: node tools/verificar_comandas_sequence_v2_native_lab_v1.cjs
       - name: Archived IMP logs must not prove a native first dispatch (no effects)
         run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
@@ -497,6 +501,10 @@ jobs:
         run: node tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs
       - name: Synthetic-only atomic strong-key TATA sequence V2 SQLite lab
         run: node tools/verificar_comandas_sequence_v2_sqlite_lab.cjs
+      - name: TATA number V2 strong key keeps daily 001 and refuses gaps (review only)
+        run: node tools/verificar_comandas_strong_key_sequence_v2_offline.cjs
+      - name: TATA number V2 on native revisions, lab level only (race, crash, cancel, gap, untrusted day)
+        run: node tools/verificar_comandas_sequence_v2_native_lab_v1.cjs
       - name: Archived IMP logs must not prove a native first dispatch (no effects)
         run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
       - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)

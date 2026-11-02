@@ -247,17 +247,58 @@ test("unknown consumer blocker is CONTENT (fail closed); mixed upstream blocker 
  const c=N.classifyConsumerBlockersV1(["UPSTREAM_EVENT_NOT_READY","UPSTREAM_X"],["SERVICE_STATE_EXPIRED_FOR_ORDER","X"]);
  assert.deepEqual(c.content.sort(),["UPSTREAM_EVENT_NOT_READY","UPSTREAM_X"]);
 });
-test("sequence gate: unattested or other-revision binding shows nothing; attested binding opens only its revision",()=>{
- const base={persisted:true,order_key:real.order_key,snapshot_sha256:real.snapshot_hash,tata_sequence:"037"};
- for(const b of [{...base,attested_independently:false},{...base,persisted:false,attested_independently:true},
-  {...base,attested_independently:true,snapshot_sha256:"0".repeat(64)},{...base,attested_independently:true,tata_sequence:"000"}]){
-  const r=chain(real,decision,{sequence_binding:b});
-  assert.equal(r.layers.L5.tata_number,null);assert.ok(r.views.every(v=>v.escpos_bytes===0));
+test("sequence levels: only LIVE_ATTESTED for this order and Itaim day reaches paper; PREVIEW and lab never print",()=>{
+ const scope="STORE:0001|01|DATE:2026-10-04";
+ const base={order_key:real.order_key,scope_id:scope,tata_sequence:"037"};
+ const live={...base,level:"LIVE_ATTESTED",persisted:true,attested_independently:true};
+ const none=chain(real,decision);
+ assert.deepEqual([none.layers.L5.reasons,none.layers.L5.sequence_level,none.layers.L5.sequence_scope],
+  [["TATA_SEQUENCE_NOT_BOUND"],null,scope]);
+ assert.equal(none.layers.L5.sequence_rule_ref,"human:cesar:2026-10-01:daily-store-tata-sequence");
+ // PREVIEW and lab numbers are reported for review, never placed in a view.
+ for(const [level,persisted,reason] of [["PREVIEW",false,"TATA_SEQUENCE_PREVIEW_ONLY_NOT_PERSISTED"],
+  ["CANDIDATE_PERSISTED_IN_LAB",true,"TATA_SEQUENCE_LAB_ONLY_NOT_LIVE_ATTESTED"]]){
+  const r=chain(real,decision,{sequence_binding:{...base,level,persisted,attested_independently:false}});
+  assert.deepEqual([r.layers.L5.status,r.layers.L5.reasons,r.layers.L5.sequence_level,
+   r.layers.L5.candidate_number,r.layers.L5.tata_number],["HOLD",[reason],level,"037",null]);
+  assert.ok(r.views.length===3&&r.views.every(v=>v.escpos_bytes===0&&!/\b037\b/.test(v.text_trace)));
  }
- // Synthetic attested binding (no real binding exists): only then a number appears.
- const ok=chain(real,decision,{sequence_binding:{...base,attested_independently:true}});
- assert.equal(ok.layers.L5.status,"BOUND");assert.equal(ok.layers.L5.tata_number,"037");
- assert.ok(ok.views.every(v=>v.text_trace.includes("IFOOD 9627 | TEKNISA")));
+ // Refused claims: flags that contradict the level, other order, other day or
+ // unit, number 000, and the old snapshot-pinned shape without a level.
+ for(const b of [{...live,attested_independently:false},{...live,persisted:false},
+  {...base,level:"CANDIDATE_PERSISTED_IN_LAB",persisted:true,attested_independently:true},
+  {...live,order_key:real.order_key.replace(/\|[^|]+$/,"|0000000001")},
+  {...live,scope_id:"STORE:0001|01|DATE:2026-10-05"},{...live,scope_id:"STORE:0001|02|DATE:2026-10-04"},
+  {...live,tata_sequence:"000"},{...live,level:"live_attested"},
+  {persisted:true,attested_independently:true,order_key:real.order_key,snapshot_sha256:real.snapshot_hash,tata_sequence:"037"}]){
+  const r=chain(real,decision,{sequence_binding:b});
+  assert.deepEqual([r.layers.L5.tata_number,r.layers.L5.sequence_level,r.layers.L5.candidate_number],[null,null,null],JSON.stringify(b));
+  assert.ok(r.views.every(v=>v.escpos_bytes===0));
+ }
+ // Synthetic LIVE claim (no producer exists): only then a number appears, on all three views.
+ const ok=chain(real,decision,{sequence_binding:live});
+ assert.deepEqual([ok.layers.L5.status,ok.layers.L5.tata_number,ok.layers.L5.sequence_level],["BOUND","037","LIVE_ATTESTED"]);
+ assert.ok(ok.views.every(v=>v.text_trace.includes("IFOOD 9627 | TEKNISA")&&/\b037\b/.test(v.text_trace)));
+ // The number belongs to the ORDER: a new native revision (header X -> P,
+ // other snapshot) keeps it; the contract never renumbers a revision.
+ const rev=event(o=>({...o,IDSTCOMANDA:"P"}));
+ assert.notEqual(rev.snapshot_hash,real.snapshot_hash);
+ const again=chain(rev,consume(rev),{sequence_binding:live});
+ assert.deepEqual([again.layers.L5.status,again.layers.L5.tata_number],["BOUND","037"]);
+});
+test("a converted or malformed native clock has no Itaim window or day: L2 and L5 HOLD",()=>{
+ for(const t of ["2026-10-05T01:58:50Z","2026-10-04T22:58:50-03:00","2026-10-04T22:58:50.0000000+00:00",
+  "2026-10-04 22:58:50","2026-10-04T24:00:00.0000000"]){
+  const ev=event(o=>({...o,DTHRABERMESA:t}));
+  const r=chain(ev,consume(ev),{sequence_binding:{level:"LIVE_ATTESTED",persisted:true,attested_independently:true,
+   order_key:ev.order_key,scope_id:"STORE:0001|01|DATE:2026-10-04",tata_sequence:"037"}});
+  if(r.layers.L1.status!=="NATIVE_REVISION_CONSISTENT"){assert.equal(r.layers.L1.status,"HOLD",t);continue;}
+  assert.deepEqual([r.layers.L2.status,r.layers.L2.reasons,r.layers.L2.window],
+   ["HOLD",["NATIVE_ORDER_TIME_NOT_STORE_LOCAL"],null],t);
+  assert.equal(r.layers.L5.tata_number,null,t);assert.ok(r.layers.L5.reasons.includes("SOURCE_LOCAL_DAY_NOT_TRUSTED"),t);
+  assert.ok(r.views.every(v=>v.escpos_bytes===0),t);
+ }
+ assert.deepEqual(N.storeLocalTimeV1("2026-10-04T22:58:50.0000000"),{day:"2026-10-04",hm:"22:58"});
 });
 test("pinned motor bytes are enforced before any projection",()=>{
  const r=runNativeChainV1({event:real,decision,routing,printer_map:printers,calibration,
