@@ -73,9 +73,24 @@ function buildManifest(){
   entries:ENTRIES,code:c.files.map(entry),runtime_data:RUNTIME_DATA.map(entry),
   node_builtins:c.builtins,unresolved_relative_requires:c.missing,
   capability_flags:flags,
+  // Identity is the EXACT bytes (git blob of the working file), never
+  // "content modulo line endings": a Windows CRLF checkout must not change it.
+  eol_policy:"BYTE_EXACT_GIT_BLOB; every file above is '-text' in .gitattributes",
   build:{command:"npm run build",typescript:"5.5.3 (package-lock)",dist_from:"src/*.ts listed above"},
   not_included:["print/spooler emitter","service or supervisor change","sequence writer","SQL client"],
   effects:{install:false,service:false,queue:false,print:false,sequence_write:false}};
+}
+/**
+ * Candidate paths NOT protected from end-of-line conversion. Without '-text',
+ * a Windows checkout (core.autocrlf) rewrites LF as CRLF and the installed
+ * bytes stop matching the pinned blob (observed: PR #135 Windows CI run
+ * 41398285659, job 125124301630).
+ */
+function byteExactAttributeGaps(manifest,attributesText){
+ const lines=new Set(String(attributesText).split(/\r?\n/).map(l=>l.trim())
+  .filter(l=>l&&!l.startsWith("#")).map(l=>l.replace(/\s+/g," ")));
+ return [...manifest.code,...manifest.runtime_data].map(f=>f.path)
+  .filter(p=>!lines.has(p+" -text"));
 }
 if(require.main===module){
  const m=buildManifest();
@@ -83,4 +98,4 @@ if(require.main===module){
   fs.writeFileSync(path.join(ROOT,MANIFEST),JSON.stringify(m,null,2)+"\n");
  process.stdout.write(JSON.stringify(m,null,2)+"\n");
 }
-module.exports={buildManifest,MANIFEST,ENTRIES,RUNTIME_DATA};
+module.exports={buildManifest,byteExactAttributeGaps,MANIFEST,ENTRIES,RUNTIME_DATA};

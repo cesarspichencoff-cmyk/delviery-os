@@ -158,6 +158,7 @@
       "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs"
     ]
   },
+  "eol_policy": "BYTE_EXACT_GIT_BLOB; every file above is '-text' in .gitattributes",
   "build": {
     "command": "npm run build",
     "typescript": "5.5.3 (package-lock)",
