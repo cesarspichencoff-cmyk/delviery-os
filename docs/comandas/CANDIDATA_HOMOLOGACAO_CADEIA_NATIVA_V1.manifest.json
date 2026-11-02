@@ -38,8 +38,8 @@
     },
     {
       "path": "src/production/nativeReaderChainV1.ts",
-      "git_blob": "5cb88d9d35f00553950fe62409492da36f927860",
-      "bytes": 12506
+      "git_blob": "a311c7c6bfc96aa69ea08a0ca229680db7acbfb0",
+      "bytes": 17125
     },
     {
       "path": "src/production/operationalTicketEscposV46.ts",
@@ -83,8 +83,8 @@
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "4610a3b306d752d7a91aeb55fe1433b016510ca9",
-      "bytes": 9897
+      "git_blob": "93a84b79a57c7002c62b06a6375aa34d76b9c042",
+      "bytes": 11417
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",
@@ -98,8 +98,8 @@
     },
     {
       "path": "tools/comandas_window_station_select_v1_offline.cjs",
-      "git_blob": "9233cc0b2a2503470a6d27d0dc1d104142c3067b",
-      "bytes": 7182
+      "git_blob": "8fd61d5c2a642a9e8aab6a77d83226508957af84",
+      "bytes": 7413
     },
     {
       "path": "tools/tata_comanda_motor_summary_v861_offline.cjs",
@@ -142,6 +142,11 @@
       "path": "data/non_production_delivery_items_v1.json",
       "git_blob": "e14326430770551e132bf6e0f8b54376dee56e6a",
       "bytes": 1552
+    },
+    {
+      "path": "data/comandas_catalog_equivalence_v1.json",
+      "git_blob": "01c24a54874658555343144dab37f90674388089",
+      "bytes": 1585
     }
   ],
   "node_builtins": [

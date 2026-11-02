@@ -17,6 +17,27 @@ const {spawnSync}=require("node:child_process");
 const {snapshotHash}=require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
 const {runNativeChainV1}=require("./comandas_cadeia_nativa_v1_offline.cjs");
 const N=require("../dist/src/production/nativeReaderChainV1.js");
+const {loadPinnedMotor}=require("./comandas_cadeia_nativa_v1_offline.cjs");
+// Catalog-equivalence evidence checked against the REAL catalog: every listed
+// entry exists, shares the recorded composition hash and classification, and
+// the pinned motor returns byte-identical JSON for each entry (differential).
+function verifyEquivalence(eq,app,motorBytes){
+ const sha=b=>crypto.createHash("sha256").update(b).digest("hex");
+ const byId=new Map(app.products.map(p=>[p.id,p]));
+ const {motor}=loadPinnedMotor(motorBytes);
+ return eq.records.map(r=>{
+  const entries=r.academy_entry_ids.map(id=>byId.get(id));
+  const exist=entries.every(Boolean);
+  const sameText=exist&&entries.every(e=>sha(Buffer.from(e.descricao,"utf8"))===r.shared.descricao_sha256);
+  const sameClass=exist&&entries.every(e=>["family","subfamily","station"]
+   .every(k=>e.classification?.[k]===r.shared.classification[k])&&e.classification.review_required===false);
+  const outputs=exist?entries.map(e=>{const x=[{product:{nome:r.native_name,classification:e.classification},quantity:1}];
+   return JSON.stringify([motor.packComanda(x),motor.kitVerdict(x)]);}):[];
+  const sameMotor=outputs.length>1&&outputs.every(o=>o===outputs[0]);
+  return {id:r.id,entries_exist:exist,identical_composition:sameText,identical_classification:sameClass,
+   identical_motor_output:sameMotor,verified:exist&&sameText&&sameClass&&sameMotor};
+ });
+}
 const ROOT=path.join(__dirname,"..");
 const PINS={"data/app-data.json":"d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22",
  "lib/packaging-current.js":"3167c309f02a0ad5a84fb43043b8866e3bee873c"};
@@ -56,6 +77,11 @@ function main(){
   put("product-identity-cache-v1.json",{schema:"deliveryos.product-identity-cache.v1",rows:[
    ...r9627.observed_items.map(x=>({CDPRODUTO:x.CDPRODUTO,canonical:canon(x.CDARVPROD),NMPRODUTO:n9627[canon(x.CDARVPROD)]})),
    ...r9092.observed_items.map((x,i)=>({CDPRODUTO:x.CDPRODUTO,canonical:canon(items9092[i].CDARVPROD),NMPRODUTO:x.NMPRODUTO.trim()}))]});
+  const equivalence=load("comandas_catalog_equivalence_v1.json");
+  const app=JSON.parse(academy["data/app-data.json"].toString("utf8"));
+  const equivalenceChecks=verifyEquivalence(equivalence,app,academy["lib/packaging-current.js"]);
+  const equivalenceVerified=equivalence.academy_catalog.git_blob===PINS["data/app-data.json"]&&
+   equivalenceChecks.every(c=>c.verified);
   const cases=[["9627",r9627.observed_order,r9627.observed_items],["9092",r9092.observed_order,items9092]];
   const report=[];
   for(const [id,o,items] of cases){
@@ -73,7 +99,8 @@ function main(){
    const cls=N.classifyConsumerBlockersV1(decision.blocking_reasons,event.blockers);
    const out=runNativeChainV1({event,decision,routing,printer_map:printers,
     calibration:load("production_printer_calibration_registry_v1.json"),
-    motor_source:academy["lib/packaging-current.js"]});
+    motor_source:academy["lib/packaging-current.js"],
+    catalog_equivalence:equivalenceVerified?equivalence:{records:[]}});
    report.push({order:id,native_header:order.IDSTCOMANDA,
     native_item_states:[...new Set(items.map(x=>x.IDSTPRCOMVEN))],lines:items.length,
     consumer:{ready:decision.ready,content_blockers:cls.content,
@@ -81,10 +108,12 @@ function main(){
      sequence:cls.sequence},
     layers:Object.fromEntries(Object.entries(out.layers).map(([k,l])=>[k,{status:l.status,reasons:l.reasons}])),
     window:out.layers.L2?.window??null,
+    catalog_resolution:out.layers.L3?.catalog_resolution??null,
     views:out.views.map(v=>({kind:v.kind,station:v.station,lines:v.lines,escpos_bytes:v.escpos_bytes,
      text_trace_sha256:v.text_trace_sha256}))});
   }
-  return {status:"PRIVATE_REPLAY_COMPLETE",academy_pins:PINS,report,
+  return {status:"PRIVATE_REPLAY_COMPLETE",academy_pins:PINS,
+   catalog_equivalence:{verified:equivalenceVerified,checks:equivalenceChecks},report,
    effects:{host:false,sql:false,queue:false,print:false,sequence_write:false}};
  }finally{fs.rmSync(temp,{recursive:true,force:true});}
 }

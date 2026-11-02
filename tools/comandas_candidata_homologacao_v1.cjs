@@ -24,6 +24,7 @@ const RUNTIME_DATA=[
  "data/runtime_printer_map_v1.json",
  "data/production_printer_calibration_registry_v1.json",
  "data/non_production_delivery_items_v1.json",
+ "data/comandas_catalog_equivalence_v1.json",
 ];
 const blob=b=>crypto.createHash("sha1").update(Buffer.concat([Buffer.from("blob "+b.length+"\0"),b])).digest("hex");
 const rel=p=>path.relative(ROOT,p).split(path.sep).join("/");

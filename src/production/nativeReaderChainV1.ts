@@ -188,22 +188,103 @@ export function joinNativeReaderSnapshotV1(
   };
 }
 
+export interface CatalogEquivalenceRecordV1 {
+  id: string;
+  canonical_code: string;
+  native_cdproduto: string;
+  native_name: string;
+  academy_entry_ids: string[];
+  shared: { descricao_sha256: string; classification: { family: string; subfamily?: string; station: string } };
+}
+export interface CatalogResolutionV1 {
+  resolved: Array<{ item_index: number; record_id: string;
+    classification: { family: string; subfamily?: string; station: string; review_required: false };
+    classification_source: string }>;
+  explained_blockers: string[];
+  motor_rerun_required: boolean;
+  refused: string[];
+}
+const CODE = /^\d\.\d{2}\.\d{2}\.\d{3}\.\d{2}$/;
+function validEquivalenceRecord(r: CatalogEquivalenceRecordV1): boolean {
+  return !!r && typeof r.id === "string" && !!clean(r.id) && CODE.test(clean(r.canonical_code)) &&
+    /^\d{10}$/.test(clean(r.native_cdproduto)) && !!clean(r.native_name) &&
+    Array.isArray(r.academy_entry_ids) && r.academy_entry_ids.length >= 2 &&
+    new Set(r.academy_entry_ids).size === r.academy_entry_ids.length &&
+    /^[a-f0-9]{64}$/.test(clean(r.shared?.descricao_sha256)) &&
+    !!clean(r.shared?.classification?.family) && !!clean(r.shared?.classification?.station);
+}
+
+/**
+ * Classification for a native item the consumer could not classify, taken
+ * from a catalog-EQUIVALENCE record: every listed Academy entry is the same
+ * product (identical composition text and classification), so the choice
+ * between them cannot change any result. Applies ONLY to an item that is
+ * unclassified AND named by the consumer's own CLASSIFICATION_UNKNOWN_<code>,
+ * and ONLY on an exact (canonical code, CDPRODUTO, native name) match with a
+ * single record. Labelled CATALOG_EQUIVALENT_ACADEMY_ENTRIES — never "human".
+ * When the consumer never ran the motor, the caller MUST re-run the pinned
+ * motor; the packaging/kit blockers are explained only under that duty.
+ */
+export function resolveCatalogEquivalenceV1(
+  event: NativeReaderEventV1,
+  decision: NativeDecisionV1,
+  records: readonly CatalogEquivalenceRecordV1[],
+  consumerBlockers: readonly string[],
+): CatalogResolutionV1 {
+  const out: CatalogResolutionV1 = { resolved: [], explained_blockers: [], motor_rerun_required: false, refused: [] };
+  const valid = (Array.isArray(records) ? records : []).filter(validEquivalenceRecord);
+  if (Array.isArray(records) && valid.length !== records.length) out.refused.push("CATALOG_EQUIVALENCE_RECORD_INVALID");
+  const blockers = new Set((consumerBlockers ?? []).map(String));
+  for (const d of decision?.items ?? []) {
+    const c = d.classification;
+    if (c && c.review_required === false) continue; // never override a proven classification
+    if (!blockers.has("CLASSIFICATION_UNKNOWN_" + d.canonical_code)) continue;
+    const raw = event?.order?.items?.[d.item_index - 1];
+    const matches = valid.filter((r) => r.canonical_code === d.canonical_code &&
+      r.native_cdproduto === raw?.CDPRODUTO && norm(r.native_name) === norm(d.product_name));
+    if (matches.length > 1) { out.refused.push("CATALOG_EQUIVALENCE_AMBIGUOUS:" + d.canonical_code); continue; }
+    if (matches.length !== 1) continue;
+    const r = matches[0];
+    out.resolved.push({ item_index: d.item_index, record_id: r.id,
+      classification: { ...r.shared.classification, review_required: false },
+      classification_source: "CATALOG_EQUIVALENT_ACADEMY_ENTRIES:" + r.id });
+    out.explained_blockers.push("CLASSIFICATION_UNKNOWN_" + d.canonical_code,
+      "PACKAGING_INPUT_CLASSIFICATION_NOT_PROVEN:" + d.item_index);
+  }
+  const resolvedIdx = new Set(out.resolved.map((x) => x.item_index));
+  const allClassified = (decision?.items ?? []).length > 0 && (decision.items).every((d) =>
+    resolvedIdx.has(d.item_index) || (d.classification?.review_required === false && !!clean(d.classification_source)));
+  if (out.resolved.length && allClassified && !decision.packaging) {
+    out.motor_rerun_required = true;
+    out.explained_blockers.push("PACKAGING_NOT_RUN", "PACKAGING_SKIPPED_INCOMPLETE_OR_UNREVIEWED_ORDER", "KITS_NOT_FACT");
+  }
+  return out;
+}
+
 /**
  * Current-product identities for the V6.6 ingress, taken ONLY from a decision
  * item whose classification the consumer proved (review_required === false,
- * a classification source, a station). CLOSED_COMBO comes from the pinned
- * motor's own output (a "combinado" group listing the product); anything the
- * motor did not group stays UNKNOWN and is held by the ingress.
+ * a classification source, a station) or a catalog-equivalence resolution.
+ * CLOSED_COMBO comes from the pinned motor's own output (a "combinado" group
+ * listing the product): the consumer's output, or the chain's own re-run when
+ * the consumer never ran it. Anything the motor did not group stays UNKNOWN.
  */
-export function nativeIdentitiesV1(decision: NativeDecisionV1): { identities: ProvenReaderProductV66[]; held: number[] } {
+export function nativeIdentitiesV1(
+  decision: NativeDecisionV1,
+  resolution?: CatalogResolutionV1,
+  motorPackaging?: NativeDecisionV1["packaging"],
+): { identities: ProvenReaderProductV66[]; held: number[] } {
   const combos = new Set<string>(), grouped = new Set<string>();
-  for (const g of decision.packaging?.groups ?? [])
+  for (const g of (motorPackaging ?? decision.packaging)?.groups ?? [])
     for (const p of g.products ?? []) {
       grouped.add(norm(p.name));
       if (g.kind === "combinado") combos.add(norm(p.name));
     }
+  const byIndex = new Map((resolution?.resolved ?? []).map((r) => [r.item_index, r]));
   const identities: ProvenReaderProductV66[] = [], held: number[] = [];
-  for (const d of decision.items ?? []) {
+  for (const raw of decision.items ?? []) {
+    const r = byIndex.get(raw.item_index);
+    const d = r ? { ...raw, classification: r.classification, classification_source: r.classification_source } : raw;
     const c = d.classification;
     const proven = !!c && c.review_required === false && !!clean(d.classification_source) && !!clean(c.station) && !!clean(c.family);
     if (!proven) held.push(d.item_index - 1);
@@ -214,7 +295,8 @@ export function nativeIdentitiesV1(decision: NativeDecisionV1): { identities: Pr
       packaging_role: !grouped.has(name) ? "UNKNOWN" : combos.has(name) ? "CLOSED_COMBO" : "OTHER",
       station_proof: proven ? "CURRENT_MOTOR_PROVEN" : "UNKNOWN",
       proof: proven ? "CURRENT_PRODUCT_IDENTITY_CROSSWALK_PROVEN" : "UNKNOWN",
-      source_ref: proven ? "native-decision:" + clean(d.classification_source) + ":" + d.canonical_code : "",
+      source_ref: !proven ? "" : r ? "catalog-equivalence:" + r.record_id + ":" + d.canonical_code
+        : "native-decision:" + clean(d.classification_source) + ":" + d.canonical_code,
     });
   }
   return { identities, held };

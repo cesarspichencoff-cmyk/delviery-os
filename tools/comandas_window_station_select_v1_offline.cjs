@@ -25,7 +25,10 @@ function windowOf(day,hm){
  const t=h*60+m,wd=new Date(day+"T00:00:00Z").getUTCDay();
  const lunchEnd=(wd===0||wd===6)?990:900;
  if(t>=660&&t<lunchEnd)return "LUNCH_CANDIDATE";
- if(t>=1080&&t<1380)return "DINNER_CANDIDATE";
+ // Dinner runs from 18:00 to the END of the same civil day: César confirmed
+ // on 02/11 that an order opened after 23:00 (real case 23:02) follows the
+ // dinner printers. 00:00 is a new civil day and never inherits the night.
+ if(t>=1080&&t<=1439)return "DINNER_CANDIDATE";
  return "OUTSIDE_REPORTED_WINDOW";
 }
 function answer(status,reasons,more={}){

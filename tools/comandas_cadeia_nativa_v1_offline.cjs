@@ -91,19 +91,41 @@ function runNativeChainV1(i){
    legacy_service_state_ignored_for_content:cls.legacy_service_state});
  // L3 ── items, notes, motor (content)
  const sequence=sequenceVerdict(i.sequence_binding,e);
- const ids=N.nativeIdentitiesV1(d);
+ const pinned=loadPinnedMotor(i.motor_source);
+ if(!pinned.motor){L.L3=layer("HOLD",[pinned.reason]);return out();}
+ // Catalog-equivalence identity (never "human"): only for an item the
+ // consumer named CLASSIFICATION_UNKNOWN_<code>, on an exact native match.
+ const resolution=N.resolveCatalogEquivalenceV1(e,d,
+  i.catalog_equivalence?.records??[],d.blocking_reasons);
+ let motorPackaging=null;const motorReasons=[];
+ if(resolution.motor_rerun_required){
+  // The consumer never ran the motor for this revision: run the SAME pinned
+  // bytes here; its own verdict replaces the explained packaging blockers.
+  const entries=d.items.map(x=>{
+   const r=resolution.resolved.find(z=>z.item_index===x.item_index);
+   return {product:{nome:x.product_name,classification:r?r.classification:x.classification},
+    quantity:x.quantity};});
+  const pack=pinned.motor.packComanda(entries),kits=pinned.motor.kitVerdict(entries);
+  motorPackaging={groups:pack.groups};
+  if(pack.has_unknown)motorReasons.push("MOTOR_PACKAGING_UNKNOWN");
+  if(pack.bags?.size_status!=="FACT"||pack.bags?.exact_bag_count_status!=="FACT")
+   motorReasons.push("MOTOR_BAG_NOT_FACT");
+  if(kits?.status!=="FACT")motorReasons.push("MOTOR_KITS_NOT_FACT:"+String(kits?.why||"").slice(0,160));
+ }
+ const ids=N.nativeIdentitiesV1(d,resolution,motorPackaging);
+ const explained=new Set(resolution.explained_blockers);
  const routes=i.routing?.products||{};
  const join=N.joinNativeReaderSnapshotV1(e,d,routes);
- const contentReasons=[...cls.content,...join.reasons,
-  ...ids.held.map(x=>"CLASSIFICATION_NOT_PROVEN_ITEM:"+(x+1))];
+ const catalog={resolved:resolution.resolved.map(x=>x.record_id),
+  motor_rerun:resolution.motor_rerun_required,refused:resolution.refused};
+ const contentReasons=[...cls.content.filter(b=>!explained.has(b)),...resolution.refused,
+  ...motorReasons,...join.reasons,...ids.held.map(x=>"CLASSIFICATION_NOT_PROVEN_ITEM:"+(x+1))];
  if(contentReasons.length||!period){
-  L.L3=layer("HOLD",contentReasons,{join:join.provenance});
+  L.L3=layer("HOLD",contentReasons,{join:join.provenance,catalog_resolution:catalog});
   L.L4=layer("HOLD",["CONTENT_NOT_PROVEN"],{views:[]});
   L.L5=layer("HOLD",[sequence.reason||"CONTENT_NOT_PROVEN"],{tata_number:null});
   return out();
  }
- const pinned=loadPinnedMotor(i.motor_source);
- if(!pinned.motor){L.L3=layer("HOLD",[pinned.reason]);return out();}
  // L4 ── destinations by native time + reviewed station rule, then three views
  const projection=projectExpectedRouting({ids:{pedido_interno:e.order.NRCOMANDA},
   items:join.join.items.map(x=>({item_index:x.delivery_item_index,codigo:x.codigo,
@@ -127,7 +149,7 @@ function runNativeChainV1(i){
   order_observations:join.join.order_observations.map(v=>({value:v,scope:"ORDER",proof:"NATIVE_SOURCE"}))};
  const review=planWindowReview(projection,claim,context,i.calibration);
  if(!review.plan||!review.plan.ready_for_shadow_payload){
-  L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob});
+  L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog});
   L.L4=layer("HOLD",[...(review.reasons||[]),...(review.plan?.blocking_reasons||[])],
    {views:[],window:review.period??period,suppressed:review.suppressed??[]});
   L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],{tata_number:sequence.number});
@@ -139,7 +161,7 @@ function runNativeChainV1(i){
  }
  const projected=projectTicketsFromCurrentPackagingV63(ingress.input,ingress.entries,pinned.motor,pinned.blob);
  L.L3=layer(projected.tickets?"NATIVE_CONTENT_PROVEN":"HOLD",projected.coherence_reasons||[],
-  {join:join.provenance,motor_blob:pinned.blob});
+  {join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog});
  if(!projected.tickets){L.L4=layer("HOLD",["MOTOR_PROJECTION_NOT_READY"],{views:[]});return out();}
  const t=projected.tickets,r=renderOperationalTicketsProofV46(t);
  const views=[...t.production.map((p,k)=>({kind:"PRODUCAO",station:p.station,
