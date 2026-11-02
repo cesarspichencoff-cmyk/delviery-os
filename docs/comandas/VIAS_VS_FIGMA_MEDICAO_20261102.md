@@ -37,6 +37,9 @@ própria segue sem quadro mestre equivalente (`UNKNOWN`).
 Pedido real 9627 em V4.8 (com observações de teste e número 037 sintético): COZINHA 449 B / 64,6 mm;
 DELIVERY SUSHI 1 768 B / 102,9 mm; CONFERÊNCIA 1.326 B / 138,9 mm. Sem número TATÁ atestado continuam
 0 bytes, mas a prévia agora mostra iFood e Teknisa.
+Pedido real 9092 em V4.8 (kits pela regra do César, número 012 sintético): DELIVERY SUSHI 1 344 B;
+DELIVERY SUSHI 2 337 B; CONFERÊNCIA 640 B / 66,1 mm, com `Sacola: 1 G  |  1 Kit p/2  |  1 Kit Simples`.
+Os quadros `30:3` e `20:9` foram relidos no Figma no fechamento: nós, posições e tamanhos idênticos aos medidos.
 
 ## Como foi medido
 
