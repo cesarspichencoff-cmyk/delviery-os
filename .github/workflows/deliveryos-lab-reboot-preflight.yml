@@ -1,0 +1,29 @@
+name: DeliveryOS isolated host reboot preflight (read-only)
+
+on:
+  pull_request:
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - 'tools/windows-local-lab/host-reboot-safety-preflight.cjs'
+      - 'tests/windows-local-lab/run-host-reboot-safety-preflight-tests.cjs'
+      - '.github/workflows/deliveryos-lab-reboot-preflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  no-go-readonly-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify read-only, fail-closed recovery checks on synthetic fixtures
+        run: node --test tests/windows-local-lab/run-host-reboot-safety-preflight-tests.cjs
