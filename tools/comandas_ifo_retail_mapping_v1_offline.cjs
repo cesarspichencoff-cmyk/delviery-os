@@ -82,8 +82,10 @@ function reviewIfoRetailMapping(input){
  // The Retail cashier may not be this host; the codes below are NOT exported.
  if(candidates[0].loja!=="01")
   return result("HOLD","IFO_RETAIL_LOJA_CONFLICTS_WITH_READER_NATIVE_SCOPE",checked);
- if(input.centralized==="UNKNOWN")
-  return result("HOLD","CENTRAL_DELIVERY_SETTING_NOT_OBSERVED",checked);
+ // The centralized-sync flag is a separate topology clue, NOT a
+ // prerequisite to identifying a unit/store/cashbox mapping candidate.
+ // Do not force access to another protected Retail screen just for this flag.
+ // UNKNOWN keeps first-dispatch host and transport entirely unattested.
  return result("MAPPING_CANDIDATE_REVIEW_ONLY",
   "TRANSCRIBED_MAPPING_COHERENT_BUT_NEITHER_LIVE_RETAIL_NOR_DISPATCH_ATTESTED",{
    ...checked,scoped_retail_loja_cashbox_candidate_present:true,
