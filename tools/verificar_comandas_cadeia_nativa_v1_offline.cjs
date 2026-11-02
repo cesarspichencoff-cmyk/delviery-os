@@ -196,6 +196,68 @@ test("differential: combo 2p + 2 temakis (a judged kit rule) flows to three dinn
  assert.equal((r.views[2].text_trace.match(/Op\. ________/g)||[]).length,2);
  assert.ok(r.views.every(v=>v.escpos_bytes===0));
 });
+// César's exact kit decision (PR #135 comment 6582963189): combo 9.15.00.030.00
+// x1 + 3 temakis -> Kit p/2 + Kit Simples; + 4 temakis -> Kit p/2 + Kit p/1.
+// The 2-temaki rule stays with the pinned motor. Nothing else is generalized.
+const kitRules=load("comandas_kit_rules_human_v1.json");
+const withTemakis=(n,extra=x=>x)=>ev9092(o=>extra({...o,items:o.items.map(x=>x.CDPRODUTO==="0000001641"?{...x,QTPRODCOMVEN:n+".000"}:x)}));
+const kitLine=r=>(r.views.find(v=>v.station==="CONFERENCIA")?.text_trace??"").split("\n").find(l=>/\bKIT\b/i.test(l))??null;
+const units=(r,station,name)=>(r.views.find(v=>v.station===station)?.text_trace??"").split("\n")
+ .map(l=>/^(\d+)  (.+)$/.exec(l)).filter(m=>m&&m[2]===name).reduce((n,m)=>n+Number(m[1]),0);
+test("9092 real: 2p combo + 3 temakis takes César's rule (Kit p/2 + Kit Simples) and reaches three views",()=>{
+ const r=chain(real9092,decision9092,{catalog_equivalence:equivalence,kit_rules:kitRules});
+ assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN",JSON.stringify(r.layers.L3.reasons));
+ assert.equal(r.layers.L3.kit_rule?.id,"KIT-9.15.00.030.00-x1+TEMAKI-x3");
+ assert.match(r.layers.L3.kit_rule.source_ref,/issuecomment-6582963189$/);
+ assert.equal(r.layers.L4.status,"THREE_VIEWS_VIRTUAL",JSON.stringify(r.layers.L4?.reasons));
+ assert.deepEqual(r.views.map(v=>v.station),["DELIVERY SUSHI 1","DELIVERY SUSHI 2","CONFERENCIA"]);
+ assert.match(kitLine(r),/1 KIT P\/2/i);assert.match(kitLine(r),/1 KIT SIMPLES/i);
+ assert.doesNotMatch(kitLine(r),/KIT P\/1/i);
+ assert.equal(units(r,"CONFERENCIA","TEMAKI DE BARRIGA DE SALMAO"),3);
+ assert.equal(units(r,"DELIVERY SUSHI 2","TEMAKI DE BARRIGA DE SALMAO"),3);
+ assert.equal(units(r,"DELIVERY SUSHI 1","COMB SUSHI + SASHIMI ESPECIAL 2 P"),1);
+});
+test("4 temakis -> Kit p/2 + Kit p/1 (rule); 2 temakis keep the motor's own judged rule (no overlay)",()=>{
+ const four=withTemakis(4),r4=chain(four,consume(four),{catalog_equivalence:equivalence,kit_rules:kitRules});
+ assert.equal(r4.layers.L3.kit_rule?.id,"KIT-9.15.00.030.00-x1+TEMAKI-x4",JSON.stringify(r4.layers.L3));
+ assert.equal(r4.layers.L3.status,"NATIVE_CONTENT_PROVEN",JSON.stringify(r4.layers.L3.reasons));
+ assert.match(kitLine(r4),/1 KIT P\/2/i);assert.match(kitLine(r4),/1 KIT P\/1/i);
+ assert.doesNotMatch(kitLine(r4),/KIT SIMPLES/i);
+ assert.equal(units(r4,"CONFERENCIA","TEMAKI DE BARRIGA DE SALMAO"),4);
+ const two=withTemakis(2),r2=chain(two,consume(two),{catalog_equivalence:equivalence,kit_rules:kitRules});
+ assert.equal(r2.layers.L3.kit_rule,null);
+ assert.equal(r2.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+ assert.match(kitLine(r2),/1 KIT P\/2/i);assert.match(kitLine(r2),/1 KIT SIMPLES/i);
+});
+test("no extrapolation: 5 temakis, combo x2, other item, or no rule file keep the motor HOLD",()=>{
+ const five=withTemakis(5),r5=chain(five,consume(five),{catalog_equivalence:equivalence,kit_rules:kitRules});
+ assert.equal(r5.layers.L3.status,"HOLD");assert.equal(r5.layers.L3.kit_rule??null,null);
+ assert.ok(r5.layers.L3.reasons.some(x=>/^MOTOR_KITS_NOT_FACT:.*temaki:5/.test(x)),JSON.stringify(r5.layers.L3.reasons));
+ const combo2=withTemakis(3,o=>({...o,items:o.items.map(x=>x.CDPRODUTO==="0000001459"?{...x,QTPRODCOMVEN:"2.000"}:x)}));
+ const rc=chain(combo2,consume(combo2),{catalog_equivalence:equivalence,kit_rules:kitRules});
+ assert.equal(rc.layers.L3.kit_rule??null,null);
+ assert.ok(rc.views.every(v=>!/KIT SIMPLES/i.test(v.text_trace)||rc.layers.L3.status==="NATIVE_CONTENT_PROVEN"));
+ const r0=chain(real9092,decision9092,{catalog_equivalence:equivalence});
+ assert.deepEqual([r0.layers.L3.status,r0.layers.L3.kit_rule??null],["HOLD",null]);
+ // Unit level, on the real decision: every identity mismatch refuses the rule.
+ const res=N.resolveCatalogEquivalenceV1(real9092,decision9092,equivalence.records,decision9092.blocking_reasons);
+ const notFact={status:"UNKNOWN",kits:[]};
+ const apply=(d,rules=kitRules.rules,motor=notFact)=>N.resolveHumanKitRuleV1(d,res,rules,motor);
+ assert.equal(apply(decision9092).rule.id,"KIT-9.15.00.030.00-x1+TEMAKI-x3");
+ const mutate=f=>{const d=structuredClone(decision9092);f(d);return d;};
+ assert.equal(apply(mutate(d=>{d.items[0].CDPRODUTO="0000009999";})).rule,null);
+ assert.equal(apply(mutate(d=>{d.items[0].canonical_code="9.15.00.040.00";})).rule,null);
+ assert.equal(apply(mutate(d=>{d.items.push({...d.items[1],item_index:3,CDPRODUTO:"0000001418",
+  canonical_code:"9.10.00.080.00",product_name:"EDAMAME",quantity:1,classification:{family:"entrada",
+  subfamily:"entrada_quente",station:"cozinha_quentes",review_required:false}});})).rule,null);
+ assert.equal(apply(mutate(d=>{d.items[1].classification={...d.items[1].classification,review_required:true};})).rule,null);
+ assert.equal(apply(decision9092,kitRules.rules,{status:"FACT",kits:[{kit:"Kit p/2",quantidade:1},{kit:"Kit Simples",quantidade:1}]}).rule,null);
+ assert.equal(apply(decision9092,kitRules.rules,{status:"FACT",kits:[{kit:"Kit p/1",quantidade:1}]}).reason,
+  "HUMAN_KIT_RULE_CONFLICTS_WITH_MOTOR");
+ assert.equal(apply(decision9092,[...kitRules.rules,{...kitRules.rules[0],id:"DUP"}]).reason,"HUMAN_KIT_RULE_AMBIGUOUS");
+ assert.equal(apply(decision9092,[{...kitRules.rules[0],source_ref:""}]).reason,"HUMAN_KIT_RULE_RECORD_INVALID");
+ assert.equal(apply(decision9092,[{...kitRules.rules[0],kits:[{kit:"Kit p/3",quantidade:1}]}]).reason,"HUMAN_KIT_RULE_RECORD_INVALID");
+});
 test("catalog equivalence guards: exact native match only, no override, ambiguity and bad records refused",()=>{
  const rec=equivalence.records[0];
  const run=recs=>N.resolveCatalogEquivalenceV1(real9092,decision9092,recs,decision9092.blocking_reasons);
