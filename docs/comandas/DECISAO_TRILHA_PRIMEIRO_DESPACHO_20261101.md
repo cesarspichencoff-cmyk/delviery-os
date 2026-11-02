@@ -125,3 +125,24 @@ Há **duas rotas independentes de descoberta**, que podem ser pesquisadas simult
 **Etapa D2 — substituição controlada da produção TATÁ:** somente após comprovar supressão seletiva de vias nativas IFO sem afetar outras origens e fallback, implementar sequência TATÁ V2 atômica com chave forte e releitura, idempotência por revisão/praça, dois tickets de produção + um de conferência, reversão testada e piloto físico supervisionado. Não usar \`IDIMPPEDPROD\`, \`IDIMPAUTENTREG\` ou mudanças globais de fila como interruptor geral.
 
 **Decisão atual:** buscar A e preparar escopo B sem ativar B; D0 somente em revisão isolada. \`IFO_RETAIL_LIVE_MAPPING=UNKNOWN\`, \`NATIVE_FIRST_DISPATCH=UNKNOWN\`, \`D1=HOLD\`, \`D2=HOLD\`. Sem mudança operacional no caixa, sem captura de eventos, sem mensagem enviada ao fornecedor, sem merge ou deploy.
+
+## Decisão operacional posterior — descoberta interna, sem contato com fornecedor
+
+**Instrução atual de César:** descobrir a origem do primeiro despacho com investigação própria. Não enviar, preparar envio, agendar ou depender de atendimento com a Teknisa. A minuta histórica de consulta fica suspensa. Nenhum pedido de contato foi enviado.
+
+### Nova evidência do CAIXA_MOOCA (somente leitura, sem PII exportada)
+
+- O canal PrintService/Operational já estava habilitado. Foi feita uma consulta limitada, em memória, aos registros de ID 307 da última hora, devolvendo **somente contagens por nomes de filas conhecidos**. Na observação delimitada foram 154 eventos, não truncados pelo limite de 600: BALCAOSUSHI1 25, BALCAOSUSHI2 23, DELIVERY SUSHI 1 25, DELIVERY SUSHI 2 15, COZINHA 25, CAIXA 35, demais 6. São eventos do Windows, **não 154 pedidos independentes, papéis físicos ou despacho comprovado da Teknisa**.
+- Outra janela móvel de uma hora, distinta da consulta anterior, teve 141 registros 307. Foi classificado **apenas em memória** se os títulos continham marcadores de origem; zero continham IFO, iFood, ForSale, FosImp, FosExp, Odhen, Teknisa, Pedido ou Comanda. Nenhum nome de trabalho, ID de cliente, documento, usuário, pedido ou título foi exportado. A diferença 154/141 é de amostras temporais móveis, não regressão ou perda comprovada.
+- O evento 307 identifica a fila e parâmetros de trabalho no spooler, mas não atesta isoladamente o processo solicitante, nem captura necessariamente TCP/Delphi/Epson diretos. Portanto **PRINTSERVICE_307_ONLY não é testemunha suficiente do primeiro despacho DLV_IFO**. Não repetir investigações equivalentes como se o evento 307 fosse a prova causal. A documentação Microsoft de MS-RPRN confirma a estrutura de campos de fila/usuário/documento e não inclui o componente de origem ForSale.
+- Consulta de nomes de módulos em memória de FosImp retornou **Acesso negado**: nenhuma elevação de privilégio ou rota alternativa foi tentada. O processo Fos está associado a explorer.exe como pai visível; os pais de FosImp, FosExp e FosSinc estavam indisponíveis ou encerrados na consulta, o que não demonstra quem imprime.
+
+### Rota própria escolhida, sem tentar desligar nada
+
+**C1 — fonte da configuração real:** usar exclusivamente uma sessão legítima de leitura do Retail para confirmar a associação atual da integração IFO à unidade 0001/loja 01/caixa ou vendedor padrão. Sem aba Token, exportação de pedidos, abertura de arquivo protegido, login por contorno ou alteração.
+
+**C2 — linhagem de uma impressão natural:** com fonte/evento previamente delimitados e autorização de privacidade, correlacionar a **mesma revisão nativa** do Reader com uma tentativa de produção e com destino, backup e exclusividade. PrintService 307 é somente evidência auxiliar de fila, nunca a identidade causal. Se não houver campo que una a revisão à tentativa, manter UNKNOWN; não aproximar por relógio nem inspecionar dados pessoais.
+
+**C3 — valor sem papel:** continuar com prévia digital isolada e renderizador existente para revisão de quantidade, observação, praça e conteúdo, sem vínculo automático com produção. Avaliar eventual piloto adicionando apenas conferência depois de verificar o papel nativo, sem criar terceira emissão apenas por hipótese. Nenhuma saída física ou numeração persistida sem aceite posterior.
+
+**Lacuna declarada:** IFO_REAL_MAPPING=UNKNOWN; FIRST_NATIVE_DISPATCH=UNKNOWN; ATOMIC_TATA_SEQUENCE=UNPROVEN; PHYSICAL_PRINT=NOT_PROVEN; PRINTSERVICE_ONLY=INSUFFICIENT; PILOT=HOLD. A PR permanece isolada; proibição de merge, serviço, filas, impressões, SQL, fiscal, captura de tráfego, segredos e alterações de Retail.
