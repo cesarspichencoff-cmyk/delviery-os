@@ -70,6 +70,34 @@ test("duplicate same cashback association is ambiguous",()=>{
  const x=baseline();x.mapping.seller_cashboxes.push({
   ...x.mapping.seller_cashboxes[0]});return x;
 },hold("IFO_RETAIL_CASHBOX_ASSOCIATION_AMBIGUOUS"));
+test("second cashier linked to a different loja is not an Itaim-01 collision",()=>{
+ const x=baseline();x.mapping.seller_cashboxes.push({
+  filial:"0001",loja:"02",caixa:"OUTSIDE_TARGET_SHOP",seller:"VENDEDOR_SINTETICO"});
+ return x;
+},candidate);
+test("per-unit alternate loja in same filial does not hide exact 0001/01",()=>{
+ const x=perUnit();x.mapping.per_unit.push({
+  filial:"0001",loja:"02",caixa:"OUTSIDE_TARGET_SHOP"});
+ return x;
+},candidate);
+test("two cashboxes in exactly target loja remain ambiguous despite foreign shops",()=>{
+ const x=baseline();x.mapping.seller_cashboxes.push({
+  filial:"0001",loja:"02",caixa:"OTHER_SHOP",seller:"VENDEDOR_SINTETICO"});
+ x.mapping.seller_cashboxes.push({
+  filial:"0001",loja:"01",caixa:"DUPLICATE_TARGET",seller:"VENDEDOR_SINTETICO"});
+ return x;
+},hold("IFO_RETAIL_CASHBOX_ASSOCIATION_AMBIGUOUS"));
+test("centralized status may be entirely omitted and remains UNKNOWN",()=>{
+ const x=baseline();delete x.centralized;
+ const r=review(x);
+ assert.equal(r.status,"MAPPING_CANDIDATE_REVIEW_ONLY");
+ assert.equal(r.centralized_delivery_flag_claim,"UNKNOWN");
+ assert.equal(r.real_cashbox_or_dispatcher_host_identified,false);
+ return x;
+},candidate);
+test("null centralized status is invalid, unlike omission",()=>{
+ const x=baseline();x.centralized=null;return x;
+},hold("CENTRAL_DELIVERY_SETTING_UNKNOWN_FORMAT"));
 test("wrong loja relative to Reader remains HOLD",()=>{
  const x=baseline();x.mapping.seller_cashboxes[0].loja="02";return x;
 },hold("IFO_RETAIL_LOJA_CONFLICTS_WITH_READER_NATIVE_SCOPE"));
