@@ -181,9 +181,9 @@ export class OfflineQueue {
   }
 
   private persist(): void {
-    this.assertWritable();
-    const encoded = JSON.stringify(this.data);
     try {
+      this.assertWritable();
+      const encoded = JSON.stringify(this.data);
       this.storage.write(encoded);
       if (this.storage.read() !== encoded) {
         this.writeHold = "OFFLINE_STORAGE_WRITE_NOT_VERIFIED";
@@ -191,7 +191,12 @@ export class OfflineQueue {
       }
       this.lastStoredRaw = encoded;
     } catch (err) {
+      // Desfazer qualquer mutação em memória que não teve commit confirmado.
+      // Se o writer gravou bytes parciais, o armazenamento fica em HOLD e
+      // precisa de recuperação explícita; NUNCA alegar evento persistido.
       this.writeHold ??= "OFFLINE_STORAGE_WRITE_FAILED";
+      this.data = this.lastStoredRaw === null
+        ? emptyData() : JSON.parse(this.lastStoredRaw) as QueueData;
       throw err;
     }
   }
