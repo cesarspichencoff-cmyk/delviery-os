@@ -10,6 +10,9 @@ const ROOT=path.resolve(__dirname,"..");
 const CANDIDATE="docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json";
 const RUNNER="tools/comandas_shadow_offline_run_v1.cjs";
 const BUILDER="tools/comandas_shadow_bundle_v1.cjs";
+const CONFERENCE_RUNNER="tools/comandas_conference_only_shadow_runner_v1.cjs";
+const CONFERENCE_ADAPTER="tools/conference_only_from_sanitized_v1.cjs";
+const CONFERENCE_EXTRAS=Object.freeze([CONFERENCE_RUNNER,CONFERENCE_ADAPTER]);
 const SCHEMA="tata.comandas.shadow-executable-bundle.v1";
 const builtin=new Set([...builtinModules,...builtinModules.map(s=>"node:"+s)]);
 const sha=b=>crypto.createHash("sha256").update(b).digest("hex");
@@ -83,7 +86,8 @@ function verify(root){
  const m=JSON.parse(fs.readFileSync(loc,"utf8"));
  if(m.schema!==SCHEMA||m.source_baseline_commit!=="4d660808f73e611023c30e71ac0f86e6c5db8833"||
  !/^[a-f0-9]{64}$/.test(m.candidate_manifest_sha256)||
- m.candidate_files!==34||m.effects?.print!==false||m.effects?.operational_write!==false)
+ m.candidate_files!==34||m.conference_runner!==CONFERENCE_RUNNER||
+ m.effects?.print!==false||m.effects?.operational_write!==false)
   throw Error("SHADOW_BUNDLE_SCHEMA_OR_SCOPE_CHANGED");
  const seen=new Set();
  for(const e of m.files){
@@ -93,6 +97,8 @@ function verify(root){
   if(b.length!==e.bytes||blob(b)!==e.git_blob||sha(b)!==e.sha256)
    throw Error("BUNDLE_FILE_DRIFT:"+e.path);
  }
+ for(const rel of CONFERENCE_EXTRAS)if(!seen.has(rel))
+  throw Error("CONFERENCE_EXCLUDED_FROM_BUNDLE:"+rel);
  const actual=[];
  function walk(base){
   for(const v of fs.readdirSync(base,{withFileTypes:true})){
@@ -106,7 +112,8 @@ function verify(root){
  const expected=new Set([...seen,"shadow-bundle.manifest.json"]);
  if(actual.length!==expected.size||actual.some(x=>!expected.has(x)))throw Error("BUNDLE_EXTRA_OR_MISSING");
  return {schema:m.schema,files_verified:m.files.length,candidate_files:m.candidate_files,
-  compiled_files:m.compiled_files,entry_runner:RUNNER,effects:m.effects,
+  compiled_files:m.compiled_files,entry_runner:RUNNER,
+  conference_runner:CONFERENCE_RUNNER,effects:m.effects,
   candidate_manifest_sha256:m.candidate_manifest_sha256,
   manifest_sha256:sha(fs.readFileSync(loc))};
 }
@@ -114,9 +121,9 @@ function build(out){
  if(!path.isAbsolute(out)||fs.existsSync(out))throw Error("OUTPUT_MUST_BE_NEW_ABSOLUTE_DIR");
  const {all,candidate_manifest_sha256}=readCandidate();
  if(!fs.existsSync(disk(ROOT,RUNNER)))throw Error("RUNNER_MISSING");
- const candidatePaths=all.map(e=>e.path),existing=new Set([...candidatePaths,RUNNER,BUILDER]);
- const compiled=compiledClosure([...candidatePaths,RUNNER,BUILDER],existing);
- const files=[...candidatePaths,...compiled,RUNNER,BUILDER].sort();
+ const candidatePaths=all.map(e=>e.path),existing=new Set([...candidatePaths,RUNNER,BUILDER,...CONFERENCE_EXTRAS]);
+ const compiled=compiledClosure([...candidatePaths,RUNNER,BUILDER,...CONFERENCE_EXTRAS],existing);
+ const files=[...candidatePaths,...compiled,RUNNER,BUILDER,...CONFERENCE_EXTRAS].sort();
  try{
   fs.mkdirSync(out,{recursive:true});
   for(const rel of files){
@@ -126,6 +133,7 @@ function build(out){
   }
   const manifest={schema:SCHEMA,source_baseline_commit:"4d660808f73e611023c30e71ac0f86e6c5db8833",
    candidate_manifest_sha256,candidate_files:34,compiled_files:compiled.length,runner:RUNNER,
+   conference_runner:CONFERENCE_RUNNER,
    effects:{print:false,operational_write:false,service_change:false,sql:false,sequence_write:false},
    files:files.map(rel=>entryFor(out,rel))};
   fs.writeFileSync(disk(out,"shadow-bundle.manifest.json"),JSON.stringify(manifest,null,2)+"\n");
