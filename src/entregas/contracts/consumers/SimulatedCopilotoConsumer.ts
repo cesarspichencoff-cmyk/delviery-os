@@ -87,12 +87,12 @@ export class SimulatedCopilotoConsumer {
   }
 
   get appliedEvents(): readonly EntregasPublicEvent[] {
-    // Em retomada com histórico incompleto, não expor um subconjunto como Trip válida.
-    return this.historyComplete ? this.appliedOrder : [];
+    // Nunca entregar a coleção mutável interna nem histórico parcial.
+    return Object.freeze(this.historyComplete ? [...this.appliedOrder] : []);
   }
 
   get isolatedEvents(): readonly { raw: unknown; reason: string }[] {
-    return this.isolated;
+    return Object.freeze(this.isolated.map(x => Object.freeze({ raw: null, reason: x.reason })));
   }
 
   get lastCheckpoint(): string | null {
