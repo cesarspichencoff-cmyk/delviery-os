@@ -21,6 +21,8 @@ namespace DeliveryOS.SilentLab {
     [STAThread]
     private static int Main(string[] args) {
       try {
+      // Fixture executable itself refuses the cashier, not only the test harness.
+      if (String.Equals(Environment.MachineName, "CAIXA_MOOCA", StringComparison.OrdinalIgnoreCase)) return 27;
       // No uncaught managed exceptions: WinExe errors must never display an OS dialog.
       // Windows GUI subsystem (winexe) guarantees no console owned by this executable.
       // A shell used by an external launcher is outside this program's control.
