@@ -39,6 +39,16 @@ const html=[
   test('no UI actions',a.actionsExecuted===0);
   test('no phone copied',!JSON.stringify(a).includes('11999990000'));
   test('no short ID copied',!JSON.stringify(a).includes('1234'));
+  await page.evaluate(()=>{
+    const el=document.querySelector('dialog [data-testid="item-name"]');
+    const secret=document.createElement('span');
+    secret.hidden=true;secret.textContent=' Cliente OCULTO 11999990000';
+    el.appendChild(secret);
+  });
+  const shown=await run();
+  test('hidden nested text excluded from product',shown.items[0].name==='Combinado de sushi');
+  test('nested hidden phone excluded',!JSON.stringify(shown).includes('11999990000'));
+
   await page.evaluate(()=>{document.querySelector('[data-testid="item-quantity"]').textContent='3'});
   test('in-place detail change', (await run()).items[0].quantity===3);
   await page.evaluate(()=>document.querySelector('dialog').removeAttribute('open'));
