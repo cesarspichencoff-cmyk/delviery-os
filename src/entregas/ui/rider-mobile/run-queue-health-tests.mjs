@@ -74,10 +74,32 @@ test("recording refusal latches write HOLD and blocks repeated commands", () => 
   assert.match(ui,/queueHold = QUEUE_WRITE_BLOCK/);
   assert.match(ui,/if \(queueHold\) \{[\s\S]*?throw new Error\(queueHoldMessage\(queueHold\)\)/);
 });
-test("native write receipt must match the new event ID and reject unexpected replay", () => {
-  assert.match(ui,/r\.event_id !== event_id/);
-  assert.match(ui,/r\.duplicate === true/);
+test("native write receipt is checked via the pure identity guard", () => {
+  assert.match(ui,/verifiedNativeQueueReceipt\(r, event_id\)/);
 });
+test("native write accepts exact identity and new Room entry", () => {
+  assert.equal(exported.verifiedNativeQueueReceipt({
+    ok: true, event_id: "e-1", duplicate: false, state: "pending"
+  }, "e-1"), true);
+});
+test("native write rejects success without event identity", () => {
+  assert.equal(exported.verifiedNativeQueueReceipt({
+    ok: true, duplicate: false, state: "pending"
+  }, "e-1"), false);
+});
+test("native write rejects identity collision and duplicate echo", () => {
+  for (const r of [
+    {ok:true,event_id:"another",duplicate:false},
+    {ok:true,event_id:"e-1",duplicate:true},
+    {ok:true,event_id:"e-1",duplicate:"false"},
+  ]) assert.equal(exported.verifiedNativeQueueReceipt(r,"e-1"),false);
+});
+test("native write rejects uncertain or terminal receipts", () => {
+  for (const r of [null,false,{ok:false,event_id:"e-1",duplicate:false},
+    {ok:true,event_id:"e-1",duplicate:false,state:"rejected"}])
+      assert.equal(exported.verifiedNativeQueueReceipt(r,"e-1"),false);
+});
+
 test("page has accessible alert independent of the server rejection", () => {
   assert.match(html,/id="queueHoldLine"[^>]*role="alert"/);
   assert.match(html,/id="rejectedLine"[^>]*role="alert"/);
