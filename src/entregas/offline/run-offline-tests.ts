@@ -357,4 +357,45 @@ test("reordenação de propriedades no payload não cria falso conflito", () => 
   assert.equal(q.all().length,1);
 });
 
+test("falha de escrita não deixa evento fantasma na memória", () => {
+  const underlying = new MemoryOfflineStorage();
+  const io = { read: () => underlying.read(), write: (_data: string) => {
+    throw new Error("SIMULATED_DISK_FULL");
+  }};
+  const q = new OfflineQueue(io,cfg);
+  assert.throws(() => q.enqueue(item(1,"2026-07-25T10:00:00.000Z")),
+    /SIMULATED_DISK_FULL/);
+  assert.equal(q.all().length,0);
+  assert.equal(q.storageHealth().writable,false);
+  assert.equal(underlying.read(),null);
+});
+
+test("write silencioso sem persistência é detectado e revertido", () => {
+  const underlying = new MemoryOfflineStorage();
+  const io = { read: () => underlying.read(), write: (_data: string) => {} };
+  const q = new OfflineQueue(io,cfg);
+  assert.throws(() => q.enqueue(item(1,"2026-07-25T10:00:00.000Z")),
+    /OFFLINE_STORAGE_WRITE_NOT_VERIFIED/);
+  assert.equal(q.all().length,0);
+  assert.equal(underlying.read(),null);
+  assert.equal(q.storageHealth().reason,"OFFLINE_STORAGE_WRITE_NOT_VERIFIED");
+});
+
+test("gravação parcial com exceção não confirma evento nem limpa os bytes", () => {
+  const underlying = new MemoryOfflineStorage();
+  const io = { read: () => underlying.read(), write: (_data: string) => {
+    underlying.write("{partial");
+    throw new Error("SIMULATED_TORN_WRITE");
+  }};
+  const q = new OfflineQueue(io,cfg);
+  assert.throws(() => q.enqueue(item(1,"2026-07-25T10:00:00.000Z")),
+    /SIMULATED_TORN_WRITE/);
+  assert.equal(q.all().length,0);
+  assert.equal(underlying.read(),"{partial");
+  assert.equal(q.storageHealth().writable,false);
+  const restarted = new OfflineQueue(io,cfg);
+  assert.equal(restarted.storageHealth().writable,false);
+  assert.equal(underlying.read(),"{partial");
+});
+
 console.log(`\n=== ${passed} offline queue tests OK ===\n`);
