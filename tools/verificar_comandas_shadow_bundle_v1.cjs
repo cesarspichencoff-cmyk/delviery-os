@@ -10,7 +10,7 @@ const work=fs.mkdtempSync(path.join(os.tmpdir(),"comandas-bundle-gate-"));
 let count=0;function test(name,fn){fn();process.stdout.write("PASS "+(++count)+" "+name+"\n");}
 try{
  const output=path.join(work,"bundle");
- test("52-file package verifies source & compiled dependency digests",()=>{
+ test("closed package includes the exact conference-only tools and verifies all digests",()=>{
   const b=build(output);
   assert.equal(b.status,"BUNDLE_BUILT_VERIFIED");
   assert.equal(b.candidate_files,34);
@@ -24,12 +24,19 @@ try{
   assert.equal(b.candidate_manifest_sha256,digest);
   const meta=JSON.parse(fs.readFileSync(path.join(output,"shadow-bundle.manifest.json"),"utf8"));
   assert.equal(meta.source_commit,undefined);
+  assert.equal(meta.conference_runner,"tools/comandas_conference_only_shadow_runner_v1.cjs");
+  for(const p of ["tools/conference_only_from_sanitized_v1.cjs",
+    "tools/comandas_conference_only_shadow_runner_v1.cjs"])
+   assert.ok(meta.files.some(f=>f.path===p),p);
   assert.equal(meta.source_baseline_commit,"4d660808f73e611023c30e71ac0f86e6c5db8833");
   assert.equal(verify(output).files_verified,b.files_verified);
  });
  const {run}=require(path.join(output,"tools/comandas_shadow_offline_run_v1.cjs"));
+ const {runConferenceOnlyV1}=require(path.join(output,
+  "tools/comandas_conference_only_shadow_runner_v1.cjs"));
  test("bundle imports executable pure replay without node_modules or compiler",()=>{
   assert.equal(typeof run,"function");
+  assert.equal(typeof runConferenceOnlyV1,"function");
  });
  const sources=path.join(work,"sources");fs.mkdirSync(sources);
  const original=load("tata_reader_real_read_cdarvprod_success_20261005_v1.json");
@@ -138,6 +145,26 @@ try{
   assert.equal(Buffer.compare(fs.readFileSync(paymentFile),b1),0);
   assert.equal(Buffer.compare(fs.readFileSync(paymentDecisionFile),b2),0);
  });
+ test("bound finance note yields exactly one sanitized conference, no production output or print",()=>{
+  const c=runConferenceOnlyV1(paymentFile,paymentDecisionFile,claimPath);
+  assert.equal(c.status,"CONFERENCE_SHADOW_SANITIZED_ONLY_NOT_FOR_PRINT",JSON.stringify(c));
+  assert.deepEqual([c.conference.station,c.suppressed_native_production_views],["CONFERENCIA",2]);
+  assert.equal(c.finance_note_excluded_in_shadow_only,true);
+  assert.equal(c.conference.escpos_bytes,0);
+  assert.equal(c.sequence_number,null);
+  assert.equal(c.operational_ready,false);
+  assert.equal(c.physical_print_authorized,false);
+  assert.ok(/^[a-f0-9]{64}$/.test(c.shadow_revision_correlation_sha256));
+  assert.equal(c.shadow_revision_correlation_sha256,
+    runConferenceOnlyV1(paymentFile,paymentDecisionFile,claimPath).shadow_revision_correlation_sha256);
+  assert.equal(JSON.stringify(c).includes(financialNote),false);
+ });
+ test("without an exact note review, conference-only wrapper fails closed",()=>{
+  const c=runConferenceOnlyV1(paymentFile,paymentDecisionFile);
+  assert.equal(c.status,"HOLD");
+  assert.equal(c.conference,null);
+  assert.equal(c.physical_print_authorized,false);
+ });
  test("Sushi 1-only payment note yields exactly 2 shadow views, with exact count and no paper",()=>{
   const one=structuredClone(paymentEvent);
   one.order.items=one.order.items.filter(x=>canon(x.CDARVPROD)==="9.30.00.090.00");
@@ -201,6 +228,7 @@ try{
  test("modified bundle code blocks before any data read",()=>{
   fs.appendFileSync(path.join(output,"src/production/nativeReaderChainV1.ts"),"\n");
   assert.throws(()=>run(eventFile,decisionFile),/BUNDLE_FILE_DRIFT/);
+  assert.throws(()=>runConferenceOnlyV1(eventFile,decisionFile),/BUNDLE_FILE_DRIFT/);
  });
 }finally{fs.rmSync(work,{recursive:true,force:true})}
 process.stdout.write("COMANDAS_SHADOW_BUNDLE_V1="+count+"/"+count+" PASS PAIR_ONLY\n");
