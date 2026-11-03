@@ -21,7 +21,7 @@ const EFFECTS=Object.freeze({production_printer:false,spooler:false,network:fals
 const FIELDS=["schema","store","day","order_key","writer_key_id","issued_at_s","nonce"];
 const sqlDDL=[
  "CREATE TABLE IF NOT EXISTS tata_seq_v2_head(scope TEXT PRIMARY KEY, highest INTEGER NOT NULL CHECK(highest BETWEEN 0 AND 999))",
- "CREATE TABLE IF NOT EXISTS tata_seq_v2_binding(scope TEXT NOT NULL, order_key TEXT NOT NULL, seq INTEGER NOT NULL CHECK(seq BETWEEN 1 AND 999), writer_key_id TEXT NOT NULL, PRIMARY KEY(scope,order_key), UNIQUE(scope,seq))",
+ "CREATE TABLE IF NOT EXISTS tata_seq_v2_binding(scope TEXT NOT NULL, order_key TEXT NOT NULL, seq INTEGER NOT NULL CHECK(seq BETWEEN 1 AND 999), writer_key_id TEXT NOT NULL, request_issued_at_s INTEGER NOT NULL, request_nonce TEXT NOT NULL, request_signature_base64 TEXT NOT NULL, PRIMARY KEY(scope,order_key), UNIQUE(scope,seq), UNIQUE(scope,request_nonce))",
  "CREATE TRIGGER IF NOT EXISTS tata_seq_v2_binding_no_update BEFORE UPDATE ON tata_seq_v2_binding BEGIN SELECT RAISE(ABORT,'IMMUTABLE_BINDING'); END",
  "CREATE TRIGGER IF NOT EXISTS tata_seq_v2_binding_no_delete BEFORE DELETE ON tata_seq_v2_binding BEGIN SELECT RAISE(ABORT,'IMMUTABLE_BINDING'); END"
 ];
@@ -104,7 +104,7 @@ function selectIdentity(pair){
  return {...e,ledger_scope};
 }
 function inspectScope(db,scope){
- const rows=db.prepare("SELECT order_key,seq,writer_key_id FROM tata_seq_v2_binding WHERE scope=? ORDER BY seq").all(scope);
+ const rows=db.prepare("SELECT order_key,seq,writer_key_id,request_issued_at_s,request_nonce,request_signature_base64 FROM tata_seq_v2_binding WHERE scope=? ORDER BY seq").all(scope);
  const head=db.prepare("SELECT highest FROM tata_seq_v2_head WHERE scope=?").get(scope);
  if(rows.length>999||(!head&&rows.length>0))return {reason:"LEDGER_HEAD_OR_ROWS_MISSING"};
  const high=head?.highest??0;
@@ -149,8 +149,9 @@ function bindAuthorizedNativeV2(db,pair,writerRequest,trust,nowS){
      .run(bound,e.ledger_scope,check.high);
     if(change.changes!==1)throw Error("HEAD_CONFLICT");
    }
-   db.prepare("INSERT INTO tata_seq_v2_binding(scope,order_key,seq,writer_key_id) VALUES (?,?,?,?)")
-    .run(e.ledger_scope,e.order_key,bound,writerRequest.writer_key_id);
+   db.prepare("INSERT INTO tata_seq_v2_binding(scope,order_key,seq,writer_key_id,request_issued_at_s,request_nonce,request_signature_base64) VALUES (?,?,?,?,?,?,?)")
+    .run(e.ledger_scope,e.order_key,bound,writerRequest.writer_key_id,
+      writerRequest.issued_at_s,writerRequest.nonce,writerRequest.signature_base64);
   }
   db.exec("COMMIT");tx=false;committed=true;
   const recheck=inspectScope(db,e.ledger_scope);
