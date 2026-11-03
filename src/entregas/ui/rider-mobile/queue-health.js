@@ -31,3 +31,13 @@ export function queueHoldMessage(code) {
       return "";
   }
 }
+
+/** A ponte nativa só confirma escrita se ecoar a identidade exata.
+ * Não aceitar ok solto, eco divergente ou colisão de event_id. */
+export function verifiedNativeQueueReceipt(reply, requestedEventId) {
+  return !!reply && typeof reply === "object" && !Array.isArray(reply) &&
+    typeof requestedEventId === "string" && requestedEventId.length > 0 &&
+    reply.ok === true && reply.event_id === requestedEventId &&
+    reply.duplicate === false &&
+    (reply.state === undefined || reply.state === "pending");
+}
