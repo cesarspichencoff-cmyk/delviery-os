@@ -33,3 +33,9 @@ Na primeira execução do wrapper de bancada, um teste de `$LASTEXITCODE` não a
 5. Todo merge, deploy, reprodução de dados reais, navegação de pedidos e Copiloto permanecem **HOLD**. A PR #137 continua DRAFT.
 
 **Estado:** CODE_READY / TEST_PASS no subconjunto sintético + diagnóstico local de uma janela PROVEN. MULTI_WINDOW_WORLD_PROVEN e REAL_DETAIL_PROVEN permanecem UNKNOWN.
+
+## Nova tentativa autorizada — 10h35 BRT
+- A ociosidade do teclado/mouse estava em ~761 segundos, antes do almoço; portanto, a guarda permitiu uma tentativa **única** do laboratório de duas janelas nativas, após conferir SHA256 do runner `0cd77dd5dfdeee01433e2e54b068149d806d6b34c3ec24e9ff8231cf771e1bdd`.
+- A execução retornou `LAB_HOLD=LAB_PROCESS_COUNT_` antes de qualquer `LAB_TWO_HWND_PROBE`. O novo processo Edge isolado não foi encontrado com identificação inequívoca; **dois HWND não foram comprovados**. O script imprimiu `LAB_CLEANUP_REMAINING_PROCESSES=0 PROFILE_EXISTS=False CLEANUP_ERRORS=7`. Os 7 erros ocorreram no loop de limpeza e precisam de diagnóstico; a checagem posterior independente encontrou 0 processos associados ao perfil e perfil ausente. Não declarar limpeza sem erros nem supor a causa do desaparecimento do processo.
+- Auditoria de impacto imediatamente após a tentativa às 10h36: processo original Edge=1, sidecar=1, Reader=Running, tarefas de monitor com LastTaskResult=0, 20 cards visíveis e estáveis, `ordersPublishable=0`. O status real dos pedidos não foi modificado.
+- **Circuit breaker ampliado:** suspender novas tentativas com o mesmo runner. Não criar janelas no perfil operacional, não alterar Edge/Reader da equipe. Próxima contra-rota deve diagnosticar inicialização e encerramento do perfil de laboratório com mecanismo diferente, sem operar durante horário de serviço. Prioridade material permanece obter sessão V2 autenticada Itaim e detalhe real, não multiplicar testes de janela.
