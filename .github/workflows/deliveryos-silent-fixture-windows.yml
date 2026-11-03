@@ -1,8 +1,9 @@
 name: Delivery OS silent fixture (isolated)
 on:
-  push:
+  pull_request:
+    types: [synchronize, reopened]
     branches:
-      - feat/gestor-shadow-observer-20261103
+      - integration/deliveryos-v1-connected-20261102
     paths:
       - .github/workflows/deliveryos-silent-fixture-windows.yml
       - runtime/silent-runner/**
