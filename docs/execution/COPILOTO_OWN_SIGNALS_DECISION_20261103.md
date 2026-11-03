@@ -28,6 +28,13 @@ A missão aqui é conseguir um Copiloto útil e verificável **sem depender de A
 | **Marcos reais dentro de fluxos TATÁ existentes** | custódia, conferência, lacre, saída, entrega, exceções confirmadas | não revela pedidos que ainda não entraram em nenhuma superfície TATÁ; demanda validação física | **PRIORIDADE 1** |
 | Captura complementar no Xiaomi já existente, por QR/código **próprio** | associação entre sacola/viagem/posto no ato da conferência ou retirada | só quando o código/identidade for produzido pelo TATÁ e escanear não aumentar atrito no pico | **CANDIDATO PRIORIDADE 2**, sem hardware novo |
 
+### Limite lógico da independência (não mascarar)
+Sem capturar o pedido no momento de entrada por um canal **próprio e autorizado**, o sistema **não pode** saber todos os pedidos recebidos no iFood/Teknisa, seu cardápio, observações ou tempo prometido. O MVP independente mede os marcos físicos TATÁ que de fato observou, não o total de pedidos que só existe nos sistemas externos.
+
+Se TATÁ Comandas receber originalmente um ticket, registro SQL ou informação derivada de plataforma externa, os marcos **posteriores** produzidos pelo TATÁ podem ser próprios, mas o conteúdo inicial continua com origem externa. Registrar procedência de cada campo, jamais renomear `derivado_de_fornecedor` para `origem_independente`. Não promover um sinal de produção/preparo de pedido com cobertura parcial a panorama completo do Itaim.
+
+O produto pode ser operacionalmente útil sem cobertura total: buscar **o que está sob custódia TATÁ comprovada**. Quando nenhum marco interno foi observado, mostrar `não observado`, e não `nenhum pedido`.
+
 ## Arquitetura escolhida — Copiloto com lastro em ações naturais
 
 **Uma única cadeia, sem infraestrutura nova:** evento nascido em fluxo TATÁ que já existe → persistência/recibo próprio → verificação de unidade, identidade, versão, ordem temporal, completude e frescor → projeção operacional existente → **Operação Viva** → Camada de Decisão existente → **Home**. Reusar as interfaces e portas atuais, não introduzir um event bus/serviço adicional.
