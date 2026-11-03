@@ -10,7 +10,11 @@
  else root.DeliveryGestorDetailReadOnly=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
  const SCHEMA='deliveryos.gestor-visible-detail-candidate.v1';
- const text=(el,max)=>el&&typeof el.textContent==='string'?el.textContent.replace(/\s+/g,' ').trim().slice(0,max+1):'';
+ const text=(el,max)=>{
+   if(!el)return '';
+   const value=typeof el.innerText==='string'?el.innerText:el.textContent;
+   return typeof value==='string'?value.replace(/\s+/g,' ').trim().slice(0,max+1):'';
+ };
  const privatePattern=/(?:[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b(?:\+?55)?\s?\(?\d{2}\)?\s?9?\d{4}[- ]?\d{4}\b|\b(?:cliente|telefone|endere[cç]o|cpf|email)\b)/i;
  const permitted=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!privatePattern.test(s);
  const fail=(code,more={})=>Object.freeze({schema:SCHEMA,state:code,merchantVerified:false,
@@ -18,10 +22,13 @@
    customerFieldsCopied:false,items:[],...more});
  const visible=e=>{
    if(!e||typeof e.getClientRects!=='function'||e.getClientRects().length===0)return false;
-   if(e.isConnected===false||e.getAttribute?.('aria-hidden')==='true'||e.closest?.('[hidden], [inert], [aria-hidden="true"]'))return false;
-   const css=e.ownerDocument?.defaultView?.getComputedStyle?.(e);
-   return !css||css.visibility!=='hidden'&&css.visibility!=='collapse'&&
-     css.display!=='none'&&Number(css.opacity??1)>0;
+   if(e.isConnected===false)return false;
+   for(let node=e,depth=0;node&&depth<32;node=node.parentElement,depth++){
+     if(node.hidden===true||node.inert===true||node.getAttribute?.('aria-hidden')==='true')return false;
+     const css=node.ownerDocument?.defaultView?.getComputedStyle?.(node);
+     if(css&&(css.visibility==='hidden'||css.visibility==='collapse'||css.display==='none'||Number(css.opacity??1)===0))return false;
+   }
+   return true;
  };
  const quantity=s=>{
    const m=/^(?:[xX]\s*)?([0-9]{1,3})(?:\s*(?:[xX]|un|und|unidades?))?$/.exec(s);
