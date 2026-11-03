@@ -171,6 +171,32 @@ try{
   assert.deepEqual([again.order_key,again.tata_sequence,again.scope_id],[att.order_key,att.tata_sequence,att.scope_id]);
   assert.equal(A.tataLedgerDayDigestV1(ledgerFor(p2).bindings,att.ledger_day_rows),att.ledger_day_digest);
  });
+ test("signed attestation from an untrusted writer is refused by the verifier AND the chain",()=>{
+  const trusted=anchors("PRODUCTION_ITAIM");
+  assert.equal(A.verifyTataSequenceAttestationV1(att,trusted,NOW).ok,true);
+  const anotherWriter=crypto.generateKeyPairSync("ed25519");
+  for(const writerPins of [[],[A.publicKeyIdV1(anotherWriter.publicKey)]]){
+   const set={...trusted,writer_key_ids:writerPins};
+   const check=A.verifyTataSequenceAttestationV1(att,set,NOW);
+   assert.equal(check.ok,false);
+   assert.ok(check.reasons.includes("WRITER_NOT_TRUSTED"),JSON.stringify(check.reasons));
+   const chain=verdict(p2,claim,{anchorSet:set});
+   assert.equal(chain.number,null);
+   assert.match(chain.reason,/WRITER_NOT_TRUSTED/);
+  }
+  assert.equal(verdict(p2,claim,{anchorSet:trusted}).number,"002");
+ });
+ test("expired attester trust anchor blocks a still-current signed statement",()=>{
+  const short=anchors("PRODUCTION_ITAIM",attester.publicKey,
+   {not_before_s:NOW-50,not_after_s:NOW+100});
+  assert.equal(A.verifyTataSequenceAttestationV1(att,short,NOW+90).ok,true);
+  const check=A.verifyTataSequenceAttestationV1(att,short,NOW+120);
+  assert.equal(check.ok,false);
+  assert.ok(check.reasons.includes("ATTESTER_NOT_TRUSTED"));
+  const chain=verdict(p2,claim,{anchorSet:short,now:NOW+120});
+  assert.equal(chain.number,null);
+  assert.match(chain.reason,/ATTESTER_NOT_TRUSTED/);
+ });
  test("production stays closed: the pinned attester set is empty and the lab never claims production",()=>{
   const pinned=JSON.parse(fs.readFileSync(path.join(ROOT,"data/tata_sequence_attesters_v1.json"),"utf8"));
   assert.deepEqual([pinned.schema,pinned.store,pinned.attesters],[A.TATA_ATTESTERS_SCHEMA_V1,"0001|01",[]]);
