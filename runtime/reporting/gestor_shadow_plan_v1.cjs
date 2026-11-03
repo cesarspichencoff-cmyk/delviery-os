@@ -10,7 +10,19 @@ const NATIVE=/^0001\|01\|[0-9]{1,12}\|[0-9]{1,12}$/;
 const STATE=new Set(['CONCLUDED','PREPARING','READY','CANCELLED','UNKNOWN']);
 const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const only=(v,keys)=>object(v)&&Object.keys(v).every(k=>keys.includes(k));
-const instant=s=>typeof s==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?(?:Z|[+-]\d\d:\d\d)$/.test(s)&&Number.isFinite(Date.parse(s))?Date.parse(s):null;
+const instant=s=>{
+ if(typeof s!=='string')return null;
+ const m=/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(?:\.(\d{1,3}))?(Z|[+-]\d\d:\d\d)$/.exec(s);
+ if(!m)return null;
+ const [year,month,day,hour,minute,second]=m.slice(1,7).map(Number);
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(year<2020||year>2100||month<1||month>12||day<1||
+   date.getUTCFullYear()!==year||date.getUTCMonth()+1!==month||
+   date.getUTCDate()!==day||hour>23||minute>59||second>59)return null;
+ const offset=m[8];
+ if(offset!=='Z'&&(Number(offset.slice(1,3))>23||Number(offset.slice(4,6))>59))return null;
+ const n=Date.parse(s);return Number.isFinite(n)?n:null;
+};
 const bounded=(x,n)=>Number.isSafeInteger(x)&&x>=0&&x<=n;
 const result=(gate,reason,more={})=>Object.freeze({schema:OUTPUT,gate,reason,
  completeness:'UNPROVEN',merchantVerified:false,readerJoinProven:false,
