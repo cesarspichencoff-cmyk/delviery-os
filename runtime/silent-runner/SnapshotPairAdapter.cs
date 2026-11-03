@@ -130,7 +130,7 @@ namespace DeliveryOS.SilentLab {
       number=0;
       object value;
       if(!o.TryGetValue(key,out value))return false;
-      var array=value as ArrayList;
+      var array=value as object[];
       if(array==null||array.Count>16)return false;
       number=array.Count;
       foreach(object item in array) {
