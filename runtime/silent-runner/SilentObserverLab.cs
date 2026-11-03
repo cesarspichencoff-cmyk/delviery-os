@@ -20,6 +20,8 @@ namespace DeliveryOS.SilentLab {
 
     [STAThread]
     private static int Main(string[] args) {
+      try {
+      // No uncaught managed exceptions: WinExe errors must never display an OS dialog.
       // Windows GUI subsystem (winexe) guarantees no console owned by this executable.
       // A shell used by an external launcher is outside this program's control.
       string root;
@@ -53,6 +55,7 @@ namespace DeliveryOS.SilentLab {
           try { mutex.ReleaseMutex(); } catch (ApplicationException) { }
         }
       }
+      } catch (Exception) { return 26; }
     }
 
     private static bool TryArguments(string[] args, out string root, out int ticks, out int sleepMs) {
