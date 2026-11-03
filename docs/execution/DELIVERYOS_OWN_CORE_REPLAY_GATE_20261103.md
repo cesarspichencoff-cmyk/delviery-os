@@ -26,7 +26,17 @@ Manter a autoridade de `docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md`: a Ho
   - ao reiniciar somente com cursor, esconde tanto eventos aplicados parciais quanto a projeção da Trip; para reconstituir o histórico, exige replay desde o início (ou, futuramente, estado durável atestado).
 - `src/entregas/contracts/consumers/run-replay-integrity-tests.ts`: 22 cenários executáveis escritos: reenvio, colisão, unidade/modo, privacidade, payload gigante/cíclico, imutabilidade, reinício e lote interrompido.
 
-**Limite atual de evidência:** as alterações e os 22 testes estão persistidos e foram inspecionados estaticamente. A tentativa de ampliar o workflow de Actions foi recusada pela ferramenta; **não foi aplicada**. Sem execução efetiva `tsx` ou `tsc` para esse novo código, não declarar `TEST_PASS` nem 10/10. O workflow antigo de laboratório, se verde, não testa automaticamente este módulo TypeScript.
+**Checkpoint de execução local real (03/11, bancada isolada Foxxy):** o texto histórico anterior sobre testes não executados foi supersedido pelos resultados abaixo. O workflow GitHub Actions NÃO foi expandido, porque a tentativa anterior foi bloqueada; não atribuir estas provas a CI.
+
+- **Commit-base testado:** `5f756ec752458f3be74add875c7e9c33bdaa26d9`, worktree `C:\\Users\\italo\\comandas-v2-foxxy-isolated-20261103\\deliveryos-pr137-qa-20261103-1906` no Foxxy, destacado e separado do Windows comercial. A branch de revisão avançou paralelamente com arquivos independentes; reconciliar HEAD/diff antes de promoção.
+- **Nova suíte de Replay do Copiloto:** `OWN_COPILOT_REPLAY_CONTRACT_PASS 22/22`, processo Node encerrado normalmente, evento fictício apenas.
+- **Regressão Gate Close Copiloto ↔ Entregas:** `15 gate-close tests OK`, sem falhas após completar a genealogia Git exigida pelo manifesto de contratos. A primeira tentativa falhou por checkout Git raso/commit ancestral ausente; após `git fetch --unshallow --filter=blob:none` (sem alterar código), `merge-base --is-ancestor` retornou 0 e todos os 15 testes passaram.
+- **Feed durável nativo:** `ENTREGAS_DURABLE_FEED: 9/9 PASS`, incluindo arquivo de commit, reabertura, cursor ausente e estado simulado.
+- **Novo ensaio integrado:** `OWN_COPILOT_DURABLE_RECOVERY_PASS 11/11`. Lê uma outbox de eventos sintéticos com armazenamento descartável; comprova invisibilidade antes do commit, reconstrução integral após replay, rejeição de cursor desconhecido, atualização por commit tardio e nenhuma duplicação do histórico de viagem. A pasta de dados de teste é destruída ao final.
+- **TypeScript estrito:** `tsc --noEmit --strict --target ES2021 --module commonjs --moduleResolution node --esModuleInterop --skipLibCheck` executado para os dois arquivos de teste e suas dependências, usando TypeScript já presente no Foxxy; exit code 0. Não equivale ao typecheck de **todo** o monorepo.
+- **Publicação da nova suíte integrada:** `src/entregas/contracts/consumers/run-owned-durable-recovery-tests.ts` no commit `76e5311e3ccc0ebb44f302d9aa32a8435e84db97`. Conteúdo publicado foi comparado byte-equivalente com o arquivo ensaiado (normalização de fim de linha).
+
+**Veredito de prova desta etapa:** 22 + 15 + 9 + 11 = **57 cenários executados e aprovados em Windows Foxxy isolado**; compilação estrita focal aprovada. `CODE_READY=PARTIAL`; `TEST_PASS_LOCAL_FOXXY=YES`; `TEST_PASS_CI_FOR_NEW_TS=NOT_ATTESTED`; `DEPLOYED=NO`; `WORLD_PROVEN=NO`; `HUMAN_ACCEPTED=NO`. O Windows do caixa, API comercial, GPS, impressora e pedidos reais não foram usados.
 
 ## Próximo gate controlado
 1. Obter execução independente do `npx tsc --noEmit` e `npx tsx src/entregas/contracts/consumers/run-replay-integrity-tests.ts` com as dependências travadas do repositório; corrigir falhas no mesmo HEAD.
