@@ -19,7 +19,7 @@ $status=[ordered]@{schema='deliveryos.gestor.completed-visible-ui.v1';
  actualOrderIdVerified=$false;noClicksOrNavigation=$true;noCustomerDataExported=$true;
  noOrderIdsExported=$true;noWriteToGestor=$true}
 $raw=& $probe
-if($LASTEXITCODE -ne 0 -or @($raw).Count -ne 1){throw 'PROBE_DID_NOT_COMPLETE'}
+if(@($raw).Count -ne 1){throw 'PROBE_DID_NOT_COMPLETE'}
 $observation=($raw|Out-String|ConvertFrom-Json -ErrorAction Stop)
 if($observation.schema -ne 'deliveryos.gestor-window-selector-diagnostic.v1' -or
   $observation.host -ne 'CAIXA_MOOCA' -or
