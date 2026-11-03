@@ -201,7 +201,11 @@ try{
   const pinned=JSON.parse(fs.readFileSync(path.join(ROOT,"data/tata_sequence_attesters_v1.json"),"utf8"));
   assert.deepEqual([pinned.schema,pinned.store,pinned.attesters],[A.TATA_ATTESTERS_SCHEMA_V1,"0001|01",[]]);
   const v=verdict(p2,claim,{anchorSet:pinned});
-  assert.deepEqual([v.number,v.reason],[null,"TATA_SEQUENCE_ATTESTATION_REFUSED:ATTESTER_NOT_TRUSTED"]);
+  // Production trust is intentionally unprovisioned: both the attester and
+  // the writer must be trusted independently. Multiple HOLD reasons are valid.
+  assert.equal(v.number,null);
+  assert.match(v.reason,/ATTESTER_NOT_TRUSTED/);
+  assert.match(v.reason,/WRITER_NOT_TRUSTED/);
   const code=fs.readFileSync(ATTESTER,"utf8").replace(/\/\*[\s\S]*?\*\//g,"").replace(/\/\/.*$/gm,"");
   assert.equal(/PRODUCTION_ITAIM|\b(INSERT|UPDATE|DELETE)\b/.test(code),false);
   assert.ok(/readOnly:true/.test(code));
