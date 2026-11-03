@@ -25,7 +25,7 @@ On an **isolated Windows VM, never on CAIXA_MOOCA**, run the opt-in native test 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\silent-runner\verify-windows-fixture.ps1
 ```
 
-The harness refuses `COMPUTERNAME=CAIXA_MOOCA`, compiles `SilentObserverLab.cs` via `csc.exe /target:winexe`, creates only an otherwise nonexistent temp directory named `deliveryos-silent-lab`, and exercises: one instance, concurrent instance rejection, visible-HWND count during execution, unchanged foreground, bounded ticks, fixture rejection, blocked markerless execution, and zero publishable output. It removes only the fixture directory it created. Compilation and GUI-session tests have **not** been run or proven by static tests alone.
+Both the harness and the fixture executable refuse `COMPUTERNAME=CAIXA_MOOCA`, compiles `SilentObserverLab.cs` via `csc.exe /target:winexe`, creates only an otherwise nonexistent temp directory named `deliveryos-silent-lab`, and exercises: one instance, concurrent instance rejection, visible-HWND count during execution, unchanged foreground, bounded ticks, fixture rejection, blocked markerless execution, and zero publishable output. It removes only the fixture directory it created. Compilation and GUI-session tests have **not** been run or proven by static tests alone.
 
 ## Explicitly out of scope
 
