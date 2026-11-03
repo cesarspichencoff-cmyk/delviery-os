@@ -66,13 +66,14 @@ Current project PR: #137 on feat/gestor-shadow-observer-20261103, base integrati
 
 **Release truth:** `CODE_READY=PARTIAL`; `TEST_PASS_FIXTURE=YES` for specific pinned tests; `DEPLOYED_V1=NO`; `WORLD_PROVEN_V1=NO`; `HUMAN_ACCEPTED_V1=NO`. No delivery completion date is supportable without a qualified source.
 
-## Vendor-native source candidate — Teknisa (public documentation reviewed 03 November 2026)
+## Vendor-native source candidate — public documentation only (03 November 2026)
+**Historical human veto (PR #127, 29 October): NO CONTACT WITH TEKNISA.** This section is internal research only; no email, ticket, outreach, draft, or request to reconsider the prohibition.
 
 The Teknisa public integrations page (https://www.teknisa.com/api) describes **Sale API** `POST /getSales` (sale details) and `POST /getSaleProducts` (sold products **including complements**). It also describes Order API `POST /orderStatus` and logistics webhooks, but **nothing here authorizes calling them**: method names and apparent read semantics are not proof of side-effect-free execution, local availability, store licensing, or permission. The public page explicitly says standard integrations/APIs are subject to commercial conditions and endpoint details require the account manager.
 
 This changes the fastest candidate source-validation order:
 1. **Inspect current installed native schemas/code and existing already-sanitisized proof, metadata only**: does the existing Reader/Teknisa stream already contain a stable iFood identity, product lines, complement lines and revisions? Keep personal fields and raw orders unread.
-2. If missing, check internally whether the **already licensed/authorized** Teknisa Sale API export exists for Itaim; request written API contract/effect boundary from the account owner/supplier only with company authorization, and no new expense without approval. `getSaleProducts` may cover sold items but **does not automatically cover incoming/in-preparation orders or iFood UUID**.
+2. If missing, check **internally only** whether an already licensed and explicitly authorized Teknisa Sale API export exists for Itaim, using installed code, permitted records and existing internal documentation. **César's explicit 29 October decision prohibits contacting Teknisa, creating Gmail drafts, tickets or outreach, and re-asking permission**; only a new initiative from César can change it. Do not buy, activate or call any API. `getSaleProducts` may cover sold items but **does not automatically cover incoming/in-preparation orders or iFood UUID**.
 3. If that fails, consider independent, legitimately authenticated Gestor observation with human-approved effect proof. Keep the original operator Edge and the six disabled tasks untouched.
 4. Only treat the official iFood Order API as an operational-PDV integration requiring homologation/merchant permission; not a passive read-only shortcut.
 
