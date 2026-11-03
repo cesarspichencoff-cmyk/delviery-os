@@ -139,10 +139,14 @@ function project(input){
  const v2Fresh=v&&fresh(v.observedAt,120000)&&fresh(v.receivedAt,120000);
  const offShift=r.state==='OUTSIDE_SERVICE_WINDOW';
  const reader=readerFresh?(offShift?'OFF_SHIFT_DIAGNOSTIC':'FRESH_DIAGNOSTIC_NOT_REAL_PROOF'):'STALE_DIAGNOSTIC';
- const edge=e?(edgeFresh?'WINDOW_STATUS_ONLY_UNVERIFIED':'STALE_OR_PAUSED'):'MISSING';
+ // A recent relaunch is a cashier-UI safety event, NOT a source/order proof.
+ const recentEdgeLaunch=Boolean(e&&edgeFresh&&e.action==='LAUNCHED');
+ const edge=e?(recentEdgeLaunch?'FRESH_WINDOW_LAUNCH_SAFETY_HOLD':
+  edgeFresh?'WINDOW_STATUS_ONLY_UNVERIFIED':'STALE_OR_PAUSED'):'MISSING';
  const ui=u?(uiFresh?'VISIBLE_CANDIDATES_NOT_ORDER_PROOF':'STALE_OR_PAUSED'):'MISSING';
  const v2Status=v?(v2Fresh?'STRUCTURE_ONLY_NOT_MERCHANT_PROOF':'STALE_OR_PAUSED'):'MISSING';
- const reason=!readerFresh?'READER_DIAGNOSTIC_STALE':offShift?'OUTSIDE_READER_SERVICE_WINDOW':
+ const reason=recentEdgeLaunch?'EDGE_WINDOW_LAUNCH_NEEDS_SAFETY_REVIEW':
+  !readerFresh?'READER_DIAGNOSTIC_STALE':offShift?'OUTSIDE_READER_SERVICE_WINDOW':
   (!v2Fresh?'GESTOR_V2_NOT_FRESH_OR_PAUSED':'MERCHANT_AND_ORDER_PROOF_MISSING');
  return Object.freeze({
   ...state('HOLD_NO_OPERATIONAL_JOIN',reason),
