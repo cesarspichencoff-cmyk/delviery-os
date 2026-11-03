@@ -13,6 +13,9 @@ const {inspectStrongKeySequence,STATE_SCHEMA}=require("./comandas_strong_key_seq
 const C=require("./comandas_sequence_v2_authorized_ledger_core_v1.cjs");
 const {reviewPersistedDayWriterReceiptsV1:reviewReceipts}=
  require("./comandas_sequence_v2_writer_receipt_review_v1.cjs");
+const {attestSignedLedgerV2}=require("./comandas_sequence_v2_independent_attester_core_v1.cjs");
+const A=require("../dist/src/production/tataSequenceAttestationV1.js");
+const N=require("../dist/src/production/nativeReaderChainV1.js");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"comandas-authorized-test-"));
 const file=path.join(temp,"synthetic-ledger-only.sqlite");
 const writer=crypto.generateKeyPairSync("ed25519"),otherWriter=crypto.generateKeyPairSync("ed25519");
@@ -108,6 +111,36 @@ try{
   assert.equal(rows().length,3);
   assert.equal(inspectStrongKeySequence({pair:nextDay,state:actualState()}).status,
    "STRONG_KEY_PRESENT_IN_SUPPLIED_STATE_NOT_ATTESTED");
+ });
+ test("independent read-only attester verifies receipts before signing; test scope never prints",()=>{
+  const attTrust={schema:A.TATA_ATTESTERS_SCHEMA_V1,store:"0001|01",
+   writer_key_ids:[writerId],attesters:[{
+    key_id:attesterId,role:"TATA_SEQUENCE_ATTESTER",scope:"TEST_ISOLATED",
+    not_before_s:NOW-3600,not_after_s:NOW+3600,
+    public_key_spki_base64:pk(attester.publicKey)}]};
+  const ro=new DatabaseSync(file,{readOnly:true});
+  try{
+   const args={db:ro,pair:orderB,writerTrust:anchors,attesterTrust:attTrust,
+    attesterPrivateKey:attester.privateKey,nowS:NOW,nonce:"b".repeat(32)};
+   const signed=attestSignedLedgerV2(args);
+   assert.equal(signed.status,"SIGNED_WRITER_LEDGER_ATTESTED_NOT_PRINT_AUTHORIZED",
+    JSON.stringify(signed));
+   assert.ok(/^[a-f0-9]{64}$/.test(signed.signed_writer_receipts_sha256));
+   assert.equal(signed.number_for_operational_ticket,null);
+   assert.equal(signed.print_authorized,false);
+   assert.equal(A.verifyTataSequenceAttestationV1(signed.attestation,attTrust,NOW).ok,true);
+   const state=actualState(),inspection=inspectStrongKeySequence({pair:orderB,state});
+   const chain=N.sequenceVerdictV1(signed.chain_binding,orderB.event,{
+    attesters:attTrust,now_s:NOW,ledger:{inspection_status:inspection.status,
+     review_binding_number:inspection.review_binding_number,rows:state.bindings}});
+   assert.equal(chain.level,"CANDIDATE_PERSISTED_IN_LAB");
+   assert.equal(chain.candidate_number,"002");
+   assert.equal(chain.number,null);
+   const noKeys=attestSignedLedgerV2({...args,attesterTrust:{...attTrust,attesters:[]}});
+   assert.equal(noKeys.status,"HOLD");
+   const unsigned=attestSignedLedgerV2({...args,writerTrust:{...anchors,writer_key_ids:[]}});
+   assert.equal(unsigned.status,"HOLD");
+  }finally{ro.close();}
  });
  test("untrusted writer, unsigned writer and malformed signature cause zero writes",()=>{
   const before=digest();
