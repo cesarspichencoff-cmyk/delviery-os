@@ -1,0 +1,63 @@
+'use strict';
+/* Delivery OS: read-only detail extraction from an ALREADY OPEN and visible dialog.
+ * Does not navigate, click, focus, scroll, fetch, alter the page or export identities.
+ * Product names exist only in caller memory; caller must enforce local retention/ACL.
+ * Actual iFood DOM compatibility and merchant identity remain UNVERIFIED.
+ */
+(function(root,factory){
+ const api=factory();
+ if(typeof module!=='undefined'&&module.exports)module.exports=api;
+ else root.DeliveryGestorDetailReadOnly=api;
+})(typeof globalThis==='object'?globalThis:this,function(){
+ const SCHEMA='deliveryos.gestor-visible-detail-candidate.v1';
+ const text=(el,max)=>el&&typeof el.textContent==='string'?el.textContent.replace(/\s+/g,' ').trim().slice(0,max+1):'';
+ const privatePattern=/(?:[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b(?:\+?55)?\s?\(?\d{2}\)?\s?9?\d{4}[- ]?\d{4}\b|\b(?:cliente|telefone|endere[cç]o|cpf|email)\b)/i;
+ const permitted=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!privatePattern.test(s);
+ const fail=(code,more={})=>Object.freeze({schema:SCHEMA,state:code,merchantVerified:false,
+   orderIdVerified:false,coverageVerified:false,readOnly:true,actionsExecuted:0,
+   customerFieldsCopied:false,items:[],...more});
+ const visible=e=>{
+   if(!e||typeof e.getClientRects!=='function'||e.getClientRects().length===0)return false;
+   const css=e.ownerDocument?.defaultView?.getComputedStyle?.(e);
+   return !css||css.visibility!=='hidden'&&css.display!=='none';
+ };
+ const quantity=s=>{
+   const m=/^(?:[xX]\s*)?([0-9]{1,3})(?:\s*(?:[xX]|un|und|unidades?))?$/.exec(s);
+   const n=m?Number(m[1]):NaN;return Number.isSafeInteger(n)&&n>=1&&n<=200?n:null;
+ };
+ function readVisibleDetail(doc){
+   if(!doc||typeof doc.querySelectorAll!=='function')return fail('HOLD_DOCUMENT');
+   const open=[...doc.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [data-testid="order-details"]')].filter(visible);
+   if(open.length===0)return fail('DETAIL_NOT_OPEN');
+   if(open.length!==1)return fail('HOLD_MULTIPLE_DETAILS');
+   const container=open[0];
+   const rows=[...container.querySelectorAll('[data-testid="order-item"], [data-testid="order-line-item"]')].filter(visible);
+   if(rows.length===0)return fail('HOLD_UNKNOWN_DETAIL_STRUCTURE');
+   if(rows.length>60)return fail('HOLD_TOO_MANY_ITEMS',{visibleRows:rows.length});
+   const items=[];let optionsTotal=0;
+   for(const row of rows){
+     const name=text(row.querySelector('[data-testid="item-name"]'),120);
+     const rawQty=text(row.querySelector('[data-testid="item-quantity"]'),20);
+     const qty=quantity(rawQty);
+     if(!permitted(name,120)||qty===null)return fail('HOLD_AMBIGUOUS_ITEM',{visibleRows:rows.length});
+     const optionEls=[...row.querySelectorAll('[data-testid="item-option"]')].filter(visible);
+     if(optionEls.length>15)return fail('HOLD_OPTION_LIMIT');
+     const options=[];
+     for(const op of optionEls){
+       const value=text(op,90);
+       if(!permitted(value,90))return fail('HOLD_AMBIGUOUS_OPTION');
+       options.push(value);
+     }
+     optionsTotal+=options.length;
+     if(optionsTotal>250)return fail('HOLD_OPTION_TOTAL_LIMIT');
+     items.push({name,quantity:qty,options});
+   }
+   return Object.freeze({schema:SCHEMA,state:'DETAIL_CANDIDATE_UNVERIFIED',
+     observedAtUtc:new Date().toISOString(),source:'VISIBLE_OPEN_DIALOG_ONLY',
+     visibleRows:rows.length,itemLines:items.length,optionLines:optionsTotal,
+     items,merchantVerified:false,orderIdVerified:false,coverageVerified:false,
+     readOnly:true,actionsExecuted:0,customerFieldsCopied:false,
+     noNavigation:true,noFocusChange:true,noRemoteTransmission:true});
+ }
+ return Object.freeze({SCHEMA,readVisibleDetail});
+});
