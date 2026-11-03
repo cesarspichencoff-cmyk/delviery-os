@@ -32,4 +32,5 @@ check('browser write claim refused',x=>{x.edge.writesPerformed=true},'HOLD_EFFEC
 check('unrecognized source field refused',x=>{x.ui.unexpected='UNVERIFIED'},'HOLD_SOURCE_SCHEMA');
 check('closed window refused',x=>{x.edge.visibleWindow=false},'NO_STABLE_VISIBLE_CARDS');
 check('untrusted merchant claim does not promote orders',x=>{x.ui.merchantVerified=true},'VISIBLE_CARDS_SHADOW_ONLY');
+check('invalid February day refused',x=>{x.now='2026-03-03T09:30:00Z';x.ui.observedAtUtc='2026-02-31T09:30:00Z';x.edge.observedAtUtc=x.now},'STALE_OR_FUTURE_UI');
 console.log('GESTOR_SHADOW_STATUS_BRIDGE_PASS '+passed+'/'+passed);
