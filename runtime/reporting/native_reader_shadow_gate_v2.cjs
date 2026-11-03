@@ -16,7 +16,8 @@ function timestamp(value){
   const zone=m[8]||'';
   if(zone&&zone!=='Z'){
     const hours=Number(zone.slice(1,3)),minutes=Number(zone.slice(4,6));
-    // ISO UTC offsets are bounded by +/-14:00, not +/-14:59.
+    // Product source policy: allow only practical civil offsets up to +/-14:00.
+    // This is stricter than RFC 3339's syntactic offset range.
     if(hours>14||minutes>59||(hours===14&&minutes!==0))return false;
   }
   return true;
