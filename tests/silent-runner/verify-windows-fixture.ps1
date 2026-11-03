@@ -74,6 +74,95 @@ try {
  Check ($rc -eq 0) 'INVALID_FIXTURE_EXIT_BOUNDED'
  $status=Get-Content (Join-Path $workspace 'status.json') -Raw|ConvertFrom-Json
  Check ($status.state -eq 'HOLD_INVALID_FIXTURE' -and $status.ordersPublishable -eq 0) 'REJECT_REALISH_DATA'
+
+ # Synthetic Reader+Gestor adapter: both envelopes preserve source-schema names,
+ # but fixtureOnly=true and LAB-* labels prove this is never a production join.
+ [IO.File]::WriteAllText((Join-Path $workspace 'input.fixture'),$valid)
+ $stamp=[DateTime]::UtcNow.ToString('o')
+ $reader=[ordered]@{
+   schema='deliveryos.itaim.automatic-reader-status.v1'
+   sourceMode='CONTROL_DIAGNOSTIC_NOT_REAL_PROOF'
+   host='CAIXA_MOOCA'
+   unitId='ITAIM'
+   observedAtUtc=$stamp
+   fixtureOnly=$true
+   liveSourceVerified=$false
+   noActionExecuted=$true
+   customerDataExported=$false
+   records=@([ordered]@{fixtureKey='LAB-1001';revision=2;itemLines=3;optionLines=1})
+ }
+ $gestor=[ordered]@{
+   schema='tata.gestor.structure-v2'
+   mode='SHADOW_READ_ONLY'
+   route='expedition'
+   observedAt=$stamp
+   classification='STRUCTURE_ONLY_UNVERIFIED'
+   fixtureOnly=$true
+   verifiedMerchant=$false
+   verifiedCoverage=$false
+   identifiersCaptured=$false
+   personalDataCaptured=$false
+   records=@([ordered]@{fixtureKey='LAB-1001';revision=2;itemLines=3;optionLines=1})
+ }
+ function Pair-Lab {
+   $readerPath=Join-Path $workspace 'reader-sanitized.fixture.json'
+   $gestorPath=Join-Path $workspace 'gestor-sanitized.fixture.json'
+   [IO.File]::WriteAllText($readerPath,($reader|ConvertTo-Json -Depth 6 -Compress))
+   [IO.File]::WriteAllText($gestorPath,($gestor|ConvertTo-Json -Depth 6 -Compress))
+   $exit=Run-Lab -arguments @('--fixture-dir='+('"'+$workspace+'"'),'--ticks=1','--sleep-ms=100')
+   Check ($exit -eq 0) 'PAIR_RUN_COMPLETED'
+   return (Get-Content (Join-Path $workspace 'status.json') -Raw|ConvertFrom-Json)
+ }
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'SYNTHETIC_PAIR_ONLY' -and $pair.syntheticPairCount -eq 1) 'ONE_SYNTHETIC_PAIR'
+ Check ($pair.readerDiagnosticRecent -and $pair.gestorStructureRecent) 'PAIR_BOTH_FRESH'
+ Check ($pair.ordersPublishable -eq 0 -and !$pair.realReaderJoinProven -and !$pair.orderIdentityProven) 'NO_REAL_JOIN_OR_PUBLISH'
+ Check ($pair.orderIdsExported -eq 0 -and $pair.customerFieldsExported -eq 0) 'NO_REAL_IDENTIFIERS'
+ $gestor.records[0].revision=3
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_DIVERGENT_REVISIONS_OR_LINES' -and $pair.syntheticPairCount -eq 0) 'REVISION_DIVERGENCE_HOLD'
+ $gestor.records[0].revision=2;$gestor.records[0].optionLines=2
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_DIVERGENT_REVISIONS_OR_LINES') 'OPTION_COUNT_DIVERGENCE_HOLD'
+ $gestor.records[0].optionLines=1;$gestor.records[0].fixtureKey='LAB-1002'
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_UNPAIRED') 'KEY_MISMATCH_HOLD'
+ $gestor.records[0].fixtureKey='LAB-1001'
+ $reader.records=@($reader.records[0],$reader.records[0])
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_INVALID_RECORDS') 'DUPLICATE_KEY_HOLD'
+ $reader.records=@($reader.records[0])
+ $reader['customerName']='FICTIONAL_NAME'
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_INVALID_PAIR') 'EXTRA_PERSONAL_FIELD_HOLD'
+ $reader.Remove('customerName')
+ $reader.host='WRONG_MACHINE'
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_INVALID_PAIR') 'WRONG_HOST_HOLD'
+ $reader.host='CAIXA_MOOCA';$reader.observedAtUtc=[DateTime]::UtcNow.AddMinutes(-10).ToString('o')
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_STALE_OR_FUTURE' -and !$pair.readerDiagnosticRecent) 'STALE_READER_HOLD'
+ $reader.observedAtUtc=[DateTime]::UtcNow.ToString('o')
+ $gestor.observedAt=[DateTime]::UtcNow.AddMinutes(10).ToString('o')
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_STALE_OR_FUTURE' -and !$pair.gestorStructureRecent) 'FUTURE_GESTOR_HOLD'
+ $gestor.observedAt=[DateTime]::UtcNow.ToString('o')
+ $gestor.verifiedMerchant=$true
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_INVALID_PAIR') 'SELF_ATTESTED_MERCHANT_HOLD'
+ $gestor.verifiedMerchant=$false
+ $reader.records[0].fixtureKey='1234'
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'HOLD_INVALID_RECORDS') 'REALISH_KEY_REJECTED'
+ $reader.records[0].fixtureKey='LAB-1001'
+ $pair=Pair-Lab
+ Check ($pair.pairState -eq 'SYNTHETIC_PAIR_ONLY') 'VALID_FIXTURE_RECOVERY'
+ [IO.File]::Delete((Join-Path $workspace 'reader-sanitized.fixture.json'))
+ $exit=Run-Lab -arguments @('--fixture-dir='+('"'+$workspace+'"'),'--ticks=1','--sleep-ms=100')
+ Check ($exit -eq 0) 'MISSING_PAIR_EXIT_BOUNDED'
+ $pair=Get-Content (Join-Path $workspace 'status.json') -Raw|ConvertFrom-Json
+ Check ($pair.pairState -eq 'HOLD_NO_PAIR' -and $pair.ordersPublishable -eq 0) 'MISSING_READER_HOLD'
+
  [IO.File]::Delete((Join-Path $workspace 'DELIVERYOS_LAB_ONLY.txt'))
  $rc=Run-Lab -arguments @('--fixture-dir='+('"'+$workspace+'"'),'--ticks=1','--sleep-ms=100')
  Check ($rc -eq 21) 'MISSING_LAB_MARKER_BLOCKED'
