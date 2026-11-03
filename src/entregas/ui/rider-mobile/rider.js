@@ -157,7 +157,9 @@ function queueOnDevice(key, build) {
   } catch {
     // Não houve comprovante Room: nunca afirmar que foi salvo.
   }
-  if (!r || r.ok !== true) {
+  // Um ACK nativo precisa confirmar ESTA identidade, não apenas trazer ok=true.
+  // Duplicate para um event_id recém-criado é colisão inesperada, não prova de escrita.
+  if (!r || r.ok !== true || r.event_id !== event_id || r.duplicate === true) {
     queueHold = QUEUE_WRITE_BLOCK;
     renderDeviceQueue(activeTrip());
     throw new Error(queueHoldMessage(queueHold));
