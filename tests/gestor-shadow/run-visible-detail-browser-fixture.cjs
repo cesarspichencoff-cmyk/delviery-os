@@ -48,6 +48,28 @@ const html=[
    el.querySelector('[data-testid="item-name"]').textContent='Contato 11999990000';
   });
   test('personal text refused',(await run()).state==='HOLD_AMBIGUOUS_ITEM');
+  await page.evaluate(()=>{
+    const el=document.querySelector('dialog');el.querySelector('[data-testid="item-name"]').textContent='Sushi';
+    const hidden=document.createElement('div');hidden.setAttribute('data-testid','order-item');
+    hidden.setAttribute('hidden','');hidden.innerHTML='<span data-testid="item-name">Extra oculto</span><span data-testid="item-quantity">1</span>';
+    el.appendChild(hidden);
+  });
+  test('hidden line forces HOLD',(await run()).state==='HOLD_HIDDEN_ITEM_ROWS');
+  await page.evaluate(()=>{
+    document.querySelector('dialog [data-testid="order-item"][hidden]').remove();
+    const line=document.querySelector('dialog [data-testid="order-item"]');
+    const dup=document.createElement('span');dup.setAttribute('data-testid','item-quantity');
+    dup.textContent='99';line.appendChild(dup);
+  });
+  test('ambiguous quantity forces HOLD',(await run()).state==='HOLD_AMBIGUOUS_ITEM_FIELDS');
+  await page.evaluate(()=>{
+    const line=document.querySelector('dialog [data-testid="order-item"]');
+    const duplicates=line.querySelectorAll('[data-testid="item-quantity"]');
+    duplicates[duplicates.length-1].remove();
+    line.setAttribute('aria-hidden','true');
+  });
+  test('aria-hidden line forces HOLD',(await run()).state==='HOLD_HIDDEN_ITEM_ROWS');
+  await page.evaluate(()=>document.querySelector('dialog [data-testid="order-item"]').removeAttribute('aria-hidden'));
   test('no outbound requests',requests===0);
   console.log('GESTOR_VISIBLE_DETAIL_EDGE_FIXTURE_PASS '+checks+'/'+checks+' OFFLINE');
  }finally{
