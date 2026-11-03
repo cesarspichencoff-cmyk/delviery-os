@@ -43,3 +43,6 @@ data/tata_sequence_attesters_v1.json -text
 docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json -text
 tools/comandas_shadow_bundle_v1.cjs -text
 tools/comandas_shadow_offline_run_v1.cjs -text
+# Conference-only offline replay is sealed and byte-checked on Windows as well.
+tools/conference_only_from_sanitized_v1.cjs -text
+tools/comandas_conference_only_shadow_runner_v1.cjs -text
