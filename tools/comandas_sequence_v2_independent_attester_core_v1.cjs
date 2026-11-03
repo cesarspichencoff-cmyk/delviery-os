@@ -10,7 +10,7 @@
  */
 const crypto=require("node:crypto");
 const {reviewPersistedDayWriterReceiptsV1}=require("./comandas_sequence_v2_writer_receipt_review_v1.cjs");
-const {eligibleNativeRevisionV2}=require("./comandas_sequence_v2_native_lab_v1.cjs");
+const {eligibleNativeRevisionV2}=require("./comandas_sequence_v2_native_pair_eligibility_v1.cjs");
 const {inspectStrongKeySequence,STATE_SCHEMA}=require("./comandas_strong_key_sequence_v2_review_only.cjs");
 const A=require("../dist/src/production/tataSequenceAttestationV1.js");
 const SCHEMA="tata.comandas.sequence-v2-independent-attester-core.v1";
