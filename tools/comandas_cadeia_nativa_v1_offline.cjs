@@ -290,9 +290,23 @@ function runNativeChainV1(i){
    // from what a printer would receive, not from the text trace.
    escpos:[...v.render.bytes],escpos_sha256:sha(Buffer.from(v.render.bytes)),
    text_trace_sha256:sha(Buffer.from(v.render.text_trace)),text_trace:v.render.text_trace}));
- L.L4=layer(views.length>=2&&views.every(v=>v.semantic_ready)?"THREE_VIEWS_VIRTUAL":"HOLD",
-  views.flatMap(v=>v.semantic_ready?[]:["VIEW_NOT_SEMANTICALLY_READY:"+v.station]),
-  {views,window:review.period,suppressed:review.suppressed,selected:review.selected,
+ // A valid result has >=1 actual production station plus exactly one
+ // CONFERENCIA view. Do not imply that every order always produces 3 views.
+ const productionViewCount=views.filter(v=>v.kind==="PRODUCAO").length;
+ const conferenceViewCount=views.filter(v=>v.kind==="CONFERENCIA").length;
+ const stationNames=views.map(v=>v.station);
+ const stationSet=new Set(stationNames);
+ const virtualViewsReady=productionViewCount>=1&&conferenceViewCount===1&&
+  stationSet.size===views.length&&views.every(v=>v.semantic_ready);
+ const viewReasons=views.flatMap(v=>v.semantic_ready?[]:
+  ["VIEW_NOT_SEMANTICALLY_READY:"+v.station]);
+ if(productionViewCount<1)viewReasons.push("PRODUCTION_VIEW_MISSING");
+ if(conferenceViewCount!==1)viewReasons.push("CONFERENCE_VIEW_COUNT_INVALID");
+ if(stationSet.size!==views.length)viewReasons.push("DUPLICATE_VIEW_STATION");
+ L.L4=layer(virtualViewsReady?"VIRTUAL_VIEWS_READY":"HOLD",viewReasons,
+  {views,view_count:views.length,production_view_count:productionViewCount,
+   conference_view_count:conferenceViewCount,stations:stationNames,
+   window:review.period,suppressed:review.suppressed,selected:review.selected,
    note_disposition:noteReview?.status??"NOT_PROVIDED",
    // iFood x Teknisa belongs to the CONFERENCE only; production never waits on it.
    conference_ifood_crosscheck:native.source_review?.conference?.status??"UNKNOWN"});

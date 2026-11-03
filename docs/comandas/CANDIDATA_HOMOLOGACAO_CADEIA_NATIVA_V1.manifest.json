@@ -98,8 +98,8 @@
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "cfe13d0c037e518e832c7acd3e23a46b2e3641c0",
-      "bytes": 18878
+      "git_blob": "161218c40ab002ecd0d8d458ee98dae3371726a1",
+      "bytes": 19768
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",

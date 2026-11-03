@@ -82,7 +82,7 @@ try{
   assert.equal(out.status,"SHADOW_PAIR_REPLAYED");
   assert.equal(out.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
   assert.equal(out.layers.L3.status,"NATIVE_CONTENT_PROVEN");
-  assert.equal(out.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+  assert.equal(out.layers.L4.status,"VIRTUAL_VIEWS_READY");
   assert.equal(out.layers.L5.status,"HOLD");
   assert.equal(out.views.length,3);
   assert.ok(out.views.every(v=>v.escpos_bytes===0));
@@ -128,7 +128,7 @@ try{
   const out=run(paymentFile,paymentDecisionFile,claimPath);
   assert.equal(out.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
   assert.equal(out.layers.L3.status,"NATIVE_CONTENT_PROVEN");
-  assert.equal(out.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+  assert.equal(out.layers.L4.status,"VIRTUAL_VIEWS_READY");
   assert.equal(out.layers.L5.status,"HOLD");
   assert.equal(out.views.length,3);
   assert.equal(out.note_excluded_in_shadow_only,true);
@@ -137,6 +137,40 @@ try{
   assert.equal(JSON.stringify(out).includes(financialNote),false);
   assert.equal(Buffer.compare(fs.readFileSync(paymentFile),b1),0);
   assert.equal(Buffer.compare(fs.readFileSync(paymentDecisionFile),b2),0);
+ });
+ test("Sushi 1-only payment note yields exactly 2 shadow views, with exact count and no paper",()=>{
+  const one=structuredClone(paymentEvent);
+  one.order.items=one.order.items.filter(x=>canon(x.CDARVPROD)==="9.30.00.090.00");
+  assert.equal(one.order.items.length,1);
+  one.snapshot_hash=snapshotHash(one.order);
+  const oneEventFile=path.join(work,"one-event-payment.json");
+  fs.writeFileSync(oneEventFile,JSON.stringify(one));
+  const oneProduced=spawnSync(process.execPath,[consumer,oneEventFile],
+   {encoding:"utf8",timeout:20000});
+  assert.ok([0,5].includes(oneProduced.status)&&oneProduced.stdout,
+   "ONE_ITEM_CONSUMER_UNAVAILABLE");
+  const oneDecision=JSON.parse(oneProduced.stdout);
+  const oneDecisionFile=path.join(work,"one-decision-payment.json");
+  fs.writeFileSync(oneDecisionFile,JSON.stringify(oneDecision));
+  const oneClaim={...exactClaim,snapshot_hash:one.snapshot_hash.toLowerCase(),
+   decision_fingerprint:oneDecision.fingerprint.toLowerCase(),
+   event_file_sha256:digest(fs.readFileSync(oneEventFile)),
+   decision_file_sha256:digest(fs.readFileSync(oneDecisionFile))};
+  const oneClaimFile=path.join(work,"one-note-review-claim.json");
+  fs.writeFileSync(oneClaimFile,JSON.stringify(oneClaim));
+  const out=run(oneEventFile,oneDecisionFile,oneClaimFile);
+  assert.equal(out.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+  assert.equal(out.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+  assert.equal(out.layers.L4.status,"VIRTUAL_VIEWS_READY");
+  assert.equal(out.layers.L4.view_count,2);
+  assert.equal(out.layers.L4.production_view_count,1);
+  assert.equal(out.layers.L4.conference_view_count,1);
+  assert.deepEqual(out.layers.L4.stations,["DELIVERY SUSHI 1","CONFERENCIA"]);
+  assert.equal(out.views.length,2);
+  assert.equal(out.layers.L5.status,"HOLD");
+  assert.equal(out.note_excluded_in_shadow_only,true);
+  assert.ok(out.views.every(v=>v.escpos_bytes===0));
+  assert.equal(JSON.stringify(out).includes(financialNote),false);
  });
  test("copied unreviewed claim or changed native file byte fails before replay",()=>{
   const bad={...exactClaim,event_file_sha256:"0".repeat(64)};

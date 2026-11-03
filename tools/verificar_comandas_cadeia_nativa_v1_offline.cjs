@@ -150,7 +150,11 @@ test("native chain: real revision -> three virtual views, dinner routes Sushi 1 
  assert.equal(out.layers.L2.window,"DINNER_CANDIDATE");
  assert.equal(out.layers.L3.status,"NATIVE_CONTENT_PROVEN");
  assert.equal(out.layers.L3.join.print_text_used,false);
- assert.equal(out.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+ assert.equal(out.layers.L4.status,"VIRTUAL_VIEWS_READY");
+ assert.equal(out.layers.L4.view_count,3);
+ assert.equal(out.layers.L4.production_view_count,2);
+ assert.equal(out.layers.L4.conference_view_count,1);
+ assert.deepEqual(out.layers.L4.stations,["COZINHA","DELIVERY SUSHI 1","CONFERENCIA"]);
  assert.deepEqual(out.views.map(v=>v.kind+":"+v.station),
   ["PRODUCAO:COZINHA","PRODUCAO:DELIVERY SUSHI 1","CONFERENCIA:CONFERENCIA"]);
  const conf=out.views[2].text_trace;
@@ -177,6 +181,33 @@ test("lunch revision: Sushi 1 goes to BALCAOSUSHI1; neither DELIVERY SUSHI recei
  assert.equal(r.layers.L2.window,"LUNCH_CANDIDATE");
  assert.deepEqual(r.views.map(v=>v.station),["COZINHA","BALCAOSUSHI1","CONFERENCIA"]);
  assert.ok(!r.views.some(v=>/DELIVERY SUSHI/.test(v.station)));
+});
+test("one Sushi 1 item yields exactly TWO applicable virtual views and explicit counts",()=>{
+ // One proven sushi item, unlike the Kids combo whose lone-bag rule is HOLD.
+ const single=event(o=>({...o,items:o.items.filter(x=>canon(x.CDARVPROD)==="9.30.00.090.00")}));
+ assert.equal(single.order.items.length,1);
+ const r=chain(single,consume(single));
+ assert.equal(r.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+ assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN",JSON.stringify(r.layers.L3.reasons));
+ assert.equal(r.layers.L4.status,"VIRTUAL_VIEWS_READY",JSON.stringify(r.layers.L4.reasons));
+ assert.equal(r.layers.L4.view_count,2);
+ assert.equal(r.layers.L4.production_view_count,1);
+ assert.equal(r.layers.L4.conference_view_count,1);
+ assert.deepEqual(r.layers.L4.stations,["DELIVERY SUSHI 1","CONFERENCIA"]);
+ assert.deepEqual(r.views.map(x=>x.station),r.layers.L4.stations);
+ assert.ok(r.views.every(v=>v.semantic_ready&&v.escpos_bytes===0));
+ assert.equal(r.layers.L5.status,"HOLD");
+ assert.equal(r.physical_effect_authorized,false);
+});
+test("a second view cannot bypass an unproven single-item bag",()=>{
+ const comboOnly=event(o=>({...o,items:o.items.filter(x=>canon(x.CDARVPROD)==="9.80.00.010.00")}));
+ const r=chain(comboOnly,consume(comboOnly));
+ assert.equal(r.layers.L3.status,"HOLD");
+ assert.ok(r.layers.L3.reasons.includes("BAG_SIZE_NOT_FACT"));
+ assert.equal(r.layers.L4.status,"HOLD");
+ assert.deepEqual(r.views,[]);
+ assert.equal(r.layers.L5.status,"HOLD");
+ assert.equal(r.physical_effect_authorized,false);
 });
 test("outside documented hours: destinations HOLD, proven content is NOT erased",()=>{
  const late=event(o=>({...o,DTHRABERMESA:"2026-10-05T16:10:00.0000000"}));
@@ -213,7 +244,7 @@ test("differential: combo 2p + 2 temakis (a judged kit rule) flows to three dinn
  const two=ev9092(o=>({...o,items:o.items.map(x=>x.CDPRODUTO==="0000001641"?{...x,QTPRODCOMVEN:"2.000"}:x)}));
  const r=chain(two,consume(two),{catalog_equivalence:equivalence});
  assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN",JSON.stringify(r.layers.L3.reasons));
- assert.equal(r.layers.L4.status,"THREE_VIEWS_VIRTUAL",JSON.stringify(r.layers.L4.reasons));
+ assert.equal(r.layers.L4.status,"VIRTUAL_VIEWS_READY",JSON.stringify(r.layers.L4.reasons));
  assert.deepEqual(r.views.map(v=>v.station),["DELIVERY SUSHI 1","DELIVERY SUSHI 2","CONFERENCIA"]);
  assert.ok(r.views[0].text_trace.includes("C1  CAIXA 1500\n1  COMB SUSHI + SASHIMI ESPECIAL 2 P"));
  assert.ok(r.views[1].text_trace.includes("C1  CAIXA 750\n2  TEMAKI DE BARRIGA DE SALMAO"));
@@ -234,7 +265,7 @@ test("9092 real: 2p combo + 3 temakis takes César's rule (Kit p/2 + Kit Simples
  assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN",JSON.stringify(r.layers.L3.reasons));
  assert.equal(r.layers.L3.kit_rule?.id,"KIT-9.15.00.030.00-x1+TEMAKI-x3");
  assert.match(r.layers.L3.kit_rule.source_ref,/issuecomment-6582963189$/);
- assert.equal(r.layers.L4.status,"THREE_VIEWS_VIRTUAL",JSON.stringify(r.layers.L4?.reasons));
+ assert.equal(r.layers.L4.status,"VIRTUAL_VIEWS_READY",JSON.stringify(r.layers.L4?.reasons));
  assert.deepEqual(r.views.map(v=>v.station),["DELIVERY SUSHI 1","DELIVERY SUSHI 2","CONFERENCIA"]);
  assert.match(kitLine(r),/1 KIT P\/2/i);assert.match(kitLine(r),/1 KIT SIMPLES/i);
  assert.doesNotMatch(kitLine(r),/KIT P\/1/i);
@@ -345,7 +376,7 @@ test("real-world legacy hours + Sushi 1 reason are separated without bypassing e
  assert.equal(r.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
  assert.equal(r.layers.L2.window,"DINNER_CANDIDATE");
  assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN");
- assert.equal(r.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+ assert.equal(r.layers.L4.status,"VIRTUAL_VIEWS_READY");
  assert.deepEqual(r.views.map(x=>x.station),["COZINHA","DELIVERY SUSHI 1","CONFERENCIA"]);
  assert.equal(r.layers.L5.status,"HOLD");
  assert.ok(r.views.every(v=>v.escpos_bytes===0));
@@ -481,7 +512,7 @@ test("native item notes stay intact: own station and conference, verbatim, never
  const ev=event(o=>({...o,observation_rows:[note(o,"DSOBSPEDDIGCMD","sem cebolinha",0),
   note(o,"DSOBSDESCIT","MOLHO A PARTE",1),note(o,"TXPRODCOMVEN","SEM TARE",3),note(o,"DSOBSPEDDIGCMD","SEM TARE",3)]}));
  const r=chain(ev,consume(ev),attestedLive(ev,"037"));
- assert.deepEqual([r.layers.L3.status,r.layers.L4?.status],["NATIVE_CONTENT_PROVEN","THREE_VIEWS_VIRTUAL"],
+ assert.deepEqual([r.layers.L3.status,r.layers.L4?.status],["NATIVE_CONTENT_PROVEN","VIRTUAL_VIEWS_READY"],
   JSON.stringify([r.layers.L3.reasons,r.layers.L4?.reasons]));
  const view=st=>r.views.find(v=>v.station===st).text_trace.split("\n");
  const [kitchen,sushi,conf]=[view("COZINHA"),view("DELIVERY SUSHI 1"),view("CONFERENCIA")];
@@ -531,7 +562,7 @@ test("one explicitly reviewed financial general note stays in source but not in 
  const accepted=chain(ev,dec,{note_disposition_claim:claim});
  assert.equal(accepted.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
  assert.equal(accepted.layers.L3.status,"NATIVE_CONTENT_PROVEN");
- assert.equal(accepted.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+ assert.equal(accepted.layers.L4.status,"VIRTUAL_VIEWS_READY");
  assert.equal(accepted.layers.L4.note_disposition,"EXCLUDED_FOR_SHADOW_ONLY");
  assert.equal(accepted.layers.L5.status,"HOLD");
  assert.equal(accepted.views.length,3);
@@ -622,4 +653,4 @@ test("decision fingerprint is the V8.57 contract and outputs are effect-free",()
 });
 
 fs.rmSync(temp,{recursive:true,force:true});
-console.log("COMANDAS_NATIVE_CHAIN_V1="+n+"/"+n+" REAL_REVISION_9627 CONSUMER_V714 PINNED_MOTOR THREE_VIRTUAL_VIEWS NO_PRINT");
+console.log("COMANDAS_NATIVE_CHAIN_V1="+n+"/"+n+" REAL_REVISION_9627 CONSUMER_V714 PINNED_MOTOR VARIABLE_VIRTUAL_VIEW_COUNT NO_PRINT");

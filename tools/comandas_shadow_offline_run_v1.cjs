@@ -70,6 +70,14 @@ function run(eventPath,decisionPath,reviewClaimPath){
  const layers={};
  for(const [k,v] of Object.entries(out.layers))
   layers[k]={status:v.status,reasons:codes(v.reasons)};
+ if(out.layers.L4){
+  const v=out.layers.L4;
+  layers.L4.view_count=Number.isInteger(v.view_count)?v.view_count:out.views.length;
+  layers.L4.production_view_count=Number.isInteger(v.production_view_count)?v.production_view_count:0;
+  layers.L4.conference_view_count=Number.isInteger(v.conference_view_count)?v.conference_view_count:0;
+  layers.L4.stations=Array.isArray(v.stations)?v.stations.filter(s=>typeof s==="string"&&
+    /^(?:COZINHA|CONFERENCIA|DELIVERY SUSHI [12]|BALCAOSUSHI[12])$/.test(s)):[];
+ }
  return {schema:"tata.comandas.shadow-sanitized-result.v1",
   status:out.layers.L1?.status==="NATIVE_REVISION_CONSISTENT"?"SHADOW_PAIR_REPLAYED":"HOLD",
   bundle_manifest_sha256:proof.manifest_sha256,
