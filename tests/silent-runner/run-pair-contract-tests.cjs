@@ -26,7 +26,7 @@ check('no symlink source',pair.includes('FileAttributes.ReparsePoint'));
 check('reject timestamp future',pair.includes('rAge>=-5')&&pair.includes('gAge>=-5'));
 check('reject timestamp stale',pair.includes('rAge<=120')&&pair.includes('gAge<=120'));
 check('bounded source size',pair.includes('info.Length>4096'));
-check('bounded fixture array',pair.includes('array.Length>16'));
+check('bounded fixture array',pair.includes('array.Count>16')&&pair.includes('IList array=value as IList;'));
 check('duplicate keys held',pair.includes('rows.ContainsKey(id)'));
 check('synthetic labels only',pair.includes('LAB-[0-9]{4}'));
 check('no direct operator file paths',!pair.includes('TataGestorObservationLab')&&!pair.includes('DeliveryOS-Edge-Gestor-Itaim'));
