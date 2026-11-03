@@ -32,6 +32,9 @@ export function createGpsStatus(opts = {}) {
 
   let watchId = null;
   let tripId = null;
+  // Identidade da inscrição, não apenas trip_id (ele pode ser reutilizado).
+  let generation = 0;
+  const isCurrent = (gen, id) => generation === gen && tripId === id;
   let lastAt = null;      // ISO do último ponto aceito
   let lastAccuracy = null;
   let lastError = null;
@@ -92,7 +95,8 @@ export function createGpsStatus(opts = {}) {
     onRender(state());
   }
 
-  function handlePosition(pos) {
+  function handlePosition(pos, gen, id) {
+    if (!isCurrent(gen, id)) return;
     lastError = null;
     const iso = new Date(pos.timestamp).toISOString();
     lastAt = iso;
@@ -102,7 +106,7 @@ export function createGpsStatus(opts = {}) {
     // Envia; a fila real de retentativa vive no servidor/queue.
     Promise.resolve(
       send({
-        trip_id: tripId,
+        trip_id: id,
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,
         accuracy_m: pos.coords.accuracy,
@@ -112,16 +116,20 @@ export function createGpsStatus(opts = {}) {
       }),
     )
       .then(() => {
+        // Um envio de A não modifica a UI de B nem da viagem já encerrada.
+        if (!isCurrent(gen, id)) return;
         pending = Math.max(0, pending - 1);
         render();
       })
       .catch(() => {
+        if (!isCurrent(gen, id)) return;
         // Mantém pendente: o ponto não se perde, sobe depois.
         render();
       });
   }
 
-  function handleError(err) {
+  function handleError(err, gen, id) {
+    if (!isCurrent(gen, id)) return;
     const map = { 1: "permission_denied", 2: "position_unavailable", 3: "timeout" };
     lastError = map[err && err.code] || "position_unavailable";
     render();
@@ -138,23 +146,43 @@ export function createGpsStatus(opts = {}) {
       }
       if (watchId !== null && tripId === trip_id) return { ok: true };
       if (watchId !== null) this.stop();
+      const gen = ++generation;
       tripId = trip_id;
-      watchId = geo.watchPosition(handlePosition, handleError, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 30000,
-      });
+      lastAt = null;
+      lastAccuracy = null;
+      lastError = null;
+      pending = 0;
+      try {
+        watchId = geo.watchPosition(
+          (pos) => handlePosition(pos, gen, trip_id),
+          (err) => handleError(err, gen, trip_id),
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 },
+        );
+      } catch {
+        // Uma inscrição recusada não pode deixar uma viagem falsamente ativa.
+        generation += 1;
+        watchId = null;
+        tripId = null;
+        lastError = "watch_start_failed";
+        render();
+        return { ok: false, error: "watch_start_failed" };
+      }
       render();
       return { ok: true };
     },
 
     /** Desliga de verdade. Chamado ao encerrar/cancelar/abandonar a viagem. */
     stop() {
-      if (watchId !== null && geo) geo.clearWatch(watchId);
+      // Invalidar antes do clearWatch: callbacks atrasados deixam de ter efeito.
+      generation += 1;
+      const previousId = watchId;
       watchId = null;
       tripId = null;
       lastAt = null;
       lastAccuracy = null;
+      lastError = null;
+      pending = 0;
+      if (previousId !== null && geo) geo.clearWatch(previousId);
       render();
     },
 
