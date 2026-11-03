@@ -132,7 +132,8 @@ try{
    const state=actualState(),inspection=inspectStrongKeySequence({pair:orderB,state});
    const chain=N.sequenceVerdictV1(signed.chain_binding,orderB.event,{
     attesters:attTrust,now_s:NOW,ledger:{inspection_status:inspection.status,
-     review_binding_number:inspection.review_binding_number,rows:state.bindings}});
+     review_binding_number:inspection.review_binding_number,
+     rows:state.bindings.filter(b=>b.scope_id==="STORE:0001/01|DATE:2026-11-03")}});
    assert.equal(chain.level,"CANDIDATE_PERSISTED_IN_LAB");
    assert.equal(chain.candidate_number,"002");
    assert.equal(chain.number,null);
