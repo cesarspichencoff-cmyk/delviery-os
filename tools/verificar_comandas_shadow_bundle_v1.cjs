@@ -15,6 +15,16 @@ try{
   assert.equal(b.status,"BUNDLE_BUILT_VERIFIED");
   assert.equal(b.candidate_files,34);
   assert.ok(b.compiled_files>=10);
+  const attrs=fs.readFileSync(path.join(ROOT,".gitattributes"),"utf8");
+  for(const path of ["docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json",
+    "tools/comandas_shadow_bundle_v1.cjs","tools/comandas_shadow_offline_run_v1.cjs"])
+   assert.ok(attrs.split(/\r?\n/).includes(path+" -text"),path);
+  const candidateBytes=fs.readFileSync(path.join(ROOT,"docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json"));
+  const digest=require("node:crypto").createHash("sha256").update(candidateBytes).digest("hex");
+  assert.equal(b.candidate_manifest_sha256,digest);
+  const meta=JSON.parse(fs.readFileSync(path.join(output,"shadow-bundle.manifest.json"),"utf8"));
+  assert.equal(meta.source_commit,undefined);
+  assert.equal(meta.source_baseline_commit,"4d660808f73e611023c30e71ac0f86e6c5db8833");
   assert.equal(verify(output).files_verified,b.files_verified);
  });
  const {run}=require(path.join(output,"tools/comandas_shadow_offline_run_v1.cjs"));

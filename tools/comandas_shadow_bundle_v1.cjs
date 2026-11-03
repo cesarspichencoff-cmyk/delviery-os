@@ -25,7 +25,8 @@ function disk(root,rel){
  return p;
 }
 function readCandidate(){
- const m=JSON.parse(fs.readFileSync(disk(ROOT,CANDIDATE),"utf8"));
+ const candidateBytes=fs.readFileSync(disk(ROOT,CANDIDATE));
+ const m=JSON.parse(candidateBytes.toString("utf8"));
  if(m.scope!=="SHADOW_NATIVE_CHAIN_NO_PRINT"||m.code?.length!==26||m.runtime_data?.length!==8)
   throw Error("CANDIDATE_MANIFEST_UNEXPECTED");
  if(Object.values(m.effects||{}).some(v=>v!==false))throw Error("CANDIDATE_EFFECTS_NOT_FALSE");
@@ -37,7 +38,7 @@ function readCandidate(){
   const b=fs.readFileSync(disk(ROOT,e.path));
   if(b.length!==e.bytes||blob(b)!==e.git_blob)throw Error("CANDIDATE_DRIFT:"+e.path);
  }
- return {m,all};
+ return {m,all,candidate_manifest_sha256:sha(candidateBytes)};
 }
 function depPath(from,req){
  if(builtin.has(req))return null;
@@ -80,7 +81,8 @@ function entryFor(root,rel){
 function verify(root){
  const loc=disk(root,"shadow-bundle.manifest.json");
  const m=JSON.parse(fs.readFileSync(loc,"utf8"));
- if(m.schema!==SCHEMA||m.source_commit!=="4d660808f73e611023c30e71ac0f86e6c5db8833"||
+ if(m.schema!==SCHEMA||m.source_baseline_commit!=="4d660808f73e611023c30e71ac0f86e6c5db8833"||
+ !/^[a-f0-9]{64}$/.test(m.candidate_manifest_sha256)||
  m.candidate_files!==34||m.effects?.print!==false||m.effects?.operational_write!==false)
   throw Error("SHADOW_BUNDLE_SCHEMA_OR_SCOPE_CHANGED");
  const seen=new Set();
@@ -105,11 +107,12 @@ function verify(root){
  if(actual.length!==expected.size||actual.some(x=>!expected.has(x)))throw Error("BUNDLE_EXTRA_OR_MISSING");
  return {schema:m.schema,files_verified:m.files.length,candidate_files:m.candidate_files,
   compiled_files:m.compiled_files,entry_runner:RUNNER,effects:m.effects,
+  candidate_manifest_sha256:m.candidate_manifest_sha256,
   manifest_sha256:sha(fs.readFileSync(loc))};
 }
 function build(out){
  if(!path.isAbsolute(out)||fs.existsSync(out))throw Error("OUTPUT_MUST_BE_NEW_ABSOLUTE_DIR");
- const {all}=readCandidate();
+ const {all,candidate_manifest_sha256}=readCandidate();
  if(!fs.existsSync(disk(ROOT,RUNNER)))throw Error("RUNNER_MISSING");
  const candidatePaths=all.map(e=>e.path),existing=new Set([...candidatePaths,RUNNER,BUILDER]);
  const compiled=compiledClosure([...candidatePaths,RUNNER,BUILDER],existing);
@@ -121,8 +124,8 @@ function build(out){
    fs.mkdirSync(path.dirname(target),{recursive:true});
    fs.copyFileSync(disk(ROOT,rel),target);
   }
-  const manifest={schema:SCHEMA,source_commit:"4d660808f73e611023c30e71ac0f86e6c5db8833",
-   candidate_files:34,compiled_files:compiled.length,runner:RUNNER,
+  const manifest={schema:SCHEMA,source_baseline_commit:"4d660808f73e611023c30e71ac0f86e6c5db8833",
+   candidate_manifest_sha256,candidate_files:34,compiled_files:compiled.length,runner:RUNNER,
    effects:{print:false,operational_write:false,service_change:false,sql:false,sequence_write:false},
    files:files.map(rel=>entryFor(out,rel))};
   fs.writeFileSync(disk(out,"shadow-bundle.manifest.json"),JSON.stringify(manifest,null,2)+"\n");

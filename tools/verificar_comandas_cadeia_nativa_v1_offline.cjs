@@ -327,6 +327,68 @@ test("repetition / return to session: identical inputs give byte-identical outpu
  assert.equal(JSON.stringify(chain(real,decision)),JSON.stringify(out));
  assert.equal(JSON.stringify(chain(real,consume(real))),JSON.stringify(out));
 });
+test("real-world legacy hours + Sushi 1 reason are separated without bypassing exact routing",()=>{
+ const ev=structuredClone(real);
+ ev.blockers=["SERVICE_HOURS_OUTSIDE_WINDOW"];
+ ev.service_resolution={service:null,evidence:"UNKNOWN",source_ref:null,
+  blockers:["SERVICE_HOURS_OUTSIDE_WINDOW"]};
+ ev.ready_for_downstream_shadow=false;
+ const dec=structuredClone(decision);
+ dec.blocking_reasons=["UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW",
+  "SERVICE_REQUIRED_SUSHI1_9.80.00.010.00","TATA_SEQUENCE_STATE_MISSING"];
+ const cls=N.classifyConsumerBlockersV1(dec.blocking_reasons,ev.blockers);
+ assert.deepEqual(cls.content,[]);
+ assert.deepEqual(cls.legacy_service_state,["UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW"]);
+ assert.deepEqual(cls.paired_destination.map(x=>[x.pair,x.canonical_code]),
+  [["SUSHI_1","9.80.00.010.00"]]);
+ const r=chain(ev,dec);
+ assert.equal(r.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+ assert.equal(r.layers.L2.window,"DINNER_CANDIDATE");
+ assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+ assert.equal(r.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+ assert.deepEqual(r.views.map(x=>x.station),["COZINHA","DELIVERY SUSHI 1","CONFERENCIA"]);
+ assert.equal(r.layers.L5.status,"HOLD");
+ assert.ok(r.views.every(v=>v.escpos_bytes===0));
+ assert.equal(r.physical_effect_authorized,false);
+});
+test("legacy Sushi 1 role cannot invent a code or a missing paired station",()=>{
+ const ev=structuredClone(real);ev.blockers=["SERVICE_HOURS_OUTSIDE_WINDOW"];
+ const dec=structuredClone(decision);
+ const cause="UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW";
+ for(const [req,blocked] of [
+  ["SERVICE_REQUIRED_SUSHI1_9.15.00.050.00","LEGACY_SERVICE_PAIR_PRODUCT_NOT_IN_NATIVE_REVISION"],
+  ["SERVICE_REQUIRED_SUSHI2_9.80.00.010.00","LEGACY_SERVICE_PAIR_DESTINATIONS_NOT_PROVEN"]]){
+  dec.blocking_reasons=[cause,req];
+  const r=chain(ev,dec);
+  assert.equal(r.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+  assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+  assert.equal(r.layers.L4.status,"HOLD");
+  assert.ok(r.layers.L4.reasons.includes(blocked),JSON.stringify(r.layers.L4.reasons));
+  assert.deepEqual(r.views,[]);
+  assert.equal(r.layers.L5.status,"HOLD");
+ }
+});
+test("untrusted/unknown service labels remain CONTENT or an out-of-hours destination HOLD",()=>{
+ const ev=structuredClone(real);ev.blockers=["SERVICE_HOURS_OUTSIDE_WINDOW","NATIVE_SOURCE_NOT_PROVEN"];
+ const base=structuredClone(decision);
+ for(const extra of ["UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW",
+  "SERVICE_REQUIRED_SUSHI1_9.80.00.010.00_EXTRA",
+  "UPSTREAM_SERVICE_UNEXPECTED"]){
+  const changed=structuredClone(base);changed.blocking_reasons=[extra];
+  const r=chain(ev,changed);
+  assert.equal(r.layers.L3.status,"HOLD");
+  assert.deepEqual(r.views,[]);
+ }
+ const outside=event(o=>({...o,DTHRABERMESA:"2026-10-05T16:10:00.0000000"}));
+ const decisionOutside=consume(outside);
+ outside.blockers=["SERVICE_HOURS_OUTSIDE_WINDOW"];
+ decisionOutside.blocking_reasons=["UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW",
+  "SERVICE_REQUIRED_SUSHI1_9.80.00.010.00"];
+ const r=chain(outside,decisionOutside);
+ assert.equal(r.layers.L2.status,"OUTSIDE_DOCUMENTED_WINDOW");
+ assert.equal(r.layers.L4.status,"HOLD");
+ assert.deepEqual(r.views,[]);
+});
 test("unknown consumer blocker is CONTENT (fail closed); mixed upstream blocker is not 'service'",()=>{
  const d=structuredClone(decision);d.blocking_reasons=[...d.blocking_reasons,"SOMETHING_NEW"];
  const r=chain(real,d);

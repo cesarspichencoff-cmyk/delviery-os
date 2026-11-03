@@ -175,9 +175,43 @@ function runNativeChainV1(i){
   order_observations:join.join.order_observations.map(v=>({value:v,
    source_ref:"native-event:"+e.snapshot_hash.slice(0,16)+":DSOBSCOMANDA",relevance:"UNKNOWN",proof:"REAL_OBSERVED"}))};
  const review=planWindowReview(projection,claim,context,i.calibration);
- if(!review.plan||!review.plan.ready_for_shadow_payload){
+ // An installed V1 SERVICE_REQUIRED_SUSHI blocker meant that its obsolete
+ // shift-state could not pick one of two configured stations. The native
+ // order clock can replace that choice only for a virtual review AND only
+ // when the exact source product, both configured endpoints and selected
+ // single destination are all rechecked. Unknown/mismatched claims HOLD.
+ const legacyPairs=cls.paired_destination.filter(x=>x.blocker.startsWith("SERVICE_REQUIRED_SUSHI"));
+ const legacyPairReasons=[];
+ const expectedPairCodes={SUSHI_1:["00009","00003"],SUSHI_2:["00006","00004"]};
+ for(const req of legacyPairs){
+  const pair=expectedPairCodes[req.pair];
+  const configured=routes[req.canonical_code];
+  const matching=projection.items.filter(x=>x.product_code===req.canonical_code);
+  if(!pair||!matching.length){
+   legacyPairReasons.push("LEGACY_SERVICE_PAIR_PRODUCT_NOT_IN_NATIVE_REVISION");continue;
+  }
+  if(!Array.isArray(configured)||pair.some(code=>!configured.includes(code))||
+     new Set(configured).size!==configured.length){
+   legacyPairReasons.push("LEGACY_SERVICE_PAIR_DESTINATIONS_NOT_PROVEN");continue;
+  }
+  const wanted=period==="LUNCH_CANDIDATE"?pair[0]:
+   period==="DINNER_CANDIDATE"?pair[1]:null;
+  const opposite=wanted===pair[0]?pair[1]:pair[0];
+  if(!wanted){
+   legacyPairReasons.push("LEGACY_SERVICE_PAIR_WINDOW_NOT_PROVEN");continue;
+  }
+  for(const item of matching){
+   const selected=(review.selected||[]).filter(x=>x.item_index===item.item_index);
+   if(!selected.some(x=>x.printer_code===wanted)||
+      selected.some(x=>x.printer_code===opposite)){
+    legacyPairReasons.push("LEGACY_SERVICE_PAIR_EXACT_STATION_NOT_PROVEN");break;
+   }
+  }
+ }
+ if(!review.plan||!review.plan.ready_for_shadow_payload||legacyPairReasons.length){
   L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob,catalog_resolution:catalog,kit_rule:kitRuleRef});
-  L.L4=layer("HOLD",[...(review.reasons||[]),...(review.plan?.blocking_reasons||[])],
+  L.L4=layer("HOLD",[...(review.reasons||[]),...(review.plan?.blocking_reasons||[]),
+    ...new Set(legacyPairReasons)],
    {views:[],window:review.period??period,suppressed:review.suppressed??[]});
   L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],sequenceLayer(sequence));
   return out();

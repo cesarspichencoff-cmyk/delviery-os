@@ -29,7 +29,9 @@ export interface ClassifiedConsumerBlockersV1 {
   sequence: string[];
 }
 
-const SERVICE_STATE = /^SERVICE_STATE_[A-Z_]+$/;
+// The installed V1 watcher also reports this exact legacy-hours reason.
+// Neither this label nor a reported shift can authorize a destination or print.
+const SERVICE_STATE = /^(?:SERVICE_STATE_[A-Z_]+|SERVICE_HOURS_OUTSIDE_WINDOW)$/;
 
 /**
  * Split V2 consumer blockers by the layer they belong to. Anything not
@@ -51,11 +53,13 @@ export function classifyConsumerBlockersV1(
     let m: RegExpExecArray | null;
     if (b === "UPSTREAM_EVENT_NOT_READY") {
       (upstreamOnlyService ? out.legacy_service_state : out.content).push(b);
-    } else if (/^UPSTREAM_SERVICE_SERVICE_STATE_[A-Z_]+$/.test(b) ||
+    } else if ((b === "UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW" &&
+      upstreamOnlyService && eventBlockers.includes("SERVICE_HOURS_OUTSIDE_WINDOW")) ||
+      /^UPSTREAM_SERVICE_SERVICE_STATE_[A-Z_]+$/.test(b) ||
       (/^UPSTREAM_SERVICE_STATE_[A-Z_]+$/.test(b) && upstreamOnlyService)) {
       out.legacy_service_state.push(b);
-    } else if ((m = /^SUSHI([12])_DUAL_PRODUCTION_ROLE_UNPROVEN_(\d\.\d{2}\.\d{2}\.\d{3}\.\d{2})$/.exec(b))) {
-      out.paired_destination.push({ blocker: b, pair: m[1] === "1" ? "SUSHI_1" : "SUSHI_2", canonical_code: m[2] });
+    } else if ((m = /^(?:SUSHI([12])_DUAL_PRODUCTION_ROLE_UNPROVEN|SERVICE_REQUIRED_SUSHI([12]))_(\d\.\d{2}\.\d{2}\.\d{3}\.\d{2})$/.exec(b))) {
+      out.paired_destination.push({ blocker: b, pair: (m[1] || m[2]) === "1" ? "SUSHI_1" : "SUSHI_2", canonical_code: m[3] });
     } else if (b === "TATA_SEQUENCE_STATE_MISSING" || b === "TATA_SEQUENCE_STATE_INVALID") {
       out.sequence.push(b);
     } else {
