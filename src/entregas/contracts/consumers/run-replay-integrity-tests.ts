@@ -67,6 +67,13 @@ async function main(): Promise<void> {
     assert.equal(c.appliedEvents[0].payload.delivery_count, 1);
     assert.equal(Object.isFrozen(c.appliedEvents[0].payload), true);
   });
+  check("visões do consumidor não expõem listas internas mutáveis", () => {
+    const publicEvents = c.appliedEvents;
+    const quarantine = c.isolatedEvents;
+    assert.equal(Object.isFrozen(publicEvents), true);
+    assert.equal(Object.isFrozen(quarantine), true);
+    assert.equal(c.appliedCount, 1);
+  });
   check("entrada inválida com telefone não é retida", () => {
     const x = c.apply(make("evt-pii", { payload: { telefone: "000000" } }));
     assert.equal(x.reason, "schema_invalid");
