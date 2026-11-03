@@ -14,8 +14,11 @@ function timestamp(value){
   if(date.getUTCFullYear()!==y||date.getUTCMonth()+1!==mo||
     date.getUTCDate()!==d)return false;
   const zone=m[8]||'';
-  if(zone&&zone!=='Z'&&(Number(zone.slice(1,3))>14||
-    Number(zone.slice(4,6))>59))return false;
+  if(zone&&zone!=='Z'){
+    const hours=Number(zone.slice(1,3)),minutes=Number(zone.slice(4,6));
+    // ISO UTC offsets are bounded by +/-14:00, not +/-14:59.
+    if(hours>14||minutes>59||(hours===14&&minutes!==0))return false;
+  }
   return true;
 }
 function reject(reason){
