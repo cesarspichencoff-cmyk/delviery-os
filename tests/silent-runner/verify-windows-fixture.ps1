@@ -11,7 +11,7 @@ $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $csc -PathType Leaf)) { throw 'CSC_NOT_INSTALLED' }
 $workspace=Join-Path ([IO.Path]::GetTempPath()) 'deliveryos-silent-lab'
 if (Test-Path -LiteralPath $workspace) { throw 'LAB_PATH_ALREADY_EXISTS' }
-$created=$false;$total=0
+$created=$false;$total=0;$running=$null
 function Check([bool]$ok,[string]$name){if (!$ok){throw ('TEST_FAIL_'+$name)};$script:total++}
 Add-Type -TypeDefinition @'
 using System;using System.Runtime.InteropServices;
@@ -47,14 +47,17 @@ try {
  Check ($LASTEXITCODE -eq 0) 'COMPILE_WINEXE'
  $valid=(@('schema=deliveryos.silent-fixture.v1','source=FICTIONAL_ONLY','reader=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF','gestor=STRUCTURE_ONLY_UNVERIFIED') -join [Environment]::NewLine)+[Environment]::NewLine
  [IO.File]::WriteAllText((Join-Path $workspace 'input.fixture'),$valid)
- $args=@('--fixture-dir='+$workspace,'--ticks=4','--sleep-ms=450')
+ $args=@('--fixture-dir='+('"'+$workspace+'"'),'--ticks=4','--sleep-ms=450')
  $si=New-Object Diagnostics.ProcessStartInfo
  $si.FileName=$binary;$si.UseShellExecute=$false;$si.CreateNoWindow=$true;$si.Arguments=$args -join ' '
  $focus=[SilentWindowCheck]::GetForegroundWindow()
  $running=[Diagnostics.Process]::Start($si)
  Start-Sleep -Milliseconds 450
  Check (!$running.HasExited) 'LONG_ENOUGH_TO_CHECK'
- Check ([SilentWindowCheck]::VisibleForPid([uint32]$running.Id) -eq 0) 'NO_VISIBLE_HWND_RUNNING'
+ for($sample=1;$sample -le 4;$sample++){
+  Check ([SilentWindowCheck]::VisibleForPid([uint32]$running.Id) -eq 0) ('NO_VISIBLE_HWND_RUNNING_'+$sample)
+  if($sample -lt 4){Start-Sleep -Milliseconds 80}
+ }
  $duplicate=Run-Lab -arguments $args
  Check ($duplicate -eq 22) 'SECOND_INSTANCE_BLOCKED'
  if(!$running.WaitForExit(6000)){$running.Kill();throw 'MAIN_TIMEOUT'}
@@ -66,14 +69,15 @@ try {
  Check ($status.tick -eq 4) 'BOUNDED_FOUR_TICKS'
  Check ($status.networkRequests -eq 0 -and $status.windowActions -eq 0) 'NO_SIDE_EFFECTS_CLAIM'
  [IO.File]::WriteAllText((Join-Path $workspace 'input.fixture'),$valid+"orderId=1234"+[Environment]::NewLine)
- $rc=Run-Lab -arguments @('--fixture-dir='+$workspace,'--ticks=1','--sleep-ms=100')
+ $rc=Run-Lab -arguments @('--fixture-dir='+('"'+$workspace+'"'),'--ticks=1','--sleep-ms=100')
  Check ($rc -eq 0) 'INVALID_FIXTURE_EXIT_BOUNDED'
  $status=Get-Content (Join-Path $workspace 'status.json') -Raw|ConvertFrom-Json
  Check ($status.state -eq 'HOLD_INVALID_FIXTURE' -and $status.ordersPublishable -eq 0) 'REJECT_REALISH_DATA'
  [IO.File]::Delete((Join-Path $workspace 'DELIVERYOS_LAB_ONLY.txt'))
- $rc=Run-Lab -arguments @('--fixture-dir='+$workspace,'--ticks=1','--sleep-ms=100')
+ $rc=Run-Lab -arguments @('--fixture-dir='+('"'+$workspace+'"'),'--ticks=1','--sleep-ms=100')
  Check ($rc -eq 21) 'MISSING_LAB_MARKER_BLOCKED'
  Write-Output ('SILENT_OBSERVER_WINDOWS_LAB_PASS '+$total+'/'+$total+' NO_VISIBLE_WINDOWS')
 } finally {
+ if($running -and !$running.HasExited){$running.Kill();[void]$running.WaitForExit(2000)}
  if($created -and (Test-Path -LiteralPath $workspace)) { Remove-Item -LiteralPath $workspace -Recurse -Force }
 }
