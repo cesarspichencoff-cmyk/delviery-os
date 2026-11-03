@@ -65,3 +65,15 @@ Current project PR: #137 on feat/gestor-shadow-observer-20261103, base integrati
 **Next bounded technical unit:** inspect only existing published sanitised contract/metadata of the native order feed, map the missing fields and attestation requirements, and add fixture tests on a review branch. No new intake, console runner, automated Gestor navigation, production change or order publication until independently proven authorized.
 
 **Release truth:** `CODE_READY=PARTIAL`; `TEST_PASS_FIXTURE=YES` for specific pinned tests; `DEPLOYED_V1=NO`; `WORLD_PROVEN_V1=NO`; `HUMAN_ACCEPTED_V1=NO`. No delivery completion date is supportable without a qualified source.
+
+## Vendor-native source candidate — Teknisa (public documentation reviewed 03 November 2026)
+
+The Teknisa public integrations page (https://www.teknisa.com/api) describes **Sale API** `POST /getSales` (sale details) and `POST /getSaleProducts` (sold products **including complements**). It also describes Order API `POST /orderStatus` and logistics webhooks, but **nothing here authorizes calling them**: method names and apparent read semantics are not proof of side-effect-free execution, local availability, store licensing, or permission. The public page explicitly says standard integrations/APIs are subject to commercial conditions and endpoint details require the account manager.
+
+This changes the fastest candidate source-validation order:
+1. **Inspect current installed native schemas/code and existing already-sanitisized proof, metadata only**: does the existing Reader/Teknisa stream already contain a stable iFood identity, product lines, complement lines and revisions? Keep personal fields and raw orders unread.
+2. If missing, check internally whether the **already licensed/authorized** Teknisa Sale API export exists for Itaim; request written API contract/effect boundary from the account owner/supplier only with company authorization, and no new expense without approval. `getSaleProducts` may cover sold items but **does not automatically cover incoming/in-preparation orders or iFood UUID**.
+3. If that fails, consider independent, legitimately authenticated Gestor observation with human-approved effect proof. Keep the original operator Edge and the six disabled tasks untouched.
+4. Only treat the official iFood Order API as an operational-PDV integration requiring homologation/merchant permission; not a passive read-only shortcut.
+
+The installed `copiloto_tata_reader_adapter_v1.cjs` (code-only inspection 03/11) exposes native `CDFILIAL, CDLOJA, NRVENDAREST, NRCOMANDA, IDORGCMDVENDA` plus product code/quantity and timestamps. That **does not prove** iFood UUID/displayId, item modifiers, or one-to-one cross-source identity. A nonempty `mappingEvidenceRef` is a caller statement, not independent attestation. Strict join remains HOLD until anchored evidence exists.
