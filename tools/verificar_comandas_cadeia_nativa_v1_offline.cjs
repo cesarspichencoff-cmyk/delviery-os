@@ -652,5 +652,152 @@ test("decision fingerprint is the V8.57 contract and outputs are effect-free",()
  for(const v of Object.values(out.effects))assert.equal(v,false);
 });
 
+/**
+ * Integrated, separated-role V2 rehearsal on an archived REAL native source.
+ * Only the disposable SQLite fixture and ephemeral Ed25519 keys are used.
+ * There is no production provisioning, live ledger, host or printer effect.
+ */
+const Integration=require("./comandas_conference_sequence_v2_integration_v1.cjs");
+const WriterCore=require("./comandas_sequence_v2_authorized_ledger_core_v1.cjs");
+const {attestSignedLedgerV2}=require("./comandas_sequence_v2_independent_attester_core_v1.cjs");
+const {DatabaseSync:SQLiteFixture}=require("node:sqlite");
+const integrationInput={event:real,decision,routing,printer_map:printers,
+ calibration,motor_source:MOTOR};
+const prepared=Integration.preflightConferenceV2(integrationInput);
+test("V2 integration: actual native 9627 content preflight, Conference only, no effects",()=>{
+ assert.equal(prepared.status,"READY_FOR_SIGNED_WRITER_REVIEW_ONLY",JSON.stringify(prepared));
+ assert.ok(/^[a-f0-9]{64}$/.test(prepared.source_fingerprint));
+ assert.ok(prepared.conference_lines>0);
+ assert.equal(prepared.production_station_count,2);
+ assert.equal(prepared.conference,null);
+ assert.equal(prepared.number_for_operational_ticket,null);
+ assert.equal(prepared.physical_print_authorized,false);
+ assert.ok(Object.values(prepared.effects).every(x=>x===false));
+ assert.equal(Integration.preflightConferenceV2({...integrationInput,
+   note_disposition_claim:{schema:"tata.comandas.note-disposition-claim.v1"}}).reason,
+   "SHADOW_NOTE_CLAIM_NOT_OPERATIONAL_AUTHORITY");
+ assert.equal(Integration.preflightConferenceV2({...integrationInput,
+   motor_source:Buffer.from("unverified-motor")}).status,"HOLD");
+});
+const ledgerFixture=path.join(temp,"signed-v2-integration-rehearsal.sqlite");
+const writerFixture=crypto.generateKeyPairSync("ed25519"),attesterFixture=crypto.generateKeyPairSync("ed25519");
+const spki=k=>k.export({type:"spki",format:"der"}).toString("base64");
+const kid=k=>crypto.createHash("sha256").update(k.export({type:"spki",format:"der"})).digest("hex");
+const writerKeyId=kid(writerFixture.publicKey),attesterKeyId=kid(attesterFixture.publicKey);
+const integrationNow=Math.floor(Date.parse("2026-11-03T17:30:00Z")/1000);
+const writerTrust={schema:WriterCore.WRITERS,store:"0001|01",
+ writer_key_ids:[writerKeyId],attester_key_ids:[attesterKeyId],
+ writer_anchors:[{key_id:writerKeyId,public_key_spki_base64:spki(writerFixture.publicKey),
+  role:"TATA_SEQUENCE_WRITER",scope:"PRODUCTION_ITAIM",
+  not_before_s:integrationNow-86400,not_after_s:integrationNow+86400}]};
+const trust=(scope)=>({schema:A.TATA_ATTESTERS_SCHEMA_V1,store:"0001|01",
+ writer_key_ids:[writerKeyId],
+ attesters:[{key_id:attesterKeyId,public_key_spki_base64:spki(attesterFixture.publicKey),
+  role:"TATA_SEQUENCE_ATTESTER",scope,not_before_s:integrationNow-86400,
+  not_after_s:integrationNow+86400}]});
+const requestPayload={schema:WriterCore.REQUEST,store:"0001|01",
+ day:real.order.DTHRABERMESA.slice(0,10),order_key:real.order_key,
+ writer_key_id:writerKeyId,issued_at_s:integrationNow,
+ nonce:crypto.randomBytes(16).toString("hex")};
+const signedRequest={...requestPayload,signature_base64:crypto.sign(null,
+ WriterCore.writerPayloadV1(requestPayload),writerFixture.privateKey).toString("base64")};
+let integrationDb,liveChain,storedDigest;
+test("V2 integration: real-native L4 -> signed writer -> read-only attester -> content-bearing Conference",()=>{
+ integrationDb=new SQLiteFixture(ledgerFixture);
+ integrationDb.exec("PRAGMA journal_mode=WAL");
+ integrationDb.exec("PRAGMA synchronous=FULL");
+ for(const stmt of WriterCore.schemaStatementsV1())integrationDb.exec(stmt);
+ const refused=Integration.bindPreparedConferenceV2({input:integrationInput,preflight:{...prepared,
+  source_fingerprint:"a".repeat(64)},db:integrationDb,
+  writerRequest:signedRequest,writerTrust,nowS:integrationNow});
+ assert.equal(refused.reason,"PREFLIGHT_CHANGED_OR_NOT_BOUND_TO_SOURCE");
+ assert.equal(integrationDb.prepare("SELECT COUNT(*) AS n FROM tata_seq_v2_binding").get().n,0);
+ const bound=Integration.bindPreparedConferenceV2({input:integrationInput,preflight:prepared,
+  db:integrationDb,writerRequest:signedRequest,writerTrust,nowS:integrationNow});
+ assert.equal(bound.status,"PERSISTED_FOR_INDEPENDENT_ATTESTER_ONLY",JSON.stringify(bound));
+ assert.equal(bound.bound_number_for_attester,"001");
+ assert.equal(bound.number_for_operational_ticket,null);
+ assert.equal(bound.physical_print_authorized,false);
+ assert.ok(Object.values(bound.effects).every(x=>x===false));
+ const reused=Integration.bindPreparedConferenceV2({input:integrationInput,preflight:prepared,
+  db:integrationDb,writerRequest:signedRequest,writerTrust,nowS:integrationNow});
+ assert.equal(reused.status,"PERSISTED_FOR_INDEPENDENT_ATTESTER_ONLY");
+ assert.equal(reused.bound_number_for_attester,"001");
+ assert.equal(reused.reused,true);
+ assert.equal(integrationDb.prepare("SELECT COUNT(*) AS n FROM tata_seq_v2_binding").get().n,1);
+ const ro=new SQLiteFixture(ledgerFixture,{readOnly:true});
+ try{
+  assert.throws(()=>ro.exec("DELETE FROM tata_seq_v2_binding"),/read.?only|readonly|attempt/i);
+  const isolated=attestSignedLedgerV2({db:ro,pair:{event:real,decision},writerTrust,
+   attesterTrust:trust("TEST_ISOLATED"),attesterPrivateKey:attesterFixture.privateKey,
+   nowS:integrationNow,nonce:crypto.randomBytes(16).toString("hex")});
+  assert.equal(isolated.status,"SIGNED_WRITER_LEDGER_ATTESTED_NOT_PRINT_AUTHORIZED",JSON.stringify(isolated));
+  const state={schema:STATE_SCHEMA,policy:{width:3,min_value:1,max_value:999},
+   bindings:ro.prepare("SELECT scope,order_key,seq FROM tata_seq_v2_binding ORDER BY seq").all()
+    .map(x=>({scope_id:x.scope,native_order_key:x.order_key,
+     tata_sequence:String(x.seq).padStart(3,"0")}))};
+  const labOnly=Integration.reviewAttestedConferenceV2({input:integrationInput,
+   preflight:prepared,chainBinding:isolated.chain_binding,
+   attesterTrust:trust("TEST_ISOLATED"),ledgerState:state,nowS:integrationNow});
+  assert.equal(labOnly.status,"HOLD");
+  // A synthetic PRODUCTION_ITAIM-scoped key is used ONLY in this offline fixture.
+  // Even a formally valid signature may produce ONLY watermarked in-memory bytes.
+  const syntheticProduction=attestSignedLedgerV2({db:ro,pair:{event:real,decision},writerTrust,
+   attesterTrust:trust("PRODUCTION_ITAIM"),attesterPrivateKey:attesterFixture.privateKey,
+   nowS:integrationNow,nonce:crypto.randomBytes(16).toString("hex")});
+  assert.equal(syntheticProduction.status,"SIGNED_WRITER_LEDGER_ATTESTED_NOT_PRINT_AUTHORIZED",
+   JSON.stringify(syntheticProduction));
+  liveChain={binding:syntheticProduction.chain_binding,state};
+  const final=Integration.reviewAttestedConferenceV2({input:integrationInput,
+   preflight:prepared,chainBinding:liveChain.binding,
+   attesterTrust:trust("PRODUCTION_ITAIM"),ledgerState:liveChain.state,
+   nowS:integrationNow});
+  assert.equal(final.status,"CONFERENCE_CONTENT_ATTESTED_OFFLINE_NOT_FOR_PRINT",JSON.stringify(final));
+  assert.equal(final.tata_sequence_for_offline_review,"001");
+  assert.equal(final.production_views_exported,0);
+  assert.equal(final.number_for_operational_ticket,null);
+  assert.equal(final.physical_print_authorized,false);
+  assert.ok(Object.values(final.effects).every(x=>x===false));
+  assert.ok(final.conference.lines>0&&final.conference.escpos_bytes>0);
+  assert.match(final.conference.text_trace,/^SIMULAÇÃO · NÃO PRODUZIR\nCONFERÊNCIA\n/);
+  assert.equal(final.conference.text_trace.trim().split("\n").at(-1),"001");
+  assert.ok(final.conference.text_trace.includes("TEKNISA"));
+  assert.ok(final.conference.text_trace.includes("CAIXA"));
+  assert.ok(!("production" in final)&&!("production_views" in final));
+  storedDigest=crypto.createHash("sha256").update(
+    JSON.stringify(ro.prepare("SELECT * FROM tata_seq_v2_binding").all())).digest("hex");
+ }finally{ro.close();}
+});
+test("V2 integration: stale source, ledger mutation, missing signature or removed anchor HOLD",()=>{
+ const changed={...integrationInput,decision:{...decision,fingerprint:"f".repeat(64)}};
+ assert.equal(Integration.reviewAttestedConferenceV2({input:changed,preflight:prepared,
+  chainBinding:liveChain.binding,attesterTrust:trust("PRODUCTION_ITAIM"),
+  ledgerState:liveChain.state,nowS:integrationNow}).status,"HOLD");
+ assert.equal(Integration.reviewAttestedConferenceV2({input:integrationInput,preflight:prepared,
+  chainBinding:liveChain.binding,attesterTrust:trust("PRODUCTION_ITAIM"),
+  ledgerState:{...liveChain.state,bindings:[]},nowS:integrationNow}).status,"HOLD");
+ assert.equal(Integration.reviewAttestedConferenceV2({input:integrationInput,preflight:prepared,
+  chainBinding:{...liveChain.binding,attestation:{...liveChain.binding.attestation,
+   signature_base64:"A".repeat(86)+"=="}},
+  attesterTrust:trust("PRODUCTION_ITAIM"),ledgerState:liveChain.state,
+  nowS:integrationNow}).status,"HOLD");
+ assert.equal(Integration.reviewAttestedConferenceV2({input:integrationInput,preflight:prepared,
+  chainBinding:liveChain.binding,attesterTrust:{...trust("PRODUCTION_ITAIM"),attesters:[]},
+  ledgerState:liveChain.state,nowS:integrationNow}).status,"HOLD");
+ assert.equal(Integration.bindPreparedConferenceV2({input:{...integrationInput,
+  note_disposition_claim:{scope:"SHADOW_VIEW_ONLY"}},preflight:prepared,
+  db:integrationDb,writerRequest:signedRequest,writerTrust,nowS:integrationNow}).status,"HOLD");
+ const nowDigest=crypto.createHash("sha256").update(
+    JSON.stringify(integrationDb.prepare("SELECT * FROM tata_seq_v2_binding").all())).digest("hex");
+ assert.equal(nowDigest,storedDigest);
+ integrationDb.close();
+ const reopened=new SQLiteFixture(ledgerFixture,{readOnly:true});
+ try{
+  assert.equal(reopened.prepare("SELECT seq FROM tata_seq_v2_binding").get().seq,1);
+  assert.equal(crypto.createHash("sha256").update(
+   JSON.stringify(reopened.prepare("SELECT * FROM tata_seq_v2_binding").all())).digest("hex"),storedDigest);
+ }finally{reopened.close();}
+});
+
 fs.rmSync(temp,{recursive:true,force:true});
 console.log("COMANDAS_NATIVE_CHAIN_V1="+n+"/"+n+" REAL_REVISION_9627 CONSUMER_V714 PINNED_MOTOR VARIABLE_VIRTUAL_VIEW_COUNT NO_PRINT");
