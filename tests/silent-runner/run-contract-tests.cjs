@@ -32,6 +32,7 @@ check('fixture marker required',source.includes('DELIVERYOS_SILENT_TEST_ONLY_V1'
 check('lab dirname guard',source.includes('deliveryos-silent-lab')&&source.includes('ReparsePoint'));
 check('strict bounded runtime',source.includes('ticks <= 8')&&source.includes('sleepMs <= 1000'));
 check('singleton mutex',source.includes('Local\\DeliveryOS_Silent_Fixture_Only_v1')&&source.includes('Mutex(true'));
+check('unexpected exceptions never display UI',source.includes('catch (Exception) { return 26; }'));
 check('zero publishable',source.includes('\\\"ordersPublishable\\\": 0'));
 check('zero personal data export',source.includes('\\\"customerFieldsExported\\\": 0')&&source.includes('\\\"orderIdsExported\\\": 0'));
 check('zero network declaration',source.includes('\\\"networkRequests\\\": 0'));
