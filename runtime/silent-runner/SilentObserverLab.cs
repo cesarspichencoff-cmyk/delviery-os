@@ -44,7 +44,9 @@ namespace DeliveryOS.SilentLab {
                 state = "HOLD_FIXTURE_ONLY";
                 reason = "NO_REAL_MERCHANT_OR_ORDER_PROOF";
               }
-              WriteStatus(folder, state, reason, tick);
+              PairEvidence evidence = state == "HOLD_FIXTURE_ONLY" ?
+                SnapshotPairAdapter.Evaluate(folder,DateTime.UtcNow) : new PairEvidence();
+              WriteStatus(folder, state, reason, tick, evidence);
             } catch (IOException) {
               return 24;
             } catch (UnauthorizedAccessException) {
@@ -128,7 +130,7 @@ namespace DeliveryOS.SilentLab {
       return expected.Count == 0;
     }
 
-    private static void WriteStatus(string folder, string state, string reason, int tick) {
+    private static void WriteStatus(string folder, string state, string reason, int tick, PairEvidence evidence) {
       // No data from the fixture is included in the output. No IDs, names or order bodies.
       string payload = "{\n"+
        "  \"schema\": \"deliveryos.silent-fixture-status.v1\",\n"+
@@ -137,6 +139,14 @@ namespace DeliveryOS.SilentLab {
        "  \"source\": \"FICTIONAL_ONLY\",\n"+
        "  \"checkedAtUtc\": \""+DateTime.UtcNow.ToString("o",CultureInfo.InvariantCulture)+"\",\n"+
        "  \"tick\": "+tick.ToString(CultureInfo.InvariantCulture)+",\n"+
+       "  \"pairState\": \""+evidence.State+"\",\n"+
+       "  \"syntheticPairCount\": "+evidence.SyntheticMatches.ToString(CultureInfo.InvariantCulture)+",\n"+
+       "  \"readerFixtureRecords\": "+evidence.ReaderFixtureRecords.ToString(CultureInfo.InvariantCulture)+",\n"+
+       "  \"gestorFixtureRecords\": "+evidence.GestorFixtureRecords.ToString(CultureInfo.InvariantCulture)+",\n"+
+       "  \"readerDiagnosticRecent\": "+(evidence.ReaderFresh ? "true":"false")+",\n"+
+       "  \"gestorStructureRecent\": "+(evidence.GestorFresh ? "true":"false")+",\n"+
+       "  \"orderIdentityProven\": false,\n"+
+       "  \"realReaderJoinProven\": false,\n"+
        "  \"merchantVerified\": false,\n"+
        "  \"readerJoinProven\": false,\n"+
        "  \"detailItemsProven\": false,\n"+
