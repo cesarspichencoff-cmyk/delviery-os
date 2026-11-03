@@ -19,8 +19,11 @@ Evoluir o Delivery OS Itaim combinando (1) o Reader de comandas e revisões Tekn
 ## Provas em 03/11/2026
 - CAIXA_MOOCA, Edge original: UIA somente leitura apontou lista de concluídos com 20 filhos visíveis e 20 números curtos candidatos distintos e estáveis entre leituras; zero IDs/pessoas exportados. A loja e a cobertura completa **não foram independentemente atestadas**.
 - O observador isolado V2 conectou seu receptor local, mas o último snapshot foi de uma estrutura inicial sem cartões, ficando desatualizado. A janela isolada **ainda não forneceu pedido autenticado**.
-- A ponte que lê apenas diagnósticos já roda em bancada no caixa, sem efeitos no Gestor: `VISIBLE_CARDS_SHADOW_ONLY`, 20 visíveis, 0 publicáveis. Testes Windows Node 24: 18/18 anteriores; os testes publicados neste ramo: 12/12 (ponte) e 12/12 (planejador) localmente.
+- A ponte que lê apenas diagnósticos já roda em bancada no caixa, sem efeitos no Gestor: `VISIBLE_CARDS_SHADOW_ONLY`, 20 visíveis, 0 publicáveis. Testes Windows Node 24: 18/18 anteriores; os testes publicados neste ramo: 13/13 (ponte) e 13/13 (planejador), incluindo rejeição de datas impossíveis. Os dois arquivos da branch foram verificados sintaticamente e exercitados no caixa, sem pedidos reais.
 - O Reader real permanece sujeito às próprias políticas de produção e permissões legítimas. Teste com comandas recentes, itens, status e prova iPhone seguem pendentes.
+
+## Custo computacional de bancada
+Em 03/11/2026, o planejador da branch processou 200 cards e 200 revisões **inteiramente fictícios** em 200 execuções no Node 24 do CAIXA_MOOCA: p50 20,99 ms; p95 27,529 ms; máximo 38,272 ms. Isso mede apenas a função de decisão, **não** captura de tela, DOM, CPU/RAM do Gestor, navegação ou latência operacional. A otimização aplicada reutiliza uma chave HMAC validada por lote. Não há garantia de desempenho sob carga real até teste controlado.
 
 ## Como testar sem acessar o caixa
 ```bash
