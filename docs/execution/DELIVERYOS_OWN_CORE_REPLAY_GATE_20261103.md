@@ -46,3 +46,24 @@ Manter a autoridade de `docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md`: a Ho
 5. Só depois considerar piloto do Copiloto em leitura e liberação; não transformar eventos simulados em operação sem proveniência.
 
 **Efeito operacional desta alteração:** nenhum. Sem merge, deploy, instalação, GPS real, bancos/serviços do caixa, impressão ou reativação de tarefas antigas.
+
+
+## Checkpoint adicional — duas filas locais e falhas de gravação (03/11/2026)
+
+**SHA testado integralmente:** `8a4336d5588a26ac7087a8070730a603d6dde751` da branch `feat/gestor-shadow-observer-20261103`; worktree isolado Foxxy `C:\\Users\\italo\\comandas-v2-foxxy-isolated-20261103\\deliveryos-offline-qa-20261103-1906` (checkout detached, sem alterar o caixa).
+
+**Mudança de risco fechada no código, em laboratório:** `src/entregas/offline/queue.ts` agora trata uma fila ilegível, schema desconhecido e registros de outro `device_id` como HOLD somente de leitura, sem permitir sobrescrever o original. Bloqueia gravação por instância obsoleta que detectou uma imagem externa diferente. Reenvios equivalentes são idempotentes, mas identidade repetida com dados de negócio divergentes falha `OFFLINE_IDEMPOTENCY_COLLISION`. ACK positivo tardio não sobrepõe conflito ou dead letter; falha de transporte tardia não reabre item sincronizado. Exposição via `storageHealth()` é apenas API de código — a interface ainda precisa mostrar HOLD. Enqueue/consultas/lotes retornam cópias, impedindo alteração por referência. Se a escrita falhar, vier parcial ou não puder ser lida de volta, o estado em memória é restaurado ao último snapshot confirmado e fica em HOLD: nunca chamar uma intenção não persistida de evento salvo.
+
+**Prova por suíte:** 
+- `run-offline-tests.ts`: **29/29**, incluindo novas falhas de disco, escrita parcial, dispositivo divergente, alteração externa, colisões e ACKs fora de ordem;
+- `run-two-device-convergence-tests.ts`: **14/14**, dois storages fictícios distintos, ACK perdido, reenvio, reinício, reconexão parcial, um servidor **simulado em memória**, convergência de Trip, quarentena de divergência e persistência de conflito;
+- `run-outbox-persistence-tests.ts`: **6/6**;
+- `run-durable-event-feed-tests.ts`: **9/9**;
+- `run-replay-integrity-tests.ts`: **22/22**;
+- `run-owned-durable-recovery-tests.ts`: **11/11**;
+- `run-gate-close-tests.ts`: **15/15**.
+**TOTAL = 106/106 testes executados e aprovados no mesmo commit**; execução Windows Foxxy, com transpile TypeScript para CommonJS em memória usando TypeScript disponível na máquina. `tsc --noEmit --strict --target ES2021` focal sobre os 4 principais arquivos de teste e dependências passou com exit code 0. Estas provas não equivalem ao typecheck de todo o repositório, CI completa ou teste em aparelho.
+
+**Limitação essencial:** a comparação da imagem lida antes da escrita é **otimista, não é compare-and-swap atômico**; não resolve corrida simultânea entre duas abas/processos que gravem a mesma chave. Uma implementação operacional precisa de escritor único ou transação/controle concorrente real por armazenamento. Os dois dispositivos no ensaio são instâncias fictícias de `OfflineQueue` com armazenamentos independentes; o receptor é `SimulatedCopilotoConsumer`, não API de backend liberada nem sincronização física. O Android Room e a autenticação HTTPS real não foram exercitados. Não usar os resultados para prometer sincronização entre dois celulares de produção.
+
+**Gates seguintes, sem ordem comercial externa:** conectar `storageHealth()` à sinalização de HOLD da interface do motoboy (sem ativação); validar armazenamento transacional ou escritor único por contexto; provar reenvio em backend próprio com identidade/autorização por ator e dispositivo; executar testes físicos autorizados de perda de rede, revogação GPS, logout/relogin e janela do caixa. PR permanece DRAFT/HOLD; nenhuma tarefa Windows interferente, serviço real, impressora, API de terceiro, GPS físico, deploy ou merge foi ativado.
