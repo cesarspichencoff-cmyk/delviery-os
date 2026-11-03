@@ -140,10 +140,20 @@ function intentKey(e) {
   }
 }
 
+function blockQueueActionsImmediately() {
+  for (const id of ["btnSecondary", "btnNotFound", "btnProblem"]) {
+    const button = $(id);
+    if (button) button.disabled = true;
+  }
+  const primary = $("btnPrimary");
+  if (primary && primary.textContent !== "Abrir rota") primary.disabled = true;
+}
+
 function queueOnDevice(key, build) {
   const events = deviceEvents();
   if (queueHold) {
     renderDeviceQueue(activeTrip());
+    blockQueueActionsImmediately();
     throw new Error(queueHoldMessage(queueHold));
   }
   if (events.some((e) => OPEN_STATES.has(e.state) && intentKey(e) === key)) {
@@ -162,6 +172,7 @@ function queueOnDevice(key, build) {
   if (!verifiedNativeQueueReceipt(r, event_id)) {
     queueHold = QUEUE_WRITE_BLOCK;
     renderDeviceQueue(activeTrip());
+    blockQueueActionsImmediately();
     throw new Error(queueHoldMessage(queueHold));
   }
   scheduleQueuePoll();
