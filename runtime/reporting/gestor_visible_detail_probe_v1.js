@@ -37,8 +37,11 @@
    if(rows.length>60)return fail('HOLD_TOO_MANY_ITEMS',{visibleRows:rows.length});
    const items=[];let optionsTotal=0;
    for(const row of rows){
-     const name=text(row.querySelector('[data-testid="item-name"]'),120);
-     const rawQty=text(row.querySelector('[data-testid="item-quantity"]'),20);
+     const nameEl=row.querySelector('[data-testid="item-name"]');
+     const qtyEl=row.querySelector('[data-testid="item-quantity"]');
+     if(!visible(nameEl)||!visible(qtyEl))return fail('HOLD_HIDDEN_ITEM_FIELDS');
+     const name=text(nameEl,120);
+     const rawQty=text(qtyEl,20);
      const qty=quantity(rawQty);
      if(!permitted(name,120)||qty===null)return fail('HOLD_AMBIGUOUS_ITEM',{visibleRows:rows.length});
      const optionEls=[...row.querySelectorAll('[data-testid="item-option"]')].filter(visible);
