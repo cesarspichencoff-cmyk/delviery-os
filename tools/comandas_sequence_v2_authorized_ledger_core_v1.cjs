@@ -92,12 +92,16 @@ function selectIdentity(pair){
  const {eligibleNativeRevisionV2}=require("./comandas_sequence_v2_native_lab_v1.cjs");
  const e=eligibleNativeRevisionV2(pair);
  if(e.reason)return {reason:e.reason};
- if(e.store!=="0001|01"||!validDay(e.day)||!SCOPE.test(e.scope_id)||
-    !Array.isArray(e.order_key.split("|"))||
+ if(e.store!=="0001|01"||!validDay(e.day)||
+    e.scope_id!=="STORE:0001|01|DATE:"+e.day||
     e.order_key.split("|").length!==4||
-    !e.order_key.split("|").every(ID.test.bind(ID)))
+    !e.order_key.split("|").every(v=>ID.test(v)))
   return {reason:"NATIVE_STRONG_KEY_NOT_TRUSTED"};
- return e;
+ // Signed attestation uses STORE:0001|01 while the V2 ledger uses
+ // STORE:0001/01. These are distinct, explicitly checked namespaces.
+ const ledger_scope="STORE:0001/01|DATE:"+e.day;
+ if(!SCOPE.test(ledger_scope))return {reason:"NATIVE_LEDGER_SCOPE_INVALID"};
+ return {...e,ledger_scope};
 }
 function inspectScope(db,scope){
  const rows=db.prepare("SELECT order_key,seq,writer_key_id FROM tata_seq_v2_binding WHERE scope=? ORDER BY seq").all(scope);
@@ -127,7 +131,7 @@ function bindAuthorizedNativeV2(db,pair,writerRequest,trust,nowS){
  let tx=false,committed=false,bound=null,reused=false;
  try{
   db.exec("BEGIN IMMEDIATE");tx=true;
-  const check=inspectScope(db,e.scope_id);
+  const check=inspectScope(db,e.ledger_scope);
   if(check.reason){db.exec("ROLLBACK");tx=false;return hold(check.reason);}
   const matching=check.rows.find(r=>r.order_key===e.order_key);
   if(matching){
@@ -139,17 +143,17 @@ function bindAuthorizedNativeV2(db,pair,writerRequest,trust,nowS){
    if(check.high===999){db.exec("ROLLBACK");tx=false;return hold("DAILY_999_EXHAUSTED");}
    bound=check.high+1;
    if(check.high===0){
-    db.prepare("INSERT INTO tata_seq_v2_head(scope,highest) VALUES (?,1)").run(e.scope_id);
+    db.prepare("INSERT INTO tata_seq_v2_head(scope,highest) VALUES (?,1)").run(e.ledger_scope);
    }else{
     const change=db.prepare("UPDATE tata_seq_v2_head SET highest=? WHERE scope=? AND highest=?")
-     .run(bound,e.scope_id,check.high);
+     .run(bound,e.ledger_scope,check.high);
     if(change.changes!==1)throw Error("HEAD_CONFLICT");
    }
    db.prepare("INSERT INTO tata_seq_v2_binding(scope,order_key,seq,writer_key_id) VALUES (?,?,?,?)")
-    .run(e.scope_id,e.order_key,bound,writerRequest.writer_key_id);
+    .run(e.ledger_scope,e.order_key,bound,writerRequest.writer_key_id);
   }
   db.exec("COMMIT");tx=false;committed=true;
-  const recheck=inspectScope(db,e.scope_id);
+  const recheck=inspectScope(db,e.ledger_scope);
   const row=recheck.rows?.find(r=>r.order_key===e.order_key);
   if(recheck.reason||row?.seq!==bound||row.writer_key_id!==writerRequest.writer_key_id)
    return hold("COMMITTED_READBACK_UNCERTAIN_MANUAL_RECONCILIATION",{
