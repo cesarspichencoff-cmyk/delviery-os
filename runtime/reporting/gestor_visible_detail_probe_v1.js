@@ -18,8 +18,10 @@
    customerFieldsCopied:false,items:[],...more});
  const visible=e=>{
    if(!e||typeof e.getClientRects!=='function'||e.getClientRects().length===0)return false;
+   if(e.isConnected===false||e.getAttribute?.('aria-hidden')==='true'||e.closest?.('[hidden], [inert], [aria-hidden="true"]'))return false;
    const css=e.ownerDocument?.defaultView?.getComputedStyle?.(e);
-   return !css||css.visibility!=='hidden'&&css.display!=='none';
+   return !css||css.visibility!=='hidden'&&css.visibility!=='collapse'&&
+     css.display!=='none'&&Number(css.opacity??1)>0;
  };
  const quantity=s=>{
    const m=/^(?:[xX]\s*)?([0-9]{1,3})(?:\s*(?:[xX]|un|und|unidades?))?$/.exec(s);
@@ -32,20 +34,25 @@
    if(open.length===0)return fail('DETAIL_NOT_OPEN');
    if(open.length!==1)return fail('HOLD_MULTIPLE_DETAILS');
    const container=open[0];
-   const rows=[...container.querySelectorAll('[data-testid="order-item"], [data-testid="order-line-item"]')].filter(visible);
-   if(rows.length===0)return fail('HOLD_UNKNOWN_DETAIL_STRUCTURE');
-   if(rows.length>60)return fail('HOLD_TOO_MANY_ITEMS',{visibleRows:rows.length});
+   const found=[...container.querySelectorAll('[data-testid="order-item"], [data-testid="order-line-item"]')];
+   if(found.length===0)return fail('HOLD_UNKNOWN_DETAIL_STRUCTURE');
+   if(found.length>60)return fail('HOLD_TOO_MANY_ITEMS',{detectedRows:found.length});
+   if(found.some(row=>!visible(row)))return fail('HOLD_HIDDEN_ITEM_ROWS',{detectedRows:found.length});
+   const rows=found;
    const items=[];let optionsTotal=0;
    for(const row of rows){
-     const nameEl=row.querySelector('[data-testid="item-name"]');
-     const qtyEl=row.querySelector('[data-testid="item-quantity"]');
+     const nameNodes=[...row.querySelectorAll('[data-testid="item-name"]')];
+     const qtyNodes=[...row.querySelectorAll('[data-testid="item-quantity"]')];
+     if(nameNodes.length!==1||qtyNodes.length!==1)return fail('HOLD_AMBIGUOUS_ITEM_FIELDS');
+     const nameEl=nameNodes[0],qtyEl=qtyNodes[0];
      if(!visible(nameEl)||!visible(qtyEl))return fail('HOLD_HIDDEN_ITEM_FIELDS');
      const name=text(nameEl,120);
      const rawQty=text(qtyEl,20);
      const qty=quantity(rawQty);
      if(!permitted(name,120)||qty===null)return fail('HOLD_AMBIGUOUS_ITEM',{visibleRows:rows.length});
-     const optionEls=[...row.querySelectorAll('[data-testid="item-option"]')].filter(visible);
+     const optionEls=[...row.querySelectorAll('[data-testid="item-option"]')];
      if(optionEls.length>15)return fail('HOLD_OPTION_LIMIT');
+     if(optionEls.some(option=>!visible(option)))return fail('HOLD_HIDDEN_OPTION_FIELDS');
      const options=[];
      for(const op of optionEls){
        const value=text(op,90);
@@ -61,7 +68,8 @@
      visibleRows:rows.length,itemLines:items.length,optionLines:optionsTotal,
      items,merchantVerified:false,orderIdVerified:false,coverageVerified:false,
      readOnly:true,actionsExecuted:0,customerFieldsCopied:false,
-     noNavigation:true,noFocusChange:true,noRemoteTransmission:true});
+     noNavigation:true,noFocusChange:true,noRemoteTransmission:true,
+     personalDataAbsentProven:false,completeDetailProven:false});
  }
  return Object.freeze({SCHEMA,readVisibleDetail});
 });
