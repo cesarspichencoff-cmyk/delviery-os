@@ -102,6 +102,18 @@ export class SimulatedCopilotoConsumer {
    * Evento incompatível / desconhecido → isolado, não derruba o consumer.
    */
   apply(raw: unknown): SimulatedApplyResult {
+    // Entrada não confiável deve ser finita e serializável ANTES da varredura
+    // recursiva do contrato público (evita ciclo, tamanho excessivo e exceção).
+    try {
+      const envelope = JSON.stringify(raw);
+      if (!envelope || envelope.length > 32768) {
+        this.isolated.push({ raw: null, reason: "unsafe_event_envelope" });
+        return { applied: false, reason: "unsafe_event_envelope", isolated: true };
+      }
+    } catch {
+      this.isolated.push({ raw: null, reason: "unsafe_event_envelope" });
+      return { applied: false, reason: "unsafe_event_envelope", isolated: true };
+    }
     const v = validatePublicEvent(raw);
     if (!v.ok) {
       // Nunca reter payload bruto inválido: pode carregar dados pessoais.
