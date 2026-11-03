@@ -16,6 +16,15 @@ Em 03/11 às 08:55–08:59 BRT, o diagnóstico Windows encontrou um processo Edg
 
 Na primeira execução do wrapper de bancada, um teste de `$LASTEXITCODE` não aplicável a scripts PowerShell gerou `PROBE_DID_NOT_COMPLETE`. O defeito foi corrigido e a execução subsequente passou; não houve alteração no monitor ativo.
 
+## Ensaio posterior em laboratório (10h19–10h25 BRT)
+- Preparados dois arquivos HTML inteiramente fictícios (`tools/gestor-window-diagnostics/lab/completed.html` e `blank.html`), perfil Edge independente `DeliveryOS-Gestor-Multiwindow-Lab-20261103` e `run-two-windows-lab.ps1`.
+- Script PowerShell passou parser (zero erros) e possui barreira de ociosidade de teclado/mouse de **120 segundos**, comparação de foco, processo Edge identificado pelo perfil exclusivamente de laboratório e limpeza de todos os processos de laboratório em `finally`. Não acessa domínio iFood, cookies, identificadores de pedidos reais nem sessão da equipe.
+- A primeira tentativa encontrou somente **4 segundos sem input**: `LAB_HOLD=OPERATOR_INPUT_ACTIVE_4`. A execução **não abriu nenhuma janela**, terminou com `LAB_CLEANUP_REMAINING_PROCESSES=0`, perfil temporário ausente, zero erros de limpeza. É sucesso da guarda, **não** prova de duas janelas nativas.
+- Criado teste `tests/gestor-shadow/run-two-surface-headless-fixture.cjs`: Edge real em modo headless com duas páginas lógicas. **9/9 PASS**: uma página fictícia com 20 cards e outra vazia → `SELECTED_READ_ONLY`; duas com cards → `HOLD_AMBIGUOUS_WINDOWS`; segunda marcada como minimizada → seleção da primeira; zero requisições externas. Esse teste **não** valida dois HWND Windows; o campo `nativeWindowsTested=false` registra o limite.
+- Adicionado verificador fail-closed `tools/gestor-window-diagnostics/lab/verify-native-lab-status.cjs`, que exige resultado fresco, dois HWND, foco preservado, cenário de segunda minimizada e depois duas elegíveis; sem arquivo de prova, sai com erro (confirmado em bancada).
+- Regressão completa no CAIXA_MOOCA com Node v24 e Edge headless, seis suítes: bridge 13/13 + planejador 13/13 + extrator 22/22 + fixture de detalhe 18/18 + seletor 20/20 + duas páginas headless 9/9 = **95/95 PASS**. Todos os casos são simulados; o piloto de leitura de pedidos reais continua bloqueado.
+- Uma tentativa de automação adicional de ensaio fora dos horários de atendimento não foi criada: limite atual de cinco tarefas agendadas. As tarefas existentes foram preservadas. **Não há teste futuro prometido ou agendado.**
+
 ## Limites e gates
 1. O teste de duas janelas **no mesmo processo real** NÃO foi repetido no caixa; a prova multi-janela atual é sintética (20/20), com uma janela real na medição de campo.
 2. O status reproduz **apenas 20 cards visíveis**, não o total de pedidos ou itens detalhados. Identidade merchant Itaim e chave de junção Reader↔Gestor não estão comprovadas por esse dado.
