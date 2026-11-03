@@ -130,9 +130,9 @@ namespace DeliveryOS.SilentLab {
       number=0;
       object value;
       if(!o.TryGetValue(key,out value))return false;
-      var array=value as object[];
-      if(array==null||array.Length>16)return false;
-      number=array.Length;
+      IList array=value as IList;
+      if(array==null||array.Count>16)return false;
+      number=array.Count;
       foreach(object item in array) {
         var data=item as IDictionary<string,object>;
         if(!HasKeys(data,"fixtureKey","revision","itemLines","optionLines"))return false;
