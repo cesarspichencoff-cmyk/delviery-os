@@ -91,6 +91,11 @@ async function main(): Promise<void> {
     assert.equal(x.reason, "unsafe_event_envelope");
     assert.equal(c.isolatedEvents[c.isolatedEvents.length - 1]?.raw, null);
   });
+  check("instância de classe em payload não vira objeto vazio silenciosamente", () => {
+    const x = c.apply(make("evt-date", { payload: { unexpected: new Date("2026-11-03T12:00:00Z") } }));
+    assert.equal(x.reason, "event_not_safe_json");
+    assert.equal(x.isolated, true);
+  });
   check("números não finitos são rejeitados sem publicação", () => {
     const x = c.apply(make("evt-nan", { payload: { duration: Number.POSITIVE_INFINITY } }));
     assert.equal(x.reason, "event_not_safe_json");
@@ -113,6 +118,7 @@ async function main(): Promise<void> {
   });
   check("evento novo após reinício parcial não desbloqueia histórico", () => {
     assert.equal(c.apply(make("evt-new")).applied, true);
+    assert.deepEqual(c.appliedEvents, []);
     assert.deepEqual(c.eventsForTrip("TRIP-1"), []);
   });
   check("replay completo restaura correlação sem inventar fatos", () => {
