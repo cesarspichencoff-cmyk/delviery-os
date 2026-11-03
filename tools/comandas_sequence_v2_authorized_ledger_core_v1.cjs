@@ -89,7 +89,7 @@ function verifyWriterRequestV1(req,trust,nowS,expected){
 function selectIdentity(pair){
  // One authoritative V2 eligibility decision, shared with the current lab.
  // This import is validation only; it NEVER accesses the lab database.
- const {eligibleNativeRevisionV2}=require("./comandas_sequence_v2_native_lab_v1.cjs");
+ const {eligibleNativeRevisionV2}=require("./comandas_sequence_v2_native_pair_eligibility_v1.cjs");
  const e=eligibleNativeRevisionV2(pair);
  if(e.reason)return {reason:e.reason};
  if(e.store!=="0001|01"||!validDay(e.day)||
