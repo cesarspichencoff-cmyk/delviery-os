@@ -74,6 +74,10 @@ test("recording refusal latches write HOLD and blocks repeated commands", () => 
   assert.match(ui,/queueHold = QUEUE_WRITE_BLOCK/);
   assert.match(ui,/if \(queueHold\) \{[\s\S]*?throw new Error\(queueHoldMessage\(queueHold\)\)/);
 });
+test("native write receipt must match the new event ID and reject unexpected replay", () => {
+  assert.match(ui,/r\.event_id !== event_id/);
+  assert.match(ui,/r\.duplicate === true/);
+});
 test("page has accessible alert independent of the server rejection", () => {
   assert.match(html,/id="queueHoldLine"[^>]*role="alert"/);
   assert.match(html,/id="rejectedLine"[^>]*role="alert"/);
