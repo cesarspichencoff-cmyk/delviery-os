@@ -1,0 +1,32 @@
+{
+  "schema": "tata.comandas.conference-single-sheet-visual-only.v1",
+  "host": "FOXXY",
+  "source_kind": "ALL_FIELDS_FICTITIOUS_NOT_FROM_READER",
+  "renderer": "operationalTicketEscposFigmaV48",
+  "intended_station": "CONFERENCIA_ONLY",
+  "production_station_views": 0,
+  "tata_sequence_001": "LAB_ONLY_NOT_ATTESTED",
+  "id_ifood_and_teknisa": "FICTITIOUS",
+  "paper": "NOT_PRINTED",
+  "sheet_data_integrity": {
+    "svg_sha256": "4e17c515d714578308de0786aab21004f670272a7c68e111ecf057c4445be21a",
+    "trace_sha256": "ba5781e90f3b647e50c4887734bef4c3e017ebb26a8c4823c6245ba1a918412e",
+    "decoded_layout_errors": [],
+    "overflow": [],
+    "printable_dots": 576,
+    "length_mm_modelled": 83.33,
+    "virtual_lines": 19,
+    "escpos_bytes_checked_in_memory": 701
+  },
+  "visual_approximation": "NOT_EPSON_BITMAP_OR_FEED_CALIBRATION",
+  "effect_permissions": {
+    "physical_print": false,
+    "spooler": false,
+    "printer": false,
+    "service": false,
+    "sql": false,
+    "network": false,
+    "cut": false
+  },
+  "human_acceptance": "PENDING"
+}
