@@ -4,6 +4,11 @@
 **Estado:** decisão de engenharia proposta para revisão, **não** liberação operacional  
 **Contexto versionado na leitura:** PR #137 em DRAFT/HOLD, HEAD `3539e8f47e81f2da946ef87ebc0033d2ee9d32ee`.
 
+## Atualização vinculante do escopo de lançamento — decisão posterior de César, 03/11/2026
+A V1 **não** está autorizada a ser lançada como Copiloto apenas de sinais próprios de Entregas. É obrigatório ter **leitura de pedidos, itens, praças, o que está pronto e Entregas** com jornada integrada e prova real. O contrato atualizado e os gates são `docs/execution/DELIVERYOS_V1_LAUNCH_ACCEPTANCE_20261103.md`.
+
+Esta decisão altera o sequenciamento proposto abaixo: primeiro resolver fonte completa e estados de pedidos **mais** Entregas, depois updates. A restrição permanente é **sem integração/ferramenta oficial** do iFood/Teknisa; não prometer independência da origem dos dados. O **Reader já existente read-only**, quando devidamente autorizado e comprovado, pode ser o canal provisório de dados externos sem habilitar API oficial ou novo coletor. A antiga proposta abaixo de não depender sequer do Reader/SQL como fonte de dados para V1 está **superada apenas nesse ponto**, não nos limites de acesso, integridade e efeitos.
+
 ## Mandato preservado
 O produto central é a **Home /**, Copiloto da operação do restaurante; Entregas é um módulo e `/copiloto` é uma rota Shadow, não a Home aprovada. A Operação Viva é a única dona de Calmo/Ambiente/Foco; a Camada de Decisão já existente ranqueia as ações dentro do Foco. **Não criar motor, rota principal, dashboard ou Copiloto paralelo.** Não trocar a linguagem visual canônica por UI de demonstração.
 
