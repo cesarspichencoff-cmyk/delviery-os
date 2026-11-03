@@ -6,7 +6,19 @@
  */
 const SCHEMA='deliveryos.spore-status-bridge-input.v1';
 const OUT='deliveryos.spore-status-bridge-output.v1';
-const stamp=x=>typeof x==='string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,7})?(?:Z|[+-]\d\d:\d\d)$/.test(x)&&Number.isFinite(Date.parse(x))?Date.parse(x):null;
+const stamp=x=>{
+ if(typeof x!=='string')return null;
+ const m=/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(?:\.(\d{1,7}))?(Z|[+-]\d\d:\d\d)$/.exec(x);
+ if(!m)return null;
+ const [year,month,day,hour,minute,second]=m.slice(1,7).map(Number);
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(year<2020||year>2100||month<1||month>12||day<1||
+    date.getUTCFullYear()!==year||date.getUTCMonth()+1!==month||
+    date.getUTCDate()!==day||hour>23||minute>59||second>59)return null;
+ const tz=m[8];
+ if(tz!=='Z'&&(Number(tz.slice(1,3))>23||Number(tz.slice(4,6))>59))return null;
+ const n=Date.parse(x);return Number.isFinite(n)?n:null;
+};
 const object=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const only=(x,keys)=>object(x)&&Object.keys(x).every(k=>keys.includes(k));
 const result=(state,summary={})=>Object.freeze({schema:OUT,state,scope:'ITAIM',
