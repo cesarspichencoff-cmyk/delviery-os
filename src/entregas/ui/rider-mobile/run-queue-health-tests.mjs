@@ -105,6 +105,10 @@ test("page has accessible alert independent of the server rejection", () => {
   assert.match(html,/id="rejectedLine"[^>]*role="alert"/);
   assert.match(ui,/hold\.textContent = queueHoldMessage\(queueHold\)/);
 });
+test("rider controls become disabled on HOLD without waiting for a refresh", () => {
+  assert.match(ui,/function blockQueueActionsImmediately\(\)/);
+  assert.match(ui,/renderDeviceQueue\(activeTrip\(\)\);\s*blockQueueActionsImmediately\(\);/);
+});
 test("route action remains available when only local write is held", () => {
   assert.match(ui,/primary\.disabled = blocked && primary\.textContent !== "Abrir rota"/);
   assert.match(ui,/secondary\.disabled = blocked/);
