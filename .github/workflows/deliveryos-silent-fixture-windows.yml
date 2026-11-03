@@ -1,0 +1,44 @@
+name: Delivery OS silent fixture (isolated)
+on:
+  push:
+    branches:
+      - feat/gestor-shadow-observer-20261103
+    paths:
+      - .github/workflows/deliveryos-silent-fixture-windows.yml
+      - runtime/silent-runner/**
+      - tests/silent-runner/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deliveryos-silent-fixture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Static fixture contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node contract tests (synthetic only)
+        run: node tests/silent-runner/run-contract-tests.cjs
+
+  native-windows:
+    name: Windows no-console native fixture
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compile and verify in isolated Windows runner
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/silent-runner/verify-windows-fixture.ps1
