@@ -1,39 +1,31 @@
-# Silent runner — offline proof of no-console architecture
+# Delivery OS — silent Reader + Gestor fixture executor
 
-**Status:** LAB CODE ONLY, not a delivery/order collector. Not installed, deployed, scheduled or running on the cashier workstation. This folder lives only in the DRAFT/HOLD PR until reviewed.
+**State:** `TEST_PASS_WINDOWS_FIXTURE` only. No production reader, no real orders, no authenticated join. PR #137 must remain DRAFT/HOLD. Nothing in this folder is installed or scheduled on the cashier machine.
 
-## What this stage contains
+## Native implementation
 
-- `SilentObserverLab.cs`: deliberately small Windows .NET Framework 4.x `winexe` program with no console subsystem. It runs for 1–8 bounded fixture-only ticks, protected by a single-instance Windows mutex.
-- The only accepted input is a four-line, strictly fictional file. A marker `DELIVERYOS_LAB_ONLY.txt` with the exact value `DELIVERYOS_SILENT_TEST_ONLY_V1` in a directory named `deliveryos-silent-lab` is mandatory. The directory and marker cannot be reparse points; input cannot be a reparse point. No arbitrary input fields are accepted.
-- It emits only a sanitized `status.json` with `HOLD_*` states, zero publishable orders, zero exported identifiers, and an atomic replacement. Invalid source content is rejected. A second concurrent instance exits without touching the status. All runs finish quickly.
-- It never starts Edge, CMD, PowerShell, a service, a scheduled task, or any network client. It does not implement UI Automation or handle credentials. The absence of those features is intentional.
+- `SilentObserverLab.cs`: .NET Framework `winexe` with no console subsystem, single-instance mutex, 1–8 bounded ticks, no network/UI APIs, no Edge launch, no direct operational paths, no event handlers that change orders, atomic status output and exception boundary to avoid GUI error dialogs. The program itself refuses `COMPUTERNAME=CAIXA_MOOCA`.
+- `SnapshotPairAdapter.cs`: strict parser of **two optional, wholly fictional JSON projections**. Accepts only a small allowlisted subset of the Reader status schema (`deliveryos.itaim.automatic-reader-status.v1`) and Gestor structure schema (`tata.gestor.structure-v2`). Both must declare `fixtureOnly=true`, an unverified source, no exported identity, timestamps no older than 120 seconds and no more than 16 fabricated `LAB-0000` style records. Unknown or personal fields, duplicate keys, stale/future timestamps, revision differences and item/option count differences are held.
+- A four-line `input.fixture` plus marker file `DELIVERYOS_LAB_ONLY.txt` containing exactly `DELIVERYOS_SILENT_TEST_ONLY_V1` in a directory named `deliveryos-silent-lab` remain mandatory. The two JSON projections are **optional**; if absent, output `pairState=HOLD_NO_PAIR`.
+- When fictional records match in all validated fields, the result is only `pairState=SYNTHETIC_PAIR_ONLY`. It is **never** an authenticated production Reader-to-iFood join. In every case `realReaderJoinProven=false`, `orderIdentityProven=false`, `ordersPublishable=0`, `orderIdsExported=0`, `customerFieldsExported=0`.
 
-## Laboratory verification
+This is an **adapter contract and laboratory comparator**, not a connector to live files. It intentionally refuses real order IDs and customer data. The use of a source schema name does **not** certify data provenance.
 
-First run the static contract tests on any machine with Node.js:
+## Automated verification
 
-```sh
-node tests/silent-runner/run-contract-tests.cjs
-```
+GitHub Actions workflow: `.github/workflows/deliveryos-silent-fixture-windows.yml`.
 
-These tests check the fixture contract, forbidden APIs, guardrails and code structure. **They do not execute the C# runtime or prove Windows behavior.**
+- Linux Node: `node tests/silent-runner/run-contract-tests.cjs` — **42/42 PASS**.
+- Linux Node: `node tests/silent-runner/run-pair-contract-tests.cjs` — **40/40 PASS**.
+- Isolated GitHub-hosted Windows: `tests/silent-runner/verify-windows-fixture.ps1` — **45/45 PASS**, compiling both C# sources with `/target:winexe` and `System.Web.Extensions.dll`.
+- Official execution [#41692832854](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41692832854): `completed/success`, tested head `fd70b039586df0557799573d3edbda99c7996642`.
 
-On an **isolated Windows VM, never on CAIXA_MOOCA**, run the opt-in native test harness:
+Windows tests check the process has no visible HWND, the foreground doesn't change, mutex blocks duplication, output is never publishable, fictional pair matches, and invalid personal fields, duplicates, expired/future data, mismatched revisions/items/options, missing source files and spoofed merchant proof are rejected. All tests occur in an isolated VM; **no test executes on CAIXA_MOOCA**.
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\silent-runner\verify-windows-fixture.ps1
-```
+## Boundaries and next gates
 
-Both the harness and the fixture executable refuse `COMPUTERNAME=CAIXA_MOOCA`, compiles `SilentObserverLab.cs` via `csc.exe /target:winexe`, creates only an otherwise nonexistent temp directory named `deliveryos-silent-lab`, and exercises: one instance, concurrent instance rejection, visible-HWND count during execution, unchanged foreground, bounded ticks, fixture rejection, blocked markerless execution, and zero publishable output. It removes only the fixture directory it created. Compilation and GUI-session tests have **not** been run or proven by static tests alone.
+No session/login, iFood detail navigation, live Reader access, personal data, GPS, printing, API calls, browser automation, service creation, scheduled task, merge, deploy, or cashier pilot. The six Edge/UIA/SP0RE tasks disabled to prevent UI flicker must remain disabled; the dedicated observation audio mute guard remains untouched.
 
-## Explicitly out of scope
+**Next development gate:** create a *separate* trustworthy read-only projection layer for existing sanitized Reader and Gestor diagnostics, without copying credentials or entering the operator's session. Verify real merchant Itaim and order identity by independent evidence before attempting a production correlation. Any unproven merchant/order detail must remain `UNKNOWN`; no production publishing.
 
-No iFood login, live orders, items, additions, Reader merge, GPS, customer fields, or notifications. No deployment, task installation, scheduling, changing browser flags, or restarting operator processes. The six previously disabled cashier Edge/UIA/SP0RE tasks must stay disabled. The existing mute guard for the observation windows stays untouched.
-
-## Progression gates
-
-1. Native VM test passes with **zero windows visible** and no focus/volume change.
-2. Independent, low-resource sandbox proves a crash/duplicate/run/stop cycle, with no new console or window and a simple rollback.
-3. A separate, authorized, read-only adapter proves its merchant scope and order details. If it cannot, status remains `HOLD` and nothing is published.
-4. Only after user approval of a controlled pilot outside peak service may the team consider installing a silent collector; never reuse the popup-producing scheduled tasks.
+A native zero-window success in GitHub's VM does **not** prove that real data collection would be invisible or usable on the cashier desktop.
