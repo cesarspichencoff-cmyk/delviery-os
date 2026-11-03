@@ -27,7 +27,8 @@
  };
  function readVisibleDetail(doc){
    if(!doc||typeof doc.querySelectorAll!=='function')return fail('HOLD_DOCUMENT');
-   const open=[...doc.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [data-testid="order-details"]')].filter(visible);
+   const open=[...doc.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [data-testid="order-details"]')]
+     .filter(e=>(String(e.tagName||'').toLowerCase()!=='dialog'||e.hasAttribute('open'))&&visible(e));
    if(open.length===0)return fail('DETAIL_NOT_OPEN');
    if(open.length!==1)return fail('HOLD_MULTIPLE_DETAILS');
    const container=open[0];
