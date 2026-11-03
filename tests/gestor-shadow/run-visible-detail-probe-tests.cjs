@@ -37,9 +37,9 @@ t('phone-like item rejected',()=>assert.equal(readVisibleDetail(fixture([dialog(
 t('email option rejected',()=>assert.equal(readVisibleDetail(fixture([dialog([row('Temaki','1',['x@example.org'])])])).state,'HOLD_AMBIGUOUS_OPTION'));
 t('too many items held',()=>assert.equal(readVisibleDetail(fixture([dialog(Array.from({length:61},()=>row('Hot Roll','1')))])).state,'HOLD_TOO_MANY_ITEMS'));
 t('too many options held',()=>assert.equal(readVisibleDetail(fixture([dialog([row('Hot Roll','1',Array(16).fill('Shoyu'))])])).state,'HOLD_OPTION_LIMIT'));
-t('hidden rows not counted',()=>{
+t('hidden rows block partial detail',()=>{
  const a=readVisibleDetail(fixture([dialog([row('Sushi','1'),row('Outro','1',[],false)])]));
- assert.equal(a.itemLines,1);
+ assert.equal(a.state,'HOLD_HIDDEN_ITEM_ROWS');assert.equal(a.items.length,0);
 });
 t('hidden dialog not read',()=>assert.equal(readVisibleDetail(fixture([el('',{},false)])).state,'DETAIL_NOT_OPEN'));
 t('hidden item name is refused',()=>{
@@ -48,6 +48,39 @@ t('hidden item name is refused',()=>{
  assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_HIDDEN_ITEM_FIELDS');
 });
 
+t('duplicate item name blocks',()=>{
+ const r=row('Temaki','1');
+ r.querySelectorAll=s=>s==='[data-testid="item-name"]'?[el('Temaki'),el('Outra leitura')]:
+  s==='[data-testid="item-quantity"]'?[el('1')]:[];
+ assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_AMBIGUOUS_ITEM_FIELDS');
+});
+t('duplicate quantity blocks',()=>{
+ const r=row('Temaki','1');
+ r.querySelectorAll=s=>s==='[data-testid="item-name"]'?[el('Temaki')]:
+  s==='[data-testid="item-quantity"]'?[el('1'),el('2')]:[];
+ assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_AMBIGUOUS_ITEM_FIELDS');
+});
+t('hidden option blocks',()=>assert.equal(
+ readVisibleDetail(fixture([dialog([row('Temaki','1',[]),row('Sushi','1')])])).state,
+ 'DETAIL_CANDIDATE_UNVERIFIED'));
+t('hidden option text is not silently dropped',()=>{
+ const r=row('Temaki','1');
+ r.querySelectorAll=s=>s==='[data-testid="item-name"]'?[el('Temaki')]:
+  s==='[data-testid="item-quantity"]'?[el('1')]:
+  s==='[data-testid="item-option"]'?[el('Extra',{},false)]:[];
+ assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_HIDDEN_OPTION_FIELDS');
+});
+t('aria-hidden ancestor blocks field',()=>{
+ const r=row('Temaki','1');
+ r.querySelectorAll=s=>s==='[data-testid="item-name"]'?[Object.assign(el('Temaki'),{closest:()=>({})})]:
+  s==='[data-testid="item-quantity"]'?[el('1')]:[];
+ assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_HIDDEN_ITEM_FIELDS');
+});
+t('candidate does not prove absence of PII or completeness',()=>{
+ const a=readVisibleDetail(fixture([dialog([row('Sushi','1')])]));
+ assert.equal(a.personalDataAbsentProven,false);
+ assert.equal(a.completeDetailProven,false);
+});
 t('strict no side effect claims',()=>{
  const a=readVisibleDetail(fixture([dialog([row('Sushi','1')])]));
  assert.equal(a.noNavigation,true);assert.equal(a.noFocusChange,true);
