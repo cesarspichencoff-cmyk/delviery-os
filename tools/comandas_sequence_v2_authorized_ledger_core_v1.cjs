@@ -111,7 +111,11 @@ function inspectScope(db,scope){
  if(!Number.isSafeInteger(high)||high!==rows.length||high>999||
     rows.some((r,i)=>r.seq!==i+1||typeof r.order_key!=="string"||
       !/^0001\|01\|[A-Za-z0-9_-]{1,64}\|[A-Za-z0-9_-]{1,64}$/.test(r.order_key)||
-      typeof r.writer_key_id!=="string"||!HEX64.test(r.writer_key_id)))
+      typeof r.writer_key_id!=="string"||!HEX64.test(r.writer_key_id)||
+      !Number.isSafeInteger(r.request_issued_at_s)||
+      !HEX32.test(String(r.request_nonce))||
+      typeof r.request_signature_base64!=="string"||
+      !/^[A-Za-z0-9+/]{86}==$/.test(r.request_signature_base64)))
   return {reason:"LEDGER_DAY_NOT_CONTIGUOUS_OR_UNTRUSTED"};
  return {rows,high};
 }
@@ -156,7 +160,9 @@ function bindAuthorizedNativeV2(db,pair,writerRequest,trust,nowS){
   db.exec("COMMIT");tx=false;committed=true;
   const recheck=inspectScope(db,e.ledger_scope);
   const row=recheck.rows?.find(r=>r.order_key===e.order_key);
-  if(recheck.reason||row?.seq!==bound||row.writer_key_id!==writerRequest.writer_key_id)
+  if(recheck.reason||row?.seq!==bound||row.writer_key_id!==writerRequest.writer_key_id||
+    !row.request_signature_base64||!row.request_nonce||
+    !Number.isSafeInteger(row.request_issued_at_s))
    return hold("COMMITTED_READBACK_UNCERTAIN_MANUAL_RECONCILIATION",{
     sequence_effect_confirmed:false,write_may_have_occurred:true});
   return {schema:SCHEMA,status:reused?"V2_BOUND_REUSED_NOT_ATTESTED":"V2_BOUND_PERSISTED_NOT_ATTESTED",
