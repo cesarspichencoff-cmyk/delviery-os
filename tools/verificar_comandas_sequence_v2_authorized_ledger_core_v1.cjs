@@ -11,6 +11,8 @@ const {syntheticReaderPairV857}=require("./verificar_tata_comanda_reader_native_
 const {snapshotHash,decisionHash}=require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
 const {inspectStrongKeySequence,STATE_SCHEMA}=require("./comandas_strong_key_sequence_v2_review_only.cjs");
 const C=require("./comandas_sequence_v2_authorized_ledger_core_v1.cjs");
+const {reviewPersistedDayWriterReceiptsV1:reviewReceipts}=
+ require("./comandas_sequence_v2_writer_receipt_review_v1.cjs");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"comandas-authorized-test-"));
 const file=path.join(temp,"synthetic-ledger-only.sqlite");
 const writer=crypto.generateKeyPairSync("ed25519"),otherWriter=crypto.generateKeyPairSync("ed25519");
@@ -44,7 +46,7 @@ let db,n=0;const test=(s,f)=>{f();process.stdout.write("PASS "+(++n)+" "+s+"\n")
 const orderA=makePair("A"),orderB=makePair("B"),nextDay=makePair("A","2026-11-04");
 const bind=(pair,req=request(pair),trust=anchors,now=NOW)=>
  C.bindAuthorizedNativeV2(db,pair,req,trust,now);
-const rows=()=>db.prepare("SELECT scope,order_key,seq,writer_key_id FROM tata_seq_v2_binding ORDER BY scope,seq").all();
+const rows=()=>db.prepare("SELECT scope,order_key,seq,writer_key_id,request_issued_at_s,request_nonce,request_signature_base64 FROM tata_seq_v2_binding ORDER BY scope,seq").all();
 const actualState=()=>({schema:STATE_SCHEMA,policy:{width:3,min_value:1,max_value:999},
  bindings:rows().map(r=>({scope_id:r.scope,native_order_key:r.order_key,
   tata_sequence:String(r.seq).padStart(3,"0")}))});
@@ -63,6 +65,27 @@ try{
   assert.ok(Object.values(out.effects).every(x=>x===false));
   assert.equal(inspectStrongKeySequence({pair:orderA,state:actualState()}).status,
    "STRONG_KEY_PRESENT_IN_SUPPLIED_STATE_NOT_ATTESTED");
+ });
+ test("persisted writer receipt independently validates signature and rejects tampering",()=>{
+  const row=rows()[0];
+  assert.equal(row.request_issued_at_s,NOW);
+  assert.ok(/^[a-f0-9]{32}$/.test(row.request_nonce));
+  assert.ok(/^[A-Za-z0-9+/]{86}==$/.test(row.request_signature_base64));
+  const scope="STORE:0001/01|DATE:2026-11-03";
+  const clean=reviewReceipts(db,scope,anchors);
+  assert.equal(clean.status,"SIGNED_DAY_RECEIPTS_VERIFIED_READ_ONLY_NOT_ATTESTED",JSON.stringify(clean));
+  assert.equal(clean.row_count,1);
+  assert.equal(clean.number_for_operational_ticket,null);
+  // Corruption only inside a rolled-back transaction on the DISPOSABLE database.
+  db.exec("BEGIN IMMEDIATE");
+  try{
+   db.exec("DROP TRIGGER tata_seq_v2_binding_no_update");
+   db.prepare("UPDATE tata_seq_v2_binding SET request_signature_base64=? WHERE scope=? AND seq=1")
+    .run("A".repeat(86)+"==",scope);
+   assert.equal(reviewReceipts(db,scope,anchors).reason,"HISTORIC_WRITER_SIGNATURE_INVALID");
+  }finally{db.exec("ROLLBACK");}
+  assert.equal(reviewReceipts(db,scope,anchors).status,
+    "SIGNED_DAY_RECEIPTS_VERIFIED_READ_ONLY_NOT_ATTESTED");
  });
  test("same order across revisions keeps 001 without another commit",()=>{
   const before=digest();
@@ -127,16 +150,31 @@ try{
   assert.throws(()=>db.prepare("DELETE FROM tata_seq_v2_binding").run(),/IMMUTABLE_BINDING/);
   assert.throws(()=>db.prepare("UPDATE tata_seq_v2_binding SET seq=99").run(),/IMMUTABLE_BINDING/);
   const before=digest();
-  db.prepare("UPDATE tata_seq_v2_head SET highest=5 WHERE scope=?")
+  db.exec("SAVEPOINT simulated_broken_head");
+  try{
+   db.prepare("UPDATE tata_seq_v2_head SET highest=5 WHERE scope=?")
     .run("STORE:0001/01|DATE:2026-11-03");
-  const held=bind(makePair("F"));
-  assert.equal(held.reason,"LEDGER_DAY_NOT_CONTIGUOUS_OR_UNTRUSTED");
-  assert.equal(digest(),before);
+   const held=bind(makePair("F"));
+   assert.equal(held.reason,"LEDGER_DAY_NOT_CONTIGUOUS_OR_UNTRUSTED");
+   assert.equal(digest(),before);
+  }finally{
+   db.exec("ROLLBACK TO simulated_broken_head");
+   db.exec("RELEASE simulated_broken_head");
+  }
  });
  test("persisted DB survives close/reopen with the exact same binding",()=>{
   db.close();db=new DatabaseSync(file);
   assert.equal(rows().length,3);
   assert.equal(rows().find(r=>r.order_key===orderA.event.order_key).seq,1);
+  const ro=new DatabaseSync(file,{readOnly:true});
+  try{
+   for(const day of ["2026-11-03","2026-11-04"]){
+    const reviewed=reviewReceipts(ro,"STORE:0001/01|DATE:"+day,anchors);
+    assert.equal(reviewed.status,"SIGNED_DAY_RECEIPTS_VERIFIED_READ_ONLY_NOT_ATTESTED",
+     JSON.stringify(reviewed));
+    assert.equal(reviewed.print_authorized,false);
+   }
+  }finally{ro.close();}
  });
  test("read-only database cannot allocate or alter a number",()=>{
   const ro=new DatabaseSync(file,{readOnly:true});
