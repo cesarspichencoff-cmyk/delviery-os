@@ -60,6 +60,48 @@ function sequenceLayer(sequence){
 function layer(status,reasons,extra={}){
  return {status,reasons:[...new Set(reasons)].sort(),...extra};
 }
+/**
+ * A claim is a narrowly scoped USER-REVIEW ASSERTION, not an authenticated
+ * signature or permission for any physical effect. Only one DSOBSCOMANDA
+ * of the exact already-verified native revision can be omitted from virtual
+ * tickets. The original event, decision and join remain unchanged.
+ */
+function shadowNoteDispositionV1(event,decision,joined,claim){
+ const hold=reason=>({status:"HOLD",reasons:[reason],ticket_join:joined});
+ if(claim==null)return {status:"NOT_PROVIDED",reasons:[],ticket_join:joined};
+ const hex=x=>typeof x==="string"&&/^[a-f0-9]{64}$/.test(x);
+ if(!claim||typeof claim!=="object"||Array.isArray(claim)||
+  claim.schema!=="tata.comandas.note-disposition-claim.v1"||
+  claim.scope!=="SHADOW_VIEW_ONLY"||
+  claim.action!=="EXCLUDE_FROM_PRODUCTION_TICKETS"||
+  claim.classification!=="NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA"||
+  claim.source_field!=="DSOBSCOMANDA"||
+  !/^human-review:[A-Za-z0-9._:/-]{12,150}$/.test(claim.human_review_reference||""))
+  return hold("NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
+ const fields=["order_key_digest","snapshot_hash","decision_fingerprint",
+  "note_content_sha256","event_file_sha256","decision_file_sha256"];
+ if(fields.some(f=>!hex(claim[f]))||
+  claim.order_key_digest!==sha(Buffer.from(event.order_key,"utf8"))||
+  claim.snapshot_hash!==String(event.snapshot_hash).toLowerCase()||
+  claim.snapshot_hash!==String(decision.snapshot_hash).toLowerCase()||
+  claim.decision_fingerprint!==String(decision.fingerprint).toLowerCase())
+  return hold("NOTE_DISPOSITION_NOT_BOUND_TO_NATIVE_REVISION");
+ const notes=event.order.observation_rows.filter(x=>x?.scope_hint==="order");
+ const dnotes=decision.order_observations;
+ const jnotes=joined.order_observations;
+ if(notes.length!==1||notes[0].source_field!=="DSOBSCOMANDA"||
+  notes[0].join_proven!==true||typeof notes[0].value!=="string"||
+  !notes[0].value.trim()||
+  !Array.isArray(dnotes)||dnotes.length!==1||
+  dnotes[0].source_field!=="DSOBSCOMANDA"||
+  dnotes[0].value!==notes[0].value||
+  !Array.isArray(jnotes)||jnotes.length!==1||jnotes[0]!==notes[0].value||
+  claim.note_content_sha256!==sha(Buffer.from(notes[0].value,"utf8")))
+  return hold("NOTE_DISPOSITION_NOT_BOUND_TO_EXACT_GENERAL_NOTE");
+ return {status:"EXCLUDED_FOR_SHADOW_ONLY",reasons:[],
+  ticket_join:{...joined,order_observations:[]},
+  original_preserved:true,physical_note_authorized:false};
+}
 
 /**
  * @param {object} i
@@ -136,6 +178,7 @@ function runNativeChainV1(i){
  const explained=new Set(resolution.explained_blockers);
  const routes=i.routing?.products||{};
  const join=N.joinNativeReaderSnapshotV1(e,d,routes);
+ const noteReview=join.join?shadowNoteDispositionV1(e,d,join.join,i.note_disposition_claim):null;
  const catalog={resolved:resolution.resolved.map(x=>x.record_id),
   motor_rerun:resolution.motor_rerun_required,refused:resolution.refused};
  const kitRuleRef=kitRule?.rule?{id:kitRule.rule.id,evidence:kitRule.rule.evidence,
@@ -150,6 +193,15 @@ function runNativeChainV1(i){
   L.L5=layer("HOLD",[sequence.reason||"CONTENT_NOT_PROVEN"],{...sequenceLayer(sequence),tata_number:null});
   return out();
  }
+ // A mismatched user-review claim never strips the note or unlocks a view.
+ // No claim means the original order-level note still follows the HOLD path.
+ if(noteReview?.status==="HOLD"){
+  L.L3=layer("NATIVE_CONTENT_PROVEN",[],{join:join.provenance,motor_blob:pinned.blob});
+  L.L4=layer("HOLD",noteReview.reasons,{views:[],note_disposition:"HOLD"});
+  L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],sequenceLayer(sequence));
+  return out();
+ }
+ const ticketJoin=noteReview?.ticket_join??join.join;
  // L4 ── destinations by native time + reviewed station rule, then three views
  const projection=projectExpectedRouting({ids:{pedido_interno:e.order.NRCOMANDA},
   items:join.join.items.map(x=>({item_index:x.delivery_item_index,codigo:x.codigo,
@@ -171,8 +223,8 @@ function runNativeChainV1(i){
  // (it may carry payment text) and the plan holds it, as V7.6/V7.7 require.
  const context={tata_sequence:sequence.number||NO_SEQUENCE,
   teknisa_sequence:e.order.NRCOMANDA,ifood_sequence:e.order.NRCOMANDAEXT,order_time:hm,
-  template_version:"production-ticket-v2-shadow",ticket_items:N.nativeTicketItemsV1(join.join),
-  order_observations:join.join.order_observations.map(v=>({value:v,
+  template_version:"production-ticket-v2-shadow",ticket_items:N.nativeTicketItemsV1(ticketJoin),
+  order_observations:ticketJoin.order_observations.map(v=>({value:v,
    source_ref:"native-event:"+e.snapshot_hash.slice(0,16)+":DSOBSCOMANDA",relevance:"UNKNOWN",proof:"REAL_OBSERVED"}))};
  const review=planWindowReview(projection,claim,context,i.calibration);
  // An installed V1 SERVICE_REQUIRED_SUSHI blocker meant that its obsolete
@@ -216,7 +268,7 @@ function runNativeChainV1(i){
   L.L5=layer("HOLD",[sequence.reason||"VIEWS_NOT_PROJECTED"],sequenceLayer(sequence));
   return out();
  }
- const ingress=compileJoinedReaderIngressV66(join.join,review.plan,ids.identities);
+ const ingress=compileJoinedReaderIngressV66(ticketJoin,review.plan,ids.identities);
  if(ingress.status!=="ALIGNED"){
   L.L3=layer("HOLD",ingress.blockers,{join:join.provenance,kit_rule:kitRuleRef});return out();
  }
@@ -241,6 +293,7 @@ function runNativeChainV1(i){
  L.L4=layer(views.length>=2&&views.every(v=>v.semantic_ready)?"THREE_VIEWS_VIRTUAL":"HOLD",
   views.flatMap(v=>v.semantic_ready?[]:["VIEW_NOT_SEMANTICALLY_READY:"+v.station]),
   {views,window:review.period,suppressed:review.suppressed,selected:review.selected,
+   note_disposition:noteReview?.status??"NOT_PROVIDED",
    // iFood x Teknisa belongs to the CONFERENCE only; production never waits on it.
    conference_ifood_crosscheck:native.source_review?.conference?.status??"UNKNOWN"});
  L.L5=layer(sequence.number?"BOUND":"HOLD",sequence.number?[]:[sequence.reason],

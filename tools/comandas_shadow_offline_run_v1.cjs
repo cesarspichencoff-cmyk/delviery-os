@@ -32,7 +32,7 @@ function readSourceJSON(filename,limit){
  const b=source(filename,limit);
  return {record:JSON.parse(b.toString("utf8")),hash:sha(b)};
 }
-function run(eventPath,decisionPath){
+function run(eventPath,decisionPath,reviewClaimPath){
  const proof=verify(ROOT);
  const {record:event,hash:eventSha}=readSourceJSON(eventPath,2000000);
  const {record:decision,hash:decisionSha}=readSourceJSON(decisionPath,3000000);
@@ -42,10 +42,20 @@ function run(eventPath,decisionPath){
    !/^[a-f0-9]{64}$/i.test(String(event.snapshot_hash))||
    !event.order||!Array.isArray(event.order.items))
   throw Error("NATIVE_PAIR_SCHEMA_INVALID");
+ // One private human-disposition record, tied to these EXACT source file
+ // bytes. It is NOT an authenticated production or print permission.
+ let reviewClaim=null;
+ if(reviewClaimPath!==undefined){
+  const claim=readSourceJSON(reviewClaimPath,8192).record;
+  if(claim.event_file_sha256!==eventSha||claim.decision_file_sha256!==decisionSha)
+   throw Error("NOTE_DISPOSITION_INPUT_FILE_DIGEST_MISMATCH");
+  reviewClaim=claim;
+ }
  // Pure evaluator validates four-part key, exact snapshot and V8.57 fingerprint.
  // No trust is conferred by a label or by a matching self-declared source hash.
  const out=runNativeChainV1({
-  event,decision,routing:readJson(path.join(ROOT,DATA.routing)),
+  event,decision,note_disposition_claim:reviewClaim,
+  routing:readJson(path.join(ROOT,DATA.routing)),
   printer_map:readJson(path.join(ROOT,DATA.printers)),
   calibration:readJson(path.join(ROOT,DATA.calibration)),
   catalog_equivalence:readJson(path.join(ROOT,DATA.equivalence)),
@@ -66,14 +76,17 @@ function run(eventPath,decisionPath){
   native_event_sha256:eventSha,v2_decision_sha256:decisionSha,
   event_source_freshness:"UNATTESTED_EXTERNAL_INPUT",
   v2_consumer_executed:false,independent_origin_attested:false,
-  layers,views:out.views.map(x=>({kind:x.kind,station:x.station,
+  layers,note_excluded_in_shadow_only:out.layers.L4?.note_disposition==="EXCLUDED_FOR_SHADOW_ONLY",
+  human_approval_cryptographically_authenticated:false,
+  views:out.views.map(x=>({kind:x.kind,station:x.station,
     item_lines:x.lines,escpos_bytes:x.escpos_bytes,text_trace_sha256:x.text_trace_sha256})),
   effects:{print:false,spooler:false,sql:false,service:false,sequence_write:false}};
 }
 if(require.main===module){
  try{
-  if(process.argv.length!==4)throw Error("USAGE_ABSOLUTE_EVENT_PATH_AND_DECISION_PATH");
-  process.stdout.write(JSON.stringify(run(process.argv[2],process.argv[3]))+"\n");
+  if(process.argv.length!==4&&process.argv.length!==5)
+   throw Error("USAGE_ABSOLUTE_EVENT_DECISION_OPTIONAL_NOTE_REVIEW_PATH");
+  process.stdout.write(JSON.stringify(run(process.argv[2],process.argv[3],process.argv[4]))+"\n");
  }catch(e){process.stderr.write("SHADOW_PAIR_HOLD="+e.message+"\n");process.exitCode=1}
 }
 module.exports={run};

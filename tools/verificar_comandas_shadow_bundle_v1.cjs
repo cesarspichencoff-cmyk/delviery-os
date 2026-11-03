@@ -88,6 +88,67 @@ try{
   assert.ok(out.views.every(v=>v.escpos_bytes===0));
   assert.equal(out.v2_consumer_executed,false);
  });
+ const paymentEvent=structuredClone(ev);
+ const financialNote="PAGO ONLINE (VALOR: 99.00) ID: 456 - COD. P/ CANCELAMENTO: 789";
+ paymentEvent.order.observation_rows=[{source_field:"DSOBSCOMANDA",
+  value:financialNote,scope_hint:"order",join_proven:true}];
+ paymentEvent.snapshot_hash=snapshotHash(paymentEvent.order);
+ const paymentFile=path.join(work,"event-payment.json");
+ fs.writeFileSync(paymentFile,JSON.stringify(paymentEvent));
+ const paymentProduced=spawnSync(process.execPath,[consumer,paymentFile],
+  {encoding:"utf8",timeout:20000});
+ assert.ok([0,5].includes(paymentProduced.status)&&paymentProduced.stdout,
+  "TEST_PAYMENT_CONSUMER_UNAVAILABLE");
+ const paymentDecision=JSON.parse(paymentProduced.stdout);
+ const paymentDecisionFile=path.join(work,"decision-payment.json");
+ fs.writeFileSync(paymentDecisionFile,JSON.stringify(paymentDecision));
+ const crypto=require("node:crypto"),digest=x=>crypto.createHash("sha256").update(x).digest("hex");
+ const exactClaim={
+  schema:"tata.comandas.note-disposition-claim.v1",
+  scope:"SHADOW_VIEW_ONLY",classification:"NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA",
+  action:"EXCLUDE_FROM_PRODUCTION_TICKETS",source_field:"DSOBSCOMANDA",
+  human_review_reference:"human-review:fixture-authorized-20261103",
+  order_key_digest:digest(paymentEvent.order_key),
+  snapshot_hash:paymentEvent.snapshot_hash.toLowerCase(),
+  decision_fingerprint:paymentDecision.fingerprint.toLowerCase(),
+  note_content_sha256:digest(financialNote),
+  event_file_sha256:digest(fs.readFileSync(paymentFile)),
+  decision_file_sha256:digest(fs.readFileSync(paymentDecisionFile))
+ };
+ const claimPath=path.join(work,"payment-review-claim.json");
+ fs.writeFileSync(claimPath,JSON.stringify(exactClaim));
+ test("default real-shape financial note retains HOLD without human disposition",()=>{
+  const out=run(paymentFile,paymentDecisionFile);
+  assert.equal(out.layers.L4.status,"HOLD");
+  assert.equal(out.views.length,0);
+  assert.equal(out.note_excluded_in_shadow_only,false);
+ });
+ test("bound finance-only claim preserves original note but excludes it from 3 virtual views",()=>{
+  const b1=fs.readFileSync(paymentFile),b2=fs.readFileSync(paymentDecisionFile);
+  const out=run(paymentFile,paymentDecisionFile,claimPath);
+  assert.equal(out.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+  assert.equal(out.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+  assert.equal(out.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+  assert.equal(out.layers.L5.status,"HOLD");
+  assert.equal(out.views.length,3);
+  assert.equal(out.note_excluded_in_shadow_only,true);
+  assert.equal(out.human_approval_cryptographically_authenticated,false);
+  assert.ok(out.views.every(v=>v.escpos_bytes===0));
+  assert.equal(JSON.stringify(out).includes(financialNote),false);
+  assert.equal(Buffer.compare(fs.readFileSync(paymentFile),b1),0);
+  assert.equal(Buffer.compare(fs.readFileSync(paymentDecisionFile),b2),0);
+ });
+ test("copied unreviewed claim or changed native file byte fails before replay",()=>{
+  const bad={...exactClaim,event_file_sha256:"0".repeat(64)};
+  const badPath=path.join(work,"bad-payment-review-claim.json");
+  fs.writeFileSync(badPath,JSON.stringify(bad));
+  assert.throws(()=>run(paymentFile,paymentDecisionFile,badPath),/NOTE_DISPOSITION_INPUT_FILE_DIGEST_MISMATCH/);
+  const altered=structuredClone(paymentEvent);
+  altered.order.items[0].QTPRODCOMVEN="9.000";
+  const alteredPath=path.join(work,"altered-event-payment.json");
+  fs.writeFileSync(alteredPath,JSON.stringify(altered));
+  assert.throws(()=>run(alteredPath,paymentDecisionFile,claimPath),/NOTE_DISPOSITION_INPUT_FILE_DIGEST_MISMATCH/);
+ });
  test("modified native revision cannot be used with old V2 decision",()=>{
   const corrupt=structuredClone(ev);
   corrupt.order.items[0].QTPRODCOMVEN="2.000";

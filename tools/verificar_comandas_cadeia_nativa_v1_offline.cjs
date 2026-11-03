@@ -510,6 +510,51 @@ test("native item notes stay intact: own station and conference, verbatim, never
  assert.equal(rg.layers.L4.status,"HOLD");assert.ok(rg.layers.L4.reasons.includes("ORDER_OBSERVATION_RELEVANCE_UNPROVEN_0"));
  assert.deepEqual(rg.views,[]);
 });
+test("one explicitly reviewed financial general note stays in source but not in three shadow views",()=>{
+ const ev=event(o=>({...o,observation_rows:[{source_field:"DSOBSCOMANDA",
+  value:"PAGO ONLINE (VALOR: 99.00) ID: 456 - COD. P/ CANCELAMENTO: 789",
+  scope_hint:"order",join_proven:true}]}));
+ const dec=consume(ev);
+ const oldEvent=JSON.stringify(ev),oldDecision=JSON.stringify(dec);
+ const hash=s=>crypto.createHash("sha256").update(s,"utf8").digest("hex");
+ const note=ev.order.observation_rows[0].value;
+ const claim={schema:"tata.comandas.note-disposition-claim.v1",
+  scope:"SHADOW_VIEW_ONLY",classification:"NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA",
+  action:"EXCLUDE_FROM_PRODUCTION_TICKETS",source_field:"DSOBSCOMANDA",
+  human_review_reference:"human-review:cesar-test-fixture-20261103",
+  order_key_digest:hash(ev.order_key),snapshot_hash:ev.snapshot_hash.toLowerCase(),
+  decision_fingerprint:dec.fingerprint.toLowerCase(),note_content_sha256:hash(note),
+  event_file_sha256:hash(oldEvent),decision_file_sha256:hash(oldDecision)};
+ const noClaim=chain(ev,dec);
+ assert.equal(noClaim.layers.L4.status,"HOLD");
+ assert.ok(noClaim.layers.L4.reasons.includes("ORDER_OBSERVATION_RELEVANCE_UNPROVEN_0"));
+ const accepted=chain(ev,dec,{note_disposition_claim:claim});
+ assert.equal(accepted.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
+ assert.equal(accepted.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+ assert.equal(accepted.layers.L4.status,"THREE_VIEWS_VIRTUAL");
+ assert.equal(accepted.layers.L4.note_disposition,"EXCLUDED_FOR_SHADOW_ONLY");
+ assert.equal(accepted.layers.L5.status,"HOLD");
+ assert.equal(accepted.views.length,3);
+ assert.ok(accepted.views.every(v=>v.escpos_bytes===0));
+ assert.ok(accepted.views.every(v=>!v.text_trace.includes(note)));
+ assert.equal(JSON.stringify(ev),oldEvent);
+ assert.equal(JSON.stringify(dec),oldDecision);
+ const checkReject=(change,code)=>{
+  const invalid={...claim,...change};
+  const r=chain(ev,dec,{note_disposition_claim:invalid});
+  assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN");
+  assert.equal(r.layers.L4.status,"HOLD");
+  assert.ok(r.layers.L4.reasons.includes(code),JSON.stringify(r.layers.L4.reasons));
+  assert.deepEqual(r.views,[]);
+ };
+ checkReject({scope:"PRODUCTION"},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
+ checkReject({note_content_sha256:"f".repeat(64)},"NOTE_DISPOSITION_NOT_BOUND_TO_EXACT_GENERAL_NOTE");
+ checkReject({decision_fingerprint:"e".repeat(64)},"NOTE_DISPOSITION_NOT_BOUND_TO_NATIVE_REVISION");
+ checkReject({order_key_digest:"a".repeat(64)},"NOTE_DISPOSITION_NOT_BOUND_TO_NATIVE_REVISION");
+ checkReject({classification:"PRODUCTION_RELEVANT"},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
+ checkReject({action:"PRINT_ON_CONFERENCE"},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
+ checkReject({human_review_reference:""},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
+});
 test("three-view content contract: ids on every view, each product in exactly one station, conference complete",()=>{
  const r=chain(real,decision,attestedLive(real,"037"));
  const native=new Map(decision.items.map(x=>[x.product_name.toLocaleUpperCase("pt-BR"),x.quantity]));
