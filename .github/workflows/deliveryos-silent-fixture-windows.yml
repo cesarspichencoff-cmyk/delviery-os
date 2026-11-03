@@ -8,6 +8,8 @@ on:
       - .github/workflows/deliveryos-silent-fixture-windows.yml
       - runtime/silent-runner/**
       - tests/silent-runner/**
+      - runtime/reporting/diagnostic_readiness_v1.cjs
+      - tests/reporting/run-diagnostic-readiness-tests.cjs
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,7 @@ jobs:
         run: |
           node tests/silent-runner/run-contract-tests.cjs
           node tests/silent-runner/run-pair-contract-tests.cjs
+          node tests/reporting/run-diagnostic-readiness-tests.cjs
 
   native-windows:
     name: Windows no-console native fixture
@@ -45,3 +48,4 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           & ./tests/silent-runner/verify-windows-fixture.ps1
+          node tests/reporting/run-diagnostic-readiness-tests.cjs
