@@ -7,6 +7,7 @@ if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'PRODUCTION_CASHIER_FORBIDDEN' 
 $dir=Split-Path -Parent $MyInvocation.MyCommand.Path
 $root=Resolve-Path (Join-Path $dir '..\..')
 $source=Join-Path $root 'runtime\silent-runner\SilentObserverLab.cs'
+$adapter=Join-Path $root 'runtime\silent-runner\SnapshotPairAdapter.cs'
 $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $csc -PathType Leaf)) { throw 'CSC_NOT_INSTALLED' }
 $workspace=Join-Path ([IO.Path]::GetTempPath()) 'deliveryos-silent-lab'
@@ -43,7 +44,7 @@ try {
  $created=$true
  [IO.File]::WriteAllText((Join-Path $workspace 'DELIVERYOS_LAB_ONLY.txt'),'DELIVERYOS_SILENT_TEST_ONLY_V1')
  $binary=Join-Path $workspace 'SilentObserverLab.exe'
- & $csc /nologo /target:winexe /platform:x64 /optimize+ ('/out:'+ $binary) $source
+ & $csc /nologo /target:winexe /platform:x64 /optimize+ /reference:System.Web.Extensions.dll ('/out:'+ $binary) $source $adapter
  Check ($LASTEXITCODE -eq 0) 'COMPILE_WINEXE'
  $valid=(@('schema=deliveryos.silent-fixture.v1','source=FICTIONAL_ONLY','reader=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF','gestor=STRUCTURE_ONLY_UNVERIFIED') -join [Environment]::NewLine)+[Environment]::NewLine
  [IO.File]::WriteAllText((Join-Path $workspace 'input.fixture'),$valid)
