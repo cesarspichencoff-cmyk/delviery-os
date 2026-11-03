@@ -154,6 +154,10 @@ export class OfflineQueue {
         this.writeHold = "OFFLINE_STORAGE_RECOVERY_REQUIRED";
         return emptyData();
       }
+      if (parsed.items.some(i => i.device_id !== this.config.device_id)) {
+        this.writeHold = "OFFLINE_STORAGE_DEVICE_MISMATCH";
+        return emptyData();
+      }
       return parsed;
     } catch {
       // O original continua intacto, inclusive após tentativa de enqueue.
@@ -203,7 +207,21 @@ export class OfflineQueue {
         i.event_id === input.event_id ||
         i.idempotency_key === input.idempotency_key,
     );
-    if (existing) return { item: structuredClone(existing), duplicate: true };
+    if (existing) {
+      // Repetição exige MESMO fato de negócio. A mesma chave com conteúdo
+      // diferente é um conflito, nunca confirmação silenciosa.
+      const stable = (value: Record<string, unknown>) => JSON.stringify(value,
+        (_key, part: unknown) => part && typeof part === "object" && !Array.isArray(part)
+          ? Object.fromEntries(Object.entries(part as Record<string, unknown>)
+            .sort(([a], [b]) => a.localeCompare(b))) : part);
+      if (existing.idempotency_key !== input.idempotency_key ||
+          existing.kind !== input.kind ||
+          existing.occurred_at !== input.occurred_at ||
+          existing.trip_id !== input.trip_id ||
+          stable(existing.payload) !== stable(input.payload))
+        throw new Error("OFFLINE_IDEMPOTENCY_COLLISION");
+      return { item: structuredClone(existing), duplicate: true };
+    }
 
     const nowIso = this.now().toISOString();
     const skew = Math.abs(
