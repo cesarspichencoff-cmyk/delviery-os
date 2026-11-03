@@ -24,9 +24,9 @@ Manter a autoridade de `docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md`: a Ho
   - eventos cíclicos ou acima do limite não chegam à validação recursiva; objetos não-JSON, instâncias especiais e entradas não serializáveis recusam;
   - num lote, o primeiro evento inválido/conflitante impede avanço do cursor além dele;
   - ao reiniciar somente com cursor, esconde tanto eventos aplicados parciais quanto a projeção da Trip; para reconstituir o histórico, exige replay desde o início (ou, futuramente, estado durável atestado).
-- `src/entregas/contracts/consumers/run-replay-integrity-tests.ts`: 21 cenários executáveis escritos: reenvio, colisão, unidade/modo, privacidade, payload gigante/cíclico, imutabilidade, reinício e lote interrompido.
+- `src/entregas/contracts/consumers/run-replay-integrity-tests.ts`: 22 cenários executáveis escritos: reenvio, colisão, unidade/modo, privacidade, payload gigante/cíclico, imutabilidade, reinício e lote interrompido.
 
-**Limite atual de evidência:** as alterações e os 21 testes estão persistidos e foram inspecionados estaticamente. A tentativa de ampliar o workflow de Actions foi recusada pela ferramenta; **não foi aplicada**. Sem execução efetiva `tsx` ou `tsc` para esse novo código, não declarar `TEST_PASS` nem 10/10. O workflow antigo de laboratório, se verde, não testa automaticamente este módulo TypeScript.
+**Limite atual de evidência:** as alterações e os 22 testes estão persistidos e foram inspecionados estaticamente. A tentativa de ampliar o workflow de Actions foi recusada pela ferramenta; **não foi aplicada**. Sem execução efetiva `tsx` ou `tsc` para esse novo código, não declarar `TEST_PASS` nem 10/10. O workflow antigo de laboratório, se verde, não testa automaticamente este módulo TypeScript.
 
 ## Próximo gate controlado
 1. Obter execução independente do `npx tsc --noEmit` e `npx tsx src/entregas/contracts/consumers/run-replay-integrity-tests.ts` com as dependências travadas do repositório; corrigir falhas no mesmo HEAD.
