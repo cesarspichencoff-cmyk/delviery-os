@@ -30,7 +30,7 @@ const result=(gate,reason,more={})=>Object.freeze({schema:OUTPUT,gate,reason,
  navigationAuthorized:false,detailsPerCycleCap:0,ordersPublishable:0,
  rawIdsExported:0,personalFieldsExported:0,actionsExecuted:0,
  noExternalEffects:true,detailQueue:[],...more});
-const token=(key,s)=>crypto.createHmac('sha256',Buffer.from(key,'hex')).update(s).digest('hex').slice(0,24);
+const token=(keyBytes,s)=>crypto.createHmac('sha256',keyBytes).update(s).digest('hex').slice(0,24);
 function plan(input,previous={}){
  if(!only(input,['schema','host','unit','now','privateKey','gestor','reader','catalog','separateSession','operatorActive','navigationEffectProven']))
   return result('HOLD','ENVELOPE_INVALID');
@@ -38,6 +38,7 @@ function plan(input,previous={}){
   return result('HOLD','SCOPE_OR_KEY_INVALID');
  const now=instant(input.now);
  if(now===null)return result('HOLD','CLOCK_INVALID');
+ const keyBytes=Buffer.from(input.privateKey,'hex');
  const g=input.gestor,r=input.reader;
  if(!only(g,['capturedAt','origin','coverage','merchantVerified','cards'])||
   g.origin!=='GESTOR_WEB_SHADOW'||!['VISIBLE_ONLY','UNKNOWN','FULL_VERIFIED'].includes(g.coverage)||
@@ -87,8 +88,8 @@ function plan(input,previous={}){
  for(const short of [...groups.keys()].sort()){
   const cards=groups.get(short),revisions=native.get(short)||[];
   if(cards.length!==1||revisions.length>1){collisions++;continue}
-  const card=cards[0],opaque=token(input.privateKey,'ITAIM|'+localDay+'|'+short);
-  const version=token(input.privateKey,card.state+'|'+card.revisionHash);
+  const card=cards[0],opaque=token(keyBytes,'ITAIM|'+localDay+'|'+short);
+  const version=token(keyBytes,card.state+'|'+card.revisionHash);
   observations[opaque]=version;
   if(revisions.length===1)matchedClaims++;
   const detailRead=card.detail?.state==='READ';
