@@ -31,6 +31,11 @@ function snapshotPublicEvent(event: EntregasPublicEvent):
     if (["bigint", "symbol", "function"].includes(typeof value)) throw new Error("NON_JSON_VALUE");
     if (value === null || typeof value !== "object") return value;
     if (seen.has(value)) throw new Error("CYCLIC_EVENT");
+    if (!Array.isArray(value)) {
+      const prototype = Object.getPrototypeOf(value);
+      if (prototype !== Object.prototype && prototype !== null)
+        throw new Error("NON_PLAIN_JSON_VALUE");
+    }
     seen.add(value);
     const result = Array.isArray(value)
       ? value.map((item) => normalized(item, depth + 1))
@@ -82,7 +87,8 @@ export class SimulatedCopilotoConsumer {
   }
 
   get appliedEvents(): readonly EntregasPublicEvent[] {
-    return this.appliedOrder;
+    // Em retomada com histórico incompleto, não expor um subconjunto como Trip válida.
+    return this.historyComplete ? this.appliedOrder : [];
   }
 
   get isolatedEvents(): readonly { raw: unknown; reason: string }[] {
@@ -114,7 +120,13 @@ export class SimulatedCopilotoConsumer {
       this.isolated.push({ raw: null, reason: "unsafe_event_envelope" });
       return { applied: false, reason: "unsafe_event_envelope", isolated: true };
     }
-    const v = validatePublicEvent(raw);
+    let v: ReturnType<typeof validatePublicEvent>;
+    try {
+      v = validatePublicEvent(raw);
+    } catch {
+      this.isolated.push({ raw: null, reason: "schema_validation_error" });
+      return { applied: false, reason: "schema_validation_error", isolated: true };
+    }
     if (!v.ok) {
       // Nunca reter payload bruto inválido: pode carregar dados pessoais.
       this.isolated.push({ raw: null, reason: "schema_invalid" });
