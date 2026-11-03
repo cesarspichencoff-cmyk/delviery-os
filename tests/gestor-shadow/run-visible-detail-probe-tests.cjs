@@ -42,6 +42,12 @@ t('hidden rows not counted',()=>{
  assert.equal(a.itemLines,1);
 });
 t('hidden dialog not read',()=>assert.equal(readVisibleDetail(fixture([el('',{},false)])).state,'DETAIL_NOT_OPEN'));
+t('hidden item name is refused',()=>{
+ const r=el('',{'[data-testid="item-name"]':[el('Hidden product',{},false)],
+ '[data-testid="item-quantity"]':[el('1')], '[data-testid="item-option"]':[]});
+ assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_HIDDEN_ITEM_FIELDS');
+});
+
 t('strict no side effect claims',()=>{
  const a=readVisibleDetail(fixture([dialog([row('Sushi','1')])]));
  assert.equal(a.noNavigation,true);assert.equal(a.noFocusChange,true);
