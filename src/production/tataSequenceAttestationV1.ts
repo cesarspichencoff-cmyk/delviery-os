@@ -107,6 +107,10 @@ export function verifyTataSequenceAttestationV1(
   if (!HEX64.test(String(st.writer_key_id)) || !HEX64.test(String(st.attester_key_id)) ||
       st.writer_key_id === st.attester_key_id || set.writer_key_ids.includes(st.attester_key_id))
     reasons.add("SEPARATION_OF_DUTIES");
+  // A claimed writer identity is not proof of an authorized writer.
+  // Accept numbers only from a writer pinned by this independent trust set.
+  if (!set.writer_key_ids.includes(st.writer_key_id))
+    reasons.add("WRITER_NOT_TRUSTED");
   if (!Number.isSafeInteger(st.issued_at_s) || !Number.isSafeInteger(st.expires_at_s) ||
       st.expires_at_s <= st.issued_at_s || st.expires_at_s - st.issued_at_s > MAX_WINDOW_S ||
       (Number.isSafeInteger(nowS) && ((nowS as number) < st.issued_at_s || (nowS as number) > st.expires_at_s)))
@@ -115,7 +119,8 @@ export function verifyTataSequenceAttestationV1(
   if (!anchor || anchor.role !== "TATA_SEQUENCE_ATTESTER" ||
       (anchor.scope !== "PRODUCTION_ITAIM" && anchor.scope !== "TEST_ISOLATED") ||
       !Number.isSafeInteger(anchor.not_before_s) || !Number.isSafeInteger(anchor.not_after_s) ||
-      !Number.isSafeInteger(st.issued_at_s) || st.issued_at_s < anchor.not_before_s || st.issued_at_s > anchor.not_after_s) {
+      !Number.isSafeInteger(st.issued_at_s) || st.issued_at_s < anchor.not_before_s || st.issued_at_s > anchor.not_after_s ||
+      (Number.isSafeInteger(nowS) && ((nowS as number) < anchor.not_before_s || (nowS as number) > anchor.not_after_s))) {
     reasons.add("ATTESTER_NOT_TRUSTED");
     return answer(null, null);
   }
