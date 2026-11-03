@@ -23,7 +23,7 @@ import {
 } from "./native-bridge.js";
 import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
 import {
-  inspectOperationalEvents, queueHoldMessage,
+  inspectOperationalEvents, queueHoldMessage, verifiedNativeQueueReceipt,
   QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
 } from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
@@ -159,7 +159,7 @@ function queueOnDevice(key, build) {
   }
   // Um ACK nativo precisa confirmar ESTA identidade, não apenas trazer ok=true.
   // Duplicate para um event_id recém-criado é colisão inesperada, não prova de escrita.
-  if (!r || r.ok !== true || r.event_id !== event_id || r.duplicate === true) {
+  if (!verifiedNativeQueueReceipt(r, event_id)) {
     queueHold = QUEUE_WRITE_BLOCK;
     renderDeviceQueue(activeTrip());
     throw new Error(queueHoldMessage(queueHold));
