@@ -46,3 +46,11 @@ tools/comandas_shadow_offline_run_v1.cjs -text
 # Conference-only offline replay is sealed and byte-checked on Windows as well.
 tools/conference_only_from_sanitized_v1.cjs -text
 tools/comandas_conference_only_shadow_runner_v1.cjs -text
+# V2 Conference integration: immutable Git blob identity across Linux/Windows.
+tools/comandas_conference_sequence_v2_integration_v1.cjs -text
+tools/comandas_sequence_v2_authorized_ledger_core_v1.cjs -text
+tools/comandas_sequence_v2_writer_receipt_review_v1.cjs -text
+tools/comandas_sequence_v2_independent_attester_core_v1.cjs -text
+tools/comandas_sequence_v2_native_pair_eligibility_v1.cjs -text
+docs/comandas/CANDIDATA_INTEGRACAO_CONFERENCIA_V2.manifest.json -text
+tools/verificar_comandas_conference_v2_manifest_v1.cjs -text
