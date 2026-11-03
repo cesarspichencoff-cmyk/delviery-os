@@ -27,7 +27,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Node contract tests (synthetic only)
-        run: node tests/silent-runner/run-contract-tests.cjs
+        run: |
+          node tests/silent-runner/run-contract-tests.cjs
+          node tests/silent-runner/run-pair-contract-tests.cjs
 
   native-windows:
     name: Windows no-console native fixture
