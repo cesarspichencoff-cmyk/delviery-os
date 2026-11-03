@@ -1,0 +1,21 @@
+SIMULAÇÃO · NÃO PRODUZIR
+CONFERÊNCIA
+iFood #TESTE001  |  TEKNISA FICTICIO01  |  19:45
+------------------------------------------------
+C1  CAIXA 750                       Op. ________
+1  SUSHI DE SALMÃO
+OBS: SEM CEBOLINHA
+2  URAMAKI CALIFÓRNIA
+------------------------------------------------
+C2  CAIXA 450                       Op. ________
+1  HOT ROLL
+OBS: SEM MOLHO
+------------------------------------------------
+Sacola: 1 G  |  1 Kit p/2
+Acomp.: 1 Gari  |  1 Tare
+------------------------------------------------
+001
+
+
+
+EXEMPLO FICTÍCIO. SEM NÚMERO REAL. NÃO IMPRIMIR.
