@@ -105,6 +105,19 @@ check('missing UI accepted as hold',run(i=>{i.ui=null}).ui==='MISSING');
 check('missing V2 accepted as hold',run(i=>{i.v2=null}).v2==='MISSING');
 check('invalid time rejected',run(i=>{i.now='2026-13-01T13:00:00Z'}).reason==='INVALID_CALLER_CLOCK');
 check('invalid leap date rejected',run(i=>{i.now='2026-02-29T13:00:00Z'}).reason==='INVALID_CALLER_CLOCK');
+check('fresh Edge relaunch triggers safety HOLD',run(i=>{
+ i.edge.observedAtUtc='2026-11-03T18:43:55Z';i.edge.action='LAUNCHED';
+}).reason==='EDGE_WINDOW_LAUNCH_NEEDS_SAFETY_REVIEW');
+check('fresh Edge relaunch gets explicit safety state',run(i=>{
+ i.edge.observedAtUtc='2026-11-03T18:43:55Z';i.edge.action='LAUNCHED';
+}).edge==='FRESH_WINDOW_LAUNCH_SAFETY_HOLD');
+check('stale launch is not misreported as a new event',base.reason!=='EDGE_WINDOW_LAUNCH_NEEDS_SAFETY_REVIEW');
+check('no Edge relaunch keeps status-only',run(i=>{
+ i.edge.observedAtUtc='2026-11-03T18:43:55Z';i.edge.action='UNCHANGED';
+}).edge==='WINDOW_STATUS_ONLY_UNVERIFIED');
+check('Edge alert never grants publishing',run(i=>{
+ i.edge.observedAtUtc='2026-11-03T18:43:55Z';i.edge.action='LAUNCHED';
+}).ordersPublishable===0);
 check('unknown non-whitelisted API absent',!/require\s*\(\s*['"](?:node:)?(?:fs|net|http|https|child_process)/.test(moduleSource));
 check('no console action API',!/(ShowWindow|Start-Process|Process\.Start|execFile|spawn\s*\(|setInterval\s*\()/i.test(moduleSource));
 check('no live provider URLs in source',!/https?:\/\/|ifood\.com\.br/i.test(moduleSource));
