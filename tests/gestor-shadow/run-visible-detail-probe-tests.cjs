@@ -72,7 +72,8 @@ t('hidden option text is not silently dropped',()=>{
 });
 t('aria-hidden ancestor blocks field',()=>{
  const r=row('Temaki','1');
- r.querySelectorAll=s=>s==='[data-testid="item-name"]'?[Object.assign(el('Temaki'),{closest:()=>({})})]:
+ const parent={getAttribute:k=>k==='aria-hidden'?'true':null,ownerDocument:{defaultView:css},parentElement:null};
+ r.querySelectorAll=s=>s==='[data-testid="item-name"]'?[Object.assign(el('Temaki'),{parentElement:parent})]:
   s==='[data-testid="item-quantity"]'?[el('1')]:[];
  assert.equal(readVisibleDetail(fixture([dialog([r])])).state,'HOLD_HIDDEN_ITEM_FIELDS');
 });
