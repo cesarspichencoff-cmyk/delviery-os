@@ -321,4 +321,40 @@ test("resposta de falha tardia não reabre uma entrega já confirmada", () => {
   assert.equal(q.all()[0].attempts, 0);
 });
 
+test("device B não assume histórico local persistido do device A", () => {
+  const storage = new MemoryOfflineStorage();
+  const a = makeQueue(storage);
+  a.enqueue(item(1,"2026-07-25T10:00:00.000Z"));
+  const before = storage.read();
+  const b = new OfflineQueue(storage,{...cfg,device_id:"dev-B-isolated"});
+  assert.deepEqual(b.storageHealth(),
+    {writable:false,reason:"OFFLINE_STORAGE_DEVICE_MISMATCH"});
+  assert.throws(()=>b.enqueue(item(2,"2026-07-25T10:01:00.000Z")),
+    /OFFLINE_STORAGE_DEVICE_MISMATCH/);
+  assert.equal(storage.read(),before);
+  assert.equal(makeQueue(storage).all().length,1);
+});
+
+test("mesma chave e conteúdo divergente nunca é descartado como duplicata", () => {
+  const storage = new MemoryOfflineStorage();
+  const q = makeQueue(storage);
+  q.enqueue(item(1,"2026-07-25T10:00:00.000Z"));
+  const original = storage.read();
+  assert.throws(()=>q.enqueue({...item(1,"2026-07-25T10:00:00.000Z"),
+    payload:{n:42}}),/OFFLINE_IDEMPOTENCY_COLLISION/);
+  assert.throws(()=>q.enqueue({...item(1,"2026-07-25T10:00:00.000Z"),
+    idempotency_key:"outra-chave"}),/OFFLINE_IDEMPOTENCY_COLLISION/);
+  assert.equal(storage.read(),original);
+  assert.deepEqual(q.all().map(x=>x.payload.n),[1]);
+});
+
+test("reordenação de propriedades no payload não cria falso conflito", () => {
+  const q = makeQueue();
+  const input = item(1,"2026-07-25T10:00:00.000Z");
+  q.enqueue({...input,payload:{a:1,b:{x:2,y:3}}});
+  const retry = q.enqueue({...input,payload:{b:{y:3,x:2},a:1}});
+  assert.equal(retry.duplicate,true);
+  assert.equal(q.all().length,1);
+});
+
 console.log(`\n=== ${passed} offline queue tests OK ===\n`);
