@@ -30,4 +30,6 @@ nav.navigationEffectProven=true;nav.gestor.merchantVerified=true;
 check('self-claim never authorizes navigation',plan(nav).navigationAuthorized===false);
 const cat=sample();cat.catalog={source:'TOQAN_AGGREGATE',pausedCount:12,sourceVerified:true};
 check('aggregate does not certify catalog',plan(cat).pausedCatalogProven===false);
+const invalidDay=sample();invalidDay.now='2026-03-03T15:30:00Z';invalidDay.gestor.capturedAt='2026-02-31T15:30:00Z';invalidDay.reader.capturedAt=invalidDay.now;
+check('impossible February date refused',plan(invalidDay).reason==='SOURCE_STALE');
 console.log('GESTOR_SHADOW_PLAN_TEST_PASS '+n+'/'+n);
