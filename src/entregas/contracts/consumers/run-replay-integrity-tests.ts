@@ -70,13 +70,13 @@ async function main(): Promise<void> {
   check("entrada inválida com telefone não é retida", () => {
     const x = c.apply(make("evt-pii", { payload: { telefone: "000000" } }));
     assert.equal(x.reason, "schema_invalid");
-    assert.equal(c.isolatedEvents.at(-1)?.raw, null);
+    assert.equal(c.isolatedEvents[c.isolatedEvents.length - 1]?.raw, null);
     assert.equal(JSON.stringify(c.isolatedEvents).includes("000000"), false);
   });
   check("evento com schema incompatível não é retido", () => {
     const x = c.apply({ ...make("evt-wrong"), schema_version: "99.0.0" });
     assert.equal(x.reason, "schema_invalid");
-    assert.equal(c.isolatedEvents.at(-1)?.raw, null);
+    assert.equal(c.isolatedEvents[c.isolatedEvents.length - 1]?.raw, null);
   });
   check("evento cíclico não derruba o consumer", () => {
     const obj = make("evt-cycle");
@@ -84,12 +84,12 @@ async function main(): Promise<void> {
     const x = c.apply(obj);
     assert.equal(x.reason, "unsafe_event_envelope");
     assert.equal(x.isolated, true);
-    assert.equal(c.isolatedEvents.at(-1)?.raw, null);
+    assert.equal(c.isolatedEvents[c.isolatedEvents.length - 1]?.raw, null);
   });
   check("evento gigantesco fica fora sem cópia", () => {
     const x = c.apply(make("evt-big", { payload: { blob: "x".repeat(33000) } }));
     assert.equal(x.reason, "unsafe_event_envelope");
-    assert.equal(c.isolatedEvents.at(-1)?.raw, null);
+    assert.equal(c.isolatedEvents[c.isolatedEvents.length - 1]?.raw, null);
   });
   check("números não finitos são rejeitados sem publicação", () => {
     const x = c.apply(make("evt-nan", { payload: { duration: Number.POSITIVE_INFINITY } }));
