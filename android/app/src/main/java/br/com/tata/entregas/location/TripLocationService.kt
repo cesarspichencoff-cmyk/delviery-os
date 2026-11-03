@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.os.BatteryManager
 import android.os.Build
@@ -22,6 +24,8 @@ import br.com.tata.entregas.sync.ApiResult
 import br.com.tata.entregas.sync.DeviceSession
 import br.com.tata.entregas.sync.EntregasApi
 import br.com.tata.entregas.sync.SyncScheduler
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationCallback
@@ -78,7 +82,10 @@ class TripLocationService : Service() {
         }
     }
 
-    private lateinit var fused: FusedLocationProviderClient
+    // Android sem Google não deve nem criar o cliente GMS ao iniciar o serviço.
+    private val fused: FusedLocationProviderClient by lazy(LazyThreadSafetyMode.NONE) {
+        LocationServices.getFusedLocationProviderClient(this)
+    }
     private lateinit var db: EntregasDatabase
     // Lifecycle, callbacks e conclusões de Tasks compartilham o main thread.
     // Room suspende sem bloquear; apenas o HTTP bloqueante vai para IO.
@@ -97,6 +104,98 @@ class TripLocationService : Service() {
     private var captureControlJob: Job? = null
 
     private var callback: LocationCallback? = null
+    private var systemListener: LocationListener? = null
+
+    private fun selectBackend(manager: LocationManager?, nativeOnly: Boolean = false): LocationBackend {
+        if (manager == null) return LocationBackend.UNAVAILABLE
+        val play = !nativeOnly && runCatching {
+            GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) ==
+                ConnectionResult.SUCCESS
+        }.getOrDefault(false)
+        val gps = runCatching { manager.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false)
+        val net = runCatching { manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) }.getOrDefault(false)
+        val capabilities = LocationCapabilities(
+            playServicesAvailable = play,
+            gpsEnabled = gps,
+            networkEnabled = net,
+            fineGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED,
+            coarseGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED,
+        )
+        return if (nativeOnly) LocationBackendSelector.afterFusedFailure(capabilities)
+            else LocationBackendSelector.select(capabilities)
+    }
+
+    private fun requestSystemUpdates(
+        manager: LocationManager,
+        backend: LocationBackend,
+        decision: CaptureDecision,
+        session: CaptureSessionLifecycle.Session,
+    ) {
+        val previousFused = callback
+        val previousSystem = systemListener
+        val registration = sessions.register(session) ?: return
+        val provider = if (backend == LocationBackend.SYSTEM_GPS) LocationManager.GPS_PROVIDER
+            else LocationManager.NETWORK_PROVIDER
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                if (!sessions.isCurrent(registration)) return
+                val point = CanonicalPoint.fromLocation(
+                    location = location,
+                    tripId = registration.session.tripId,
+                    deviceId = deviceId,
+                    capturedOffline = !NetworkState.isOnline(this@TripLocationService),
+                )
+                persist(point, registration.session, location.time)
+                reevaluateCadence()
+            }
+            override fun onProviderDisabled(disabledProvider: String) {
+                if (sessions.isCurrent(registration)) {
+                    stopBecause("provedor_localizacao_desativado", registration.session)
+                }
+            }
+        }
+        callback = null
+        systemListener = listener
+        currentDecision = decision
+        fun subscribe() {
+            if (!sessions.isCurrent(registration)) return
+            try {
+                // Framework nativo; mesma fila e contrato que o Fused.
+                manager.requestLocationUpdates(
+                    provider,
+                    decision.intervalS.toLong().coerceAtLeast(1L) * 1000L,
+                    0f,
+                    listener,
+                    mainLooper,
+                )
+                if (sessions.isCurrent(registration)) {
+                    Bridge.publishServiceState(serviceStateJson())
+                    updateNotification()
+                } else manager.removeUpdates(listener)
+            } catch (e: SecurityException) {
+                stopBecause("permissao_revogada", session)
+            } catch (e: IllegalArgumentException) {
+                stopBecause("provedor_localizacao_indisponivel", session)
+            }
+        }
+        if (previousSystem != null) {
+            try { manager.removeUpdates(previousSystem) }
+            catch (e: SecurityException) {
+                stopBecause("falha_remocao_localizacao", session)
+                return
+            }
+        }
+        if (previousFused == null) subscribe()
+        else fused.removeLocationUpdates(previousFused).addOnCompleteListener { removed ->
+            if (sessions.isCurrent(registration)) {
+                if (removed.isSuccessful) subscribe()
+                else stopBecause("falha_remocao_localizacao", session)
+            }
+        }
+    }
+
 
     private fun createCallback(registration: CaptureSessionLifecycle.Registration) = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -110,15 +209,17 @@ class TripLocationService : Service() {
                     deviceId = deviceId,
                     capturedOffline = !NetworkState.isOnline(this@TripLocationService),
                 )
-                persist(point, session)
-                Bridge.publishLocation(point, location.time)
+                // Só a escrita Room confirmada autoriza exibir o ponto como atual.
+                // A publicação dentro do mutex não atravessa STOP nem troca de viagem.
+                persist(point, session, location.time)
             }
             reevaluateCadence()
         }
 
         override fun onLocationAvailability(availability: LocationAvailability) {
             if (!sessions.isCurrent(registration)) return
-            freshness = if (availability.isLocationAvailable) "current" else "unavailable"
+            // Provider disponível NÃO é evidência de ponto persistido. Só Room confirma "current".
+            if (!availability.isLocationAvailable) freshness = "unavailable"
             Bridge.publishServiceState(serviceStateJson())
             updateNotification()
         }
@@ -126,7 +227,6 @@ class TripLocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        fused = LocationServices.getFusedLocationProviderClient(this)
         db = EntregasDatabase.get(this)
         TripNotification.ensureChannel(this)
     }
@@ -301,6 +401,29 @@ class TripLocationService : Service() {
             return
         }
 
+        val manager = getSystemService(LocationManager::class.java)
+        when (val backend = selectBackend(manager)) {
+            LocationBackend.UNAVAILABLE -> {
+                stopBecause("provedor_localizacao_indisponivel", session)
+                return
+            }
+            LocationBackend.SYSTEM_GPS, LocationBackend.SYSTEM_NETWORK -> {
+                requestSystemUpdates(manager!!, backend, decision, session)
+                return
+            }
+            LocationBackend.GOOGLE_FUSED -> Unit
+        }
+
+        // Se o provider anterior era Android nativo, retire somente aquele
+        // listener antes de iniciar o callback Fused desta inscrição.
+        systemListener?.let { old ->
+            try { manager?.removeUpdates(old) }
+            catch (e: SecurityException) {
+                stopBecause("falha_remocao_localizacao", session)
+                return
+            }
+        }
+        systemListener = null
         val previous = callback
         val registration = sessions.register(session) ?: return
         // Cada inscrição tem callback próprio: remover A depois de iniciar B
@@ -328,7 +451,19 @@ class TripLocationService : Service() {
                         fused.removeLocationUpdates(callback)
                     }
                 }.addOnFailureListener {
-                    if (sessions.isCurrent(registration)) stopBecause("falha_inscricao_localizacao", session)
+                    if (!sessions.isCurrent(registration)) return@addOnFailureListener
+                    // O GMS foi encontrado, mas falhou ao inscrever o callback.
+                    // Tentar apenas o backend nativo com permissão vigente.
+                    // A remoção do Fused anterior deve terminar primeiro.
+                    val manager = getSystemService(LocationManager::class.java)
+                    val native = selectBackend(manager, nativeOnly = true)
+                    if (manager != null &&
+                        (native == LocationBackend.SYSTEM_GPS ||
+                         native == LocationBackend.SYSTEM_NETWORK)) {
+                        requestSystemUpdates(manager, native, decision, session)
+                    } else {
+                        stopBecause("falha_inscricao_localizacao", session)
+                    }
                 }
             } catch (e: SecurityException) {
                 stopBecause("permissao_revogada", session)
@@ -375,7 +510,15 @@ class TripLocationService : Service() {
         if (next.context != currentDecision?.context) requestUpdates(next)
     }
 
-    private fun persist(point: CanonicalGpsPoint, session: CaptureSessionLifecycle.Session) {
+    private fun persist(point: CanonicalGpsPoint, session: CaptureSessionLifecycle.Session, timeMs: Long) {
+        // Localização simulada nunca entra na outbox e nunca se apresenta como real.
+        if (point.isMock) {
+            if (sessions.isCurrent(session)) {
+                freshness = "unavailable"
+                updateNotification()
+            }
+            return
+        }
         // O callback chega no mainLooper em ordem. UNDISPATCHED entra na fila
         // do mutex nessa mesma ordem antes de devolver o controle ao callback.
         // O mutex preserva a ordem observada; o Room, por sua vez, reserva a
@@ -410,13 +553,15 @@ class TripLocationService : Service() {
                     nowMs,
                 )
                 // IGNORE de pointId repetido não consome número da sequência.
-                if (inserted == -1L) return@withLock
+                if (inserted <= 0L) return@withLock
                 val pending = db.gpsPoints().pendingCount()
                 // Pontos já observados continuam duráveis após STOP, mas sua
                 // conclusão não pode ressuscitar notificação nem alterar B.
-                if (sessions.isCurrent(session)) {
+                if (DurableLocationPublication.mayPublish(inserted, sessions.isCurrent(session), point.isMock)) {
                     lastAccuracyM = point.accuracyM
+                    freshness = "current"
                     pendingSync = pending
+                    Bridge.publishLocation(point, timeMs)
                     updateNotification()
                 }
                 SyncScheduler.requestNow(this@TripLocationService)
@@ -461,6 +606,10 @@ class TripLocationService : Service() {
         captureControlJob = null
         callback?.let { fused.removeLocationUpdates(it) }
         callback = null
+        systemListener?.let { listener ->
+            runCatching { getSystemService(LocationManager::class.java)?.removeUpdates(listener) }
+        }
+        systemListener = null
         currentDecision = null
         Bridge.publishStopped(reason)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -471,6 +620,10 @@ class TripLocationService : Service() {
         sessions.invalidate()
         callback?.let { fused.removeLocationUpdates(it) }
         callback = null
+        systemListener?.let { listener ->
+            runCatching { getSystemService(LocationManager::class.java)?.removeUpdates(listener) }
+        }
+        systemListener = null
         scope.cancel()
         super.onDestroy()
     }
