@@ -150,16 +150,16 @@ try{
   assert.throws(()=>db.prepare("DELETE FROM tata_seq_v2_binding").run(),/IMMUTABLE_BINDING/);
   assert.throws(()=>db.prepare("UPDATE tata_seq_v2_binding SET seq=99").run(),/IMMUTABLE_BINDING/);
   const before=digest();
-  db.exec("SAVEPOINT simulated_broken_head");
+  // Only the disposable test fixture is altered and then restored.
+  const scope="STORE:0001/01|DATE:2026-11-03";
+  const oldHead=db.prepare("SELECT highest FROM tata_seq_v2_head WHERE scope=?").get(scope).highest;
+  db.prepare("UPDATE tata_seq_v2_head SET highest=5 WHERE scope=?").run(scope);
   try{
-   db.prepare("UPDATE tata_seq_v2_head SET highest=5 WHERE scope=?")
-    .run("STORE:0001/01|DATE:2026-11-03");
    const held=bind(makePair("F"));
    assert.equal(held.reason,"LEDGER_DAY_NOT_CONTIGUOUS_OR_UNTRUSTED");
    assert.equal(digest(),before);
   }finally{
-   db.exec("ROLLBACK TO simulated_broken_head");
-   db.exec("RELEASE simulated_broken_head");
+   db.prepare("UPDATE tata_seq_v2_head SET highest=? WHERE scope=?").run(oldHead,scope);
   }
  });
  test("persisted DB survives close/reopen with the exact same binding",()=>{
