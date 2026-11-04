@@ -193,6 +193,30 @@ const html=(one=false)=>`<!doctype html><html><body>
     const after=await page.evaluate(()=>({html:document.documentElement.outerHTML,focus:document.activeElement?.id,scrollX,scrollY}));
     assert.deepEqual(after,before);
   });
+  await setup(groupedHtml());
+  await test("unassigned grouped item blocks the review",async()=>{
+    await page.locator("dialog").evaluate(d=>{
+      const item=document.createElement("div");
+      item.className="line";
+      item.innerHTML='<span class="name">Loose item</span><span class="qty">1</span>';
+      d.appendChild(item);
+    });
+    const a=await scan(GROUP_CFG);
+    assert.equal(a.state,"HOLD_ITEM_SCOPE_AMBIGUOUS");
+    assert.equal(a.ordersPublishable,0);
+  });
+  await setup(groupedHtml());
+  await test("nested order blocks cannot duplicate item quantities",async()=>{
+    await page.locator(".detail-order").first().evaluate(block=>{
+      const nested=document.createElement("section");
+      nested.className="detail-order";
+      nested.innerHTML='<span class="detail-ref">#1236</span>';
+      block.appendChild(nested);
+    });
+    const a=await scan(GROUP_CFG);
+    assert.equal(a.state,"HOLD_OVERLAPPING_ORDER_SCOPE");
+    assert.equal(a.ordersPublishable,0);
+  });
   await test("no external requests during the entire fixture",async()=>assert.equal(network,0));
   console.log("GESTOR_V3_VISIBLE_SENSOR_EDGE_FIXTURE_PASS "+pass+"/"+pass+
     " (SYNTHETIC_ONLY; NO_ORDERS_FROM_IFOOD)");
