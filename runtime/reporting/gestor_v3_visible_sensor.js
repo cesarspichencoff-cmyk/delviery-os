@@ -138,7 +138,9 @@
       pending = true;
       queueMicrotask(() => { pending = false; reconcile(); });
     });
-    observer.observe(doc.documentElement, { subtree: true, childList: true, characterData: true });
+    // Attribute-only UI changes (hidden, open, class, aria-* and data-*) can alter
+    // visibility, order identity or the selected detail without changing text.
+    observer.observe(doc.documentElement, { subtree: true, childList: true, characterData: true, attributes: true });
     reconcile();
     return Object.freeze({
       reconcile,
