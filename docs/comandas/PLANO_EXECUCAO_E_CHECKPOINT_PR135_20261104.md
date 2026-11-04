@@ -291,6 +291,40 @@ A documentação Microsoft SQL Server confirma que `SERIALIZABLE` pode reter blo
 
 **Primeiro** obter as duas amostras **reais e passivas** conforme o protocolo já autorizado, preservando identificadores apenas dentro da operação e fornecendo ao projeto somente totais/flags sem PII. **Depois**, comparar o resultado D0/D1/D2, a cobertura por praça e as anomalias com a alternativa SQL bloqueante. Mesmo um D1 físico confirmado **não habilita** automaticamente papel de Conferência, sequência ou Reader novo; ele apenas fortalece a decisão de preservar Cozinha/Sushi nativas. Não antecipar instalação ou contatar fornecedores sem autorização separada.
 
+## Etapa 3 — censo passivo: corrigido o falso D1 sem cobertura das praças (04/11/2026)
+
+**STATUS: CÓDIGO OFFLINE VALIDADO, SEM CENSO REAL, ETAPA 3 AINDA EM_ANDAMENTO / PR #135 DRAFT/HOLD.**
+
+### Problema material detectado e reparado
+
+O primeiro classificador de autorrelatos (37 cenários, `schema v1`) aceitava classificar provisoriamente como `D1_SAMPLE_CONFORME_RELATADA_NAO_AUTENTICADA` dois turnos completos **mesmo que todos os pedidos observados fossem de uma única praça e faltassem famílias de preparo**. Isso contrariava o protocolo já aprovado em `docs/comandas/CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md`: observar amostras consecutivas sem escolher pedidos favoráveis, identificar tipos de preparo efetivamente presentes e **não declarar conformidade do turno inteiro com categoria/práça ausente**.
+
+- **Correção real em código:** `tools/comandas_passive_paper_census_review_only.cjs` passa a exigir `schema=tata.comandas.paper-census-sample-offline.v2`, recusando payload v1 como `D0` em vez de promovê-lo silenciosamente. Cada turno declara agora um agregado `preparation_coverage` com contagens de pedidos de **uma praça, de múltiplas praças e de praça desconhecida**, que precisam somar exatamente os pedidos observados; quatro famílias de preparo (`SUSHI_1`, `SUSHI_2`, `HOT_ROLL`, `KITCHEN`) e presença de exceção **combinado dupla** sem roteamento comprovado.
+- **D1 somente como autorrelato restrito:** além das condições anteriores (almoço+jantar, até 20 pedidos consecutivos por turno, ligação papel-pedido, todas as praças necessárias, conteúdo/quantidades/notas e saídas tardias conferidos), exige **ambos os tipos de pedido e as quatro famílias em cada turno**, zero pedidos de praça desconhecida e nenhuma exceção `combinado dupla` sem comprovação. Se os pedidos consecutivos naturais não incluírem o mix, classificar `D0`; **não escolher pedidos artificialmente** para obter D1.
+- **D2 prevalece** quando há anomalia efetivamente relatada em input válido, mesmo com cobertura incompleta; informação ausente, soma impossível, categoria repetida/desconhecida ou schema antigo não vira zero anomalias. Mesmo D1 tem sempre `sample_provenance=UNATTESTED_HUMAN_REPORT`, `review_status=HOLD`, `native_paper_sample_proven=false` e todas as permissões de efeito `false`.
+- **Prova de código:** commits `0b0173fe` (contrato v2) e `07be2cc0` (52 testes) nesta mesma PR. A CI [#41924450934](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41924450934) para o SHA completo `07be2cc03178caca0e8fcd0dee00bec72c2b58ef` terminou **completed/success em Linux e Windows** e executou os **52 cenários do censo** em ambos, sem regressões. A CI anterior `#41923507012` foi cancelada após novo commit e **não é a prova**. A futura CI do presente registro documental exige resultado no novo SHA.
+
+### Cartão enxuto para registro humano — SOMENTE PAPEL QUE JÁ SAIRIA NATURALMENTE
+
+**Ainda não preenchido.** Uma ficha para `ALMOCO` e outra para `JANTAR`; somente a equipe presente nas praças pode testemunhar papel físico. A equipe guarda a associação visual dos aliases `A01...A20`/`J01...J20` **dentro da operação**, sem subir os números nativos, nomes, horários exatos, itens completos, observações livres, dados fiscais, imagens de clientes ou endereços ao GitHub/chat.
+
+| Informação sanitizada por turno | Registro humano — inicialmente EM BRANCO |
+|---|---|
+| Data local / turno | — / ALMOCO ou JANTAR |
+| Pedidos disponíveis no recorte da amostra / pedidos consecutivos observados | — / — (até 20; menos se houver menos pedidos) |
+| Contagem: 1 praça / múltiplas praças / praça desconhecida | — / — / — (soma deve igualar pedidos observados) |
+| Família efetivamente vista no papel e itens | SUSHI_1 [ ], SUSHI_2 [ ], HOT_ROLL [ ], KITCHEN [ ] |
+| Pedido e papel associados visualmente | SIM / NÃO / INCERTO |
+| Cobertura de todas as praças necessárias | COMPLETA / PARCIAL / DESCONHECIDA |
+| Itens e quantidades conferidos / notas conferidas | SIM / NÃO / INCERTO; SIM / NÃO / INCERTO |
+| Saída tardia/reimpressão acompanhada durante a janela | SIM / NÃO / INCERTO |
+| Exceção de roteamento `combinado dupla` não resolvida | SIM / NÃO |
+| Anomalias classificadas sem nomes nem itens | Falta, duplicata, praça errada, divergência, nota omitida, atraso, GP/Gestor indevido, ilegível, origem incerta, outra; ou nenhuma **somente se observada** |
+
+**Condições de preenchimento:** não preencher zeros para impressora não acompanhada; não inferir papel por fila Windows `Printed`; nunca imprimir teste, reimprimir, acionar GP/Gestor, mudar caixa, serviço, SQL, impressora ou fiscal. A ficha permite apenas preparar informação agregada para a análise **quando** a observação realmente acontecer. Enquanto sem duas fichas reais, `PAPER_CENSUS_NOT_YET_COLLECTED`; a Etapa 5 **não** começa.
+
+**Decisão preservada:** priorizar a verificação da possibilidade de manter Cozinha/Sushi nativas e Conferência em sombra, evitando a rota de substituição com `SERIALIZABLE` e seus locks não medidos. Não confundir proteção estática `CODE_TEST_PASS` com `WORLD_PROVEN`, nem usar D1 relatado para liberar impressão, sequência, SQL, migração ou cutover. Próximo ganho material exige observações reais e autorizadas **por pessoa presente**, não mais fixtures.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -307,4 +341,5 @@ A documentação Microsoft SQL Server confirma que `SERIALIZABLE` pode reter blo
 - **04/11/2026 — ETAPA 3, gate de origem do plano e risco de escritores:** código `e05f206d`, 36 testes sintéticos `c8f46be6` e CI Linux/Windows `#41906882348` **SUCCESS integral** no commit `e91d1894`. Plano cacheado V2 não autentica a nova candidata; `SERIALIZABLE`, varredura/conversão e completude permanecem sem prova real. Etapa 3 `EM_ANDAMENTO OFFLINE`, PR `DRAFT/HOLD`, zero efeitos operacionais. Commit documental gerará nova CI a verificar.
 - **04/11/2026 — ETAPA 3, risco de lock no POS:** 40/40 contraexemplos simulados do limite de `LOCK_TIMEOUT` do **leitor**; commit `81596080` integra o teste Linux/Windows. CI #41914689748 consultada durante o checkpoint: `PENDING_OR_IN_PROGRESS`. *Nenhuma latência real inferida.* Etapa 3 `EM_ANDAMENTO`, PR #135 `DRAFT/HOLD`, zero SQL/serviços/print reais; CI final do código e do documento a revalidar.
 - **04/11/2026 — ETAPA 3, alternativa sem novo SQL:** censo passivo (já autorizado, ainda sem observação física) ganhou classificador D0/D1/D2 de **autorrelatos** estritamente agregados e 37 testes sintéticos `PASS` isolados; commit `b25d6964`, CI #41923299173 status `in_progress` durante o checkpoint. Nenhum D1/D2 real foi produzido. Etapas 3 e 5 não mudam, PR #135 `DRAFT/HOLD`; dados pessoais/SQL/print permanecem bloqueados. CI do commit documental exige verificação separada.
+- **04/11/2026 — ETAPA 3, falso positivo do censo v1 corrigido:** o D1 anterior não exigia presença de pedidos multipraça nem quatro famílias por turno. Contrato v2 `0b0173fe`, testes 52/52 `07be2cc0`; CI `#41924450934` **completed/success em Linux e Windows**. Ficha sanitizada de coleta preparada, ainda **sem dado físico**, PR #135 DRAFT/HOLD. Etapa 3 segue EM_ANDAMENTO e Etapa 5 PENDENTE. Novo SHA documental requer CI própria.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
