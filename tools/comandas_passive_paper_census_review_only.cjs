@@ -59,7 +59,8 @@ function review(input){
       'anomalies'])||
       !['ALMOCO','JANTAR'].includes(s.window)||seen.has(s.window)||
       typeof s.day!=='string'||!/^\d{4}-\d\d-\d\d$/.test(s.day)||
-      !Number.isFinite(Date.parse(s.day+'T00:00:00Z'))||
+      (!Number.isFinite(Date.parse(s.day+'T00:00:00Z'))||
+       new Date(s.day+'T00:00:00Z').toISOString().slice(0,10)!==s.day)||
       !count(s.orders_available)||!count(s.orders_observed)||
       s.orders_observed>Math.min(20,s.orders_available)||
       !yesno.has(s.consecutive_sample)||
