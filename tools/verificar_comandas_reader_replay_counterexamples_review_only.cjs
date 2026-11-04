@@ -16,6 +16,17 @@ function bootstrap(){const m=model();observe(m,{id:1,hash:A,revision:'r1'});pers
 function stable(m,hash,revision,id=1){
  observe(m,{id,hash,revision});observe(m,{id,hash,revision});
 }
+function fillAcrossBoundedPolls(m,total){
+ const batches=[];
+ for(let first=1;first<=total;first+=50){
+  const last=Math.min(total,first+49),count=last-first+1;
+  if(count>50)throw Error('TOP_50_CONTRACT_VIOLATION');
+  batches.push(count);
+  for(let i=first;i<=last;i++)observe(m,{id:i,hash:A,revision:'r1',orderTime:i});
+  persist(m);
+ }
+ return batches;
+}
 test('bootstrap suppresses A without writing an event file',()=>{
  const m=bootstrap();assert.equal(m.files.size,0);
  assert.equal(m.seen.get(key(1)).emitted_hash,A);safe(m);
@@ -70,25 +81,25 @@ test('missing B file after persisted checkpoint is suppressed without a check',(
  assert.equal(m.suppressions.at(-1).reason,'EMITTED_HASH_EQUAL');safe(m);
 });
 test('exact 250 entries survive persisted checkpoint boundary',()=>{
- const m=model();for(let i=1;i<=250;i++)observe(m,{id:i,hash:A,revision:'r1',orderTime:i});
- persist(m);assert.equal(m.persisted.entries.length,250);
+ const m=model();const batches=fillAcrossBoundedPolls(m,250);
+ assert.deepEqual(batches,[50,50,50,50,50]);assert.equal(m.persisted.entries.length,250);
  restart(m);assert.equal(m.seen.size,250);safe(m);
 });
 test('251st entry silently drops oldest checkpoint row, not RAM row',()=>{
- const m=model();for(let i=1;i<=251;i++)observe(m,{id:i,hash:A,revision:'r1',orderTime:i});
- persist(m);assert.equal(m.seen.size,251);
+ const m=model();const batches=fillAcrossBoundedPolls(m,251);
+ assert.deepEqual(batches,[50,50,50,50,50,1]);assert.equal(m.seen.size,251);
  assert.equal(m.persisted.entries.length,250);
  assert.ok(!m.persisted.entries.some(e=>e.key===key(1)));safe(m);
 });
-test('restart after 251 suppressed baselines emits old suppressed A',()=>{
- const m=model();for(let i=1;i<=251;i++)observe(m,{id:i,hash:A,revision:'r1',orderTime:i});
- persist(m);restart(m);assert.equal(m.seen.has(key(1)),false);
+test('CONDITIONAL resurfacing of evicted bootstrap A after 251 across batches emits unexpectedly',()=>{
+ const m=model();const batches=fillAcrossBoundedPolls(m,251);
+ assert.deepEqual(batches,[50,50,50,50,50,1]);restart(m);assert.equal(m.seen.has(key(1)),false);
  stable(m,A,'r1-old',1);assert.equal(m.writes.length,1);
  assert.equal(m.writes[0].revision,'r1-old');safe(m);
 });
-test('reboot changes outcome because in-memory seen differs from saved checkpoint',()=>{
- const m=model();for(let i=1;i<=251;i++)observe(m,{id:i,hash:A,revision:'r1',orderTime:i});
- persist(m);observe(m,{id:1,hash:A,revision:'r1-old'});
+test('reboot changes outcome IF evicted baseline returns to recent query after source turnover',()=>{
+ const m=model();const batches=fillAcrossBoundedPolls(m,251);
+ assert.deepEqual(batches,[50,50,50,50,50,1]);observe(m,{id:1,hash:A,revision:'r1-old'});
  assert.equal(m.writes.length,0);restart(m);stable(m,A,'r1-old',1);
  assert.equal(m.writes.length,1);safe(m);
 });
@@ -108,7 +119,7 @@ test('two distinct A-B-A-B histories yield observationally identical persisted s
  stable(short,B,'r4');persist(short);
  const longer=bootstrap();stable(longer,B,'r2');stable(longer,A,'r3');
  stable(longer,B,'r4');stable(longer,A,'r5');stable(longer,B,'r6');persist(longer);
- const visible=m=>JSON.stringify({cp:m.persisted,files:[...m.files.keys()].sort()});
+ const visible=m=>JSON.stringify({cp:m.persisted,files:[...m.files.entries()].sort()});
  assert.equal(visible(short),visible(longer));
  assert.notEqual(short.observations.length,longer.observations.length);
  assert.deepEqual(short.writes.map(x=>x.revision),longer.writes.map(x=>x.revision));
