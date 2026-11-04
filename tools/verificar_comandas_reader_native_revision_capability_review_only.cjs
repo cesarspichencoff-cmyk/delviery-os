@@ -126,9 +126,10 @@ test('catalog must include system types to interpret declared column type',()=>{
 });
 test('catalog query cannot be a database write',()=>{
  const x=base();
+ const normalized=x.catalog_sql.replace(/\r\n/g,'\n');
  const liveQueryStart='\nSELECT\n  s.name AS source_schema,';
- assert.equal(x.catalog_sql.split(liveQueryStart).length,2,'SQL_SELECT_MARKER_NOT_UNIQUE');
- x.catalog_sql=x.catalog_sql.replace(liveQueryStart,
+ assert.equal(normalized.split(liveQueryStart).length,2,'SQL_SELECT_MARKER_NOT_UNIQUE');
+ x.catalog_sql=normalized.replace(liveQueryStart,
   '\nUPDATE\n  s.name AS source_schema,');
  hold(x,'CATALOG_METADATA_QUERY_SCOPE_INVALID');
 });
