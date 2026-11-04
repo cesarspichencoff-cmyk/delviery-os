@@ -33,6 +33,14 @@ Consultas de catálogo anteriores comprovaram índices com chaves adequadas para
 
 **NÃO PROVADO:** leitura transacional atômica de cabeçalho/itens/observações; prova de todos os itens em instantes concorrentes; completude independente das notas; associação iFood por UUID confirmado; semântica de pronto de estados 3/P/X; emissão exclusiva/sem duplicidade da Conferência; densidade noturna física.
 
+## Ajuste de tipos nativos e regressão (verificado depois do plano)
+
+Nova leitura **somente de catálogo** (`sys.columns` + `sys.types`) confirmou que `TEKNISA.COMANDAVEN.NRVENDAREST` e `NRCOMANDA` são **`varchar(10)`**, ambas com collation `Latin1_General_CI_AS`. A candidata `tools/comandas_reader_one_order_serializable_REVIEW_ONLY.sql` antes recomendava genericamente `nvarchar(64)`; esse tipo não coincide com a coluna. Pela precedência de tipos SQL, a comparação pode envolver conversão implícita e prejudicar planos; com collation Windows o grau de impacto depende do otimizador/plano, **não** declarar Index Scan inevitável.
+
+A especificação foi corrigida na PR #135 para exigir **`SqlDbType.VarChar`, `Size=10` em ambos os parâmetros**, com revalidação do esquema no futuro piloto. O teste `tools/verificar_comandas_reader_one_order_serializable_review_only.cjs` passou **9/9** na worktree isolada Foxxy (commit `39deca62`), incluindo novo caso contra `NVarChar(64)`; o gate existente de isolamento passou **23/23**. Uma outra regressão de revisão misturada **não rodou nessa worktree** porque sua dependência `dist/src/production/currentPackagingBridgeV63.js` não estava compilada: **não chamar essa suíte de aprovada nessa execução**. O teste 6/6 havia passado antes em um ambiente Foxxy já compilado, separadamente. CI da nova alteração deve ser verificada pelo SHA exato.
+
+Fontes externas de apoio: [Microsoft — Data type precedence](https://learn.microsoft.com/en-us/sql/t-sql/data-types/data-type-precedence-transact-sql), [Microsoft Q&A — `nvarchar` em coluna `varchar` e influência da collation](https://learn.microsoft.com/en-gb/answers/questions/640059/nvarchar-convert-to-varchar-cause-index-scan).
+
 ## Decisão de execução
 
 1. **Não** executar `ALTER DATABASE`, RCSI/SNAPSHOT ON, hints `HOLDLOCK`, `SERIALIZABLE`, `UPDLOCK`, `NOLOCK`, DDL, nem criar outro watcher em produção como atalho.
