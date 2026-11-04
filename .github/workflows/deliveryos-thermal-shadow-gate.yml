@@ -431,6 +431,14 @@ jobs:
       - name: Existing Reader V2 event bytes must match producer envelope (Windows offline)
         shell: pwsh
         run: ./tools/verificar_reader_existing_event_content_REVIEW_ONLY.ps1
+      - name: Existing Reader V2 event byte parity on Windows PowerShell 5.1 (Windows offline)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ps51 = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+          if (-not (Test-Path -LiteralPath $ps51 -PathType Leaf)) { throw 'PS51_NOT_AVAILABLE' }
+          & $ps51 -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\tools\verificar_reader_existing_event_content_REVIEW_ONLY.ps1
+          if ($LASTEXITCODE -ne 0) { throw ('PS51_READER_EVENT_TEST_FAILED_EXIT_'+$LASTEXITCODE) }
       - name: Legacy Reader event witness reconciliation NEVER migrates checkpoints (Windows offline)
         run: node tools/verificar_comandas_reader_legacy_event_reconciliation_review_only.cjs
       - name: Reader crash/restart event-checkpoint boundary stays HOLD (Windows synthetic)
