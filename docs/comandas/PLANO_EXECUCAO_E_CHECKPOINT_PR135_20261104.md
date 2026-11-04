@@ -266,6 +266,31 @@ A documentação Microsoft SQL Server confirma que `SERIALIZABLE` pode reter blo
 
 **Critério operacional da Etapa 3 preservado:** planejar obtenção de evidência de plano da consulta exata, sem reaproveitar plano cacheado do V2 instalado, e protocolo autorizado de impacto nas escritas com STOP observável. Se houver varredura ampla, conversão implícita, impacto desconhecido, bloqueio de writers, plano ausente, estado nativo incompleto ou identidade da sessão não comprovada, manter `HOLD`. **Nenhum plano seguro ou orçamento numérico de espera foi demonstrado; não se pede teste real sem autorização específica de César.** Manter Reader ativo intocado, Cozinha/Sushi nativas, Conferência apenas sombra e nenhuma impressão nova.
 
+## Rota de menor intervenção — censo passivo preparado em paralelo à Etapa 3 (04/11/2026)
+
+**Estado: PREPARADO EM LABORATÓRIO / EVIDÊNCIA FÍSICA AINDA AUSENTE.** A Etapa 3 continua `EM_ANDAMENTO`; a Etapa 5 **NÃO** foi iniciada nem aprovada. Esta preparação não autoriza ação no caixa, SQL, impressoras ou mudança de etapa.
+
+### Por que é o próximo trabalho útil
+
+- A rota de substituição de toda a produção depende de provar a integridade/revisão SQL e o custo de bloqueios de um `SELECT SERIALIZABLE` ainda sem plano da candidata. O `LOCK_TIMEOUT` do leitor não limita a espera dos escritores; a fonte permanece sem atestador nativo de revisão completa.
+- A rota conservadora **preserva as vias nativas de Cozinha/Sushi** e estuda **apenas Conferência em sombra**, caso o papel nativo já atenda às praças corretas. Isto **não prova** que a Conferência TATÁ possa emitir papel nem que o Reader seja fonte transacionalmente completa.
+- O censo físico da operação natural no almoço e no jantar **já foi autorizado somente para observar**, pelo protocolo `docs/comandas/CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md`. O resultado continua `PAPER_CENSUS_AUTHORIZED_NOT_OBSERVED`. Não confundir autorização de observar com fato observado. Nenhum SQL nem impressão extra são necessários para **organizar a futura evidência**.
+
+### Classificação pronta para quando existirem observações
+
+- `tools/comandas_passive_paper_census_review_only.cjs`: aceita **somente dados agregados** por turno (ALMOCO/JANTAR): data, quantos pedidos estavam disponíveis, quantos foram observados, consecutividade, identidade conferida no papel, cobertura de praças, itens/notas, observação de saídas tardias e categorias **codificadas** de anomalias. Não recebe texto livre, fotos, IDs de pedidos, nomes, contatos, endereço nem dado fiscal.
+- `tools/verificar_comandas_passive_paper_census_review_only.cjs`: **37 cenários sintéticos**, incluindo 20 pedidos consecutivos quando existirem 20 ou mais, cobertura parcial, jantar ausente, duplicidade, papel inesperado Gestor/GP, observação ilegível, notas não conferidas, dados pessoais indevidos e data impossível. **37/37 PASS em execução isolada da lógica**; isso não equivale a observação física.
+- Classes:
+  - **D0** (`D0_EVIDENCE_INSUFFICIENT`): turno ausente, número de observações menor que a amostra possível, falta de testemunha de praça, identidade não conferida, comparação de itens/notas sem certeza ou acompanhamento de saída tardia ausente. **Nenhuma ausência presumida vira zero anomalias.**
+  - **D1** (`D1_SAMPLE_CONFORME_RELATADA_NAO_AUTENTICADA`): apenas quando os dois turnos declaram amostras completas e sem anomalias. **É autorrelato estruturado**, não atestação do papel nem generalização a pedidos/categorias fora da amostra.
+  - **D2** (`D2_ANOMALIA_RELATADA_REQUER_APURACAO`): uma ou mais anomalias relatadas, mesmo que o restante da amostra esteja incompleto. Investigar sem mudar a operação.
+- **Em todas as classes**, o resultado retorna `review_status=HOLD`, `sample_provenance=UNATTESTED_HUMAN_REPORT`, todos os efeitos `false`, nenhuma permissão de sequência, SQL, impressão, supressão seletiva ou cutover. A ferramenta **não lê máquinas nem impressoras**.
+- Workflow `.github/workflows/deliveryos-thermal-shadow-gate.yml`: suítes de censo adicionadas em Linux e Windows. Commit de código `b25d69643679cee2747b8bfa65df93c374021c8a`, CI [#41923299173](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41923299173) na hora do registro: **`in_progress`**. Antes de chamar `TEST_PASS` de CI, exigir `completed/success` no SHA adequado. Este registro documental criará outro SHA e CI própria.
+
+### Próximo passo que realmente muda a decisão
+
+**Primeiro** obter as duas amostras **reais e passivas** conforme o protocolo já autorizado, preservando identificadores apenas dentro da operação e fornecendo ao projeto somente totais/flags sem PII. **Depois**, comparar o resultado D0/D1/D2, a cobertura por praça e as anomalias com a alternativa SQL bloqueante. Mesmo um D1 físico confirmado **não habilita** automaticamente papel de Conferência, sequência ou Reader novo; ele apenas fortalece a decisão de preservar Cozinha/Sushi nativas. Não antecipar instalação ou contatar fornecedores sem autorização separada.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -281,4 +306,5 @@ A documentação Microsoft SQL Server confirma que `SERIALIZABLE` pode reter blo
 - **04/11/2026 — TRANSIÇÃO ETAPA 2 → ETAPA 3 (SOMENTE OFFLINE):** Gate 2 aprovado no SHA `01466b5b` pela CI #41881651913 `completed/success` Linux+Windows, incluindo 42 casos de journal e revisão nativa. Etapa 2 `CONCLUÍDA NO LABORATÓRIO`; Etapa 3 `EM_ANDAMENTO APENAS OFFLINE` para validar riscos do SQL `SERIALIZABLE` sem executar pedidos. Sem plano da nova consulta, teste físico, migração, deploy ou impressão; esses efeitos continuam `HOLD`. A CI do novo registro documental precisará verificação separada.
 - **04/11/2026 — ETAPA 3, gate de origem do plano e risco de escritores:** código `e05f206d`, 36 testes sintéticos `c8f46be6` e CI Linux/Windows `#41906882348` **SUCCESS integral** no commit `e91d1894`. Plano cacheado V2 não autentica a nova candidata; `SERIALIZABLE`, varredura/conversão e completude permanecem sem prova real. Etapa 3 `EM_ANDAMENTO OFFLINE`, PR `DRAFT/HOLD`, zero efeitos operacionais. Commit documental gerará nova CI a verificar.
 - **04/11/2026 — ETAPA 3, risco de lock no POS:** 40/40 contraexemplos simulados do limite de `LOCK_TIMEOUT` do **leitor**; commit `81596080` integra o teste Linux/Windows. CI #41914689748 consultada durante o checkpoint: `PENDING_OR_IN_PROGRESS`. *Nenhuma latência real inferida.* Etapa 3 `EM_ANDAMENTO`, PR #135 `DRAFT/HOLD`, zero SQL/serviços/print reais; CI final do código e do documento a revalidar.
+- **04/11/2026 — ETAPA 3, alternativa sem novo SQL:** censo passivo (já autorizado, ainda sem observação física) ganhou classificador D0/D1/D2 de **autorrelatos** estritamente agregados e 37 testes sintéticos `PASS` isolados; commit `b25d6964`, CI #41923299173 status `in_progress` durante o checkpoint. Nenhum D1/D2 real foi produzido. Etapas 3 e 5 não mudam, PR #135 `DRAFT/HOLD`; dados pessoais/SQL/print permanecem bloqueados. CI do commit documental exige verificação separada.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
