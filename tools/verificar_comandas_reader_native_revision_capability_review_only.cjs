@@ -125,7 +125,11 @@ test('catalog must include system types to interpret declared column type',()=>{
  'CATALOG_METADATA_QUERY_SCOPE_INVALID');
 });
 test('catalog query cannot be a database write',()=>{
- const x=base();x.catalog_sql=x.catalog_sql.replace('SELECT','UPDATE');
+ const x=base();
+ const liveQueryStart='\nSELECT\n  s.name AS source_schema,';
+ assert.equal(x.catalog_sql.split(liveQueryStart).length,2,'SQL_SELECT_MARKER_NOT_UNIQUE');
+ x.catalog_sql=x.catalog_sql.replace(liveQueryStart,
+  '\nUPDATE\n  s.name AS source_schema,');
  hold(x,'CATALOG_METADATA_QUERY_SCOPE_INVALID');
 });
 test('no fake metadata result can be injected as evidence',()=>{
