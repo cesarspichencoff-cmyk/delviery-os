@@ -27,6 +27,7 @@ import {
   QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
 } from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
+import { selectActiveRiderTrip } from "./rider-trip-scope.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -69,16 +70,10 @@ const POLL_MS = 15000;
 let pollTimer = null;
 
 function activeTrip() {
-  // A viagem DESTE motoboy. O servidor já entrega só as dele; filtrar aqui
-  // também impede que uma resposta mais larga mostre a viagem de outro. O
-  // ator vem no próprio snapshot: `cap.me` chega depois da primeira pintura.
-  const quem = snap?.actor || cap.me;
-  const me = quem && quem.role === "motoboy_interno" ? quem.actor_id : null;
-  return (snap?.trips || []).find(
-    (t) =>
-      ["preparando_saida", "em_rota", "retornando"].includes(t.state) &&
-      (!me || t.courier_actor_id === me),
-  );
+  // Sem identidade de motoboy válida, ou em conflito com a sessão nativa,
+  // nenhuma viagem é selecionada. Nunca aceitar a primeira viagem de uma
+  // resposta ampla antes de confirmar o ator.
+  return selectActiveRiderTrip(snap, cap.me);
 }
 
 /* ---------------- Fila do aparelho (C5) ----------------
