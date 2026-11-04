@@ -82,4 +82,40 @@ test('warnings make writer-blocking and plan costs explicit',()=>{
  assert.match(template,/Free-text observations MAY include customer PII/);
  assert.match(template,/SqlDbType\.NVarChar or nvarchar\(64\) here, which risks implicit conversion\/scan/);
 });
+
+test('201-row sentinel is rejected by the existing 200-row private assembler',()=>{
+ // This is a contract test, not a SQL execution: TOP(201) signals truncation
+ // only if ALL 201 rows reach the consumer. Never slice to 200 or claim
+ // source_read_exhausted automatically from a successful HTTP/SQL command.
+ const {build}=require('./comandas_reader_native_note_rowset_v1_review_only.cjs');
+ const sample={
+  CDFILIAL:'0001',CDLOJA:'01',NRVENDAREST:'LABSALE',NRCOMANDA:'LABCMD',
+  NRCOMANDAEXT:'1234',IDORGCMDVENDA:'DLV_IFO',IDSTCOMANDA:'3',
+  DTHRABERMESA:'2026-11-04T12:01:00.0000000',
+  NRPRODCOMVEN:'000001',CDPRODUTO:'PROD01',CDARVPROD:'9200001000',
+  QTPRODCOMVEN:'1.000',IDSTPRCOMVEN:'4',
+  DSOBSCOMANDA:null,DSOBSDESCIT:null,DSOBSPEDDIGCMD:null,
+  TXPRODCOMVEN:null
+ };
+ const input=(count,exhausted)=>({
+  schema:'tata.comandas.native-note-rowset-input.v1',
+  source_read_exhausted:exhausted,
+  rows:Array.from({length:count},(_,i)=>({
+   ...sample,NRPRODCOMVEN:String(i+1).padStart(6,'0')
+  }))
+ });
+ const bounded=build(input(200,true));
+ assert.equal(bounded.status,'PRIVATE_CANONICAL_EVENT_CANDIDATE');
+ assert.equal(bounded.itemsCount,200);
+ assert.equal(bounded.realOrderPublishable,false);
+ assert.equal(bounded.printAuthorized,false);
+ const sentinel=build(input(201,true));
+ assert.equal(sentinel.status,'HOLD');
+ assert.equal(sentinel.reason,'BOUNDED_EXHAUSTED_SOURCE_ROWSET_NOT_SUPPLIED');
+ assert.equal(sentinel.privateEvent,null);
+ const nonExhausted=build(input(200,false));
+ assert.equal(nonExhausted.status,'HOLD');
+ assert.equal(nonExhausted.privateEvent,null);
+});
+
 console.log('READER_SERIALIZABLE_ONE_ORDER_STATIC_REVIEW_PASS '+n+'/'+n+' NO_SQL');
