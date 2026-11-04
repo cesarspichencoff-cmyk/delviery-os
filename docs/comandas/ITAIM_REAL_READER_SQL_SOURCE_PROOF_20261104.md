@@ -37,6 +37,12 @@ Referências Microsoft:
 - https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
 - https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-exec-sessions-transact-sql
 
+## Índices nativos (consulta adicional, ainda sem ler pedidos)
+
+Uma consulta de catálogo `sys.indexes`, `sys.index_columns` e `sys.columns` encontrou índices com os identificadores nativos nas primeiras colunas de chave: `COMANDAVEN` 1 índice com prefixo `CDFILIAL,CDLOJA,NRVENDAREST,NRCOMANDA`; `ITCOMANDAVEN` 5; `VENDAREST` 4; `PRODUTO` 18. Trata-se de **índices existentes**, não de índices criados ou otimizados nesta rodada. A presença de índices torna uma leitura localizada plausível, mas **não** prova que um SELECT real os utilizará ou quanto bloqueará o caixa.
+
+Nenhum SELECT de pedidos, `SERIALIZABLE`, `HOLDLOCK`, `SET TRANSACTION ISOLATION LEVEL`, plano executado ou mudança de schema foi realizado. Qualquer ensaio futuro de bloqueio em produção exige avaliação do plano/impacto e janela explicitamente autorizada, mesmo para uma única comanda.
+
 ## Eventos locais: inspeção estatística sem exportar PII
 
 **Amostra 1:** 100 eventos mais recentes (por data de modificação de arquivo). 100/100 com campos requeridos e `observation_scan_complete=true`; SHA-256 armazenado em **maiúsculas** em 100/100, SHA recalculado por Node coincide em **100/100 após lowercase**; origem `DLV_IFO` em 98/100. O hash sem conversão seria rejeitado pelo replay que exige `^[0-9a-f]{64}$`.
