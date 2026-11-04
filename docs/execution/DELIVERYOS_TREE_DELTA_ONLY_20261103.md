@@ -13,6 +13,10 @@ A PR #137 agora tem **ponte opcional de verificação em memória** `runtime/rep
 
 O gargalo **não é mais apenas acessar os arquivos nem corrigir o hash**: é garantir uma revisão completa sob `READ COMMITTED` com RCSI OFF sem afetar o POS. Depois, provar eventos físicos de pronto por praça e a Home. A candidata de substituição do V2 continua **review-only e não instalada**, com migração de checkpoint bloqueada.
 
+## Consistência SQL: única candidata nova e sem produção (04/11)
+
+PR #135, `docs/comandas/ITAIM_ONE_ORDER_SERIALIZABLE_REVIEW_GATE_20261104.md`. Foi preservada a consulta de 17 campos, o gate existente de SQL e a prova administrativa RCSI OFF. A **única adição** é uma candidata `SERIALIZABLE` para uma comanda exata, *review-only*, mais teste estático **8/8** no Foxxy; regressões relacionadas **55/55** passaram no mesmo ambiente. A candidata não foi executada contra a Teknisa e o gate original mantém `HOLD`. O timeout de locks **não impede** que a leitura bloqueie gravações do POS. Para prosseguir é obrigatório avaliar plano/custo/contencão e prova de unidade transacional da aplicação, antes de permitir um teste real com bloqueios. **Nenhuma mudança de configuração do banco, nenhum segundo Reader e nenhum release.** A ponte em memória da PR #137 continua sendo a menor rota diagnóstica enquanto essa prova está aberta.
+
 ## Veredito corrigido
 **A maioria do software já existe.** A matriz anterior de oito gates operacionais com 0/8 comprovados em campo **não é uma lista de oito funcionalidades ausentes**. Ela representa ausência de prova final **da jornada real integrada**, coexistindo com código, UI, contratos, CI e testes anteriores. Não reconstruir componentes aprovados, não reiniciar nova vertical ou duplicar Copiloto.
 
