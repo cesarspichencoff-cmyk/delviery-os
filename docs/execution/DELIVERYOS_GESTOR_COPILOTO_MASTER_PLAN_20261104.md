@@ -161,4 +161,66 @@ A inferência de risco precisa apresentar regra, baseline medido, frescor, alcan
 
 **Um próximo passo técnico de maior valor:** prova sanitizada, somente leitura, de uma sessão isolada regularmente autenticada e de UM detalhe de pedido atual Itaim (com referência, item, quantidade, status e tempo), sem causar efeito no caixa. Sem isso, não afirmar que V3 leu “todos os pedidos” ou que a atualização em 60 s funciona. O trabalho de código remanescente deve apoiar diretamente o passo seguinte, não desviar para telas, novos motores ou testes cosméticos.
 
-**Status consolidado 04/11:** CANONICAL_PLAN=RECORDED · Gestor V3 Edge 25/25 + Windows CI success · STAGING_ONLY_ON_CAIXA_MOOCA · GESTOR_REAL_MERCHANT=UNKNOWN · COMPLETE_CURRENT_ORDERS=UNKNOWN · END_TO_END_COPILOTO=UNKNOWN · 60S_FIELD_SLA=NOT_PROVEN · PR #137 DRAFT/HOLD.
+**Status consolidado 04/11:** CANONICAL_PLAN=RECORDED · Gestor V3 Edge 27/27 no commit 59ddf3c + Windows CI success (sintético) · STAGING_ONLY_ON_CAIXA_MOOCA · GESTOR_REAL_MERCHANT=UNKNOWN · COMPLETE_CURRENT_ORDERS=UNKNOWN · END_TO_END_COPILOTO=UNKNOWN · 60S_FIELD_SLA=NOT_PROVEN · PR #137 DRAFT/HOLD.
+
+## 11. Roteiro executivo de entrega — 04/11, após auditoria do V3
+
+Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8 da seção 5 continuam vinculantes; a tabela detalha entregas, critérios e dependências. Não criar plano paralelo. O desenvolvimento do TATÁ Comandas/PR #135 fica inteiramente fora deste escopo.
+
+| Etapa | Objetivo e resultado visível | Prova obrigatória de saída | Estado |
+|---|---|---|---|
+| **A — Um pedido real (P0–P1)** | Identificar o Gestor autenticado do **Itaim** e obter uma revisão completa de **um pedido** em leitura silenciosa | Unidade verificada por prova independente, referência, estado, hora, itens, quantidade e modificadores/observações conferidos contra a interface, sem dado pessoal exportado; sem clique operacional, janela, áudio ou foco roubado | **BLOQUEIO CRÍTICO — HOLD**; V2 estrutural e V3 staging já existem |
+| **B — Cobertura e semântica (P2)** | Saber o que Quadros/Expedição entregam na lista e no detalhe; escolher a melhor observação | Matriz campo×modo×origem×identidade×frescor×privacidade; verificar filtros, agrupamentos, virtualização, paginação, WebSocket/HTTP/Service Worker apenas em sessão isolada legitimamente acessível | **Depende de A** |
+| **C — Captura diferencial (P2–P3)** | Ler apenas novos/alterados e reconciliar perdidos; projetar uma revisão única no journal **existente** | Amostra 1→5→lote representativo: criação, edição, cancelamento, reconexão, duplicata, fora de ordem e quebra de origem; comparar com fonte, provar cobertura e dedupe; ausência/stale/partial nunca vira zero | **Pendente de fonte real** |
+| **D — Produção por praça (P4)** | Ranking All Day por produto/modificador; carga por praça e dependências entre pedidos | Classificador/catálogo já aprovados; quantidade/revisão sem dupla contagem; Sushi Quentes distinto de Quentes da Cozinha; estados separados entre demanda, encaminhamento e preparo físico comprovado; S20/S21 sem truncamento | **Motor existe; alimentação real pendente** |
+| **E — Copiloto que antecipa (P5–P6)** | Home V3.3 com pulso, ambientes, um único Foco e próxima ação de alto valor | Uma recomendação explicável com causa/impacto/evidência/frescor; outros riscos visíveis; Calmo não surge de origem ausente; não inventar ETA/saturação/confiança; medir lag fim a fim e falsas recomendações | **Home existe; integração real pendente** |
+| **F — Conferência e Entregas (P7)** | Conectar prontos/conferidos/lacrados, motoboy e viagem ao pedido certo | Identidade forte na junção, recibo de ato físico, ACK durável de Entregas no Xiaomi, offline sem duplicar, GPS consentido; nenhuma sacola inferida como fato. Apenas CONSUMIR confirmação Comandas quando existente | **HOLD de campo** |
+| **G — Piloto Itaim (P8)** | Um almoço e um jantar inteiros com Copiloto útil, silencioso e reversível | L1–L8 aceitos, zero popup CMD/PowerShell/áudio/foco, privacidade, rollback, cobertura e latências medidas, alertas falsos e perdidos registrados, aceite de César | **HOLD para implantação** |
+
+### Regras de execução
+
+1. O caminho crítico é **A → B → C → D → E → F → G**. O trabalho próprio de Entregas pode avançar em paralelo, mas não torna A concluída. Não expandir laboratório fictício sem defeito ou hipótese concreta.
+2. O ensaio indicado para 05/11 é **condicionado**, não tarefa automática: sessão isolada do Itaim autenticada por meios normais, um detalhe **já aberto** e supervisor/condição operacional apropriados. Se a sessão não existir, manter HOLD; nunca abrir outra janela do perfil de operação nem relançar o Edge.
+3. Eventos e interface devem permanecer desacoplados: a Home consulta **o estado projetado da Operação Viva**, nunca faz scraping no render. Reusar o journal/outbox e a Camada de Decisão existentes.
+4. **Reconciliação a cada 60 s não é SLA de 60 s.** Medir evento na origem (quando timestamp comprovado), captura, journal, projeção, Home, coverage de lista e completude de detalhes; sem fonte de tempo, marcar UNKNOWN. Durante falha de rede/login/dados, mostrar fonte defasada e não pintar verde.
+5. Fatos recebidos do iFood e dados derivados da Teknisa continuam externos mesmo se passarem por eventos TATÁ; anotar procedência por campo. Nunca equiparar status de cabeçalho a item pronto por praça ou pedido pronto a sacola conferida.
+6. Instalador, extensão, host, serviço, tarefa, login, navegador, merge, deploy, impressão, GPS ou ação no Gestor exigem **gate específico de efeito/autorização**. Nenhum novo gasto sem decisão humana.
+
+## 12. Potencialização da pesquisa: PLUS priorizados
+
+| Recurso complementar | Ganho na rotina do Itaim | Dependência / decisão |
+|---|---|---|
+| **PLUS 1 — Radar All Day por SKU + modificador** | Somar hot rolls, combinados, bebidas, molhos e variantes; ajudar a trabalhar lotes sem misturar observações e alergias; mostrar pedidos que dependem de cada item | Toast KDS agrupa por item e opcionalmente por modificadores. **Fazer dentro do motor atual após C/D**, nunca dashboard novo |
+| **PLUS 2 — Três naturezas de carga** | Separar quantidade demandada, quantidade liberada/enviada para a praça e quantidade com preparo ou prontidão física atestada | Toast diferencia pedidos/etapas held e fired. No TATÁ só exibir estados que as fontes comprovaram. **Contrato em D**, sem inferir pronto |
+| **PLUS 3 — Previsão de fila de entregadores** | Cruzar tag logística/chegada estimada, agrupamento por motoboy, prazo do pedido e conferência para antecipar espera e atraso | O iFood documenta essas tags, mas o acesso real do Itaim está UNKNOWN. **Depois de B**, sem clicar em pronto nem alterar tempo automaticamente |
+| **PLUS 4 — Conferência crítica** | Destacar risco de kit, bebida, sobremesa, quentes/frios, observação especial e lacre incorreto, com identidade certa | Reusar S14/S20/S21 e atos próprios com recibo. **Depois de D/F**, não prescrever “duas sacolas” por estimativa |
+| **PLUS 5 — Foco anti-ruído** | A Home recomenda só ações úteis e mede falso positivo, falso negativo e tempo entre aviso e resolução | Reusar Calmo/Ambiente/Foco e feedback humano; Google SRE favorece alertas por sintomas acionáveis. **Calibrar em E/G**, sem novo árbitro |
+| **PLUS 6 — Ponte silenciosa Edge → Windows** | Alternativa local para transportar eventos de extensão a um host nativo sem depender de um receptor HTTP próprio | Microsoft Edge oferece Native Messaging (manifesto, permissão, registro e host). **NÃO INSTALAR AGORA**: reusar V2/receptor até prova de necessidade; exige gate do navegador isolado, segurança/rollback |
+| **PLUS 7 — Replay de turnos e aprendizado verificável** | Comparar previsão versus resultado real no almoço e jantar; descobrir gargalos repetidos por produto/praça sem sobrecarregar equipe | Reusar journal e replay existentes, com registros mínimos sanitizados. **Ativar só em shadow após fatos C** |
+
+### Transferência explícita do estudo internacional
+
+- **iFood — Expedição/Quadros, tempo de preparo, logística, pendências e pedidos agrupados:** fonte de possíveis campos para a matriz da etapa B, **não** prova de visibilidade na conta Itaim. Referência atualizada em 05/05/2026: https://blog-parceiros.ifood.com.br/painel-de-expedicao-gestor-de-pedidos/
+- **Toast — All Day e modificadores:** somar linhas por produto e manter subgrupos por opção quando importarem para preparação, nunca achatar alergias. Referência: https://doc.toasttab.com/doc/platformguide/adminReportingTotalsKDS.html
+- **Toast — held/fired:** diferenciar demanda potencial de itens efetivamente liberados ao preparo; origem pode não disponibilizar esse estado. Referência: https://doc.toasttab.com/doc/platformguide/adminKitchenDiningRoomReference.html
+- **Playwright — HTTP, WebSocket e Service Worker:** observar a rede é hipótese de maior completude, mas o mecanismo pode ocultar eventos; a escolha vem da prova B, não do PDF. Referências: https://playwright.dev/docs/network e https://playwright.dev/docs/service-workers
+- **Edge Native Messaging:** ponte técnica possível, não infraestrutura instalada: https://learn.microsoft.com/pt-br/microsoft-edge/extensions/developer-guide/native-messaging
+- **Google SRE:** alertar problemas acionáveis e de impacto, não gerar barulho de telemetria: https://sre.google/resources/practices-and-processes/incident-management-guide/
+
+### Exemplos estritamente fictícios
+
+- “12 hot rolls demandados em pedidos **observados**, sendo 3 com modificadores diferentes”. Não dizer “12 em preparo”, nem “12 em todos os pedidos” sem cobertura.
+- “Pedido #1234 próximo do prazo exibido, depende de dois itens de Sushi Quentes; verificar a praça antes da conferência”. Depende de tempos e vínculo completos, não é evento real.
+- “Entregador associado ao grupo está com chegada prevista, mas conferência sem recibo”. Só com logística, identidade e prontidão verificadas; não colocar rótulo de atraso por suposição.
+
+### Instalação recomendada agora
+
+**Nenhuma instalação operacional.** O V2 estrutural, o V3 em staging, o Edge/Playwright de laboratório, o receptor existente, o journal, o motor e a Home são suficientes para descobrir se um pedido real é observável. Adicionar extensão, native host, serviço ou licença antes da prova A só criaria nova superfície de falha e custo de operação. O próximo investimento técnico deve ser o menor ensaio autorizado capaz de comprovar o primeiro pedido. A rota silenciosa e a proteção do caixa têm prioridade sobre gadgets.
+
+## 13. Checkpoint desta atualização
+
+- **PR #137 continua DRAFT/HOLD.** Sensor V3 corrigido para mutações só de atributos (commit 7775627); duas regressões adicionais no commit 59ddf3c; GitHub Actions #41798990871 **completed/success**, com **27/27 Edge sintético** e demais jobs aprovados. Esse resultado **não** usa iFood real.
+- O V3 armazenado no CAIXA_MOOCA permanece **STAGING_ONLY**, **não foi atualizado nem ativado** nesta retomada. O V2 só tem prova de estrutura; Reader local continua em modo diagnóstico, sem prova de pedidos reais.
+- Fatos de campo ainda desconhecidos: merchant autenticado Itaim, um detalhe completo, status físico por praça, cobertura de todos os pedidos, latência até 60 s, Entregas end-to-end, uso real no iPhone/Xiaomi.
+- **Próximo resultado:** um pedido verdadeiro do Gestor Itaim, completo e comparado com a interface em sessão isolada, sem perturbar a equipe. Só então a escolha final entre leitura incremental por rede, DOM ou extensão deverá ser feita.
+- **Não declarar entrega concluída** com laboratório, PR verde ou arquivo copiado. L1–L8, estabilidade no pico, rollback e aceite humano continuam critérios do lançamento.
