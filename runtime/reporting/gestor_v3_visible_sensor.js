@@ -79,6 +79,14 @@
       const blocks = q(detail, config.selectors.detailOrder);
       if (!blocks.length || blocks.length > 100 || blocks.some(x => !visible(x)))
         return fail("HOLD_GROUP_DETAIL_INCOMPLETE", cards.length);
+      // Every item row in this detail must belong to exactly one order.
+      if (blocks.some((b, i) => blocks.some((other, j) => i !== j && b.contains(other))))
+        return fail("HOLD_OVERLAPPING_ORDER_SCOPE", cards.length);
+      const detailLines = q(detail, config.selectors.item);
+      if (!detailLines.length || detailLines.length > 1000 ||
+          detailLines.some(line => !visible(line) ||
+            blocks.filter(block => block.contains(line)).length !== 1))
+        return fail("HOLD_ITEM_SCOPE_AMBIGUOUS", cards.length);
       const seen = new Set(), orders = [];
       for (const block of blocks) {
         const ref = single(block, config.selectors.detailOrderReference, 20);
