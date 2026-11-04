@@ -60,7 +60,47 @@ test("write HOLD says explicitly that the action is unconfirmed", () => {
 test("unknown code does not invent a warning", () => {
   assert.equal(queueHoldMessage("SOMETHING_ELSE"),"");
 });
+const scopeSource = readFileSync(new URL("rider-trip-scope.js",dir),"utf8");
+const { selectActiveRiderTrip } = await import("data:text/javascript;base64," +
+  Buffer.from(scopeSource).toString("base64"));
+const rider = id => ({role:"motoboy_interno",actor_id:id});
+const trip = (id,owner,state="em_rota") => ({
+  trip_id:id,courier_actor_id:owner,state,deliveries:[],
+});
+const own=trip("t-2","rider-2");
+const foreign=trip("t-1","rider-1");
+test("identity missing never reveals first trip from wide snapshot",()=>{
+  assert.equal(selectActiveRiderTrip({trips:[foreign,own]}),null);
+});
+test("confirmed motoboy sees only own active trip",()=>{
+  assert.equal(selectActiveRiderTrip({actor:rider("rider-2"),trips:[foreign,own]}),own);
+});
+test("non-motoboy actor cannot select a trip",()=>{
+  assert.equal(selectActiveRiderTrip({actor:{role:"gerente",actor_id:"rider-1"},trips:[foreign]}),null);
+});
+test("native session conflict blocks even valid-looking snapshot",()=>{
+  assert.equal(selectActiveRiderTrip({actor:rider("rider-2"),trips:[foreign,own]},rider("rider-1")),null);
+});
+test("native session can identify rider when snapshot has no actor",()=>{
+  assert.equal(selectActiveRiderTrip({trips:[foreign,own]},rider("rider-2")),own);
+});
+test("native non-rider session blocks otherwise valid snapshot",()=>{
+  assert.equal(selectActiveRiderTrip({actor:rider("rider-2"),trips:[own]},
+    {role:"gerente",actor_id:"rider-2"}),null);
+});
+test("blank identity and malformed trips fail closed",()=>{
+  assert.equal(selectActiveRiderTrip({actor:rider(" "),trips:[foreign]}),null);
+  assert.equal(selectActiveRiderTrip({actor:rider("rider-2"),trips:"wrong"}),null);
+});
+test("completed, foreign and malformed trips are never selected",()=>{
+  assert.equal(selectActiveRiderTrip({actor:rider("rider-2"),
+    trips:[trip("done","rider-2","entregue"),foreign,null]}),null);
+});
 const ui=readFileSync(new URL("rider.js",dir),"utf8");
+test("live rider page uses same fail-closed identity selector",()=>{
+  assert.match(ui,/import \{ selectActiveRiderTrip \} from "\.\/rider-trip-scope\.js"/);
+  assert.match(ui,/return selectActiveRiderTrip\(snap, cap\.me\)/);
+});
 const html=readFileSync(new URL("index.html",dir),"utf8");
 test("real rider page imports HOLD classifier and keeps native queue gate", () => {
   assert.match(ui,/from "\.\/queue-health\.js"/);
