@@ -4,8 +4,6 @@
 # Old checkpoints intentionally FAIL CLOSED until a separate authorized,
 # verified migration ensures no duplicate re-emission of historical orders.
 # Zero SQL/prints/services executed while preparing this GitHub candidate.
-if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'REVIEW_ONLY_CANDIDATE_CANNOT_RUN_ON_CASHIER' }
-
 param(
   [int]$MaxPolls = 0,
   [int]$PollSeconds = 3,
@@ -15,6 +13,8 @@ param(
   [string]$EventDir = "C:\ProgramData\TataComandaReader\state\reader-events-v1",
   [switch]$EmitExistingOnBootstrap
 )
+
+if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'REVIEW_ONLY_CANDIDATE_CANNOT_RUN_ON_CASHIER' }
 
 $ErrorActionPreference = "Stop"
 $ExpectedLogin = "NT SERVICE\TataComandaReader"
