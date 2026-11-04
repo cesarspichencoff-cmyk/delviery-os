@@ -7,7 +7,12 @@ $ErrorActionPreference='Stop'
 if($env:COMPUTERNAME -eq 'CAIXA_MOOCA'){throw 'CASHIER_HOST_FORBIDDEN'}
 $tokens=$null;$parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($CandidatePath,[ref]$tokens,[ref]$parseErrors)
-if(@($parseErrors).Count -ne 0){throw ('CANDIDATE_POWERSHELL_PARSE_ERROR_COUNT_'+@($parseErrors).Count)}
+if(@($parseErrors).Count -ne 0){
+  $details = @($parseErrors | ForEach-Object {
+    ([string]$_.Message+' at '+$_.Extent.StartLineNumber+':'+$_.Extent.StartColumnNumber)
+  }) -join ' | '
+  throw ('CANDIDATE_POWERSHELL_PARSE_ERROR_COUNT_'+@($parseErrors).Count+' '+$details)
+}
 $matches=@($ast.FindAll({
  param($node)
  $node -is [Management.Automation.Language.FunctionDefinitionAst] -and
