@@ -217,6 +217,59 @@ const html=(one=false)=>`<!doctype html><html><body>
     assert.equal(a.state,"HOLD_OVERLAPPING_ORDER_SCOPE");
     assert.equal(a.ordersPublishable,0);
   });
+  await setup(groupedHtml());
+  await test("grouped watch tracks changed item quantities without navigation",async()=>{
+    await page.evaluate(cfg=>{
+      globalThis.groupEvents=[];
+      globalThis.groupWatch=globalThis.DeliveryGestorV3Review.watch(
+        document,cfg,e=>globalThis.groupEvents.push(e));
+    },GROUP_CFG);
+    await page.waitForFunction(()=>globalThis.groupEvents?.length===1);
+    await mutate(".detail-order:first-child .qty","4");
+    await page.waitForFunction(()=>globalThis.groupEvents?.length===2);
+    const events=await page.evaluate(()=>globalThis.groupEvents);
+    assert.equal(events[0].detail.orders[0].items[0].quantity,3);
+    assert.equal(events[1].detail.orders[0].items[0].quantity,4);
+    assert.equal(events[1].ordersPublishable,0);
+    await page.evaluate(()=>globalThis.groupWatch.stop());
+  });
+  await setup(groupedHtml());
+  await test("grouped watch closing detail removes old item evidence",async()=>{
+    await page.evaluate(cfg=>{
+      globalThis.closeEvents=[];
+      globalThis.closeWatch=globalThis.DeliveryGestorV3Review.watch(
+        document,cfg,e=>globalThis.closeEvents.push(e));
+    },GROUP_CFG);
+    await page.waitForFunction(()=>globalThis.closeEvents?.length===1);
+    await page.locator("dialog").evaluate(d=>d.removeAttribute("open"));
+    await page.waitForFunction(()=>globalThis.closeEvents?.length===2);
+    const events=await page.evaluate(()=>globalThis.closeEvents);
+    assert.equal(events[0].state,"REVIEW_ONLY");
+    assert.equal(events[1].state,"HOLD_GROUP_DETAIL_NOT_OPEN");
+    assert.equal(events[1].orders.length,0);
+    assert.equal(events[1].ordersPublishable,0);
+    await page.evaluate(()=>globalThis.closeWatch.stop());
+  });
+  await setup(groupedHtml());
+  await test("grouped watch quarantines orphan item inserted live",async()=>{
+    await page.evaluate(cfg=>{
+      globalThis.orphanEvents=[];
+      globalThis.orphanWatch=globalThis.DeliveryGestorV3Review.watch(
+        document,cfg,e=>globalThis.orphanEvents.push(e));
+    },GROUP_CFG);
+    await page.waitForFunction(()=>globalThis.orphanEvents?.length===1);
+    await page.locator("dialog").evaluate(d=>{
+      const item=document.createElement("div");
+      item.className="line";
+      item.innerHTML='<span class="name">Missing association</span><span class="qty">2</span>';
+      d.appendChild(item);
+    });
+    await page.waitForFunction(()=>globalThis.orphanEvents?.length===2);
+    const events=await page.evaluate(()=>globalThis.orphanEvents);
+    assert.equal(events[1].state,"HOLD_ITEM_SCOPE_AMBIGUOUS");
+    assert.equal(events[1].ordersPublishable,0);
+    await page.evaluate(()=>globalThis.orphanWatch.stop());
+  });
   await test("no external requests during the entire fixture",async()=>assert.equal(network,0));
   console.log("GESTOR_V3_VISIBLE_SENSOR_EDGE_FIXTURE_PASS "+pass+"/"+pass+
     " (SYNTHETIC_ONLY; NO_ORDERS_FROM_IFOOD)");
