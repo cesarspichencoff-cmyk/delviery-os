@@ -7,8 +7,12 @@ The 100ms LOCK_TIMEOUT limits this reader's wait, NOT time writers wait for it.
 An authorized isolated, NON-POOLED Reader-identity connection with its own
 short CommandTimeout, plan review, rollback, monitoring and safety window
 would be prerequisites. No customer/fiscal fields, no iFood request.
-Required ADO.NET params: @nrVendaRest nvarchar(64), @nrComanda nvarchar(64).
+Required ADO.NET typed params: @nrVendaRest and @nrComanda; actual SQL
+column types MUST be verified from catalog and matched exactly before any run.
+Never assume nvarchar(64) or rely on an implicit conversion/scan.
 Precondition: exact native order key issued by the authorized Reader.
+Free-text observations MAY include customer PII despite no customer columns;
+never log, transmit or publish raw observation fields.
 Result >200 lines or any timeout => HOLD (never silently truncate).
 */
 SET NOCOUNT ON;
