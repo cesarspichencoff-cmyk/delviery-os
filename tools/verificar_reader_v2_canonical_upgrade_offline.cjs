@@ -15,7 +15,7 @@ test('PowerShell params first and cashier review guard before any setup',()=>{
  assert.match(start,/^\s*# REVIEW ONLY/m);
  assert.ok(start.indexOf('param(')>-1);
  assert.ok(start.indexOf('param(')<start.indexOf("if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA')"));
- assert.ok(start.indexOf("if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA')")<start.indexOf('New-Item -ItemType Directory'));
+ assert.ok(candidate.indexOf("if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA')")<candidate.indexOf('New-Item -ItemType Directory'));
 });
 test('reuses PR135 canonical SHA-256 module, not old uppercase ConvertTo-Json hashing',()=>{
  assert.match(candidate,/comandas_reader_canonical_json_v1_REVIEW_ONLY\.ps1/);
