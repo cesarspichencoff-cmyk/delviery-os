@@ -16,6 +16,7 @@ on:
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
       - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
       - tests/tata-reader/run-real-feed-boundary-tests.cjs
+      - tests/tata-reader/run-file-feed-tests.cjs
       - tests/reporting/run-native-reader-producer-contract-review-tests.cjs
   workflow_dispatch:
 
@@ -44,6 +45,7 @@ jobs:
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
           node tests/tata-reader/run-real-feed-boundary-tests.cjs
+          node tests/tata-reader/run-file-feed-tests.cjs
 
   native-windows:
     name: Windows no-console native fixture
