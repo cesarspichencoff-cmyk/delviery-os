@@ -11,6 +11,8 @@ on:
       - runtime/reporting/diagnostic_readiness_v1.cjs
       - tests/reporting/run-diagnostic-readiness-tests.cjs
       - runtime/reporting/copiloto_tata_reader_adapter_v1.cjs
+      - runtime/reporting/copiloto_tata_file_feed_v1.cjs
+      - runtime/reporting/native_reader_verified_legacy_hash_v1.cjs
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
       - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
       - tests/tata-reader/run-real-feed-boundary-tests.cjs
