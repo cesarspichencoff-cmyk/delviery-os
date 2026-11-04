@@ -51,11 +51,69 @@
   });
   function selectorConfig(c) {
     if (!c || typeof c !== "object" || !c.selectors || typeof c.selectors !== "object") return false;
-    for (const key of ["root", "card", "reference", "status", "detail", "detailReference", "item", "itemName", "itemQuantity", "option"]) {
+    if (c.layout !== undefined && c.layout !== "FLAT" && c.layout !== "GROUPED") return false;
+    const keys = c.layout === "GROUPED"
+      ? ["root", "card", "detail", "detailOrder", "detailOrderReference", "item", "itemName", "itemQuantity", "option"]
+      : ["root", "card", "reference", "status", "detail", "detailReference", "item", "itemName", "itemQuantity", "option"];
+    for (const key of keys) {
       const s = c.selectors[key];
       if (typeof s !== "string" || !s.length || s.length > 110 || /[\u0000-\u001f]/.test(s)) return false;
     }
     return true;
+  }
+  // A Gestor group card is NOT an order. Read only the individually numbered
+  // order blocks inside an already open group detail; never click open a group.
+  function groupedReview(doc, config, cards) {
+    let opened;
+    try { opened = q(doc, config.selectors.detail).filter(visible); }
+    catch { return fail("HOLD_SELECTOR", cards.length); }
+    if (opened.length > 1) return fail("HOLD_MULTIPLE_DETAILS", cards.length);
+    if (!opened.length) return Object.freeze({
+      ...fail("HOLD_GROUP_DETAIL_NOT_OPEN", cards.length),
+      groupCount: cards.length, orderCountScope: "UNKNOWN"
+    });
+    const detail = opened[0];
+    if (String(detail.tagName).toLowerCase() === "dialog" && !detail.hasAttribute("open"))
+      return fail("HOLD_CLOSED_DIALOG", cards.length);
+    try {
+      const blocks = q(detail, config.selectors.detailOrder);
+      if (!blocks.length || blocks.length > 100 || blocks.some(x => !visible(x)))
+        return fail("HOLD_GROUP_DETAIL_INCOMPLETE", cards.length);
+      const seen = new Set(), orders = [];
+      for (const block of blocks) {
+        const ref = single(block, config.selectors.detailOrderReference, 20);
+        if (!ref || !ORDER_RE.test(ref) || seen.has(ref))
+          return fail("HOLD_AMBIGUOUS_ORDER", cards.length);
+        seen.add(ref);
+        const lines = q(block, config.selectors.item);
+        if (!lines.length || lines.length > 70 || lines.some(x => !visible(x)))
+          return fail("HOLD_DETAIL_INCOMPLETE", cards.length);
+        const items = [];
+        for (const line of lines) {
+          const name = single(line, config.selectors.itemName, 100);
+          const qty = quantity(single(line, config.selectors.itemQuantity, 12));
+          if (!name || qty === null) return fail("HOLD_ITEM_INVALID", cards.length);
+          const opts = q(line, config.selectors.option);
+          if (opts.length > 25 || opts.some(x => !visible(x)))
+            return fail("HOLD_OPTION_INCOMPLETE", cards.length);
+          const options = opts.map(x => text(x, 110));
+          if (options.some(x => x === null)) return fail("HOLD_OPTION_SENSITIVE", cards.length);
+          items.push({ name, quantity: qty, options });
+        }
+        orders.push({ reference_candidate: ref, items });
+      }
+      // Cards = visible groups; order count only covers ONE open group detail.
+      // No inferred status, merchant, group-to-order linkage or full coverage.
+      return Object.freeze({
+        schema: SCHEMA, state: "REVIEW_ONLY", readOnly: true, actionsExecuted: 0,
+        merchantVerified: false, coverageVerified: false, ordersPublishable: 0,
+        coverage: "OPEN_GROUP_DETAIL_ONLY", visibleCards: cards.length,
+        groupCount: cards.length, orderCountScope: "OPEN_DETAIL_ONLY",
+        groupLinkVerified: false,
+        orders: orders.map(({reference_candidate}) => ({ reference_candidate, header_status: null })),
+        detail: { state: "VISIBLE_GROUP_DETAIL_CANDIDATES", orders }
+      });
+    } catch { return fail("HOLD_SELECTOR", cards.length); }
   }
   function scan(doc, config) {
     if (!doc?.querySelectorAll || !selectorConfig(config)) return fail("HOLD_CONFIG");
@@ -74,6 +132,7 @@
     if (cards.length > 200) return fail("HOLD_CARD_LIMIT", cards.length);
     if (!cards.length) return fail("HOLD_EMPTY_NOT_ZERO");
     if (cards.some(x => !visible(x))) return fail("HOLD_HIDDEN_CARD", cards.length);
+    if (config.layout === "GROUPED") return groupedReview(doc, config, cards);
     const orders = [], seen = new Set();
     try {
       for (const card of cards) {
