@@ -8,6 +8,25 @@ const CFG={mode:"FIXTURE",selectors:{
  detail:"dialog[open]",detailReference:".detail-ref",item:".line",
  itemName:".name",itemQuantity:".qty",option:".option"
 }};
+const GROUP_CFG={mode:"FIXTURE",layout:"GROUPED",selectors:{
+ root:"#groups",card:".group-card",detail:"dialog[open]",
+ detailOrder:".detail-order",detailOrderReference:".detail-ref",
+ item:".line",itemName:".name",itemQuantity:".qty",option:".option"
+}};
+const groupedHtml=()=>`<!doctype html><html><body>
+ <input id="focus-marker" value="preserve focus">
+ <main id="groups"><div class="group-card">Grupo com dois pedidos</div>
+ <div class="group-card">Outro grupo sem detalhes abertos</div></main>
+ <dialog open>
+   <section class="detail-order"><span class="detail-ref">#1234</span>
+     <div class="line"><span class="name">Hot roll</span><span class="qty">3</span>
+       <span class="option">Sem cebolinha</span></div>
+   </section>
+   <section class="detail-order"><span class="detail-ref">#1235</span>
+     <div class="line"><span class="name">Combinado sushi</span><span class="qty">2</span></div>
+     <div class="line"><span class="name">Refrigerante</span><span class="qty">1</span></div>
+   </section>
+ </dialog></body></html>`;
 const html=(one=false)=>`<!doctype html><html><body>
  <input id="focus-marker" value="preserve focus"><main id="orders">
  <div class="card"><span class="ref">#1234</span><span class="status">Em preparo</span></div>
@@ -114,6 +133,65 @@ const html=(one=false)=>`<!doctype html><html><body>
     assert.equal(state.detail.state,"NOT_OPEN");
     assert.equal(state.ordersPublishable,0);
     await page.evaluate(()=>globalThis.v3DialogWatch.stop());
+  });
+  await setup(groupedHtml());
+  await test("grouped card counts are never order counts",async()=>{
+    const a=await scan(GROUP_CFG);
+    assert.equal(a.state,"REVIEW_ONLY");
+    assert.equal(a.groupCount,2);
+    assert.equal(a.orders.length,2);
+    assert.equal(a.orderCountScope,"OPEN_DETAIL_ONLY");
+    assert.equal(a.coverage,"OPEN_GROUP_DETAIL_ONLY");
+    assert.equal(a.groupLinkVerified,false);
+  });
+  await test("group details preserve each reference and its own items",async()=>{
+    const a=await scan(GROUP_CFG);
+    assert.equal(a.detail.state,"VISIBLE_GROUP_DETAIL_CANDIDATES");
+    assert.equal(a.detail.orders[0].reference_candidate,"#1234");
+    assert.deepEqual(a.detail.orders[0].items[0],{
+      name:"Hot roll",quantity:3,options:["Sem cebolinha"]});
+    assert.equal(a.detail.orders[1].reference_candidate,"#1235");
+    assert.equal(a.detail.orders[1].items.length,2);
+  });
+  await test("grouped review does not infer status, merchant or publishability",async()=>{
+    const a=await scan(GROUP_CFG);
+    assert.equal(a.orders[0].header_status,null);
+    assert.equal(a.merchantVerified,false);
+    assert.equal(a.coverageVerified,false);
+    assert.equal(a.ordersPublishable,0);
+    assert.equal(a.actionsExecuted,0);
+  });
+  await test("duplicate references inside grouped details fail closed",async()=>{
+    await mutate(".detail-order:nth-child(2) .detail-ref","#1234");
+    assert.equal((await scan(GROUP_CFG)).state,"HOLD_AMBIGUOUS_ORDER");
+    assert.equal((await scan(GROUP_CFG)).ordersPublishable,0);
+  });
+  await setup(groupedHtml());
+  await test("hidden individual order blocks fail grouped review",async()=>{
+    await page.locator(".detail-order").last().evaluate(el=>el.hidden=true);
+    assert.equal((await scan(GROUP_CFG)).state,"HOLD_GROUP_DETAIL_INCOMPLETE");
+  });
+  await setup(groupedHtml());
+  await test("unopened group is not mistaken for zero orders",async()=>{
+    await page.locator("dialog").evaluate(el=>el.removeAttribute("open"));
+    const a=await scan(GROUP_CFG);
+    assert.equal(a.state,"HOLD_GROUP_DETAIL_NOT_OPEN");
+    assert.equal(a.groupCount,2);
+    assert.equal(a.orders.length,0);
+    assert.equal(a.ordersPublishable,0);
+  });
+  await setup(groupedHtml());
+  await test("invalid grouped item quantity blocks the entire group",async()=>{
+    await mutate(".detail-order:nth-child(2) .qty","indefinido");
+    assert.equal((await scan(GROUP_CFG)).state,"HOLD_ITEM_INVALID");
+  });
+  await setup(groupedHtml());
+  await test("grouped review does not click, scroll, mutate DOM or focus",async()=>{
+    await page.locator("#focus-marker").focus();
+    const before=await page.evaluate(()=>({html:document.documentElement.outerHTML,focus:document.activeElement?.id,scrollX,scrollY}));
+    await scan(GROUP_CFG);
+    const after=await page.evaluate(()=>({html:document.documentElement.outerHTML,focus:document.activeElement?.id,scrollX,scrollY}));
+    assert.deepEqual(after,before);
   });
   await test("no external requests during the entire fixture",async()=>assert.equal(network,0));
   console.log("GESTOR_V3_VISIBLE_SENSOR_EDGE_FIXTURE_PASS "+pass+"/"+pass+
