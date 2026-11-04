@@ -24,6 +24,8 @@ on:
       - src/platform/run-reader-classification-work-review-tests.ts
       - src/product/eventos/gesto-bancada-shadow.ts
       - src/platform/run-gesto-bancada-shadow-tests.ts
+      - src/product/eventos/ledger-shadow.ts
+      - src/platform/run-ledger-shadow-restart-tests.ts
       - src/entregas/ui/rider-mobile/rider.js
       - src/entregas/ui/rider-mobile/rider-trip-scope.js
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
@@ -96,3 +98,5 @@ jobs:
         run: node dist/src/platform/run-reader-classification-work-review-tests.js
       - name: One-touch station action only in shadow; permission + source gates
         run: node dist/src/platform/run-gesto-bancada-shadow-tests.js
+      - name: Ledger event idempotency and corruption on restart, shadow only
+        run: node dist/src/platform/run-ledger-shadow-restart-tests.js
