@@ -20,6 +20,7 @@ if($rawSource -notmatch 'Assert-TataPersistedEventContentReview -Path \$eventPat
 $root=Join-Path ([IO.Path]::GetTempPath()) ('tata-event-content-guard-'+[guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($root)|Out-Null
 $file=Join-Path $root 'LABCMD1_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json'
+$SushiEmoji=[char]::ConvertFromUtf32(0x1F363)
 function Expected {
  return [ordered]@{
   schema='deliveryos.tata-reader-stable-order-event.v1'
@@ -36,7 +37,7 @@ function Expected {
    })
    observation_scan_complete=$true
    observation_rows=@([ordered]@{
-    source_field='DSOBSPEDDIGCMD';value="FICTICIO L'IMITADO 🍣"
+    source_field='DSOBSPEDDIGCMD';value="FICTICIO L'IMITADO $SushiEmoji"
     scope_hint='item';join_proven=$true;item_index=0;CDPRODUTO='LABPROD1'
    })
   }
@@ -59,9 +60,9 @@ function Write-Fixture($Value){
  [IO.File]::WriteAllBytes($file,$bytes)
 }
 function Mutated {
- $new=Expected
- $copy=(ConvertTo-Json -InputObject $new -Depth 20 | ConvertFrom-Json)
- return $copy
+ # Preserve native order-opening datetime as an original STRING on PS 5.1.
+ # A JSON roundtrip would coerce it to DateTime and invalidate the test.
+ return (Expected)
 }
 $expected=Expected
 $passed=0
@@ -133,7 +134,7 @@ try{
   Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
  }
  Pass 'changed apostrophe note rejected' {
-  $v=Mutated;$v.order.observation_rows[0].value="FICTICIO L'ALTERADO 🍣"
+  $v=Mutated;$v.order.observation_rows[0].value="FICTICIO L'ALTERADO $SushiEmoji"
   Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
  }
  Pass 'printing effect escalation rejected'{
@@ -153,11 +154,23 @@ try{
   $v=Mutated;$v.order.observation_scan_complete=$false
   Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
  }
+ Pass 'native opening datetime different precision is NOT date-normalized' {
+  $v=Mutated;$v.order.DTHRABERMESA='2026-11-04T12:20:00.000'
+  Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
+ }
+ Pass 'native opening datetime timezone form cannot silently change' {
+  $v=Mutated;$v.order.DTHRABERMESA='2026-11-04T12:20:00.0000000Z'
+  Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
+ }
+ Pass 'historical observed_at must match producer timestamp shape' {
+  $v=Mutated;$v.observed_at='BAD_TIMESTAMP'
+  Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_OBSERVED_AT_INVALID'
+ }
  Pass 'event file above cap refused' {
   [IO.File]::WriteAllBytes($file,(New-Object byte[] 4194305))
   Expect-Hold 'EXISTING_EVENT_FILE_UNSAFE_METADATA'
  }
- if($passed -ne 17){throw 'UNEXPECTED_CASE_COUNT'}
+ if($passed -ne 20){throw 'UNEXPECTED_CASE_COUNT'}
  Write-Output ('READER_EXISTING_EVENT_CONTENT_GATE_PASS '+$passed+'/'+$passed+' SYNTHETIC_ONLY NO_OPERATIONAL_EFFECTS')
 } finally {
  if(Test-Path -LiteralPath $root){[IO.Directory]::Delete($root,$true)}
