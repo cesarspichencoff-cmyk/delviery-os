@@ -71,11 +71,11 @@ export function criarLedgerShadow(o: OpcoesLedgerShadow): LedgerShadow {
     let texto: string;
     try { texto = readFileSync(o.arquivo, "utf8"); }
     catch { falhaDoIndice = "shadow_recovery_read_failed"; return falhaDoIndice; }
-    if (texto !== "" && !texto.endsWith("\\n")) {
+    if (texto !== "" && !texto.endsWith(String.fromCharCode(10))) {
       falhaDoIndice = "shadow_recovery_incomplete_tail";
       return falhaDoIndice;
     }
-    const entradas = texto.split("\\n");
+    const entradas = texto.split(String.fromCharCode(10));
     for (let i = 0; i < entradas.length; i += 1) {
       const linha = entradas[i]!;
       if (linha === "") continue;
