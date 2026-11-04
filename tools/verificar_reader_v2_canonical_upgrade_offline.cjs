@@ -39,6 +39,7 @@ test('safety boundary, original identity checks and no new SQL/write effects',()
   'UNEXPECTED_SQL_LOGIN',
   'DATABASE_MISMATCH',
   'TEKNISA.COMANDAVEN',
+  'CONVERT(nvarchar(64),c.IDORGCMDVENDA) = N\'DLV_IFO\'',
   'DSOBSCOMANDA',
   'DSOBSDESCIT',
   'DSOBSPEDDIGCMD',
@@ -46,6 +47,7 @@ test('safety boundary, original identity checks and no new SQL/write effects',()
   'observation_scan_complete=$true',
   'SERVICE_WEEKLY_POLICY'
  ])assert.ok(candidate.includes(term),'PRESERVATION_MISSING_'+term);
+ assert.doesNotMatch(candidate,/IDORGCMDVENDA\) LIKE N'DLV\[_\]%'/);
  assert.ok(!/\b(?:ALTER DATABASE|UPDATE TEKNISA|DELETE FROM TEKNISA|INSERT INTO TEKNISA|Invoke-WebRequest|Start-Process)\b/i.test(candidate));
  assert.match(candidate,/print=\$false;spooler_write=\$false/);
 });
