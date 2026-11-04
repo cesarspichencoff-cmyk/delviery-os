@@ -13,6 +13,7 @@ on:
       - runtime/reporting/copiloto_tata_reader_adapter_v1.cjs
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
       - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+      - tests/tata-reader/run-real-feed-boundary-tests.cjs
       - tests/reporting/run-native-reader-producer-contract-review-tests.cjs
   workflow_dispatch:
 
@@ -40,6 +41,7 @@ jobs:
           # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+          node tests/tata-reader/run-real-feed-boundary-tests.cjs
 
   native-windows:
     name: Windows no-console native fixture
