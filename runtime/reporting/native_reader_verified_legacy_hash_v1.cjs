@@ -11,7 +11,7 @@ function normalizeVerifiedLegacyNativeHashV1(event){
     !event.order||typeof event.order!=='object'||Array.isArray(event.order))
     return hold('SOURCE_EVENT_INVALID');
  const received=event.snapshot_hash;
- if(typeof received!=='string'||!/^[0-9A-F]{64}$/.test(received))
+ if(typeof received!=='string'||!(/^[0-9A-F]{64}$/.test(received)||/^[0-9a-f]{64}$/.test(received)))
     return hold('LEGACY_SHA256_FORMAT_INVALID');
  const expected=snapshotHash(event.order);
  if(typeof expected!=='string'||received.toLowerCase()!==expected)
