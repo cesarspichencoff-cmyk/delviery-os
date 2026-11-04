@@ -29,6 +29,12 @@ on:
       - src/entregas/ui/rider-mobile/rider.js
       - src/entregas/ui/rider-mobile/rider-trip-scope.js
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+      - runtime/reporting/gestor_visible_detail_probe_v1.js
+      - runtime/reporting/gestor_window_selector_v1.cjs
+      - runtime/reporting/gestor_shadow_status_bridge_v1.cjs
+      - tests/gestor-shadow/run-visible-detail-probe-tests.cjs
+      - tests/gestor-shadow/run-window-selector-tests.cjs
+      - tests/gestor-shadow/run-status-bridge-tests.cjs
   workflow_dispatch:
 
 permissions:
@@ -59,6 +65,11 @@ jobs:
           node tests/tata-reader/run-file-feed-tests.cjs
           # Rider actor identity + Room queue HOLD; synthetic only, no devices.
           node src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+          # Gestor: visibility, identity, ambiguity and privacy are fail-closed.
+          # These are pure synthetic tests; they never connect to iFood.
+          node tests/gestor-shadow/run-visible-detail-probe-tests.cjs
+          node tests/gestor-shadow/run-window-selector-tests.cjs
+          node tests/gestor-shadow/run-status-bridge-tests.cjs
 
   native-windows:
     name: Windows no-console native fixture
