@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import {prepararGestoBancadaShadow} from "../product/eventos/gesto-bancada-shadow";
 import {validarEvento} from "../product/eventos/catalogo-operacional";
+import {criarLedgerShadow} from "../product/eventos/ledger-shadow";
+import {mkdtempSync,rmSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
 import {projetarLeitura} from "../product/eventos/projetar-leitura";
 import type {RevisaoVinculoReaderTrabalho} from "../product/eventos/vinculo-reader-trabalho-praca";
 import type {CruzamentoClassificacaoTrabalhoReview} from "../product/eventos/revisar-classificacao-trabalho-praca";
@@ -74,6 +78,23 @@ async function main(){
   const r=await call(),out=JSON.stringify(r);
   for(const needle of ["PROD-FICTICIO","LABSALE","CLIENTE-FICTICIO"])
     assert.equal(out.includes(needle),false);
+ });
+ await test("one touch through existing shadow ledger survives restart with same event",async()=>{
+  const dir=mkdtempSync(join(tmpdir(),"deliveryos-gesto-"));
+  try{
+   const file=join(dir,"shadow.jsonl"),result=await call();
+   assert.equal(result.status,"SHADOW_PREVIEW");
+   if(!result.evento)throw Error("missing demo event");
+   const first=criarLedgerShadow({arquivo:file,habilitado:true});
+   assert.equal(first.registrar(result.evento).tipo,"gravado");
+   const reloaded=criarLedgerShadow({arquivo:file,habilitado:true});
+   assert.equal(reloaded.replay().length,1);
+   assert.equal(reloaded.registrar(result.evento).tipo,"duplicata_identica");
+   const p=projetarLeitura(reloaded.replay(),{
+    tenant_id:"tata",unit_id:"ITAIM",agora_iso:"2026-11-04T15:32:00Z"});
+   assert.equal(p.linhagem.natureza,"demonstracao");
+   assert.equal(p.pedidos_prontos.length,0);
+  }finally{rmSync(dir,{recursive:true,force:true})}
  });
  console.log("GESTO_BANCADA_SHADOW_PASS "+passed+"/"+passed+" SYNTHETIC_ONLY");
 }
