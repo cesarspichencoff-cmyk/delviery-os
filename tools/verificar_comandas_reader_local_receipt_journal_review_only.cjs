@@ -92,7 +92,8 @@ test('missing file witness is not counted as persisted event',()=>{
  hold(x,'JOURNALED_EVENT_FILE_MISSING');
 });
 test('orphan event file without journal cannot establish existence',()=>{
- const x=sample();x.event_witnesses=sample(['EVENT_FILE_WRITTEN']).event_witnesses;
+ const x=sample();x.checkpoint.entries=[];
+ x.event_witnesses=sample(['EVENT_FILE_WRITTEN']).event_witnesses;
  hold(x,'ORPHAN_OR_WRONG_EVENT_WITNESS');
 });
 test('event witness for bootstrap suppression cannot be adopted',()=>{
@@ -207,8 +208,8 @@ test('edited file bytes with recomputed self hash but stale journal refused',()=
 });
 test('malformed JSON with updated self hash is refused',()=>{
  const x=sample(['EVENT_FILE_WRITTEN']);const w=x.event_witnesses[0];
- w.json_utf8='{' ;w.raw_sha256=digest(w.json_utf8);
- hold(x,'EVENT_WITNESS_BYTES_INVALID');
+ w.json_utf8='{invalid_json';w.raw_sha256=digest(w.json_utf8);
+ hold(x,'EVENT_WITNESS_JSON_INVALID');
 });
 test('extra payload field is not silently normalized away',()=>{
  const x=sample(['EVENT_FILE_WRITTEN']);const w=x.event_witnesses[0];
