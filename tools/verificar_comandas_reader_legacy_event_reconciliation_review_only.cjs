@@ -135,5 +135,21 @@ test('forged raw SHA and matching event can only yield advisory HOLD',()=>{
  const r=hold(x,'SOURCE_PROVENANCE_AND_SQL_COMPLETENESS_NOT_ATTESTED');
  assert.equal(r.matched_shape_count,1);
 });
+test('case-only duplicate checkpoint identity is HOLD under POS comparison',()=>{
+ const x=input(2);x.checkpoint.entries[1].order_key=
+   x.checkpoint.entries[0].order_key.toLowerCase();
+ hold(x,'CHECKPOINT_ENTRY_UNSAFE');
+});
+test('case-only duplicate event identity is HOLD',()=>{
+ const x=input(2),w=x.event_witnesses[1],e=JSON.parse(w.json_utf8);
+ e.order_key=x.checkpoint.entries[0].order_key.toLowerCase();
+ rehash(w,e);
+ hold(x,'EVENT_ENVELOPE_OR_DUPLICATE_INVALID');
+});
+test('case-only duplicate Windows event filename is HOLD',()=>{
+ const x=input(2);
+ x.event_witnesses[1].name=x.event_witnesses[0].name.toLowerCase();
+ hold(x,'EVENT_ENVELOPE_OR_DUPLICATE_INVALID');
+});
 console.log('READER_LEGACY_EVENT_RECONCILIATION_REVIEW_PASS '+n+'/'+n+
  ' SYNTHETIC_ONLY NO_MIGRATION_NO_SQL_NO_PRINT');
