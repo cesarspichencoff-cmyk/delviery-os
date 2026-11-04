@@ -6,7 +6,12 @@ const one=window=>({window,day:'2026-11-04',orders_available:25,
  orders_observed:20,consecutive_sample:'YES',
  identity_confirmed:'YES',stations_covered:'ALL_REQUIRED',
  content_compared:'YES',notes_compared:'YES',
- late_output_checked:'YES',anomalies:[]});
+ late_output_checked:'YES',anomalies:[],
+ preparation_coverage:{
+  single_station_orders:12,multi_station_orders:8,unknown_station_orders:0,
+  families_observed:['SUSHI_1','SUSHI_2','HOT_ROLL','KITCHEN'],
+  ambiguous_combined_double:false
+ }});
 const baseline=()=>({schema:SCHEMA,shifts:[one('ALMOCO'),one('JANTAR')]});
 const D0='D0_EVIDENCE_INSUFFICIENT';
 const D1='D1_SAMPLE_CONFORME_RELATADA_NAO_AUTENTICADA';
@@ -52,6 +57,8 @@ test('sample fewer than twenty when shift had more is incomplete',()=>{
 test('shift with 12 available and all 12 observed is eligible only for provisional D1',()=>{
  const x=baseline();x.shifts[0].orders_available=12;
  x.shifts[0].orders_observed=12;
+ x.shifts[0].preparation_coverage.single_station_orders=7;
+ x.shifts[0].preparation_coverage.multi_station_orders=5;
  assert.equal(check(x,D1).observed_orders,32);
 });
 test('a shift with zero reported orders cannot prove the paper route',()=>{
@@ -166,6 +173,78 @@ test('invalid calendar date cannot be treated as a witnessed shift',()=>{
  const x=baseline();x.shifts[0].day='2026-02-30';
  check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
 });
-if(passed!==37)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+test('two shifts with only single-station orders cannot prove multi-station routes',()=>{
+ const x=baseline();for(const s of x.shifts){
+ s.preparation_coverage.single_station_orders=20;
+ s.preparation_coverage.multi_station_orders=0;
+ }
+ check(x,D0,'INCOMPLETE_OR_UNVERIFIED_SHIFT_SAMPLE');
+});
+test('two shifts with only multi-station orders cannot prove simple routes',()=>{
+ const x=baseline();for(const s of x.shifts){
+ s.preparation_coverage.single_station_orders=0;
+ s.preparation_coverage.multi_station_orders=20;
+ }
+ check(x,D0,'INCOMPLETE_OR_UNVERIFIED_SHIFT_SAMPLE');
+});
+test('unknown native station mapping must keep D0',()=>{
+ const x=baseline();x.shifts[0].preparation_coverage.unknown_station_orders=1;
+ x.shifts[0].preparation_coverage.single_station_orders=11;
+ check(x,D0);
+});
+test('missing HOT_ROLL coverage cannot prove full station routing',()=>{
+ const x=baseline();x.shifts[1].preparation_coverage.families_observed=
+ ['SUSHI_1','SUSHI_2','KITCHEN'];check(x,D0);
+});
+test('missing KITCHEN coverage cannot prove routing to kitchen',()=>{
+ const x=baseline();x.shifts[0].preparation_coverage.families_observed=
+ ['SUSHI_1','SUSHI_2','HOT_ROLL'];check(x,D0);
+});
+test('one shift missing any family prevents whole-day D1',()=>{
+ const x=baseline();x.shifts[1].preparation_coverage.families_observed=
+ ['SUSHI_1'];const r=check(x,D0);
+ assert.equal(r.preparation_family_coverage_reported,false);
+});
+test('unverified combined double exception cannot yield D1',()=>{
+ const x=baseline();x.shifts[0].preparation_coverage.ambiguous_combined_double=true;
+ check(x,D0);
+});
+test('invalid preparation category never becomes silently accepted',()=>{
+ const x=baseline();x.shifts[0].preparation_coverage.families_observed.push('FISCAL');
+ check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+test('repeated family cannot double count',()=>{
+ const x=baseline();x.shifts[1].preparation_coverage.families_observed=
+ ['SUSHI_1','SUSHI_1'];check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+test('reported station mix cannot exceed observed order count',()=>{
+ const x=baseline();x.shifts[0].preparation_coverage.multi_station_orders=20;
+ check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+test('negative count of multi-station sample is invalid',()=>{
+ const x=baseline();x.shifts[1].preparation_coverage.multi_station_orders=-1;
+ check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+test('old input v1 schema cannot bypass added category and mix checks',()=>{
+ const x=baseline();x.schema='tata.comandas.paper-census-sample-offline.v1';
+ check(x,D0,'INVALID_INPUT');
+});
+test('missing per-shift preparation coverage cannot silently promote D1',()=>{
+ const x=baseline();delete x.shifts[0].preparation_coverage;
+ check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+test('anomaly outranks missing multi-station samples',()=>{
+ const x=baseline();x.shifts[0].anomalies=['DUPLICATE'];
+ x.shifts[1].preparation_coverage.multi_station_orders=0;
+ x.shifts[1].preparation_coverage.single_station_orders=20;
+ check(x,D2);
+});
+test('nominal D1 is still self reported even with complete four-family sample',()=>{
+ const r=check(baseline(),D1);
+ assert.equal(r.sample_mix_complete_reported,true);
+ assert.equal(r.preparation_family_coverage_reported,true);
+ assert.equal(r.native_paper_sample_proven,false);
+});
+if(passed!==52)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');
