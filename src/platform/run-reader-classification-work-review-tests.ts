@@ -53,7 +53,7 @@ function event(index:number,station:"combinados"|"enrolados",quantity:number){
   tenant:"tata",unidade:"ITAIM",praca:station,pedido_id:b.opaque_order_ref!,
   grupo:b.lines[index]!.line_ref,estado:"aguardando",
   ocorrido_em:"2026-11-04T18:02:00.000Z",observado_em:"2026-11-04T18:02:00.000Z",
-  operador:"terminal-1",revisao:1,quantidade
+  operador:"terminal-1",revisao:1,quantidade:quantity
  });
  assert.equal(r.ok,true);
  return (r as Extract<typeof r,{ok:true}>).evento;
