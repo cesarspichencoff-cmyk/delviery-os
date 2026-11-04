@@ -56,6 +56,9 @@ function Load-Checkpoint {
     return @{
       schema = "deliveryos.tata-reader-continuous-checkpoint.v1"
       hash_contract_version = "NODE_CANONICAL_JSON_SHA256_V1"
+      # Structural origin marker; NOT independent migration attestation.
+      checkpoint_origin = "FRESH_NODE_CANONICAL_V2"
+      checkpoint_generation = [Guid]::NewGuid().ToString("N")
       bootstrap_complete = $false
       seen = @{}
     }
@@ -66,9 +69,25 @@ function Load-Checkpoint {
   # watcher identity. Fail BEFORE SQL, events or checkpoint writes. Explicit
   # supervised migration + complete backup/replay is a different release gate.
   if ($raw.hash_contract_version -cne "NODE_CANONICAL_JSON_SHA256_V1") { throw "CHECKPOINT_HASH_MIGRATION_REQUIRED" }
+  # A marker-only edit must never pass for migration of old hashes.
+  # Fresh-origin fields are structural and do not attest legacy migration.
+  if ($raw.checkpoint_origin -cne "FRESH_NODE_CANONICAL_V2") { throw "CHECKPOINT_ORIGIN_NOT_VERIFIED" }
+  if ([string]$raw.checkpoint_generation -cnotmatch '^[0-9a-f]{32}$') { throw "CHECKPOINT_GENERATION_ID_INVALID" }
   $seen = @{}
-  foreach ($entry in @($raw.entries)) { $seen[[string]$entry.order_key] = $entry }
-  return @{ schema=$raw.schema; hash_contract_version=[string]$raw.hash_contract_version; bootstrap_complete=[bool]$raw.bootstrap_complete; seen=$seen }
+  if (@($raw.entries).Count -gt 250) { throw "CHECKPOINT_ENTRY_COUNT_EXCEEDED" }
+  foreach ($entry in @($raw.entries)) {
+    $key = [string]$entry.order_key
+    if ([string]::IsNullOrWhiteSpace($key)) { throw "CHECKPOINT_ORDER_KEY_INVALID" }
+    if ($seen.ContainsKey($key)) { throw "CHECKPOINT_DUPLICATE_ORDER_KEY" }
+    if ([string]$entry.snapshot_hash -cnotmatch '^[0-9a-f]{64}$') { throw "CHECKPOINT_SNAPSHOT_HASH_NOT_CANONICAL" }
+    if ($null -ne $entry.emitted_hash -and [string]$entry.emitted_hash -cnotmatch '^[0-9a-f]{64}$') {
+      throw "CHECKPOINT_EMITTED_HASH_NOT_CANONICAL"
+    }
+    $seen[$key] = $entry
+  }
+  return @{ schema=$raw.schema; hash_contract_version=[string]$raw.hash_contract_version;
+    checkpoint_origin=[string]$raw.checkpoint_origin; checkpoint_generation=[string]$raw.checkpoint_generation;
+    bootstrap_complete=[bool]$raw.bootstrap_complete; seen=$seen }
 }
 
 function Save-Checkpoint($checkpoint) {
@@ -76,6 +95,8 @@ function Save-Checkpoint($checkpoint) {
   $out = [ordered]@{
     schema = "deliveryos.tata-reader-continuous-checkpoint.v1"
     hash_contract_version = "NODE_CANONICAL_JSON_SHA256_V1"
+    checkpoint_origin = [string]$checkpoint.checkpoint_origin
+    checkpoint_generation = [string]$checkpoint.checkpoint_generation
     bootstrap_complete = [bool]$checkpoint.bootstrap_complete
     entries = $entries
   }
