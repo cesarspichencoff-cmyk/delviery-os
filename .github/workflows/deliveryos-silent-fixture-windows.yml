@@ -22,6 +22,9 @@ on:
       - src/platform/run-reader-station-link-review-tests.ts
       - src/product/eventos/revisar-classificacao-trabalho-praca.ts
       - src/platform/run-reader-classification-work-review-tests.ts
+      - src/entregas/ui/rider-mobile/rider.js
+      - src/entregas/ui/rider-mobile/rider-trip-scope.js
+      - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
   workflow_dispatch:
 
 permissions:
@@ -50,6 +53,8 @@ jobs:
           node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
           node tests/tata-reader/run-real-feed-boundary-tests.cjs
           node tests/tata-reader/run-file-feed-tests.cjs
+          # Rider actor identity + Room queue HOLD; synthetic only, no devices.
+          node src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
 
   native-windows:
     name: Windows no-console native fixture
