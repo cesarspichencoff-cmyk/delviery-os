@@ -20,6 +20,8 @@ on:
       - tests/reporting/run-native-reader-producer-contract-review-tests.cjs
       - src/product/eventos/vinculo-reader-trabalho-praca.ts
       - src/platform/run-reader-station-link-review-tests.ts
+      - src/product/eventos/revisar-classificacao-trabalho-praca.ts
+      - src/platform/run-reader-classification-work-review-tests.ts
   workflow_dispatch:
 
 permissions:
@@ -83,3 +85,5 @@ jobs:
         run: npm run build
       - name: Reader line to work events, no live/readiness authority
         run: node dist/src/platform/run-reader-station-link-review-tests.js
+      - name: Reader classification to exact station consistency (review only)
+        run: node dist/src/platform/run-reader-classification-work-review-tests.js
