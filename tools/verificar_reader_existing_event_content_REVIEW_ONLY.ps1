@@ -91,7 +91,7 @@ try{
   $bytesBefore=[IO.File]::ReadAllBytes($file)
   Assert-TataPersistedEventContentReview -Path $file -ExpectedEvent $expected|Out-Null
   $bytesAfter=[IO.File]::ReadAllBytes($file)
-  if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$bytesBefore,[byte[]]$bytesAfter)){
+  if(-not ([Convert]::ToBase64String($bytesBefore) -ceq [Convert]::ToBase64String($bytesAfter))){
    throw 'EVENT_BYTES_MUTATED'
   }
  }
