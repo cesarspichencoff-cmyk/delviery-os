@@ -17,7 +17,7 @@
 
 | ID | Capacidade de lançamento | Prova operacional exigida | Estado em 03/11 |
 | --- | --- | --- | --- |
-| L1 | **Pedidos reais do Itaim:** número/identidade interna, revisões, horário, itens, quantidades e observações fiéis | Origem/unidade autenticadas; captura completa de uma revisão real autorizada com campos e quantidades reconciliados; identidade distinta de UUID iFood | **HOLD** — Reader candidato omite observações e completude |
+| L1 | **Pedidos reais do Itaim:** número/identidade interna, revisões, horário, itens, quantidades e observações fiéis | Origem/unidade autenticadas; captura completa de uma revisão real autorizada com campos e quantidades reconciliados; identidade distinta de UUID iFood | **HOLD campo** — watcher antigo omite observações; PR #135 já prepara montador/consulta/serializador em laboratório (64/64 verificações), mas instalação e leitura reais não estão comprovadas |
 | L2 | **Praças por item:** Sushi, Quentes, Cozinha e demais áreas sem colisão de rótulo | Mapa produto→praça validado no catálogo real, exceções identificadas; teste de itens multiárea e instruções do cliente sem troca de praça | **HOLD** — mapa Quentes/Cozinha ambíguo; classificação de exceções incompleta |
 | L3 | **Ciclo de produção:** na praça, aguardando, pronto em praça, pedido consolidado pronto, na conferência, liberado para saída | Provar cada transição com fonte/recibo e comparação com o fluxo físico; diferenciar estado do cabeçalho, itens e conferência | **HOLD** — estados nativos 3/P/X têm semântica real ainda não homologada; não inventar “pronto” |
 | L4 | **Copiloto Home:** produção/expedição/praças atualizadas, Calmo/Ambiente/Foco, recomendação única e fundamento | Navegador real mostrando fatos frescos, fontes, atraso, primeira ação humana e estados desconhecidos; sem sintéticos em produção | **HOLD** — código/motores em parte implementados; alimentação real e Home completa não comprovadas |
@@ -36,6 +36,7 @@ Procurar primeiro o watcher nativo **já construído** e sua saída protegida, s
 **Não** alterar serviço instalado ou banco no escuro. Primeiro validar candidata offline; após gate de escopo, verificar instalada/identidade/bytes e **uma** revisão real do Itaim em modo de leitura. Quando SQL transacional consistente for necessária, verificar recursos já existentes; não ativar opções de banco em produção por conta própria. Fonte externa continua rotulada como tal.
 
 ### 2. Descoberta de estado real — sem chamar P de pronto por palpite
+**Achado adicional de código:** `src/entregas/pilot/ready-orders.ts` já guarda uma fila própria de `ready_order`; `src/entregas/pilot/ready-queue-observation.ts` permite observação sem expor rótulo/autor, com `source_mode` e marca de eventos; `run-ready-fact-tests.ts` exercita o evento público `delivery_ready`. O ato existente `registerReadyOrder` **não prova automaticamente que a cozinha realmente concluiu o pedido**. A integração deve vincular essa fila ao ato de conferência/pronto validado, e não ao código de status `P` da origem. Não lançar lista de prontos abastecida apenas por registros manuais de demonstração.
 Existem estados nativos `3`, `P`, `X` e transições entre eles. O significado de cada estado, cancelamento, revisão e `pronto` deve ser provado por observação supervisionada de pedidos, não por suposição de enum. Distinguir:
 - item iniciado / item pronto por praça;
 - comanda ainda em produção / comanda pronta;
@@ -44,6 +45,7 @@ Existem estados nativos `3`, `P`, `X` e transições entre eles. O significado d
 Se o sistema de origem não entrega `pronto por praça`, não criar esse fato a partir de `pedido pronto`. Produzir a informação por um evento próprio em fluxo TATÁ existente, sem preencher vários campos no pico.
 
 ### 3. Mapeamento real de praças
+A PR #135 já dispõe de classificador e seletor de janela/praça candidatos em laboratório, além de revisão da fonte `docs/comandas/READER_V2_ESTADOS_REAIS_FONTE_POR_VIA_20261026.md` e `docs/comandas/SELETOR_JANELA_PRACA_PREVIA_OFFLINE_V1_20261027.md`. Reusar esse trabalho em vez de redesenhar roteamento.
 Reaproveitar catálogo e classificação do TATÁ Comandas/Academia, sem presumir equivalência entre `cozinha_quentes` e o rótulo operacional `Quentes`. Resolver os itens ambíguos por evidência de via/prática da unidade, preservar múltiplas praças e quantidades, não contar uma linha duas vezes. `Caixa` e `Conferência` sem cobertura de fila devem aparecer `sem medição automática`, não verde.
 
 ### 4. Home Copiloto existente, sem segunda inteligência
@@ -59,6 +61,13 @@ Reusar Room/WorkManager + contratos de eventos/recibos, nunca `SimulatedCopiloto
 
 ### 6. Gate de campo e autorização
 A sequência é **Foxxy isolado → navegador real de QA → verificação read-only autorizada no Itaim → teste acompanhado iPhone/Xiaomi → ensaio almoço e jantar → revisão adversarial de evidências → decisão humana de piloto**. Não fazer merge/deploy, ligar serviços, imprimir, acessar pedidos de clientes ou autorizar captura de GPS como subproduto deste documento.
+
+## Evidência adicional recuperada na PR #135 — código preparado, não ativo
+- `docs/comandas/READER_NOTES_CANONICAL_PS_NODE_GATE_20261103.md`: consulta única fictícia para 17 campos, montador de observações e serialização PowerShell↔Node corrigindo divergência com apóstrofo; 64/64 verificações de laboratório. Nada lido no SQL operacional. Não repetir pesquisa ou correção já coberta; validar compatibilidade do **novo candidato** com o consumidor e depois com o instalado.
+- `docs/comandas/READER_SQL_SNAPSHOT_INTEGRITY_GATE_20261103.md`: vinte e três testes de isolamento e seis de revisão misturada, ainda sem provar configuração do SQL Server. Não presumir que `READ COMMITTED` resolve revisão transacional sem verificar configuração.
+- `docs/comandas/AMOSTRA_REAL_650_REVISOES_ESTADOS_E_EVENTO_PRODUCAO_20261026.md`: 650 revisões passivas, não pedidos únicos; observadas `3→P`, `3→X`, `X→P` e `P→4`. Nenhuma mudança comprova prontidão física, primeiro papel ou retirada.
+- `src/entregas/ui/copiloto/index.html` em PR #137 ainda declara **sem lista de pedidos reais**: é diagnóstico de fonte, não a Home operacional para lançamento.
+- `src/entregas/pilot/ready-orders.ts` e `ready-queue-observation.ts` já preservam informação de pronto e modo da origem; não presumir que `ready_order` significa “pronto na cozinha” nem que todo item está confirmado por praça.
 
 ## Regras de eficiência e updates
 - **Sem reescrever mecanismos aprovados**: adaptar interfaces e contratos mínimos na PR de TATÁ Comandas e no Delivery OS; não comprar ferramentas nem criar terceiro coletor.
