@@ -33,6 +33,12 @@ A PR #135 também registra `docs/comandas/READER_SUPERVISED_MAINTENANCE_PREFLIGH
 
 **Mantém HOLD:** a rota legada de aceite no piloto ainda não demonstrou sessão autenticada do ator; resposta 4xx do lote operacional continua potencialmente reprocessável sem classificação de autoria, recusa terminal e commit incerto; não alterar `markFailed` indiscriminadamente. Nenhum teste físico Xiaomi/HTTPS ou aceite humano ocorreu. A prioridade de campo Reader/produção/Copiloto **não mudou**.
 
+### Checkpoint Reader → Copiloto 04/11 — admissão de fonte real, sem inventar prontidão
+
+A ponte de leitura em arquivo e o validador nativo **já existiam**. `runtime/reporting/copiloto_tata_reader_adapter_v1.cjs` agora **reusa** `native_reader_producer_contract_review_v1.cjs` para bloquear em modo real do Itaim/DLV_IFO observações incompletas, alteração de hash ou vínculo errado entre nota e item. `tests/tata-reader/run-real-feed-boundary-tests.cjs` exercita **evento → checkpoint → leitura do Copiloto** com pedidos sintéticos. GitHub Actions `41773277307` **completed/success**: adaptador 21/21, revisor 27/27, checkpoint 5/5 e regressões existentes. O reporte técnico é `docs/execution/DELIVERYOS_READER_COPILOTO_REAL_SOURCE_GATE_20261104.md`.
+
+**Não confundir com live:** nenhuma identidade SQL do Reader instalado, scan real completo, número total de pedidos ou ready físico foi atestada. A origem real continua `STOP_SAFE`; a Home e o produtor R5-D3 precisam de ligação com fatos de campo, não de novo leitor nem outra taxonomia.
+
 ## SOMENTE o que ainda falta — quatro fechos materiais
 
 ### F1. Provar o feed de pedidos atuais e compatibilizar a candidata do Reader
