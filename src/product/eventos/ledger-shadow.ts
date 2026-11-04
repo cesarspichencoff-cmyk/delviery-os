@@ -121,10 +121,10 @@ export function criarLedgerShadow(o: OpcoesLedgerShadow): LedgerShadow {
         detalhe: "mesma chave idempotente com conteudo diferente",
       };
     }
-    vistos.set(chave, marca);
     const dir = dirname(o.arquivo);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     appendFileSync(o.arquivo, JSON.stringify(e) + "\n");
+    vistos.set(chave, marca);
     return { tipo: "gravado", event_id: e.event_id };
   }
 
