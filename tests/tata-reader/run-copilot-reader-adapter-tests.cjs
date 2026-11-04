@@ -105,4 +105,73 @@ test('time policy cannot override producer block or unknown provenance',()=>{
   assert.equal(adapt(e,timed).reason,'READER_DOWNSTREAM_BLOCKED');
   e.blockers=[];assert.equal(adapt(e,{...timed,sourceMode:null}).reason,'AUTHORIZED_SOURCE_MAPPING_REQUIRED');
 });
+
+// Real-mode admission guard reuses the existing native producer review.
+// Every fact below is invented. Passing the shape does NOT attest source,
+// login, SQL isolation, KDS state or operational readiness.
+const {snapshotHash}=require('../../runtime/reporting/native_reader_shadow_replay_v1.cjs');
+const copy=x=>JSON.parse(JSON.stringify(x));
+const realScope={...timed,sourceMode:'real',sourceUnitId:'0001',sourceStoreId:'01',
+  sourceTimePolicy:{...timed.sourceTimePolicy,sourceUnitId:'0001',sourceStoreId:'01'}};
+function nativeRealFixture(){
+  const o={
+    CDFILIAL:'0001',CDLOJA:'01',NRVENDAREST:'LABSALE01',NRCOMANDA:'LABCMD01',
+    NRCOMANDAEXT:'1234',IDORGCMDVENDA:'DLV_IFO',IDSTCOMANDA:'3',
+    DTHRABERMESA:'2026-11-03T18:20:00.0000000',
+    items:[{NRPRODCOMVEN:'LINE01',CDPRODUTO:'PROD01',CDARVPROD:'9200001000',
+      QTPRODCOMVEN:'2.000',IDSTPRCOMVEN:'4'}],
+    observation_scan_complete:true,
+    observation_rows:[{source_field:'DSOBSPEDDIGCMD',value:"SEM CEBOLINHA, LIMÃO",
+      scope_hint:'item',item_index:0,CDPRODUTO:'PROD01',join_proven:true}]
+  };
+  return {...event(),order:o,order_key:'0001|01|LABSALE01|LABCMD01',
+    snapshot_hash:snapshotHash(o),observed_at:'2026-11-03T18:21:00-03:00'};
+}
+test('real-mode reader notes/digest reviewer accepts only canonical synthetic shape',()=>{
+ const e=nativeRealFixture(),result=adapt(e,realScope);
+ assert.equal(result.state,'adapted',result.reason);
+ const r=project({unitId:'ITAIM',sourceUnitId:'0001',revisions:[result.revision],
+   now:'2026-11-03T18:22:00-03:00',maxAgeMs:120000});
+ assert.equal(r.orders.length,1);
+ assert.equal(r.orders[0].ready_for_dispatch,null);
+ assert.equal(r.orders[0].kds_cycle.state,'UNKNOWN');
+ assert.equal(r.live_source_verified,false);
+ assert.equal(r.operational_order_total,null);
+ assert.equal(JSON.stringify(r).includes('CEBOLINHA'),false);
+});
+test('real-mode rejects legacy watcher without full observation scan',()=>{
+ const e=nativeRealFixture();delete e.order.observation_scan_complete;
+ delete e.order.observation_rows;
+ assert.equal(adapt(e,realScope).reason,'READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+});
+test('real-mode rejects uppercase SHA even if fields are otherwise complete',()=>{
+ const e=nativeRealFixture();e.snapshot_hash=e.snapshot_hash.toUpperCase();
+ assert.equal(adapt(e,realScope).reason,'READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+});
+test('real-mode rejects tampered order note, item join and quantity',()=>{
+ for(const mutate of [
+  e=>{e.order.observation_rows[0].value='EDITADO';},
+  e=>{e.order.observation_rows[0].CDPRODUTO='PROD02';e.snapshot_hash=snapshotHash(e.order);},
+  e=>{e.order.items[0].QTPRODCOMVEN='99.000';}
+ ]){
+  const e=nativeRealFixture();mutate(e);
+  assert.equal(adapt(e,realScope).reason,'READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+ }
+});
+test('real-mode cannot borrow native Itaím qualification from another unit',()=>{
+ const e=nativeRealFixture();
+ assert.equal(adapt(e,{...realScope,unitId:'OTHER'}).reason,
+  'READER_REAL_ITAIM_SCOPE_NOT_QUALIFIED');
+ assert.equal(adapt(e,{...realScope,sourceStoreId:'99'}).state,'out_of_scope');
+});
+test('control-mode fixture still works but never becomes a live source',()=>{
+ const e=event(),a=adapt(e,scope);
+ assert.equal(a.state,'adapted');
+ assert.equal(a.revision.source_mode,'control');
+ const r=project({unitId:'ITAIM',sourceUnitId:scope.sourceUnitId,revisions:[a.revision],
+  now:'2026-10-26T20:02:00-03:00',maxAgeMs:120000});
+ assert.equal(r.live_source_verified,false);
+ assert.equal(r.orders[0].source_mode,'control');
+});
+
 console.log(`COPILOT_READER_ADAPTER_PASS ${passed}`);
