@@ -4,6 +4,9 @@
 
 **Estado da revisão:** PR #137 em DRAFT/HOLD, HEAD na verificação `cbacf47d0fc7dd51d0a39a355f7524d509a0774f`; PR #135 permanece separada. Este relatório é prova de **laboratório**, não homologação do Reader instalado.
 
+## Atualização factual posterior — fonte instalada e alternativa sem restart
+Consultar **primeiro** `docs/execution/DELIVERYOS_READER_V2_LEGACY_HASH_IN_MEMORY_BRIDGE_20261104.md` e PR #135 `docs/comandas/ITAIM_REAL_READER_SQL_SOURCE_PROOF_20261104.md`. A sessão SQL **do watcher V2 instalado** foi comprovada na auditoria administrativa, e seus campos de notas existem. `RCSI=OFF` e `SNAPSHOT=OFF` — portanto **integridade atômica de revisão não comprovada**, mesmo que o digest confira. Nova ponte em memória para hash legado estritamente recomputado, desligada por padrão, 11/11 + arquivo 19/19 no CI `41780271973`; **nenhum deploy**. Esse avanço supera a antiga hipótese de que o V2 instalado omitia necessariamente observações e de que a falta de acesso administrativo aos diretórios era o único bloqueio. Os resultados do gate anterior abaixo continuam válidos apenas no seu escopo laboratorial.
+
 ## Reuso confirmado antes da intervenção
 - `runtime/reporting/copiloto_tata_file_feed_v1.cjs` já implementava leitura limitada por checkpoint e consistência do diretório/arquivos, janelas de tempo, unidade e modo; não foi duplicado.
 - `runtime/reporting/copiloto_tata_reader_adapter_v1.cjs` já adaptava identidade, itens e quantidades, preservando `ready_for_dispatch=null` e estado KDS `UNKNOWN`.
