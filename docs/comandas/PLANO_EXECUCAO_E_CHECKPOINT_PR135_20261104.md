@@ -226,6 +226,31 @@ Executar **ETAPA 3 — preparação técnica exclusivamente offline**: comparar 
 
 **Fronteira:** `GATE_2_SYNTHETIC=PASS`; `STAGE_3_OFFLINE_PREP=IN_PROGRESS`; `STAGE_3_REAL_SQL=NOT_ATTEMPTED`; `SQL_PLAN_OF_CANDIDATE=UNKNOWN`; `WRITER_BLOCKING_EFFECT=UNKNOWN`; `PAPER_CENSUS=NOT_OBSERVED`; `PRODUCTION=HOLD`. Esta transição **não autoriza** SQL vivo, instalação, reinício, mudança do caixa, spooler, impressão, SEFAZ, sequência ou merge.
 
+## Etapa 3 — risco de plano SQL de uma comanda: gate adversarial offline (04/11/2026)
+
+**ESTADO: ETAPA 3 EM_ANDAMENTO, SOMENTE REVISÃO — NÃO AUTORIZA CONSULTA SQL REAL.** O Gate 2 permanece concluído exclusivamente no laboratório. O Reader V2 instalado e o SQL/serviços/impressoras continuam intocados.
+
+### Resultado implementado e provado
+
+- **Código:** `tools/comandas_reader_one_order_plan_risk_review_only.cjs` — analisa em memória o SQL da candidata `tools/comandas_reader_one_order_serializable_REVIEW_ONLY.sql` e um **resumo sintético/autodeclarado** do plano. Retorna **sempre HOLD**, mesmo que todos os operadores aleguem `INDEX_SEEK`; não abre conexão SQL, não executa `SHOWPLAN`, não consulta pedido, não muda isolamento e não entrega permissão de impressão.
+- **36 testes novos:** `tools/verificar_comandas_reader_one_order_plan_risk_review_only.cjs`, integrados ao workflow para **Linux e Windows**. Validam falta de plano, hash da consulta divergente, confusão com plano cacheado do Reader instalado, parâmetros diferentes de `VARCHAR(10)`, filtros de Itaim/origem modificados, `NOLOCK`, alteração de `SERIALIZABLE`/`LOCK_TIMEOUT`/`MAXDOP`, DML, tabela nativa ausente ou duplicada, varreduras, `CONVERT_IMPLICIT`, alertas de cardinalidade/derramamento, reivindicação falsa de segurança de escritores e de completude semântica e entrada adulterada. Prova: CI de código [#41906882348](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41906882348) no commit `e91d1894af106d11fc5e434e98ed5690647c7ba9`, **COMPLETED / SUCCESS integral em Linux e Windows**. O teste específico passou **36/36** em cada sistema.
+- **Comparação válida:** o plano cacheado observado no Reader V2 instalado tinha 3 buscas por índice e um `Index Scan` em `PRODUTO`, com métricas registradas em `docs/comandas/READER_V2_CACHED_SQL_PLAN_AND_ATOMICITY_GATE_20261104.md`. É **evidência do Reader V2 instalado, não do SELECT candidato com `SERIALIZABLE`**. Nenhum indicador daquele plano pode ser usado como custo/espera garantidos da consulta proposta.
+- **Limites da análise:** um hash de SQL igual e quatro `INDEX_SEEK` **declarados pelo próprio emissor** não autenticam a procedência do plano. Mesmo plano estimado verdadeiro não prova esperas/locks efetivos de escritores nem que a Teknisa concluiu cabeçalho, itens, notas e modificadores numa única revisão lógica. Analisar essas questões separadamente; nenhuma conclusão `WORLD_PROVEN` foi obtida.
+
+### Matriz de STOP e evidências exigidas antes de qualquer piloto
+
+| Evidência ou risco | Estado atual | Gate proposto |
+|---|---|---|
+| Plano da **consulta candidata exata** sob os tipos nativos `VARCHAR(10)` | **UNKNOWN** | Demonstrar e revisar um plano atribuível à consulta, não reaproveitar o plano instalado |
+| Acesso a `COMANDAVEN`, `VENDAREST`, `ITCOMANDAVEN`, `PRODUTO` e conversões implícitas | **NÃO PROVADO NA CANDIDATA** | Revisão de operadores, cardinalidade/varreduras, conversões e joins |
+| Impacto de `SERIALIZABLE` nos escritores do caixa | **UNKNOWN / ALTO RISCO POTENCIAL** | Plano e protocolo de observação/STOP autorizados; `LOCK_TIMEOUT 100` limita a espera do leitor, **não** do escritor |
+| Uma leitura limitada por `TOP(201)` | **CANDIDATA ESTÁTICA** | Linhas `>=201` devem bloquear como truncamento; o limite não restringe automaticamente todos os locks ou leituras físicas internos |
+| Revisão lógica íntegra e monotônica | **NÃO COMPROVADA** | Evidência independente de transações/revisões nativas, incluindo commits repartidos e A→B→A |
+| Identidade iFood/Conferência, dedupe real e papel físico | **HOLD** | Portões separados; nunca consequência de sucesso da análise de plano |
+| Segurança operacional e autorização para SQL real | **NÃO AUTORIZADA** | Decisão de César específica e próxima ao efeito, incluindo impacto no caixa, janela, STOP e rollback; sem ativar RCSI global |
+
+**Decisão e próximo passo:** preservar a operação nativa; manter Conferência TATÁ somente em sombra. O próximo trabalho seguro ainda é **preparação offline**, especificando como autenticar o plano da candidata e medir risco para writers antes de propor um ensaio. Não houve execução de consultas de pedidos, DML/DDL, `SET SHOWPLAN_XML`, `SERIALIZABLE` real, instalação, restart, spooler, papel, sequência, fiscal/SEFAZ, deploy ou merge. `STAGE_3=IN_PROGRESS`; `CANDIDATE_SQL_PLAN=UNKNOWN`; `WRITER_LOCK_IMPACT=UNKNOWN`; `NATIVE_REVISION_SEMANTIC_COMPLETENESS=UNKNOWN`; `PRINT=HOLD`.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -239,4 +264,5 @@ Executar **ETAPA 3 — preparação técnica exclusivamente offline**: comparar 
 - **04/11/2026 — ETAPA 2, contrato de revisão e recibos locais:** leitura de SQL da candidata sem token de revisão independente; reuso de auditoria real preexistente sem repetir SQL. Teste de 28 casos de contrato nativo corrigido para CRLF no commit `f29f94c8`; modelo puro de recibos/journal de 28 casos e integração Linux/Windows no commit `effa6c41`. Os ensaios isolados passaram, mas **CI do SHA de código permanece PENDENTE**; CI anterior #41863904986 falhou no Windows e não é prova. Sem efeitos operacionais. Status `EM_ANDAMENTO/DRAFT/HOLD`.
 - **04/11/2026 — ETAPA 2, auditoria adversarial e rota mínima:** recebimento de código `6268a291`/`ecbdc2cd` com validação estrita de JSON/bytes/testemunhas e reconciliação checkpoint→última observação; 42/42 casos estruturais isolados, CI do SHA exato ainda não confirmada. Reuso do censo autorizado porém **não observado**; decisão provisória D0 = manter vias nativas e Conferência apenas sombra; D1/D2 exigem papel real. Etapa 2 permanece `EM_ANDAMENTO`, PR #135 `DRAFT/HOLD`, sem SQL/serviço/impressora.
 - **04/11/2026 — TRANSIÇÃO ETAPA 2 → ETAPA 3 (SOMENTE OFFLINE):** Gate 2 aprovado no SHA `01466b5b` pela CI #41881651913 `completed/success` Linux+Windows, incluindo 42 casos de journal e revisão nativa. Etapa 2 `CONCLUÍDA NO LABORATÓRIO`; Etapa 3 `EM_ANDAMENTO APENAS OFFLINE` para validar riscos do SQL `SERIALIZABLE` sem executar pedidos. Sem plano da nova consulta, teste físico, migração, deploy ou impressão; esses efeitos continuam `HOLD`. A CI do novo registro documental precisará verificação separada.
+- **04/11/2026 — ETAPA 3, gate de origem do plano e risco de escritores:** código `e05f206d`, 36 testes sintéticos `c8f46be6` e CI Linux/Windows `#41906882348` **SUCCESS integral** no commit `e91d1894`. Plano cacheado V2 não autentica a nova candidata; `SERIALIZABLE`, varredura/conversão e completude permanecem sem prova real. Etapa 3 `EM_ANDAMENTO OFFLINE`, PR `DRAFT/HOLD`, zero efeitos operacionais. Commit documental gerará nova CI a verificar.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
