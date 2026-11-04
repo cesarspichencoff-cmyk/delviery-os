@@ -10,6 +10,10 @@ on:
       - tests/silent-runner/**
       - runtime/reporting/diagnostic_readiness_v1.cjs
       - tests/reporting/run-diagnostic-readiness-tests.cjs
+      - runtime/reporting/copiloto_tata_reader_adapter_v1.cjs
+      - runtime/reporting/native_reader_producer_contract_review_v1.cjs
+      - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+      - tests/reporting/run-native-reader-producer-contract-review-tests.cjs
   workflow_dispatch:
 
 permissions:
@@ -33,6 +37,9 @@ jobs:
           node tests/silent-runner/run-contract-tests.cjs
           node tests/silent-runner/run-pair-contract-tests.cjs
           node tests/reporting/run-diagnostic-readiness-tests.cjs
+          # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
+          node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
+          node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
 
   native-windows:
     name: Windows no-console native fixture
