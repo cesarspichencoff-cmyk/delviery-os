@@ -73,5 +73,7 @@ test('warnings make writer-blocking and plan costs explicit',()=>{
  assert.match(template,/NOT time writers wait for it/);
  assert.match(template,/plan review, rollback, monitoring/);
  assert.match(template,/Result >200 lines or any timeout => HOLD/);
+ assert.match(template,/Free-text observations MAY include customer PII/);
+ assert.match(template,/Never assume nvarchar\(64\)/);
 });
 console.log('READER_SERIALIZABLE_ONE_ORDER_STATIC_REVIEW_PASS '+n+'/'+n+' NO_SQL');
