@@ -94,7 +94,7 @@ export function revisarClassificacaoTrabalhoPraca(input:Readonly<{
      binding.reader_transaction_attested!==false||
      binding.physical_event_attested!==false||
      binding.ready_for_dispatch!==null||binding.live_home_authorized!==false||
-     binding.source_modified===true)
+     binding.no_action_executed!==true)
     return hold("READER_LINE_BINDING_UNQUALIFIED");
   const id=revision.identity;
   if(!id||id.unit_id!=="0001"||id.store_id!=="01"||id.origin!=="DLV_IFO"||
