@@ -94,5 +94,66 @@ try{
   assert.equal(read(args).state,'unavailable');
   assert.equal(read(args).operational_order_total,null);
  });
+ test('legacy uppercase is disabled unless trusted caller opts in',()=>{
+  const e=canonical();e.snapshot_hash=e.snapshot_hash.toUpperCase();seed(e);
+  const r=read(args);
+  assert.equal(r.reason,'SOURCE_CURRENT_REVISION_BLOCKED');
+  assert.equal(r.view,null);
+ });
+ test('actual V2 uppercase-format digest is verified in memory, never published as live',()=>{
+  const e=canonical();e.snapshot_hash=e.snapshot_hash.toUpperCase();seed(e);
+  const eventPath=path.join(dir,e.order.NRCOMANDA+'_'+e.snapshot_hash+'.json');
+  const before=fs.readFileSync(eventPath,'utf8');
+  const ckBefore=fs.readFileSync(ckPath,'utf8');
+  const r=read({...args,scope:{...scope,allowVerifiedLegacyUppercase:true}});
+  assert.equal(r.state,'observed_records',r.reason);
+  assert.equal(r.legacyDigestReconciled,1);
+  assert.equal(r.view.orders[0].snapshot_ref,snapshotHash(e.order));
+  assert.equal(r.live_source_verified,false);
+  assert.equal(r.operational_order_total,null);
+  assert.equal(r.view.orders[0].ready_for_dispatch,null);
+  assert.equal(fs.readFileSync(eventPath,'utf8'),before);
+  assert.equal(fs.readFileSync(ckPath,'utf8'),ckBefore);
+  assert(!JSON.stringify(r).includes('ALERGIA FICTICIA'));
+ });
+ test('canonical lowercase event also passes explicit bridge without double normalization',()=>{
+  const e=canonical();seed(e);
+  const r=read({...args,scope:{...scope,allowVerifiedLegacyUppercase:true}});
+  assert.equal(r.state,'observed_records',r.reason);
+  assert.equal(r.legacyDigestReconciled,0);
+ });
+ test('stale or inconsistent uppercase digest cannot pass even when checkpoint agrees',()=>{
+  const e=canonical();e.order.observation_rows[0].value='NOTA ALTERADA';
+  // Deliberately retain old SHA. Its uppercase form still matches a tampered
+  // checkpoint/file name, but NOT the current canonical event contents.
+  e.snapshot_hash=e.snapshot_hash.toUpperCase();seed(e);
+  const r=read({...args,scope:{...scope,allowVerifiedLegacyUppercase:true}});
+  assert.equal(r.reason,'SOURCE_CURRENT_REVISION_BLOCKED');
+  assert.equal(r.view,null);
+ });
+ test('uppercase hash cannot forgive broken note-item relation or missing completeness',()=>{
+  for(const alter of [
+   e=>{e.order.observation_rows[1].CDPRODUTO='WRONG';},
+   e=>{delete e.order.observation_scan_complete;}
+  ]){
+   const e=canonical();alter(e);
+   e.snapshot_hash=snapshotHash(e.order).toUpperCase();seed(e);
+   const r=read({...args,scope:{...scope,allowVerifiedLegacyUppercase:true}});
+   assert.equal(r.reason,'SOURCE_CURRENT_REVISION_BLOCKED');
+  }
+ });
+ test('legacy compatibility cannot be enabled from other scope, mode or directory',()=>{
+  for(const delta of [
+    {scope:{...scope,unitId:'OUTRO',allowVerifiedLegacyUppercase:true}},
+    {scope:{...scope,sourceMode:'control',allowVerifiedLegacyUppercase:true}},
+    {scope:{...scope,sourceStoreId:'02',allowVerifiedLegacyUppercase:true}},
+    {scope:{...scope,allowVerifiedLegacyUppercase:'yes'}},
+    {scope:{...scope,allowVerifiedLegacyUppercase:true},selection:'directory'}
+  ]){
+   const r=read({...args,...delta});
+   assert.match(r.reason,/LEGACY_HASH_REVIEW_(?:SCOPE|POLICY)_INVALID/);
+   assert.equal(r.view,null);
+  }
+ });
 }finally{fs.rmSync(root,{recursive:true,force:true});}
 console.log('COPILOTO_REAL_CHECKPOINT_BOUNDARY_PASS '+passed+'/'+passed+' SYNTHETIC_ONLY');
