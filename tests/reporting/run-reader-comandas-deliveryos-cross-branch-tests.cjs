@@ -8,6 +8,7 @@ const path=require('node:path');
 const sourceRoot=process.argv[2];
 if(!sourceRoot||!path.isAbsolute(sourceRoot)) throw Error('PR135_SOURCE_WORKTREE_ABSOLUTE_PATH_REQUIRED');
 const producer=require(path.join(sourceRoot,'tools','comandas_reader_native_note_rowset_v1_review_only.cjs'));
+const nativeJoin=require(path.join(sourceRoot,'dist','src','production','nativeReaderChainV1.js'));
 const consumer=require('../../runtime/reporting/native_reader_shadow_replay_v1.cjs');
 const {review}=require('../../runtime/reporting/native_reader_producer_contract_review_v1.cjs');
 const HMAC=Buffer.alloc(32,13);
@@ -199,5 +200,45 @@ test('producer output never claims a real order even with self-consistent review
  assert.equal(review(e).actualNativeSourceAuthenticated,false);
  assert.equal(r.sourceFreshnessProven,false);
  assert.equal(r.ordersPublishable,0);
+});
+test('native production join reuses exact event and separates customer vs production notes',()=>{
+ const e=baseline(),d=pair(e).decision;
+ const out=nativeJoin.joinNativeReaderSnapshotV1(e,d,{
+  '9.20.00.010.00':['00009'],'9.20.00.020.00':['00002']
+ });
+ assert.equal(out.status,'NATIVE_SAME_SNAPSHOT_JOINED');
+ assert.equal(out.provenance.independent_source_attested,false);
+ assert.equal(out.join.effects.print,false);
+ assert.equal(out.join.effects.persistence_write,false);
+ assert.deepEqual(out.join.order_observations,['NOTA GERAL FICTICIA']);
+ assert.deepEqual(out.join.items[0].delivery_observacoes,['SEM CEBOLINHA, LIMÃO']);
+ assert.deepEqual(out.join.items[0].tx_prod_com_ven,[]);
+ assert.deepEqual(out.join.items[1].tx_prod_com_ven,["TESTE L'IMITADO"]);
+ assert.deepEqual(out.join.items[1].delivery_observacoes,[]);
+});
+test('native ticket observation bridge preserves source notes without printing',()=>{
+ const e=baseline(),j=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
+ assert.equal(j.status,'NATIVE_SAME_SNAPSHOT_JOINED');
+ assert.deepEqual(nativeJoin.nativeTicketItemsV1(j.join),[
+  {item_index:0,item_observations:['SEM CEBOLINHA, LIMÃO']},
+  {item_index:1,item_observations:["TESTE L'IMITADO"]}
+ ]);
+ assert.equal(j.provenance.independent_source_attested,false);
+});
+test('production native join refuses quantity drift before creating joined item',()=>{
+ const e=baseline(),d=pair(e).decision;
+ d.items[0].quantity=99;
+ const x=nativeJoin.joinNativeReaderSnapshotV1(e,d,{});
+ assert.equal(x.status,'HOLD');
+ assert.equal(x.join,null);
+ assert.ok(x.reasons.some(s=>s.startsWith('NATIVE_ITEM_IDENTITY_OR_QUANTITY_MISMATCH')));
+});
+test('production native join refuses tampered observation identity',()=>{
+ const e=baseline(),d=pair(e).decision;
+ e.order.observation_rows[0].CDPRODUTO='OTHER';
+ const x=nativeJoin.joinNativeReaderSnapshotV1(e,d,{});
+ assert.equal(x.status,'HOLD');
+ assert.equal(x.join,null);
+ assert.ok(x.reasons.includes('NATIVE_OBSERVATION_SCOPE_INVALID'));
 });
 console.log('READER_PR135_TO_DELIVERYOS_PR137_CROSS_BRANCH_PASS '+ok+'/'+ok+' SYNTHETIC_ONLY');
