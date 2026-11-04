@@ -178,6 +178,38 @@ Executar **ETAPA 2** sobre os casos adversariais que ainda não possuem prova co
 
 **Próxima decisão técnica:** não integrar o protótipo ao Reader enquanto não houver caminho para autenticar e delimitar cada revisão da Teknisa. Comparar, dentro da Etapa 2, as alternativas *preservar produção nativa e homologar apenas Conferência em sombra* versus *substituir produção*, reusando o censo de papel já previsto. Só propor Etapa 3 / ensaio SQL específico com plano de bloqueios, prova de proveniência e autorização separados.
 
+## Etapa 2 — auditoria adversarial de recibos e decisão mínima de rota (04/11/2026)
+
+**ESTADO: EM_ANDAMENTO / DRAFT / HOLD.** Somente código de revisão, fixtures fictícios e GitHub; **nenhuma instalação, banco de pedidos, SQL operacional, serviço, spooler, papel, sequência ou cutover foi alterado.** A validação do SHA exato é obrigatória antes de fechar qualquer gate.
+
+### Fronteiras de identidade que não podem ser confundidas
+
+| Evidência | O que identifica | O que NÃO comprova |
+|---|---|---|
+| `CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA` | Uma chave de comanda no conjunto da consulta | Revisão atual, origem independente iFood, instante completo de commit |
+| `snapshot_hash` | Bytes/campos do conteúdo canônico observado | Transições A→B→A não amostradas; transação SQL ou entrega de papel |
+| `seq` e `receipt_hash` do jornal local | Ordem das observações **se o jornal não foi adulterado** | Revisão monotônica **da Teknisa**, integridade NTFS, não repúdio |
+| `event_bytes_sha256` e testemunha do arquivo | Consistência **auto-declarada** do arquivo apresentado | Persistência física independente; impressão, entrega ou leitura da cozinha |
+| Identificador de tentativa / recebimento de impressão | **Ainda não implementado nem provado** | Não declarar `Printed` na fila como papel entregue |
+
+### Correções adversariais do modelo local
+
+- O contrato `tools/comandas_reader_local_receipt_journal_review_only.cjs` agora exige chaves **exatas** no recibo, checkpoint, envelope e testemunha. Rejeita campos de autorização acrescentados fora do digest, evita tratar uma entrada de checkpoint sem histórico como observada e compara o hash do estado atual com a **última observação local daquela chave**.
+- Para `EVENT_FILE_WRITTEN`, passou a exigir `event_bytes_sha256` no recibo e, na testemunha, JSON sintético inteiro, SHA-256 dos bytes, schema, sequência, chave e hash correspondentes. Rejeita bytes alterados, digest recalculado sem alterar o recibo, JSON inválido, BOM, arquivo excessivo, nome divergente, testemunhas órfãs e conteúdo com atributos extras.
+- `tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs`: ampliado de **28 para 42 casos**. Um ensaio estrutural com função de digest substituta passou **42/42**, mas **não substitui** Node `crypto` real nem CI Linux/Windows. Commits de código `6268a291` (contrato), `3f738f5f` (casos) e `ecbdc2cd` (precisão de fixture). A CI do SHA `ecbdc2cdf843292f9b290435bbaf1ad2797ecb76` **não estava confirmada** na última consulta; não marcar `TEST_PASS` de GitHub sem workflow `completed/success` associado ao SHA.
+- A confirmação de uma cadeia local continua `HOLD`: alguém que altere **jornal + checkpoint + testemunhas de forma consistente** pode fabricar um passado que o verificador isolado não distingue; observações entre polls também são irrecuperáveis. `SOURCE_REVISION=UNKNOWN`, `SQL_ATOMICITY=UNKNOWN`, `NTFS_DURABILITY=UNPROVEN`, `PAPER_EFFECT=UNPROVEN`, `NO_REEMIT_WORLD_PROOF=UNKNOWN`.
+
+### Decisão provisória de risco mínimo, sem autorização operacional
+
+**Rota atual D0 — manter a operação nativa intocada e a conferência TATÁ somente em sombra.** Não há censo físico concluído de papel. A prova de 02/11 `docs/comandas/CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md` documenta autorização **apenas para observação passiva** do papel que sairia normalmente; ela ainda não comprova chegada, cobertura ou não duplicidade nas praças. Nenhuma rotina de captura/print novo deve ser iniciada a partir deste plano.
+
+- **Se D1_SAMPLE_CONFORME for observado nos dois turnos:** ganha suporte preservar Cozinha/Sushi nativas e homologar somente **Conferência TATÁ em sombra**. A amostra não dispensa origem iFood independente, sequência TATÁ comprovadamente persistente, revisão semanticamente completa, efeito físico exclusivo e posterior autorização específica para piloto.
+- **Se D2_ANOMALIA_OBSERVADA:** manter toda nova emissão `HOLD`; investigar falha de conteúdo/rota/duplicidade e a fonte exata antes de pensar em substituição.
+- **Se D0 / parcial / não observado:** nenhuma decisão de substituir vias, ligar nova impressora ou duplicar comanda; manter fonte instalada e plano de verificação.
+- **Substituir produção Cozinha/Sushi** agora requer mais evidência e superfície de risco (primeiro despacho nativo, parada seletiva, concorrência, backlog, recuperação e rollback físico). Não é a próxima ação justificada pelas provas atuais.
+
+**Próximo passo seguro:** concluir CI Linux/Windows do SHA de código que contém os 42 casos, atualizar a prova no checkpoint e manter a Etapa 2 aberta até classificar as lacunas de revisão/fonte. O desenho da Etapa 3 pode ser preparado offline, mas **nenhuma consulta de comanda, bloqueio SQL ou ação física** está autorizada por essa preparação. Não confundir `CODE_READY`, `TEST_PASS` e `WORLD_PROVEN`.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -189,4 +221,5 @@ Executar **ETAPA 2** sobre os casos adversariais que ainda não possuem prova co
 - **04/11/2026 — ETAPA 2, paridade e estados sem autoridade:** commit de código `3c55ffce`, CI `#41847006834` **SUCCESS** (PowerShell 5.1 e 7: 20/20 em cada runtime; Linux + Windows); commit `c2da8611`, CI `#41848894669` **SUCCESS** (21/21 estados de emissão sintéticos, Linux + Windows). PR #135 segue `DRAFT/HOLD`, etapa 2 `EM_ANDAMENTO`, sem operação real. Este registro documental gera SHA e CI próprios.
 - **04/11/2026 — ETAPA 2, replay e evicção:** CI #41857302979 `SUCCESS` no código `18782063`; teste final refinado em lotes TOP 50 no código `7146dec5`, CI #41859010787 `SUCCESS` (Linux + Windows, 20/20 cenários sintéticos). Revelada ambiguidade A→B→A→B e risco condicional de reemitir bootstrap evicto *se voltar à consulta*. Sem prova no SQL real, sem migração, sem serviço/print; etapa 2 segue `EM_ANDAMENTO`. CI do commit documental é independente.
 - **04/11/2026 — ETAPA 2, contrato de revisão e recibos locais:** leitura de SQL da candidata sem token de revisão independente; reuso de auditoria real preexistente sem repetir SQL. Teste de 28 casos de contrato nativo corrigido para CRLF no commit `f29f94c8`; modelo puro de recibos/journal de 28 casos e integração Linux/Windows no commit `effa6c41`. Os ensaios isolados passaram, mas **CI do SHA de código permanece PENDENTE**; CI anterior #41863904986 falhou no Windows e não é prova. Sem efeitos operacionais. Status `EM_ANDAMENTO/DRAFT/HOLD`.
+- **04/11/2026 — ETAPA 2, auditoria adversarial e rota mínima:** recebimento de código `6268a291`/`ecbdc2cd` com validação estrita de JSON/bytes/testemunhas e reconciliação checkpoint→última observação; 42/42 casos estruturais isolados, CI do SHA exato ainda não confirmada. Reuso do censo autorizado porém **não observado**; decisão provisória D0 = manter vias nativas e Conferência apenas sombra; D1/D2 exigem papel real. Etapa 2 permanece `EM_ANDAMENTO`, PR #135 `DRAFT/HOLD`, sem SQL/serviço/impressora.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
