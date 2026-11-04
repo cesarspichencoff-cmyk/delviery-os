@@ -23,6 +23,14 @@ A PR #137 reusou `copiloto_tata_reader_adapter_v1.cjs` (preserva `NRPRODCOMVEN` 
 
 **Prova:** `src/platform/run-reader-station-link-review-tests.ts` **12/12** no Foxxy; GitHub Actions `41784841075` **completed/success** com build TypeScript e 3 jobs (Linux específico, contratos existentes e Windows). Registro em `docs/execution/DELIVERYOS_NATIVE_READER_LINE_TO_R5D3_BOUNDARY_PROOF_20261104.md`. Tudo sintético. `concluido` declarado **não** vira pronto físico; origem de demonstração permanece demonstração. Ainda faltam atomicidade SQL, classificação independente item→praça, evento de bancada atestado e conexão com a Home canônica. **Não** refazer produtor, projetor, Home, Reader ou Entregas.
 
+## Checkpoint de classificação por linha 04/11 — reaproveitamento da PR #135
+
+**Código de classificação já existe.** PR #135 `comandas_reader_catalog_identity_crosscheck_v1_offline.cjs` + `comandas_reader_bound_classification_v1_offline.cjs` + `sourceBoundClassificationReviewV1.ts` já ligam identidade, quantidade, índice e estação apenas para revisão, sem aprovar catálogo nem papel. A PR #137 agora tem **um confronto estreito** em `revisar-classificacao-trabalho-praca.ts`: compara essa classificação já revisada com a linha exata e a praça declarada pelo R5-D3 existente. Uma divergência de código, revisão, quantidade, praça, catálogo ou observação pendente vira HOLD. Estação coincidente **não** autoriza pronto, produtor nem Home.
+
+**Provas:** 14/14 testes da nova revisão + 12/12 do vínculo anterior no Foxxy; **8/8 testes cruzando os módulos reais de código** da PR #135 (`bb107bf3`) e #137 (`08d3077a`), total **34/34 PASS em laboratório**, todos sintéticos. GitHub CI `41787511322` **completed/success**, três jobs. Documento: `docs/execution/DELIVERYOS_CLASSIFICACAO_NATIVA_POR_LINHA_GATE_20261104.md`.
+
+**Fonte atual da classificação ainda não comprovada:** em leitura somente de metadados no CAIXA_MOOCA, `product-identity-cache-v1.json` e `routing.json` seguem datados de **05/10**, e `product-aliases-v1.json` de **06/10** com três aliases. As 14 lacunas de 26/10 já têm matriz de homologação: **não recriar esse catálogo, não tratar lacuna histórica como erro atual e não inferir praça vigente somente do alias ou da impressora**. Próxima prova necessária é catálogo e rota autorizados atuais, seguidos de evento físico independente por praça. Sem SQL, alteração em serviço ou deploy nesta revisão.
+
 ## Veredito corrigido
 **A maioria do software já existe.** A matriz anterior de oito gates operacionais com 0/8 comprovados em campo **não é uma lista de oito funcionalidades ausentes**. Ela representa ausência de prova final **da jornada real integrada**, coexistindo com código, UI, contratos, CI e testes anteriores. Não reconstruir componentes aprovados, não reiniciar nova vertical ou duplicar Copiloto.
 
