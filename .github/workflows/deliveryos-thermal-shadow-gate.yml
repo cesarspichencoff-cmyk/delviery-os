@@ -107,6 +107,8 @@ jobs:
         run: node tools/verificar_comandas_reader_replay_counterexamples_review_only.cjs
       - name: Native SQL revision identity is unproven (Linux static review)
         run: node tools/verificar_comandas_reader_native_revision_capability_review_only.cjs
+      - name: Local observation journal never proves native revisions (Linux synthetic)
+        run: node tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
@@ -455,6 +457,8 @@ jobs:
         run: node tools/verificar_comandas_reader_replay_counterexamples_review_only.cjs
       - name: Native SQL revision identity is unproven (Windows static review)
         run: node tools/verificar_comandas_reader_native_revision_capability_review_only.cjs
+      - name: Local observation journal never proves native revisions (Windows synthetic)
+        run: node tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs
       - name: Three-way box accounting consumes unique physical boxes (Windows offline)
         run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
       - name: Product code bound to classification and pinned Academia (Windows offline)
