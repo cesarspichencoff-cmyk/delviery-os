@@ -97,7 +97,6 @@ test("work at another station holds instead of silently rerouting",()=>{
 test("work event for nonproduction null-station is refused",()=>{
  const cs=claims.map((c,i)=>i===0?{...c,station:null}:c);
  const cr=classReview();
- cr.review!.entries[0].product.classification.station; // type-only / read-only
  const c0:RevisaoClassificacaoPR135={
   ...cr,review:{...cr.review!,entries:cr.review!.entries.map((e,i)=>
     i===0?{...e,product:{...e.product,classification:{
