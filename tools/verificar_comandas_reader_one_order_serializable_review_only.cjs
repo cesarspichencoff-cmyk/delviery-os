@@ -47,6 +47,12 @@ test('joins preserve item-to-order and product routing',()=>{
   'i.CDFILIAL=c.CDFILIAL','p.CDPRODUTO=i.CDPRODUTO'])assert.ok(sql.includes(name));
  assert.match(sql,/ORDER BY i\.NRPRODCOMVEN ASC/i);
 });
+test('native order parameters use exact varchar10 types observed in Itaim SQL catalog',()=>{
+ assert.match(template,/COMANDAVEN\.NRVENDAREST is varchar\(10\), NRCOMANDA is varchar\(10\)/);
+ assert.match(template,/SqlDbType\.VarChar, Size=10/);
+ assert.match(template,/never use\s+SqlDbType\.NVarChar or nvarchar\(64\)/i);
+ for(const key of ['c.NRVENDAREST=@nrVendaRest','c.NRCOMANDA=@nrComanda'])assert.ok(sql.includes(key));
+});
 test('no customer, fiscal or remote action fields are selected',()=>{
  for(const name of ['TELEFONE','CPF','CNPJ','ENDERECO','DSQRCODENFCE',
   'NRPROTOCOLONFCE','spoolsv','msdb','sp_send_dbmail','xp_cmdshell'])
