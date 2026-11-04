@@ -51,6 +51,71 @@ function Write-AtomicJson([string]$Path, $Object) {
   }
 }
 
+# Strict content validation for an already-present event in the REVIEW ONLY
+# candidate. It never creates or repairs a file and is not source attestation.
+# The fast path where checkpoint.emitted_hash already equals the current hash
+# remains an INDEPENDENT unproven boundary (not solved by this function).
+function Assert-TataPersistedEventContentReview {
+  param(
+    [Parameter(Mandatory=$true)][string]$Path,
+    [Parameter(Mandatory=$true)]$ExpectedEvent
+  )
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+    throw 'EXISTING_EVENT_FILE_MISSING'
+  }
+  $before=Get-Item -LiteralPath $Path -Force
+  if (($before.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+      $before.Length -lt 2 -or $before.Length -gt 4194304) {
+    throw 'EXISTING_EVENT_FILE_UNSAFE_METADATA'
+  }
+  try {
+    [byte[]]$bytes=[IO.File]::ReadAllBytes($Path)
+    if ($bytes.Length -ne $before.Length -or
+        ($bytes.Length -ge 3 -and $bytes[0] -eq 239 -and
+         $bytes[1] -eq 187 -and $bytes[2] -eq 191)) {
+      throw 'EXISTING_EVENT_FILE_BYTES_INVALID'
+    }
+    $utf8=New-Object Text.UTF8Encoding($false,$true)
+    $raw=$utf8.GetString($bytes)
+    $stored=$raw | ConvertFrom-Json -ErrorAction Stop
+  } catch {
+    throw 'EXISTING_EVENT_FILE_UNREADABLE'
+  }
+  if ($null -eq $stored -or
+      $stored.schema -cne 'deliveryos.tata-reader-stable-order-event.v1' -or
+      $stored.order_key -cne [string]$ExpectedEvent.order_key -or
+      $stored.snapshot_hash -cne [string]$ExpectedEvent.snapshot_hash -or
+      $null -eq $stored.order -or $null -eq $stored.observed_at) {
+    throw 'EXISTING_EVENT_FILE_IDENTITY_MISMATCH'
+  }
+  # Compare the ENTIRE producer envelope, including item/note data and
+  # blocked effects. Observed-at is historical and not re-generated.
+  # This is equality with an expected CURRENT candidate, not a trusted
+  # receipt of origin, native atomicity, or permanent durability.
+  $comparison=[ordered]@{}
+  foreach ($name in @($ExpectedEvent.Keys)) {
+    if ($name -ceq 'observed_at') {
+      $comparison[$name]=$stored.observed_at
+    } else {
+      $comparison[$name]=$ExpectedEvent[$name]
+    }
+  }
+  try {
+    $expectedJson=ConvertTo-Json -InputObject $comparison -Depth 20 -Compress
+    $storedJson=ConvertTo-Json -InputObject $stored -Depth 20 -Compress
+  } catch { throw 'EXISTING_EVENT_FILE_COMPARISON_INVALID' }
+  if ($expectedJson -cne $storedJson) {
+    throw 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
+  }
+  $after=Get-Item -LiteralPath $Path -Force
+  if (($after.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+      $after.Length -ne $before.Length -or
+      $after.LastWriteTimeUtc.Ticks -ne $before.LastWriteTimeUtc.Ticks) {
+    throw 'EXISTING_EVENT_FILE_CHANGED_DURING_READ'
+  }
+  return $true
+}
+
 function Load-Checkpoint {
   if (-not (Test-Path -LiteralPath $CheckpointPath -PathType Leaf)) {
     return @{
@@ -398,6 +463,9 @@ ORDER BY r.DTHRABERMESA DESC,r.NRVENDAREST DESC,i.NRPRODCOMVEN;
               Write-AtomicJson $eventPath $event
               $result.events_emitted++
             } else {
+              # Prior crash may have persisted event bytes but not checkpoint.
+              # Never dedupe a corrupted/foreign event by Test-Path alone.
+              Assert-TataPersistedEventContentReview -Path $eventPath -ExpectedEvent $event | Out-Null
               $result.duplicates_suppressed++
             }
             $entry.emitted_hash=$hash
