@@ -35,6 +35,8 @@ on:
       - tests/gestor-shadow/run-visible-detail-probe-tests.cjs
       - tests/gestor-shadow/run-window-selector-tests.cjs
       - tests/gestor-shadow/run-status-bridge-tests.cjs
+      - runtime/reporting/gestor_v3_visible_sensor.js
+      - tests/gestor-shadow/run-v3-visible-sensor-browser-tests.cjs
   workflow_dispatch:
 
 permissions:
@@ -111,3 +113,28 @@ jobs:
         run: node dist/src/platform/run-gesto-bancada-shadow-tests.js
       - name: Ledger event idempotency and corruption on restart, shadow only
         run: node dist/src/platform/run-ledger-shadow-restart-tests.js
+
+  gestor-v3-browser-fixture:
+    name: Edge V3 isolated visible-data fixture (25 assertions)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned browser fixture dependencies
+        run: npm ci --ignore-scripts
+      - name: Browser fixture only (no Gestor credentials, orders or internet requests)
+        shell: pwsh
+        run: |
+          $edge = @(
+            'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files\Microsoft\Edge\Application\msedge.exe'
+          ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          if (-not $edge) { throw 'EDGE_EXECUTABLE_NOT_FOUND_ON_RUNNER' }
+          $env:EDGE_EXE = $edge
+          node tests/gestor-shadow/run-v3-visible-sensor-browser-tests.cjs
