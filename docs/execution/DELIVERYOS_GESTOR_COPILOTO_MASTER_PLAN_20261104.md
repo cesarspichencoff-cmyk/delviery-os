@@ -252,3 +252,18 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 - O diagnóstico do perfil via `safe-dom-preflight.cjs` exigiria execução local, cujo invocador remoto não comprova supressão de console. Respeitando exigência **zero CMD/PowerShell visível**, não foi executado, não se iniciou script, janela, extensão, login automatizado nem V3. Nenhuma captura de credencial.
 - **GATE A = PARTIAL/HOLD:** sessão Itaim validada visualmente por César; sem prova técnica independente de merchant, cartão de pedido real, detalhe, itens, cobertura ou transmissão ao motor.
 - Próximo verificador de menor risco: identificar se a janela isolada **já mostra cartões de pedidos ativos do Itaim**, sem clicar em comandos. Só então planejar diagnóstico sanitizado por meio comprovadamente silencioso, no perfil isolado e com efeitos controlados. Não promover V3 ao motor ainda.
+
+## 16. Checkpoint do agrupamento real — 04/11/2026
+
+**Fato humano confirmado:** na sessão isolada, o Gestor do Itaim mostra cartões que podem representar vários pedidos; ao abrir um cartão, os pedidos aparecem individualizados, com seus números e itens. Observação humana não confirma automaticamente que os mesmos elementos estejam disponíveis no DOM, na rede ou via instrumentação.
+
+**Defeito preventivo identificado:** o sensor V3 de revisão anterior exigia um único número de pedido por cartão. No layout descrito, interpretar cartão como pedido geraria contagem e associação incorretas. Não ativar esse modo sobre a operação.
+
+**Adaptação em código da PR #137 (sem deploy):**
+- Commit `69ac7f22`: modo opcional `GROUPED` no sensor V3 existente. Cartões são contabilizados como **grupos**; pedidos individualizados são lidos apenas dos blocos numerados dentro de um detalhe **já aberto**. A captura não realiza cliques, rolagem, navegação, escrita ou publicação. Status de cabeçalho, vínculo entre grupo e pedido, cobertura da loja e merchant ficam desconhecidos; `ordersPublishable=0`.
+- Commit `2253c1c4`: mais oito testes sintéticos de agrupamento, incluindo associação de itens ao número correto, duplicidade, bloco oculto, ausência de detalhe, quantidade inválida, ausência de efeitos e ausência de falsas afirmações de cobertura. Total esperado da suíte V3: 35 cenários; **ainda dependente de resultado real da CI**.
+- Workflow associado a `2253c1c4`: [Actions #41878958310](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41878958310), `queued` na última consulta. Não registrar PASS até obter logs e conclusão.
+
+**GATE A permanece PARCIAL:** login e visualização do Itaim reportados por César, mas seletores reais, leitura técnica sanitizada de 1 pedido, qualidade da identificação, conectividade sem console e envio de fatos ao motor continuam não comprovados. Para capturar grupos fechados sem cliques, será necessário comprovar mecanismo legítimo e autorizado que permita acesso aos detalhes já recebidos; o V3 de revisão não descobre detalhes ocultos sozinho.
+
+**Fronteira de efeitos:** somente commits à PR em rascunho e testes de laboratório. Nenhuma instalação, tarefa, serviço, extensão ou sessão do caixa alterada, sem acesso a cliente ou pedido real e sem mudança no Gestor operacional.
