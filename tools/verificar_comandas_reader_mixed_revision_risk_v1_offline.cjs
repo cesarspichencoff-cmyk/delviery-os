@@ -58,5 +58,32 @@ test('claimed RCSI ON still does not prove caller or actual query',()=>{
  assert.equal(x.actualStatementSnapshotProven,false);
  assert.equal(x.ordersPublishable,0);
 });
+// Stage 2: structurally plausible counterexamples to stable-read heuristics.
+// These fixtures do not prove real SQL transactions or semantic completeness.
+test('two identical mixed reads and hashes still do not attest a source revision',()=>{
+ const repeat=candidate([early[0],late[1]]);
+ assert.equal(repeat.status,'PRIVATE_CANONICAL_EVENT_CANDIDATE');
+ assert.equal(repeat.privateEvent.snapshot_hash,m.privateEvent.snapshot_hash);
+ assert.equal(repeat.realOrderPublishable,false);
+ assert.equal(repeat.currentSqlSnapshotProven,false);
+ assert.equal(repeat.observationScanIndependentlyProven,false);
+});
+test('ABA change A then B then A defeats equality-only stability detection',()=>{
+ const before=candidate(early),during=candidate(late),after=candidate(early);
+ assert.equal(before.privateEvent.snapshot_hash,after.privateEvent.snapshot_hash);
+ assert.notEqual(before.privateEvent.snapshot_hash,during.privateEvent.snapshot_hash);
+ for(const result of [before,during,after]){
+  assert.equal(result.realOrderPublishable,false);
+  assert.equal(result.currentSqlSnapshotProven,false);
+ }
+});
+test('plausible but semantically partial rowset cannot establish completeness',()=>{
+ const partial=candidate([early[0]]);
+ assert.equal(partial.status,'PRIVATE_CANONICAL_EVENT_CANDIDATE');
+ assert.equal(partial.realOrderPublishable,false);
+ assert.equal(partial.currentSqlSnapshotProven,false);
+ assert.equal(partial.observationScanIndependentlyProven,false);
+});
+
 console.log('READER_MIXED_REVISION_FAIL_CLOSED_PASS '+n+'/'+n+
  ' NO_SQL_REAL_ORDERS_OR_CUSTOMERS');
