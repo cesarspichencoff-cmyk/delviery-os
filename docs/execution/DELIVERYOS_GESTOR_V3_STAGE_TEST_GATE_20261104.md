@@ -36,3 +36,16 @@
 **Critérios de STOP:** qualquer alteração de foco/visibilidade do caixa, captura de PII, perda de vínculo de pedido, falha de autorização, dupla sessão ambígua, CPU fora do limite, evento duplicado não idempotente, cardinalidade/paginação desconhecida disfarçada de completa, atraso > SLA sem alerta, ou processo relançando a janela.
 
 **Prova atual:** `V3_CODE_STAGED` e `25/25_SYNTHETIC_BROWSER`. **Não** `GESTOR_REAL_PROVEN`, não `60S_PROVEN`, não `DEPLOYED`, não `10/10`.
+
+## Checkpoint incremental — atributos do DOM (04/11/2026)
+
+**Falha de observabilidade identificada na revisão:** o `watch()` V3 monitorava mudanças em `childList` e `characterData`, mas não mudanças **somente de atributos**. Uma UI pode ocultar um cartão (`hidden`/`class`/`style`) ou fechar um detalhe (`open`) sem alterar texto; o sensor poderia deixar de emitir a mudança até uma reconciliação externa.
+
+**Correção em laboratório (PR #137):**
+- Código: `777562756dbf3ce13e36bb5e53174f552bf29344` — `MutationObserver` passa a observar também `attributes`, sem clicar, modificar DOM nem obter conteúdo de rede.
+- Regressões: `59ddf3c16053fd4a616307441d5059958cbd56f8` — dois testes Edge adicionais: ocultação de cartão induz `HOLD_HIDDEN_CARD` e fechamento do detalhe retira a leitura do detalhe; ambos mantêm `ordersPublishable=0`.
+- [GitHub Actions #41798990871](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41798990871): `completed/success`, com **27/27 cenários V3 no Edge real sobre dados fictícios**; demais jobs do workflow concluíram `success` (contratos estáticos, Windows no-console e vínculo de praça em laboratório).
+- **Fronteira:** `TEST_PASS_SYNTHETIC`, não prova de layout, pedido, sessão, desempenho sob carga nem latência do Gestor real. O executável V3 guardado em `GestorV3Staging` no CAIXA_MOOCA **não foi atualizado, instalado ou ativado** por esta correção.
+- Observação passiva adicional do CAIXA_MOOCA (04/11, 08:19:39Z): `C:\\ProgramData\\DeliveryOS-Itaim-Observer\\status.json` ainda reportava `CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `state=OUTSIDE_SERVICE_WINDOW`, sem total de pedidos comprovado. GestorWebReadOnlyV2 mantém somente a captura estrutural de 03/11 13:40:27Z.
+- **Próximo gate inalterado:** comprovar escopo Itaim e um detalhe real já aberto em sessão isolada legitimamente autenticada, em ensaio supervisionado; só então revisar a carga/latência de observação de atributos e alimentar shadow da Home. Nenhuma das seis tarefas desativadas foi reativada.
+
