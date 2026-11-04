@@ -34,6 +34,18 @@ assert.equal(response.ordersRead,0);
 assert.equal(response.sourceIdentityProven,false);
 assert.equal(response.printAuthorized,false);
 assert.equal(run.stderr.trim(),'');
+// Adversarial host-name spoof in the CHILD process only, never on the machine.
+const spoof=spawnSync('powershell.exe',[
+ '-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass',
+ '-File',script,'-Mode','ReadOnlyMetadata'
+],{encoding:'utf8',timeout:10000,windowsHide:true,
+ env:{...process.env,COMPUTERNAME:'CAIXA_MOOCA'}});
+assert.equal(spoof.status,62,'SPOOFED_HOST_MUST_NOT_PASS_ACTUAL_WINDOWS_IDENTITY');
+const spoofed=JSON.parse(spoof.stdout.trim());
+assert.equal(spoofed.reason,'WRONG_PROCESS_IDENTITY_NO_SQL');
+assert.equal(spoofed.sqlExecuted,false);
+assert.equal(spoofed.printAuthorized,false);
+assert.equal(spoof.stderr.trim(),'');
 let t=0;
 const ok=(k,v)=>{assert.ok(v,k);t++};
 ok('host check happens before connection',guardHost<beforeConnection);
@@ -46,5 +58,7 @@ ok('no DML/DDL',!/\b(ALTER DATABASE|CREATE LOGIN|GRANT|UPDATE TEKNISA|DELETE FRO
 ok('fails safely on Foxxy',response.reason==='WRONG_HOST_NO_SQL');
 ok('no SQL attempted',response.sqlExecuted===false);
 ok('no new print authorization',response.printAuthorized===false);
+ok('host spoof cannot bypass actual Windows identity',spoofed.reason==='WRONG_PROCESS_IDENTITY_NO_SQL');
+ok('spoofed host never opens SQL',spoofed.sqlExecuted===false);
 console.log('READER_EXISTING_IDENTITY_METADATA_PROBE_OFFLINE_PASS '+t+'/'+t+
  ' FOXYY_REFUSED_BEFORE_SQL NO_CASHIER_TERMINAL');
