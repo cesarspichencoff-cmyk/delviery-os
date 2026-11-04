@@ -36,13 +36,13 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 ## Etapas e critérios de transição
 
 ### ETAPA 1 — Inventário e congelamento dos componentes válidos
-**ESTADO: EM_ANDAMENTO (04/11/2026, após criação deste checkpoint).**
+**ESTADO: CONCLUÍDA (04/11/2026; gate 1 comprovado pelo HEAD `26232815` e CI #41797580883).**
 - Revalidar HEAD e CI, manifesto 26+8, V2 instalado (não V1), contratos de origem `DLV_IFO`, chaves e revisões, 2 ou 3 vias aplicáveis, motores pinados, testes existentes e ausência de mudanças de efeito.
 - Produzir mapa curto `PRESERVAR / CORRIGIR / BLOQUEAR`; NÃO reimplementar classificação/kits/renderizador.
 - **GATE 1:** base e testes relevantes identificados sem contradição; riscos atuais catalogados e nenhuma modificação de produção. Só então anunciar entrada na Etapa 2.
 
 ### ETAPA 2 — Testes adversariais e integridade offline
-**ESTADO: PENDENTE.**
+**ESTADO: EM_ANDAMENTO (04/11/2026; transição explícita após gate 1).**
 - Exercitar dados de transações repartidas; A→B→A; notas Unicode/apóstrofo; cancelamento durante leitura; linhas ausentes/truncadas; revisões distintas com hashes, duplicidade e restart; risco de misturar revisão entre vias.
 - Reusar suítes existentes; implementar apenas casos não cobertos. Proteção de migração de hash/checkpoint sem reemissão das 250 entradas amostradas.
 - **GATE 2:** testes adversariais e CI do SHA exato, recusa segura `HOLD` nos casos negativos; não atribuir prova de banco real a fixtures.
@@ -75,9 +75,22 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 
 ## Próximo passo seguro
 
-Concluir **ETAPA 1** por inspeção do HEAD e da matriz de provas/manifesto; atualizar checkpoint com evidência e anunciar a transição. Depois **ETAPA 2** somente sobre código/testes isolados. Nenhuma tentativa de SQL live ou impressão sem autorização expressa.
+Executar **ETAPA 2** sobre os casos adversariais que ainda não possuem prova completa: split commits e completude semântica, ABA, mudanças concorrentes, notas Unicode, dedupe/checkpoint e migração V2 sem reemissão. Rastrear exatamente qual teste atual já cobre cada caso e adicionar apenas cobertura faltante. Antes de sair da etapa 2, exigir CI do SHA de código exato e documentação da falha segura. Nenhuma tentativa de SQL live ou impressão sem autorização expressa.
+
+
+## Gate 1 — fechamento comprovado e mapa de preservação (04/11/2026)
+
+**Transição autorizada neste escopo de desenvolvimento:** `ETAPA 1 CONCLUÍDA → ETAPA 2 EM_ANDAMENTO`. Este registro **não** autoriza efeito no caixa.
+
+- **HEAD validado antes desta atualização:** `262328153075cb50952f7796090c60ffe02e4db4`; [CI #41797580883](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41797580883) `completed/success`. Este commit introduziu apenas o documento de checkpoint sobre a base `0dd1e8ac`; sucesso de CI não constitui prova live.
+- **PRESERVAR:** manifesto 26 code + 8 runtime data, identidade byte-a-byte; Reader V2 instalado e supervisor V1 intocados; contrato de quatro partes e origem `DLV_IFO`; motor pinado de produtos, kits, embalagens e observações; renderizador Figma V4.8; número de vias **variável 2 ou 3**, sem via vazia, `VIRTUAL_VIEWS_READY`.
+- **CORRIGIR/PROVAR ANTES DE OPERAÇÃO:** revisão inteira consistente no banco e **semanticamente completa** (provas separadas); migração de SHA antigo/JSON canônico sem reemissão; confirmação de checkpoint/restart; leitura independente de iFood somente na Conferência; sequência real e censo físico.
+- **BLOQUEAR:** `SERIALIZABLE`/query de pedidos em caixa, troca de serviço V1/V2, alteração RCSI/SNAPSHOT, printer/queue/fiscal, sequência real, impressão/cutover/merge/deploy, fornecedor e novos custos sem gate/autorização específica.
+- **Prova adicional Foxxy ISOLADO**, cópia no commit `39deca62` (**não** o HEAD atual): 9/9 revisão SQL estática, 23/23 isolamento sem DB, 5/5 atualização canônica synthetic, 6/6 risco de revisão misturada após build local TypeScript; total **43/43**. Uma primeira tentativa 6/6 não executou por ausência de `dist`; recuperada com compilação somente na cópia Foxxy, sem mudar o banco. A diferença entre a cópia Foxxy e o HEAD antes do registro são **3 arquivos**: dois documentos e a suíte SQL review (não alegar que os testes Foxxy são testes do HEAD).
+- **Etapa 2 ainda aberta:** não há teste operacional vivo nem prova de migração do checkpoint de 250 entradas; investigar cobertura antes de escrever novo código. O gate 2 exige CI exata após eventuais mudanças, testes negativos adversariais e recusa segura.
 
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
+- **04/11/2026 — TRANSIÇÃO ETAPA 1 → ETAPA 2:** Gate 1 comprovado por CI #41797580883 em `26232815`; preservação/matriz verificadas, 43/43 verificações adicionais no Foxxy isolado (commit distinto `39deca62`). Etapa 2 `EM_ANDAMENTO`; nenhuma ação operacional. Novo SHA gerado por este registro exige prova própria, mas não altera código executável.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
