@@ -244,3 +244,11 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 **Estado de efeito deste checkpoint:** só leituras remotas e documentação da PR #137; sem mudanças no caixa, sessão, tarefas, processos, Edge, Gestor ou produção.
 
 **Confirmação humana após abertura do delivery:** César respondeu que a janela separada do Edge para o Delivery OS **ainda não está conectada ao iFood**. A sessão isolada autenticada exigida pelo Gate A não deve ser presumida. Não executar `enter-login-once.cjs` (contém clique programático no fluxo de entrada) nem usar as instruções antigas do V2, que se referem ao Edge ORIGINAL, como substituto do laboratório isolado. Próximo passo é autenticação **normal, supervisionada e fora de momento crítico**, exclusivamente no perfil isolado, após validar o método sem perturbar o Gestor da equipe. Até lá: Gate A = HOLD, não ativar V3 e não anunciar Copiloto operacional.
+
+## 15. Checkpoint humano — login normal do Gestor na janela isolada (04/11)
+
+- César confirmou em conversa que o Edge separado foi aberto, o login normal do iFood foi concluído e a **unidade Itaim aparece na tela**. Evidência: **HUMAN_REPORTED**, não sessão técnica revalidada pelo sensor.
+- Verificação passiva da máquina: CAIXA_MOOCA online; Edge, perfil `DedicatedEdgeProfile` e processo Gestor já existem. `DevToolsActivePort` do perfil tem mtime de 01/11 (stale, não prova attach do navegador atual); não assumir CDP conectado.
+- O diagnóstico do perfil via `safe-dom-preflight.cjs` exigiria execução local, cujo invocador remoto não comprova supressão de console. Respeitando exigência **zero CMD/PowerShell visível**, não foi executado, não se iniciou script, janela, extensão, login automatizado nem V3. Nenhuma captura de credencial.
+- **GATE A = PARTIAL/HOLD:** sessão Itaim validada visualmente por César; sem prova técnica independente de merchant, cartão de pedido real, detalhe, itens, cobertura ou transmissão ao motor.
+- Próximo verificador de menor risco: identificar se a janela isolada **já mostra cartões de pedidos ativos do Itaim**, sem clicar em comandos. Só então planejar diagnóstico sanitizado por meio comprovadamente silencioso, no perfil isolado e com efeitos controlados. Não promover V3 ao motor ainda.
