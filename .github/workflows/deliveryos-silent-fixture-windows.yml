@@ -18,6 +18,8 @@ on:
       - tests/tata-reader/run-real-feed-boundary-tests.cjs
       - tests/tata-reader/run-file-feed-tests.cjs
       - tests/reporting/run-native-reader-producer-contract-review-tests.cjs
+      - src/product/eventos/vinculo-reader-trabalho-praca.ts
+      - src/platform/run-reader-station-link-review-tests.ts
   workflow_dispatch:
 
 permissions:
@@ -62,3 +64,22 @@ jobs:
           $ErrorActionPreference='Stop'
           & ./tests/silent-runner/verify-windows-fixture.ps1
           node tests/reporting/run-diagnostic-readiness-tests.cjs
+
+  native-station-link-review:
+    name: Exact Reader line to R5D3 work (synthetic only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Compile existing TypeScript contracts
+        run: npm run build
+      - name: Reader line to work events, no live/readiness authority
+        run: node dist/src/platform/run-reader-station-link-review-tests.js
