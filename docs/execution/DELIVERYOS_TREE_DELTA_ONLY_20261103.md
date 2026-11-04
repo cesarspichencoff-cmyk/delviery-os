@@ -5,6 +5,14 @@
 ## Revalidação adversarial (03/11, checkpoint posterior)
 **Leia antes do plano antigo:** `docs/execution/DELIVERYOS_ITAIM_AUDIT_DIFFERENCE_CHECK_20261103.md`. A auditoria recuperou **decisão vinculante de 26/10**: as duas vias de Produção usam conteúdo nativo atestado sem exigir UUID iFood global; a Conferência e o vínculo externo de Entregas exigem atestação própria. A taxonomia **Sushi Quentes × Quentes da Cozinha** foi resolvida pelo César em 01/08, não é pergunta aberta. Histórico 9627/9092 já passou em três vias virtuais, e a ponte dos módulos foi testada diretamente **28/28 no Foxxy**, com decisão fictícia de consumidor; não recomeçar essas frentes. A Operação Viva V4 teve substrato avaliado, **visual rejeitado**; a Home aprovada permanece soberana. A cobertura dos 22 sinais (incluindo S20/S21), o “só quente → bancada do caixa”, os estados físicos de pronto e os riscos de recusa/ACK remoto Android não estavam suficientemente refletidos neste checkpoint antigo.
 
+## Checkpoint de fonte real, 04/11 — ponte sem mudar o watcher
+
+**Atualização posterior e prevalente**: PR #135 `docs/comandas/ITAIM_REAL_READER_SQL_SOURCE_PROOF_20261104.md` comprovou sessão SQL do watcher **V2** sob `NT SERVICE\\TataComandaReader` (o V1 é supervisor), `RCSI=OFF`, `SNAPSHOT=OFF`, captura de notas e filtragem da origem ampla `DLV[_]%`. O antigo `EPERM` foi superado **para leitura administrativa dos diretórios**; não há autorização implícita para alterar banco, serviço ou impressão. O estado semanal da operação já vem de política válida desde 26/10 — não reabrir turno por causa do arquivo legado de 14/10.
+
+A PR #137 agora tem **ponte opcional de verificação em memória** `runtime/reporting/native_reader_verified_legacy_hash_v1.cjs`, sem alteração da fonte, com digest canônico recomputado e recusa de notas incompletas; **11/11** testes do novo caminho e **19/19** da suíte de arquivos no CI Linux `41780271973` (job Windows também passou). Documentado em `docs/execution/DELIVERYOS_READER_V2_LEGACY_HASH_IN_MEMORY_BRIDGE_20261104.md`. **LAB_ONLY / source not independently atomic**. Isso pode evitar um cutover de checkpoint de 250 entradas para preparar a leitura diagnóstica.
+
+O gargalo **não é mais apenas acessar os arquivos nem corrigir o hash**: é garantir uma revisão completa sob `READ COMMITTED` com RCSI OFF sem afetar o POS. Depois, provar eventos físicos de pronto por praça e a Home. A candidata de substituição do V2 continua **review-only e não instalada**, com migração de checkpoint bloqueada.
+
 ## Veredito corrigido
 **A maioria do software já existe.** A matriz anterior de oito gates operacionais com 0/8 comprovados em campo **não é uma lista de oito funcionalidades ausentes**. Ela representa ausência de prova final **da jornada real integrada**, coexistindo com código, UI, contratos, CI e testes anteriores. Não reconstruir componentes aprovados, não reiniciar nova vertical ou duplicar Copiloto.
 
