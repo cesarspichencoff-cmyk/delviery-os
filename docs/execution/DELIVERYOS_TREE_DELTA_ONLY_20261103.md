@@ -1,0 +1,50 @@
+# DeliveryOS — auditoria de árvore unificada: somente delta real para V1 Itaim
+**Data:** 03/11/2026 (BRT) · **Natureza:** inspeção de código, arquivos de prova e PRs; **não** validação de operação.
+**Referências na leitura:** PR #133 `39f394c95744cf4c152ee5c99982f80afa5544a6`; PR #135 `168a9faa9c2350231dd97f3e3957d6ca323d94ce`; PR #137 `f913b20c18063e61ea81d0faec2c8525c7adeb1f`. As três permanecem DRAFT e NÃO mescladas. A árvore completa da #137 contém **2.405 entradas** (`truncated=false`). O VÉRTICE foi revalidado em seu ponteiro `vertice-active` sem substituir a fonte de produto.
+
+## Veredito corrigido
+**A maioria do software já existe.** A matriz anterior de oito gates operacionais com 0/8 comprovados em campo **não é uma lista de oito funcionalidades ausentes**. Ela representa ausência de prova final **da jornada real integrada**, coexistindo com código, UI, contratos, CI e testes anteriores. Não reconstruir componentes aprovados, não reiniciar nova vertical ou duplicar Copiloto.
+
+## O que JÁ existe — só reuso
+
+| Capacidade | Evidência direta na árvore | Grau já sustentado |
+| --- | --- | --- |
+| Home/Organismo do Copiloto com gramática V3.3, uma prioridade, Calmo/Ambiente/Foco e visual canônico | `src/product/ui/surfaces/home.js`, `docs/auditorias/DELIVERYOS_AUDITORIA_PRESERVACAO_FUNDADORA_2026-10-13.md`, testes R5 | **CODE + TESTES DE DEMONSTRAÇÃO**; não leitura atual completa |
+| Células e equivalências estruturais: Sushi (combinados/duplas/enrolados), Quentes (`enrolados_quentes`), Cozinha (`cozinha_quentes`), Caixa, Conferência, Entregas | `src/product/viewmodels/copiloto-celulas-v33.ts` D45/D46 | **MAPA E NOMES JÁ EM CÓDIGO**; faltam medições reais por praça e conferência |
+| Camada de decisão e arbitragem de Foco existentes | `src/perfil-delivery/decisao.js`, `src/platform/copiloto/causal-attention-orchestrator.ts` | **CÓDIGO EXISTE**; não criar outro motor |
+| Entregas com Trip, domínio, outbox, idempotência, atores e rotas | `src/entregas/operational`, `integration`, `pilot`, `offline` | **CODE + FIXTURES**; precisa campo |
+| Android nativo GPS e fila Room/WorkManager, alternativa sem GMS, proteção contra callbacks tardios | `android/app`, `docs/execution/DELIVERYOS_V1_CONNECTED_TREE_20261102.md`, `docs/entregas/pilot/GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md` | **CODE + TESTES JVM anteriores**; sem Xiaomi real |
+| Registro de `ready_order` e evento público `delivery_ready`, com instante preservado e fila de observação | `src/entregas/pilot/ready-orders.ts`, `ready-queue-observation.ts`, `run-ready-fact-tests.ts` | **CODE + TESTES**; “registrado pronto” ≠ “produção fisicamente pronta” |
+| Porta comum Entregas→Copiloto no PG/browser | `src/product/viewmodels/copiloto-entregas-leitura.ts`, `docs/product/COPILOTO_ENTREGAS_SHARED_PG_BROWSER_PROOF_2026-10-15.md` | **9/9 PG/browser no laboratório com fatos sintéticos**; leitura é principalmente projeção histórica |
+| Reader instalado no caixa Itaim e observador silencioso sanitizado | `docs/execution/TATA_COMANDAS_ITAIM_SCM_TRUST_AUDIT_20261103.md`, `docs/execution/COMANDAS_READER_MINIMUM_SOURCE_RECEIPT_GATE_20261103.md` | **SERVIÇO RUNNING + METADADOS**; não comprova revisão atual autenticada nem dados completos |
+| Código candidato para cabeçalho/itens/notas, 17 colunas em query única, hash PowerShell↔Node, classificação e janela de praça, guardas de isolamento | PR #135 `tools/comandas_reader_native_note_rowset_v1_review_only.cjs`, `tools/comandas_reader_notes_single_select_v1_REVIEW_ONLY.sql`, `docs/comandas/READER_NOTES_CANONICAL_PS_NODE_GATE_20261103.md`; `src/production/sourceBoundClassificationReviewV1.ts` | **64/64 verificações de notas/hashes; 12/12 de identidade, outras validações offline**; sem SQL atual, nova candidata NÃO está no código da PR #137 |
+| Testes CI recentes de contratos sem pop-ups | PR #137 `Delivery OS silent fixture (isolated)` run `41743649761`: SUCCESS; PR #135 `DeliveryOS Thermal Shadow Gate` run `41744057314`: SUCCESS | **CI_FIXTURE_PASS**, não software liberado |
+
+**Histórico integrado:** `docs/execution/DELIVERYOS_V1_CONNECTED_TREE_20261102.md`, PR #133, consolidou os patches de GPS, Android, Entregas, roteamento de identidade e Copiloto. A auditoria de preservação de 13/10 localizou o cânone visual e alertou que `#/copiloto` era inspetor Shadow, não Home. A PR #135 é frente separada de leitor/comandas. A PR #137 é revisão de fontes, diagnóstico, recuperação silenciosa e integridade Entregas. **NÃO copiar indiscriminadamente PR antiga nem mesclar branches divergentes.**
+
+## SOMENTE o que ainda falta — quatro fechos materiais
+
+### F1. Provar o feed de pedidos atuais e compatibilizar a candidata do Reader
+A PR #135 já preparou leitura de observações, coluna, montador e hash e testou offline, mas `tools/comandas_reader_native_note_rowset_v1_review_only.cjs` e `...notes_single_select_v1_REVIEW_ONLY.sql` **não estão na árvore da #137** (checagem de arquivos por branch). O watcher instalado no caixa ainda não foi demonstrado como os mesmos bytes, nem possui canal oficial atestado para consulta SQL sob sua identidade, sem alterar ACL/serviço. Preparar **adaptador compatível em laboratório** entre candidata e contrato da #137; verificar semântica e integridade, unidade, revisão e observações. Só depois de autorização delimitada, obter 1 revisão atual read-only sob identidade real, sem PII; crescer a 5 e amostra variada. Sem rota autorizada, `LIVE_SOURCE=HOLD` — não contornar ACL e não inventar fonte de Gestor.
+**Nota:** o vínculo UUID iFood↔chave nativa deve ser comprovado por fonte independente autorizada. 311 pares históricos por código curto **não** são prova de identidade.
+
+### F2. Provar estado `pronto` e composição por praça
+A estrutura e o mapa de praças **existem**; falta fonte de **estado físico por item/praça**, ou evento TATÁ já existente, suficientemente comprovado. Cabeçalhos nativos `3/P/X` e itens `4/6` não significam automaticamente `pronto` nem `primeira impressão`; usar a fila `ready_order` apenas como **ato registrado**. Conferência/lacre/retirada precisam de recibos próprios. O catálogo da candidata de Comandas ainda reporta exceções de classificação (14 códigos em revisão histórica); não pintar a produção toda de verde com cobertura parcial. Não reconstruir D45/D46 nem alterar o motor de sacolas sem defeito.
+
+### F3. Conectar **o que já existe** à Home real, não ao inspetor
+Fechar a linha fonte F1 + fatos físicos F2 → projeção existente → Operação Viva/atenção existente → **Home /** + Entregas, com identidade, escopo Itaim, modo, integridade e frescor. `src/entregas/ui/copiloto/index.html` e `#/copiloto` são superfícies diagnósticas; `src/product/viewmodels/copiloto-entregas-leitura.ts` projeta **histórico**, não fila ativa nem GPS. Exigir um ensaio de navegador com pedido revisado, praça, pronto, conferência e viagem fictícios conectados entre si e teste da falta de fonte; depois repetir com dados reais autorizados.
+
+### F4. Prova de campo e corte controlado
+No Itaim, com autorização: iPhone/caixa sem CMD/PowerShell piscando; Xiaomi com APK `pilot` assinado, consentimento, Room/worker e eventos/ACK servidor, GPS somente durante viagem; testar retomada offline, dois aparelhos e desligamento/rollback. Testar almoço e jantar com operação real e revisão humana. **Merge, instalação, fonte de clientes, SQL, impressão, GPS e cutover NÃO são autorizados por esta auditoria**.
+
+## Caminho crítico otimizado
+1. **Agora, apenas Foxxy/GitHub:** confrontar interfaces da PR #135 com o consumidor da #137, resolver só incompatibilidades de schema/ordem/hash, publicar fixture do caminho fechado e inspecionar CI no HEAD exato.
+2. **Fonte real em janela autorizada:** verificar binário/identidade efetiva e consulta Read-only sem alteração de caixa/ACL/serviço, provar um pedido de Itaim + observações e depois amostra; sem acesso permitido, bloquear e declarar o impedimento externo concreto.
+3. **Prontidão de produção e Home:** registrar ato físico com prova por praça/conferência; plugar projeção na Home já existente e fazer teste E2E integrado.
+4. **Campo:** Android/iPhone, turno e rollback; só após observação e aceite humano considerar lançamento.
+
+## O que explicitamente NÃO falta e NÃO faremos
+Recriar Copiloto, novo motor, nova Home, redesenho geral, app de entregas novo, segundo watcher do caixa, mais sensores/câmeras, novos scripts agendados, hardware, integração oficial iFood/Teknisa, contatar Teknisa, impressão ou ação em pedido. Os seis experimentos Edge/UIA anteriormente desativados seguem desligados por interferência na tela do caixa.
+
+## Limite do veredito
+**MUITO CÓDIGO EXISTE, INTEGRAÇÃO FÍSICA NÃO PROVADA.** Número de fixtures aprovadas ou número de componentes não fornece percentual de lançamento. Distinguir: `CODE_EXISTS`, `TEST_PASS`, `CONNECTED_IN_LAB`, `LIVE_SOURCE_PROVEN`, `REAL_FIELD_PROVEN`, `HUMAN_ACCEPTED`. Hoje os dois últimos permanecem NÃO. O trabalho a fazer é **quatro fechos**, não oito sistemas novos.
