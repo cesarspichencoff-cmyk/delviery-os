@@ -267,3 +267,21 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 **GATE A permanece PARCIAL:** login e visualização do Itaim reportados por César, mas seletores reais, leitura técnica sanitizada de 1 pedido, qualidade da identificação, conectividade sem console e envio de fatos ao motor continuam não comprovados. Para capturar grupos fechados sem cliques, será necessário comprovar mecanismo legítimo e autorizado que permita acesso aos detalhes já recebidos; o V3 de revisão não descobre detalhes ocultos sozinho.
 
 **Fronteira de efeitos:** somente commits à PR em rascunho e testes de laboratório. Nenhuma instalação, tarefa, serviço, extensão ou sessão do caixa alterada, sem acesso a cliente ou pedido real e sem mudança no Gestor operacional.
+
+## 17. Corrigido: partição de itens por pedido no cartão agrupado
+
+**Gatilho de campo (relato humano 04/11):** o Gestor do Itaim exibe cartões que podem agrupar múltiplos pedidos; ao abrir, cada pedido aparece individualizado com número e itens. Isso orienta `layout=GROUPED`, mas não substitui uma captura DOM/autenticidade confirmada pelo sensor.
+
+**Falha adversarial reproduzida em laboratório:** um item renderizado fora de qualquer bloco numerado de pedido podia ser ignorado enquanto a revisão permanecia `REVIEW_ONLY`; blocos de pedido aninhados podiam causar ambiguidade de soma. Não contar cartão agrupado como pedido.
+
+**Correção versionada na PR #137**:
+- `e1113ab2ad784c67509ad138f98b9c6130bf97ff`: rejeitar `HOLD_ITEM_SCOPE_AMBIGUOUS` se uma linha visível/oculta do detalhe pertencer a zero ou múltiplos blocos numerados; rejeitar `HOLD_OVERLAPPING_ORDER_SCOPE` se um bloco de pedido contiver outro. Somente leitura, sem ativação do sensor em campo.
+- `eac586047c59c4a0e2b97ded4f262b2cd80e2322`: dois casos de regressão sintéticos adicionados à suíte Edge; total agora 37.
+- CI do commit `eac58604`: [GitHub Actions #41922440582](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41922440582) = **completed/success**. Log Edge `GESTOR_V3_VISIBLE_SENSOR_EDGE_FIXTURE_PASS 37/37`, inclusive os dois novos casos; Windows silencioso `SILENT_OBSERVER_WINDOWS_LAB_PASS 45/45 NO_VISIBLE_WINDOWS`; readiness offline `53/53`. Jobs de contratos e ligação de praça também passaram.
+- Prova independente anterior Foxxy: 9/9 casos sintéticos sobre o sensor corrigido isoladamente. Não confundir a prova do Foxxy com acesso ao iFood real.
+
+**Estado operacional:** `STAGED_CODE + TEST_PASS_SYNTHETIC`, **NÃO** `GESTOR_REAL_PROVEN` / `DEPLOYED` / `WORLD_PROVEN`. O Edge dedicado `TataGestorObservationLab/DedicatedEdgeProfile` foi autenticado visualmente por César e exibe grupos; nenhum seletor de DOM real, cobertura de grupos fechados, pedido completo extraído, identidade independente de merchant ou latência máxima foi homologado. O V3 **não foi ativado** nem alimentou a Home.
+
+**Ocultação do Edge (pedido separado):** nenhum mecanismo de ocultação foi executado. Scripts V2 existentes referem-se a **outro perfil** e não devem ser reutilizados. Tentativas de criar acionador silencioso da janela correta foram bloqueadas por segurança; o único arquivo local preparatório do perfil correto foi neutralizado em modo HOLD. Não afirmar janela oculta; não executar PowerShell/CMD visível nem clicar no Gestor operacional. A alternativa manual de minimizar a janela dedicada não configura ocultação completa.
+
+**Próximo gate A, sem custo novo:** identificar e validar, mediante ensaio supervisionado e isolado, os seletores/estrutura do DOM de um pedido já aberto na UI legítima e seus detalhes; nenhum clique ou abertura automática de cartões, nenhuma coleta de clientes. Comparar número+itens+quantidades+complementos com a tela antes de considerar captura real. Investigar cobertura dos cartões fechados sem assumir que dados não renderizados estejam disponíveis. Manter DRAFT/HOLD sem merge/deploy/cutover e sem alterar caixa.
