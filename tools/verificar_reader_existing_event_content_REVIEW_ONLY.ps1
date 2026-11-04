@@ -143,7 +143,7 @@ try{
  }
  Pass 'unexpected extra envelope field rejected'{
   $v=Mutated
-  $v|Add-Member -MemberType NoteProperty -Name 'extra' -Value 'inject'
+  $v['extra']='inject'
   Write-Fixture $v;Expect-Hold 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
  }
  Pass 'service metadata spoofing rejected'{
