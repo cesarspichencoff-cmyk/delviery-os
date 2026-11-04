@@ -99,7 +99,23 @@ function Assert-TataPersistedEventContentReview {
   $observations=[regex]::Matches($raw,$obsPattern)
   if ($observations.Count -ne 1) { throw 'EXISTING_EVENT_OBSERVED_AT_INVALID' }
   $timestamp=$observations[0].Groups['stamp'].Value
-  if ($timestamp -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})
+  $stampPattern = '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]{1,7})?(Z|[+-][0-9]{2}:[0-9]{2})$'
+  if ($timestamp -cnotmatch $stampPattern) { throw 'EXISTING_EVENT_OBSERVED_AT_INVALID' }
+  if ($ExpectedEvent -isnot [System.Collections.IDictionary] -or
+      -not $ExpectedEvent.Contains('observed_at')) {
+    throw 'EXISTING_EVENT_EXPECTED_ENVELOPE_INVALID'
+  }
+  $comparison=[ordered]@{}
+  foreach ($name in @($ExpectedEvent.Keys)) {
+    if ($name -ceq 'observed_at') { $comparison[$name]=$timestamp }
+    else { $comparison[$name]=$ExpectedEvent[$name] }
+  }
+  try {
+    $expectedRaw=$comparison | ConvertTo-Json -Depth 20 -ErrorAction Stop
+  } catch { throw 'EXISTING_EVENT_FILE_COMPARISON_INVALID' }
+  if ($expectedRaw -cne $raw) {
+    throw 'EXISTING_EVENT_FILE_CONTENT_MISMATCH'
+  }
   $after=Get-Item -LiteralPath $Path -Force
   if (($after.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
       $after.Length -ne $before.Length -or
