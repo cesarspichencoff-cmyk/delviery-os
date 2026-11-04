@@ -135,4 +135,50 @@ test("source strings or structure alone never prove producer authority",()=>{
   assert.equal(a.physical_event_attested,false);
   assert.equal(a.live_home_authorized,false);
 });
+test("actual Reader adapter to item-line binding keeps two same-code rows separate",()=>{
+  // Uses the existing CJS adapter, NOT a synthetic reimplementation of it.
+  // Source is still control fixture, not actual service or independently
+  // observed station. Private free text must not enter either model.
+  const adapter=require(process.cwd()+"/runtime/reporting/copiloto_tata_reader_adapter_v1.cjs") as {
+    adaptStableTataOrderV1:(
+      event:unknown,scope:unknown
+    )=>{state:string;revision:RevisaoNativaParaTrabalho|null;reason:string|null}
+  };
+  const raw={
+    schema:"deliveryos.tata-reader-stable-order-event.v1",
+    snapshot_hash:"a".repeat(64),
+    observed_at:"2026-11-04T13:01:00-03:00",
+    ready_for_downstream_shadow:true,blockers:[],
+    service_resolution:{service:"LUNCH",evidence:"HUMAN_CONFIRMED_RULE",
+      source_ref:"SYNTHETIC",blockers:[]},
+    effects:{database_read:true,database_write:false,network_call:false,
+      odhen_write:false,print:false,spooler_write:false,
+      fiscal_action:false,sefaz_call:false,cutover:false},
+    order:{
+      CDFILIAL:"0001",CDLOJA:"01",NRVENDAREST:"LAB-SALE",NRCOMANDA:"LAB-ORDER",
+      IDORGCMDVENDA:"DLV_IFO",IDSTCOMANDA:"3",
+      DTHRABERMESA:"2026-11-04T13:00:00-03:00",
+      customer_name:"PRIVATE_SENTINEL",observation_rows:["PRIVATE_SENTINEL"],
+      items:[
+        {NRPRODCOMVEN:"L1",CDPRODUTO:"PROD-01",QTPRODCOMVEN:"1.000"},
+        {NRPRODCOMVEN:"L2",CDPRODUTO:"PROD-01",QTPRODCOMVEN:"2.000"},
+      ],
+    },
+  };
+  const a=adapter.adaptStableTataOrderV1(raw,{
+    unitId:"ITAIM",sourceUnitId:"0001",sourceStoreId:"01",
+    mappingEvidenceRef:"SYNTHETIC_ONLY",sourceMode:"control",
+  });
+  assert.equal(a.state,"adapted",a.reason??"");
+  const r=run(a.revision!,[work()]);
+  assert.equal(r.state,"REVIEW_CANDIDATE_ONLY",r.reasons.join(","));
+  assert.equal(r.lines.length,2);
+  assert.notEqual(r.lines[0]!.line_ref,r.lines[1]!.line_ref);
+  assert.equal(r.lines[0]!.event_ids.length,1);
+  assert.equal(r.lines[1]!.event_ids.length,0);
+  assert.equal(r.live_home_authorized,false);
+  assert.equal(r.ready_for_dispatch,null);
+  assert.equal(JSON.stringify(r).includes("PRIVATE_SENTINEL"),false);
+  assert.equal(JSON.stringify(a.revision).includes("PRIVATE_SENTINEL"),false);
+});
 console.log("READER_STATION_WORK_LINE_BINDING_REVIEW_PASS "+passed+"/"+passed+" SYNTHETIC_ONLY");
