@@ -35,14 +35,15 @@ function review(input){
     !Array.isArray(cp.entries)||cp.entries.length<1||cp.entries.length>250||
     !Array.isArray(w)||w.length!==cp.entries.length)
    return response('LEGACY_CHECKPOINT_OR_WITNESS_COVERAGE_INVALID');
+  // PowerShell/NTFS identifiers can collide under case-insensitive comparison.
   const seen=new Set();
   for(const e of cp.entries){
    if(!object(e)||typeof e.order_key!=='string'||e.order_key.length<7||
-     seen.has(e.order_key)||!HEX_UPPER.test(e.snapshot_hash)||
+     seen.has(e.order_key.toUpperCase())||!HEX_UPPER.test(e.snapshot_hash)||
      !HEX_UPPER.test(e.emitted_hash)||e.emitted_hash!==e.snapshot_hash||
      !Number.isSafeInteger(e.stable_count)||e.stable_count<2)
     return response('CHECKPOINT_ENTRY_UNSAFE');
-   seen.add(e.order_key);
+   seen.add(e.order_key.toUpperCase());
   }
   const byKey=new Map(),filenames=new Set();
   for(const witness of w){
@@ -55,15 +56,15 @@ function review(input){
    let event;
    try{event=JSON.parse(witness.json_utf8)}catch{return response('EVENT_JSON_INVALID')}
    if(!object(event)||event.schema!==EVENT||!object(event.order)||
-     typeof event.order_key!=='string'||byKey.has(event.order_key)||
-     filenames.has(witness.name)||!HEX_UPPER.test(event.snapshot_hash))
+     typeof event.order_key!=='string'||byKey.has(event.order_key.toUpperCase())||
+     filenames.has(witness.name.toUpperCase())||!HEX_UPPER.test(event.snapshot_hash))
     return response('EVENT_ENVELOPE_OR_DUPLICATE_INVALID');
-   byKey.set(event.order_key,{event,name:witness.name});
-   filenames.add(witness.name);
+   byKey.set(event.order_key.toUpperCase(),{event,name:witness.name});
+   filenames.add(witness.name.toUpperCase());
   }
   let matched=0;
   for(const entry of cp.entries){
-   const witness=byKey.get(entry.order_key);
+   const witness=byKey.get(entry.order_key.toUpperCase());
    if(!witness)return response('MISSING_OR_EXTRA_ORDER_WITNESS',matched);
    const e=witness.event,o=e.order;
    if(o.CDFILIAL!=='0001'||o.CDLOJA!=='01'||o.IDORGCMDVENDA!=='DLV_IFO'||
