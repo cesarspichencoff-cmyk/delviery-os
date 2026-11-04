@@ -82,7 +82,10 @@ export function vincularReaderTrabalhoPraca(
       (item.route_code !== null && !safe(item.route_code)))
       return hold("NATIVE_LINE_IDENTITY_DUPLICATE_OR_INVALID");
     used.add(item.line_no);
-    const ref = "reader-line:" + hash([...parts, item.line_no]);
+    // Bind to the exact native revision and product: a changed SKU or note
+    // never inherits an earlier workstation completion.
+    const ref = "reader-line:" + hash([...parts, id.snapshot_hash, item.line_no,
+      item.product_code, String(item.quantity)]);
     byRef.set(ref, { line: item, events: [], stations: new Set() });
   }
   const approved: EnvelopeOperacional[] = [];
@@ -105,7 +108,10 @@ export function vincularReaderTrabalhoPraca(
     }
     target.events.push(e);
     target.stations.add(p.praca_id);
-    approved.push(e);
+    // R5-D3 infers data nature from the source prefix. Until the
+    // actual producer's authority is attested, its projection is ALWAYS
+    // explicitly demonstration, even for a self-declared real Reader revision.
+    approved.push({ ...e, source: "fixture:" + e.source });
   }
   const projection = projetarLeitura(approved, {
     tenant_id: input.tenant, unit_id: input.unit, agora_iso: input.now,
