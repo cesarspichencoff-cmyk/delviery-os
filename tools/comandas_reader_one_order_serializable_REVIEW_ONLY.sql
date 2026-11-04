@@ -7,9 +7,11 @@ The 100ms LOCK_TIMEOUT limits this reader's wait, NOT time writers wait for it.
 An authorized isolated, NON-POOLED Reader-identity connection with its own
 short CommandTimeout, plan review, rollback, monitoring and safety window
 would be prerequisites. No customer/fiscal fields, no iFood request.
-Required ADO.NET typed params: @nrVendaRest and @nrComanda; actual SQL
-column types MUST be verified from catalog and matched exactly before any run.
-Never assume nvarchar(64) or rely on an implicit conversion/scan.
+Verified in the Itaim SQL Server catalog (04/11/2026):
+TEKNISA.COMANDAVEN.NRVENDAREST is varchar(10), NRCOMANDA is varchar(10).
+ADO.NET bind BOTH @nrVendaRest and @nrComanda as SqlDbType.VarChar, Size=10.
+Verify the column metadata again at the supervised pilot; never use
+SqlDbType.NVarChar or nvarchar(64) here, which risks implicit conversion/scan.
 Precondition: exact native order key issued by the authorized Reader.
 Free-text observations MAY include customer PII despite no customer columns;
 never log, transmit or publish raw observation fields.
