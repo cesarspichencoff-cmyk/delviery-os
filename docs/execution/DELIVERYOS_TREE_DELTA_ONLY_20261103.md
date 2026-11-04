@@ -28,6 +28,11 @@
 ## Checkpoint simultâneo da manutenção supervisionada no Reader — não repetir pedido de autorização
 A PR #135 também registra `docs/comandas/READER_SUPERVISED_MAINTENANCE_PREFLIGHT_20261103.md`: **César já autorizou manutenção supervisionada com possibilidade de breve interrupção reversível**, sem autorizar impressão, mudanças globais de SQL, ACL indiscriminada ou cutover. O pré-ensaio no Itaim concluiu **STOP_SAFE**, porque diretórios do serviço retornam EPERM, o binário/identidade efetiva ainda não foram comprovados e o wrapper versionado mata os processos-filhos ao parar sem protocolo de drenagem demonstrado. **Nenhuma parada/consulta SQL ocorreu.** Reiniciar o serviço já instalado não cria a rota diagnóstica ausente. A lacuna é **acesso administrativo legitimamente permitido + rota autenticada de diagnóstico no próprio serviço + backup/drenagem/restart ensaiados**, não a falta de um novo “sim” de César.
 
+### Checkpoint Android 04/11 — correção pontual com regressão completa
+`docs/execution/DELIVERYOS_ANDROID_TERM_ACK_RECEIPT_PROOF_20261104.md` e commit `26489dfb`: `SyncWorker` não marca mais `term_ack.sent` com mero HTTP 200; o recibo do servidor deve vincular identidade, aparelho, unidade, hash, versão e escolha. **JUnit direcionado 11/11; Android JVM completo 254/254 (22 suites, 0 falha, 0 ignorado) no Foxxy, offline.** A cadeia de domínio Entregas e o Android não foram refeitos.
+
+**Mantém HOLD:** a rota legada de aceite no piloto ainda não demonstrou sessão autenticada do ator; resposta 4xx do lote operacional continua potencialmente reprocessável sem classificação de autoria, recusa terminal e commit incerto; não alterar `markFailed` indiscriminadamente. Nenhum teste físico Xiaomi/HTTPS ou aceite humano ocorreu. A prioridade de campo Reader/produção/Copiloto **não mudou**.
+
 ## SOMENTE o que ainda falta — quatro fechos materiais
 
 ### F1. Provar o feed de pedidos atuais e compatibilizar a candidata do Reader
