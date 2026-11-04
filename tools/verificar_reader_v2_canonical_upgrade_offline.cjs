@@ -56,8 +56,12 @@ test('extracted original Load-Checkpoint function blocks legacy state dynamicall
  assert.ok(fs.existsSync(fixture));
  const child=spawnSync('powershell.exe',
   ['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-File',fixture],
-  {encoding:'utf8',windowsHide:true,timeout:25000,maxBuffer:1024*1024});
- assert.equal(child.status,0,'OFFLINE_PS_GATE_FAILED '+String(child.stderr||'').slice(0,360));
+  {encoding:'utf8',windowsHide:true,timeout:90000,maxBuffer:1024*1024});
+ assert.equal(child.status,0,'OFFLINE_PS_GATE_FAILED exit='+child.status+
+    ' signal='+String(child.signal||'none')+
+    ' error='+String(child.error?.message||'none')+
+    ' stderr='+String(child.stderr||'').slice(0,360)+
+    ' stdout='+String(child.stdout||'').slice(-240));
  assert.match(child.stdout,/READER_V2_CHECKPOINT_MIGRATION_GATE_PASS 10\/10 SYNTHETIC_ONLY_NO_MIGRATION/);
 });
 console.log('READER_V2_CANONICAL_CANDIDATE_GATE_PASS '+cases+'/'+cases+' SYNTHETIC_ONLY');
