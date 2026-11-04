@@ -224,3 +224,21 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 - Fatos de campo ainda desconhecidos: merchant autenticado Itaim, um detalhe completo, status físico por praça, cobertura de todos os pedidos, latência até 60 s, Entregas end-to-end, uso real no iPhone/Xiaomi.
 - **Próximo resultado:** um pedido verdadeiro do Gestor Itaim, completo e comparado com a interface em sessão isolada, sem perturbar a equipe. Só então a escolha final entre leitura incremental por rede, DOM ou extensão deverá ser feita.
 - **Não declarar entrega concluída** com laboratório, PR verde ou arquivo copiado. L1–L8, estabilidade no pico, rollback e aceite humano continuam critérios do lançamento.
+
+## 14. Checkpoint operacional — almoço de 04/11 às 11h07 BRT
+
+**Gatilho humano:** César confirmou "O delivery abriu". Isso autoriza verificar status sem efeitos; **não** autoriza alterar sessão do Gestor operacional, ativar extensão/V3, instalar serviço ou fazer cutover.
+
+**Verificação remota SOMENTE LEITURA no dispositivo ONLINE validado CAIXA_MOOCA** (não Foxxy):
+
+- **Automação Reader confirmada em janela LUNCH:** status local 2026-11-04T14:07:39.411Z, automático, READ_ONLY_LOCAL, NO_EVIDENCE, sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF, liveSourceVerified=false, operationalOrderTotal=null, filesRead=250, ignoredHistorical=250, projectedOrderCount=0. **A projeção zero NÃO prova zero pedidos.**
+- **Causa estrutural identificada no código instalado:** `observer.cjs` lê somente a fonte de arquivos `C:\ProgramData\TataComandaReader` em modo `control` com `maxAgeMs=300000` e `maxFiles=250`. Não é captura direta do Gestor web e **não deve ser promovida** como observador de pedidos do iFood. Os 250 arquivos foram todos rejeitados como históricos pela regra temporal.
+- **Gestor instalado está em execução:** processo `Gestor de Pedidos.exe` apareceu na lista de processos. Há múltiplos `msedge.exe`, **mas PID não prova conta Itaim, sessão autenticada, detalhe aberto ou cobertura de pedidos**.
+- **V2 e monitores sem prova nova de loja/identidade:** `GestorWebReadOnlyV2/latest.structure.json` ainda observado em 03/11 13:40Z, apenas STRUCTURE_ONLY_UNVERIFIED; `GestorUiReadOnlyMonitor/status.json` antigo HOLD, merchantVerified=false, actualOrderIdVerified=false. **V3 continua STAGING_ONLY não instalado/ativado**.
+- **Silêncio:** guard de áudio registrou 2026-11-04T14:09:08.999Z, observador silenciado e Edge do operador não tocado, zero ação em janela; isso confirma um registro local, não garante ausência futura de popups em todos os processos.
+
+**Resultado:** Gate A **ABERTO MAS NÃO APROVADO**; a janela de almoço e a presença do Gestor foram observadas, sem pedido real e sem prova de merchant. **Não avançar para B/C/E nem afirmar que Copiloto agirá sozinho.**
+
+**Próximo gate mínimo:** obter prova de que o **perfil Edge ISOLADO** do laboratório — e não o Gestor/Edge operacional — está legitimamente autenticado em conta Itaim e exibindo detalhe de pedido atual. Se não estiver, registrar razão concreta e coordenar autenticação normal supervisionada antes de qualquer prova. Sem instalar/ativar V3, iniciar terminal visível, clicar em pedido operacional, exportar cliente ou mexer em Comandas. Quando tal sessão estiver comprovada, realizar ensaio REVIEW_ONLY sanitizado para um pedido e comparar com tela.
+
+**Estado de efeito deste checkpoint:** só leituras remotas e documentação da PR #137; sem mudanças no caixa, sessão, tarefas, processos, Edge, Gestor ou produção.
