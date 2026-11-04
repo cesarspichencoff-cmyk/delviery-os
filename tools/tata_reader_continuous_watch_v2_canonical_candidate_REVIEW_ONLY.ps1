@@ -101,7 +101,13 @@ function Assert-TataPersistedEventContentReview {
     }
   }
   try {
+    # ConvertFrom-Json may deserialize ISO date-looking strings to DateTime
+    # (PowerShell 5.1 / 7 differ). Normalize BOTH views through the same
+    # parser to avoid rejecting an untouched event solely from that coercion.
+    # This remains only an equality check, not an independent event receipt.
     $expectedJson=ConvertTo-Json -InputObject $comparison -Depth 20 -Compress
+    $normalizedExpected=$expectedJson | ConvertFrom-Json -ErrorAction Stop
+    $expectedJson=ConvertTo-Json -InputObject $normalizedExpected -Depth 20 -Compress
     $storedJson=ConvertTo-Json -InputObject $stored -Depth 20 -Compress
   } catch { throw 'EXISTING_EVENT_FILE_COMPARISON_INVALID' }
   if ($expectedJson -cne $storedJson) {
