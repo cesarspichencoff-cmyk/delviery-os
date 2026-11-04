@@ -162,6 +162,10 @@ test('one source category absent cannot be inferred as covered',()=>{
  const x=baseline();x.shifts[1].stations_covered='PARTIAL';
  const r=check(x,D0);assert.equal(r.complete_station_coverage_world_proven,false);
 });
-if(passed!==36)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+test('invalid calendar date cannot be treated as a witnessed shift',()=>{
+ const x=baseline();x.shifts[0].day='2026-02-30';
+ check(x,D0,'REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+if(passed!==37)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');
