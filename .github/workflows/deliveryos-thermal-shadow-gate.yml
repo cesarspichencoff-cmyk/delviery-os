@@ -101,6 +101,8 @@ jobs:
         run: node tools/verificar_comandas_reader_sql_consistency_gate_v1_offline.cjs
       - name: Reader crash/restart event-checkpoint boundary stays HOLD (Linux synthetic)
         run: node tools/verificar_comandas_reader_restart_boundary_review_only.cjs
+      - name: Reader bootstrap vs persisted disposition remains HOLD (Linux offline)
+        run: node tools/verificar_comandas_reader_emission_disposition_review_only.cjs
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
@@ -443,6 +445,8 @@ jobs:
         run: node tools/verificar_comandas_reader_legacy_event_reconciliation_review_only.cjs
       - name: Reader crash/restart event-checkpoint boundary stays HOLD (Windows synthetic)
         run: node tools/verificar_comandas_reader_restart_boundary_review_only.cjs
+      - name: Reader bootstrap vs persisted disposition remains HOLD (Windows offline)
+        run: node tools/verificar_comandas_reader_emission_disposition_review_only.cjs
       - name: Three-way box accounting consumes unique physical boxes (Windows offline)
         run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
       - name: Product code bound to classification and pinned Academia (Windows offline)
