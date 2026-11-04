@@ -86,6 +86,35 @@ const html=(one=false)=>`<!doctype html><html><body>
     const n=await page.evaluate(()=>globalThis.v3Events.length);
     assert.equal(n,2);
   });
+  await setup();
+  await test("attribute-only card hiding triggers fail-closed review",async()=>{
+    await page.evaluate(cfg=>{
+      globalThis.v3AttributeEvents=[];
+      globalThis.v3AttributeWatch=globalThis.DeliveryGestorV3Review.watch(document,cfg,e=>globalThis.v3AttributeEvents.push(e));
+    },CFG);
+    await page.waitForFunction(()=>globalThis.v3AttributeEvents?.length===1);
+    await page.locator(".card").first().evaluate(el=>el.setAttribute("hidden",""));
+    await page.waitForFunction(()=>globalThis.v3AttributeEvents?.length===2);
+    const state=await page.evaluate(()=>globalThis.v3AttributeEvents.at(-1));
+    assert.equal(state.state,"HOLD_HIDDEN_CARD");
+    assert.equal(state.ordersPublishable,0);
+    await page.evaluate(()=>globalThis.v3AttributeWatch.stop());
+  });
+  await setup();
+  await test("attribute-only detail closure invalidates selected detail",async()=>{
+    await page.evaluate(cfg=>{
+      globalThis.v3DialogEvents=[];
+      globalThis.v3DialogWatch=globalThis.DeliveryGestorV3Review.watch(document,cfg,e=>globalThis.v3DialogEvents.push(e));
+    },CFG);
+    await page.waitForFunction(()=>globalThis.v3DialogEvents?.length===1);
+    await page.locator("dialog").evaluate(el=>el.removeAttribute("open"));
+    await page.waitForFunction(()=>globalThis.v3DialogEvents?.length===2);
+    const state=await page.evaluate(()=>globalThis.v3DialogEvents.at(-1));
+    assert.equal(state.state,"REVIEW_ONLY");
+    assert.equal(state.detail.state,"NOT_OPEN");
+    assert.equal(state.ordersPublishable,0);
+    await page.evaluate(()=>globalThis.v3DialogWatch.stop());
+  });
   await test("no external requests during the entire fixture",async()=>assert.equal(network,0));
   console.log("GESTOR_V3_VISIBLE_SENSOR_EDGE_FIXTURE_PASS "+pass+"/"+pass+
     " (SYNTHETIC_ONLY; NO_ORDERS_FROM_IFOOD)");
