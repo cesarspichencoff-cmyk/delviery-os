@@ -16,7 +16,7 @@
 **Arquivos no branch DRAFT da PR #135**:
 
 - `tools/comandas_reader_actual_identity_isolation_probe_v1_NOT_DEPLOYED.ps1`: candidato de one-shot read-only. Recusa host distinto de `CAIXA_MOOCA` e `WindowsIdentity.GetCurrent().Name` diferente de `NT SERVICE\TataComandaReader`, ambos **antes de instanciar SqlConnection**. Sob identidade efetivamente permitida e em alteração futura separadamente autorizada, executaria apenas **um SELECT da tabela de metadados `sys.databases`** pela conexão local de segurança integrada; confere `SUSER_SNAME()` e `DB_NAME()`. Retorna somente RCSI ON/OFF, estado de SNAPSHOT, hora e flags negativas de pedido/print. Não consulta `TEKNISA.COMANDAVEN` nem exporta dados de clientes.
-- `tools/verificar_reader_actual_identity_probe_v1_offline.cjs`: **10/10 PASS no Foxxy**; provocou recusa `WRONG_HOST_NO_SQL` com exit code 61, `sqlExecuted=false`; verificou os guards antes da conexão e ausência de comandos DDL/DML. Não significa autenticação de fonte real.
+- `tools/verificar_reader_actual_identity_probe_v1_offline.cjs`: **12/12 PASS no Foxxy**; provocou recusa `WRONG_HOST_NO_SQL` com exit code 61, `sqlExecuted=false`. Em segunda tentativa, falsificou somente `COMPUTERNAME` no ambiente do processo filho de laboratório: o verificador recusou por `WRONG_PROCESS_IDENTITY_NO_SQL` (exit code 62) antes de abrir SQL. Verificou os guards antes da conexão e ausência de comandos DDL/DML. Não significa autenticação de fonte real.
 - Os códigos de isolamento já preparados `comandas_reader_isolation_catalog_v1_REVIEW_ONLY.sql` e `comandas_reader_sql_consistency_gate_v1_review_only.cjs` continuam apenas revisão/fixture, com testes 23/23; misturas de revisões 6/6.
 
 ## Portão de execução ainda não satisfeito
@@ -32,6 +32,6 @@ Para obter a prova real **sob a conta e sessão certas**, falta um canal técnic
 
 ## Estados comprovados
 
-`CODE_READY_METADATA_PROBE=YES`; `LAB_HOST_GUARD_PASS=10`; `LIVE_SQL_METADATA_READ=NOT_EXECUTED`; `SERVICE_OFFICIAL_INVOKE_ROUTE=NOT_AVAILABLE_OR_NOT_VERIFIED`; `READER_PROCESS_EFFECTIVE_IDENTITY=UNKNOWN`; `CURRENT_NATIVE_ORDER=UNKNOWN`; `PRODUCTION_PRINT=HOLD`.
+`CODE_READY_METADATA_PROBE=YES`; `LAB_IDENTITY_GUARDS_PASS=12`; `LIVE_SQL_METADATA_READ=NOT_EXECUTED`; `SERVICE_OFFICIAL_INVOKE_ROUTE=NOT_AVAILABLE_OR_NOT_VERIFIED`; `READER_PROCESS_EFFECTIVE_IDENTITY=UNKNOWN`; `CURRENT_NATIVE_ORDER=UNKNOWN`; `PRODUCTION_PRINT=HOLD`.
 
 **Princípio:** uma ferramenta tecnicamente capaz de ler SQL **não** constitui autorização ou prova de que a leitura foi feita pelo Reader. Preservar funcionamento silencioso do caixa acima de um diagnóstico conveniente.
