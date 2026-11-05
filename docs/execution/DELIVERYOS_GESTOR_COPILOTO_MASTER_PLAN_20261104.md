@@ -421,3 +421,11 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 
 **Detalhe de evidência, valores e critérios:** [`DELIVERYOS_L1_READER_COMANDAS_CROSS_PR_GATE_20261104.md`](./DELIVERYOS_L1_READER_COMANDAS_CROSS_PR_GATE_20261104.md), seção 7. Nenhum pedido bruto, cliente, observação, consulta SQL, serviço, impressão, Edge ou aplicação alterado nesta rodada. Sem merge/deploy/ativação. `PR #137` DRAFT/HOLD.
 
+## 28. Estado atual L1–L8 e diagnóstico do projetor
+
+**Controle de continuidade para César:** [`DELIVERYOS_V1_ETAPAS_PROGRESSO_ATUAL.md`](./DELIVERYOS_V1_ETAPAS_PROGRESSO_ATUAL.md) passou a ser o quadro compacto do progresso **L1–L8** e subgates N1–N5. Foco: **L1/N2–N3**, sem confundir 0/8 aceites ponta a ponta com a quantidade de testes aprovados. Conferir esse quadro e o contrato de lançamento antes de toda continuação.
+
+**Revisão de diagnóstico:** análise somente leitura das duas implementações instaladas no caixa distinguiu `SKIPPED_LOCKED` durante a proteção de concorrência de 120 segundos de uma trava realmente órfã. A tentativa observada ocorreu cerca de 66 segundos depois da atualização da trava: **não sustenta a antiga conclusão de trava órfã**. A rotina de consumo só repete projeção após novo envelope, o que pode manter o relatório antigo sem nova emissão. Existe risco adicional de concorrência no protocolo de liberação. Não alterar código instalado; reconciliar primeiro a fonte versionada da versão executada, pois o arquivo antigo da PR #135 é diferente da versão no host.
+
+**Próxima prova material:** N2/N3 com recibo sanitizado de uma revisão; correção do projetor separada e restrita a laboratório até haver baseline fiel, regressões e autorização de efeito. [CI #41964180535](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41964180535) mantém 4/4 jobs aprovados do código anterior. PR #137 DRAFT/HOLD.
+
