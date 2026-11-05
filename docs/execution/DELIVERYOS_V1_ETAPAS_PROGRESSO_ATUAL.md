@@ -215,3 +215,11 @@ No `CAIXA_MOOCA` foi lido passivamente o arquivo de saúde já existente `state/
 O levantamento passivo de quatro tarefas TATA-GetIn independentes identificou `node.exe` direto sob `InteractiveToken` em gatilhos diários com horários nominais 20h50, 20h55, 00h00 e 00h02 (São Paulo). A rotina `scheduled-runner.mjs` usa `windowsHide:true` no **filho**, não no processo pai criado pelo Agendador; `render-visual.mjs` usa navegador `headless:true`. Há risco plausível de janela do processo pai, **sem correlação PID↔janela e sem demonstração de popup**. Não mudar tarefas GetIn, Reader ou qualquer coisa de produção sob suspeita. Evidência completa: `DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md`.
 
 **Fronteira preservada:** `PRODUCTION_READER_RUNNING=OBSERVED`, `CURRENT_ORDER_COMPLETENESS=UNKNOWN`, `FLASH_CAUSALITY=UNKNOWN`, `WINDOWS_TASK_CHANGED=NO`, `ORDER_CONTENT_READ=NO`, `N2_N3=HOLD`, `V1_ACCEPTED=0/8`.
+
+### Checkpoint posterior do jantar, 05/11 — 20h57 BRT
+
+Leitura **somente de metadados preexistentes** no caixa: Reader `RUNNING`, `last_success_at=2026-11-05T20:57:47.8038677-03:00`, `consecutive_failures=0`, último lote `OK`, `polls=20`, `poll_errors=0`, `events_emitted=0` no lote. O observador à mesma janela declarou `OBSERVED_RECORDS`, `schedule=DINNER`, mas `sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF` e `liveSourceVerified=false`. A saúde do processo e a existência de registros diagnósticos **não** promovem a fonte, a completude ou a autorização de Home.
+
+A frente de janelas avançou por evidências independentes, não por intervenção: registro GetIn `SUCCESS` às 20h50min25s, PNG e recibo visual existentes gravados às **20h55min03s**. O rótulo `updatedAtBR='05/11, 20:50'` do visual é o horário da **fonte/coleta** (`r.updatedAtBR` no código), não o horário da renderização. Os quatro jobs GetIn com `node.exe` direto sob `InteractiveToken` continuam apenas candidatos de risco de console; falta atribuição da janela a PID/processo/sessão. Ver auditoria `DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md`.
+
+**Decisão:** não tocar em GetIn ou Reader no caixa sem prova de causalidade e mecanismo intrinsecamente silencioso. `FLASH_CAUSALITY=UNKNOWN`, `WINDOWS_TASK_CHANGED=NO`, `N2/N3=HOLD`, `L1=PARTIAL`, `V1_ACCEPTED=0/8`.
