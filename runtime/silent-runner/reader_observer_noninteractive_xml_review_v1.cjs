@@ -37,7 +37,8 @@ function review(original,proposed){
   // A one-field S4U change is categorically WRONG for Windows built-in
   // service principals (SYSTEM/LocalService/NetworkService). Task Scheduler
   // provides ServiceAccount logon for those identities. Reject the real
-  // CAIXA_MOOCA task XML until the installed-vs-receipt principal is reconciled.
+  // CAIXA_MOOCA task XML: its SID and localized SISTEMA receipt are consistent,
+  // but S4U is still the wrong logon mode for a built-in service identity.
   const userMatches=[...original.matchAll(/<UserId>([^<]*)<\/UserId>/g)];
   if(userMatches.length!==1 || !userMatches[0][1].trim())
    return safeStatus('TASK_PRINCIPAL_MISSING_OR_AMBIGUOUS');
