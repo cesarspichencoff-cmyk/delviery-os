@@ -411,3 +411,13 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 
 **Checkpoint detalhado e gates N1–N5:** [`DELIVERYOS_L1_READER_COMANDAS_CROSS_PR_GATE_20261104.md`](./DELIVERYOS_L1_READER_COMANDAS_CROSS_PR_GATE_20261104.md). N1: identidade/versão de arquivo e heartbeat parcialmente provadas; N2 captura e completude SQL de revisão real = HOLD; N3 paridade canônica em uma revisão real = UNKNOWN; N4 atestação independente = HOLD; N5 integração com Home = HOLD. Continuar pelo **menor recibo sanitizado já disponível**, sem executar SQL, vigiar pedidos, instalar software, tocar ACL, imprimir, abrir console ou alterar Edge.
 
+## 27. Checkpoint nativo sanitizado e projeção bloqueada — 05/11
+
+**Marco de campo, somente metadados:** `CAIXA_MOOCA` Reader V2 ativo, script instalado com SHA-256 conferido no checkpoint anterior, 250/250 entradas do checkpoint no escopo Itaim com revisões estabilizadas, marcador de emissão == hash atual e 3/3 referências amostradas com arquivos locais existentes. Os 250 registros **não são pedidos ativos**; integridade de observações e vínculo com cliente/pedido iFood não foram lidos nem atestados. Heartbeat informa execução recente `OK` e zero falhas consecutivas, mas supervisor local não é comprovante de fonte independente.
+
+**Segundo bloqueio observado:** consumidor de sombra registra `SKIPPED_LOCKED` no projetor; checkpoint de projeção datado de 30/10, `projector.lock` contém PID que não constava na amostra atual de processos. Hipótese: lock persistente; ainda **UNKNOWN** se pertence a processo temporário, saiu da amostra, foi reutilizado ou está órfão. **Não** remover lock ou reiniciar processo no caixa, nem chamar relatório desatualizado de Home ao vivo.
+
+**Rota de continuidade revisada:** prioridade para L1 Reader nativo (versão/hash/recibo e itens/observações atuais completos) antes de Edge. A PR #135 segue DRAFT e seu consumidor com capacidade de escrita em host permanece suspenso; usar apenas montador puro na homologação sintética. Os gates N2 (corpo e isolamento da revisão), N3 (hash PowerShell↔Node no dado real), N4 (origem/autoridade/frescor) e N5 (Home) permanecem HOLD. O problema de projeção é separado e deve ser investigado sem destravar efeitos produtivos.
+
+**Detalhe de evidência, valores e critérios:** [`DELIVERYOS_L1_READER_COMANDAS_CROSS_PR_GATE_20261104.md`](./DELIVERYOS_L1_READER_COMANDAS_CROSS_PR_GATE_20261104.md), seção 7. Nenhum pedido bruto, cliente, observação, consulta SQL, serviço, impressão, Edge ou aplicação alterado nesta rodada. Sem merge/deploy/ativação. `PR #137` DRAFT/HOLD.
+
