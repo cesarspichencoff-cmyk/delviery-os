@@ -14,6 +14,8 @@ on:
       - runtime/reporting/copiloto_tata_file_feed_v1.cjs
       - runtime/reporting/native_reader_verified_legacy_hash_v1.cjs
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
+      - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
+      - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
       - runtime/tata-reader/tata_reader_health_v1.cjs
       - tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
       - labs/reporting/host-shadow-loop-lab-recovery-v1.cjs
@@ -70,6 +72,7 @@ jobs:
           node tests/reporting/run-diagnostic-readiness-tests.cjs
           # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
+          node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
           node tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
