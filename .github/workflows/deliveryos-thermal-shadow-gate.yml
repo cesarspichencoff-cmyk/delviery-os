@@ -111,6 +111,8 @@ jobs:
         run: node tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs
       - name: Candidate SQL plan origin and writer risk HOLD (Linux synthetic)
         run: node tools/verificar_comandas_reader_one_order_plan_risk_review_only.cjs
+      - name: One-order JOIN cardinality can multiply rows (Linux synthetic)
+        run: node tools/verificar_comandas_reader_join_cardinality_counterexamples_review_only.cjs
       - name: Reader SERIALIZABLE writer lock contention counterexamples (Linux synthetic)
         run: node tools/verificar_comandas_reader_writer_contention_review_only.cjs
       - name: Passive paper census D0 D1 D2 evidence gate (Linux synthetic)
@@ -467,6 +469,8 @@ jobs:
         run: node tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs
       - name: Candidate SQL plan origin and writer risk HOLD (Windows synthetic)
         run: node tools/verificar_comandas_reader_one_order_plan_risk_review_only.cjs
+      - name: One-order JOIN cardinality can multiply rows (Windows synthetic)
+        run: node tools/verificar_comandas_reader_join_cardinality_counterexamples_review_only.cjs
       - name: Reader SERIALIZABLE writer lock contention counterexamples (Windows synthetic)
         run: node tools/verificar_comandas_reader_writer_contention_review_only.cjs
       - name: Passive paper census D0 D1 D2 evidence gate (Windows synthetic)
