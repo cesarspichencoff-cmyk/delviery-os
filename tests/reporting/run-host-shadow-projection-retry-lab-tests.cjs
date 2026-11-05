@@ -8,13 +8,21 @@ const {spawnSync}=require("node:child_process");
 const candidate=path.resolve(__dirname,"../../labs/reporting/host-shadow-loop-lab-recovery-v1.cjs");
 let cases=0;
 function check(name,fn){fn();cases++;console.log("PASS "+name);}
-function replay({mode="RECOVER_ON_SECOND",baseline=false,cycles=5}={}){
+function replay({mode="RECOVER_ON_SECOND",baseline=false,cycles=5,lockAgeMs=null}={}){
   const outer=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-projection-"));
   const root=path.join(outer,"deliveryos-projector-lab");
   try{
     fs.mkdirSync(path.join(root,"shadow"),{recursive:true});
     fs.mkdirSync(path.join(root,"evidence"),{recursive:true});
     fs.writeFileSync(path.join(root,"LAB_ONLY.txt"),"DELIVERYOS_PROJECTOR_LAB_ONLY_V1\n");
+    if(lockAgeMs!==null){
+      const lockDir=path.join(root,"state","reporting-v1");
+      fs.mkdirSync(lockDir,{recursive:true});
+      const lock=path.join(lockDir,"projector.lock");
+      fs.writeFileSync(lock,"99991"); // fake PID, never used to kill or authorize removal
+      const age=new Date(Date.now()-lockAgeMs);
+      fs.utimesSync(lock,age,age);
+    }
     fs.writeFileSync(path.join(root,"shadow","report_source_envelope_v1.cjs"),
       "module.exports={buildReportSourceEnvelope:()=>({schema:'FAKE_LAB'})};\n");
     const stub=[
@@ -36,7 +44,11 @@ function replay({mode="RECOVER_ON_SECOND",baseline=false,cycles=5}={}){
     assert.equal(res.status,0,res.stdout+"\n"+res.stderr);
     assert.equal(res.stderr,"");
     const status=JSON.parse(fs.readFileSync(path.join(root,"evidence","shadow-consumer-status.json"),"utf8"));
-    const attempts=Number(fs.readFileSync(path.join(root,"attempts.txt"),"utf8"));
+    const attempts=fs.existsSync(path.join(root,"attempts.txt")) ?
+      Number(fs.readFileSync(path.join(root,"attempts.txt"),"utf8")) : 0;
+    if(lockAgeMs!==null){
+      assert.equal(fs.readFileSync(path.join(root,"state","reporting-v1","projector.lock"),"utf8"),"99991");
+    }
     assert.equal(status.schema,"deliveryos.live-shadow-consumer-status.v2");
     assert.equal(status.state,"STOPPED");
     assert.equal(status.processed,0);
@@ -59,6 +71,14 @@ check("persistent lock causes bounded retries, no every-poll process storm",()=>
   const r=replay({mode:"ALWAYS_LOCKED",cycles:6});
   assert(r.attempts>=2 && r.attempts<=3,JSON.stringify(r));
   assert.equal(r.lastProjection,"SKIPPED_LOCKED");
+});
+check("stale lock remains intact, no projector execution and explicit HOLD",()=>{
+  const r=replay({cycles:4,lockAgeMs:200000});
+  assert.deepEqual(r,{attempts:0,lastProjection:"HOLD_STALE_LOCK_UNVERIFIED"});
+});
+check("fresh lock remains intact and no repeated projector child is launched",()=>{
+  const r=replay({cycles:3,lockAgeMs:1000});
+  assert.deepEqual(r,{attempts:0,lastProjection:"SKIPPED_LOCKED"});
 });
 check("lab candidate refuses execution without explicit sandbox root and marker",()=>{
   const r=spawnSync(process.execPath,[candidate],{encoding:"utf8",timeout:3000,
