@@ -16,6 +16,8 @@ on:
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
       - runtime/tata-reader/tata_reader_health_v1.cjs
       - tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
+      - labs/reporting/host-shadow-loop-lab-recovery-v1.cjs
+      - tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
       - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
       - tests/tata-reader/run-real-feed-boundary-tests.cjs
       - tests/tata-reader/run-file-feed-tests.cjs
@@ -70,6 +72,7 @@ jobs:
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
+          node tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
           node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
           node tests/tata-reader/run-real-feed-boundary-tests.cjs
           node tests/tata-reader/run-file-feed-tests.cjs
