@@ -35,3 +35,18 @@
 4. **N4 e N5:** identificar autenticamente origem/frescor e estabelecer que o conjunto visível corresponde ao escopo Itaim `DLV_IFO`, sem inferir 100% de cobertura a partir de `TOP 50`. Só depois da autorização distinta de publicação permitir que a Home reflita pedidos reais.
 
 **Resultado:** `CODE_READY + LAB_TEST_PASS`. `DEPLOYED=NO`; `FIELD_PROVEN=NO`; `N2/N3=HOLD`; `V1_ACCEPTED=0/8`.
+
+## Revisão adversarial adicional — identidade de código antes de iniciar Node
+
+**Falha encontrada:** o lançador de laboratório original conferia apenas se o executável se chamava `node.exe` e o arquivo JS tinha o basename esperado; um mesmo nome em outro caminho **não comprova identidade de código**. Isso é inadequado como base de confiança para qualquer evolução de campo.
+
+**Correção na PR #137:** `labs/reader-proof/NativeReaderOneShotLabLauncher.cs` recusa `CAIXA_MOOCA` antes de qualquer argumento; além disso passou a exigir um **runner GitHub Actions** do repositório exato, arquivo JS no caminho canônico do checkout `GITHUB_WORKSPACE/labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs`, ausência de reparse point e hash Git blob SHA-1 do **conteúdo completo**, fixado em `770d7d284612246c9ee442d37fd5b7151a7287b4`. Isso reduz troca de script, mas **não é atestação do binário Node nem identidade do sistema operacional**. Não chamar esta proteção autorização de campo.
+
+**Testes negativos Windows:** um script com mesmo nome em pasta falsa deve falhar sem gerar recibo; alterar o arquivo do checkout sob o caminho verdadeiro deve falhar pelo hash. A alteração temporária do teste ocorre **somente na VM descartável** e o próprio teste restaura os bytes do arquivo. Não há execução no caixa.
+
+**Falha real capturada pela CI e correção mínima:** [Actions #41972619037](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41972619037) teve **3/4 jobs aprovados e Windows FAILED**: os dois casos de substituição recusaram como esperado, mas o script legítimo saiu com `exit=88` na checagem de bytes. O arquivo `.gitattributes` já advertia que checkout Windows converte LF/CRLF em arquivos de hash fixado. A solução **não flexibilizou a verificação**: acrescentou `labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs -text`, para preservar bytes exatos, mantendo comparação estrita do blob.
+
+**Prova final:** [Actions #41972968082](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41972968082), **completed/success 4/4 jobs**; log Windows `NATIVE_READER_LAB_SCRIPT_IDENTITY_PASS 2/2 WRONG_PATH_AND_TAMPER_DENIED` e `NATIVE_READER_ONE_SHOT_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII`. A correção está no commit `de03d73fc289938e132ae212a8d43480a16385ee`, posterior ao lançador pinado `d3f890a4dd13f6925b654d8687aace454e75ded8`.
+
+**Fronteira:** `LAB_TEST_PASS`, não `FIELD_PROVEN`. A cópia de laboratório requer um arquivo `synthetic-event.json`: ela **não deve ser adaptada copiando evento real com observações para um novo diretório**. A próxima variante precisará de origem e permissão local expressamente aprovadas, sem persistência extra de bruto, e de prova de execução silenciosa/rollback no ambiente efetivo; nenhuma autorização foi ampliada.
+
