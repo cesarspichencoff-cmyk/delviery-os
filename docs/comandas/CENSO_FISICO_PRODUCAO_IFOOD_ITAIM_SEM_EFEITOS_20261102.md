@@ -4,6 +4,8 @@
 
 **Estado inicial:** `PAPER_CENSUS_AUTHORIZED_NOT_OBSERVED` · PR #130 Draft/HOLD · produção nativa não substituída · conferência TATÁ independente não ativada. O computador Windows chama-se `CAIXA_MOOCA`, mas César confirmou que pertence ao **Itaim**. Isso não identifica o caixa lógico `IFO`.
 
+> **Revisão de 05/11/2026 (PR #135, ainda DRAFT/HOLD):** a classificação abaixo foi alinhada ao classificador offline v2. O documento original foi criado durante a PR #130; sua referência histórica permanece, mas a PR vigente é a #135. Nenhuma observação física foi recebida.
+
 ## Objetivo
 Decidir por evidência visível se as vias nativas já produzidas para pedidos iFood são suficientes, corretas e recebidas nas **praças efetivamente necessárias**. Se forem, avaliar preservar a produção nativa e desenvolver **apenas a conferência independente**; se não, manter o sistema shadow/HOLD e reabrir a investigação causal. **Um censo nunca autoriza imprimir, desativar, apagar, reprocessar ou modificar a origem.**
 
@@ -47,12 +49,34 @@ Referência: `docs/comandas/AUDITORIA_REVALIDADA_IMPRESSORAS_E_JANELAS_20261027.
 5. **Não imprimir folha de teste nem reimprimir comanda para completar amostra.** Não alterar energia, configuração, driver, porta, serviço, SQL, fiscal ou Retail.
 6. **Não atribuir resultado conforme a turno inteiro se faltar praça, observador, identidade ou categoria na amostra.**
 
-## Classificação ao final
-- **`D1_SAMPLE_CONFORME`**: em ambos os turnos, para os pedidos efetivamente observados, testemunhas cobriram todas as praças necessárias, associaram papéis às encomendas, conferiram itens/quantidades/notas e **não viram** falta, duplicata, rota incorreta nem saída tardia. Isso prova **somente a amostra**, não ausência universal de backlog ou correção de toda a instalação. Hipótese de preservar produção nativa ganha suporte; conferência independente segue pendente.
-- **`D2_ANOMALIA_OBSERVADA`**: ao menos uma falta, duplicata, rota errada, observação ilegível, divergência de conteúdo, papel indevido GP/Gestor ou efeito tardio registrado com origem identificável. Preservar registro, operação normal e `HOLD`; não ligar uma segunda fonte.
-- **`D0_INCOMPLETO`**: qualquer cenário sem cobertura mínima por praça, sem vínculo visível ao pedido, amostra curta ou sem tipo de preparo crucial. Não converter campos vazios em “zero problema”.
-- **`PAPER_CENSUS_NOT_YET_COLLECTED`**: nenhum observador comunicou registros de papel; este é o estado atual.
+## Resumo seguro por turno — preencher somente após observação
+Usar o registro local por aliases `A01…A20` ou `J01…J20` enquanto a saída normal acontece; **não** publicar IDs reais, fotos, nomes, itens, notas nem dados fiscais. Ao terminar, comunicar somente este resumo agregado, com testemunhas identificadas **localmente**, sem dados pessoais no repositório:
 
+| Campo por turno | Almoço | Jantar |
+|---|---|---|
+| Data local (AAAA-MM-DD) | Não observado | Não observado |
+| Pedidos disponíveis na janela | Não observado | Não observado |
+| Pedidos consecutivos acompanhados (máx. 20) | Não observado | Não observado |
+| Amostra consecutiva? (`YES/NO/UNKNOWN`) | UNKNOWN | UNKNOWN |
+| Vínculo visual das vias ao mesmo pedido confirmado? | UNKNOWN | UNKNOWN |
+| Todas as praças necessárias acompanhadas? (`ALL_REQUIRED/PARTIAL/UNKNOWN`) | UNKNOWN | UNKNOWN |
+| Itens/quantidades conferidos? (`YES/NO/UNKNOWN`) | UNKNOWN | UNKNOWN |
+| Observações do pedido conferidas? (`YES/NO/UNKNOWN`) | UNKNOWN | UNKNOWN |
+| Saída tardia verificada até o fim do intervalo relevante? | UNKNOWN | UNKNOWN |
+| Pedidos de uma praça / várias praças / praça desconhecida | Não observado | Não observado |
+| Famílias efetivamente vistas (`SUSHI_1`, `SUSHI_2`, `HOT_ROLL`, `KITCHEN`) | Não observado | Não observado |
+| Exceção de combinado dupla sem ambiguidade? | UNKNOWN | UNKNOWN |
+| **Categorias** de anomalia observadas (sem repetir tipo) | Não observado | Não observado |
+
+Esse quadro é **modelo**, não uma observação. `Não observado` e `UNKNOWN` jamais equivalem a zero ou a conformidade. O campo de tipos de anomalia agrupa **categorias distintas por turno**; ele não mede a quantidade de ocorrências nem de papéis. Conservar a contagem e o vínculo individual **somente no acompanhamento presencial**. A informação agregada pode ser avaliada offline pelo classificador `tools/comandas_passive_paper_census_review_only.cjs`, cujo contrato aceita apenas dois turnos, campos fechados e nenhum identificador pessoal.
+
+## Classificação ao final — alinhada ao classificador offline da PR #135
+- **`D1_SAMPLE_CONFORME_RELATADA_NAO_AUTENTICADA`**: em **ambos os turnos**, foram relatados todos os pedidos consecutivos disponíveis até o máximo de 20, vínculo visual, cobertura de todas as praças necessárias, comparação de itens e notas e verificação de papel tardio. **Além disso**, cada turno deve incluir amostras de **uma e múltiplas praças**, todas as quatro famílias (`SUSHI_1`, `SUSHI_2`, `HOT_ROLL`, `KITCHEN`) e nenhuma ambiguidade sobre combinado dupla. Sem categorias de anomalia relatadas. **É somente classificação provisória do relato**, não prova autenticada de papel, de ausência global de duplicações ou de correção operacional; o sistema permanece `HOLD`.
+- **`D2_ANOMALIA_RELATADA_REQUER_APURACAO`**: qualquer categoria de falta, duplicação, praça errada, conteúdo/observação divergente, saída tardia, papel inesperado GP/Gestor, ilegibilidade ou origem desconhecida **relatada**. A divergência explícita `NO` em conteúdo ou observações também é D2 mesmo que a lista de categorias esteja vazia. Investigar localmente sem reimprimir, limpar fila ou expor dados. D2 **não autentica a causa física ou a origem**.
+- **`D0_EVIDENCE_INSUFFICIENT`**: não houve observação ou faltou um dos turnos, a amostra de pedidos disponíveis não foi consecutiva/completa até 20, alguma conferência está `UNKNOWN`, falta uma família ou um dos tipos de composição, houve ambiguidade, ou o registro não atende o esquema seguro. **D0 não significa que a impressora falhou**. Quando houver menos de 20 pedidos disponíveis, observar todos é permitido; ainda assim, faltando cobertura de famílias/rotas o resultado fica D0.
+- **`PAPER_CENSUS_NOT_YET_COLLECTED`**: estado factual da operação enquanto nenhuma testemunha informar observações, independentemente de resultados de teste sintético.
+
+O classificador só produz rótulos `D0/D1/D2` sobre dados *declarados*, sempre com `review_status=HOLD`, `native_paper_sample_proven=false` e sem qualquer permissão de impressão, reimpressão, SQL, sequência, serviço, deploy ou transição de etapa. O protocolo humano e a revisão da prova física são etapas **externas** ao classificador.
 ## Fronteira de autorização e futuro
 A autorização humana permite **organizar e realizar observação visual passiva**; não autoriza emissão de ticket adicional, acesso SQL, obtenção de token, mudanças de impressão, deploy, merge nem automação física. A consulta agregada `DLV_IFO→CDCAIXA` permanece **não autorizada** e é uma decisão separada. Não declarar `FIRST_NATIVE_DISPATCH=PROVEN` apenas pelo censo — mesmo com D1, o callsite continua desconhecido, apenas deixa de ser obrigatório **se** a arquitetura preservar integralmente a via nativa.
 
