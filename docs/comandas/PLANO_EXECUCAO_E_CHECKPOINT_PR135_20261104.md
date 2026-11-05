@@ -404,6 +404,30 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 
 **Não avançar etapa:** `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `STAGE_5=PENDING`, `PRODUCTION=HOLD`. Efeitos reais nesta decisão: **nenhum**. A CI do último commit documental `0c824c15` estava `completed` na consulta que antecedeu a atualização; verificar o resultado no SHA, sem inferir sucesso de um job parcial. A publicação desta decisão inicia nova CI, a verificar separadamente.
 
+## Etapa 3 — auditoria do piloto em sombra: capacidade de arquivo e dados sensíveis (04/11/2026)
+
+**Decisão: PILOTO NO HOST BLOQUEADO, mesmo que a CI esteja verde.** Inspeção apenas de código Git/manifesto; nenhum novo acesso ao Reader/SQL/serviços/arquivos operacionais ou à impressora do `CAIXA_MOOCA`.
+
+### Risco concreto descoberto
+
+A candidata histórica de homologação propunha copiar os **34 arquivos** do manifesto para uma pasta nova e executar um piloto em sombra no caixa. Contudo, o manifesto exato `docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json` (blob `25a8d83b737a0eed1f815dd8f6907bb152d8b68d`) **declara a capacidade `file_write`** em `runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs` (blob `8e75fea85437d063c2f6ee2df09ee33962d42ce6`).
+
+Inspeção do consumidor:
+- Linhas 535–553: faz `fs.existsSync` em `C:\\ProgramData\\TataComandaReader\\state\\tata-sequence-state.json` e, quando existe, **lê esse estado operacional**, mesmo que o resto do piloto esteja em pasta isolada. Não há acesso a esse estado autorizado para um novo piloto.
+- Linhas 138–145 e 594: a função `writeAtomicJson(outPath,result)` cria/renomeia arquivos **quando é passado um caminho de saída**. Sem caminho não executa esta gravação, mas a capacidade existe e não é restringida por sandbox próprio.
+- Linhas 555–595: o `result` inclui `order_observations`, IDs e outros dados derivados do evento e é serializado integralmente em `stdout`, o que **pode vazar informações de pedidos** em captura de logs, mesmo sem impressão.
+- Este código não foi executado nesta revisão. **Não há prova de que tenha ocorrido escrita ou exposição real**; a conclusão é risco de desenho. O contrato de sequência real/atestação permanece desligado.
+
+### Contramedida aplicada nesta PR
+
+O documento de homologação `docs/comandas/CANDIDATA_FINAL_HOMOLOGACAO_20261102.md` foi atualizado no commit `9b65e1f6` para declarar que o passo "piloto em pasta nova" **não está autorizado nem é seguro como descrito**. Nenhuma mudança no consumidor pinado, seu manifesto, hashes, Reader instalado ou host; não reescrever o manifesto de 26+8 arquivos para aparentar integridade após mudança.
+
+**Portões obrigatórios para uma proposta futura:** remover/redirecionar leituras de `ProgramData` e qualquer estado do Reader, confinar escrita a diretório novo isolado, não transportar notas/IDs para `stdout` ou log sem proteção/sanitização, verificar a identidade pinada do manifesto, executar primeiro apenas dados fictícios em CI, e obter autorização nova para qualquer leitura de evento real ou execução em `CAIXA_MOOCA`. Imprimir, reservar sequência, tocar spooler/SQL e substituir o Reader continuam proibidos.
+
+**Próxima rota sem risco operacional:** usar a cadeia offline existente `tools/comandas_cadeia_nativa_v1_offline.cjs` somente em CI para rever a separação das vias, enquanto o censo de papel natural já autorizado recebe prova por observadores presenciais. Reavaliar eventual piloto sombra **apenas depois** de atender o gate de isolamento; não confundir CI de motor com autorização de manipular dados reais.
+
+**Estado consolidado:** `STAGE_3=IN_PROGRESS`; `REAL_NATIVE_PKS=OBSERVED`; `PAPER_CENSUS=NOT_OBSERVED`; `EXACT_CANDIDATE_PLAN=UNKNOWN`; `SEMANTIC_REVISION=UNKNOWN`; `HOST_SHADOW_PILOT=BLOCKED`; `PRINT=HOLD`; `READER_CUTOVER=HOLD`. Última CI do código/documento anterior no SHA `def025bd`: run `#41954939296` estava `completed` durante esta edição, conclusão `success`. O commit desta atualização do plano exige CI própria.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -425,4 +449,5 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 - **04/11/2026 — ETAPA 3, SQL UNIQUE catálogo preparado (NÃO EXECUTADO):** arquivo `comandas_reader_join_unique_catalog_REVIEW_ONLY.sql` apenas `sys.*`; verificador adversarial de chaves `UNIQUE` com 26 casos PASS Linux+Windows, CI #41951271651 **completed/success** no commit `15d9a052`. Metadados reais e plano da candidata seguem `UNKNOWN`; nenhum SQL operacional/serviço/impressora modificado. PR #135 DRAFT/HOLD, Etapa 3 em andamento. Novo SHA documental requer CI própria.
 - **04/11/2026 — ETAPA 3, autorização de catálogo consumida:** uma consulta `sys.*` na instância `(local)\\SQLEXPRESS` de `CAIXA_MOOCA` confirmou 4 PKs `UNIQUE` habilitadas/unfiltered em COMANDAVEN, VENDAREST, ITCOMANDAVEN e PRODUTO (385 linhas de catálogo; 116 índices). Prova: `docs/comandas/ITAIM_SQL_JOIN_UNIQUE_CATALOG_PROOF_20261104.md`, commit `56b63fa4`. Sem pedidos, impressão, serviço, novo plano ou bloqueio operacional. `JOIN_UNIQUE_CATALOG=OBSERVED_DIRECTLY`; Etapa 3 DRAFT/HOLD; novo SHA documental ainda requer CI própria.
 - **04/11/2026 — ETAPA 3, diferença de evidência e rota mais econômica:** revalidadas PKs reais; análise concluiu que insistir em novo ensaio `SERIALIZABLE` antes do censo de papel não é a rota de menor risco. Provisoriamente conservar produção nativa + Conferência em sombra. Decisão D0/D1/D2 condicionada somente ao censo físico, ainda não entregue; SQL plano/custos e completude da revisão continuam UNKNOWN. Sem mudança operacional; PR DRAFT/HOLD. O commit desta alteração requer CI própria.
+- **04/11/2026 — ETAPA 3, piloto sombra histórico bloqueado por revisão de capacidade:** manifesto 26+8 inclui consumidor V7.14 com `file_write`; fonte `8e75fea8` acessa estado absoluto do Reader, aceita `outPath` para escrita e imprime payload potencialmente sensível em `stdout`. Proteção documental da homologação commit `9b65e1f6`; sem execução em host, SQL, eventos ou impressão. `HOST_SHADOW_PILOT=BLOCKED` até isolamento e nova autorização. Censo físico ainda ausente, PR DRAFT/HOLD, Etapa 3 EM_ANDAMENTO; CI do novo SHA a verificar.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
