@@ -70,3 +70,13 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Continuidade L2–L8:** nenhuma alteração nos gates anteriores. A correção de `SKIPPED_LOCKED` continua exclusiva do laboratório, com testes 7/7 aprovados, sem implantação.
 
+## Checkpoint 05/11 — aquisição V2 e horários de abertura sem fuso
+
+**Etapa atual: L1/N2–N3. Aceite operacional V1: 0/8.** Auditoria estrutural no código instalado `tata_reader_continuous_watch_candidate_v2.ps1`, sem acessar SQL ou arquivo bruto de pedido. Identificadas diferenças materiais ante a candidata PR #135: filtro largo `IDORGCMDVENDA LIKE DLV[_]%` em vez da igualdade `DLV_IFO`; `TopOrders=50` com desempate incompleto por comanda; serialização PowerShell `ConvertTo-Json` ainda não reconciliada com `JSON.stringify` em observações que contêm apóstrofos. PR #135 tem consulta exata e serializador de laboratório, mas **não foram instalados/validados em fonte real**.
+
+**Campo, metadados:** Reader heartbeat 05/11 01:19 BRT `RUNNING`, lote `OK`, nenhuma falha consecutiva; checkpoint atualizado. Das 250 entradas emitidas, 31 têm data de abertura textual em 03/11 e 219 em 04/11; nenhuma em 05/11. **Todas as 250 datas de abertura são horários sem offset** (`yyyy-MM-ddTHH:mm:ss.fffffff`); último relógio textual **04/11 22:59**, não 19:59. A primeira conversão de `Date.parse` era incorreta; foi corrigida pela leitura do formato original. A biblioteca existente `tata_source_time_v1.cjs` já exige política explícita de origem para converter horas sem fuso; preservar esse bloqueio.
+
+**Diferença e critérios N2/N3 documentados em:** [`DELIVERYOS_L1_INSTALLED_V2_VS_PR135_DIFFCHECK_20261105.md`](./DELIVERYOS_L1_INSTALLED_V2_VS_PR135_DIFFCHECK_20261105.md). Nenhum recibo sanitizado **atual** de revisão completa foi identificado nos caminhos genéricos de evidência do caixa; os artefatos de provas nomeadas encontrados são históricos de outubro. **Não** promover evidência histórica para fato de novembro. Subgates N2/N3/N4/N5 permanecem HOLD, sem prova de completude, origem nem autorização de Home.
+
+**Próximo passo de maior valor:** somente uma verificação real de revisão por canal local expressamente autorizado, sanitizada antes de qualquer exportação, com contagem/ligação dos itens, observações e hash canônico; e comprovação independente da política de horário. Nenhum SELECT ou sensor novo no caixa antes do gate. A recuperação do projetor permanece isolada com 7/7 testes aprovados em laboratório.
+
