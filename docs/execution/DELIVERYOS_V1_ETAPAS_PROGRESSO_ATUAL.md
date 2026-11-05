@@ -44,3 +44,19 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 **L1/N2–N3:** procurar recibo existente e previamente sanitizado para uma única revisão, que demonstre itens, quantidades e observações completos, com origem e hash sem expor identificadores/PII. Em paralelo, reconciliar **somente em código versionado e ambiente isolado** a implementação do projetor, antes de qualquer correção operacional. Não ativar novo coletor, SQL, impressão, task ou programa visível no caixa.
 
 **Regra de comunicação:** em cada continuação, indicar etapa L1–L8 e subgate, avanço executado, evidência `CODE_READY / CI_PASS / FIELD_PROVEN`, bloqueio, próxima ação. Não declarar V1 completa com 0/8 aceites de campo.
+
+## Checkpoint 05/11 — recuperação de projeção em laboratório
+
+**Etapa:** permanece **L1/8 — Reader nativo, N2/N3 em HOLD**. Não há nenhum dos oito aceites completos em campo. A correção abaixo é uma frente adjacente da projeção/relatórios, útil para a futura L4, **não é evidência de itens/observações reais**.
+
+**Causa reproduzida a partir do código instalado, somente leitura:** no `CAIXA_MOOCA`, `shadow/live_shadow_consumer_loop_v1.cjs` chama `runProjector()` apenas quando surge envelope novo ou no bootstrap. `projectionBootstrapped=true` é definido inclusive após retorno `SKIPPED_LOCKED`. Sem novos envelopes, o processo fica vivo sem retentar a projeção. O `continuous_reporting_projector_v1.cjs` usa lock exclusivo e uma janela de 120 s; o primeiro `SKIPPED_LOCKED` ocorreu cerca de 66 s depois do mtime, logo a hipótese anterior de lock órfão naquele instante era **não comprovada**. O auto-unlock do projetor por idade (sem identidade do detentor) é risco de concorrência separado.
+
+**Código/prova nova na PR #137:**
+- `labs/reporting/host-shadow-loop-lab-recovery-v1.cjs`: variante **LAB-ONLY** da lógica da versão encontrada no caixa; exige raiz temporária com marcador exclusivo, recusa hostname `CAIXA_MOOCA` e ciclos limitados. Reproduz baseline negativo e introduz retentativa com intervalo somente no laboratório. Verifica lock local antes de iniciar o projetor; lock antigo/incerto => `HOLD_STALE_LOCK_UNVERIFIED`, sem apagar, renomear ou chamar o processo.
+- `tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs`: fixtures inteiramente inventados e descartados, sem pedidos, SQL ou login. Controle original: **1 tentativa / fica em SKIPPED_LOCKED**. Candidato: **2 tentativas / recupera PROJECTED** quando a trava deixa de impedir a execução; bloqueio persistente tem chamadas limitadas; locks recente/antigo são preservados, sem nova execução; sem marcador o programa recusa rodar.
+- [GitHub Actions #41966451312](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41966451312): **4/4 jobs SUCCESS**; log `TATA_REPORTING_LOCKED_RETRY_LAB_PASS 7/7 SYNTHETIC_ONLY`. Demais suites do projeto permanecem aprovadas. Principal commit de testes `436ab8e8065f08f30b0beb5f23b4d9f3ccc80013`.
+
+**Limite:** prova `LAB_TEST_PASS` de algoritmo em arquivos fictícios, não prova de segurança do protocolo de lock do projetor em produção. O próprio projetor instalado pode remover um lock antigo só pela idade. Nenhuma variante foi copiada/instalada/iniciada no caixa; nenhuma alteração em processos, lock, impressão, arquivos de pedido, Home, Edge ou serviço; PR #135 e #137 seguem DRAFT/HOLD.
+
+**Próximo passo:** localizar/projetar recibo **já sanitizado** de uma revisão única para fechar N2/N3, sem ler dados de cliente. Em paralelo, antes de homologar retentativa real, corrigir o lock no código da fonte instalada sob revisão de concorrência/rollback e obter autorização pontual para eventual piloto. Até lá, não usar relatório antigo como indicador de pedido atual.
+
