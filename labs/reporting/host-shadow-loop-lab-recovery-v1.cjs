@@ -127,6 +127,23 @@ function ensureReportingEnvelope(file, eventPath, decisionPath) {
 }
 
 function runProjector() {
+  // Conservative LAB guard: the installed projector can remove age>120s locks
+  // without proving ownership. Never launch it while a lock may be present.
+  const lock=path.join(installRoot,"state","reporting-v1","projector.lock");
+  try {
+    if (fs.existsSync(lock)) {
+      const st=fs.statSync(lock);
+      const age=Date.now()-st.mtimeMs;
+      lastProjectionStatus=(!st.isFile()||!Number.isFinite(age)||age<0||age>=90000)
+        ? "HOLD_STALE_LOCK_UNVERIFIED" : "SKIPPED_LOCKED";
+      lastProjectionError=null;
+      return;
+    }
+  } catch {
+    lastProjectionStatus="HOLD_LOCK_INSPECTION_FAILED";
+    lastProjectionError=null;
+    return;
+  }
   projectionRuns += 1;
   if (!fs.existsSync(projector)) {
     lastProjectionStatus = "MISSING";
