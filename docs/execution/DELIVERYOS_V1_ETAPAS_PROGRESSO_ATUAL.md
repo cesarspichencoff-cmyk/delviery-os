@@ -124,3 +124,13 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Fronteira:** `CODE_READY + CI_PASS` para endurecimento de laboratório; `FIELD_EXECUTED=NO`, `READ_REAL_ORDER=NO`, `HOME_PUBLISH=HOLD`, `DEPLOY=NO`. PR #137 DRAFT/HOLD. Nenhum serviço, terminal, janela, impressora, lock ou banco do `CAIXA_MOOCA` foi alterado. L2–L8 preservadas.
 
+## Checkpoint 05/11 — vínculo de metadados de um evento nativo
+
+**Etapa atual: L1 de L8, N2/N3 HOLD, 0/8 aceites de campo.** Para reduzir a lacuna entre o Reader em funcionamento e o recibo N2/N3, foi criada uma função **sem qualquer I/O** em `runtime/reporting/native_reader_existing_event_binding_v1.cjs` que valida o checkpoint inteiro, seleciona uma única revisão estável e emitida e liga sua identidade/hash ao evento fornecido, sem publicar a chave e sem conceder `ordersPublishable`.
+
+**Prova nova de campo estritamente sobre metadados:** leitura somente do checkpoint V2 no `CAIXA_MOOCA`: 250/250 entradas válidas no escopo `0001/01`, únicas, ordenadas, estabilidade >=2 e hash de emissão correspondente. Usando a fórmula de nome de arquivo do watcher instalado, `get_file_info` confirmou a existência do arquivo de **uma** revisão selecionada (5.227 bytes). **Arquivo de evento não foi aberto; itens, notas e hash interno não foram lidos.** Não houve comandos/processos/efeitos no host. Esta é a primeira ligação concreta **checkpoint → arquivo emitido**, não uma atestação de origem ou de completude.
+
+**Prova sintética em CI:** [GitHub Actions #41974771649](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41974771649) **4/4 success**, incluindo `NATIVE_READER_EXISTING_EVENT_BINDING_PASS 16/16 SYNTHETIC_ONLY` e os 11 casos N2/N3 anteriores. A tentativa de editar o YAML do workflow foi bloqueada pelas configurações de segurança; em alternativa, a suíte foi integrada ao entrypoint de testes já existente, sem editar permissões de Actions.
+
+**Documento de gate:** [`DELIVERYOS_READER_EXISTING_EVENT_BINDING_GATE_20261105.md`](./DELIVERYOS_READER_EXISTING_EVENT_BINDING_GATE_20261105.md). **Próxima fronteira:** autorização e prova de execução local invisível para comparar em memória uma única revisão já emitida, com resultado apenas sanitizado. Uma leitura desse arquivo ou execução no caixa não foi autorizada por esta implementação, e a atestação independente da origem/isolamento SQL permanece pendente. Não criar terceiro coletor, não copiar evento bruto, não mexer em impressoras/serviço/Edge. L2–L8 permanecem no plano original.
+
