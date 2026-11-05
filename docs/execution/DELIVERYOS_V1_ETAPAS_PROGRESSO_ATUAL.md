@@ -104,3 +104,13 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Próxima fronteira material:** garantir **canal local de prova previamente autorizado e comprovadamente silencioso** que forneça uma única revisão real à função em memória e destrua o conteúdo bruto após produzir recibo sanitizado; confrontar a contagem de itens/notas com evidência da consulta e do esgotamento de linhas, e exigir atestação independente de origem/horário. Até então, o veredito não pode sair de `HOLD`, mesmo com hash autoconsistente.
 
+## Checkpoint 05/11 — executor de recibo N2/N3 silencioso em Windows de laboratório
+
+**Etapa atual: L1 de L8 — N2/N3 em HOLD; 0/8 aceites de campo.** A fonte de pedidos não foi ativada na Home. A CI confirmou um caminho completo **somente de laboratório** entre um evento fictício, o verificador N2/N3, um recibo sem dados pessoais e um aplicativo Windows GUI sem console.
+
+**Evidência:** [CI #41970189987](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41970189987) `completed/success`, **4/4 jobs**. `NATIVE_READER_ONE_SHOT_LAB_PASS 10/10 SYNTHETIC_ONLY` (contratos e privacidade); `NATIVE_READER_ONE_SHOT_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII` (lançador Windows `winexe`, um Node filho, dez amostras sem janela visível e foco preservado na VM). Arquivos: `labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs`, `labs/reader-proof/NativeReaderOneShotLabLauncher.cs`, `tests/reporting/build-reader-one-shot-lab-fixture.cjs`, `tests/reporting/run-reader-one-shot-lab-tests.cjs`. Todos recusam ou dependem de proteção LAB; o lançador/CLI **recusam CAIXA_MOOCA**.
+
+**Limite material:** confirmação de laboratório ≠ ausência absoluta de flash em campo, ≠ leitura de revisão real, ≠ autorização SQL, ≠ prova de completude/joins de origem. Nenhum executável ou arquivo novo foi copiado/instalado/rodado no caixa. O recibo sempre mantém `ordersPublishable=0` e `sourceIdentityVerified=false`; nenhuma observação de cliente foi exportada.
+
+**Plano de passagem:** [`DELIVERYOS_READER_N2N3_ONE_SHOT_LAB_PROOF_20261105.md`](./DELIVERYOS_READER_N2N3_ONE_SHOT_LAB_PROOF_20261105.md). O próximo gate exige uma variante de uso único **autorizada separadamente**, com acesso mínimo a um evento **já emitido**, processo local comprovadamente silencioso e prova de origem/isolamento da consulta, sem abrir shell no caixa. Até esses itens estarem comprovados, **N2/N3=HOLD**, L1 ainda parcial, L2–L8 preservadas.
+
