@@ -38,6 +38,30 @@ try{
   assert.equal(typeof run,"function");
   assert.equal(typeof runConferenceOnlyV1,"function");
  });
+ test("offline pair CLI suppresses sensitive filename in exception output",()=>{
+  const marker="PRIVATE_ORDER_IDENTIFIER_MUST_NOT_LEAK";
+  const nonexistent=path.join(work,marker+".json");
+  const runner=path.join(output,"tools/comandas_shadow_offline_run_v1.cjs");
+  const p=spawnSync(process.execPath,[runner,nonexistent,nonexistent],
+     {encoding:"utf8",timeout:15000});
+  assert.equal(p.error,undefined);
+  assert.equal(p.status,1);
+  assert.equal(p.stdout,"");
+  assert.equal(p.stderr,"SHADOW_PAIR_HOLD\n");
+  assert.ok(!p.stderr.includes(marker));
+ });
+ test("conference-only CLI also suppresses sensitive filename on failed read",()=>{
+  const marker="PRIVATE_CONFERENCE_IDENTIFIER_MUST_NOT_LEAK";
+  const nonexistent=path.join(work,marker+".json");
+  const runner=path.join(output,"tools/comandas_conference_only_shadow_runner_v1.cjs");
+  const p=spawnSync(process.execPath,[runner,nonexistent,nonexistent],
+     {encoding:"utf8",timeout:15000});
+  assert.equal(p.error,undefined);
+  assert.equal(p.status,4);
+  assert.equal(p.stdout,"");
+  assert.equal(p.stderr,"CONFERENCE_ONLY_SHADOW_HOLD\n");
+  assert.ok(!p.stderr.includes(marker));
+ });
  const sources=path.join(work,"sources");fs.mkdirSync(sources);
  const original=load("tata_reader_real_read_cdarvprod_success_20261005_v1.json");
  const replay=load("tata_reader_real_order_unified_replay_success_20261005_v2.json");
