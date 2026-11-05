@@ -137,6 +137,22 @@ check('legacy event quantity change cannot be mistaken for a migration-only chan
  const r=reviewOne(checkpoint,event);
  assert.equal(r.checkpointBound,false);assert.equal(r.ordersPublishable,0);safe(r);
 });
+check('corrupted legacy emitted hash in other entry blocks entire checkpoint',()=>{
+ const {checkpoint,event}=prepare();
+ checkpoint.entries.push({...checkpoint.entries[0],
+  order_key:'0001|01|FICT_OLD|FICT_OLD_COMMAND',
+  last_seen_order_time:'2026-11-04T11:00:00.0000000',
+  emitted_hash:'NOT_A_DIGEST'});
+ const r=reviewOne(checkpoint,event);
+ assert.equal(r.reason,'CHECKPOINT_HASH_OR_STABILITY_INVALID');
+ safe(r);
+});
+check('impossible SQL wall date must not count as validated source time',()=>{
+ const {checkpoint,event}=prepare();
+ checkpoint.entries[0].last_seen_order_time='2026-02-30T11:59:00.0000000';
+ const r=reviewOne(checkpoint,event);
+ assert.equal(r.reason,'SOURCE_TIME_UNVERIFIED');safe(r);
+});
 check('invalid checkpoint is consistently HOLD',()=>{
  for(const cp of [null,{},[],{schema:'unknown',entries:[]}]){
   const r=selectOne(cp);assert.equal(r.state,'HOLD');
