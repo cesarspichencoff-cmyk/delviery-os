@@ -556,3 +556,24 @@ Referências técnicas de leitura: Microsoft [cenários de spooler](https://lear
 4. **Só depois**, propor leitura agregada de eventos por fonte/intervalo e eventual reconciliação por identidade independente, sem nomes de clientes/documentos/pedidos no chat ou GitHub. Não ler agora arquivos brutos, nem presumir relação 1:1 entre spool, Writer, Reader e papel.
 
 **Portões:** `HISTORICAL_DELIVERY_SUSHI_1_KEEP_PRINTED_JOBS=TRUE_ON_20261027`; `HISTORICAL_1086_JOBS=PRINTED_RETAINED_20261022_26`; `CURRENT_KEEP_PRINTED_JOBS=UNKNOWN`; `SPOOL_3356_PAIR_CAUSE=UNKNOWN`; `WINDOWS_QUEUE_API_AS_INDEPENDENT_READONLY_WITNESS=NOT_ELIGIBLE`; `PRINTSERVICE_V886_ON_TARGET=NOT_RUN`; `PRINTSERVICE_EVENTS=NOT_READ`; `ACTIVE_TEK_PRINT_PATH=UNKNOWN`; `PAPER_CENSUS=D0_NOT_OBSERVED`; `STAGE_3=IN_PROGRESS`; `PRINT=HOLD`; `CUTOVER=HOLD`.
+
+
+## Etapa 3 — evolução observada do Reader sem processo remoto (05/11/2026, 01:50 BRT)
+
+**Resultado material:** 13 lotes adicionais do Reader V2 concluídos sem elevar o contador acumulado de falhas, comprovado por duas leituras dos **JSONs de heartbeat já existentes**. Não equivale a prova de revisão SQL íntegra nem de impressão física. `STAGE_3=IN_PROGRESS`, `DRAFT/HOLD`.
+
+| Medida | 01:37:17 BRT | 01:50:15 BRT | Diferença |
+|---|---:|---:|---:|
+| `totals.batches` | 10.069 | 10.082 | +13 |
+| `totals.ok` | 9.529 | 9.542 | +13 |
+| `totals.failed` | 540 | 540 | **0** |
+| `totals.events_emitted` | 4.123 | 4.123 | 0 |
+| `consecutive_failures` | 0 | 0 | 0 |
+
+- O último lote observado no segundo ponto era `#10082`, `OK`, `poll_errors=0`, `exit_code=0`, duração 62.328 ms; `watcher.sha256_verified=true`, identidade de execução/supervisor preservada. Status do consumidor sombra permaneceu `RUNNING`, `processed=4180`, `ready_count=779`, `blocked_count=3401` e `print=false`.
+- Prova **limitada ao intervalo ~13 minutos de madrugada**; falhas históricas de 540 lotes permanecem sem causa, e funcionamento durante almoço/jantar não está atestado. Os contadores de eventos/consumidor não são equivalentes a pedidos físicos.
+- **Meio utilizado:** somente `read_multiple_files` no dispositivo online `CAIXA_MOOCA` de `state/reader-heartbeat-v1.json`, `evidence/shadow-consumer-status.json` e status do observer, sem ler linhas de pedido, sem CMD/PowerShell, sem terminal, sem `Get-PrintJob`, sem Event Log, sem SQL adicional, sem alteração de serviço/impressora/fila ou impressões.
+- Revisão estática adicional confirmou que a V8.86 (`tools/comandas_printservice_metadata_v886_target_windows.ps1`) usa `Start-Job` e `Get-WinEvent -ListLog` **apenas para metadados de configuração**: não consulta eventos 307. O conector remoto não atesta invisibilidade gráfica de `start_process`; **não executar** no caixa enquanto esse requisito não tiver prova e autorização. O canal PrintService e sua ACL continuam `UNKNOWN` no host.
+- A CI do checkpoint anterior #41969523056 (SHA `9399cdbb`) estava `in_progress` na última consulta anterior a esta gravação; não confundir com aprovação. Este novo commit documental exigirá CI própria.
+
+**Próximo portão de maior valor:** censo presencial passivo das vias nativas (até 20 pedidos consecutivos no almoço e até 20 no jantar, sem emitir ou apagar papel) para decidir D0/D1/D2; em paralelo, monitorar somente os heartbeats agregados já existentes para identificar se `totals.failed` cresce na janela de atendimento. Não converter esses dados em atestação de entrega. Diagnóstico de PrintService com processo remoto continua bloqueado por falta de prova de execução invisível, identidade/ACL e autorização específica.
