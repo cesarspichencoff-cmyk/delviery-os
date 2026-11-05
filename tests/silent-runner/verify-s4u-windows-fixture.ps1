@@ -106,10 +106,21 @@ try {
     $result.customerDataExported -ne $false -or
     $result.cmdExecuted -ne $false -or
     $result.processChildren -ne 0){throw 'S4U_PROOF_ENVELOPE_INVALID'}
- $info=Get-ScheduledTaskInfo -TaskName $task -ErrorAction Stop
- if($info.LastTaskResult -ne 0){
-  throw ('S4U_TASK_EXIT_NONZERO_'+$info.LastTaskResult)
+ # 0x41301 means the Scheduler still reports RUNNING while the
+ # fixture has already persisted its result. Wait for the actual exit.
+ $taskCompleted=$false
+ for($i=0;$i -lt 50;$i++){
+  $info=Get-ScheduledTaskInfo -TaskName $task -ErrorAction Stop
+  $state=(Get-ScheduledTask -TaskName $task -ErrorAction Stop).State
+  if($info.LastTaskResult -eq 0 -and [string]$state -ne 'Running'){
+   $taskCompleted=$true;break
+  }
+  if($info.LastTaskResult -ne 267009 -and $info.LastTaskResult -ne 0){
+   throw ('S4U_TASK_EXIT_NONZERO_'+$info.LastTaskResult)
+  }
+  Start-Sleep -Milliseconds 120
  }
+ if(!$taskCompleted){throw 'S4U_SCHEDULER_FINISH_NOT_CONFIRMED'}
  Write-Host ('S4U_DISPOSABLE_WINDOWS_LOCAL_IO_PASS 1/1 S4U_PRINCIPAL 10/10_NO_VISIBLE_HWND NO_FOCUS_CHANGE FICTIONAL_ONLY SESSION_'+$session)
 } finally {
  # The only task touched or removed is the GUID-scoped temporary CI task.
