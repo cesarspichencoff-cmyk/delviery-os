@@ -50,3 +50,4 @@ check('native harness checks foreground',nativeHarness.includes('FOCUS_UNCHANGED
 check('native harness does not install scheduled tasks',!/(Register-ScheduledTask|schtasks\.exe|New-ScheduledTask)/i.test(nativeHarness));
 check('native harness compiles winexe',nativeHarness.includes('/target:winexe'));
 console.log('SILENT_OBSERVER_LAB_CONTRACT_PASS '+passed+'/'+passed+' (STATIC_OFFLINE_ONLY)');
+require('./run-reader-observer-noninteractive-review-tests.cjs');
