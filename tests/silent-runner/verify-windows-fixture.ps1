@@ -170,6 +170,9 @@ try {
  # Does not modify production task definitions or use any Reader/customer files.
  & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Limited
  & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Highest
+ # Compare the *actually observed* SYSTEM+InteractiveToken pairing in a disposable runner.
+ # No task is enabled or started by this metadata-only comparison.
+ & (Join-Path $dir 'verify-system-logon-metadata-windows-lab.ps1')
  Write-Output ('SILENT_OBSERVER_WINDOWS_LAB_PASS '+$total+'/'+$total+' NO_VISIBLE_WINDOWS')
 } finally {
  if($running -and !$running.HasExited){$running.Kill();[void]$running.WaitForExit(2000)}
