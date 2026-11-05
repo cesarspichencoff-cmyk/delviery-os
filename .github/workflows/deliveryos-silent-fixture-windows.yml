@@ -216,7 +216,18 @@ jobs:
             if($rejectedBlob.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
               { throw 'ONE_SHOT_TAMPERED_CHECKOUT_ACCEPTED' }
           } finally { [IO.File]::WriteAllBytes($script,$original) }
-          Write-Host 'NATIVE_READER_LAB_SCRIPT_IDENTITY_PASS 2/2 WRONG_PATH_AND_TAMPER_DENIED'
+          # Negative proof 3: a valid main script with a modified import
+          # must NOT run in the isolated lab. Restore bytes after the check.
+          $module=(Resolve-Path -LiteralPath 'runtime/reporting/native_reader_existing_event_binding_v1.cjs').Path
+          $moduleOriginal=[IO.File]::ReadAllBytes($module)
+          try {
+            [IO.File]::WriteAllText($module,'// TAMPERED_DEPENDENCY_DO_NOT_RUN')
+            $verifiedArgv=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$script+'"'))
+            $rejectedModule=Start-Process -FilePath $guiExe -ArgumentList $verifiedArgv -Wait -PassThru
+            if($rejectedModule.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+              { throw 'ONE_SHOT_TAMPERED_MODULE_ACCEPTED' }
+          } finally { [IO.File]::WriteAllBytes($module,$moduleOriginal) }
+          Write-Host 'NATIVE_READER_LAB_SCRIPT_IDENTITY_PASS 3/3 WRONG_PATH_SCRIPT_AND_DEPENDENCY_TAMPER_DENIED'
           Add-Type -TypeDefinition @'
           using System;
           using System.Runtime.InteropServices;
