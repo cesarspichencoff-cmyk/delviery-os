@@ -95,7 +95,11 @@ function review(input){
       new Set(s.anomalies).size!==s.anomalies.length)
     return outcome('D0_EVIDENCE_INSUFFICIENT','REPORT_SHAPE_OR_PRIVACY_INVALID');
    seen.add(s.window);
-   anomalies+=s.anomalies.length;observed+=s.orders_observed;
+   const reportedTypes=new Set(s.anomalies);
+   // Explicit NO is a conflict category; a matching tag must not double count.
+   if(s.content_compared==='NO')reportedTypes.add('CONTENT_MISMATCH');
+   if(s.notes_compared==='NO')reportedTypes.add('NOTE_OMITTED');
+   anomalies+=reportedTypes.size;observed+=s.orders_observed;
    const sampleComplete=s.orders_available>0&&
      s.orders_observed===Math.min(20,s.orders_available)&&
      s.consecutive_sample==='YES'&&s.identity_confirmed==='YES'&&
@@ -109,9 +113,6 @@ function review(input){
    if(!sampleComplete||!mixComplete||!familiesComplete)complete=false;
    if(!mixComplete)allMix=false;
    if(!familiesComplete)allFamilies=false;
-   // Directly reported conflict even if anomaly array was left empty.
-   if(s.content_compared==='NO'||s.notes_compared==='NO')
-    anomalies++;
   }
   const counts={reported_anomalies:anomalies,
     shifts_reported:seen.size,observed_orders:observed,

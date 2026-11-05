@@ -604,3 +604,12 @@ A estabilidade das contagens e do `mtime`, combinada à retenção positiva **hi
 **Prova de CI:** workflow #41972182497 terminou `completed/success` no HEAD anterior `2f91a21605efb73776aca01a7a211eded564f111` (Linux/Windows). Este novo commit de documentação deve passar em sua própria CI antes de declarar validação do SHA novo.
 
 **Gate mantido:** `PAPER_CENSUS=NOT_OBSERVED`, `STAGE_3=IN_PROGRESS`, `PR=DRAFT_HOLD`, `PRINT=HOLD`, `CUTOVER=HOLD`. Não foi executado nenhum processo no `CAIXA_MOOCA`, nem aberta janela CMD/PowerShell, lido pedido/EVTX/SPL/SHD ou alterado spooler, SQL, impressora, serviço ou Teknisa. Próximo avanço depende de amostras reais presencialmente testemunhadas no almoço e jantar, sem novas emissões de papel.
+
+
+## Etapa 3 — correção de contagem de anomalias duplicadas no classificador offline (05/11/2026)
+
+**Falha real de contabilização, em fixtures:** a rotina de censo `comandas_passive_paper_census_review_only.cjs` somava tags do array `anomalies` e acrescentava somente uma unidade quando `content_compared=NO` **ou** `notes_compared=NO`. Isso contava duas divergências de conteúdo/notas como uma e, se o mesmo tipo já estivesse em `anomalies`, contava uma divergência duas vezes. Esse erro alterava `reported_anomalies`, não a classificação conservadora `D2`, nem os gates de impressão.
+
+**Correção mínima:** reunir **tipos distintos por turno** em `Set`, incluindo `CONTENT_MISMATCH` para `content_compared=NO` e `NOTE_OMITTED` para `notes_compared=NO`; somar a quantidade de tipos por turno, sem colapsar resultados de turnos diferentes e sem converter tipos em número de incidentes. O protocolo humano agora explicita a regra; quatro testes adversariais foram adicionados (52→56). O mesmo tipo em ambos os turnos conta uma vez em cada turno. Todos os resultados permanecem `review_status=HOLD`, sem prova física autenticada e sem efeitos externos.
+
+**Verificação da mudança:** workflow Linux/Windows da PR já inclui `node tools/verificar_comandas_passive_paper_census_review_only.cjs` em ambos os jobs; CI do novo SHA deverá confirmar `56/56` e demais regressões. Nenhum comando foi executado em CAIXA_MOOCA, Foxxy, SQL, spooler, impressoras, GP/Teknisa ou rede de produção; atualização apenas na branch draft. `PAPER_CENSUS=NOT_OBSERVED`; `STAGE_3=IN_PROGRESS`; `PRINT=HOLD`; `CUTOVER=HOLD`.

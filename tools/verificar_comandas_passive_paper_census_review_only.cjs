@@ -245,6 +245,26 @@ test('nominal D1 is still self reported even with complete four-family sample',(
  assert.equal(r.preparation_family_coverage_reported,true);
  assert.equal(r.native_paper_sample_proven,false);
 });
-if(passed!==52)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+test('both item and note mismatch NO count as two distinct reported categories',()=>{
+ const x=baseline();x.shifts[0].content_compared='NO';x.shifts[0].notes_compared='NO';
+ assert.equal(check(x,D2).reported_anomalies,2);
+});
+test('explicit mismatch tag and matching NO count as one category',()=>{
+ const x=baseline();x.shifts[0].content_compared='NO';
+ x.shifts[0].anomalies=['CONTENT_MISMATCH'];
+ assert.equal(check(x,D2).reported_anomalies,1);
+});
+test('two mismatch tags with matching NO flags count as two categories',()=>{
+ const x=baseline();x.shifts[0].content_compared='NO';
+ x.shifts[0].notes_compared='NO';
+ x.shifts[0].anomalies=['CONTENT_MISMATCH','NOTE_OMITTED'];
+ assert.equal(check(x,D2).reported_anomalies,2);
+});
+test('same anomaly type reported in each distinct shift counts once per shift',()=>{
+ const x=baseline();x.shifts[0].anomalies=['DUPLICATE'];
+ x.shifts[1].anomalies=['DUPLICATE'];
+ assert.equal(check(x,D2).reported_anomalies,2);
+});
+if(passed!==56)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');
