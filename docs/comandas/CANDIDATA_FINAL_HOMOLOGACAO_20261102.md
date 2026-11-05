@@ -1,6 +1,12 @@
 # TATÁ Comandas — candidata final de homologação (02/11/2026)
 
-**PR #135, branch `audit/comandas-native-chain-20261102`. DRAFT, sem merge.** A unidade de homologação é o
+**PR #135, branch `audit/comandas-native-chain-20261102`. DRAFT, sem merge.**
+
+**AVISO DE SEGURANÇA, 04/11/2026 — PILOTO EM HOST SUSPENSO, SEM AUTORIZAÇÃO.** O item 1 abaixo ("piloto em sombra numa pasta nova do caixa") é **plano histórico**, não receita executável nem autorização vigente. Auditoria do blob Git `8e75fea85437d063c2f6ee2df09ee33962d42ce6` de `runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs` encontrou: (a) tentativa de ler estado em caminho **absoluto operacional** `C:\\ProgramData\\TataComandaReader\\state\\tata-sequence-state.json` quando presente (linhas 535–553); (b) capacidade de gravar JSON por `writeAtomicJson` se houver `outPath` (linhas 138–145, 594); (c) saída JSON integral em `stdout` (linhas 555–595), potencialmente com observações de pedidos e PII. O manifesto `CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json` **já declara `file_write` para esse consumidor**, portanto dizer "34 arquivos sem qualquer efeito de arquivo" seria falso.
+
+**GATE ADICIONAL OBRIGATÓRIO ANTES DE PILOTO:** separar a execução de consumo de dados reais da execução sintética; proibir leitura de `ProgramData`/estado do Reader por candidato ou teste; proibir qualquer gravação fora de destino novo, isolado e expressamente aprovado; sanitizar `stdout` e logs antes de expor evento de cliente; assegurar que não haja SQL adicional, serviço, spooler, sequência ou impressão; exigir revisão de integridade do manifesto após qualquer mudança e **autorização operacional nova e específica** antes de usar a máquina. Não foram feitas alterações no consumidor nem no host nesta auditoria. **SOMENTE CI/offline com dados fictícios permanece permitido.** O item 1 e qualquer etapa posterior continuam `HOLD`, independentemente de CI verde.
+
+ A unidade de homologação é o
 manifesto `docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json`: **26 arquivos de código + 8 de
 dados**, identidade byte a byte (blob git), todos `-text`, sem processo filho, rede, SQL, spooler ou impressão.
 
