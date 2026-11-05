@@ -33,6 +33,25 @@ check('selects one stable emitted V2 filename privately, with no field claim',()
   'FICT_COMMAND_'+event.snapshot_hash+'.json');
  assert.equal(r.sourceVerified,false);assert.equal(r.checkpointBound,false);
 });
+check('private descriptor never appears in generic JSON logs',()=>{
+ const {event,checkpoint}=prepare();
+ const candidate=selectOne(checkpoint);
+ const json=JSON.stringify(candidate);
+ assert.equal(candidate.privateDescriptor.event_filename,
+  'FICT_COMMAND_'+event.snapshot_hash+'.json');
+ assert.equal(Object.keys(candidate).includes('privateDescriptor'),false);
+ assert.equal(Object.getOwnPropertyDescriptor(candidate,'privateDescriptor').enumerable,false);
+ for(const secret of ['FICT_SALE','FICT_COMMAND',event.snapshot_hash])
+  assert.equal(json.includes(secret),false);
+ assert.equal(candidate.ordersPublishable,0);
+});
+check('sanitized result remains without a private descriptor after binding',()=>{
+ const {checkpoint,event}=prepare();
+ const r=reviewOne(checkpoint,event);
+ assert.equal(r.privateDescriptor,null);
+ assert.equal(JSON.stringify(r).includes('FICT_COMMAND'),false);
+ assert.equal(JSON.stringify(r).includes(event.snapshot_hash),false);
+});
 check('real-proof-shaped but synthetic event gets sanitized checkpoint binding',()=>{
  const {checkpoint,event}=prepare(),raw=JSON.stringify(event);
  const r=reviewOne(checkpoint,event);
