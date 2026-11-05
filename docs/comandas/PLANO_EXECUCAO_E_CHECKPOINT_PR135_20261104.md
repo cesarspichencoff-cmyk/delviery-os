@@ -360,6 +360,27 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 
 **Gate 3 continua aberto:** `LIVE_UNIQUE_KEYS_AUTHENTICATED=UNKNOWN`; `CANDIDATE_EXACT_SQL_PLAN=UNKNOWN`; `SERIALIZABLE_WRITER_IMPACT=UNKNOWN`; `NATIVE_SEMANTIC_REVISION=UNKNOWN`; `PAPER_CENSUS_WORLD_RESULT=NOT_OBSERVED`; `PRODUCTION_PRINT=HOLD`. A próxima ação de maior valor **não é adicionar mais cenários sintéticos**: é obter, quando César autorizar expressamente, **somente os metadados de índice** e separar a avaliação do plano real/risco de writes; em paralelo, concluir o censo físico já autorizado **por observador presente**. Não usar resultado dessa consulta como autorização de execução do SELECT candidato ou alteração da impressão nativa. Preservar Cozinha/Sushi nativas e Conferência apenas em sombra.
 
+## Etapa 3 — catálogo real PK UNIQUE observado com autorização explícita (04/11/2026)
+
+**MUDANÇA DE EVIDÊNCIA:** `JOIN_UNIQUE_CATALOG=OBSERVED_DIRECTLY` nas quatro tabelas `TEKNISA`. **Etapa 3 permanece `EM_ANDAMENTO` / PR #135 `DRAFT/HOLD`.** O novo fato encerra **apenas a dúvida sobre presença e colunas das chaves únicas no esquema observado**, não autentica a revisão da comanda nem autoriza consulta operacional, impressão ou cutover.
+
+**Autorização limitada de César:** exclusivamente uma consulta `SELECT` de metadados `sys.*` do banco Teknisa, sessão isolada e somente leitura, sem pedidos, serviços ou impressoras. Foi executada uma única consulta em `CAIXA_MOOCA` online; **não** no Foxxy. ADO.NET com `Integrated Security=SSPI`, `Pooling=False`, `Connect Timeout=5`, `CommandTimeout=8`; conexão à instância `(local)\SQLEXPRESS`, banco `teknisa`. Comando PowerShell `-NoProfile -NonInteractive -WindowStyle Hidden` solicitado, sem inspeção gráfica de piscadas. `SqlConnection.Database` foi observado; o login SQL visto pelo servidor não foi reconsultado de forma independente. O processo terminou e descartou a conexão. Não houve segunda consulta SQL.
+
+**Fonte exata:** `tools/comandas_reader_join_unique_catalog_REVIEW_ONLY.sql` (blob `fed24c7180c97cd9037b6c6c6cb372fd6c9d3e16`), validado com um único `SELECT` de `sys.schemas`/`sys.tables`/`sys.indexes`/`sys.index_columns`/`sys.columns`. **Prova durável detalhada:** [ITAIM_SQL_JOIN_UNIQUE_CATALOG_PROOF_20261104.md](ITAIM_SQL_JOIN_UNIQUE_CATALOG_PROOF_20261104.md) (commit `56b63fa4`).
+
+**Resultado real:** 385 registros de metadados, 116 índices, **4 índices únicos, todos `CLUSTERED`/PK, ativos, não hipotéticos, não filtrados**:
+
+| Tabela | PK única observada | Colunas da chave |
+|---|---|---|
+| `COMANDAVEN` | `PK_COMANDAVEN` | `CDFILIAL, NRVENDAREST, NRCOMANDA` |
+| `VENDAREST` | `PK_VENDAREST` | `CDFILIAL, NRVENDAREST` |
+| `ITCOMANDAVEN` | `PK_ITCOMANDAVEN` | `CDFILIAL, NRVENDAREST, NRCOMANDA, NRPRODCOMVEN` |
+| `PRODUTO` | `PK_PRODUTO` | `CDPRODUTO` |
+
+**Interpretação precisa:** pela estrutura observada e pelas igualdades da consulta candidata *atual*, `VENDAREST` e `PRODUTO` não podem multiplicar uma correspondência por chave; `COMANDAVEN` tem identidade única; `ITCOMANDAVEN` admite naturalmente vários itens por comanda, mas não dois itens com a mesma **chave completa de linha**. Isso enfraquece a hipótese de multiplicação por duplicatas nativas dessas chaves; não garante que todas as linhas de item existam, que o JOIN não omita dados ou que o Reader observe uma revisão lógica completa. O ensaio sintético de 30 casos permanece uma proteção defensiva, não uma descrição do que foi observado no banco.
+
+**Fronteira de prova:** `UNIQUE_PK_KEYS_DIRECT_CATALOG=OBSERVED`; `CANDIDATE_SQL_PLAN=UNKNOWN`; `WRITER_WAIT_AND_LOCK_IMPACT=UNKNOWN`; `SPLIT_COMMITS_NATIVE_REVISION=UNKNOWN`; `IFOOD_INDEPENDENT_IDENTITY=UNKNOWN`; `PAPER_CENSUS=NOT_OBSERVED`; `PRINT=HOLD`; `CUTOVER=HOLD`. A autorização desta sessão **foi consumida** pela leitura de catálogo; **não** abrange novo `SHOWPLAN`, `SERIALIZABLE`, SQL de pedidos, medição de locks, alteração do Reader ou emissão. Próximo passo seguro: reconciliar o novo fato ao desenho offline da Etapa 3 e escolher a menor rota de risco, preservando Cozinha/Sushi nativas e Conferência apenas em sombra.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -379,4 +400,5 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 - **04/11/2026 — ETAPA 3, falso positivo do censo v1 corrigido:** o D1 anterior não exigia presença de pedidos multipraça nem quatro famílias por turno. Contrato v2 `0b0173fe`, testes 52/52 `07be2cc0`; CI `#41924450934` **completed/success em Linux e Windows**. Ficha sanitizada de coleta preparada, ainda **sem dado físico**, PR #135 DRAFT/HOLD. Etapa 3 segue EM_ANDAMENTO e Etapa 5 PENDENTE. Novo SHA documental requer CI própria.
 - **04/11/2026 — ETAPA 3, cardinalidade real dos JOINs ainda UNKNOWN:** 30/30 contraexemplos usando montador review-only, inclusive 99 itens → 198 linhas duplicadas, recusadas pelo identificador de linha; código SHA `cc8e77f2`, CI #41942138953 **completed/success Linux+Windows**. Inventário anterior de prefixos de índices NÃO comprova `is_unique` e composição efetiva da chave. Nada consultado no SQL real; plano/locks/papel/revisão nativa continuam HOLD; novo SHA de documento exigirá CI própria.
 - **04/11/2026 — ETAPA 3, SQL UNIQUE catálogo preparado (NÃO EXECUTADO):** arquivo `comandas_reader_join_unique_catalog_REVIEW_ONLY.sql` apenas `sys.*`; verificador adversarial de chaves `UNIQUE` com 26 casos PASS Linux+Windows, CI #41951271651 **completed/success** no commit `15d9a052`. Metadados reais e plano da candidata seguem `UNKNOWN`; nenhum SQL operacional/serviço/impressora modificado. PR #135 DRAFT/HOLD, Etapa 3 em andamento. Novo SHA documental requer CI própria.
+- **04/11/2026 — ETAPA 3, autorização de catálogo consumida:** uma consulta `sys.*` na instância `(local)\\SQLEXPRESS` de `CAIXA_MOOCA` confirmou 4 PKs `UNIQUE` habilitadas/unfiltered em COMANDAVEN, VENDAREST, ITCOMANDAVEN e PRODUTO (385 linhas de catálogo; 116 índices). Prova: `docs/comandas/ITAIM_SQL_JOIN_UNIQUE_CATALOG_PROOF_20261104.md`, commit `56b63fa4`. Sem pedidos, impressão, serviço, novo plano ou bloqueio operacional. `JOIN_UNIQUE_CATALOG=OBSERVED_DIRECTLY`; Etapa 3 DRAFT/HOLD; novo SHA documental ainda requer CI própria.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
