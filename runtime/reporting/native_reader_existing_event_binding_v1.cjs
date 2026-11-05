@@ -48,12 +48,19 @@ function selectOne(checkpoint){
     order_key:e.order_key,expected_hash:e.snapshot_hash,
     event_filename:segments[3]+'_'+e.snapshot_hash+'.json'
   });
-  return Object.freeze({
+  // Keep the descriptor available ONLY via explicit property access.
+  // A generic JSON.stringify/log of selectOne() must never disclose the
+  // native order key, filename or a stable content digest by accident.
+  const result={
    schema:SCHEMA,state:'CANDIDATE_PRIVATE_UNVERIFIED',
    reason:null,checkpointBound:false,sourceVerified:false,
    completeSqlReadVerified:false,ordersPublishable:0,
-   homePublishAuthorized:false,privateDescriptor:desc
+   homePublishAuthorized:false
+  };
+  Object.defineProperty(result,'privateDescriptor',{
+    enumerable:false,writable:false,configurable:false,value:desc
   });
+  return Object.freeze(result);
  }catch{return hold('CHECKPOINT_REVIEW_EXCEPTION');}
 }
 function reviewOne(checkpoint,event){
