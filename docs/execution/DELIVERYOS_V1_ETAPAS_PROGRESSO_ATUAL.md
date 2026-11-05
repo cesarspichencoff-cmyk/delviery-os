@@ -154,3 +154,15 @@ O pré-check read-only no `CAIXA_MOOCA` encontrou checkpoint válido com 250/250
 
 A autorização e o blocker operacional ficam registrados em [`DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md`](./DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md). Próximo avanço: validar **invocação local sem terminal e sem exportação**; não solicitar repetição da mesma autorização nem substituir o bloqueio por execução arriscada.
 
+## 05/11 — risco de janelas do Agendador e mitigação dos monitores ChatGPT
+
+**Etapa L1 de L8 — N2/N3 HOLD, 0/8 aceites operacionais.** A autorização condicional de César para uma comanda antiga continua preservada; não autoriza alteração de tarefa/serviço nem execução de shell. Nenhum conteúdo de pedido foi aberto.
+
+**Prova nova por leitura passiva do XML do Task Scheduler no `CAIXA_MOOCA`:** `DeliveryOS-Itaim-Reader-Observe` está habilitada e executa **Node.js diretamente em sessão interativa a cada dois minutos**, inclusive fora do horário do delivery, com `Hidden=false`. Seu `observer.cjs` não inicia processo filho, mas escreve diagnósticos existentes. A inicialização do próprio Node no desktop **pode** gerar uma janela; **não está comprovada causalidade de flashes**. Seis outras tarefas experimentais de PowerShell permanecem **desativadas**; a tarefa AudioMute chama executável nativo. Quatro tarefas independentes `TATA-GetIn-D1-*` também iniciam Node interativamente em horários de calendário específicos e não foram alteradas; PrintAgent está desativada. A configuração `Hidden` do Agendador só oculta a tarefa da lista do Windows, **não** oculta consola do programa.
+
+**Mitigação preventiva realmente executada:** atualizados e conferidos os prompts das automações do ChatGPT `Delivery OS — Reader e Edge no almoço` e `TATÁ — integridade Comandas e Academia`, mantendo **ambas habilitadas e os horários**, para proibir `start_process`, PowerShell/CMD, shell e disparo de programa no caixa. Apenas leitura de status/metadados permitida. Não prova eliminação total das piscadas.
+
+**Fonte externa de risco:** https://github.com/wonderwhy-er/DesktopCommanderMCP/issues/852 , incidente conhecido de janelas e roubo de foco em Remote Desktop Commander Windows. Não assumir corrigido em v0.3.1 sem prova na máquina.
+
+**Decisão de segurança:** manter intocada a tarefa Windows atual. Próxima rota é preparar, fora do caixa, um executável GUI sem console que preserve o observador, agendamento, permissões e arquivos de status; comprovar pai/filho sem janela no laboratório e planejar rollback. Mudança da tarefa no caixa exige **autorização distinta**. A prova N2/N3 de conteúdo real segue bloqueada até haver invocação silenciosa e privacidade local. Detalhes: [`DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md`](./DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md).
+
