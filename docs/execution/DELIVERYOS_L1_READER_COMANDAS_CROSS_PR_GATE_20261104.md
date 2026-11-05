@@ -62,3 +62,27 @@ O manifesto `docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json`
 
 **Próximo teste material apropriado:** investigar um recibo **já existente e sanitizado** que demonstre `observation_scan_complete`, identidade de versão e hash sobre **uma mesma revisão corrente** sem acesso a texto de cliente. Se inexistente, definir atestação de origem/isolamento com operador autorizado, sem executar SELECT novo ou produzir tarefas com console no caixa.
 
+## 7. Checkpoint de estabilização: metadados sanitizados, não conteúdo de pedido
+
+**Data:** 05/11/2026, inspeção passiva no CAIXA_MOOCA. **Escopo de acesso:** API de arquivos para ler exclusivamente o checkpoint de metadados do watcher e status agregados, consultar informações de arquivos e listar nomes/PIDs de processos; **nenhum arquivo de evento com itens/observações foi aberto**, nenhum comando executado.
+
+### Recibo do watcher
+- `state/reader-watch-checkpoint-v1.json` já existe e apresenta `schema=deliveryos.tata-reader-continuous-checkpoint.v1`, `bootstrap_complete=true`, **250 entradas** (limite do checkpoint). Todas as 250 chaves de quatro partes começam pelo escopo `CDFILIAL=0001` e `CDLOJA=01` (Itaim); 250/250 têm `stable_count>=2`, `emitted_hash===snapshot_hash`, e hashes textuais de 64 caracteres hexadecimais.
+- Estatísticas de arquivo (somente `get_file_info`, conteúdo **não lido**): três amostras em posições 0, 125 e 249 apontam para arquivos locais de evento existentes, de tamanhos 5.227, 4.519 e 3.791 bytes. Isso sustenta existência de emissão local persistida, **não** que linhas de pedido, anotações, cliente ou hash interno do JSON estejam corretos. As 250 entradas **não são 250 pedidos ativos** nem comprovam a completude da fila do iFood.
+- `reader-heartbeat-v1.json`: supervisor relata `RUNNING`, `sha256_verified=true`, último lote `OK`, 20 polls, 1000 snapshots observados, nenhuma revisão nova, 1000 repetições suprimidas, zero falhas consecutivas; totais históricos `events_emitted=4123` e `failed=540` abrangem a vida da rotina, **não** pedidos atuais. Verificação anterior do SHA-256 do script instalado já conferiu o hash esperado, mas heartbeat e checkpoint são informações locais, não um recibo assinado da origem.
+- Processo `powershell.exe` com PID 19140 apareceu na listagem de processos e coincide com PID declarado pelo supervisor no heartbeat; o serviço `TataComandaReader.ContinuousService.exe` também aparece ativo. **Isso não atesta** qual usuário/token executa o processo, isolamento transacional ou permissões do SQL.
+
+### Bloqueio independente de projeção
+- `evidence/shadow-consumer-status.json` relata `state=RUNNING`, `processed=4180` e `last_projection_status=SKIPPED_LOCKED` com contador `projection_runs=2314`. São **contadores históricos locais**, não pedidos presentes no salão/delivery.
+- `evidence/reporting-projector-status.json` relata `SKIPPED_LOCKED`, atualizado em 05/11 02:01Z; `state/reporting-v1/projection-checkpoint.json` foi modificado em 30/10 21:09Z. `state/reporting-v1/projector.lock` contém somente PID decimal 31492 e teve mtime em 05/11 02:00Z. **PID 31492 não foi encontrado na amostra única de lista de processos** obtida depois. Isso cria a hipótese testável de lock persistente/órfão, mas **não prova** que esteja órfão agora, não demonstra qual rotina o mantém e **não autoriza** deletar o lock, matar processos ou reiniciar o projetor.
+- `evidence/reporting-enrichment-diagnostic.json` informa `PROCESS_EXIT_NONZERO`, para diagnóstico referente ao dia 28/10, capturado em 05/11 02:01Z. Esse erro de enriquecimento não é prova de falha do Reader nem deve ser tratado como resolução do bloqueio de projeção.
+
+### Difference Check e próximos critérios
+1. **N1 (watcher instalado)**: arquivo/hash e atividade do supervisor verificados por fontes distintas; identidade efetiva da conta e atestação SQL ainda UNKNOWN.
+2. **N2 (revisão e observações)**: checkpoint local indica emissões estabilizadas, mas sem inspeção autorizada e sanitizada do corpo de um evento não há evidência independente de `observation_scan_complete`, join, quantidade, nem isolamento de um único snapshot. Não classificar N2 como aprovado.
+3. **N3 (hash canônico)**: permanece em HOLD por potencial divergência `ConvertTo-Json` V2 vs `JSON.stringify` (acentos/apóstrofo/observações). Só comparações sintéticas foram homologadas na PR #135.
+4. **Projeção**: abrir investigação **de código/status, somente laboratório**, sobre `SKIPPED_LOCKED` e o ciclo de lock/heartbeat. Antes de qualquer intervenção no host exigir prova dupla de ausência de detentor, integridade de concorrência, rollback e autorização pontual. Não converter checkpoint de 30/10 em feed atual de Home.
+5. **N4/N5** permanecem bloqueados; nenhuma alteração na aplicação operacional, SQL, tela, serviços, impressora, Edge ou Copiloto.
+
+**Prova e efeito:** somente leitura e documentação versionada. Nenhuma carga de dados de cliente foi extraída para ChatGPT; a comparação dos metadados foi executada sem apresentar chaves individuais. Os resultados do checkpoint são **metadata-level**, não `WORLD_PROVEN`.
+
