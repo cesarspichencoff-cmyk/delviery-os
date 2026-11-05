@@ -168,7 +168,8 @@ try {
  Check ($rc -eq 21) 'MISSING_LAB_MARKER_BLOCKED'
  # Run a separate one-shot S4U task ONLY on this disposable GitHub Windows VM.
  # Does not modify production task definitions or use any Reader/customer files.
- & (Join-Path $dir 'verify-s4u-windows-fixture.ps1')
+ & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Limited
+ & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Highest
  Write-Output ('SILENT_OBSERVER_WINDOWS_LAB_PASS '+$total+'/'+$total+' NO_VISIBLE_WINDOWS')
 } finally {
  if($running -and !$running.HasExited){$running.Kill();[void]$running.WaitForExit(2000)}
