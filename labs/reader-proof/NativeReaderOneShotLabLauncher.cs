@@ -11,13 +11,52 @@ namespace DeliveryOS.ReaderLab {
   const string LabName="deliveryos-reader-proof-lab";
   const string Marker="DELIVERYOS_READER_PROOF_LAB_ONLY_V1";
   const string ApprovedRepository="cesarspichencoff-cmyk/delviery-os";
-  const string ApprovedScriptGitBlob="770d7d284612246c9ee442d37fd5b7151a7287b4";
+  const string ApprovedScriptGitBlob="8496af20f5e02d6d323bd62353292f696070cce4";
   // The launcher is a CI test artifact, not the field program.
   static bool ApprovedRunner() {
    return String.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"),"true",
       StringComparison.OrdinalIgnoreCase) &&
       String.Equals(Environment.GetEnvironmentVariable("GITHUB_REPOSITORY"),ApprovedRepository,
       StringComparison.OrdinalIgnoreCase);
+  }
+  static bool CheckGitBlob(string full,string expected) {
+   try{
+    var info=new FileInfo(full);
+    if(!info.Exists||info.Length<100||info.Length>65536||
+       (info.Attributes&FileAttributes.ReparsePoint)!=0)return false;
+    byte[] payload=File.ReadAllBytes(full);
+    var prefix=Encoding.ASCII.GetBytes("blob "+payload.Length+"\0");
+    var whole=new byte[prefix.Length+payload.Length];
+    Buffer.BlockCopy(prefix,0,whole,0,prefix.Length);
+    Buffer.BlockCopy(payload,0,whole,prefix.Length,payload.Length);
+    string actual;
+    using(var hash=SHA1.Create())
+     actual=BitConverter.ToString(hash.ComputeHash(whole))
+       .Replace("-","").ToLowerInvariant();
+    Array.Clear(payload,0,payload.Length);
+    Array.Clear(whole,0,whole.Length);
+    return String.Equals(actual,expected,StringComparison.Ordinal);
+   }catch{return false;}
+  }
+  static bool DependenciesMatch(string workspace) {
+   var names=new[]{
+    "native_reader_existing_event_binding_v1.cjs",
+    "native_reader_n2n3_sanitized_receipt_v1.cjs",
+    "native_reader_verified_legacy_hash_v1.cjs",
+    "native_reader_producer_contract_review_v1.cjs",
+    "native_reader_shadow_replay_v1.cjs"
+   };
+   var expected=new[]{
+    "18f98521c3756ce26b4fe6645ed6cb0b3baff6e5",
+    "0f44bccd8acaf41465d3e8d8b15074badd0e7047",
+    "6199f42c84a8fbf8170da9d05d0bbf024fc7dd1f",
+    "c753ac8c16aa1266b3eba2ba478614e49fc94e85",
+    "72077ffe6710f32117de34b2d1e43bc22039c51a"
+   };
+   for(int i=0;i<names.Length;i++)
+    if(!CheckGitBlob(Path.Combine(workspace,"runtime","reporting",names[i]),
+        expected[i]))return false;
+   return true;
   }
   static bool ScriptIdentity(string candidate) {
    try {
@@ -40,7 +79,9 @@ namespace DeliveryOS.ReaderLab {
       .Replace("-","").ToLowerInvariant();
     Array.Clear(payload,0,payload.Length);
     Array.Clear(input,0,input.Length);
-    return String.Equals(actual,ApprovedScriptGitBlob,StringComparison.Ordinal);
+    if(!String.Equals(actual,ApprovedScriptGitBlob,StringComparison.Ordinal))return false;
+    // The main script alone is NOT enough: pin every local module it imports.
+    return DependenciesMatch(workspace);
    }catch{return false;}
   }
   static bool ValidRoot(string source,out string root) {
