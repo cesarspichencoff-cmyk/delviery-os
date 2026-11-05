@@ -126,7 +126,45 @@ jobs:
           if ($receipt.ordersPublishable -ne 0 -or $receipt.hideAuthorized -ne $false -or
               $receipt.windowActionsExecuted -ne 0 -or $receipt.commandLinesExported -ne $false -or
               $receipt.personalDataExported -ne $false) { throw 'INVENTORY_PRIVACY_OR_ACTIONS_FAILED' }
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class NativeEdgeWindowAudit {
+            public delegate bool Visit(IntPtr hwnd, IntPtr unused);
+            [DllImport("user32.dll")] static extern bool EnumWindows(Visit cb, IntPtr param);
+            [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+            [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            public static int VisibleForPid(uint pid) {
+              int total=0;
+              EnumWindows((h,p) => { uint owner=0;GetWindowThreadProcessId(h,out owner);
+                if (owner==pid && IsWindowVisible(h)) total++;
+                return true; },IntPtr.Zero);
+              return total;
+            }
+          }
+          '@
+          # Exercise a live GUI-subsystem process for 1.2 seconds only on this VM.
+          # No WindowStyle Hidden launcher option: detect windows the binary creates.
+          $focusBefore=[NativeEdgeWindowAudit]::GetForegroundWindow()
+          $held=Start-Process -FilePath $guiExe -ArgumentList @("--lab-dir=$lab","--hold-visibility-lab-only") -PassThru
+          $observed=0
+          for ($i=0; $i -lt 10; $i++) {
+            if ($held.HasExited) { throw 'INVENTORY_HOLD_EXITED_BEFORE_AUDIT' }
+            if ([NativeEdgeWindowAudit]::VisibleForPid([uint32]$held.Id) -ne 0) {
+              throw 'NATIVE_INVENTORY_VISIBLE_HWND'
+            }
+            $observed++
+            Start-Sleep -Milliseconds 70
+          }
+          if (-not $held.WaitForExit(5000)) { $held.Kill(); throw 'INVENTORY_HOLD_TIMEOUT' }
+          if ($held.ExitCode -ne 0) { throw ('INVENTORY_HOLD_FAILED_'+$held.ExitCode) }
+          if ([NativeEdgeWindowAudit]::GetForegroundWindow() -ne $focusBefore) {
+            throw 'INVENTORY_FOCUS_CHANGED'
+          }
+          if ($observed -ne 10) { throw 'INVENTORY_VISIBILITY_SAMPLES_MISSING' }
           Write-Host 'GESTOR_DEDICATED_NATIVE_WINDOW_INVENTORY_PASS 20/20 PLUS_HOLD_RECEIPT LAB_ONLY NO_CONSOLE_SUBSYSTEM'
+          Write-Host 'GESTOR_DEDICATED_NATIVE_NO_WINDOW_RUNTIME_PASS 10/10 NO_VISIBLE_HWND NO_FOCUS_CHANGE LAB_ONLY'
 
   native-station-link-review:
     name: Exact Reader line to R5D3 work (synthetic only)
