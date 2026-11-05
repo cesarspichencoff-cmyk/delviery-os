@@ -1,5 +1,7 @@
 # S4U Windows task execution test on a GitHub disposable Windows VM ONLY.
 # NEVER execute on CAIXA_MOOCA, no real Reader, files, tasks or customer data.
+[CmdletBinding()]
+param([ValidateSet('Limited','Highest')][string]$LabRunLevel='Limited')
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 if($env:COMPUTERNAME -eq 'CAIXA_MOOCA'){throw 'PRODUCTION_HOST_FORBIDDEN'}
@@ -18,7 +20,7 @@ if([IO.Path]::GetFileName($node) -ne 'node.exe'){throw 'NOT_WINDOWS_NODE'}
 $task='DeliveryOS-Lab-S4U-'+[Guid]::NewGuid().ToString('N').Substring(0,12)
 $registered=$false
 $created=$false
-Add-Type -TypeDefinition @'
+if(-not ('S4UWindowAudit' -as [type])){ Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 public static class S4UWindowAudit {
@@ -35,6 +37,7 @@ public static class S4UWindowAudit {
   }
 }
 '@
+}
 try {
  New-Item -ItemType Directory -Path $lab -ErrorAction Stop | Out-Null
  $created=$true
@@ -44,10 +47,10 @@ try {
   'FICTIONAL_LOCAL_IO_ONLY')
  $principalName=[Security.Principal.WindowsIdentity]::GetCurrent().Name
  if([string]::IsNullOrWhiteSpace($principalName)){throw 'CURRENT_USER_NOT_KNOWN'}
- $principal=New-ScheduledTaskPrincipal -UserId $principalName -LogonType S4U -RunLevel Limited
+ $principal=New-ScheduledTaskPrincipal -UserId $principalName -LogonType S4U -RunLevel $LabRunLevel
  $argument='"'+$source+'" "--lab-dir='+$lab+'"'
  $action=New-ScheduledTaskAction -Execute $node -Argument $argument -WorkingDirectory $lab
- $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddHours(5)
+ $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddHours(5) -RepetitionInterval (New-TimeSpan -Minutes 2)
  $settings=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Seconds 45) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
  if(Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue){
   throw 'LAB_TASK_NAME_COLLISION'
@@ -56,11 +59,14 @@ try {
  $registered=$true
  $readBack=Get-ScheduledTask -TaskName $task -ErrorAction Stop
  if([string]$readBack.Principal.LogonType -ne 'S4U'){throw 'S4U_NOT_REGISTERED'}
- if([string]$readBack.Principal.RunLevel -ne 'Limited'){
+ if([string]$readBack.Principal.RunLevel -ne $LabRunLevel){
   throw 'LAB_RUNLEVEL_CHANGED'
  }
  if([string]$readBack.Settings.MultipleInstances -ne 'IgnoreNew'){
   throw 'LAB_INSTANCE_POLICY_CHANGED'
+ }
+ if([string]$readBack.Triggers[0].Repetition.Interval -ne 'PT2M'){
+  throw 'LAB_REPETITION_2_MIN_NOT_REGISTERED'
  }
  $focus=[S4UWindowAudit]::GetForegroundWindow()
  Start-ScheduledTask -TaskName $task -ErrorAction Stop
@@ -121,7 +127,7 @@ try {
   Start-Sleep -Milliseconds 120
  }
  if(!$taskCompleted){throw 'S4U_SCHEDULER_FINISH_NOT_CONFIRMED'}
- Write-Host ('S4U_DISPOSABLE_WINDOWS_LOCAL_IO_PASS 1/1 S4U_PRINCIPAL 10/10_NO_VISIBLE_HWND NO_FOCUS_CHANGE FICTIONAL_ONLY SESSION_'+$session)
+ Write-Host ('S4U_DISPOSABLE_WINDOWS_LOCAL_IO_PASS 1/1 S4U_PRINCIPAL 10/10_NO_VISIBLE_HWND NO_FOCUS_CHANGE FICTIONAL_ONLY RUNLEVEL_'+$LabRunLevel+' REPEAT_PT2M SESSION_'+$session)
 } finally {
  # The only task touched or removed is the GUID-scoped temporary CI task.
  if($registered){
