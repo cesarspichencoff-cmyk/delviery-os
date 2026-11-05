@@ -9,6 +9,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Threading;
 using System.Management;
+using System.Text.RegularExpressions;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace DeliveryOS.GestorReview {
@@ -82,6 +84,40 @@ namespace DeliveryOS.GestorReview {
       return "CANDIDATE_UNVERIFIED";
     }
 
+    // WMI may return a reused PID. Identity requires the SAME creation
+    // timestamp, not merely the same numeric PID or executable name.
+    public static bool SameInstanceIdentity(uint firstPid,string firstCreated,
+                                            uint secondPid,string secondCreated) {
+      return firstPid!=0 && firstPid==secondPid &&
+        !String.IsNullOrEmpty(firstCreated) &&
+        Regex.IsMatch(firstCreated, @"^[0-9]{14}\.[0-9]{6}[+-][0-9]{3}$") &&
+        String.Equals(firstCreated,secondCreated,StringComparison.Ordinal);
+    }
+
+    static bool StillSameProcess(uint pid,string created,string originalCommand) {
+      int matches=0;
+      string where="SELECT Name,ProcessId,CreationDate,CommandLine FROM Win32_Process WHERE ProcessId="+
+        pid.ToString(CultureInfo.InvariantCulture);
+      using (var query=new ManagementObjectSearcher(where)) {
+        using (var rows=query.Get()) {
+          foreach (ManagementObject row in rows) {
+            using(row) {
+              if (++matches!=1) return false;
+              uint current=Convert.ToUInt32(row["ProcessId"]);
+              string createdNow=Convert.ToString(row["CreationDate"]);
+              string name=Convert.ToString(row["Name"]);
+              string command=Convert.ToString(row["CommandLine"]);
+              if (!SameInstanceIdentity(pid,created,current,createdNow) ||
+                  !IsDedicatedMainEdge(name,command) ||
+                  !String.Equals(originalCommand,command,StringComparison.Ordinal))
+                return false;
+            }
+          }
+        }
+      }
+      return matches==1;
+    }
+
     static void CountWindows(uint targetPid, out int visible, out int minimized) {
       int v=0,m=0;
       if (!EnumWindows((window, unused) => {
@@ -98,8 +134,9 @@ namespace DeliveryOS.GestorReview {
     static string Inspect() {
       var commands = new List<string>();
       var pids = new List<uint>();
+      var creationTimes = new List<string>();
       using (var query = new ManagementObjectSearcher(
-        "SELECT Name,ProcessId,CommandLine FROM Win32_Process WHERE Name='msedge.exe'")) {
+        "SELECT Name,ProcessId,CommandLine,CreationDate FROM Win32_Process WHERE Name='msedge.exe'")) {
         using (var rows = query.Get()) {
           foreach (ManagementObject process in rows) {
             using (process) {
@@ -108,12 +145,17 @@ namespace DeliveryOS.GestorReview {
               if (!IsDedicatedMainEdge(name,command)) continue;
               commands.Add(command);
               pids.Add(Convert.ToUInt32(process["ProcessId"]));
+              creationTimes.Add(Convert.ToString(process["CreationDate"]));
             }
           }
         }
       }
       if (commands.Count!=1) return "HOLD_NO_UNIQUE_DEDICATED_PROCESS";
+      if (!StillSameProcess(pids[0],creationTimes[0],commands[0]))
+        return "HOLD_PROCESS_IDENTITY_UNVERIFIED";
       int v,m;CountWindows(pids[0],out v,out m);
+      if (!StillSameProcess(pids[0],creationTimes[0],commands[0]))
+        return "HOLD_PROCESS_CHANGED_DURING_OBSERVATION";
       return ReviewForLab(commands,v,m);
     }
 
