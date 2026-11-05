@@ -135,6 +135,23 @@ try {
   Unregister-ScheduledTask -TaskName $task -Confirm:$false -ErrorAction Stop
  }
  if($created -and (Test-Path -LiteralPath $lab)){
-  Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction Stop
+  # Task Scheduler may release the completed Node fixture's cwd shortly after
+  # LastTaskResult=0. Retry only this GUID-scoped disposable lab directory.
+  # Never suppress a persistent cleanup failure or touch operational paths.
+  $removed=$false
+  for($cleanupAttempt=0;$cleanupAttempt -lt 15;$cleanupAttempt++){
+   try{
+    Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction Stop
+    if(-not (Test-Path -LiteralPath $lab)){$removed=$true;break}
+   }catch{
+    $err=$_.Exception
+    if(-not ($err -is [System.IO.IOException]) -and
+       -not ($err.InnerException -is [System.IO.IOException])){
+     throw
+    }
+   }
+   Start-Sleep -Milliseconds 250
+  }
+  if(-not $removed){throw 'DISPOSABLE_S4U_LAB_CLEANUP_FAILED'}
  }
 }
