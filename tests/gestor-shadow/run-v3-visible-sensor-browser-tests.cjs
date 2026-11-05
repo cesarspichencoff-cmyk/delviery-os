@@ -94,6 +94,18 @@ const html=(one=false)=>`<!doctype html><html><body>
     const n=await page.evaluate(()=>globalThis.v3Events.length);
     assert.equal(n,2);
   });
+  await test("unchanged local scan does not claim source freshness or new visible content",async()=>{
+    const result=await page.evaluate(()=>{
+      const before=globalThis.v3Watch.current();
+      globalThis.v3Watch.reconcile();
+      return {before,after:globalThis.v3Watch.current()};
+    });
+    assert.equal(result.after.visibleContentChangedAt,result.before.visibleContentChangedAt);
+    assert.equal(result.after.freshnessBasis,"LOCAL_DOM_SCAN_ONLY");
+    assert.equal(result.after.sourceFreshnessVerified,false);
+    assert.equal(result.after.sourceUpdatedAt,null);
+    assert.equal(result.after.ordersPublishable,0);
+  });
   await test("timestamp TTL never presents stale facts as current",async()=>{
     const a=await page.evaluate(()=>globalThis.v3Watch.current(Date.now()+61000));
     assert.equal(a.state,"HOLD_STALE");assert.equal(a.ordersPublishable,0);
@@ -269,6 +281,26 @@ const html=(one=false)=>`<!doctype html><html><body>
     assert.equal(events[1].state,"HOLD_ITEM_SCOPE_AMBIGUOUS");
     assert.equal(events[1].ordersPublishable,0);
     await page.evaluate(()=>globalThis.orphanWatch.stop());
+  });
+  await setup(groupedHtml());
+  await test("grouped visual update remains unverified by upstream source",async()=>{
+    await page.evaluate(cfg=>{
+      globalThis.freshEvents=[];
+      globalThis.freshWatch=globalThis.DeliveryGestorV3Review.watch(
+        document,cfg,e=>globalThis.freshEvents.push(e));
+    },GROUP_CFG);
+    await page.waitForFunction(()=>globalThis.freshEvents?.length===1);
+    await page.waitForTimeout(20);
+    await mutate(".detail-order:first-child .qty","5");
+    await page.waitForFunction(()=>globalThis.freshEvents?.length===2);
+    const events=await page.evaluate(()=>globalThis.freshEvents);
+    assert.equal(events[0].sourceFreshnessVerified,false);
+    assert.equal(events[1].sourceFreshnessVerified,false);
+    assert.equal(events[1].sourceUpdatedAt,null);
+    assert.equal(events[1].freshnessBasis,"LOCAL_DOM_SCAN_ONLY");
+    assert.ok(new Date(events[1].visibleContentChangedAt)>=new Date(events[0].visibleContentChangedAt));
+    assert.equal(events[1].ordersPublishable,0);
+    await page.evaluate(()=>globalThis.freshWatch.stop());
   });
   await test("no external requests during the entire fixture",async()=>assert.equal(network,0));
   console.log("GESTOR_V3_VISIBLE_SENSOR_EDGE_FIXTURE_PASS "+pass+"/"+pass+
