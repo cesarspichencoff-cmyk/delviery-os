@@ -100,8 +100,8 @@ jobs:
           if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'PRODUCTION_PC_FORBIDDEN' }
           $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
           if (!(Test-Path -LiteralPath $csc)) { throw 'COMPILER_MISSING' }
-          $src='runtime/reporting/gestor_dedicated_edge_inventory_win_v1.cs'
-          $test='tests/gestor-shadow/DedicatedEdgeInventoryTests.cs'
+          $src=(Resolve-Path -LiteralPath 'runtime/reporting/gestor_dedicated_edge_inventory_win_v1.cs').Path
+          $test=(Resolve-Path -LiteralPath 'tests/gestor-shadow/DedicatedEdgeInventoryTests.cs').Path
           $testExe=Join-Path $env:RUNNER_TEMP 'DedicatedEdgeInventoryTests.exe'
           $guiExe=Join-Path $env:RUNNER_TEMP 'DedicatedEdgeInventory.exe'
           & $csc /nologo /target:exe /main:DeliveryOS.InventoryTests /reference:System.Management.dll "/out:$testExe" $src $test
