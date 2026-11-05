@@ -44,3 +44,12 @@ Ambas agora proíbem explicitamente no `CAIXA_MOOCA`: `start_process`, `interact
 6. Somente com **canal de invocação sem terminal comprovado** e autorização vigente, considerar a leitura de **uma comanda já emitida**, inteiramente local e sanitizada, para N2/N3. Não usar o conector `read_file` para extrair conteúdo bruto.
 
 **Status:** `PASSIVE_SCHEDULE_AUDIT=PROVEN`; `POWER_SHELL_EXPERIMENTAL_TASKS_DISABLED=PROVEN`; `READER_NODE_INTERACTIVE_EVERY_2_MIN=PROVEN`; `FLASH_CAUSALITY=UNKNOWN`; `CHATGPT_AUTOMATIONS_GUARDED=DONE`; `WINDOWS_TASK_CHANGED=NO`; `ORDER_CONTENT_READ=NO`; `L1_N2_N3=HOLD`.
+
+## Evidência nova — shells ativos apesar das tarefas experimentais desativadas
+
+**Amostra passiva de processos em 05/11/2026, tarde BRT:** `list_processes` no `CAIXA_MOOCA` retornou **4 processos powershell.exe**, **4 cmd.exe** e **8 node.exe**, além de outros processos do Windows. A lista revela nome, PID e consumo aproximado, **não** revela conta/SID efetivo, sessão Windows, árvore pai-filho, janela visível ou motivo de execução. Essas contagens são transitórias, não uma medida de frequência de piscadas. O monitor de sessões remotas retornou somente duas sessões identificadas como `node:local`, que **não permitem associar os oito shells aos processos remotos nem ao Reader**.
+
+**Distinção essencial:** seis tarefas experimentais de PowerShell do Delivery OS estão efetivamente desativadas por definição XML, mas isso **não significa que o Windows não tenha outros processos CMD/PowerShell ativos**. Os terminais podem atender a outras rotinas, ferramentas ou usuários; a causa ainda é `UNKNOWN`. Não encerrar processos, desabilitar tarefas ou reiniciar serviços baseado nessas contagens.
+
+**Efeito:** sem processo novo, sem shell executado pelo assistente, sem toque na área de trabalho ou dados de pedidos; apenas chamadas `list_processes`/`list_sessions` passivas. A rota `S4U` da tarefa Reader permanece **BLOCKED por principal LocalSystem e divergência de recibos**. A primeira condição para uma intervenção futura é identificar **sessão/owner/PID/parent de uma janela que de fato aparece**, por canal passivo e autorizado, e não modificar a tarefa Reader por suspeita.
+
