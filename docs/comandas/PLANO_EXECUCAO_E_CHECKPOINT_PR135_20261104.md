@@ -48,7 +48,7 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 - **GATE 2:** testes adversariais e CI do SHA exato, recusa segura `HOLD` nos casos negativos; não atribuir prova de banco real a fixtures.
 
 ### ETAPA 3 — Prova de plano/isolamento SQL antes de consulta de pedidos
-**ESTADO: EM_ANDAMENTO — APENAS REVISÃO DE PLANO E RISCO OFFLINE (04/11/2026). SQL de pedidos/locks reais NÃO AUTORIZADO.**
+**ESTADO: EM_ANDAMENTO — PKs UNIQUE das quatro tabelas COMPROVADAS por catálogo real em 04/11/2026; plano da candidata, bloqueio de escritores e completude de revisão ainda UNKNOWN. SELECT de pedidos/SHOWPLAN/locks reais NÃO AUTORIZADO.**
 - Analisar somente catálogos/plano quando autorizado pelas permissões existentes. A candidata `SERIALIZABLE` tem risco físico de locks; plano já cacheado do Reader V2 NÃO representa plano da candidata.
 - Demonstrar filtros nativos, `varchar(10)`, abrangência de todas as linhas/notas, custos, `TOP(201)`=sentinela, `MAXDOP 1`, limites de comando e rollback/STOP. Determinar se transações nativas gravam revisão semanticamente completa.
 - **GATE 3:** risco de bloqueio controlável e prova técnica suficiente para **propor** ensaio específico. Caso contrário manter HOLD e explorar alternativa não bloqueante de forma autorizada; não habilitar RCSI global.
@@ -75,7 +75,7 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 
 ## Próximo passo seguro
 
-Executar **ETAPA 3 — preparação técnica exclusivamente offline**: comparar o plano cacheado do V2 instalado (somente referência, não prova da consulta candidata) com a consulta de uma comanda sob `SERIALIZABLE` ainda NÃO executada; definir bloqueadores, métricas de STOP, revisão independente da completude semântica e evidências exigíveis antes de solicitar um eventual piloto. Não repetir catálogo já comprovado. Nenhuma tentativa de SQL de pedidos, SHOWPLAN em sessão operacional, alteração de isolamento, serviço ou impressão sem autorização específica de César.
+**ETAPA 3: decisão por menor risco, sem nova SQL.** A unicidade de PKs já foi comprovada no catálogo real (prova `ITAIM_SQL_JOIN_UNIQUE_CATALOG_PROOF_20261104.md`); não repetir. A rota de menor intervenção preserva integralmente as vias nativas de Cozinha/Sushi e deixa a Conferência TATÁ **somente em sombra**. A próxima evidência que realmente altera essa decisão são os resultados do **censo passivo de papel já autorizado** (almoço e jantar, observadores presenciais, sem emitir folha extra). Enquanto não existirem, o estado é `D0 / NÃO OBSERVADO` e nem a Etapa 5 nem impressão são liberadas. Se o censo sustentar D1, avaliar preservação nativa e homologação de Conferência com identidade iFood independente, revisão/efeito exclusivos ainda pendentes; se D2, apurar anomalia sem ligar nova fonte. A candidata `SERIALIZABLE` permanece apenas como **rota alternativa não aprovada**, porque não há plano dela, prova de completude semântica ou medição do impacto em escritores. Nenhuma consulta adicional, SHOWPLAN, alteração de isolamento, serviço ou papel sem autorização específica.
 
 
 ## Gate 1 — fechamento comprovado e mapa de preservação (04/11/2026)
@@ -381,6 +381,29 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 
 **Fronteira de prova:** `UNIQUE_PK_KEYS_DIRECT_CATALOG=OBSERVED`; `CANDIDATE_SQL_PLAN=UNKNOWN`; `WRITER_WAIT_AND_LOCK_IMPACT=UNKNOWN`; `SPLIT_COMMITS_NATIVE_REVISION=UNKNOWN`; `IFOOD_INDEPENDENT_IDENTITY=UNKNOWN`; `PAPER_CENSUS=NOT_OBSERVED`; `PRINT=HOLD`; `CUTOVER=HOLD`. A autorização desta sessão **foi consumida** pela leitura de catálogo; **não** abrange novo `SHOWPLAN`, `SERIALIZABLE`, SQL de pedidos, medição de locks, alteração do Reader ou emissão. Próximo passo seguro: reconciliar o novo fato ao desenho offline da Etapa 3 e escolher a menor rota de risco, preservando Cozinha/Sushi nativas e Conferência apenas em sombra.
 
+## Etapa 3 — reorientação pela prova real de chaves e rota de menor efeito (04/11/2026)
+
+**Decisão técnica provisória: NÃO iniciar ensaio de SELECT `SERIALIZABLE` no caixa nem substituir a produção nativa com a evidência atual.** A consulta real autorizada de catálogo já foi concluída e documentada; o seu resultado foi **quatro PKs únicas, vigentes, não filtradas**. Isso reduz a incerteza específica sobre a multiplicação por junções das tabelas, mas **não resolve** cabeçalho/itens/notas gravados em commits separados, transições A→B→A não vistas pelo polling, identidade externa iFood, backlog, emissão única nem prova de papel.
+
+### Decisão condicional, com fronteiras claras
+
+| Cenário comprovado | Decisão permitida | O que continua proibido |
+|---|---|---|
+| **D0 / nenhum censo físico verificado** (estado atual) | Preservar impressão nativa; manter Conferência TATÁ em sombra e observação passiva previamente autorizada | Novo print, instalação, consulta de pedidos, troca de Reader, corte de vias, avanço de gate |
+| **D1 / amostra física conforme e bem testemunhada** | Preferir rota de **preservar Cozinha/Sushi nativas**; especificar homologação independente da Conferência, ainda `HOLD` | Inferir conformidade universal, assumir número TATÁ persistido ou liberar a Conferência para papel |
+| **D2 / anomalia efetivamente observada** | Investigar praça, origem, momento, dupla emissão e conteúdo sob plano próprio; preservar fonte nativa até diagnóstico | Acionar GP/Gestor, duplicar vias, reimprimir testes ou substituir produção como correção automática |
+| **Proposta futura de substituição das vias nativas** | Só reconsiderar com evidência de primeiro despacho, corte seletivo, plano candidato, impacto nos escritores, revisão completa, backlog e rollback; autorização específica | Tratar PK única ou CI verde como prova de segurança operacional |
+
+### Gate de engenharia que permanece aberto
+
+1. **Fato recém-adquirido:** PKs únicas em `COMANDAVEN`, `VENDAREST`, `ITCOMANDAVEN` e `PRODUTO` — `WORLD_CATALOG_OBSERVED` na sessão do dia 04/11. **Não repetir esse SQL sem motivo novo.**
+2. **Plano da consulta candidata ainda `UNKNOWN`:** o plano cacheado da consulta V2 existente não é o plano da candidata de uma comanda. Mesmo com chaves únicas e filtros nativos, o otimizador pode escolher varreduras e `SERIALIZABLE` pode bloquear escrita no caixa. `LOCK_TIMEOUT 100` limita a espera do leitor, **não** o atraso do escritor.
+3. **Completude semântica ainda `UNKNOWN`:** nem um snapshot transacional, nem duas leituras iguais, nem SHA-256 provam que a aplicação Teknisa concluiu uma revisão lógica inteira dos itens/observações. Uma revisão imutável/atestada por origem exigiria mecanismo independente ainda não comprovado.
+4. **Rota conservadora NÃO equivale a imprimir Conferência:** preservar Cozinha/Sushi nativas pode evitar alterar a fonte de produção, mas a Conferência TATÁ continua exigindo origem iFood independente, identidade/revisão conciliadas, sequência TATÁ persistente e exclusiva, destino próprio, não reemissão, recuperação após crash e prova física. Não antecipar Etapa 5 ou 6.
+5. **Prioridade de evidência, sem novo código desnecessário:** obter dois relatos de papel natural coletados por observadores presenciais usando `CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md`. O classificador v2 `tools/comandas_passive_paper_census_review_only.cjs` só avalia relatos agregados e não autentica o mundo. Se a prova não vier, declarar `D0` em vez de criar fixtures substitutas. Em paralelo, apenas leitura/revisão offline dos contratos já existentes, sem novas execuções SQL ou de serviços.
+
+**Não avançar etapa:** `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `STAGE_5=PENDING`, `PRODUCTION=HOLD`. Efeitos reais nesta decisão: **nenhum**. A CI do último commit documental `0c824c15` estava `completed` na consulta que antecedeu a atualização; verificar o resultado no SHA, sem inferir sucesso de um job parcial. A publicação desta decisão inicia nova CI, a verificar separadamente.
+
 ## Registro de acompanhamento (append cronológico com provas)
 
 - **04/11/2026 — CHECKPOINT INICIAL:** plano consolidado com base na pesquisa internacional e no conteúdo da PR #135. Etapa 1 `EM_ANDAMENTO`; etapas 2–6 `PENDENTE`. Sem execução operacional. SHA anterior conhecido `0dd1e8a...`.
@@ -401,4 +424,5 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 - **04/11/2026 — ETAPA 3, cardinalidade real dos JOINs ainda UNKNOWN:** 30/30 contraexemplos usando montador review-only, inclusive 99 itens → 198 linhas duplicadas, recusadas pelo identificador de linha; código SHA `cc8e77f2`, CI #41942138953 **completed/success Linux+Windows**. Inventário anterior de prefixos de índices NÃO comprova `is_unique` e composição efetiva da chave. Nada consultado no SQL real; plano/locks/papel/revisão nativa continuam HOLD; novo SHA de documento exigirá CI própria.
 - **04/11/2026 — ETAPA 3, SQL UNIQUE catálogo preparado (NÃO EXECUTADO):** arquivo `comandas_reader_join_unique_catalog_REVIEW_ONLY.sql` apenas `sys.*`; verificador adversarial de chaves `UNIQUE` com 26 casos PASS Linux+Windows, CI #41951271651 **completed/success** no commit `15d9a052`. Metadados reais e plano da candidata seguem `UNKNOWN`; nenhum SQL operacional/serviço/impressora modificado. PR #135 DRAFT/HOLD, Etapa 3 em andamento. Novo SHA documental requer CI própria.
 - **04/11/2026 — ETAPA 3, autorização de catálogo consumida:** uma consulta `sys.*` na instância `(local)\\SQLEXPRESS` de `CAIXA_MOOCA` confirmou 4 PKs `UNIQUE` habilitadas/unfiltered em COMANDAVEN, VENDAREST, ITCOMANDAVEN e PRODUTO (385 linhas de catálogo; 116 índices). Prova: `docs/comandas/ITAIM_SQL_JOIN_UNIQUE_CATALOG_PROOF_20261104.md`, commit `56b63fa4`. Sem pedidos, impressão, serviço, novo plano ou bloqueio operacional. `JOIN_UNIQUE_CATALOG=OBSERVED_DIRECTLY`; Etapa 3 DRAFT/HOLD; novo SHA documental ainda requer CI própria.
+- **04/11/2026 — ETAPA 3, diferença de evidência e rota mais econômica:** revalidadas PKs reais; análise concluiu que insistir em novo ensaio `SERIALIZABLE` antes do censo de papel não é a rota de menor risco. Provisoriamente conservar produção nativa + Conferência em sombra. Decisão D0/D1/D2 condicionada somente ao censo físico, ainda não entregue; SQL plano/custos e completude da revisão continuam UNKNOWN. Sem mudança operacional; PR DRAFT/HOLD. O commit desta alteração requer CI própria.
 - **As próximas atualizações devem especificar:** `DATA | ETAPA | EXECUÇÃO | EVIDÊNCIA (URL/SHA/teste) | RISCO/HOLD | DECISÃO/PRÓXIMO PASSO`. Transição só após gate comprovado, e comunicada explicitamente a César.
