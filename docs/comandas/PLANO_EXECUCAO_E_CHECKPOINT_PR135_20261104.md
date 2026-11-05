@@ -461,3 +461,14 @@ O documento de homologação `docs/comandas/CANDIDATA_FINAL_HOMOLOGACAO_20261102
 - **CI vinculada:** commit 94733dae insere a verificação nos dois jobs do workflow deliveryos-thermal-shadow-gate.yml. Run #41957674769 foi observado in_progress antes deste registro; **não declarar sucesso ainda**. O novo commit deste texto terá CI própria.
 - **Gate futuro do piloto:** separar dados inventados de reais; garantir que a candidata não leia estado operacional por caminho absoluto, não escreva fora de diretório novo autorizado e não publique payload sensível nos logs; verificar manifesto/hash e política de acesso em ambiente isolado; só depois solicitar autorização pontual de execução em host. **Não** alterar o consumidor de 34 arquivos pinados silenciosamente nem atribuir identidade de produção ao teste.
 - **Próxima evidência operacional:** censo físico passivo de almoço e jantar, com testemunhas presenciais e dados apenas agregados. PAPER_CENSUS=NOT_OBSERVED; HOST_SHADOW_PILOT=BLOCKED; SERIALIZABLE=NOT_EXECUTED; PRINT=HOLD; STAGE_3=IN_PROGRESS.
+
+
+## Etapa 3 — saída segura do executor de Conferência em sombra (04/11/2026)
+
+**Escopo executado:** código e testes offline, somente PR DRAFT. Revisão da rota de menor risco confirmou que já existe tools/comandas_conference_only_shadow_runner_v1.cjs sobre o par sanitizado tools/comandas_shadow_offline_run_v1.cjs; este último **não executa** o consumidor V7.14. Preservar essa rota existente; não duplicar motor, classificador ou sequência.
+
+**Falha concreta corrigida:** o CLI do par sanitizado mostrava e.message na saída stderr; erros de sistema de arquivos podem carregar caminhos e identificadores de pedidos. No commit afdc4616, a saída foi reduzida ao código constante SHADOW_PAIR_HOLD com retorno 1. A API run continua lançando exceções internamente; a correção é do CLI, não uma prova de privacidade da cadeia inteira.
+
+**Teste incorporado:** commit d80ff1e7 adiciona dois casos ao teste verificar_comandas_shadow_bundle_v1.cjs que constroem o bundle isolado e executam subprocessos Node em caminhos deliberadamente inexistentes com identificadores fictícios sentinela. Exigem stderr constante, stdout vazio, código de saída esperado (1 no par, 4 na Conferência) e nenhuma exposição da sentinela. Workflow já chama esse verificador tanto em Linux quanto em Windows. CI #41958830244 estava em andamento no momento da escrita; **não declarar PASS até resultado dos dois jobs no SHA exato**.
+
+**Limites:** o bundle histórico ainda contém V7.14 como arquivo pinado, embora o executor sanitizado não o chame; não levar o bundle integral ao caixa como se fosse pacote confinado. Não houve execução de pacote no CAIXA_MOOCA, teste de papel, migração, nova leitura de SQL ou ação física. PAPER_CENSUS=NOT_OBSERVED; HOST_SHADOW_PILOT=BLOCKED; PRINT=HOLD; STAGE_3=IN_PROGRESS. Próximo trabalho de maior valor é o censo físico passivo já autorizado, e não outra rodada de fixtures substituindo a prova real.
