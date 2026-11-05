@@ -3,7 +3,8 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {spawnSync}=require('node:child_process');
-const {build,makeEvent}=require('./build-reader-one-shot-lab-fixture.cjs');
+const {build,makeEvent,eventPath,checkpointPath}=
+ require('./build-reader-one-shot-lab-fixture.cjs');
 const cli=path.resolve(__dirname,'../../labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs');
 let passed=0;
 function check(name,fn){fn();passed++;console.log('PASS '+name);}
@@ -43,11 +44,11 @@ check('one synthetic source produces one sanitized and unpublished receipt',()=>
  assert.equal(r.n3CanonicalHashSelfConsistent,true);
 }));
 check('raw event is never modified by the one-shot evaluator',()=>scope(lab=>{
- const p=path.join(lab,'synthetic-event.json'),before=fs.readFileSync(p,'utf8');
+ const p=eventPath(lab),before=fs.readFileSync(p,'utf8');
  safe(lab,run(lab));assert.equal(fs.readFileSync(p,'utf8'),before);
 }));
 check('legacy apostrophe-escaped digest is rejected without private output',()=>scope(lab=>{
- const p=path.join(lab,'synthetic-event.json'),e=makeEvent();
+ const p=eventPath(lab),e=makeEvent();
  const keys=['CDFILIAL','CDLOJA','NRVENDAREST','NRCOMANDA','NRCOMANDAEXT',
   'IDORGCMDVENDA','IDSTCOMANDA','DTHRABERMESA'];
  const basis=Object.fromEntries(keys.map(k=>[k,e.order[k]]));
@@ -56,19 +57,26 @@ check('legacy apostrophe-escaped digest is rejected without private output',()=>
  basis.observation_rows=e.order.observation_rows;
  const ps=JSON.stringify(basis).replace("L'ação",'L\\u0027ação');
  e.snapshot_hash=require('node:crypto').createHash('sha256').update(ps).digest('hex').toUpperCase();
- fs.writeFileSync(p,JSON.stringify(e)+'\n');
+ // Keep an exact checkpoint/file pair; the mismatch must be CANONICAL,
+ // not a missing file or a changed checkpoint pointer.
+ fs.rmSync(p);
+ fs.writeFileSync(eventPath(lab,e),JSON.stringify(e)+'\n');
+ const cp=JSON.parse(fs.readFileSync(checkpointPath(lab),'utf8'));
+ cp.entries[0].snapshot_hash=e.snapshot_hash;
+ cp.entries[0].emitted_hash=e.snapshot_hash;
+ fs.writeFileSync(checkpointPath(lab),JSON.stringify(cp)+'\n');
  assert.equal(safe(lab,run(lab)).reason,'N3_HASH_BYTES_NOT_CANONICAL');
 }));
 check('invalid input does not echo payload and returns HOLD',()=>scope(lab=>{
- fs.writeFileSync(path.join(lab,'synthetic-event.json'),'{ SECRET FICT_PRIVATE_SENTINEL ');
+ fs.writeFileSync(eventPath(lab),'{ SECRET FICT_PRIVATE_SENTINEL ');
  const r=safe(lab,run(lab));assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
 }));
 check('oversized input is bounded before JSON parsing',()=>scope(lab=>{
- fs.writeFileSync(path.join(lab,'synthetic-event.json'),'A'.repeat(256*1024+1));
+ fs.writeFileSync(eventPath(lab),'A'.repeat(256*1024+1));
  const r=safe(lab,run(lab));assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
 }));
 check('file symlink outside lab is not followed',()=>scope(lab=>{
- const input=path.join(lab,'synthetic-event.json'),outside=path.resolve(__filename);
+ const input=eventPath(lab),outside=path.resolve(__filename);
  fs.unlinkSync(input);
  try{fs.symlinkSync(outside,input,'file');}
  catch(e){if(process.platform==='win32'&&e.code==='EPERM')return;throw e;}
@@ -93,10 +101,41 @@ check('lab path must be absolute and marked with exact basename',()=>scope(lab=>
  assert.equal(fs.existsSync(path.join(lab,'receipt.json')),false);
 }));
 check('caller claims of real source do not authorize publication',()=>scope(lab=>{
- const p=path.join(lab,'synthetic-event.json'),e=makeEvent();
+ const p=eventPath(lab),e=makeEvent();
  e.sourceMode='real';e.sourceAuthenticated=true;e.ready_for_downstream_shadow=true;
  fs.writeFileSync(p,JSON.stringify(e)+'\n');
  const r=safe(lab,run(lab));assert.equal(r.sourceIdentityVerified,false);
  assert.equal(r.ordersPublishable,0);
+}));
+check('checkpoint with missing emitted file does not create or read orders',()=>scope(lab=>{
+ const cp=JSON.parse(fs.readFileSync(checkpointPath(lab),'utf8'));
+ cp.entries[0].snapshot_hash='A'.repeat(64);
+ cp.entries[0].emitted_hash='A'.repeat(64);
+ fs.writeFileSync(checkpointPath(lab),JSON.stringify(cp)+'\n');
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+ assert.equal(fs.existsSync(eventPath(lab)),true);
+}));
+check('tampered legacy event quantity stays HOLD despite original filename',()=>scope(lab=>{
+ const p=eventPath(lab),event=JSON.parse(fs.readFileSync(p,'utf8'));
+ event.order.items[0].QTPRODCOMVEN='17.000';
+ fs.writeFileSync(p,JSON.stringify(event)+'\n');
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'N3_HASH_BYTES_NOT_CANONICAL');
+}));
+check('invalid checkpoint source time never opens an event for authority',()=>scope(lab=>{
+ const cp=JSON.parse(fs.readFileSync(checkpointPath(lab),'utf8'));
+ cp.entries[0].last_seen_order_time='2026-02-30T12:00:00.0000000';
+ fs.writeFileSync(checkpointPath(lab),JSON.stringify(cp)+'\n');
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+}));
+check('checkpoint symlink cannot escape the sandbox',()=>scope(lab=>{
+ const cp=checkpointPath(lab),outside=path.resolve(__filename);
+ fs.rmSync(cp);
+ try{fs.symlinkSync(outside,cp,'file');}
+ catch(e){if(process.platform==='win32'&&e.code==='EPERM')return;throw e;}
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
 }));
 console.log('NATIVE_READER_ONE_SHOT_LAB_PASS '+passed+'/'+passed+' SYNTHETIC_ONLY');
