@@ -60,3 +60,13 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Próximo passo:** localizar/projetar recibo **já sanitizado** de uma revisão única para fechar N2/N3, sem ler dados de cliente. Em paralelo, antes de homologar retentativa real, corrigir o lock no código da fonte instalada sob revisão de concorrência/rollback e obter autorização pontual para eventual piloto. Até lá, não usar relatório antigo como indicador de pedido atual.
 
+## Checkpoint 05/11 — diferença de aquisição do Reader V2 instalado
+
+**Etapa atual permanece L1/N2–N3 (0/8 aceites completos).** Comparação estrutural, somente código, do watcher V2 instalado com a candidata review-only da PR #135. Atestado que o V2 já seleciona os quatro campos de observações, mas a consulta instalada utiliza `IDORGCMDVENDA LIKE 'DLV[_]%'`, Top 50 por padrão e ordenação sem `NRCOMANDA` como desempate. Hash continua em `ConvertTo-Json` PowerShell antigo; divergência com Node é possível quando há apóstrofo. A candidata PR #135 usa `IDORGCMDVENDA='DLV_IFO'`, desempate completo e serializador canônico — **não instalada nem validada em SQL real**.
+
+**Prova nova de saúde:** heartbeat 05/11 01:19h BRT `RUNNING` / último lote `OK` / zero falhas consecutivas, e checkpoint atualizado; comprovante histórico em `continuous-watch-proof-v1/checkpoint.json` permanece datado de 05/10. Nenhum evento de pedido ou texto de observação foi aberto.
+
+**Documento técnico de decisão:** [`DELIVERYOS_L1_INSTALLED_V2_VS_PR135_DIFFCHECK_20261105.md`](./DELIVERYOS_L1_INSTALLED_V2_VS_PR135_DIFFCHECK_20261105.md). Gate N2 exige origem exata, consistência/limite de seleção e prova independente de completude de uma revisão. N3 exige hash canônico na mesma revisão. **Não basta** heartbeat ou `observation_scan_complete=true` autodeclarado. Próxima prova de campo necessita canal previamente autorizado, sanitização local e sem janela; até lá, HOLD. Não substituir watcher/Reader nem usar o consumidor da PR #135 com escrita.
+
+**Continuidade L2–L8:** nenhuma alteração nos gates anteriores. A correção de `SKIPPED_LOCKED` continua exclusiva do laboratório, com testes 7/7 aprovados, sem implantação.
+
