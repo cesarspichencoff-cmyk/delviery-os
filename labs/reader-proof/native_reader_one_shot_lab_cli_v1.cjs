@@ -72,6 +72,11 @@ function main(){
  if(Buffer.byteLength(json,'utf8')>2048)return 80;
  try{
   fs.writeFileSync(dest,json,{encoding:'utf8',flag:'wx',mode:0o600});
+  // Only a fixed, bounded hold in disposable CI permits window/focus sampling.
+  if(process.env.DELIVERYOS_READER_LAB_HOLD_MS==='2500'){
+   const wait=new SharedArrayBuffer(4);
+   Atomics.wait(new Int32Array(wait),0,0,2500);
+  }
   return 0;
  }catch{return 81;}
 }
