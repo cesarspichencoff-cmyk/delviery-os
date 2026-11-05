@@ -577,3 +577,19 @@ Referências técnicas de leitura: Microsoft [cenários de spooler](https://lear
 - A CI do checkpoint anterior #41969523056 (SHA `9399cdbb`) estava `in_progress` na última consulta anterior a esta gravação; não confundir com aprovação. Este novo commit documental exigirá CI própria.
 
 **Próximo portão de maior valor:** censo presencial passivo das vias nativas (até 20 pedidos consecutivos no almoço e até 20 no jantar, sem emitir ou apagar papel) para decidir D0/D1/D2; em paralelo, monitorar somente os heartbeats agregados já existentes para identificar se `totals.failed` cresce na janela de atendimento. Não converter esses dados em atestação de entrega. Diagnóstico de PrintService com processo remoto continua bloqueado por falta de prova de execução invisível, identidade/ACL e autorização específica.
+
+
+## Etapa 3 — confronto de dois censos de spool e continuidade do Reader (05/11/2026)
+
+**Escopo:** segunda leitura **somente de nomes/metadados**, sem inicializar terminal, CMD/PowerShell, serviço, impressão, consulta SQL, arquivos de conteúdo `.SHD/.SPL` ou evento do PrintService. Executado exclusivamente no dispositivo online `CAIXA_MOOCA` por `list_directory`, `get_file_info` e leitura dos JSONs já existentes; o código dos arquivos do spool não foi aberto.
+
+- **Novo censo de diretório:** 6.712 arquivos, exatamente 3.356 `.SPL` e 3.356 `.SHD`, com 3.356 bases de nome pareadas e nenhuma base isolada detectada. O censo anterior de 05/11 também tinha 3.356 pares: **variação líquida de quantidade = 0**. Não foi armazenado digest dos nomes no censo anterior; portanto **não** alegar imutabilidade do conjunto ou ausência de criação/exclusão intermediária.
+- **Metadados:** `C:\Windows\System32\spool\PRINTERS` mantém `modified=2026-11-05T02:27:25.121Z` (04/11 23:27:25.121 BRT); `Microsoft-Windows-PrintService%4Operational.evtx` mantém 1.052.672 bytes e `modified=2026-11-05T02:32:54.161Z` (04/11 23:32:54.161 BRT). `mtime` estável **não é prova de que a fila não recebeu eventos ou de que impressoras via periféricos não imprimiram**.
+- **Reader V2 em 05/11 02:08:11 BRT:** `RUNNING`, hash V2 verificado; último lote `#10099` concluído `OK`, `poll_errors=0`, `consecutive_failures=0`. Totais: 10.099 lotes, 9.559 OK, **540 failed históricos**. Desde a amostra às 01:50 BRT: +17 lotes, +17 OK, +0 failed. No conjunto 01:37→02:08: +30 lotes, +30 OK, +0 failed. `events_emitted` permanece 4.123 e `shadow-consumer processed` permanece 4.180, `print=false` — são contadores diferentes e não comprovam papel.
+- **CI do checkpoint anterior:** #41970278079 `completed/success` no SHA exato `14136fcf1f53e25e31da6b17d24df0e7caec3b1a`, com os dois jobs Linux e Windows `success`. A nova gravação documental exige CI própria.
+
+### Interpretação / decisão
+
+A estabilidade das contagens e do `mtime`, combinada à retenção positiva **histórica** da fila `DELIVERY SUSHI 1` em 27/10 (1.086 jobs com status `Printed`), é **compatível** com trabalhos mantidos por política de retenção. Não identifica quais dos 3.356 arquivos correspondem à fila, não distingue órfãos de trabalhos vivos, não comprova impressão/papel e não afirma que não houve novas impressões em caminho Epson/ponte/periféricos. `CURRENT_KEEP_PRINTED_JOBS`, `CURRENT_QUEUE_STATE`, `WINDOWS_EVENT_CORRELATION` e `PHYSICAL_PAPER` continuam `UNKNOWN`.
+
+**Sem novas consultas repetidas apenas para aumentar a amostra da madrugada.** Próxima evidência realmente decisiva é o censo passivo natural de almoço e jantar já autorizado, focalizando Cozinha/Sushi 1/Sushi 2/Conferência e atrasos/duplicações, com avaliação D0/D1/D2; leitura automática de PrintService continua bloqueada até execução sem janelas, identidade/ACL e autorização própria comprovadas. Não instalar/alterar serviço, fila, spooler, Teknisa, sequência nem imprimir. `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `PRINT=HOLD`, `CUTOVER=HOLD`.
