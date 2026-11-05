@@ -41,7 +41,12 @@ function review(original,proposed){
   const userMatches=[...original.matchAll(/<UserId>([^<]*)<\/UserId>/g)];
   if(userMatches.length!==1 || !userMatches[0][1].trim())
    return safeStatus('TASK_PRINCIPAL_MISSING_OR_AMBIGUOUS');
-  if(/^S-1-5-(?:18|19|20)$/i.test(userMatches[0][1].trim()))
+  // Normalize locale-dependent names in receipts/XML: SISTEMA and S-1-5-18
+  // refer to the same built-in account. A service principal is never S4U.
+  const principal=userMatches[0][1].trim().normalize('NFKC').replace(/\s+/g,' ').toUpperCase();
+  const serviceSid=/^S-1-5-(?:18|19|20)$/.test(principal);
+  const serviceName=/^(?:(?:NT AUTHORITY|AUTORIDADE NT)\\)?(?:SYSTEM|SISTEMA|LOCALSYSTEM|LOCAL SYSTEM|LOCALSERVICE|LOCAL SERVICE|NETWORKSERVICE|NETWORK SERVICE|SERVIÇO LOCAL|SERVICO LOCAL|SERVIÇO DE REDE|SERVICO DE REDE)$/.test(principal);
+  if(serviceSid||serviceName)
    return safeStatus('BUILTIN_SERVICE_PRINCIPAL_NOT_ELIGIBLE_FOR_S4U');
   if(proposed!==original.replace(FROM,TO))
    return safeStatus('UNAUTHORIZED_XML_DIFFERENCE');
