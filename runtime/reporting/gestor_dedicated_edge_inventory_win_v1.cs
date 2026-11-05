@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
+using System.Threading;
 using System.Management;
 using System.Runtime.InteropServices;
 
@@ -156,14 +157,21 @@ namespace DeliveryOS.GestorReview {
       // No executing on a productive workstation, irrespective of arguments.
       if (String.Equals(Environment.MachineName,Cashier,StringComparison.OrdinalIgnoreCase))
         return 77;
-      if (args==null || args.Length!=1 || !args[0].StartsWith("--lab-dir=",StringComparison.Ordinal))
+      // The optional bounded hold is ONLY for visibility measurements on a lab VM.
+      bool hold=(args!=null && args.Length==2 &&
+        String.Equals(args[1],"--hold-visibility-lab-only",StringComparison.Ordinal));
+      if (args==null || (args.Length!=1 && !hold) ||
+          !args[0].StartsWith("--lab-dir=",StringComparison.Ordinal))
         return 78;
       string folder;
       if (!ValidLabDirectory(args[0].Substring("--lab-dir=".Length),out folder)) return 79;
       string state;
       try { state=Inspect(); } catch { state="HOLD_INVENTORY_UNAVAILABLE"; }
-      try { WriteStatus(folder,state);return 0; }
-      catch { return 80; }
+      try {
+        WriteStatus(folder,state);
+        if (hold) Thread.Sleep(1200); // observable runtime; no UI or background service
+        return 0;
+      } catch { return 80; }
     }
   }
 }
