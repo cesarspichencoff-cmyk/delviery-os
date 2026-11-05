@@ -167,11 +167,11 @@ test('200 items with one duplicated product yields 201 output and blocks',()=>{
  assert.equal(joinFixture(t).length,201);
  assertHold(assemble(t),'BOUNDED_EXHAUSTED_SOURCE_ROWSET_NOT_SUPPLIED');
 });
-test('199 items with a duplicate product below 201 still blocks by line key',()=>{
- const t=model({items:Array.from({length:199},(_,i)=>item(i+1))});
+test('99 items with a duplicate product make 198 rows and block by native line key',()=>{
+ const t=model({items:Array.from({length:99},(_,i)=>item(i+1))});
  t.products.push(product('LABPROD','9900009999'));
- assert.equal(joinFixture(t).length,201);
- assertHold(assemble(t),'BOUNDED_EXHAUSTED_SOURCE_ROWSET_NOT_SUPPLIED');
+ assert.equal(joinFixture(t).length,198);
+ assertHold(assemble(t),'NATIVE_ITEM_LINE_KEY_DUPLICATE');
 });
 test('single item with extra product row can never become two distinct tickets',()=>{
  const t=model({items:[item(1)]});t.products.push(product('LABPROD','9900000001'));
