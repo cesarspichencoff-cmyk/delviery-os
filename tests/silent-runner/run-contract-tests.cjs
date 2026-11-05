@@ -49,5 +49,11 @@ check('native harness checks visible HWND',nativeHarness.includes('VisibleForPid
 check('native harness checks foreground',nativeHarness.includes('FOCUS_UNCHANGED'));
 check('native harness does not install scheduled tasks',!/(Register-ScheduledTask|schtasks\.exe|New-ScheduledTask)/i.test(nativeHarness));
 check('native harness compiles winexe',nativeHarness.includes('/target:winexe'));
-console.log('SILENT_OBSERVER_LAB_CONTRACT_PASS '+passed+'/'+passed+' (STATIC_OFFLINE_ONLY)');
+const systemLogonFixture=fs.readFileSync(path.join(__dirname,'verify-system-logon-metadata-windows-lab.ps1'),'utf8');
+check('SYSTEM metadata fixture refuses cashier',systemLogonFixture.includes("COMPUTERNAME -eq 'CAIXA_MOOCA'"));
+check('SYSTEM metadata fixture requires disposable GitHub Windows runner',systemLogonFixture.includes("GITHUB_ACTIONS -ne 'true'") && systemLogonFixture.includes("GITHUB_REPOSITORY -ne 'cesarspichencoff-cmyk/delviery-os'"));
+check('SYSTEM metadata fixture tasks disabled and cannot demand start',systemLogonFixture.includes('New-ScheduledTaskSettingsSet -Disable -DisallowDemandStart'));
+check('SYSTEM metadata fixture cannot run scheduled tasks',!systemLogonFixture.includes('Start-ScheduledTask') && !systemLogonFixture.includes('Enable-ScheduledTask'));
+check('SYSTEM metadata fixture uses unique tasks and cleans up',systemLogonFixture.includes('[Guid]::NewGuid()') && systemLogonFixture.includes('Unregister-ScheduledTask'));
+console.log('SILENT_OBSERVER_LAB_CONTRACT_PASS +passed+'/'+passed+' (STATIC_OFFLINE_ONLY)');
 require('./run-reader-observer-noninteractive-review-tests.cjs');
