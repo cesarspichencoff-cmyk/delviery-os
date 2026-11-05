@@ -125,3 +125,5 @@ check('no false source authority is created by event-provided claims',()=>{
  assertNoRaw(r);
 });
 console.log('NATIVE_READER_N2N3_SANITIZED_RECEIPT_PASS '+passed+'/'+passed+' SYNTHETIC_ONLY');
+// Reuse this existing CI contract entrypoint; do not change workflow permissions.
+require('./run-native-reader-existing-event-binding-tests.cjs');
