@@ -35,3 +35,12 @@
 5. **Mudança na produção:** nenhuma autorizada por este documento. **Não** substituir V2 por arquivos da PR #135, não ativar o consumidor de escrita, não abrir console, não consultar SQL, não imprimir, não ler pedidos pessoais no chat e não realizar merge/cutover.
 
 **Resultado:** revisão estrutural da versão **realmente instalada** `PROVEN`, lacunas exatas `FACT`; casos em que o risco ocorreu `UNKNOWN`; L1/N2–N3 `HOLD`. A correção de recuperação do projetor segue em laboratório, separada da captura de observações.
+
+## Checkpoint adicional: distribuição das 250 datas e correção de fuso
+
+**Leitura somente dos metadados de `state/reader-watch-checkpoint-v1.json` em 05/11; nenhuma identidade ou nota de pedido exportada:** 250 entradas; 31 contêm no campo `last_seen_order_time` o prefixo de data `2026-11-03`, e 219 o prefixo `2026-11-04`. Todas as 250 possuem timestamps `yyyy-MM-ddTHH:mm:ss.fffffff` **SEM offset/Z**, por exemplo a primeira abertura por ordem de tempo está entre 03/11 21:05:14 e a última em **04/11 22:59:00 no relógio textual da origem**. Nenhuma data começa com `2026-11-05` no snapshot (não se esperam, necessariamente, pedidos após meia-noite). Todas têm hash de formato hexadecimal e emitted_hash == snapshot_hash, o que prova autoconsistência de checkpoint, NÃO pedidos ativos nem cobertura total.
+
+**Correção de análise:** uma conversão inicial com `Date.parse` tratou o horário sem fuso como se estivesse em UTC e apresentou a última abertura incorretamente às `19h59` no fuso de São Paulo. O texto do banco **não** traz fuso; o valor bruto correto é `22:59`. Não usar essa conversão para calcular frescor até obter evidência da origem. A própria biblioteca já versionada em `runtime/reporting/tata_source_time_v1.cjs` exige `sourceTimePolicy` explícita, amarrada a `unitId`, `sourceUnitId`, `sourceStoreId` e `evidenceRef`, para converter horário local sem offset; sem isso, devolve `EXPLICIT_SOURCE_TIMEZONE_REQUIRED`. **A biblioteca já protege o produto desse erro**, portanto não criar conversor novo.
+
+**Gates:** ausência de datas em 05/11 no checkpoint não significa falha do Reader; a última abertura textual de 04/11 22:59 é compatível com o encerramento do jantar, mas o vínculo com horário real local e cobertura de todas as comandas ainda é UNKNOWN. Não inferir origem/fuso do relógio do runner, do ChatGPT ou do Windows. `N2` e `N3` permanecem HOLD.
+
