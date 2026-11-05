@@ -118,8 +118,9 @@ jobs:
           if (Test-Path -LiteralPath $lab) { throw 'LAB_DIR_ALREADY_EXISTS' }
           [void](New-Item -ItemType Directory -Path $lab)
           [IO.File]::WriteAllText((Join-Path $lab 'LAB_ONLY.txt'),'DELIVERYOS_EDGE_INVENTORY_LAB_ONLY_V1')
-          & $guiExe "--lab-dir=$lab"
-          if ($LASTEXITCODE -ne 0) { throw 'INVENTORY_EXECUTION_FAILED' }
+          # WinExe has no console; pwsh may return before its work has completed.
+          $native=Start-Process -FilePath $guiExe -ArgumentList @("--lab-dir=$lab") -Wait -PassThru -WindowStyle Hidden
+          if ($native.ExitCode -ne 0) { throw ('INVENTORY_EXECUTION_FAILED_'+$native.ExitCode) }
           $receipt=Get-Content -LiteralPath (Join-Path $lab 'inventory.status.json') -Raw | ConvertFrom-Json
           if ($receipt.state -ne 'HOLD_NO_UNIQUE_DEDICATED_PROCESS') { throw 'LAB_INVENTORY_UNEXPECTED_STATE' }
           if ($receipt.ordersPublishable -ne 0 -or $receipt.hideAuthorized -ne $false -or
