@@ -166,6 +166,9 @@ try {
  [IO.File]::Delete((Join-Path $workspace 'DELIVERYOS_LAB_ONLY.txt'))
  $rc=Run-Lab -arguments @('--fixture-dir='+('"'+$workspace+'"'),'--ticks=1','--sleep-ms=100')
  Check ($rc -eq 21) 'MISSING_LAB_MARKER_BLOCKED'
+ # Run a separate one-shot S4U task ONLY on this disposable GitHub Windows VM.
+ # Does not modify production task definitions or use any Reader/customer files.
+ & (Join-Path $dir 'verify-s4u-windows-fixture.ps1')
  Write-Output ('SILENT_OBSERVER_WINDOWS_LAB_PASS '+$total+'/'+$total+' NO_VISIBLE_WINDOWS')
 } finally {
  if($running -and !$running.HasExited){$running.Kill();[void]$running.WaitForExit(2000)}
