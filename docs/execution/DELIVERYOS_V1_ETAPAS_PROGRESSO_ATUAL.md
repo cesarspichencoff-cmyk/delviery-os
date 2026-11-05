@@ -92,3 +92,15 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Próximo passo de maior valor:** comprovar **uma** revisão real do `DLV_IFO` por canal aprovado que calcule localmente contagem de itens, quantidade/escopo de observações, igualdade de hash canônico e identidade/frescor independentes, exportando somente recibo sanitizado. Não criar outro conversor ou coletor e não confiar na mera caixa alta/baixa do hash. Sem canal autorizado e silencioso, manter HOLD em vez de executar no caixa.
 
+## Checkpoint 05/11 — recibo N2/N3 sanitizado de revisão única
+
+**Etapa atual:** **L1 de L8**, com **N2/N3 ainda em HOLD; 0/8 aceites operacionais**. O bloqueio de campo é o mesmo: a autenticidade da revisão real, o conjunto completo de itens/observações no SQL e o hash verificado localmente **não foram atestados**.
+
+**Capacidade preparada na PR #137 (não instalada):** `runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs` compõe exclusivamente as duas funções puras já existentes — `normalizeVerifiedLegacyNativeHashV1()` e `native_reader_producer_contract_review_v1.review()`. Aceita um envelope já obtido por **chamador autorizado** e calcula *em memória* integridade canônica do conteúdo, relações item/observação e contagens. A saída é somente `state=HOLD`, categorias de bloqueio e contagens, **sem nomes, notas, chaves de pedido, hash bruto, arquivos ou valores individuais**. Preserva `ordersPublishable=0`, `sourceIdentityVerified=false`, `sourceFreshnessVerified=false`, `n2ObservationReadIndependentlyComplete=false`. Não tem API de SQL, leitura de disco, rede ou impressão.
+
+**Prova sintética:** `tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs` passou **11/11** na job `Static fixture contracts` da [GitHub Actions #41969060087](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41969060087), incluindo SHA maiúsculo reconciliável **somente quando os bytes canônicos batem**, apóstrofo com hash divergente, adulteração de quantidade, item com observação ligada a produto errado, origem DLV diferente, alegação de autenticidade arbitrária e ausência de dados pessoais no recibo. O código não é substituto de prova independente.
+
+**Ações no caixa:** nenhuma. O Reader V2 instalado permanece intacto; nenhuma revisão real foi carregada em ChatGPT; não se executou o novo avaliador no `CAIXA_MOOCA`, não se consultou SQL e não houve serviço, janela, impressão ou Home alterados.
+
+**Próxima fronteira material:** garantir **canal local de prova previamente autorizado e comprovadamente silencioso** que forneça uma única revisão real à função em memória e destrua o conteúdo bruto após produzir recibo sanitizado; confrontar a contagem de itens/notas com evidência da consulta e do esgotamento de linhas, e exigir atestação independente de origem/horário. Até então, o veredito não pode sair de `HOLD`, mesmo com hash autoconsistente.
+
