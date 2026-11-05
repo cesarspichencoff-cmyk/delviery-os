@@ -40,6 +40,14 @@ namespace DeliveryOS {
         Check("bad_profile_cannot_claim_candidate",DedicatedEdgeInventory.ReviewForLab(new List<string>{wrong},1,0)=="HOLD_PROFILE_NOT_MATCHED");
         Check("null_source",DedicatedEdgeInventory.ReviewForLab(null,1,0)=="HOLD_NO_UNIQUE_DEDICATED_PROCESS");
         Check("no_pid_or_hwnd_export",!good.Contains("personalDataExported"));
+        string created="20261105023142.123456-180";
+        Check("stable_instance_creation",DedicatedEdgeInventory.SameInstanceIdentity(1234,created,1234,created));
+        Check("pid_reused_rejected",!DedicatedEdgeInventory.SameInstanceIdentity(1234,created,5678,created));
+        Check("creation_mismatch_rejected",!DedicatedEdgeInventory.SameInstanceIdentity(1234,created,1234,"20261105023143.123456-180"));
+        Check("creation_missing_rejected",!DedicatedEdgeInventory.SameInstanceIdentity(1234,null,1234,created));
+        Check("creation_malformed_rejected",!DedicatedEdgeInventory.SameInstanceIdentity(1234,"yesterday",1234,"yesterday"));
+        Check("pid_zero_rejected",!DedicatedEdgeInventory.SameInstanceIdentity(0,created,0,created));
+        Check("timezone_change_rejected",!DedicatedEdgeInventory.SameInstanceIdentity(1234,created,1234,"20261105023142.123456+000"));
         Console.WriteLine("DEDICATED_EDGE_NATIVE_IDENTITY_LAB_PASS "+total+"/"+total+" SYNTHETIC_ONLY");
         return 0;
       } catch(Exception e) { Console.Error.WriteLine(e.Message);return 1; }
