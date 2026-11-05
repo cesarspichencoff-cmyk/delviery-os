@@ -21,18 +21,36 @@ function makeEvent(){
   order_key:'0001|01|FICT_SALE|FICT_COMMAND',
   snapshot_hash:snapshotHash(order).toUpperCase(),order};
 }
+function eventPath(dir,event=makeEvent()){
+ return path.join(dir,'reader-events-v1',
+  event.order.NRCOMANDA+'_'+event.snapshot_hash+'.json');
+}
+function checkpointPath(dir){
+ return path.join(dir,'synthetic-checkpoint.json');
+}
 function build(dir){
  if(typeof dir!=='string'||!path.isAbsolute(dir)||
     path.basename(dir)!=='deliveryos-reader-proof-lab')
   throw Error('INVALID_LAB_ROOT');
  if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});
  fs.writeFileSync(path.join(dir,'LAB_ONLY.txt'),marker+'\n',{flag:'wx'});
- fs.writeFileSync(path.join(dir,'synthetic-event.json'),
-  JSON.stringify(makeEvent())+'\n',{flag:'wx'});
+ const event=makeEvent();
+ fs.mkdirSync(path.join(dir,'reader-events-v1'));
+ fs.writeFileSync(eventPath(dir,event),
+  JSON.stringify(event)+'\n',{flag:'wx'});
+ const checkpoint={
+  schema:'deliveryos.tata-reader-continuous-checkpoint.v1',
+  bootstrap_complete:true,entries:[{
+   order_key:event.order_key,snapshot_hash:event.snapshot_hash,
+   emitted_hash:event.snapshot_hash,stable_count:2,
+   last_seen_order_time:event.order.DTHRABERMESA
+  }]
+ };
+ fs.writeFileSync(checkpointPath(dir),JSON.stringify(checkpoint)+'\n',{flag:'wx'});
 }
 if(require.main===module){
  const args=process.argv.slice(2);
  if(args.length!==1||!args[0].startsWith('--lab-dir='))process.exitCode=77;
  else try{build(args[0].slice(10));}catch{process.exitCode=78;}
 }
-module.exports={makeEvent,build};
+module.exports={makeEvent,build,eventPath,checkpointPath};
