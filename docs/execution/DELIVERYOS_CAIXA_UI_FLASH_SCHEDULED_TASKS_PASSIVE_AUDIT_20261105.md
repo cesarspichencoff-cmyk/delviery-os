@@ -43,7 +43,7 @@ Ambas agora proíbem explicitamente no `CAIXA_MOOCA`: `start_process`, `interact
 5. **Antes de mudança no caixa**, obter autorização **separada para alterar uma tarefa Windows**; a aprovação já recebida de uma revisão real, somente leitura, não autoriza essa alteração. Em ensaio de campo, verificar funcionamento do status e ausência de janelas no desktop ativo. Falha = rollback supervisionado, sem interrupção de Reader ou impressão.
 6. Somente com **canal de invocação sem terminal comprovado** e autorização vigente, considerar a leitura de **uma comanda já emitida**, inteiramente local e sanitizada, para N2/N3. Não usar o conector `read_file` para extrair conteúdo bruto.
 
-**Status:** `PASSIVE_SCHEDULE_AUDIT=PROVEN`; `POWER_SHELL_EXPERIMENTAL_TASKS_DISABLED=PROVEN`; `READER_NODE_INTERACTIVE_EVERY_2_MIN=PROVEN`; `FLASH_CAUSALITY=UNKNOWN`; `CHATGPT_AUTOMATIONS_GUARDED=DONE`; `WINDOWS_TASK_CHANGED=NO`; `ORDER_CONTENT_READ=NO`; `L1_N2_N3=HOLD`.
+**Status:** `PASSIVE_SCHEDULE_AUDIT=PROVEN`; `POWER_SHELL_EXPERIMENTAL_TASKS_DISABLED=PROVEN`; `READER_NODE_PT2M=PROVEN_XML`; `READER_DESKTOP_INTERACTIVE=UNKNOWN`; `FLASH_CAUSALITY=UNKNOWN`; `CHATGPT_AUTOMATIONS_GUARDED=DONE`; `WINDOWS_TASK_CHANGED=NO`; `ORDER_CONTENT_READ=NO`; `L1_N2_N3=HOLD`.
 
 ## Evidência nova — shells ativos apesar das tarefas experimentais desativadas
 
@@ -51,10 +51,29 @@ Ambas agora proíbem explicitamente no `CAIXA_MOOCA`: `start_process`, `interact
 
 **Distinção essencial:** seis tarefas experimentais de PowerShell do Delivery OS estão efetivamente desativadas por definição XML, mas isso **não significa que o Windows não tenha outros processos CMD/PowerShell ativos**. Os terminais podem atender a outras rotinas, ferramentas ou usuários; a causa ainda é `UNKNOWN`. Não encerrar processos, desabilitar tarefas ou reiniciar serviços baseado nessas contagens.
 
-**Efeito:** sem processo novo, sem shell executado pelo assistente, sem toque na área de trabalho ou dados de pedidos; apenas chamadas `list_processes`/`list_sessions` passivas. A rota `S4U` da tarefa Reader permanece **BLOCKED por principal LocalSystem e divergência de recibos**. A primeira condição para uma intervenção futura é identificar **sessão/owner/PID/parent de uma janela que de fato aparece**, por canal passivo e autorizado, e não modificar a tarefa Reader por suspeita.
+**Efeito:** sem processo novo, sem shell executado pelo assistente, sem toque na área de trabalho ou dados de pedidos; apenas chamadas `list_processes`/`list_sessions` passivas. A rota `S4U` da tarefa Reader permanece **BLOCKED por principal LocalSystem**; os recibos `SISTEMA` e o SID `S-1-5-18` são consistentes quanto à identidade nominal. A primeira condição para uma intervenção futura é identificar **sessão/owner/PID/parent de uma janela que de fato aparece**, por canal passivo e autorizado, e não modificar a tarefa Reader por suspeita.
 
 
 
 ## Retificação de causa — 05/11/2026, leitura passiva de XML e recibos
 
 `S-1-5-18` (XML) e `SISTEMA` (`install-receipt.json`/`verification.json`) representam LocalSystem, conforme https://learn.microsoft.com/pt-br/windows-server/identity/ad-ds/manage/understand-security-identifiers . A hipótese de **duas contas diferentes é descartada**; não confundir nome localizado com SID. Continua sem prova a sessão/token do processo e a correlação PID↔janela. `LogonType=InteractiveToken` permanece no XML; S4U **não é opção válida para LocalSystem** e a tarefa permanece intacta. A auditoria foi exclusivamente leitura de arquivos já existentes, sem comandos/shell/processos ou acesso a pedidos.
+
+## Inspeção passiva adicional — tarefas independentes TATA-GetIn (05/11/2026)
+
+Leitura direta, **sem iniciar comandos ou tarefas**, de quatro arquivos XML do Agendador no `CAIXA_MOOCA` e de dois arquivos-fonte locais (`TataGetinD1/src/scheduled-runner.mjs` e `TataGetinD1/src/render-visual.mjs`). Os quatro XMLs apresentam `Enabled=true`, `CalendarTrigger` diário (`DaysInterval=1`), `LogonType=InteractiveToken`, `RunLevel=LeastPrivilege` e ação **`node.exe` diretamente**, sem lançador GUI nativo na ação. Identificações das tarefas e horários extraídos literalmente do `StartBoundary`:
+
+| Tarefa | StartBoundary XML | Conversão nominal São Paulo (UTC−03) | Ação |
+| --- | --- | --- | --- |
+| `TATA-GetIn-D1-Collector` | `2026-10-29T03:00:00Z` | 00:00 | `node.exe` → `scheduled-runner.mjs` |
+| `TATA-GetIn-D1-Visual` | `2026-10-30T00:02:00-03:00` | 00:02 | `node.exe` → `render-visual.mjs` |
+| `TATA-GetIn-D1-Collector-2050` | `2026-10-30T23:50:00Z` | 20:50 | `node.exe` → `scheduled-runner.mjs` |
+| `TATA-GetIn-D1-Visual-2055` | `2026-10-30T23:55:00Z` | 20:55 | `node.exe` → `render-visual.mjs` |
+
+São **instâncias distintas do Reader**, não tarefas experimentais previamente desabilitadas. A correspondência nominal de horário é apenas conversão dos campos XML: **sem prova de horário efetivo de execução, de janela visível, de host pai/filho nem de foco alterado**. Não deduzir que uma piscada ocorreu nesses minutos sem observação temporal.
+
+Código: `scheduled-runner.mjs` chama `spawn(process.execPath, ['.../detail-report.mjs'], {windowsHide:true, stdio:['ignore','pipe','pipe']})`. Esse `windowsHide` protege o **processo filho** solicitado por `spawn`, não altera a forma como o **processo pai `node.exe`** é iniciado pelo Agendador. Documentação: https://nodejs.org/api/child_process.html. `render-visual.mjs` usa `chromium.launch({channel:'chrome',headless:true})`, indicando intenção de renderizar sem navegador visível, mas não suprime por si só um console do processo Node pai. `InteractiveToken` indica sessão interativa já conectada, conforme https://learn.microsoft.com/en-us/windows/win32/taskschd/taskschedulerschema-logontype-principaltype-element .
+
+**Difference Check:** a hipótese anterior centrada no Reader `LocalSystem` era insuficiente. As quatro ações GetIn possuem características que justificam **prioridade para correlação de campo** nos minutos nominais acima, porém continuam `CANDIDATE_NOT_CAUSALITY_PROVEN`. A rotina GetIn é independente: **não executar/desabilitar/reprogramar seus jobs nem alterar seus arquivos no escopo Delivery OS**. Se algum popup for objetivamente atribuído ao processo pai, preparar correção na frente responsável com lançador de subsistema GUI e prova de equivalência/rollback, sob autorização própria; não migrar essas tarefas S4U por padrão.
+
+**Próxima prova real:** associação `evento de janela visível → timestamp → PID → parent PID → SessionId → usuário/token → definição de tarefa`, sem títulos, textos ou dados de cliente. Não há ainda canal passivo da ferramenta remota que comprove essa associação no desktop do caixa. Até lá: `FLASH_CAUSALITY=UNKNOWN`, `GETIN_CONSOLE_RISK=SOURCE_SUPPORTED_HYPOTHESIS`, `WINDOWS_TASK_CHANGED=NO`, `N2_N3=HOLD`, `V1_ACCEPTED=0/8`.
