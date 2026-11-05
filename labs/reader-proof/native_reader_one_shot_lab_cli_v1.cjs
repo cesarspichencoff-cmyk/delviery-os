@@ -5,7 +5,8 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const os=require('node:os');
-const {review}=require('../../runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs');
+const {selectOne,reviewOne}=
+ require('../../runtime/reporting/native_reader_existing_event_binding_v1.cjs');
 
 const MARKER='DELIVERYOS_READER_PROOF_LAB_ONLY_V1';
 const LAB_NAME='deliveryos-reader-proof-lab';
@@ -54,9 +55,23 @@ function main(){
  if(fs.existsSync(dest))return 78;
  let result;
  try{
-  result=review(boundedRead(path.join(lab,'synthetic-event.json')));
+  // LAB only: select one emitted revision from the fixture checkpoint.
+  // No raw copy. The event stays under its canonical, pre-existing filename.
+  const checkpoint=boundedRead(path.join(lab,'synthetic-checkpoint.json'));
+  const choice=selectOne(checkpoint);
+  if(choice.state!=='CANDIDATE_PRIVATE_UNVERIFIED')
+   throw Error('CHECKPOINT_HOLD');
+  const dir=path.join(lab,'reader-events-v1');
+  const d=fs.lstatSync(dir);
+  if(!d.isDirectory()||d.isSymbolicLink()||
+     fs.realpathSync(dir)!==path.resolve(dir))
+   throw Error('EVENT_DIRECTORY_INVALID');
+  const file=choice.privateDescriptor.event_filename;
+  if(!/^[A-Za-z0-9_-]{1,64}_[0-9A-F]{64}\.json$/.test(file))
+   throw Error('EVENT_FILENAME_INVALID');
+  result=reviewOne(checkpoint,boundedRead(path.join(dir,file)));
  }catch{
-  result={schema:'deliveryos.native-reader-n2n3-sanitized-receipt.v1',
+  result={schema:'deliveryos.native-reader-existing-event-binding.v1',
    state:'HOLD',reason:'LAB_INPUT_UNREADABLE_OR_CHANGED',
    sourceIdentityVerified:false,sourceFreshnessVerified:false,
    n2ObservationReadIndependentlyComplete:false,
