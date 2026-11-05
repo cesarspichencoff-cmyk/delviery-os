@@ -44,7 +44,7 @@ try {
   'FICTIONAL_LOCAL_IO_ONLY')
  $principalName=[Security.Principal.WindowsIdentity]::GetCurrent().Name
  if([string]::IsNullOrWhiteSpace($principalName)){throw 'CURRENT_USER_NOT_KNOWN'}
- $principal=New-ScheduledTaskPrincipal -UserId $principalName -LogonType S4U -RunLevel LeastPrivilege
+ $principal=New-ScheduledTaskPrincipal -UserId $principalName -LogonType S4U -RunLevel Limited
  $argument='"'+$source+'" "--lab-dir='+$lab+'"'
  $action=New-ScheduledTaskAction -Execute $node -Argument $argument -WorkingDirectory $lab
  $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddHours(5)
@@ -56,7 +56,7 @@ try {
  $registered=$true
  $readBack=Get-ScheduledTask -TaskName $task -ErrorAction Stop
  if([string]$readBack.Principal.LogonType -ne 'S4U'){throw 'S4U_NOT_REGISTERED'}
- if([string]$readBack.Principal.RunLevel -ne 'LeastPrivilege'){
+ if([string]$readBack.Principal.RunLevel -ne 'Limited'){
   throw 'LAB_RUNLEVEL_CHANGED'
  }
  if([string]$readBack.Settings.MultipleInstances -ne 'IgnoreNew'){
