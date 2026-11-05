@@ -5,3 +5,4 @@ tests/tata-reader/fixtures/*.ps1 -text
 tests/tata-reader/fixtures/host_v2/* -text
 runtime/tata-reader/*.ps1 -text
 runtime/tata-reader/*.cjs -text
+labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs -text
