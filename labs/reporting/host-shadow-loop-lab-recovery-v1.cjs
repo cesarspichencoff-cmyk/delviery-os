@@ -169,12 +169,21 @@ function runProjector() {
     return;
   }
 
-  lastProjectionError = null;
+  // The actual installed projector emits exactly CURRENT, PROJECTED or
+  // SKIPPED_LOCKED. A corrupt/unknown stdout must NEVER turn into false OK.
   try {
-    const out = JSON.parse(String(child.stdout || "{}"));
-    lastProjectionStatus = String(out.status || "OK");
+    const out=JSON.parse(String(child.stdout || ""));
+    if(!out || typeof out!=="object" || Array.isArray(out) ||
+       !["CURRENT","PROJECTED","SKIPPED_LOCKED"].includes(out.status)) {
+      lastProjectionStatus="HOLD_PROJECTOR_RESULT_UNRECOGNIZED";
+      lastProjectionError="PROJECTOR_RESULT_NOT_ATTESTED";
+      return;
+    }
+    lastProjectionStatus=out.status;
+    lastProjectionError=null;
   } catch {
-    lastProjectionStatus = "OK";
+    lastProjectionStatus="HOLD_PROJECTOR_OUTPUT_INVALID";
+    lastProjectionError="PROJECTOR_STDOUT_INVALID_JSON";
   }
 }
 
