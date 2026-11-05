@@ -95,6 +95,11 @@ if(require.main===module){
   if(process.argv.length!==4&&process.argv.length!==5)
    throw Error("USAGE_ABSOLUTE_EVENT_DECISION_OPTIONAL_NOTE_REVIEW_PATH");
   process.stdout.write(JSON.stringify(run(process.argv[2],process.argv[3],process.argv[4]))+"\n");
- }catch(e){process.stderr.write("SHADOW_PAIR_HOLD="+e.message+"\n");process.exitCode=1}
+ }catch(_error){
+  // Never reveal exception messages: filesystem errors can include source paths,
+  // and upstream messages may carry customer or order information.
+  process.stderr.write("SHADOW_PAIR_HOLD\n");
+  process.exitCode=1;
+ }
 }
 module.exports={run};
