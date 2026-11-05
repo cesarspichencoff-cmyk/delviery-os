@@ -134,3 +134,15 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Documento de gate:** [`DELIVERYOS_READER_EXISTING_EVENT_BINDING_GATE_20261105.md`](./DELIVERYOS_READER_EXISTING_EVENT_BINDING_GATE_20261105.md). **Próxima fronteira:** autorização e prova de execução local invisível para comparar em memória uma única revisão já emitida, com resultado apenas sanitizado. Uma leitura desse arquivo ou execução no caixa não foi autorizada por esta implementação, e a atestação independente da origem/isolamento SQL permanece pendente. Não criar terceiro coletor, não copiar evento bruto, não mexer em impressoras/serviço/Edge. L2–L8 permanecem no plano original.
 
+## Checkpoint 05/11 — prova integrada de uso único entre checkpoint e evento existente
+
+**Etapa atual permanece L1 de L8, com N2/N3/N4/N5 em HOLD e 0/8 aceites de campo.** A entrega desta rodada está em `CODE_READY + CI_PASS`, sem `DEPLOYED` ou `WORLD_PROVEN`.
+
+**Diferença importante:** o executor de laboratório passou a usar `synthetic-checkpoint.json → selectOne() → reader-events-v1/<arquivo emitido> → reviewOne() → receipt.json`, em vez de ler um evento por nome fixo. Nenhum segundo arquivo bruto é criado. O descritor privado não é enumerável em JSON; hashes ilegítimos em entradas não selecionadas e datas impossíveis provocam HOLD. A integridade de seis arquivos de código (script principal mais cinco dependências) agora é conferida antes de iniciar Node no Windows de CI, com `.gitattributes -text`.
+
+**Campo somente metadados:** checkpoint existente do V2 no `CAIXA_MOOCA` reavaliado; **250/250** entradas válidas sob escopo Itaim, datas reais de calendário, ordem, digest e emissão estabilizada. Permanece a prova de existência de um arquivo emitido de **5.227 bytes**; **nenhum conteúdo foi aberto** nem programa executado no caixa.
+
+**CI exata:** [#41976315120](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41976315120), `completed/success` 4/4 jobs. Contratos **20/20** de binding, **14/14** de uso único integrado, negativas Windows **3/3** para alterações de script/caminho/dependência e **10/10** verificações de janelas pai/filho não visíveis e foco preservado no laboratório.
+
+**Prova, limites, próximo gate:** [`DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md`](./DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md). Sem autorização para executar a variante de laboratório no caixa; ela o proíbe. Próximo passo relevante **não é outro teste sintético semelhante**, mas uma autorização explícita e a homologação de uma variante mínima e silenciosa de campo que leia **uma única revisão já emitida no próprio host**, sem extrair bruto/PII, somada à atestação independente da leitura completa/origem SQL. N2/N3 seguem sem prova real; a Home não publica pedidos. L2–L8 preservadas no plano original.
+
