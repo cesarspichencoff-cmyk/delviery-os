@@ -3,11 +3,46 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
+using System.Security.Cryptography;
 namespace DeliveryOS.ReaderLab {
  public static class NativeReaderOneShotLabLauncher {
   const string ForbiddenHost="CAIXA_MOOCA";
   const string LabName="deliveryos-reader-proof-lab";
   const string Marker="DELIVERYOS_READER_PROOF_LAB_ONLY_V1";
+  const string ApprovedRepository="cesarspichencoff-cmyk/delviery-os";
+  const string ApprovedScriptGitBlob="770d7d284612246c9ee442d37fd5b7151a7287b4";
+  // The launcher is a CI test artifact, not the field program.
+  static bool ApprovedRunner() {
+   return String.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"),"true",
+      StringComparison.OrdinalIgnoreCase) &&
+      String.Equals(Environment.GetEnvironmentVariable("GITHUB_REPOSITORY"),ApprovedRepository,
+      StringComparison.OrdinalIgnoreCase);
+  }
+  static bool ScriptIdentity(string candidate) {
+   try {
+    var workspace=Environment.GetEnvironmentVariable("GITHUB_WORKSPACE");
+    if(String.IsNullOrWhiteSpace(workspace))return false;
+    string full=Path.GetFullPath(candidate);
+    string expected=Path.GetFullPath(Path.Combine(workspace,"labs","reader-proof",
+       "native_reader_one_shot_lab_cli_v1.cjs"));
+    if(!String.Equals(full,expected,StringComparison.OrdinalIgnoreCase))return false;
+    var info=new FileInfo(full);
+    if(!info.Exists||info.Length<100||info.Length>65536||
+       (info.Attributes&FileAttributes.ReparsePoint)!=0)return false;
+    byte[] payload=File.ReadAllBytes(full);
+    var header=Encoding.ASCII.GetBytes("blob "+payload.Length+"\0");
+    var input=new byte[header.Length+payload.Length];
+    Buffer.BlockCopy(header,0,input,0,header.Length);
+    Buffer.BlockCopy(payload,0,input,header.Length,payload.Length);
+    string actual;
+    using(var sha=SHA1.Create())actual=BitConverter.ToString(sha.ComputeHash(input))
+      .Replace("-","").ToLowerInvariant();
+    Array.Clear(payload,0,payload.Length);
+    Array.Clear(input,0,input.Length);
+    return String.Equals(actual,ApprovedScriptGitBlob,StringComparison.Ordinal);
+   }catch{return false;}
+  }
   static bool ValidRoot(string source,out string root) {
    root=null;
    try {
@@ -31,6 +66,7 @@ namespace DeliveryOS.ReaderLab {
    // FIRST operation refuses to run on the productive cashier host.
    if(String.Equals(Environment.MachineName,ForbiddenHost,
        StringComparison.OrdinalIgnoreCase))return 77;
+   if(!ApprovedRunner())return 87;
    if(args==null||args.Length!=3||!args[0].StartsWith("--lab-dir=",StringComparison.Ordinal)||
       !args[1].StartsWith("--node-path=",StringComparison.Ordinal)||
       !args[2].StartsWith("--script-path=",StringComparison.Ordinal))return 78;
@@ -44,6 +80,8 @@ namespace DeliveryOS.ReaderLab {
        !String.Equals(Path.GetFileName(script),"native_reader_one_shot_lab_cli_v1.cjs",
          StringComparison.OrdinalIgnoreCase)||!File.Exists(node)||!File.Exists(script))
      return 80;
+    // A same-name file supplied by the caller is NOT an acceptable program.
+    if(!ScriptIdentity(script))return 88;
     if(File.Exists(Path.Combine(lab,"receipt.json")))return 81;
     var settings=new ProcessStartInfo {
      FileName=node,Arguments=Arg(script)+" "+Arg("--lab-dir="+lab),
