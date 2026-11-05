@@ -318,3 +318,20 @@ Este é o **plano único de execução do Delivery OS Itaim**. As etapas P0–P8
 - **Blocked:** sem acesso ao DOM atual pelo conector de abas e sem invocador de inspeção comprovadamente silencioso no CAIXA_MOOCA. `DedicatedEdgeProfile/DevToolsActivePort` teve modificação em 01/11 e não prova attach válido. Não executar comandos no caixa para forçar CDP, não usar o navegador operacional, não instalar sensor sem gate. O V3 copiado continua `STAGED_CODE`, não `DEPLOYED`.
 
 **Próximo ato permitido sem perturbação:** somente leitura/planejamento/QA em repositório ou Foxxy isolado; o salto para o primeiro pedido real exige canal de observação isolado e sem console comprovado no ambiente do caixa. Gate A permanece **PARTIAL/HOLD**, PR #137 **DRAFT**.
+
+## 20. Frescor do DOM não é frescor da origem — gate adicional
+
+**Risco observado no código:** `watch().reconcile()` refazia a leitura do DOM e renovava `observed_at` mesmo quando conteúdo visível permanecia inalterado. Sem recibo da origem, uma página congelada em segundo plano poderia parecer recém-observada. Isso não demonstra atualização real do Gestor do iFood.
+
+**Correção na PR #137:** commit `d78e844d27de87344ffd572e675757973bac561b` acrescenta ao recibo do `watch()`:
+- `observed_at`: data/hora da **última verificação local** do DOM (não timestamp iFood).
+- `visibleContentChangedAt`: data/hora da **última alteração detectada no resultado visível**, sem renovar a cada varredura idêntica.
+- `freshnessBasis=LOCAL_DOM_SCAN_ONLY`, `sourceFreshnessVerified=false`, `sourceUpdatedAt=null`: nenhum frescor do servidor do iFood alegado.
+
+**Testes:** commit `b348b7ab96b1f61215b793a72c56c4db33686c65` adicionou dois testes (40→42) para varredura idêntica não renovar mudança de conteúdo e para mudança visível de grupo não certificar frescor na origem. [GitHub Actions #41951024140](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/41951024140) `completed/success`, quatro jobs aprovados. Logs: Edge `42/42 (SYNTHETIC_ONLY; NO_ORDERS_FROM_IFOOD)`, Windows `45/45 NO_VISIBLE_WINDOWS`, readiness offline `53/53`. A validação é de laboratório, não do iFood.
+
+**Verificação passiva do caixa:** CAIXA_MOOCA online; `status.json` às `2026-11-05T01:45:40.020Z` (22h45 BRT de 04/11) reporta `schedule=DINNER`, `filesRead=250`, `ignoredHistorical=249`, `projectedOrderCount=1`, e permanece `sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `operationalOrderTotal=null`. Um registro do feed local **não** prova um pedido iFood. A extensão V2 continua sem nova captura estrutural comprovada; `DevToolsActivePort` tem mtime de 01/11 e não comprova ligação atual com Edge.
+
+**Decisão de execução:** sem shell, reinício de Edge, injecção CDP, extensões, tasks ou hooks visíveis no caixa. O V3 de 40 testes copiado anteriormente ao `GestorV3Staging` permanece **INATIVO** e não deve ser rotulado como versão dos 42 testes sem substituição verificada. Não houve sincronização deste commit ao caixa, nem ativação, merge ou deploy. Edge isolado ainda não foi ocultado por automação.
+
+**Gate A futuro:** instrumento read-only de sessão isolada comprovadamente silencioso + comparação de um pedido real (identidade, itens, quantidades, complementos), sem PII e sem efeitos no Gestor. Gate de esconder janela requer validar um HWND pertencente unicamente ao perfil dedicado e demonstrar atualização real da fonte quando em segundo plano; caso contrário, HOLD. `sourceFreshnessVerified` somente poderá mudar para true com evidência independente explícita, não via mudança de DOM.
