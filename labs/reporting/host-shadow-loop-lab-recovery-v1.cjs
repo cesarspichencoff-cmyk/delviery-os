@@ -40,6 +40,7 @@ let lastError = null;
 let projectionBootstrapped = false;
 let retryLockedAt = 0;
 const retryLockedMs=1100; // LAB fixture ONLY; production retry policy NOT authorized.
+const reproduceHostBaseline=process.env.DELIVERYOS_LAB_REPRODUCE_BASELINE==="1";
 
 function sleep(ms) {
   const sab = new SharedArrayBuffer(4);
@@ -214,7 +215,7 @@ function runOnce() {
   // Host baseline bug: SKIPPED_LOCKED sets bootstrapped and never retries
   // without a NEW envelope. This LAB variant permits a bounded retry.
   if (envelopeChanged || !projectionBootstrapped ||
-      (lastProjectionStatus==="SKIPPED_LOCKED" && Date.now()>=retryLockedAt)) {
+      (!reproduceHostBaseline && lastProjectionStatus==="SKIPPED_LOCKED" && Date.now()>=retryLockedAt)) {
     runProjector();
     projectionBootstrapped = true;
     retryLockedAt = lastProjectionStatus==="SKIPPED_LOCKED" ? Date.now()+retryLockedMs : 0;
