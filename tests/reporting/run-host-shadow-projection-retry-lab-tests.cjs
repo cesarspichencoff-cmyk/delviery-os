@@ -31,8 +31,11 @@ function replay({mode="RECOVER_ON_SECOND",baseline=false,cycles=5,lockAgeMs=null
       "const counter=path.join(root,'attempts.txt');",
       "const count=(fs.existsSync(counter)?Number(fs.readFileSync(counter,'utf8')):0)+1;",
       "fs.writeFileSync(counter,String(count));",
-      "const status=(process.env.DELIVERYOS_LAB_PROJECTOR_MODE==='ALWAYS_LOCKED'||count===1)",
-      "  ?'SKIPPED_LOCKED':'PROJECTED';",
+      "const mode=process.env.DELIVERYOS_LAB_PROJECTOR_MODE;",
+      "if(mode==='INVALID_JSON'){process.stdout.write('not-json');process.exit(0);}",
+      "if(mode==='UNKNOWN_RESULT'){process.stdout.write(JSON.stringify({status:'UNRECOGNIZED'}));process.exit(0);}",
+      "const status=(mode==='ALWAYS_LOCKED'||count===1)?'SKIPPED_LOCKED':",
+      "  mode==='CURRENT_AFTER_RETRY'?'CURRENT':'PROJECTED';",
       "process.stdout.write(JSON.stringify({status}));"
     ].join("\n")+"\n";
     fs.writeFileSync(path.join(root,"shadow","continuous_reporting_projector_v1.cjs"),stub);
@@ -79,6 +82,18 @@ check("stale lock remains intact, no projector execution and explicit HOLD",()=>
 check("fresh lock remains intact and no repeated projector child is launched",()=>{
   const r=replay({cycles:3,lockAgeMs:1000});
   assert.deepEqual(r,{attempts:0,lastProjection:"SKIPPED_LOCKED"});
+});
+check("malformed JSON stdout cannot claim projector OK",()=>{
+  const r=replay({mode:"INVALID_JSON",cycles:4});
+  assert.deepEqual(r,{attempts:1,lastProjection:"HOLD_PROJECTOR_OUTPUT_INVALID"});
+});
+check("unknown projector result cannot claim success",()=>{
+  const r=replay({mode:"UNKNOWN_RESULT",cycles:4});
+  assert.deepEqual(r,{attempts:1,lastProjection:"HOLD_PROJECTOR_RESULT_UNRECOGNIZED"});
+});
+check("actual native CURRENT status is accepted after unlocked retry",()=>{
+  const r=replay({mode:"CURRENT_AFTER_RETRY",cycles:5});
+  assert.deepEqual(r,{attempts:2,lastProjection:"CURRENT"});
 });
 check("lab candidate refuses execution without explicit sandbox root and marker",()=>{
   const r=spawnSync(process.execPath,[candidate],{encoding:"utf8",timeout:3000,
