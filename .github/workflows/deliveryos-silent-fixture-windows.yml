@@ -199,6 +199,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'ONE_SHOT_FIXTURE_BUILD_FAILED' }
           $node=(Get-Command node).Source
           $script=(Resolve-Path -LiteralPath 'labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs').Path
+          # Negative proof 1: same basename but attacker-selected path cannot execute.
+          $spoof=Join-Path $lab 'native_reader_one_shot_lab_cli_v1.cjs'
+          [IO.File]::WriteAllText($spoof,'process.exit(0)')
+          $wrongPath=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$spoof+'"'))
+          $rejectedPath=Start-Process -FilePath $guiExe -ArgumentList $wrongPath -Wait -PassThru
+          if($rejectedPath.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+            { throw 'ONE_SHOT_SPOOF_SCRIPT_ACCEPTED' }
+          Remove-Item -LiteralPath $spoof -Force
+          # Negative proof 2: even the approved checkout path must match its pinned blob.
+          $original=[IO.File]::ReadAllBytes($script)
+          try {
+            [IO.File]::WriteAllText($script,'// TEST TAMPER - MUST NOT RUN')
+            $exactPath=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$script+'"'))
+            $rejectedBlob=Start-Process -FilePath $guiExe -ArgumentList $exactPath -Wait -PassThru
+            if($rejectedBlob.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+              { throw 'ONE_SHOT_TAMPERED_CHECKOUT_ACCEPTED' }
+          } finally { [IO.File]::WriteAllBytes($script,$original) }
+          Write-Host 'NATIVE_READER_LAB_SCRIPT_IDENTITY_PASS 2/2 WRONG_PATH_AND_TAMPER_DENIED'
           Add-Type -TypeDefinition @'
           using System;
           using System.Runtime.InteropServices;
