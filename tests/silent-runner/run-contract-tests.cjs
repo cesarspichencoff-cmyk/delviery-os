@@ -55,5 +55,5 @@ check('SYSTEM metadata fixture requires disposable GitHub Windows runner',system
 check('SYSTEM metadata fixture tasks disabled and cannot demand start',systemLogonFixture.includes('New-ScheduledTaskSettingsSet -Disable -DisallowDemandStart'));
 check('SYSTEM metadata fixture cannot run scheduled tasks',!systemLogonFixture.includes('Start-ScheduledTask') && !systemLogonFixture.includes('Enable-ScheduledTask'));
 check('SYSTEM metadata fixture uses unique tasks and cleans up',systemLogonFixture.includes('[Guid]::NewGuid()') && systemLogonFixture.includes('Unregister-ScheduledTask'));
-console.log('SILENT_OBSERVER_LAB_CONTRACT_PASS +passed+'/'+passed+' (STATIC_OFFLINE_ONLY)');
+console.log('SILENT_OBSERVER_LAB_CONTRACT_PASS '+passed+'/'+passed+' (STATIC_OFFLINE_ONLY)');
 require('./run-reader-observer-noninteractive-review-tests.cjs');
