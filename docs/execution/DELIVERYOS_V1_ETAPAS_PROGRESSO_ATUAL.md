@@ -194,3 +194,9 @@ A documentação oficial de Task Scheduler separa `S4U` (conta de usuário) e `S
 
 **Próximo passo necessário:** obter prova passiva confiável da identidade efetiva e sessão onde a tarefa roda, comparando com XML e recibos, **sem chamar start_process/shell no caixa**; só depois decidir se há necessidade de mudar qualquer mecanismo de inicialização. A autorização anterior de César para ler uma única comanda não inclui modificar tarefa Windows. Nenhuma comanda, observação ou dado de cliente foi aberto; L2–L8 permanecem preservadas.
 
+## 05/11 — shells ativos sem origem atribuída; não alterar o Reader por hipótese
+
+Em uma amostra `list_processes` **somente leitura** no `CAIXA_MOOCA` foram encontrados 4 `powershell.exe`, 4 `cmd.exe` e 8 `node.exe`. Esses processos existem apesar das seis tarefas experimentais PowerShell estarem desativadas. **Não há evidência de que as instâncias estejam visíveis ao operador, nem correlação com a tarefa Reader, que no XML declara o principal `LocalSystem` (`S-1-5-18`).** A ferramenta não fornece conta/sessão/processo pai; não encerrar processos nem tocar nas tarefas sem prova adicional. [Diagnóstico de tela retificado](./DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md).
+
+**Prioridade corrigida:** reconciliar SID efetivo/recibos da tarefa e identificar processo-janelamento real por método passivo antes de propor qualquer alteração operacional. A rota S4U para a tarefa instalada está vetada em código (15/15 testes PASS). A prova Windows S4U de contas do laboratório não autoriza o caixa. Permanecem `L1=PARTIAL`, `N2/N3=HOLD`, `0/8` aceites de campo, com autorização condicional anterior restrita a uma leitura de pedido sem efeitos.
+
