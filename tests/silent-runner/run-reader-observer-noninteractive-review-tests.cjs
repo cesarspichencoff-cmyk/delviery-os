@@ -79,4 +79,28 @@ check('non-task strings rejected',()=>{
   const r=review(a,b);assert.equal(r.reason,'TASK_XML_INVALID');blocked(r);
  }
 });
+check('service accounts are never eligible for the S4U shortcut',()=>{
+ for(const sid of ['S-1-5-18','S-1-5-19','S-1-5-20']){
+  const baseline=original.replace('FICTIONAL_USER',sid);
+  const candidate=baseline.replace(from,to);
+  const r=review(baseline,candidate);
+  assert.equal(r.reason,'BUILTIN_SERVICE_PRINCIPAL_NOT_ELIGIBLE_FOR_S4U');
+  assert.equal(r.onlyLogonTypeChange,false);
+  blocked(r);
+  assert.equal(JSON.stringify(r).includes(sid),false);
+ }
+});
+check('baseline without principal is blocked',()=>{
+ const baseline=original.replace('<UserId>FICTIONAL_USER</UserId>','');
+ const r=review(baseline,baseline.replace(from,to));
+ assert.equal(r.reason,'TASK_PRINCIPAL_MISSING_OR_AMBIGUOUS');
+ blocked(r);
+});
+check('ambiguous duplicate principal in baseline is blocked',()=>{
+ const baseline=original.replace('<UserId>FICTIONAL_USER</UserId>',
+  '<UserId>FICTIONAL_USER</UserId><UserId>OTHER_USER</UserId>');
+ const r=review(baseline,baseline.replace(from,to));
+ assert.equal(r.reason,'TASK_PRINCIPAL_MISSING_OR_AMBIGUOUS');
+ blocked(r);
+});
 console.log('READER_OBSERVER_S4U_XML_REVIEW_PASS '+passed+'/'+passed+' SYNTHETIC_ONLY_NO_TASK_CHANGE');
