@@ -32,6 +32,8 @@ on:
       - runtime/reporting/gestor_visible_detail_probe_v1.js
       - runtime/reporting/gestor_window_selector_v1.cjs
       - runtime/reporting/gestor_dedicated_window_gate_v1.cjs
+      - runtime/reporting/gestor_dedicated_edge_inventory_win_v1.cs
+      - tests/gestor-shadow/DedicatedEdgeInventoryTests.cs
       - tests/gestor-shadow/run-dedicated-window-gate-tests.cjs
       - runtime/reporting/gestor_shadow_status_bridge_v1.cjs
       - tests/gestor-shadow/run-visible-detail-probe-tests.cjs
@@ -91,6 +93,39 @@ jobs:
           $ErrorActionPreference='Stop'
           & ./tests/silent-runner/verify-windows-fixture.ps1
           node tests/reporting/run-diagnostic-readiness-tests.cjs
+      - name: Prove dedicated Edge identity inventory in isolated Windows laboratory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'PRODUCTION_PC_FORBIDDEN' }
+          $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          if (!(Test-Path -LiteralPath $csc)) { throw 'COMPILER_MISSING' }
+          $src='runtime/reporting/gestor_dedicated_edge_inventory_win_v1.cs'
+          $test='tests/gestor-shadow/DedicatedEdgeInventoryTests.cs'
+          $testExe=Join-Path $env:RUNNER_TEMP 'DedicatedEdgeInventoryTests.exe'
+          $guiExe=Join-Path $env:RUNNER_TEMP 'DedicatedEdgeInventory.exe'
+          & $csc /nologo /target:exe /main:DeliveryOS.InventoryTests /reference:System.Management.dll "/out:$testExe" $src $test
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_IDENTITY_TEST_COMPILE_FAILED' }
+          & $testExe
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_IDENTITY_TEST_FAILED' }
+          & $csc /nologo /target:winexe /main:DeliveryOS.GestorReview.DedicatedEdgeInventory /reference:System.Management.dll "/out:$guiExe" $src
+          if ($LASTEXITCODE -ne 0) { throw 'NO_CONSOLE_INVENTORY_COMPILE_FAILED' }
+          $bytes=[IO.File]::ReadAllBytes($guiExe)
+          $pe=[BitConverter]::ToInt32($bytes,0x3c)
+          $subsystem=[BitConverter]::ToUInt16($bytes,$pe+24+68)
+          if ($subsystem -ne 2) { throw 'NOT_WINDOWS_GUI_SUBSYSTEM' }
+          $lab=Join-Path $env:RUNNER_TEMP 'deliveryos-edge-inventory-lab'
+          if (Test-Path -LiteralPath $lab) { throw 'LAB_DIR_ALREADY_EXISTS' }
+          [void](New-Item -ItemType Directory -Path $lab)
+          [IO.File]::WriteAllText((Join-Path $lab 'LAB_ONLY.txt'),'DELIVERYOS_EDGE_INVENTORY_LAB_ONLY_V1')
+          & $guiExe "--lab-dir=$lab"
+          if ($LASTEXITCODE -ne 0) { throw 'INVENTORY_EXECUTION_FAILED' }
+          $receipt=Get-Content -LiteralPath (Join-Path $lab 'inventory.status.json') -Raw | ConvertFrom-Json
+          if ($receipt.state -ne 'HOLD_NO_UNIQUE_DEDICATED_PROCESS') { throw 'LAB_INVENTORY_UNEXPECTED_STATE' }
+          if ($receipt.ordersPublishable -ne 0 -or $receipt.hideAuthorized -ne $false -or
+              $receipt.windowActionsExecuted -ne 0 -or $receipt.commandLinesExported -ne $false -or
+              $receipt.personalDataExported -ne $false) { throw 'INVENTORY_PRIVACY_OR_ACTIONS_FAILED' }
+          Write-Host 'GESTOR_DEDICATED_NATIVE_WINDOW_INVENTORY_PASS 20/20 PLUS_HOLD_RECEIPT LAB_ONLY NO_CONSOLE_SUBSYSTEM'
 
   native-station-link-review:
     name: Exact Reader line to R5D3 work (synthetic only)
