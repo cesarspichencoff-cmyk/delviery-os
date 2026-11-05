@@ -200,3 +200,10 @@ Em uma amostra `list_processes` **somente leitura** no `CAIXA_MOOCA` foram encon
 
 **Prioridade corrigida:** reconciliar SID efetivo/recibos da tarefa e identificar processo-janelamento real por método passivo antes de propor qualquer alteração operacional. A rota S4U para a tarefa instalada está vetada em código (15/15 testes PASS). A prova Windows S4U de contas do laboratório não autoriza o caixa. Permanecem `L1=PARTIAL`, `N2/N3=HOLD`, `0/8` aceites de campo, com autorização condicional anterior restrita a uma leitura de pedido sem efeitos.
 
+
+
+## Complemento L1 — proteção de tela e identificação da tarefa (05/11/2026)
+
+Leitura passiva no `CAIXA_MOOCA`: definição XML da tarefa `DeliveryOS-Itaim-Reader-Observe` com `UserId=S-1-5-18`, `LogonType=InteractiveToken`, `PT2M`, `IgnoreNew` e `Enabled=true`; recibos contemporâneos registram `principal=SISTEMA`. `SISTEMA` é nome localizado da **mesma conta LocalSystem**, não usuário concorrente. Persistem UNKNOWN quanto ao token/sessão reais do processo e PID causador de eventual janela. `S4U` para esta identidade continua **BLOCKED**, com validador e casos de aliases/SIDs na PR #137.
+
+Status agregado do observador em `2026-11-05T19:43:39.666Z`: `OUTSIDE_SERVICE_WINDOW`, `liveSourceVerified=false`, `operationalOrderTotal=null`. Último diagnóstico armazenado do almoço em `2026-11-05T17:59:39.254Z`: `UNAVAILABLE`, `SOURCE_CHANGED_DURING_READ`; esse registro **não comprova pedido válido nem prontidão**, e não autoriza alterar a fonte. Nenhum comando/shell/processo criado no caixa, nenhuma leitura de pedido bruto, nenhuma tarefa alterada. N2/N3, L1 e aceite da V1 permanecem **HOLD (0/8)**.
