@@ -146,3 +146,11 @@ PR #135 TATÁ Comandas permanece DRAFT/HOLD. Consumidor com efeitos de arquivo e
 
 **Prova, limites, próximo gate:** [`DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md`](./DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md). Sem autorização para executar a variante de laboratório no caixa; ela o proíbe. Próximo passo relevante **não é outro teste sintético semelhante**, mas uma autorização explícita e a homologação de uma variante mínima e silenciosa de campo que leia **uma única revisão já emitida no próprio host**, sem extrair bruto/PII, somada à atestação independente da leitura completa/origem SQL. N2/N3 seguem sem prova real; a Home não publica pedidos. L2–L8 preservadas no plano original.
 
+## 05/11 — autorização condicional recebida; teste real bloqueado pelo canal de execução
+
+**L1/N2–N3.** César autorizou **uma** revisão antiga, somente leitura e supervisionada, condicionada a zero janelas/terminal, zero alteração ou interferência no caixa e zero exportação de conteúdo bruto de cliente. **Não confundir autorização recebida com condição atendida ou execução concluída.**
+
+O pré-check read-only no `CAIXA_MOOCA` encontrou checkpoint válido com 250/250 entradas estabilizadas, uma revisão selecionada e arquivo já emitido presente (5.227 bytes). O Reader segue `RUNNING`, com falhas consecutivas zero na amostra. **Nenhum pedido/observação foi aberto.** O canal `read_file` exportaria o bruto para a sessão; `start_process` usa shell PowerShell e não comprova invisibilidade no Windows efetivo. Nenhum dos dois satisfaz as condições; portanto, **FIELD_TEST=NOT_ATTEMPTED**, `N2/N3=HOLD`, `V1=0/8`, sem alteração no host.
+
+A autorização e o blocker operacional ficam registrados em [`DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md`](./DELIVERYOS_READER_N2N3_EXISTING_EVENT_ONE_SHOT_INTEGRATED_GATE_20261105.md). Próximo avanço: validar **invocação local sem terminal e sem exportação**; não solicitar repetição da mesma autorização nem substituir o bloqueio por execução arriscada.
+
