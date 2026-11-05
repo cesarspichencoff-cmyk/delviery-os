@@ -6,8 +6,18 @@ const {review}=require('./native_reader_n2n3_sanitized_receipt_v1.cjs');
 const SCHEMA='deliveryos.native-reader-existing-event-binding.v1';
 const SOURCE_CHECKPOINT='deliveryos.tata-reader-continuous-checkpoint.v1';
 const safe=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
-const stamp=x=>typeof x==='string'&&
- /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?$/.test(x);
+// SQL native wall time has NO offset; check calendar validity without
+// converting it to a UTC instant or assuming the host time zone.
+const stamp=x=>{
+ if(typeof x!=='string')return false;
+ const m=/^(20\d{2})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,7})?$/.exec(x);
+ if(!m)return false;
+ const [y,mo,d,h,mi,se]=m.slice(1).map(Number);
+ const t=new Date(Date.UTC(y,mo-1,d,h,mi,se));
+ return t.getUTCFullYear()===y&&t.getUTCMonth()+1===mo&&
+  t.getUTCDate()===d&&t.getUTCHours()===h&&
+  t.getUTCMinutes()===mi&&t.getUTCSeconds()===se;
+};
 const hold=reason=>Object.freeze({schema:SCHEMA,state:'HOLD',reason,
  checkpointBound:false,sourceVerified:false,completeSqlReadVerified:false,
  ordersPublishable:0,homePublishAuthorized:false,privateDescriptor:null});
@@ -35,7 +45,7 @@ function selectOne(checkpoint){
    previous=e.last_seen_order_time;
    if(typeof e.snapshot_hash!=='string'||
       !/^[0-9A-F]{64}$/.test(e.snapshot_hash)||
-      (e.emitted_hash!==null&&typeof e.emitted_hash!=='string')||
+      (e.emitted_hash!==null&&!/^[0-9A-F]{64}$/.test(e.emitted_hash))||
       !Number.isSafeInteger(e.stable_count)||e.stable_count<1)
     return hold('CHECKPOINT_HASH_OR_STABILITY_INVALID');
   }
