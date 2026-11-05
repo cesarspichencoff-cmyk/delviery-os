@@ -61,7 +61,7 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 
 ### ETAPA 5 — Censo físico e modo sombra
 **ESTADO: PENDENTE.**
-- Censo natural de papel almoço/jantar já autorizado **somente para observar**; resultado ainda desconhecido. D1 = papel nativo conforme na amostra; D2 = anomalia; D0 = incompleto.
+- Censo natural de papel almoço/jantar já autorizado **somente para observar**; resultado ainda desconhecido. **D1 = relato estruturado provisoriamente conforme, não autenticado**; D2 = anomalia relatada; D0 = evidência insuficiente. Nenhum desses rótulos comprova papel físico ou autoriza impressão.
 - Simulação dos tickets TATÁ sem imprimir requer canal/piloto autorizado separadamente caso envolva cópia/execução no caixa; comparar conteúdo/observações/rotas, medir cobertura sem PII. `Printed` na fila != papel.
 - **GATE 5:** decidir por prova entre preservar Cozinha/Sushi nativas e acrescentar Conferência ou substituir vias sob plano próprio; nenhuma rota passa automaticamente à produção.
 
@@ -203,8 +203,8 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 
 **Rota atual D0 — manter a operação nativa intocada e a conferência TATÁ somente em sombra.** Não há censo físico concluído de papel. A prova de 02/11 `docs/comandas/CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md` documenta autorização **apenas para observação passiva** do papel que sairia normalmente; ela ainda não comprova chegada, cobertura ou não duplicidade nas praças. Nenhuma rotina de captura/print novo deve ser iniciada a partir deste plano.
 
-- **Se D1_SAMPLE_CONFORME for observado nos dois turnos:** ganha suporte preservar Cozinha/Sushi nativas e homologar somente **Conferência TATÁ em sombra**. A amostra não dispensa origem iFood independente, sequência TATÁ comprovadamente persistente, revisão semanticamente completa, efeito físico exclusivo e posterior autorização específica para piloto.
-- **Se D2_ANOMALIA_OBSERVADA:** manter toda nova emissão `HOLD`; investigar falha de conteúdo/rota/duplicidade e a fonte exata antes de pensar em substituição.
+- **Se D1_SAMPLE_CONFORME_RELATADA_NAO_AUTENTICADA for informado nos dois turnos:** é apenas indício organizado; a decisão de preservar Cozinha/Sushi nativas exige revisão do vínculo papel-pedido e testemunho presencial, mantendo a **Conferência TATÁ somente em sombra**. A amostra não dispensa origem iFood independente, sequência TATÁ comprovadamente persistente, revisão semanticamente completa, efeito físico exclusivo e posterior autorização específica para piloto.
+- **Se D2_ANOMALIA_RELATADA_REQUER_APURACAO:** manter toda nova emissão `HOLD`; investigar o relato de falha de conteúdo/rota/duplicidade e a fonte exata antes de pensar em substituição, sem tratar a causa como autenticada.
 - **Se D0 / parcial / não observado:** nenhuma decisão de substituir vias, ligar nova impressora ou duplicar comanda; manter fonte instalada e plano de verificação.
 - **Substituir produção Cozinha/Sushi** agora requer mais evidência e superfície de risco (primeiro despacho nativo, parada seletiva, concorrência, backlog, recuperação e rollback físico). Não é a próxima ação justificada pelas provas atuais.
 
@@ -222,7 +222,7 @@ O TATÁ é consumidor de dados/roteador de produção; **Teknisa permanece siste
 2. **Candidata de uma comanda (NÃO EXECUTAR):** `tools/comandas_reader_one_order_serializable_REVIEW_ONLY.sql`: `SELECT TOP (201)`, `0001/01/DLV_IFO`, parâmetros nativos `varchar(10)`, todos os 17 campos, notas, `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`, `LOCK_TIMEOUT 100`, `DEADLOCK_PRIORITY LOW`, `MAXDOP 1`. Os testes estáticos `tools/verificar_comandas_reader_one_order_serializable_review_only.cjs` já protegem forma e conteúdo. **LOCK_TIMEOUT limita a espera do leitor, não o tempo de bloqueio de um writer do PDV**; uma consulta curta e seek plausível não são garantias. Não modificar o banco globalmente para obter RCSI.
 3. **Gate 3 ainda aberto:** falta plano estimado comprovado da **candidata exata**, cardinalidade de produto/joins, custo e possibilidade de varredura/espera/travamento, prova de origem por Reader e, separadamente, protocolo para a **completude semântica** dos commits de cabeçalho, itens e observações. `SERIALIZABLE` pode produzir visão transacional coerente sem provar que a aplicação completou uma revisão lógica repartida. Não autorizar leitura real de pedidos por uma simples CI verde.
 4. **Critérios STOP propostos (a validar antes de qualquer ensaio):** ausência de plano/cadeia de identidade, conversão implícita relevante, varredura ampla, expectativa de locks em escrituras do POS, esquema divergente, sessão diferente da conta Reader, cardinalidade `201` (sentinela de truncamento), qualquer timeout/erro, plano alterado, dados livres/PII expostos ou impossibilidade de comprovar a revisão → **HOLD sem retries automáticos**. Os limiares de latência e impacto físico ainda precisam de medição e autorização, não devem ser inventados.
-5. **Rota D0 preservada:** manter vias nativas Cozinha/Sushi; Conferência TATÁ somente sombra. O censo visual do papel já estava autorizado só para observação natural, mas seu resultado não foi coletado. Apenas com evidência D1 ou D2 poderá ser reconsiderada a arquitetura das vias — sem autorização automática de impressão/cutover.
+5. **Rota D0 preservada:** manter vias nativas Cozinha/Sushi; Conferência TATÁ somente sombra. O censo visual do papel já estava autorizado só para observação natural, mas seu resultado não foi coletado. Um futuro D1 ou D2 **de autorrelato** orientará a investigação; reconsiderar a arquitetura exige confirmação presencial e revisão independente da prova, sem autorização automática de impressão/cutover.
 
 **Fronteira:** `GATE_2_SYNTHETIC=PASS`; `STAGE_3_OFFLINE_PREP=IN_PROGRESS`; `STAGE_3_REAL_SQL=NOT_ATTEMPTED`; `SQL_PLAN_OF_CANDIDATE=UNKNOWN`; `WRITER_BLOCKING_EFFECT=UNKNOWN`; `PAPER_CENSUS=NOT_OBSERVED`; `PRODUCTION=HOLD`. Esta transição **não autoriza** SQL vivo, instalação, reinício, mudança do caixa, spooler, impressão, SEFAZ, sequência ou merge.
 
@@ -289,7 +289,7 @@ A documentação Microsoft SQL Server confirma que `SERIALIZABLE` pode reter blo
 
 ### Próximo passo que realmente muda a decisão
 
-**Primeiro** obter as duas amostras **reais e passivas** conforme o protocolo já autorizado, preservando identificadores apenas dentro da operação e fornecendo ao projeto somente totais/flags sem PII. **Depois**, comparar o resultado D0/D1/D2, a cobertura por praça e as anomalias com a alternativa SQL bloqueante. Mesmo um D1 físico confirmado **não habilita** automaticamente papel de Conferência, sequência ou Reader novo; ele apenas fortalece a decisão de preservar Cozinha/Sushi nativas. Não antecipar instalação ou contatar fornecedores sem autorização separada.
+**Primeiro** obter as duas amostras **reais e passivas** conforme o protocolo já autorizado, preservando identificadores apenas dentro da operação e fornecendo ao projeto somente totais/flags sem PII. **Depois**, comparar o resultado D0/D1/D2, a cobertura por praça e as anomalias com a alternativa SQL bloqueante. Mesmo uma amostra física efetivamente testemunhada e revisada **não habilita** automaticamente papel de Conferência, sequência ou Reader novo; ele apenas fortalece a decisão de preservar Cozinha/Sushi nativas. Não antecipar instalação ou contatar fornecedores sem autorização separada.
 
 ## Etapa 3 — censo passivo: corrigido o falso D1 sem cobertura das praças (04/11/2026)
 
@@ -390,7 +390,7 @@ Para usar índice como evidência, revisar `is_unique`, colunas-chave `key_ordin
 | Cenário comprovado | Decisão permitida | O que continua proibido |
 |---|---|---|
 | **D0 / nenhum censo físico verificado** (estado atual) | Preservar impressão nativa; manter Conferência TATÁ em sombra e observação passiva previamente autorizada | Novo print, instalação, consulta de pedidos, troca de Reader, corte de vias, avanço de gate |
-| **D1 / amostra física conforme e bem testemunhada** | Preferir rota de **preservar Cozinha/Sushi nativas**; especificar homologação independente da Conferência, ainda `HOLD` | Inferir conformidade universal, assumir número TATÁ persistido ou liberar a Conferência para papel |
+| **D1 autorrelatado + amostra física conferida presencialmente** | Considerar rota de **preservar Cozinha/Sushi nativas**; especificar homologação independente da Conferência, ainda `HOLD` | Tratar apenas o rótulo D1 como prova física, inferir conformidade universal, assumir número TATÁ persistido ou liberar a Conferência para papel |
 | **D2 / anomalia efetivamente observada** | Investigar praça, origem, momento, dupla emissão e conteúdo sob plano próprio; preservar fonte nativa até diagnóstico | Acionar GP/Gestor, duplicar vias, reimprimir testes ou substituir produção como correção automática |
 | **Proposta futura de substituição das vias nativas** | Só reconsiderar com evidência de primeiro despacho, corte seletivo, plano candidato, impacto nos escritores, revisão completa, backlog e rollback; autorização específica | Tratar PK única ou CI verde como prova de segurança operacional |
 
@@ -613,3 +613,10 @@ A estabilidade das contagens e do `mtime`, combinada à retenção positiva **hi
 **Correção mínima:** reunir **tipos distintos por turno** em `Set`, incluindo `CONTENT_MISMATCH` para `content_compared=NO` e `NOTE_OMITTED` para `notes_compared=NO`; somar a quantidade de tipos por turno, sem colapsar resultados de turnos diferentes e sem converter tipos em número de incidentes. O protocolo humano agora explicita a regra; quatro testes adversariais foram adicionados (52→56). O mesmo tipo em ambos os turnos conta uma vez em cada turno. Todos os resultados permanecem `review_status=HOLD`, sem prova física autenticada e sem efeitos externos.
 
 **Verificação da mudança:** workflow Linux/Windows da PR já inclui `node tools/verificar_comandas_passive_paper_census_review_only.cjs` em ambos os jobs; CI do novo SHA deverá confirmar `56/56` e demais regressões. Nenhum comando foi executado em CAIXA_MOOCA, Foxxy, SQL, spooler, impressoras, GP/Teknisa ou rede de produção; atualização apenas na branch draft. `PAPER_CENSUS=NOT_OBSERVED`; `STAGE_3=IN_PROGRESS`; `PRINT=HOLD`; `CUTOVER=HOLD`.
+
+
+## Etapa 3 — reconciliação dos critérios de decisão D0/D1/D2 (05/11/2026)
+
+**Falha de redação material, agora corrigida:** trechos históricos do plano chamavam o D1 de `papel nativo conforme na amostra` e usavam rótulos antigos D1/D2, apesar de o classificador vigente (`tools/comandas_passive_paper_census_review_only.cjs`, schema v2) garantir `sample_provenance=UNATTESTED_HUMAN_REPORT`, `native_paper_sample_proven=false` e `review_status=HOLD`. Os pontos de decisão das Etapas 3/5 foram alinhados: D1 **não autentica** papel ou testemunhas, D2 é anomalia **relatada**, D0 é evidência insuficiente. Para qualquer mudança de arquitetura, distinguir o relato agregado da validação humana presencial independente; nenhum rótulo autoriza sozinho impressão, reimpressão ou cutover.
+
+**Evidência de CI anterior exata:** commit `3ec9d65f8e42e0d3f7d1d10f47b283e509406d11` passou no workflow #41974215294, Linux e Windows `completed/success`, inclusive os **56/56** testes sintéticos do classificador. Esta nova atualização documental terá CI própria. Não foram produzidas novas observações de papel nem houve ações no host, fila, SQL, Reader instalado, Gestor, GP ou Teknisa. `PAPER_CENSUS=NOT_OBSERVED`; `STAGE_3=IN_PROGRESS`; `STAGE_4=NOT_AUTHORIZED`; `PRINT=HOLD`; `CUTOVER=HOLD`.
