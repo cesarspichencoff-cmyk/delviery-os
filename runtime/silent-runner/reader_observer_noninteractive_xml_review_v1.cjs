@@ -34,6 +34,15 @@ function review(original,proposed){
      count(original,'<Enabled>true</Enabled>')<1||
      !/<Command>[^<]+<\/Command>/.test(original))
    return safeStatus('BASELINE_CONTRACT_NOT_MATCHED');
+  // A one-field S4U change is categorically WRONG for Windows built-in
+  // service principals (SYSTEM/LocalService/NetworkService). Task Scheduler
+  // provides ServiceAccount logon for those identities. Reject the real
+  // CAIXA_MOOCA task XML until the installed-vs-receipt principal is reconciled.
+  const userMatches=[...original.matchAll(/<UserId>([^<]*)<\/UserId>/g)];
+  if(userMatches.length!==1 || !userMatches[0][1].trim())
+   return safeStatus('TASK_PRINCIPAL_MISSING_OR_AMBIGUOUS');
+  if(/^S-1-5-(?:18|19|20)$/i.test(userMatches[0][1].trim()))
+   return safeStatus('BUILTIN_SERVICE_PRINCIPAL_NOT_ELIGIBLE_FOR_S4U');
   if(proposed!==original.replace(FROM,TO))
    return safeStatus('UNAUTHORIZED_XML_DIFFERENCE');
   return safeStatus('ONLY_LOGON_TYPE_CHANGED_BUT_FIELD_GATES_PENDING',true);
