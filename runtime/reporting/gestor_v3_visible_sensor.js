@@ -187,7 +187,16 @@
   function watch(doc, config, onChange, ttlMs = 60000) {
     if (typeof onChange !== "function" || !Number.isInteger(ttlMs) || ttlMs < 1000 || ttlMs > 120000)
       throw Error("INVALID_WATCH_ARGUMENT");
-    let stopped = false, pending = false, last = null, latestAt = 0, previous = "";
+    let stopped = false, pending = false, last = null, latestAt = 0;
+    let changedAt = 0, previous = "";
+    // Local DOM observation is NOT an upstream iFood heartbeat.
+    // Repeated unchanged scans must not make the visible content seem newer.
+    const receipt = (snapshot) => Object.freeze({
+      ...snapshot, observed_at: new Date(latestAt).toISOString(),
+      visibleContentChangedAt: changedAt ? new Date(changedAt).toISOString() : null,
+      freshnessBasis: "LOCAL_DOM_SCAN_ONLY",
+      sourceFreshnessVerified: false, sourceUpdatedAt: null,
+    });
     function reconcile() {
       if (stopped) return null;
       const snapshot = scan(doc, config);
@@ -196,7 +205,8 @@
       const signature = JSON.stringify(snapshot);
       if (signature !== previous) {
         previous = signature;
-        onChange(Object.freeze({ ...snapshot, observed_at: new Date(latestAt).toISOString() }));
+        changedAt = latestAt;
+        onChange(receipt(snapshot));
       }
       return snapshot;
     }
@@ -214,7 +224,7 @@
       current(now = Date.now()) {
         if (!last || now < latestAt - 2000 || now - latestAt > ttlMs)
           return fail("HOLD_STALE");
-        return Object.freeze({ ...last, observed_at: new Date(latestAt).toISOString() });
+        return receipt(last);
       },
       stop() { stopped = true; observer.disconnect(); },
     });
