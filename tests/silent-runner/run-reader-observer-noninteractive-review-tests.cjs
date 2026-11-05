@@ -90,6 +90,17 @@ check('service accounts are never eligible for the S4U shortcut',()=>{
   assert.equal(JSON.stringify(r).includes(sid),false);
  }
 });
+check('localized and English built-in service-account names also reject S4U',()=>{
+ for(const principal of ['SYSTEM','SISTEMA','LocalSystem','NT AUTHORITY\\SYSTEM',
+   'NT AUTHORITY\\LOCAL SERVICE','NT AUTHORITY\\NETWORK SERVICE','SERVIÇO LOCAL','Serviço de Rede']){
+  const baseline=original.replace('FICTIONAL_USER',principal);
+  const r=review(baseline,baseline.replace(from,to));
+  assert.equal(r.reason,'BUILTIN_SERVICE_PRINCIPAL_NOT_ELIGIBLE_FOR_S4U');
+  assert.equal(r.onlyLogonTypeChange,false);
+  blocked(r);
+  assert.equal(JSON.stringify(r).includes(principal),false);
+ }
+});
 check('baseline without principal is blocked',()=>{
  const baseline=original.replace('<UserId>FICTIONAL_USER</UserId>','');
  const r=review(baseline,baseline.replace(from,to));
