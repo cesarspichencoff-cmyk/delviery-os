@@ -472,3 +472,33 @@ O documento de homologação `docs/comandas/CANDIDATA_FINAL_HOMOLOGACAO_20261102
 **Teste incorporado:** commit d80ff1e7 adiciona dois casos ao teste verificar_comandas_shadow_bundle_v1.cjs que constroem o bundle isolado e executam subprocessos Node em caminhos deliberadamente inexistentes com identificadores fictícios sentinela. Exigem stderr constante, stdout vazio, código de saída esperado (1 no par, 4 na Conferência) e nenhuma exposição da sentinela. Workflow já chama esse verificador tanto em Linux quanto em Windows. CI #41958830244 estava em andamento no momento da escrita; **não declarar PASS até resultado dos dois jobs no SHA exato**.
 
 **Limites:** o bundle histórico ainda contém V7.14 como arquivo pinado, embora o executor sanitizado não o chame; não levar o bundle integral ao caixa como se fosse pacote confinado. Não houve execução de pacote no CAIXA_MOOCA, teste de papel, migração, nova leitura de SQL ou ação física. PAPER_CENSUS=NOT_OBSERVED; HOST_SHADOW_PILOT=BLOCKED; PRINT=HOLD; STAGE_3=IN_PROGRESS. Próximo trabalho de maior valor é o censo físico passivo já autorizado, e não outra rodada de fixtures substituindo a prova real.
+
+
+## Etapa 3 — auditoria eletrônica das evidências de impressão (05/11/2026)
+
+**OBJETIVO:** explorar a telemetria já existente antes de exigir censo físico amplo. Inspeção diretamente no dispositivo CAIXA_MOOCA (host Itaim) exclusivamente com list_devices, read_multiple_files, list_directory, get_file_info e list_processes. Não houve consulta SQL, comando CMD/PowerShell iniciado, alteração de serviços, tarefas, fila, spooler, impressora ou arquivos. Nenhum conteúdo SPL/SHD ou documento de cliente foi aberto ou exportado.
+
+### Provas de metadados do host
+
+1. Reader em state/reader-heartbeat-v1.json, lido por volta de 05/11 01:07 (São Paulo): RUNNING; watcher V2 com hash esperado verificado; último lote OK, poll_errors=0, events_emitted=0 e duplicates_suppressed=1000 (ciclos de polling, não mil pedidos únicos). Total acumulado events_emitted=4123, sem implicar impressão.
+2. Consumidor sombra em evidence/shadow-consumer-status.json, atualizado em 05/11 01:07: RUNNING, processed=4180, ready_count=779, blocked_count=3401, print=false e spooler_write=false. São contadores acumulados de processamento, não pedidos distintos ou papéis impressos.
+3. O mapa shadow/printer-map.json documenta configuração de 30/09 de Cozinha, Delivery Sushi 1/2, balcões e CAIXA. Há referência a servidor de periféricos separado para várias filas. Configuração estática não é prova de emissão atual.
+4. Diretório C:\Windows\System32\spool\PRINTERS: 6.712 arquivos; precisamente 3.356 pares de nomes SHD/SPL em listagem, sem abrir conteúdo. Cinco arquivos SPL amostrados por metadados entre começo, quartos e fim do inventário têm criação entre 22/10 e 04/11 no fuso local. Nenhum arquivo foi aberto, removido, copiado ou associado a um pedido específico.
+5. Log Microsoft-Windows-PrintService%4Operational.evtx existe, com 1.052.672 bytes e última modificação observada em 04/11 23:32:54 local; log Admin também existe. Nenhum evento ou ID foi decodificado; ainda não há correlação de trabalho, impressora, pedido ou conclusão. Presença do processo spoolsv não prova fila saudável.
+6. Observer local status.json, atualizado em 05/11 01:01, declara CONTROL_DIAGNOSTIC_NOT_REAL_PROOF, liveSourceVerified=false, operationalOrderTotal=null, fora do horário. Relatórios de materialização com database_read=false são históricos, não prova de papéis atuais.
+
+### Interpretação e riscos
+
+- Há trilha eletrônica local digna de investigação antes de exigir extensa coleta de papel. O fato observável é a presença de arquivos e do log, NÃO a identificação de trabalhos de delivery.
+- Os 3.356 pares não significam 3.356 comandas perdidas, não impressas ou entregues; separar fila ativa, documentos retidos intencionalmente, arquivos órfãos e trabalhos de outros aplicativos. KeepPrintedJobs NÃO foi consultado. O servidor de periféricos pode operar fora do spool local.
+- A Microsoft documenta que, no fluxo usual, arquivos SPL/SHD são excluídos após conclusão e que remanescentes justificam diagnóstico. A referência não autoriza limpeza/reinício: https://learn.microsoft.com/pt-br/troubleshoot/windows-server/printing/troubleshoot-printing-scenarios .
+- Mesmo evento de trabalho concluído no PrintService não comprova papel físico entregue à praça. Nunca limpar/reiniciar spooler, pois trabalhos ainda válidos podem ser perdidos.
+
+### Próximo gate seguro — eletrônico primeiro
+
+1. Somente leitura e sem janelas no caixa: apurar KeepPrintedJobs, estado real de fila, retenção e presença de arquivos órfãos com superfícies já existentes. Se requerer terminal visível ou mudar configuração, não executar; efeito/autorização separados.
+2. Extrair em canal local autorizado somente contagens e estados agregados do log PrintService por intervalo e impressora, SEM nomes de documentos, conteúdo de pedidos, cliente ou dados fiscais no chat/GitHub. Distinguir fila Windows local do servidor de periféricos e atestar se essas impressões são realmente da Teknisa.
+3. Correlacionar digitalmente pedidos Reader e saídas de impressão somente quando houver identidade/origem suficientemente forte e autorização de leitura adequada. Não supor autorização para SQL adicional ou novo acesso ao servidor de periféricos.
+4. Depois reavaliar a observação física passiva já autorizada para confirmação de papel real; telemetria pode focalizar a amostra, mas não elimina prova visual sem decisão explícita. O contrato do censo permanece vigente até revisão autorizada.
+
+**STATUS:** STAGE_3=IN_PROGRESS; SPOOL_FILE_PAIRS=3356_METADATA_OBSERVED; PRINTSERVICE_LOG_PRESENT=METADATA_OBSERVED; CURRENT_QUEUE_STATE=UNKNOWN; KEEP_PRINTED_JOBS=UNKNOWN; PRINT_EVENT_LOG_CONTENT=NOT_INSPECTED; PERIPHERALS_SERVER_PRINT_PATH=UNKNOWN; PAPER_CENSUS=NOT_OBSERVED; HOST_SHADOW_PILOT=BLOCKED; PRINT=HOLD; CUTOVER=HOLD. Nenhuma autorização de Etapa 4/5 ou operação alterada.
