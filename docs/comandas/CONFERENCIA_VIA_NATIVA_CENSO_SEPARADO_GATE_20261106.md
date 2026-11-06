@@ -36,3 +36,8 @@ A ferramenta somente **classifica relatos fornecidos**. Ela não observa impress
 ## Gate temporal acrescentado na revisão
 
 A testemunha específica da Conferência deve trazer `day` (AAAA-MM-DD) e `window` (ALMOCO/JANTAR) correspondentes **exatamente** à mesma data e turno da amostra v2 de produção. Um registro de outro dia não pode satisfazer o turno só porque seus agregados de contagem parecem iguais. Recusa de calendário inválido ou dia divergente = D0. A correspondência declarada de data ainda não prova observação física.
+
+
+## Revisão adversarial: mesmos números não garantem os mesmos pedidos
+
+Apenas data, turno e quantidade de pedidos vinculados não bastam: duas amostras distintas de 20 pedidos podem produzir o mesmo agregado no mesmo almoço. O formulário da Conferência requer agora `same_consecutive_order_cohort_confirmed` (`YES`/`NO`/`UNKNOWN`), declarado pelo acompanhamento visual local, referindo-se **aos mesmos pedidos consecutivos** da amostra v2 de produção, não só ao mesmo total. Apenas `YES` em ambos os turnos permite D1 provisório; `NO` ou `UNKNOWN` resulta em D0, com motivo `CONFERENCE_SAME_ORDER_COHORT_NOT_CONFIRMED`. Evidência de anomalia relatada permanece D2 mesmo quando o vínculo da coorte é desconhecido. O algoritmo não recebe números de comanda, aliases individuais, notas, fotos ou identificadores dos clientes. A confirmação continua auto declarada, jamais prova independente de identidade ou autenticação física.

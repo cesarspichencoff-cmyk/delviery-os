@@ -15,6 +15,7 @@ const shift=window=>({window,day:'2026-11-06',orders_available:25,
 const conf=window=>({window,day:'2026-11-06',paper_seen:'YES',reported_origin:'TEKNISA_NATIVE_REPORTED',
  paper_kind:'CONFERENCE_NONFISCAL_REPORTED',
  caixa_watched_whole_sample:'YES',order_link_confirmed:'YES',
+ same_consecutive_order_cohort_confirmed:'YES',
  orders_matched:20,items_quantities_match:'YES',notes_match:'YES',
  one_paper_per_order:'YES',late_output_checked:'YES',
  additional_tata_paper_seen:'NO'});
@@ -55,6 +56,7 @@ test('fully claimed paper observation still is D1 self reported only',()=>{
  const o=check(baseline(),D1);
  assert.equal(o.conference_shifts_reported,2);
  assert.equal(o.conference_orders_visually_matched_reported,40);
+ assert.equal(o.same_production_cohort_shifts_reported,2);
  assert.equal(o.native_conference_paper_world_proven,false);
 });
 test('one conference shift insufficient',()=>{
@@ -163,6 +165,28 @@ test('invalid conference calendar day is rejected',()=>{
  const x=baseline();x.conference_observations[0].day='2026-02-30';
  check(x,D0,'CONFERENCE_REPORT_SHAPE_OR_PRIVACY_INVALID');
 });
-if(cases!==34)throw Error('CONFERENCE_CENSUS_CASE_COUNT_'+cases);
+test('same day and counts but different order cohort cannot yield D1',()=>{
+ const x=baseline();
+ x.conference_observations[0].same_consecutive_order_cohort_confirmed='NO';
+ const out=check(x,D0,'CONFERENCE_SAME_ORDER_COHORT_NOT_CONFIRMED');
+ assert.equal(out.same_production_cohort_shifts_reported,1);
+});
+test('unknown cohort despite visual paper match remains D0',()=>{
+ const x=baseline();
+ x.conference_observations[1].same_consecutive_order_cohort_confirmed='UNKNOWN';
+ check(x,D0,'CONFERENCE_SAME_ORDER_COHORT_NOT_CONFIRMED');
+});
+test('missing cohort declaration is invalid shape',()=>{
+ const x=baseline();
+ delete x.conference_observations[0].same_consecutive_order_cohort_confirmed;
+ check(x,D0,'CONFERENCE_REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+test('reported anomaly remains D2 even if cohort is not identified',()=>{
+ const x=baseline();
+ x.conference_observations[1].same_consecutive_order_cohort_confirmed='UNKNOWN';
+ x.conference_observations[1].one_paper_per_order='NO';
+ check(x,D2,'REPORTED_PAPER_ANOMALY_NOT_CAUSAL_OR_WORLD_PROOF');
+});
+if(cases!==38)throw Error('CONFERENCE_CENSUS_CASE_COUNT_'+cases);
 console.log('COMANDAS_NATIVE_CONFERENCE_CENSUS='+cases+'/'+cases+
  ' HUMAN_REPORT_ONLY NO_PAPER_IO NO_FIELD_PROOF PRINT_HOLD');

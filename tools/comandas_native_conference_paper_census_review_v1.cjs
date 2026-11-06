@@ -9,7 +9,8 @@ const {review:reviewProduction,SCHEMA:PRODUCTION_SCHEMA} =
  require('./comandas_passive_paper_census_review_only.cjs');
 const SCHEMA='tata.comandas.native-conference-paper-census-review.v1';
 const FIELDS=['window','day','paper_seen','reported_origin','paper_kind',
- 'caixa_watched_whole_sample','order_link_confirmed','orders_matched',
+ 'caixa_watched_whole_sample','order_link_confirmed',
+ 'same_consecutive_order_cohort_confirmed','orders_matched',
  'items_quantities_match','notes_match','one_paper_per_order',
  'late_output_checked','additional_tata_paper_seen'];
 const PERMISSIONS=Object.freeze({sql:false,reader:false,service:false,
@@ -28,6 +29,7 @@ function result(classification,reason,details={}){
   production_sample_classification:details.production_sample_classification||D0,
   conference_shifts_reported:details.shifts||0,
   conference_orders_visually_matched_reported:details.matched||0,
+  same_production_cohort_shifts_reported:details.cohort_matches||0,
   report_anomaly_categories:details.report_anomaly_categories||0,
   native_conference_paper_world_proven:false,
   all_native_paper_sources_authenticated:false,
@@ -56,6 +58,7 @@ function review(input){
   const sampled=new Map(shifts.map(s=>[s.window,s]));
   const seen=new Set();
   let matched=0,anomalies=0,complete=true;
+  let cohortMatchesReported=0;
   for(const c of input.conference_observations){
    if(!exact(c,FIELDS)||!['ALMOCO','JANTAR'].includes(c.window)||
       seen.has(c.window)||!sampled.has(c.window)||
@@ -63,7 +66,9 @@ function review(input){
       !Number.isFinite(Date.parse(c.day+'T00:00:00Z'))||
       new Date(c.day+'T00:00:00Z').toISOString().slice(0,10)!==c.day||
       !tri.has(c.paper_seen)||!tri.has(c.caixa_watched_whole_sample)||
-      !tri.has(c.order_link_confirmed)||!tri.has(c.items_quantities_match)||
+      !tri.has(c.order_link_confirmed)||
+      !tri.has(c.same_consecutive_order_cohort_confirmed)||
+      !tri.has(c.items_quantities_match)||
       !tri.has(c.notes_match)||!tri.has(c.one_paper_per_order)||
       !tri.has(c.late_output_checked)||!tri.has(c.additional_tata_paper_seen)||
       !['TEKNISA_NATIVE_REPORTED','OTHER_REPORTED','UNKNOWN'].includes(c.reported_origin)||
@@ -74,6 +79,7 @@ function review(input){
    if(c.day!==sampled.get(c.window).day)
     return result(D0,'CONFERENCE_SHIFT_DATE_NOT_BOUND_TO_PRODUCTION',info);
    seen.add(c.window);matched+=c.orders_matched;
+   if(c.same_consecutive_order_cohort_confirmed==='YES') cohortMatchesReported++;
    if(c.paper_seen==='NO')anomalies++;
    if(c.reported_origin==='OTHER_REPORTED')anomalies++;
    if(c.paper_kind==='FISCAL_ONLY_REPORTED')anomalies++;
@@ -85,6 +91,7 @@ function review(input){
       c.paper_kind!=='CONFERENCE_NONFISCAL_REPORTED'||
       c.caixa_watched_whole_sample!=='YES'||
       c.order_link_confirmed!=='YES'||
+      c.same_consecutive_order_cohort_confirmed!=='YES'||
       c.orders_matched!==sampled.get(c.window).orders_observed||
       c.items_quantities_match!=='YES'||c.notes_match!=='YES'||
       c.one_paper_per_order!=='YES'||c.late_output_checked!=='YES'||
@@ -92,9 +99,12 @@ function review(input){
     complete=false;
   }
   info.shifts=seen.size;info.matched=matched;
+  info.cohort_matches=cohortMatchesReported;
   info.report_anomaly_categories=anomalies;
   if(p.classification.startsWith('D2_')||anomalies>0)
    return result(D2,'REPORTED_PAPER_ANOMALY_NOT_CAUSAL_OR_WORLD_PROOF',info);
+  if(seen.size>0 && cohortMatchesReported!==seen.size)
+   return result(D0,'CONFERENCE_SAME_ORDER_COHORT_NOT_CONFIRMED',info);
   if(p.classification!=='D1_SAMPLE_CONFORME_RELATADA_NAO_AUTENTICADA'||
      seen.size!==2||!complete)
    return result(D0,'NATIVE_CONFERENCE_WITNESS_OR_COVERAGE_INSUFFICIENT',info);
