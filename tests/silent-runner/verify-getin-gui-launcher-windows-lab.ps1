@@ -108,6 +108,7 @@ try {
  Check ($denied.ExitCode -eq 79) 'MISSING_MARKER_DENIED'
  Write-Host ('GETIN_GUI_SILENT_DISPOSABLE_LAB_PASS '+$count+'/'+$count+' SYNTHETIC_ONLY NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE')
 } finally {
+ Remove-Item Env:GETIN_LAB_STDIO_STRESS -ErrorAction SilentlyContinue
  if($parent -and -not $parent.HasExited){$parent.Kill();[void]$parent.WaitForExit(2000)}
  if($created -and (Test-Path -LiteralPath $lab)){
   Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction Stop
