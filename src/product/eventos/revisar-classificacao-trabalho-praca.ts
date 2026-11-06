@@ -7,8 +7,9 @@
  * Pure and read-only; no new classifier, event, persistence or Home decision.
  */
 import { PRACAS, type PracaId } from "../viewmodels/areas";
-import type {
-  RevisaoNativaParaTrabalho, RevisaoVinculoReaderTrabalho,
+import {
+  referenciaOpacaPedidoReader, referenciaOpacaLinhaReader,
+  type RevisaoNativaParaTrabalho, type RevisaoVinculoReaderTrabalho,
 } from "./vinculo-reader-trabalho-praca";
 
 export const CLASSIFICACAO_TRABALHO_REVIEW_V1 =
@@ -103,6 +104,10 @@ export function revisarClassificacaoTrabalhoPraca(input:Readonly<{
      !all(binding.lines)||binding.lines.length!==revision.items.length||
      !all(claims)||claims.length!==revision.items.length)
     return hold("NATIVE_REVISION_SCOPE_OR_ITEMS_INVALID");
+  // A review binding for another native order cannot be accepted even
+  // if its line count, product codes and quantities happen to be identical.
+  if(binding.opaque_order_ref!==referenciaOpacaPedidoReader(id))
+    return hold("READER_ORDER_BINDING_IDENTITY_DRIFT");
   if(classification.status!=="REVIEW_CANDIDATE_ONLY"||
      classification.native_pair_self_consistency_checked!==true||
      classification.exact_native_items_bound!==true||
@@ -139,6 +144,7 @@ export function revisarClassificacaoTrabalhoPraca(input:Readonly<{
     if(!native||!line||!e||
        !text(native.product_code)||!text(native.line_no)||
        !text(line.product_code)||line.product_code!==native.product_code||
+       line.line_ref!==referenciaOpacaLinhaReader(id,native)||
        !text(claim.product_name)||claim.product_name!==e.product.nome||
        !text(claim.product_code)||!CANONICAL.test(claim.product_code)||
        !text(native.route_code)||native.route_code!==claim.product_code.replace(/\./g,"")||
