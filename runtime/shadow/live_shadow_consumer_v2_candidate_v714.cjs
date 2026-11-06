@@ -262,7 +262,28 @@ if (!Array.isArray(event.service_resolution?.blockers)) {
     upstreamBlockers.push("UPSTREAM_SERVICE_" + String(blocker));
   }
 }
-const blockers = [...upstreamBlockers, ...observationBlockers];
+// Local defense in depth for the legacy UNINSTALLED V7.14 candidate.
+// The installed V2 Reader accepts DLV_* on ingress; this consumer must
+// independently reject everything except the exact Itaim iFood native source.
+// This guard does NOT attest an application-complete revision or paper.
+function nativeItaimIfoodScopeReasonsV1(e) {
+  const o=e?.order;
+  if (!o || typeof o!=="object" || Array.isArray(o))
+    return ["NATIVE_ORDER_SCOPE_MISSING"];
+  const reasons=[];
+  if (o.CDFILIAL!=="0001" || o.CDLOJA!=="01")
+    reasons.push("ITAIM_NATIVE_SCOPE_MISMATCH");
+  if (o.IDORGCMDVENDA!=="DLV_IFO")
+    reasons.push("NATIVE_IFOOD_ORIGIN_NOT_EXACT");
+  const parts=[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA];
+  if (parts.some(s=>typeof s!=="string" || !s || s.length>10 ||
+      /[|\x00-\x1f\x7f]/.test(s)) ||
+      e.order_key!==parts.join("|"))
+    reasons.push("NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER");
+  return reasons;
+}
+const blockers = [...upstreamBlockers, ...observationBlockers,
+  ...nativeItaimIfoodScopeReasonsV1(event)];
 const items = [];
 const packEntries = [];
 
