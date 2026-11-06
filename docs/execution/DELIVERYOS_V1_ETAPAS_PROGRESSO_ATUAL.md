@@ -223,3 +223,13 @@ Leitura **somente de metadados preexistentes** no caixa: Reader `RUNNING`, `last
 A frente de janelas avançou por evidências independentes, não por intervenção: registro GetIn `SUCCESS` às 20h50min25s, PNG e recibo visual existentes gravados às **20h55min03s**. O rótulo `updatedAtBR='05/11, 20:50'` do visual é o horário da **fonte/coleta** (`r.updatedAtBR` no código), não o horário da renderização. Os quatro jobs GetIn com `node.exe` direto sob `InteractiveToken` continuam apenas candidatos de risco de console; falta atribuição da janela a PID/processo/sessão. Ver auditoria `DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md`.
 
 **Decisão:** não tocar em GetIn ou Reader no caixa sem prova de causalidade e mecanismo intrinsecamente silencioso. `FLASH_CAUSALITY=UNKNOWN`, `WINDOWS_TASK_CHANGED=NO`, `N2/N3=HOLD`, `L1=PARTIAL`, `V1_ACCEPTED=0/8`.
+
+### Checkpoint de homologação sem console, 05/11 — contratos GetIn ancorados em fonte observada
+
+Após os 80/80 testes fictícios do lançador GUI, executei **leitura passiva só do código e dos XMLs** GetIn existentes no `CAIXA_MOOCA`, sem entrar em reservas, sessão Chrome, mensagens, credenciais, pedidos ou alterar a máquina. O trabalho revelou contratos adicionais: mutex local do coletor, timeout do filho de 150 s, reconciliação de data/unidade/contagens/mensagem, SHA-256 e data de fechamento do mesmo dia antes do PNG, mais quatro tarefas (`InteractiveToken`, `Hidden=false`, `IgnoreNew` por tarefa) com limites de 3–5 minutos.
+
+O novo modelo **de forma** `labs/getin-silent/getin-source-shape-contract.cjs` e sua suíte em `tests/silent-runner/run-getin-source-shape-contract-tests.cjs` passaram **42/42** no [workflow #42139117697](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42139117697), com conteúdo inteiramente fictício; não há prova de execução ou equivalência dos scripts produtivos. O lançador GUI também foi reforçado para consumir pipes de saída e erro, evitando potencial deadlock oculto; a suíte Windows ganhou prova de emissão completa de mais de 128 KiB por canal. A prova desse último reforço depende do resultado da CI **do commit que o contém**.
+
+A auditoria completa e os metadados de tamanho/mtime da fonte observada (não hashes) estão em `docs/execution/DELIVERYOS_CAIXA_UI_FLASH_SCHEDULED_TASKS_PASSIVE_AUDIT_20261105.md`.
+
+**Gates de avanço:** `REAL_SCRIPT_PARITY=NOT_PROVEN`; `FIELD_HIDDEN_LAUNCH=NOT_AUTHORIZED`; `FLASH_CAUSALITY=UNKNOWN`; `READER_ORDER_SOURCE=UNVERIFIED`; `N2_N3=HOLD`; `L1=PARTIAL`; `V1_ACCEPTED=0/8`. Não alterar GetIn, Reader, tarefas, imagens, e-mails ou impressão no caixa por evidência de laboratório.
