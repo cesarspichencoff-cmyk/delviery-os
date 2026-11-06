@@ -90,7 +90,8 @@ namespace DeliveryOS.WindowAttributionLab {
     }
     static string Inspect(uint pid,string created,uint parent,uint session,string ownerSid,out int hwndCount) {
       hwndCount=0;
-      ProcessInfo before=Lookup(pid);
+      ProcessInfo before;
+      try{before=Lookup(pid);}catch{return "HOLD_PRELOOKUP_RUNTIME_ERROR";}
       if(before==null)return "HOLD_PROCESS_NOT_ATTESTED";
       if(!String.Equals(before.Name,TargetExe,StringComparison.OrdinalIgnoreCase))
         return "HOLD_NOT_SYNTHETIC_TARGET";
@@ -100,8 +101,9 @@ namespace DeliveryOS.WindowAttributionLab {
       if(before.Session!=session)return "HOLD_SESSION_MISMATCH";
       if(!String.Equals(before.OwnerSid,ownerSid,StringComparison.Ordinal))
         return "HOLD_OWNER_MISMATCH";
-      hwndCount=VisibleCount(pid);
-      ProcessInfo after=Lookup(pid);
+      try{hwndCount=VisibleCount(pid);}catch{return "HOLD_ENUM_WINDOWS_RUNTIME_ERROR";}
+      ProcessInfo after;
+      try{after=Lookup(pid);}catch{return "HOLD_POSTLOOKUP_RUNTIME_ERROR";}
       if(!Same(before,after))return "HOLD_PROCESS_CHANGED_DURING_OBSERVATION";
       if(hwndCount!=1)return "HOLD_NO_UNIQUE_VISIBLE_HWND";
       return "LAB_ONLY_SYNTHETIC_WINDOW_PROCESS_LINK";
