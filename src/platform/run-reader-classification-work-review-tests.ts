@@ -4,7 +4,8 @@
  */
 import assert from "node:assert/strict";
 import { produzirTrabalhoPraca } from "../product/eventos/produtor-trabalho-praca";
-import { vincularReaderTrabalhoPraca, type RevisaoNativaParaTrabalho } from "../product/eventos/vinculo-reader-trabalho-praca";
+import { vincularReaderTrabalhoPraca, type RevisaoNativaParaTrabalho,
+ type RevisaoVinculoReaderTrabalho } from "../product/eventos/vinculo-reader-trabalho-praca";
 import { revisarClassificacaoTrabalhoPraca, type RevisaoClassificacaoPR135,
  type ClaimClassificacaoPR135, type ConvergenciaCatalogoPR135 } from
  "../product/eventos/revisar-classificacao-trabalho-praca";
@@ -60,10 +61,10 @@ function event(index:number,station:"combinados"|"enrolados",quantity:number){
 }
 function review(o:{revision?:RevisaoNativaParaTrabalho;events?:readonly unknown[];
   classification?:RevisaoClassificacaoPR135;claims?:readonly ClaimClassificacaoPR135[];
-  catalog?:ConvergenciaCatalogoPR135}={}){
+  catalog?:ConvergenciaCatalogoPR135;binding?:RevisaoVinculoReaderTrabalho}={}){
  const revision=o.revision??rev;
  return revisarClassificacaoTrabalhoPraca({
-  revision,binding:joined(o.events??[],revision),
+  revision,binding:o.binding??joined(o.events??[],revision),
   classification:o.classification??classReview(),
   claims:o.claims??claims,catalog:o.catalog??convergence,
  });
@@ -157,5 +158,56 @@ test("no code, item, claim or hash is emitted in positive review",()=>{
  const txt=JSON.stringify(review());
  for(const secret of ["0000001111","9200001000","PRODUTO LAB 1","LABSALE","LABORDER"])
   assert.equal(txt.includes(secret),false);
+});
+test("two equal-SKU equal-quantity native lines are distinct by exact opaque line ref",()=>{
+ const twinRevision:RevisaoNativaParaTrabalho={...rev,items:[
+  {...rev.items[0],line_no:"L01"},
+  {...rev.items[0],line_no:"L02"},
+ ]};
+ const twinClaims:ClaimClassificacaoPR135[]=claims.map((_,i)=>({
+  ...claims[0],source_item_index:i
+ }));
+ const template=classReview();
+ const twinClass:RevisaoClassificacaoPR135={...template,
+  review:{...template.review!,entries:twinClaims.map(c=>({
+   source_item_index:c.source_item_index,quantity:c.quantity,
+   station_proof:"UNKNOWN",product:{nome:c.product_name,
+    classification:{station:c.station,family:c.family}}
+  }))}};
+ const exact=joined([],twinRevision);
+ assert.equal(exact.lines.length,2);
+ assert.notEqual(exact.lines[0].line_ref,exact.lines[1].line_ref);
+ const inputs={revision:twinRevision,claims:twinClaims,classification:twinClass};
+ assert.equal(review(inputs).status,"REVIEW_CANDIDATE_ONLY");
+ const swapped:RevisaoVinculoReaderTrabalho={...exact,lines:[
+  {...exact.lines[0],line_ref:exact.lines[1].line_ref},
+  {...exact.lines[1],line_ref:exact.lines[0].line_ref},
+ ]};
+ const wrong=review({...inputs,binding:swapped});
+ assert.equal(wrong.status,"HOLD");
+ assert.ok(wrong.reasons.includes("READER_NATIVE_LINE_REFERENCE_DRIFT"));
+ assert.equal(wrong.ready_for_dispatch,null);
+ assert.equal(wrong.live_home_authorized,false);
+});
+test("foreign order binding is refused even when every line ref is otherwise correct",()=>{
+ const exact=joined();
+ const forgery:RevisaoVinculoReaderTrabalho={...exact,
+  opaque_order_ref:"reader-order:"+"0".repeat(64)};
+ const result=review({binding:forgery});
+ assert.equal(result.status,"HOLD");
+ assert.ok(result.reasons.includes("READER_ORDER_BINDING_IDENTITY_DRIFT"));
+ assert.equal(result.checked_lines,0);
+ assert.equal(result.live_home_authorized,false);
+});
+test("native line reference from a previous revision cannot be reused",()=>{
+ const original=joined();
+ const revised:RevisaoNativaParaTrabalho={...rev,identity:{
+  ...rev.identity,snapshot_hash:"f".repeat(64)
+ }};
+ const stale={...original,opaque_order_ref:joined([],revised).opaque_order_ref};
+ const result=review({revision:revised,binding:stale});
+ assert.equal(result.status,"HOLD");
+ assert.ok(result.reasons.includes("READER_NATIVE_LINE_REFERENCE_DRIFT"));
+ assert.equal(result.ready_for_dispatch,null);
 });
 console.log("READER_CLASSIFICATION_WORK_REVIEW_PASS "+ok+"/"+ok+" SYNTHETIC_ONLY");
