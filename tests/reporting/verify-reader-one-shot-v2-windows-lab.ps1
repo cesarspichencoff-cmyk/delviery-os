@@ -69,7 +69,7 @@ try {
  $focus=[ReaderV2WindowAudit]::GetForegroundWindow()
  $parent=Start-Process -FilePath $exe -ArgumentList $argv -PassThru
  Start-Sleep -Milliseconds 160
- if($parent.HasExited) {throw 'V2_PROCESS_EARLY_EXIT'}
+ if($parent.HasExited) {throw ('V2_PROCESS_EARLY_EXIT_CODE_'+$parent.ExitCode)}
  $children=@(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($parent.Id)")
  $nodes=@($children | Where-Object {$_.Name -eq 'node.exe'})
  if($nodes.Count -ne 1) {throw 'EXPECTED_ONE_NODE_CHILD'}
