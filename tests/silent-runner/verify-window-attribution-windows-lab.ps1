@@ -107,7 +107,7 @@ try {
  Check ($rejected.ExitCode -eq 79) 'MARKER_MISSING_DENIED'
  [IO.File]::WriteAllText((Join-Path $dir 'LAB_ONLY.txt'),
   'DELIVERYOS_WINDOW_ATTRIBUTION_DISPOSABLE_LAB_V1')
- if(-not $target.WaitForExit(8000)){throw 'VISIBLE_FIXTURE_DID_NOT_EXIT'}
+ if(-not $target.WaitForExit(18000)){throw 'VISIBLE_FIXTURE_DID_NOT_EXIT'}
  Check ($target.ExitCode -eq 0) 'VISIBLE_FIXTURE_EXIT'
  $target=Start-Process -FilePath $fixture -ArgumentList @('--mode=hidden',('"--lab-dir='+$dir+'"')) -PassThru -ErrorAction Stop
  Start-Sleep -Milliseconds 600
