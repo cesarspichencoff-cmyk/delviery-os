@@ -53,6 +53,10 @@ function Run-Probe($info,[string]$expected){
  if($p.ExitCode -ne 0){throw ('PROBE_FAILED_'+$p.ExitCode)}
  $receipt=Get-Content -LiteralPath (Join-Path $dir 'receipt.json') -Raw
  $data=$receipt|ConvertFrom-Json
+ if($data.state -ne $expected){
+  # State is a closed lab-only enum; identifiers and window content stay private.
+  Write-Host ('WINDOW_ATTRIBUTION_LAB_SAFE_MISMATCH expected='+$expected+' actual='+$data.state+' count='+$data.visibleHwndCount)
+ }
  Check ($data.state -eq $expected) ('EXPECTED_'+$expected)
  Check ($data.source -eq 'SYNTHETIC_WINDOWS_ONLY' -and $data.fieldProof -eq $false -and
         $data.ordersPublishable -eq 0) 'NO_FIELD_PROMOTION'
