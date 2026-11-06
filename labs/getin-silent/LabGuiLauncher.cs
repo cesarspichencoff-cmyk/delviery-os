@@ -77,7 +77,14 @@ namespace DeliveryOS.GetInSilentLab {
     using(var child=Process.Start(psi)){
      if(child==null)return 80;
      child.StandardInput.Close();
-     // Short, bounded test; this process creates no console of its own.
+     // Always drain both pipes: the real collection script can emit diagnostics.
+     // Without readers, a full pipe can deadlock a healthy, silent Node child.
+     // Discard text entirely; never export credentials, reservation content or PII.
+     child.OutputDataReceived += (sender,e) => { };
+     child.ErrorDataReceived += (sender,e) => { };
+     child.BeginOutputReadLine();
+     child.BeginErrorReadLine();
+     // Short, bounded synthetic test; no console is created by this parent.
      if(!child.WaitForExit(9000)){child.Kill();child.WaitForExit(2000);return 81;}
      if(child.ExitCode!=0)return 82;
     }
