@@ -141,10 +141,16 @@ export function revisarClassificacaoTrabalhoPraca(input:Readonly<{
     used.add(idx);
     const native=revision.items[idx],line=binding.lines[idx],
       e=classification.review.entries.find(x=>x.source_item_index===idx);
-    if(!native||!line||!e||
+    // Matching SKU + quantity cannot distinguish two native lines. Require
+    // the exact line identifier from THIS order and THIS snapshot.
+    if(!native||!line||!e)
+      return hold("CLASSIFICATION_LINE_CODE_OR_QUANTITY_DRIFT");
+    if(line.line_ref!==referenciaOpacaLinhaReader(id,native))
+      return hold("READER_NATIVE_LINE_REFERENCE_DRIFT");
+    if(
        !text(native.product_code)||!text(native.line_no)||
        !text(line.product_code)||line.product_code!==native.product_code||
-       line.line_ref!==referenciaOpacaLinhaReader(id,native)||
+
        !text(claim.product_name)||claim.product_name!==e.product.nome||
        !text(claim.product_code)||!CANONICAL.test(claim.product_code)||
        !text(native.route_code)||native.route_code!==claim.product_code.replace(/\./g,"")||
