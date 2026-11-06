@@ -42,6 +42,26 @@ internal suspend fun preservePilotBatchHttpRefusal(
     return true
 }
 
+/**
+ * Prioridade da conclusão: uma recusa de autorização ou de lote no piloto
+ * nunca pode ser mascarada por retry transitório/GPS pendente. A fila Room
+ * persiste e o job periódico continua independente do job NOW.
+ */
+internal enum class SyncFinalization { PILOT_HOLD, PLATFORM_REAUTH, GPS_CONTINUATION, TRANSIENT_RETRY, COMPLETE }
+
+internal fun decideSyncFinalization(
+    pilotAuthorizationBlocked: Boolean,
+    platformCredentialRefused: Boolean,
+    gpsRemaining: Boolean,
+    retryable: Boolean,
+): SyncFinalization = when {
+    pilotAuthorizationBlocked -> SyncFinalization.PILOT_HOLD
+    platformCredentialRefused -> SyncFinalization.PLATFORM_REAUTH
+    gpsRemaining -> SyncFinalization.GPS_CONTINUATION
+    retryable -> SyncFinalization.TRANSIENT_RETRY
+    else -> SyncFinalization.COMPLETE
+}
+
 /** Limita cada execução sem abandonar o saldo de uma fila offline. */
 internal data class GpsDrainOutcome(
     val retryable: Boolean = false,
@@ -422,17 +442,22 @@ class SyncWorker(
         // Credencial recusada e RETENTAVEL. Retornar sucesso aqui foi o coracao
         // do P0: o WorkManager dava a sincronizacao por concluida e os pontos
         // ficavam `failed` para sempre, sem nada sinalizar.
-        if (credencialRecusada) {
-            DeviceSession.limparCredencial(db)
-            return retryOrYield()
+        // Limpar a credencial de plataforma e um efeito local necessario,
+        // mesmo quando o piloto tambem exige HOLD por outra razao.
+        if (credencialRecusada) DeviceSession.limparCredencial(db)
+        return when (decideSyncFinalization(
+            pilotAuthorizationBlocked = pilotAuthorizationBlocked,
+            platformCredentialRefused = credencialRecusada,
+            gpsRemaining = gpsDrain.remaining,
+            retryable = retryable,
+        )) {
+            SyncFinalization.PILOT_HOLD -> Result.failure()
+            SyncFinalization.PLATFORM_REAUTH -> retryOrYield()
+            // Saldo GPS nao pode ser abandonado ao esgotar tentativas rapidas.
+            SyncFinalization.GPS_CONTINUATION -> Result.retry()
+            SyncFinalization.TRANSIENT_RETRY -> retryOrYield()
+            SyncFinalization.COMPLETE -> Result.success()
         }
-        // Saldo após progresso não é falha esgotada: deve ter continuação,
-        // mesmo se o envio secundário de contagens falhou nesta execução.
-        if (gpsDrain.remaining) return Result.retry()
-        // Other transient work (including GPS platform sync) retains bounded retry.
-        if (retryable) return retryOrYield()
-        if (pilotAuthorizationBlocked) return Result.failure()
-        return Result.success()
     }
 
     private fun ackJson(ack: br.com.tata.entregas.data.TermAckEntity) = JSONObject().apply {

@@ -295,4 +295,63 @@ class RoomSyncRaceRecoveryTest {
         db.outbox().markSent(listOf("evt-2"))
         assertEquals(0, db.outbox().pendingCount())
     }
+
+    @Test fun pilotHttpBlockDominatesUnrelatedGpsRetryAndRemainingQueue() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.PILOT_HOLD,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = true,
+                platformCredentialRefused = false,
+                gpsRemaining = true,
+                retryable = true,
+            ),
+        )
+    }
+
+    @Test fun pilotBlockSurvivesConcurrentPlatformCredentialRefusal() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.PILOT_HOLD,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = true,
+                platformCredentialRefused = true,
+                gpsRemaining = false,
+                retryable = true,
+            ),
+        )
+    }
+
+    @Test fun platformCredentialRefusalKeepsReauthPriority() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.PLATFORM_REAUTH,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = false,
+                platformCredentialRefused = true,
+                gpsRemaining = true,
+                retryable = false,
+            ),
+        )
+    }
+
+    @Test fun remainingGpsQueueRequestsContinuationWithoutPilotBlock() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.GPS_CONTINUATION,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = false,
+                platformCredentialRefused = false,
+                gpsRemaining = true,
+                retryable = true,
+            ),
+        )
+    }
+
+    @Test fun transientAndClearCompletionKeepOriginalPolicies() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.TRANSIENT_RETRY,
+            br.com.tata.entregas.sync.decideSyncFinalization(false, false, false, true),
+        )
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.COMPLETE,
+            br.com.tata.entregas.sync.decideSyncFinalization(false, false, false, false),
+        )
+    }
 }
