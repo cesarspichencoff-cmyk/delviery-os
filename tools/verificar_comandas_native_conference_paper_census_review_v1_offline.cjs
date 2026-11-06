@@ -12,7 +12,7 @@ const shift=window=>({window,day:'2026-11-06',orders_available:25,
  preparation_coverage:{single_station_orders:12,multi_station_orders:8,
   unknown_station_orders:0,families_observed:['SUSHI_1','SUSHI_2','HOT_ROLL','KITCHEN'],
   ambiguous_combined_double:false}});
-const conf=window=>({window,paper_seen:'YES',reported_origin:'TEKNISA_NATIVE_REPORTED',
+const conf=window=>({window,day:'2026-11-06',paper_seen:'YES',reported_origin:'TEKNISA_NATIVE_REPORTED',
  paper_kind:'CONFERENCE_NONFISCAL_REPORTED',
  caixa_watched_whole_sample:'YES',order_link_confirmed:'YES',
  orders_matched:20,items_quantities_match:'YES',notes_match:'YES',
@@ -155,6 +155,14 @@ test('malformed source schema rejected',()=>{
 test('missing root fields rejected',()=>{
  const x=baseline();delete x.conference_observations;check(x,D0);
 });
-if(cases!==32)throw Error('CONFERENCE_CENSUS_CASE_COUNT_'+cases);
+test('conference paper cannot be matched to another day with same shift',()=>{
+ const x=baseline();x.conference_observations[0].day='2026-11-05';
+ check(x,D0,'CONFERENCE_SHIFT_DATE_NOT_BOUND_TO_PRODUCTION');
+});
+test('invalid conference calendar day is rejected',()=>{
+ const x=baseline();x.conference_observations[0].day='2026-02-30';
+ check(x,D0,'CONFERENCE_REPORT_SHAPE_OR_PRIVACY_INVALID');
+});
+if(cases!==34)throw Error('CONFERENCE_CENSUS_CASE_COUNT_'+cases);
 console.log('COMANDAS_NATIVE_CONFERENCE_CENSUS='+cases+'/'+cases+
  ' HUMAN_REPORT_ONLY NO_PAPER_IO NO_FIELD_PROOF PRINT_HOLD');

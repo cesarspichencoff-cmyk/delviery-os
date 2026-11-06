@@ -32,3 +32,7 @@ O relato positivo de César **não deve ser perdido** nem convertido artificialm
 A ferramenta somente **classifica relatos fornecidos**. Ela não observa impressoras, não pode ser chamada de prova real e não será executada no `CAIXA_MOOCA`. O trabalho foi feito exclusivamente no GitHub; CI com entradas fictícias, sem SQL, PowerShell, instalação ou impressão.
 
 **Bordas:** `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `REAL_PAPER_CENSUS=PARTIAL_HUMAN_REPORT_UNATTESTED`, `TEKNISA_NATIVE_OUTPUT=PRESERVE`, `TATA_CONFERENCE_PRINT=HOLD`, `CUTOVER=HOLD`.
+
+## Gate temporal acrescentado na revisão
+
+A testemunha específica da Conferência deve trazer `day` (AAAA-MM-DD) e `window` (ALMOCO/JANTAR) correspondentes **exatamente** à mesma data e turno da amostra v2 de produção. Um registro de outro dia não pode satisfazer o turno só porque seus agregados de contagem parecem iguais. Recusa de calendário inválido ou dia divergente = D0. A correspondência declarada de data ainda não prova observação física.
