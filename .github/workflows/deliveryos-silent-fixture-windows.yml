@@ -71,6 +71,8 @@ jobs:
       - name: Node contract tests (synthetic only)
         run: |
           node tests/silent-runner/run-contract-tests.cjs
+          # GetIn source-shape mirror: fictional only, no productive script or session.
+          node tests/silent-runner/run-getin-source-shape-contract-tests.cjs
           node tests/silent-runner/run-pair-contract-tests.cjs
           node tests/reporting/run-diagnostic-readiness-tests.cjs
           # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
