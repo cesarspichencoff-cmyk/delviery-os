@@ -26,31 +26,46 @@ namespace DeliveryOS.WindowAttributionLab {
       public uint Id,Parent,Session;
       public string Created,OwnerSid,Name;
     }
-    static ProcessInfo Lookup(uint pid) {
-      int count=0;
-      ProcessInfo data=null;
-      string query="SELECT Name,ProcessId,ParentProcessId,SessionId,CreationDate FROM Win32_Process WHERE ProcessId="+
-        pid.ToString(CultureInfo.InvariantCulture);
-      using(var search=new ManagementObjectSearcher(query))
-      using(var rows=search.Get())
-      foreach(ManagementObject entry in rows) {
-        using(entry) {
-          count++;
-          if(count>1)return null;
-          var info=new ProcessInfo();
-          info.Id=Convert.ToUInt32(entry["ProcessId"],CultureInfo.InvariantCulture);
-          info.Parent=Convert.ToUInt32(entry["ParentProcessId"],CultureInfo.InvariantCulture);
-          info.Session=Convert.ToUInt32(entry["SessionId"],CultureInfo.InvariantCulture);
-          info.Created=Convert.ToString(entry["CreationDate"]);
-          info.Name=Convert.ToString(entry["Name"]);
-          using(var owner=entry.InvokeMethod("GetOwnerSid",null,null)) {
-            if(owner==null || Convert.ToUInt32(owner["ReturnValue"])!=0) return null;
-            info.OwnerSid=Convert.ToString(owner["Sid"]);
+    sealed class LabStageError : Exception {
+      public readonly string Stage;
+      public LabStageError(string stage) {Stage=stage;}
+    }
+    static ProcessInfo Lookup(uint processId) {
+      string stage="CONSTRUCT_QUERY";
+      try {
+        int count=0;
+        ProcessInfo data=null;
+        string query="SELECT Name,ProcessId,ParentProcessId,SessionId,CreationDate FROM Win32_Process WHERE ProcessId="+
+          processId.ToString(CultureInfo.InvariantCulture);
+        using(var search=new ManagementObjectSearcher(query)) {
+          stage="QUERY_ROWS";
+          using(var rows=search.Get()) {
+            foreach(ManagementObject entry in rows) {
+              using(entry) {
+                count++;
+                if(count>1)return null;
+                stage="READ_ROW_FIELDS";
+                var info=new ProcessInfo();
+                info.Id=Convert.ToUInt32(entry["ProcessId"],CultureInfo.InvariantCulture);
+                info.Parent=Convert.ToUInt32(entry["ParentProcessId"],CultureInfo.InvariantCulture);
+                info.Session=Convert.ToUInt32(entry["SessionId"],CultureInfo.InvariantCulture);
+                info.Created=Convert.ToString(entry["CreationDate"]);
+                info.Name=Convert.ToString(entry["Name"]);
+                stage="OWNER_SID_METHOD";
+                using(var owner=entry.InvokeMethod("GetOwnerSid",null,null)) {
+                  if(owner==null || Convert.ToUInt32(owner["ReturnValue"])!=0) return null;
+                  info.OwnerSid=Convert.ToString(owner["Sid"]);
+                }
+                data=info;
+              }
+            }
           }
-          data=info;
         }
+        return count==1?data:null;
+      } catch {
+        // Fixed stage string only; never include exception text or source values.
+        throw new LabStageError(stage);
       }
-      return count==1?data:null;
     }
     static bool Same(ProcessInfo a,ProcessInfo b) {
       return a!=null && b!=null && a.Id!=0 && a.Id==b.Id && a.Parent==b.Parent &&
@@ -91,7 +106,8 @@ namespace DeliveryOS.WindowAttributionLab {
     static string Inspect(uint pid,string created,uint parent,uint session,string ownerSid,out int hwndCount) {
       hwndCount=0;
       ProcessInfo before;
-      try{before=Lookup(pid);}catch{return "HOLD_PRELOOKUP_RUNTIME_ERROR";}
+      try{before=Lookup(pid);}catch(LabStageError err){return "HOLD_PRELOOKUP_"+err.Stage;}
+      catch{return "HOLD_PRELOOKUP_RUNTIME_ERROR";}
       if(before==null)return "HOLD_PROCESS_NOT_ATTESTED";
       if(!String.Equals(before.Name,TargetExe,StringComparison.OrdinalIgnoreCase))
         return "HOLD_NOT_SYNTHETIC_TARGET";
