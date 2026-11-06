@@ -44,6 +44,22 @@ export interface RevisaoVinculoReaderTrabalho {
 }
 const hash = (parts: readonly string[]): string =>
   createHash("sha256").update(JSON.stringify(parts)).digest("hex");
+// Stable, review-only references. The classifier must re-bind exact native
+// order + revision + line, not just an SKU and a quantity (both may repeat).
+export function referenciaOpacaPedidoReader(
+  id: RevisaoNativaParaTrabalho["identity"],
+): string {
+  return "reader-order:" + hash([id.unit_id, id.store_id,
+    id.nr_venda_rest, id.nr_comanda]);
+}
+export function referenciaOpacaLinhaReader(
+  id: RevisaoNativaParaTrabalho["identity"],
+  item: Readonly<{line_no: string; product_code: string; quantity: number}>,
+): string {
+  return "reader-line:" + hash([id.unit_id, id.store_id, id.nr_venda_rest,
+    id.nr_comanda, id.snapshot_hash, item.line_no, item.product_code,
+    String(item.quantity)]);
+}
 const safe = (v: unknown): v is string =>
   typeof v === "string" && v.length > 0 && v.length <= 128 && v.trim() === v;
 function hold(reason: string): RevisaoVinculoReaderTrabalho {
@@ -72,8 +88,7 @@ export function vincularReaderTrabalhoPraca(
     return hold("NATIVE_READER_REVISION_IDENTITY_UNQUALIFIED");
   if (!Array.isArray(r.items) || !r.items.length || r.items.length > 200)
     return hold("NATIVE_LINES_MISSING");
-  const parts = [id.unit_id, id.store_id, id.nr_venda_rest, id.nr_comanda];
-  const order = "reader-order:" + hash(parts);
+  const order = referenciaOpacaPedidoReader(id);
   const byRef = new Map<string, { line: Linha; events: EnvelopeOperacional[]; stations: Set<PracaId> }>();
   const used = new Set<string>();
   for (const item of r.items) {
@@ -84,8 +99,7 @@ export function vincularReaderTrabalhoPraca(
     used.add(item.line_no);
     // Bind to the exact native revision and product: a changed SKU or note
     // never inherits an earlier workstation completion.
-    const ref = "reader-line:" + hash([...parts, id.snapshot_hash, item.line_no,
-      item.product_code, String(item.quantity)]);
+    const ref = referenciaOpacaLinhaReader(id, item);
     byRef.set(ref, { line: item, events: [], stations: new Set() });
   }
   const approved: EnvelopeOperacional[] = [];
