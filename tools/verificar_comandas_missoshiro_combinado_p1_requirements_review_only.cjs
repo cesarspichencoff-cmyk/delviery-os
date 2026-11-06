@@ -106,5 +106,19 @@ test("source document explicitly guards the exception, review-only and unknown e
   assert.ok(doc.includes("OUTRO_ITEM_DESCONHECIDO")||doc.includes("terceiros produtos"));
   assert.ok(doc.includes("PRINT=HOLD"));
 });
+test("legacy pinned Academy motor still contains a real Missoshiro container conflict (HOLD)",()=>{
+  const vm=require("node:vm");
+  const motor=fs.readFileSync(path.join(__dirname,"fixtures","canonical-packaging-v63-pinned.js"),"utf8");
+  const sandbox={};
+  vm.runInNewContext(motor,sandbox,{timeout:2000});
+  const P=sandbox.TATAPackaging;
+  assert.ok(P&&typeof P.categoryOf==="function");
+  const legacy=P.categoryOf({nome:"MISSOSHIRO",
+    classification:{family:"acompanhamento",station:"cozinha_quentes"}});
+  assert.equal(legacy.category,"selada_650");
+  assert.equal(legacy.box,"650");
+  assert.equal(P.SELADA_650.includes("missoshiro"),true);
+  console.log("LEGACY_MOTOR_CONFLICT_HOLD MISSOSHIRO_SEALED_650_NOT_ISOPOR; NO_ENGINE_PATCH_APPLIED");
+});
 console.log("COMANDAS_MISSOSHIRO_P1_REQUIREMENTS="+total+"/"+total+
   " SYNTHETIC_ONLY NO_NATIVE_ID NO_MOTOR_CHANGE NO_PRINT");
