@@ -58,6 +58,9 @@ try {
  $subsystem=[BitConverter]::ToUInt16($bytes,$pe+24+68)
  Check ($subsystem -eq 2) 'NO_CONSOLE_SUBSYSTEM'
  foreach($mode in @('collector','visual')){
+  # Only the visual fixture emits two high-volume fictional pipes.
+  if($mode -eq 'visual'){$env:GETIN_LAB_STDIO_STRESS='1'}
+  else {Remove-Item Env:GETIN_LAB_STDIO_STRESS -ErrorAction SilentlyContinue}
   $args=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('--mode='+$mode))
   $focus=[GetInWindowAudit]::GetForegroundWindow()
   $parent=Start-Process -FilePath $exe -ArgumentList $args -PassThru -ErrorAction Stop
