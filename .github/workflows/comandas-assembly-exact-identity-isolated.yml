@@ -1,0 +1,28 @@
+name: Comandas assembly exact Academy identity isolated
+on:
+  push:
+    branches:
+      - audit/comandas-assembly-exact-identity-lab-20261106
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Academy exact identity refusal (fictional input)
+        run: node tools/verificar_comandas_assembly_catalog_identity_hold_v1_offline.cjs
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Academy exact identity refusal (fictional input)
+        run: node tools/verificar_comandas_assembly_catalog_identity_hold_v1_offline.cjs

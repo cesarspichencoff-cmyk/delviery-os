@@ -1,0 +1,52 @@
+{
+  "schema": "tata.comandas.assembly-academy-identity-reference.v1",
+  "source": {
+    "repository": "cesarspichencoff-cmyk/tata-academia",
+    "ref": "evolucao/v33-product-pass",
+    "path": "data/app-data.json",
+    "git_blob_sha1": "d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22",
+    "retrieved": "2026-11-06",
+    "provenance": "ACADEMY_CATALOG_ONLY_NOT_NATIVE_PRODUCT_ID"
+  },
+  "records": [
+    {
+      "id": "combinado_salmao_1_pessoa",
+      "name": "Combinado Salmão 1 pessoa",
+      "description": "6 sashimis de salmão, 3 nigiris de salmão e 3 rolls.",
+      "family": "combinado",
+      "subfamily": "salmao",
+      "station": "combinados",
+      "menu_status": "PROVEN_PUBLISHED_MENU",
+      "classification_truth_class": "PROVEN_DELIVERYOS_STATION_MATRIX",
+      "review_required": false,
+      "human_assembly_rule_role": null
+    },
+    {
+      "id": "combinado_salmao_atum_1_pessoa",
+      "name": "Combinado Salmão/Atum 1 pessoa",
+      "description": "6 sashimis, 3 nigiris, 3 rolls. obs.: os itens não podem ser alterados ou substituídos",
+      "family": "combinado",
+      "subfamily": "salmao",
+      "station": "combinados",
+      "menu_status": "PROVEN_PUBLISHED_MENU",
+      "classification_truth_class": "PROVEN_DELIVERYOS_STATION_MATRIX",
+      "review_required": false,
+      "human_assembly_rule_role": "SALMAO_ATUM_P1"
+    },
+    {
+      "id": "missoshiro",
+      "name": "Missoshiro",
+      "description": null,
+      "family": "acompanhamento",
+      "subfamily": "sopa",
+      "station": "cozinha_quentes",
+      "menu_status": "PROVEN_PUBLISHED_NAME_ONLY",
+      "classification_truth_class": "UNKNOWN_REVIEW_REQUIRED",
+      "review_required": true,
+      "human_assembly_rule_role": "MISSOSHIRO"
+    }
+  ],
+  "native_product_ids_observed_for_these_three": false,
+  "all_records_catalog_only": true,
+  "effect_authority": "NONE"
+}
