@@ -102,10 +102,14 @@ test("original source buffer is left byte-identical and compiled candidate is se
   assert.notEqual(delta.candidate_source,source);
   assert.equal(baseline.categoryOf(M).box,"650");
 });
-test("unexpected old motor change fails closed rather than patching a new release",()=>{
-  assert.equal(patch(source.replace("MISSOSHIRO","OTHER_WORD")).status,
-   "ISOLATED_CATEGORY_CANDIDATE_ONLY",
-   "This replacement targets fixture text only and must not bypass exact pin");
+test("tampered motor bytes fail closed rather than patching a new release",()=>{
+  const altered=source.replace('"guioza", "edamame", "missoshiro"',
+                               '"guioza", "edamame", "other_word"');
+  assert.notEqual(altered,source);
+  const result=patch(altered);
+  assert.equal(result.status,"HOLD");
+  assert.equal(result.reason,"PINNED_BLOB_MISMATCH");
+  assert.equal(result.candidate_source,null);
 });
 console.log("COMANDAS_MISSOSHIRO_DELTA_CANDIDATE="+passed+"/"+passed+
  " ISOLATED_CATEGORY_ONLY LEGACY_KIT_AND_BAG_HOLD NO_PRINT");
