@@ -222,10 +222,27 @@ class SyncWorker(
         val acks = db.termAcks().pending()
         for (ack in acks) {
             when (val r = piloto.sendTermAcknowledgement(ackJson(ack))) {
-                is ApiResult.Ok -> db.termAcks().markSent(listOf(ack.acknowledgementId))
+                is ApiResult.Ok -> {
+                    // HTTP 200 alone does not attest that the server stored THIS
+                    // actor, device, term version and choice. A mismatched or
+                    // partial response leaves the durable local entry pending.
+                    if (confirmsTermAckOnPilot(ack, r.value)) {
+                        db.termAcks().markSent(listOf(ack.acknowledgementId))
+                    } else {
+                        retryable = true
+                    }
+                }
                 is ApiResult.Retryable -> retryable = true
-                is ApiResult.Unauthorized -> Unit // integracao pendente no piloto; fica visivel
-                is ApiResult.Rejected -> Unit // fica visível; não insiste
+                is ApiResult.Unauthorized -> {
+                    // The legacy pilot route still lacks proven authenticated
+                    // actor/session plumbing. Never call this remote acceptance.
+                    pilotAuthorizationBlocked = true
+                }
+                is ApiResult.Rejected -> {
+                    // Local consent is not remote acceptance; preserve the
+                    // append-only evidence for a supervised resolution.
+                    if (r.status == 403) pilotAuthorizationBlocked = true
+                }
             }
         }
 

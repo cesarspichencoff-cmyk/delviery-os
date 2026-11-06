@@ -3,12 +3,22 @@
 // No HTTP route, watcher, cursor mutation, permission grant or source-mode inference.
 const fs=require('node:fs'),path=require('node:path');
 const {adaptStableTataOrderV1}=require('./copiloto_tata_reader_adapter_v1.cjs');
+const {normalizeVerifiedLegacyNativeHashV1}=require('./native_reader_verified_legacy_hash_v1.cjs');
 const {projectTataOrdersForCopilotV1}=require('./copiloto_tata_orders_v1.cjs');
 const {explicitInstant}=require('./tata_source_time_v1.cjs');
 function readTataFileFeed({root,scope,now,maxAgeMs,maxFiles=250,maxBytes=8*1024*1024,selection='checkpoint'}){
   const common={schema:'deliveryos.copiloto-tata-file-feed.v1',live_source_verified:false,
     operational_order_total:null,no_action_executed:true,coverage:selection==='checkpoint'?'producer_checkpoint_observations_not_active_order_inventory':'bounded_directory_observations_not_active_order_inventory'};
   const denied=reason=>({...common,state:'unavailable',reason,view:null});
+  // Opt-in must be owned by the trusted server configuration, NEVER a browser.
+  // Source authenticity and physical ready remain unverified even when matched.
+  if(scope&&scope.allowVerifiedLegacyUppercase!==undefined&&
+     typeof scope.allowVerifiedLegacyUppercase!=='boolean')
+     return denied('LEGACY_HASH_REVIEW_POLICY_INVALID');
+  if(scope?.allowVerifiedLegacyUppercase===true&&
+     !(selection==='checkpoint'&&scope.sourceMode==='real'&&
+       scope.unitId==='ITAIM'&&scope.sourceUnitId==='0001'&&scope.sourceStoreId==='01'))
+     return denied('LEGACY_HASH_REVIEW_SCOPE_INVALID');
   if(!scope||!['unitId','sourceUnitId','sourceStoreId','mappingEvidenceRef'].every(k=>typeof scope[k]==='string'&&scope[k].trim())||
       !['real','control','simulated'].includes(scope.sourceMode))return denied('SOURCE_CONFIGURATION_REQUIRED');
   if(!explicitInstant(now)||!Number.isSafeInteger(maxAgeMs)||maxAgeMs<=0||
@@ -17,7 +27,7 @@ function readTataFileFeed({root,scope,now,maxAgeMs,maxFiles=250,maxBytes=8*1024*
   if(typeof root!=='string'||!path.isAbsolute(root))return denied('TRUSTED_ABSOLUTE_ROOT_REQUIRED');
   if(!['checkpoint','directory'].includes(selection))return denied('SOURCE_SELECTION_INVALID');
   const directory=path.join(root,'state','reader-events-v1'),files=[],revisions=[],readStats=[];
-  let handle,bytes=0,ignoredHistorical=0;
+  let handle,bytes=0,ignoredHistorical=0,legacyDigestReconciled=0;
   try{
     for(const p of [root,path.join(root,'state'),directory]){
       const s=fs.lstatSync(p);if(!s.isDirectory()||s.isSymbolicLink()||fs.realpathSync(p)!==path.resolve(p))return denied('SOURCE_PATH_INVALID');
@@ -77,7 +87,18 @@ function readTataFileFeed({root,scope,now,maxAgeMs,maxFiles=250,maxBytes=8*1024*
       const age=Date.parse(now)-Date.parse(event.observed_at);
       if(age<0)return denied('SOURCE_FUTURE_OBSERVATION');
       if(age>maxAgeMs){ignoredHistorical++;continue;}
-      const adapted=adaptStableTataOrderV1(event,scope);
+      // Check raw event against the original checkpoint FIRST. Only afterward
+      // may a copied envelope be canonicalized IN MEMORY for the existing
+      // strict adapter. Never mutate event/checkpoint/files or infer PII rights.
+      let canonicalEvent=event;
+      if(scope.allowVerifiedLegacyUppercase===true){
+        const normalized=normalizeVerifiedLegacyNativeHashV1(event);
+        if(normalized.state!=='CANONICAL_SHAPE_REVIEW_ONLY')
+          return denied('SOURCE_CURRENT_REVISION_BLOCKED');
+        canonicalEvent=normalized.event;
+        if(normalized.legacyUppercaseConverted)legacyDigestReconciled++;
+      }
+      const adapted=adaptStableTataOrderV1(canonicalEvent,scope);
       // A rejected current revision must not silently leave an older order visible.
       if(adapted.state!=='adapted')return denied('SOURCE_CURRENT_REVISION_BLOCKED');
       revisions.push(adapted.revision);
@@ -95,7 +116,8 @@ function readTataFileFeed({root,scope,now,maxAgeMs,maxFiles=250,maxBytes=8*1024*
     const afterDir=fs.statSync(directory);
     if(beforeDir.mtimeMs!==afterDir.mtimeMs)return denied('SOURCE_CHANGED_DURING_READ');
     const view=projectTataOrdersForCopilotV1({unitId:scope.unitId,sourceUnitId:scope.sourceUnitId,revisions,now,maxAgeMs});
-    return {...common,state:view.state,reason:null,filesRead:files.length,ignoredHistorical,view};
+    return {...common,state:view.state,reason:null,filesRead:files.length,ignoredHistorical,
+      legacyDigestReconciled,view};
   }catch{return denied('SOURCE_UNREADABLE_OR_INVALID');}
   finally{if(handle)handle.closeSync();}
 }

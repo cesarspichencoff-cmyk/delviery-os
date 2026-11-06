@@ -27,7 +27,10 @@ const HOST_SCHEMAS = new Set([
   "deliveryos.tata-reader-continuous-host-status.v1",
   "deliveryos.tata-reader-continuous-host-status.v2",
 ]);
-const CONSUMER_SCHEMA = "deliveryos.live-shadow-consumer-status.v1";
+const CONSUMER_SCHEMAS = new Set([
+  "deliveryos.live-shadow-consumer-status.v1",
+  "deliveryos.live-shadow-consumer-status.v2",
+]);
 
 /** Sem cadencia declarada (watcher v1 sem supervisor): poll de ~3 s. */
 const LEGACY_CHECKPOINT_STALE_SECONDS = 90;
@@ -143,14 +146,18 @@ function evaluateTataReaderHealthV1(input) {
     }
   }
   let consumerFailed = false;
+  let consumerInvalid = false;
   if (consumer !== null) {
-    if (!isObj(consumer) || consumer.schema !== CONSUMER_SCHEMA) {
+    if (!isObj(consumer) || !CONSUMER_SCHEMAS.has(consumer.schema) ||
+        typeof consumer.state !== "string" || !consumer.state.trim()) {
+      consumerInvalid = true;
       reasons.push("CONSUMER_STATUS_SCHEMA_INVALID");
     } else {
-      evidence.consumer_state = String(consumer.state ?? "");
-      if (evidence.consumer_state === "FAILED") {
+      evidence.consumer_state = consumer.state;
+      if (evidence.consumer_state !== "RUNNING") {
         consumerFailed = true;
-        reasons.push("CONSUMER_FAILED");
+        reasons.push(evidence.consumer_state === "FAILED" ?
+          "CONSUMER_FAILED" : "CONSUMER_NOT_RUNNING");
       }
     }
   }
@@ -232,7 +239,7 @@ function evaluateTataReaderHealthV1(input) {
     if (evidence.last_error_class) reasons.push(`LAST_ERROR_${evidence.last_error_class}`);
     return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
   }
-  if (consumerFailed || !evidence.watcher_sha256_verified || ages.checkpoint_s === null) {
+  if (consumerFailed || consumerInvalid || !evidence.watcher_sha256_verified || ages.checkpoint_s === null) {
     return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
   }
   return verdict("HEALTHY", reasons, { ...extra(), thresholds: t });

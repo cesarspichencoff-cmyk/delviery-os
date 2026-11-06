@@ -22,7 +22,12 @@ import {
   permissionFromStatus,
 } from "./native-bridge.js";
 import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
+import {
+  inspectOperationalEvents, queueHoldMessage, verifiedNativeQueueReceipt,
+  QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
+} from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
+import { selectActiveRiderTrip } from "./rider-trip-scope.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -65,16 +70,10 @@ const POLL_MS = 15000;
 let pollTimer = null;
 
 function activeTrip() {
-  // A viagem DESTE motoboy. O servidor já entrega só as dele; filtrar aqui
-  // também impede que uma resposta mais larga mostre a viagem de outro. O
-  // ator vem no próprio snapshot: `cap.me` chega depois da primeira pintura.
-  const quem = snap?.actor || cap.me;
-  const me = quem && quem.role === "motoboy_interno" ? quem.actor_id : null;
-  return (snap?.trips || []).find(
-    (t) =>
-      ["preparando_saida", "em_rota", "retornando"].includes(t.state) &&
-      (!me || t.courier_actor_id === me),
-  );
+  // Sem identidade de motoboy válida, ou em conflito com a sessão nativa,
+  // nenhuma viagem é selecionada. Nunca aceitar a primeira viagem de uma
+  // resposta ampla antes de confirmar o ator.
+  return selectActiveRiderTrip(snap, cap.me);
 }
 
 /* ---------------- Fila do aparelho (C5) ----------------
@@ -85,6 +84,8 @@ function activeTrip() {
 const OPEN_STATES = new Set(["pending", "failed", "sending"]);
 let queuePoll = null;
 let queueSeen = "";
+// Apenas estado de leitura/gravação LOCAL, sem inventar recibo do servidor.
+let queueHold = null;
 
 function deviceQueueOn() {
   return !!(
@@ -99,8 +100,20 @@ function deviceQueueOn() {
 
 function deviceEvents() {
   if (!native || !native.operationalEvents) return [];
-  const list = native.operationalEvents();
-  return Array.isArray(list) ? list : [];
+  try {
+    const checked = inspectOperationalEvents(native.operationalEvents());
+    if (!checked.ok) {
+      if (queueHold !== QUEUE_WRITE_BLOCK) queueHold = QUEUE_READ_BLOCK;
+      return [];
+    }
+    // Uma falha de leitura recuperou; falha de escrita exige intervenção
+    // explícita e NUNCA é curada apenas por conseguir ler o Room.
+    if (queueHold === QUEUE_READ_BLOCK) queueHold = null;
+    return checked.events;
+  } catch {
+    if (queueHold !== QUEUE_WRITE_BLOCK) queueHold = QUEUE_READ_BLOCK;
+    return [];
+  }
 }
 
 /** A mesma chave das ações: toque repetido numa intenção pendente não vira outra. */
@@ -122,14 +135,41 @@ function intentKey(e) {
   }
 }
 
+function blockQueueActionsImmediately() {
+  for (const id of ["btnSecondary", "btnNotFound", "btnProblem"]) {
+    const button = $(id);
+    if (button) button.disabled = true;
+  }
+  const primary = $("btnPrimary");
+  if (primary && primary.textContent !== "Abrir rota") primary.disabled = true;
+}
+
 function queueOnDevice(key, build) {
-  if (deviceEvents().some((e) => OPEN_STATES.has(e.state) && intentKey(e) === key)) {
+  const events = deviceEvents();
+  if (queueHold) {
+    renderDeviceQueue(activeTrip());
+    blockQueueActionsImmediately();
+    throw new Error(queueHoldMessage(queueHold));
+  }
+  if (events.some((e) => OPEN_STATES.has(e.state) && intentKey(e) === key)) {
     return { result: { ok: true, queued: true, already_queued: true } };
   }
   const command = build();
   const event_id = newCommandId("ev");
-  const r = native.recordOperationalEvent({ event_id, idempotency_key: event_id, command });
-  if (!r || r.ok !== true) throw new Error("Não foi possível guardar a ação neste aparelho. Tente de novo.");
+  let r = null;
+  try {
+    r = native.recordOperationalEvent({ event_id, idempotency_key: event_id, command });
+  } catch {
+    // Não houve comprovante Room: nunca afirmar que foi salvo.
+  }
+  // Um ACK nativo precisa confirmar ESTA identidade, não apenas trazer ok=true.
+  // Duplicate para um event_id recém-criado é colisão inesperada, não prova de escrita.
+  if (!verifiedNativeQueueReceipt(r, event_id)) {
+    queueHold = QUEUE_WRITE_BLOCK;
+    renderDeviceQueue(activeTrip());
+    blockQueueActionsImmediately();
+    throw new Error(queueHoldMessage(queueHold));
+  }
   scheduleQueuePoll();
   return { result: { ok: true, queued: true } };
 }
@@ -173,8 +213,11 @@ function withDeviceIntents(trip) {
 function renderDeviceQueue(serverTrip) {
   const line = $("pendingLine");
   const rejected = $("rejectedLine");
-  if (!line || !rejected) return;
+  const hold = $("queueHoldLine");
+  if (!line || !rejected || !hold) return;
   if (!deviceQueueOn()) {
+    hold.hidden = true;
+    hold.textContent = "";
     line.hidden = true;
     line.textContent = "";
     rejected.hidden = true;
@@ -182,6 +225,8 @@ function renderDeviceQueue(serverTrip) {
     return;
   }
   const events = deviceEvents();
+  hold.textContent = queueHoldMessage(queueHold);
+  hold.hidden = !queueHold;
   const open = events.filter((e) => OPEN_STATES.has(e.state));
   if (open.length) {
     const failed = open.some((e) => e.state === "failed");
@@ -427,6 +472,13 @@ function render() {
   }
 
   $("tripFoot").textContent = `Viagem · ${t.deliveries.filter((d) => d.active).length} parada(s)`;
+  // HOLD de armazenamento: comandos de confirmação não podem alegar sucesso.
+  // Abrir rota não é escrita nem confirmação e permanece disponível.
+  const blocked = deviceQueueOn() && !!queueHold;
+  primary.disabled = blocked && primary.textContent !== "Abrir rota";
+  secondary.disabled = blocked;
+  notFound.disabled = blocked;
+  btnProblem.disabled = blocked;
 }
 
 function openRoute(s) {
