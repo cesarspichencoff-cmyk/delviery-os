@@ -24,12 +24,16 @@ try{
     let bytesPerPipe=0;
     const stress=process.env.GETIN_LAB_STDIO_STRESS==='1';
     if(stress){
-      const line='LAB_STDIO_STRESS_ONLY_'+'.'.repeat(2030)+'\n';
+      const line=Buffer.from('LAB_STDIO_STRESS_ONLY_'+'.'.repeat(2030)+'\n','utf8');
+      let outBytes=0,errBytes=0;
       for(let i=0;i<80;i++){
-        fs.writeSync(1,line);
-        fs.writeSync(2,line);
+        const out=fs.writeSync(1,line,0,line.length);
+        const err=fs.writeSync(2,line,0,line.length);
+        if(out!==line.length || err!==line.length)throw Error('SHORT_FAKE_PIPE_WRITE');
+        outBytes+=out;errBytes+=err;
       }
-      bytesPerPipe=Buffer.byteLength(line,'utf8')*80;
+      if(outBytes!==errBytes)throw Error('FAKE_PIPE_LENGTH_MISMATCH');
+      bytesPerPipe=outBytes;
     }
     fs.writeFileSync(path.join(lab,mode+'.child.receipt.json'),JSON.stringify({
      schema:'deliveryos.getin-synthetic-job.v1',state:'FIXTURE_ONLY',mode,
