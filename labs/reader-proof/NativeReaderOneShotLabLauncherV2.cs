@@ -11,7 +11,7 @@ namespace DeliveryOS.ReaderLab {
   const string LabName="deliveryos-reader-proof-v2-lab";
   const string Marker="DELIVERYOS_READER_PROOF_LAB_ONLY_V2";
   const string ApprovedRepository="cesarspichencoff-cmyk/delviery-os";
-  const string ApprovedScriptGitBlob="7fc95b333115cfad06415805edfd3d00648e2f9a";
+  const string ApprovedScriptGitBlob="532344b2d3b35ed87f475a0bebaa441f12bc54cc";
   // The launcher is a CI test artifact, not the field program.
   static bool ApprovedRunner() {
    return String.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"),"true",
