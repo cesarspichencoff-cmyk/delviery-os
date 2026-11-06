@@ -118,3 +118,33 @@ Arquivos: `labs/getin-silent/LabGuiLauncher.cs`, `labs/getin-silent/synthetic-ge
 **Event logs vistos somente por metadados:** `C:\Windows\System32\winevt\Logs\Security.evtx` e `System.evtx` existem; na listagem realizada não apareceu `Microsoft-Windows-TaskScheduler%4Operational.evtx` (apenas a variante `%4Maintenance`). **Não foram abertos** logs binários; a existência do Security não comprova habilitação de auditoria 4688, nem causalidade de janelas. Não ativar auditoria, alterar política, instalar monitor, nem executar leitor EVTX ou shell no caixa.
 
 **Fronteira de efeito:** `PR_137=DRAFT`, `LAB_GIT_CODE_READY=YES`, `LAB_TEST_PASS_80_80=YES`, `GETIN_REAL_EXECUTION_PROVEN=NO`, `FLASH_CAUSALITY=UNKNOWN`, `TASKS_ALTERED=NONE`, `CAIXA_CODE_EXECUTED=NO`, `L1_N2_N3=HOLD`, `V1_ACCEPTED=0/8`.
+
+## Homologação de contratos GetIn observados em fonte instalada — 05/11/2026
+
+**Escopo de acesso:** leitura passiva de `src/scheduled-runner.mjs`, `src/detail-report.mjs`, `src/render-visual.mjs`, `package.json`, dos scripts de instalação e dos quatro XMLs de tarefas no `CAIXA_MOOCA`. **Não** foram lidos dados pessoais, mensagens de reserva, sessões do Chrome, HTML de clientes, cookies, credenciais, SQL, nem conteúdo dos arquivos `out/detail-latest.json` e `out/whatsapp-detailed.txt`. Os scripts reais **não foram copiados para o GitHub**.
+
+**Inventário de origem, somente metadados de arquivo (UTC, não hash criptográfico):**
+
+| Arquivo | Bytes observados | Última modificação |
+| --- | ---: | --- |
+| `src/scheduled-runner.mjs` | 4.076 | `2026-10-29T07:30:59.708Z` |
+| `src/detail-report.mjs` | 8.989 | `2026-11-01T00:31:31.651Z` |
+| `src/render-visual.mjs` | 7.157 | `2026-11-01T00:33:09.964Z` |
+| `src/summary.mjs` | 2.666 | `2026-10-29T07:06:19.546Z` |
+| `src/detail-format.mjs` | 3.723 | `2026-10-29T07:19:47.254Z` |
+| `package-lock.json` | 1.675 | `2026-10-29T06:48:34.884Z` |
+
+`SOURCE_CRYPTOGRAPHIC_HASH=UNKNOWN`: tamanho/mtime são indícios de versão, não prova de integridade ou igualdade de bytes. Antes de homologar código real fora do caixa, será preciso pinagem de origem sem exportar sessão/dados.
+
+**Contratos de controle observados:**
+- Coleta: arquivo exclusivo `.scheduled-running.lock` criado via `open('wx')`; tentativa existente com idade até 25 minutos bloqueia; uma idade superior aciona remoção e nova aquisição (a concorrência dessa recuperação exige prova separada). O processo pai salva `RUNNING`, inicia o filho `detail-report.mjs` com `windowsHide:true`, `stdio` em pipes e **timeout de 150 segundos**. Só grava `SUCCESS` se o retorno do filho, a data de D+1, a unidade Itaim, o número de entradas e a referência de data na mensagem forem consistentes; registra SHA-256 da mensagem. Em falha, grava `FAILED` e não libera sucesso.
+- Fonte: `detail-report.mjs` depende de Playwright e perfil persistente Chrome `.getin-session`, utiliza `headless:true` e cria artefatos após leitura de origem real. **Não executar essa origem fora de fluxo autorizado**.
+- Visual: `render-visual.mjs` só prossegue com `run-status=SUCCESS`, data de fonte consistente, carimbo de conclusão no mesmo dia São Paulo, SHA-256 igual, contagens e soma de pessoas reconciliadas; usa Chrome `headless:true`, grava o PNG por escrita/renomeação e `visual-state.json`. O campo `updatedAtBR` deriva do horário de origem/coleta, não de geração do PNG.
+- Agendador: existem **quatro tarefas habilitadas**, todas com `node.exe` direto, `InteractiveToken`, `Hidden=false` e `MultipleInstancesPolicy=IgnoreNew`: coleta 00h00 (`PT5M`), coleta 20h50 (`PT5M`), visual 00h02 (`PT3M`), visual 20h55 (`PT5M`). Os limites são das definições XML; o `IgnoreNew` protege instâncias **por tarefa**, não constitui um mutex global entre nomes distintos. Não há prova de duplicidade real.
+- Os dois agendamentos visuais usam o mesmo script; ao considerar migração futura, exigir prevenção de concorrência, preservação de ambos os horários, prazo de execução e identidade interativa. O lançador atual de bancada possui espera de **9 segundos**, inadequada como política real para tarefas de 3–5 minutos: **não é um executável de produção**.
+
+**Nova prova de contratos sintéticos:** `labs/getin-silent/getin-source-shape-contract.cjs` e `tests/silent-runner/run-getin-source-shape-contract-tests.cjs` modelam apenas as **formas e invariantes observados**. [CI #42139117697](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42139117697) passou **42/42** casos com dados fictícios, incluindo data D+1, unidade, totais, SHA, mudança de dia no fuso São Paulo, HTML escapado e erros de origem. O espelho é **mais restritivo** que o coletor real em algumas reconciliações e trata trava antiga como revisão, não remoção. Portanto `SOURCE_SHAPE_CONTRACT_TEST_PASS` **não equivale** a `REAL_SCRIPT_BEHAVIORAL_EQUIVALENCE`.
+
+**Robustez do lançador:** o laboratório passou a drenar assincronamente `stdout` e `stderr` redirecionados, sem gravar seus textos; caso contrário, grande volume de mensagens poderia deixar o Node bloqueado num pipe cheio apesar de estar sem janela. O filho fictício agora emite conteúdo laboratorial de alto volume **em ambos os canais**, atesta os bytes efetivamente aceitos e só grava seu recibo **após** completar a emissão. A CI da revisão final é pré-condição para declarar esse reforço comprovado; não herdar automaticamente os 80/80 anteriores como prova desse caso adicional.
+
+**Continuidade / decisão:** `GETIN_SOURCE_READ=PASSIVE_CODE_ONLY`; `GETIN_SOURCE_HASH=UNKNOWN`; `SOURCE_SHAPE_42_42=TEST_PASS`; `REAL_GETIN_PARITY=UNKNOWN`; `SILENT_LAUNCHER_DEPLOYED=NO`; `ACTUAL_FLASH_CAUSE=UNKNOWN`; `WINDOWS_TASK_CHANGED=NO`; `ORDER_OR_RESERVATION_CONTENT_READ=NO`; `L1_N2_N3=HOLD`; `V1_ACCEPTED=0/8`. Não publicar, instalar, mudar Agendador, gerar imagem/e-mail novo, reiniciar serviço ou executar diagnóstico no caixa.
