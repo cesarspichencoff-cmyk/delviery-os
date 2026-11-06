@@ -171,6 +171,9 @@ try {
  # Calibrate a synthetic HWND-to-PID/parent/session/SID probe on this VM first,
  # independent of the existing disposable S4U task registration fixtures.
  & (Join-Path $dir 'verify-window-attribution-windows-lab.ps1')
+ # Test a candidate GUI launcher for the two synthetic GetIn job shapes.
+ # No actual GetIn code, account, scheduler registration or customer file.
+ & (Join-Path $dir 'verify-getin-gui-launcher-windows-lab.ps1')
  & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Limited
  & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Highest
  # Compare the *actually observed* SYSTEM+InteractiveToken pairing in a disposable runner.
