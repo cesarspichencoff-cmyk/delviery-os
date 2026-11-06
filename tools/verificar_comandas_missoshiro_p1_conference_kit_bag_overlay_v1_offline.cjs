@@ -110,9 +110,10 @@ test("tampered source exact-blob check fails closed",()=>{
  assert.match(r.reason,/PINNED_MOTOR_SOURCE_HOLD/);
 });
 test("source omitted/empty or extra input fields hold",()=>{
- for(const src of ["",null,undefined]){
+ for(const src of ["",null]){
   assert.equal(evalCase([M],false,src).status,"HOLD");
  }
+ assert.equal(project(input([M])).status,"HOLD");
  assert.equal(project(input([]),pinned).status,"HOLD");
  const m=input([M]);m.items[0]={role:ROLES.MISSOSHIRO,units:1,print:true};
  assert.equal(project(m,pinned).status,"HOLD");
