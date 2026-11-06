@@ -26,6 +26,22 @@ internal data class GpsBatchOutcome(
     val credentialRefused: Boolean = false,
 )
 
+/**
+ * O piloto pode responder HTTP 4xx ANTES de devolver recibos individuais.
+ * Nao temos prova de que CADA evento foi rejeitado pelo dominio.
+ * Portanto reter os IDs/idempotencyKey no Room e sinalizar bloqueio da janela,
+ * sem marcar sent/rejected em lote nem copiar texto remoto para lastError.
+ */
+internal suspend fun preservePilotBatchHttpRefusal(
+    db: EntregasDatabase,
+    eventIds: List<String>,
+    refusal: ApiResult.Rejected,
+): Boolean {
+    if (eventIds.isEmpty()) return false
+    db.outbox().markFailed(eventIds, "pilot_http_${refusal.status}_blocked")
+    return true
+}
+
 /** Limita cada execução sem abandonar o saldo de uma fila offline. */
 internal data class GpsDrainOutcome(
     val retryable: Boolean = false,
@@ -327,7 +343,14 @@ class SyncWorker(
                         pilotAuthorizationBlocked = true
                     }
                 }
-                is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
+                is ApiResult.Rejected -> {
+                    // Sem recibo individual nao existe recusa terminal por evento.
+                    // 400 (incluindo INVALID_EVENTS_BATCH), 403 e demais 4xx
+                    // permanecem no Room ate correção/autorização operacional.
+                    if (preservePilotBatchHttpRefusal(db, ids, r)) {
+                        pilotAuthorizationBlocked = true
+                    }
+                }
             }
         }
 
