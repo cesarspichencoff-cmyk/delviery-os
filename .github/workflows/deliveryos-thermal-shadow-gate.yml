@@ -153,6 +153,8 @@ jobs:
         run: node tools/verificar_comandas_missoshiro_combinado_p1_requirements_review_only.cjs
       - name: Isolated pinned motor Missoshiro isopor delta and kit bag HOLD (offline)
         run: node tools/verificar_comandas_missoshiro_motor_delta_candidate_v1_offline.cjs
+      - name: Synthetic Missoshiro plus cold combo explicit P M bags and kit hold (offline)
+        run: node tools/verificar_comandas_missoshiro_p1_conference_kit_bag_overlay_v1_offline.cjs
       - name: Archive exact-byte classification versus routing coverage (no auto-classification)
         run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
       - name: Existing 554-code native catalog versus 463-route archived reconciliation (HOLD)
@@ -570,6 +572,8 @@ jobs:
         run: node tools/verificar_comandas_missoshiro_combinado_p1_requirements_review_only.cjs
       - name: Isolated pinned motor Missoshiro isopor delta and kit bag HOLD (offline)
         run: node tools/verificar_comandas_missoshiro_motor_delta_candidate_v1_offline.cjs
+      - name: Synthetic Missoshiro plus cold combo explicit P M bags and kit hold (offline)
+        run: node tools/verificar_comandas_missoshiro_p1_conference_kit_bag_overlay_v1_offline.cjs
       - name: Archive exact-byte classification versus routing coverage (no auto-classification)
         run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
       - name: Existing 554-code native catalog versus 463-route archived reconciliation (HOLD)
