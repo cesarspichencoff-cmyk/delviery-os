@@ -205,7 +205,14 @@ test("native line reference from a previous revision cannot be reused",()=>{
   ...rev.identity,snapshot_hash:"f".repeat(64)
  }};
  const stale={...original,opaque_order_ref:joined([],revised).opaque_order_ref};
- const result=review({revision:revised,binding:stale});
+ // Keep the classification receipt for the *new* revision valid, so this
+ // specifically tests whether an old line_ref can sneak into that revision.
+ const c=classReview();
+ const updatedClassification:RevisaoClassificacaoPR135={...c,
+  revision_binding:{...c.revision_binding!,
+   native_snapshot_sha256:revised.identity.snapshot_hash}};
+ const result=review({revision:revised,binding:stale,
+  classification:updatedClassification});
  assert.equal(result.status,"HOLD");
  assert.ok(result.reasons.includes("READER_NATIVE_LINE_REFERENCE_DRIFT"));
  assert.equal(result.ready_for_dispatch,null);
