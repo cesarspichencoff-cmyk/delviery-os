@@ -91,6 +91,13 @@ try {
   Check ($child.mode -eq $mode -and $child.state -eq 'FIXTURE_ONLY' -and
          $child.networkRequests -eq 0 -and $child.recordsProcessed -eq 0 -and
          $child.customerDataExported -eq $false) 'CHILD_IS_FICTIONAL'
+  if($mode -eq 'visual'){
+   Check ($child.stressCompleted -eq $true -and
+          $child.streamedBytesPerPipe -gt 131072) 'HIGH_VOLUME_BOTH_PIPES_PROVEN'
+  }else{
+   Check ($child.stressCompleted -eq $false -and
+          $child.streamedBytesPerPipe -eq 0) 'COLLECTOR_NO_STRESS'
+  }
   Check (-not $receipt.Contains($node) -and -not $receipt.Contains($lab) -and
          -not $raw.Contains($lab)) 'NO_PATHS_EXPORTED'
   $parent=$null
