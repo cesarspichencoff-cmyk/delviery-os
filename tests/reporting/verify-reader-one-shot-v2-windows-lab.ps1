@@ -21,14 +21,14 @@ $lab=Join-Path $env:RUNNER_TEMP 'deliveryos-reader-proof-v2-lab'
 if(Test-Path -LiteralPath $lab) { throw 'LAB_ROOT_COLLISION' }
 $node=(Get-Command node).Source
 $script=(Resolve-Path 'labs/reader-proof/native_reader_one_shot_lab_cli_v2.cjs').Path
-$argv=@(('\"--lab-dir='+$lab+'\"'),('\"--node-path='+$node+'\"'),('\"--script-path='+$script+'\"'))
+$argv=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$script+'"'))
 try {
  node tests/reporting/build-reader-one-shot-lab-v2-fixture.cjs "--lab-dir=$lab"
  if($LASTEXITCODE -ne 0) { throw 'V2_FIXTURE_FAILED' }
  # 1. Exact path identity. A same-named script under the sandbox is rejected.
  $spoof=Join-Path $lab 'native_reader_one_shot_lab_cli_v2.cjs'
  [IO.File]::WriteAllText($spoof,'process.exit(0)')
- $badArgs=@(('\"--lab-dir='+$lab+'\"'),('\"--node-path='+$node+'\"'),('\"--script-path='+$spoof+'\"'))
+ $badArgs=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$spoof+'"'))
  $bad=Start-Process -FilePath $exe -ArgumentList $badArgs -Wait -PassThru
  if($bad.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json'))){
   throw 'SPOOF_SCRIPT_ACCEPTED'
