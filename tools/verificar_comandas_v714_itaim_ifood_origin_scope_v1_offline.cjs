@@ -1,103 +1,116 @@
 "use strict";
 /**
- * Tests the EXACT local scope function extracted from V7.14 source without
- * requiring its Windows paths, opening an event, querying SQL, starting any
- * process on the cashier or invoking any real consumer.
+ * Isolated proof of a proposed pre-flight gate; not installed or integrated.
+ * Uses only a pinned Git snapshot and wholly fictitious events.
  */
 const assert=require("node:assert/strict");
-const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
-const src=fs.readFileSync(path.join(__dirname,"..","runtime","shadow",
+const fs=require("node:fs"),path=require("node:path");
+const {SCHEMA,PINNED_V714_BLOB,EFFECTS,
+ reviewLegacyV714Scope:review}=
+ require("./comandas_v714_native_scope_preflight_review_only.cjs");
+const source=fs.readFileSync(path.join(__dirname,"..","runtime","shadow",
  "live_shadow_consumer_v2_candidate_v714.cjs"),"utf8");
-const marker="function nativeItaimIfoodScopeReasonsV1(e) {";
-const start=src.indexOf(marker);
-assert.ok(start>0,"NATIVE_GUARD_NOT_FOUND");
-assert.equal(src.indexOf(marker,start+1),-1,"DUPLICATE_NATIVE_GUARD");
-const end=src.indexOf("\n}\n",start);
-assert.ok(end>start,"NATIVE_GUARD_END_NOT_FOUND");
-const code=src.slice(start,end+2);
-const guard=vm.runInNewContext("("+code+")",Object.create(null),{timeout:1000});
-const review=x=>Array.from(guard(x));
-const fake=()=>({
+const event=()=>({
+ schema:"deliveryos.tata-reader-stable-order-event.v1",
  order_key:"0001|01|FAKESALE|FAKECMD",
  ready_for_downstream_shadow:true,
  blockers:[],service_resolution:{blockers:[]},
  order:{CDFILIAL:"0001",CDLOJA:"01",NRVENDAREST:"FAKESALE",
-        NRCOMANDA:"FAKECMD",IDORGCMDVENDA:"DLV_IFO",
-        IDSTCOMANDA:"P",items:[]}
+  NRCOMANDA:"FAKECMD",IDORGCMDVENDA:"DLV_IFO",
+  IDSTCOMANDA:"P",items:[]}
 });
-let n=0;
-function test(label,fn){fn();console.log("PASS "+(++n)+" "+label);}
-test("exact Itaim DLV_IFO four-field key has no SOURCE blocker only",()=>{
- assert.deepEqual(review(fake()),[]);
+let count=0;
+const test=(name,fn)=>{fn();console.log("PASS "+(++count)+" "+name);};
+const check=(input=event(),src=source)=>{
+ const out=review(input,src);
+ assert.equal(out.schema,SCHEMA);
+ assert.equal(out.status,"HOLD");
+ assert.equal(out.source_event_authenticated,false);
+ assert.equal(out.source_revision_complete,false);
+ assert.equal(out.native_status_semantics_proven,false);
+ assert.equal(out.consumer_patched_or_executed,false);
+ assert.equal(out.operational_ready,false);
+ assert.equal(out.print_authorized,false);
+ assert.deepEqual(out.effects,EFFECTS);
+ assert.ok(Object.values(out.effects).every(v=>v===false));
+ assert.ok(!JSON.stringify(out).includes("FAKESALE"));
+ return out;
+};
+test("pinned original V714 is preserved and only preflight is evaluated",()=>{
+ assert.equal(PINNED_V714_BLOB,"8e75fea85437d063c2f6ee2df09ee33962d42ce6");
+ assert.equal(check().reason,"EXACT_SCOPE_IS_ONLY_UNATTESTED_CANDIDATE");
+ assert.equal(check().exact_itaim_ifood_scope_syntactically_matching,true);
+ assert.equal(source.includes("nativeItaimIfoodScopeReasonsV1"),false);
 });
-test("native DLV_NMO is not accepted despite upstream ready",()=>{
- const x=fake();x.order.IDORGCMDVENDA="DLV_NMO";
- assert.ok(review(x).includes("NATIVE_IFOOD_ORIGIN_NOT_EXACT"));
+test("upstream ready cannot promote unrelated native DLV source",()=>{
+ const x=event();x.order.IDORGCMDVENDA="DLV_NMO";
+ assert.equal(check(x).reason,"NATIVE_IFOOD_ORIGIN_NOT_EXACT");
 });
-test("native DLV_CPD is not accepted despite iFood-like prefix",()=>{
- const x=fake();x.order.IDORGCMDVENDA="DLV_CPD";
- assert.ok(review(x).includes("NATIVE_IFOOD_ORIGIN_NOT_EXACT"));
+test("another similar-looking DLV prefix never becomes iFood",()=>{
+ const x=event();x.order.IDORGCMDVENDA="DLV_CPD";
+ assert.equal(check(x).reason,"NATIVE_IFOOD_ORIGIN_NOT_EXACT");
 });
-test("missing native origin is rejected",()=>{
- const x=fake();delete x.order.IDORGCMDVENDA;
- assert.ok(review(x).includes("NATIVE_IFOOD_ORIGIN_NOT_EXACT"));
+test("missing native origin is denied",()=>{
+ const x=event();delete x.order.IDORGCMDVENDA;
+ assert.equal(check(x).reason,"NATIVE_IFOOD_ORIGIN_NOT_EXACT");
 });
-test("incorrect filial blocks regardless upstream ready",()=>{
- const x=fake();x.order.CDFILIAL="0002";
- assert.ok(review(x).includes("ITAIM_NATIVE_SCOPE_MISMATCH"));
+test("different filial remains blocked",()=>{
+ const x=event();x.order.CDFILIAL="0002";
+ assert.equal(check(x).reason,"ITAIM_NATIVE_SCOPE_MISMATCH");
 });
-test("incorrect store blocks regardless upstream ready",()=>{
- const x=fake();x.order.CDLOJA="02";
- assert.ok(review(x).includes("ITAIM_NATIVE_SCOPE_MISMATCH"));
+test("different logical store remains blocked",()=>{
+ const x=event();x.order.CDLOJA="02";
+ assert.equal(check(x).reason,"ITAIM_NATIVE_SCOPE_MISMATCH");
 });
-test("order key cannot be forged independently of native header",()=>{
- const x=fake();x.order_key="0001|01|FAKESALE|OTHER";
- assert.ok(review(x).includes("NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER"));
+test("header/order key mismatch remains blocked",()=>{
+ const x=event();x.order_key="0001|01|FAKESALE|NOT_SAME";
+ assert.equal(check(x).reason,"NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER");
 });
-test("missing header cannot claim a valid scope",()=>{
- const x=fake();delete x.order;
- assert.deepEqual(review(x),["NATIVE_ORDER_SCOPE_MISSING"]);
+test("missing order header remains blocked",()=>{
+ const x=event();delete x.order;
+ assert.equal(check(x).reason,"EVENT_ENVELOPE_NOT_TRUSTED");
 });
-test("null event remains rejected without throwing",()=>{
- assert.deepEqual(review(null),["NATIVE_ORDER_SCOPE_MISSING"]);
+test("null envelope remains blocked",()=>{
+ assert.equal(check(null).reason,"EVENT_ENVELOPE_NOT_TRUSTED");
 });
-test("delimiter injection in a native field must fail closed",()=>{
- const x=fake();x.order.NRVENDAREST="FAKE|SALE";x.order_key="0001|01|FAKE|SALE|FAKECMD";
- assert.ok(review(x).includes("NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER"));
+test("delimiter injection remains blocked",()=>{
+ const x=event();x.order.NRVENDAREST="FAKE|SALE";
+ x.order_key="0001|01|FAKE|SALE|FAKECMD";
+ assert.equal(check(x).reason,"NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER");
 });
-test("varchar10 overlength native identity cannot silently pass",()=>{
- const x=fake();x.order.NRCOMANDA="12345678901";
- x.order_key="0001|01|FAKESALE|"+x.order.NRCOMANDA;
- assert.ok(review(x).includes("NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER"));
+test("native varchar10 length boundary remains enforced",()=>{
+ const x=event();x.order.NRCOMANDA="12345678901";
+ x.order_key="0001|01|FAKESALE|12345678901";
+ assert.equal(check(x).reason,"NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER");
 });
-test("control characters cannot become order key components",()=>{
- const x=fake();x.order.NRCOMANDA="A\nB";x.order_key="0001|01|FAKESALE|A\nB";
- assert.ok(review(x).includes("NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER"));
+test("control characters cannot become native identity",()=>{
+ const x=event();x.order.NRCOMANDA="A\nB";
+ x.order_key="0001|01|FAKESALE|A\nB";
+ assert.equal(check(x).reason,"NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER");
 });
-test("native status 3 P X have no inferred finalization meaning",()=>{
+test("native status 3 P X remains uninterpreted and not approved",()=>{
  for(const status of ["3","P","X"]){
-  const x=fake();x.order.IDSTCOMANDA=status;
-  assert.deepEqual(review(x),[]);
+  const x=event();x.order.IDSTCOMANDA=status;
+  const result=check(x);
+  assert.equal(result.exact_itaim_ifood_scope_syntactically_matching,true);
+  assert.equal(result.native_status_semantics_proven,false);
  }
 });
-test("this guard cannot promote ready status or write an effect",()=>{
- assert.ok(src.includes("...nativeItaimIfoodScopeReasonsV1(event)"));
- assert.ok(src.includes("const blockers = [...upstreamBlockers, ...observationBlockers,"));
- assert.ok(src.includes("ready: blockers.length === 0"));
- assert.ok(src.includes("print: false"));
- assert.ok(src.includes("spooler_write: false"));
- assert.equal(src.includes("NATIVE_STATUS_MEANS_FINALIZED"),false);
+test("changed pinned V714 bytes fail before any scope claim",()=>{
+ const changed=source.replace("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC",
+  "CANONICAL_PACKAGING_MOTOR_SOURCE_CHANGED_BEFORE_EXEC");
+ assert.notEqual(changed,source);
+ assert.equal(check(event(),changed).reason,"PINNED_V714_BLOB_MISMATCH");
 });
-test("different plausible sale key than header always blocks",()=>{
- const x=fake();x.order.NRVENDAREST="SALEA";
- assert.ok(review(x).includes("NATIVE_ORDER_KEY_NOT_BOUND_TO_HEADER"));
+test("omitted candidate source fails closed",()=>{
+ assert.equal(check(event(),"").reason,"PINNED_V714_SOURCE_UNAVAILABLE");
+ assert.equal(check(event(),null).reason,"PINNED_V714_SOURCE_UNAVAILABLE");
 });
-test("valid native identity cannot be widened by extra attacker fields",()=>{
- const x=fake();x.ready=true;x.authorizePrint=true;
- assert.deepEqual(review(x),[]);
- assert.equal(src.includes("effects: {"),true);
- assert.equal(src.includes("print: false"),true);
+test("unreviewed print flag never grants authorization",()=>{
+ const x=event();x.print_authorized=true;x.effects={print:true};
+ assert.equal(check(x).print_authorized,false);
+ assert.equal(check(x).consumer_patched_or_executed,false);
 });
-if(n!==16)throw Error("UNEXPECTED_NATIVE_SCOPE_COUNT_"+n);
-console.log("COMANDAS_V714_NATIVE_IFOOD_ITAIM_SCOPE="+n+"/"+n+
- " ONLY_UNINSTALLED_SHADOW NO_SQL NO_ORDER_DATA NO_PRINT");
+if(count!==16)throw Error("V714_ORIGIN_PREFLIGHT_TEST_COUNT_DRIFT_"+count);
+console.log("COMANDAS_V714_ORIGIN_PREFLIGHT="+count+"/"+count+
+ " UNINSTALLED_PENDING_INTEGRATION NO_SQL NO_PRIVATE_ORDERS NO_PRINT");
