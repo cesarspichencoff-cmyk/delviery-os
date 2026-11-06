@@ -26,6 +26,42 @@ internal data class GpsBatchOutcome(
     val credentialRefused: Boolean = false,
 )
 
+/**
+ * O piloto pode responder HTTP 4xx ANTES de devolver recibos individuais.
+ * Nao temos prova de que CADA evento foi rejeitado pelo dominio.
+ * Portanto reter os IDs/idempotencyKey no Room e sinalizar bloqueio da janela,
+ * sem marcar sent/rejected em lote nem copiar texto remoto para lastError.
+ */
+internal suspend fun preservePilotBatchHttpRefusal(
+    db: EntregasDatabase,
+    eventIds: List<String>,
+    refusal: ApiResult.Rejected,
+): Boolean {
+    if (eventIds.isEmpty()) return false
+    db.outbox().markFailed(eventIds, "pilot_http_${refusal.status}_blocked")
+    return true
+}
+
+/**
+ * Prioridade da conclusão: uma recusa de autorização ou de lote no piloto
+ * nunca pode ser mascarada por retry transitório/GPS pendente. A fila Room
+ * persiste e o job periódico continua independente do job NOW.
+ */
+internal enum class SyncFinalization { PILOT_HOLD, PLATFORM_REAUTH, GPS_CONTINUATION, TRANSIENT_RETRY, COMPLETE }
+
+internal fun decideSyncFinalization(
+    pilotAuthorizationBlocked: Boolean,
+    platformCredentialRefused: Boolean,
+    gpsRemaining: Boolean,
+    retryable: Boolean,
+): SyncFinalization = when {
+    pilotAuthorizationBlocked -> SyncFinalization.PILOT_HOLD
+    platformCredentialRefused -> SyncFinalization.PLATFORM_REAUTH
+    gpsRemaining -> SyncFinalization.GPS_CONTINUATION
+    retryable -> SyncFinalization.TRANSIENT_RETRY
+    else -> SyncFinalization.COMPLETE
+}
+
 /** Limita cada execução sem abandonar o saldo de uma fila offline. */
 internal data class GpsDrainOutcome(
     val retryable: Boolean = false,
@@ -327,7 +363,14 @@ class SyncWorker(
                         pilotAuthorizationBlocked = true
                     }
                 }
-                is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
+                is ApiResult.Rejected -> {
+                    // Sem recibo individual nao existe recusa terminal por evento.
+                    // 400 (incluindo INVALID_EVENTS_BATCH), 403 e demais 4xx
+                    // permanecem no Room ate correção/autorização operacional.
+                    if (preservePilotBatchHttpRefusal(db, ids, r)) {
+                        pilotAuthorizationBlocked = true
+                    }
+                }
             }
         }
 
@@ -399,17 +442,22 @@ class SyncWorker(
         // Credencial recusada e RETENTAVEL. Retornar sucesso aqui foi o coracao
         // do P0: o WorkManager dava a sincronizacao por concluida e os pontos
         // ficavam `failed` para sempre, sem nada sinalizar.
-        if (credencialRecusada) {
-            DeviceSession.limparCredencial(db)
-            return retryOrYield()
+        // Limpar a credencial de plataforma e um efeito local necessario,
+        // mesmo quando o piloto tambem exige HOLD por outra razao.
+        if (credencialRecusada) DeviceSession.limparCredencial(db)
+        return when (decideSyncFinalization(
+            pilotAuthorizationBlocked = pilotAuthorizationBlocked,
+            platformCredentialRefused = credencialRecusada,
+            gpsRemaining = gpsDrain.remaining,
+            retryable = retryable,
+        )) {
+            SyncFinalization.PILOT_HOLD -> Result.failure()
+            SyncFinalization.PLATFORM_REAUTH -> retryOrYield()
+            // Saldo GPS nao pode ser abandonado ao esgotar tentativas rapidas.
+            SyncFinalization.GPS_CONTINUATION -> Result.retry()
+            SyncFinalization.TRANSIENT_RETRY -> retryOrYield()
+            SyncFinalization.COMPLETE -> Result.success()
         }
-        // Saldo após progresso não é falha esgotada: deve ter continuação,
-        // mesmo se o envio secundário de contagens falhou nesta execução.
-        if (gpsDrain.remaining) return Result.retry()
-        // Other transient work (including GPS platform sync) retains bounded retry.
-        if (retryable) return retryOrYield()
-        if (pilotAuthorizationBlocked) return Result.failure()
-        return Result.success()
     }
 
     private fun ackJson(ack: br.com.tata.entregas.data.TermAckEntity) = JSONObject().apply {

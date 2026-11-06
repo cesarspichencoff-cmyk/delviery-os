@@ -208,6 +208,81 @@ class RoomSyncRaceRecoveryTest {
         assertEquals(0, db.outbox().pendingCount())
     }
 
+    @Test fun pilotHttp400WithoutPerEventReceiptPreservesAllEventsAcrossRestart() = runBlocking {
+        val a = event("pilot-invalid-batch-a")
+        val b = event("pilot-invalid-batch-b")
+        db.outbox().insert(a)
+        db.outbox().insert(b)
+        val ids = db.outbox().nextBatch(10).map { it.eventId }
+        val blocked = br.com.tata.entregas.sync.preservePilotBatchHttpRefusal(
+            db,
+            ids,
+            br.com.tata.entregas.sync.ApiResult.Rejected(
+                reason = "FICT_PRIVATE_RESPONSE_NEVER_PERSIST",
+                status = 400,
+            ),
+        )
+        assertTrue(blocked)
+        db.close()
+        db = open()
+        assertEquals(2, db.outbox().pendingCount())
+        assertEquals(0, db.outbox().rejectedCount())
+        val recovered = db.outbox().nextBatch(10)
+        assertEquals(listOf(a.eventId, b.eventId), recovered.map { it.eventId })
+        assertTrue(recovered.all { it.syncState == "failed" && it.attempts == 1 })
+        assertTrue(recovered.all { it.lastError == "pilot_http_400_blocked" })
+        assertTrue(recovered.none { it.lastError?.contains("FICT_PRIVATE") == true })
+        assertEquals(listOf(a.idempotencyKey, b.idempotencyKey),
+            recovered.map { it.idempotencyKey })
+    }
+
+    @Test fun pilotHttp403BlockedPreservesQueueNotPlatformSession() = runBlocking {
+        val e = event("pilot-auth-blocked")
+        db.outbox().insert(e)
+        val blocked = br.com.tata.entregas.sync.preservePilotBatchHttpRefusal(
+            db,
+            listOf(e.eventId),
+            br.com.tata.entregas.sync.ApiResult.Rejected(
+                reason = "FICT_PRIVATE_AUTH_BODY",
+                status = 403,
+            ),
+        )
+        assertTrue(blocked)
+        assertEquals(1, db.outbox().pendingCount())
+        assertEquals(0, db.outbox().rejectedCount())
+        val stored = db.outbox().nextBatch(5).single()
+        assertEquals(e.idempotencyKey, stored.idempotencyKey)
+        assertEquals("pilot_http_403_blocked", stored.lastError)
+    }
+
+    @Test fun latePilotHttp422CannotReviveAlreadyConfirmedEvent() = runBlocking {
+        val e = event("pilot-late-422")
+        db.outbox().insert(e)
+        db.outbox().markSent(listOf(e.eventId))
+        val blocked = br.com.tata.entregas.sync.preservePilotBatchHttpRefusal(
+            db,
+            listOf(e.eventId),
+            br.com.tata.entregas.sync.ApiResult.Rejected(
+                reason = "FICT_PRIVATE_LATE_RESPONSE",
+                status = 422,
+            ),
+        )
+        assertTrue(blocked)
+        assertEquals(0, db.outbox().pendingCount())
+        assertEquals(0, db.outbox().rejectedCount())
+        assertTrue(db.outbox().nextBatch(5).isEmpty())
+    }
+
+    @Test fun emptyPilotBatchCannotMutateDurableRoom() = runBlocking {
+        val blocked = br.com.tata.entregas.sync.preservePilotBatchHttpRefusal(
+            db,
+            emptyList(),
+            br.com.tata.entregas.sync.ApiResult.Rejected("LAB_ONLY", 400),
+        )
+        assertEquals(false, blocked)
+        assertEquals(0, db.outbox().pendingCount())
+    }
+
     @Test fun pendingOutboxFailureRemainsRetryableAcrossRestart() = runBlocking {
         db.outbox().insert(event("evt-2"))
         db.outbox().markFailed(listOf("evt-2"), "timeout")
@@ -219,5 +294,64 @@ class RoomSyncRaceRecoveryTest {
         assertEquals("event-key-evt-2", recovered.single().idempotencyKey)
         db.outbox().markSent(listOf("evt-2"))
         assertEquals(0, db.outbox().pendingCount())
+    }
+
+    @Test fun pilotHttpBlockDominatesUnrelatedGpsRetryAndRemainingQueue() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.PILOT_HOLD,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = true,
+                platformCredentialRefused = false,
+                gpsRemaining = true,
+                retryable = true,
+            ),
+        )
+    }
+
+    @Test fun pilotBlockSurvivesConcurrentPlatformCredentialRefusal() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.PILOT_HOLD,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = true,
+                platformCredentialRefused = true,
+                gpsRemaining = false,
+                retryable = true,
+            ),
+        )
+    }
+
+    @Test fun platformCredentialRefusalKeepsReauthPriority() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.PLATFORM_REAUTH,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = false,
+                platformCredentialRefused = true,
+                gpsRemaining = true,
+                retryable = false,
+            ),
+        )
+    }
+
+    @Test fun remainingGpsQueueRequestsContinuationWithoutPilotBlock() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.GPS_CONTINUATION,
+            br.com.tata.entregas.sync.decideSyncFinalization(
+                pilotAuthorizationBlocked = false,
+                platformCredentialRefused = false,
+                gpsRemaining = true,
+                retryable = true,
+            ),
+        )
+    }
+
+    @Test fun transientAndClearCompletionKeepOriginalPolicies() {
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.TRANSIENT_RETRY,
+            br.com.tata.entregas.sync.decideSyncFinalization(false, false, false, true),
+        )
+        assertEquals(
+            br.com.tata.entregas.sync.SyncFinalization.COMPLETE,
+            br.com.tata.entregas.sync.decideSyncFinalization(false, false, false, false),
+        )
     }
 }
