@@ -95,6 +95,8 @@ jobs:
         run: node tools/verificar_comandas_native_status_lifecycle_v1_offline.cjs
       - name: Reader one-order serializable proposal stays REVIEW ONLY (static, no SQL)
         run: node tools/verificar_comandas_reader_one_order_serializable_review_only.cjs
+      - name: Stage 3 SERIALIZABLE versus application partial commits (Linux offline)
+        run: node tools/verificar_comandas_reader_serializable_semantic_commit_gap_v1_offline.cjs
       - name: Reader source revision mixing, ABA and partial-commit counterexamples (Linux offline)
         run: node tools/verificar_comandas_reader_mixed_revision_risk_v1_offline.cjs
       - name: Reader SQL snapshot metadata must remain HOLD without independent proof (Linux)
@@ -452,6 +454,10 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: Stage 3 one-order SERIALIZABLE static preflight no SQL (Windows)
+        run: node tools/verificar_comandas_reader_one_order_serializable_review_only.cjs
+      - name: Stage 3 SERIALIZABLE versus application partial commits (Windows offline)
+        run: node tools/verificar_comandas_reader_serializable_semantic_commit_gap_v1_offline.cjs
       - name: Reader source revision mixing, ABA and partial-commit counterexamples (Windows offline)
         run: node tools/verificar_comandas_reader_mixed_revision_risk_v1_offline.cjs
       - name: Reader V2 canonical hash and legacy checkpoint refuse unsafe migration (Windows synthetic)
