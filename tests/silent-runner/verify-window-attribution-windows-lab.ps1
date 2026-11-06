@@ -26,8 +26,8 @@ function Check([bool]$ok,[string]$label){
  if(!$ok){throw ('WINDOW_ATTRIBUTION_LAB_FAIL_'+$label)}
  $script:total++
 }
-function Read-Fixture([uint32]$pid){
- $wmi=Get-WmiObject Win32_Process -Filter ('ProcessId='+$pid) -ErrorAction Stop
+function Read-Fixture([uint32]$processId){
+ $wmi=Get-WmiObject Win32_Process -Filter ('ProcessId='+$processId) -ErrorAction Stop
  if($null -eq $wmi){throw 'SYNTHETIC_TARGET_NOT_FOUND'}
  $owner=$wmi.GetOwnerSid()
  if($null -eq $owner -or [uint32]$owner.ReturnValue -ne 0 -or
