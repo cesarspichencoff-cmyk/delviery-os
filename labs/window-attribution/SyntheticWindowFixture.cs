@@ -38,7 +38,7 @@ namespace DeliveryOS.WindowAttributionLab {
         form.CreateControl();
         if(args[0]=="--mode=visible")form.Show();
         else form.Hide();
-        DateTime until=DateTime.UtcNow.AddSeconds(6);
+        DateTime until=DateTime.UtcNow.AddSeconds(15);
         while(DateTime.UtcNow<until) {
           Application.DoEvents();
           Thread.Sleep(25);
