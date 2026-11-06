@@ -1,5 +1,15 @@
 name: Delivery OS silent fixture (isolated)
 on:
+  # Temporary isolated validation for PS5.1 oracle; does not deploy or merge.
+  push:
+    branches:
+      - audit/reader-ps51-oracle-lab-20261106
+    paths:
+      - .github/workflows/deliveryos-silent-fixture-windows.yml
+      - runtime/reporting/native_reader_*_v2.cjs
+      - runtime/reporting/native_reader_legacy_ps51_digest_v1.cjs
+      - tests/reporting/run-native-reader-legacy-ps51-*.cjs
+      - tests/reporting/fixtures/ps51_legacy_event_oracle_LAB_ONLY.ps1
   pull_request:
     types: [synchronize, reopened]
     branches:
@@ -78,6 +88,8 @@ jobs:
           # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
+          # New N3 legacy digest tests with wholly fictional inputs.
+          node tests/reporting/run-native-reader-legacy-ps51-digest-tests.cjs
           node tests/reporting/run-reader-one-shot-lab-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
@@ -107,6 +119,9 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference='Stop'
+          # Real Windows PowerShell 5.1 oracle, temporary fictional data only.
+          node tests/reporting/run-native-reader-legacy-ps51-oracle-diff-tests.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'PS51_ORACLE_SYNTHETIC_DIFF_FAILED' }
           & ./tests/silent-runner/verify-windows-fixture.ps1
           node tests/reporting/run-diagnostic-readiness-tests.cjs
       - name: Prove dedicated Edge identity inventory in isolated Windows laboratory
