@@ -24,6 +24,15 @@ try{
      customerDataExported:false,networkRequests:0,ordersPublishable:0,
      shellExecuted:false,recordsProcessed:0
     })+'\n',{flag:'wx'});
+    // Deliberate >128 KB for each redirected pipe to catch deadlocks in the
+    // candidate GUI launcher. CI only; no user data is printed or retained.
+    if(process.env.GETIN_LAB_STDIO_STRESS==='1'){
+      const line='LAB_STDIO_STRESS_ONLY_'+'.'.repeat(2030)+'\n';
+      for(let i=0;i<80;i++){
+        fs.writeSync(1,line);
+        fs.writeSync(2,line);
+      }
+    }
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,2300);
    }
   }
