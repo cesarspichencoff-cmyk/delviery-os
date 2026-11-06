@@ -676,3 +676,23 @@ A estabilidade das contagens e do `mtime`, combinada à retenção positiva **hi
 **Efeito/autoridade:** `CODE_READY=SIMULATED_CANDIDATE`, `TEST_PASS=UNKNOWN_UNTIL_CI`, `LIVE_MOTOR_FIXED=false`, `FIRST_REAL_CONFERENCE_PREVIEW=UNPROVEN`, `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `PAPER_CENSUS=PARTIAL`, `PRINT=HOLD`, `CUTOVER=HOLD`, `PR=DRAFT_HOLD`. **Nenhuma ação no CAIXA_MOOCA**, nenhum processo CMD/PowerShell, SQL, spooler, impressora, deploy, merge, alteração de catálogo ou dados de pedido.
 
 **Próximo gate material:** após CI verde em Linux e Windows, provar correspondência nativa exata, conferir observação geral do pedido sob autorização de acesso apropriada, verificar integrações e completa revisão SQL sem efeitos, antes de propor migração controlada do motor ou um teste físico supervisionado de Conferência.
+
+## Etapa 3 — heartbeat e consumidor em leitura passiva (06/11/2026, 08:30 BRT)
+
+**Condição de acesso:** o `CAIXA_MOOCA` apareceu ONLINE, mas somente foram utilizados `list_devices`, `list_directory` e `read_multiple_files`. Caminhos já existentes: `C:\\ProgramData\\TataComandaReader\\state\\reader-heartbeat-v1.json`, `C:\\ProgramData\\TataComandaReader\\evidence\\shadow-consumer-status.json` e `C:\\ProgramData\\DeliveryOS-Itaim-Observer\\status.json`. Nenhum CMD/PowerShell/terminal ou processo foi iniciado; nenhum SQL novo, pedido individual, conteúdo .SPL/.SHD, Event Log, spooler, fila, impressora, serviço ou configuração foi lido/alterado. Não foram coletadas observações físicas do papel.
+
+**Estado observado no Reader V2** (heartbeat escrito em 06/11/2026 às 08:30:59 BRT):
+- `state=RUNNING`, `watcher.file_name=tata_reader_continuous_watch_candidate_v2.ps1`, `watcher.sha256_verified=true`.
+- Último lote `#11894` = `OK`, 20 polls, `poll_errors=0`, `events_emitted=0` nesse lote; `consecutive_failures=0`. Em andamento `#11895`.
+- Acumulados: `batches=11894`, `ok=11342`, `failed=552`, `events_emitted=4688`. No checkpoint humano parcial anterior (05/11, `11109/10560/549`), isso representa **+785 lotes = +782 OK +3 falhas**; não se conhecem, por esse agregado, a hora/categoria/causa dessas três falhas. Os eventos emitidos não equivalem a folhas ou pedidos únicos.
+- Supervisor declara `print=false`, `spooler_write=false`, `database_write=false`; o worker usa leitura SQL já instalada. Isso é status declarado, não auditoria independente de todo o host.
+
+**Estado observado no consumidor sombra** (status atualizado em 06/11/2026, 08:30:56 BRT):
+- `state=RUNNING`; `processed=4745`, `ready_count=873`, `blocked_count=3872`; `print=false`, `spooler_write=false`.
+- `last_projection_status=FAILED` com `PROJECTOR_PROCESS_ERROR: spawnSync ... ETIMEDOUT`. É uma falha observada da projeção de relatório, **não evidência de que o Reader deixou de captar a revisão ou de que uma comanda física deixou de sair**. Diagnóstico causal segue separado.
+- Observer local em `CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `operationalOrderTotal=null`, `OUTSIDE_SERVICE_WINDOW`: não comprova rota física nem revisão semântica.
+
+**Identidade do código revisado:** PR #135 `DRAFT/HOLD`, HEAD observado `686584b602399602f6453f1ba2275ab1c5087e2c`; workflow [#42174372892](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42174372892) `completed/success` com Linux e Windows `success`. Esses resultados são da CI offline do commit anterior, **não do presente registro**.
+
+**Decisão e portões:** `PAPER_CENSUS=D0_EVIDENCE_INSUFFICIENT` (há apenas relato humano parcial anterior de Conferência), `NATIVE_COMMIT_COMPLETION=UNKNOWN`, `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `PRINT=HOLD`, `CUTOVER=HOLD`. A próxima evidência com capacidade de alterar a arquitetura continua sendo o **censo passivo presencial** de até 20 pedidos iFood consecutivos por turno no almoço e jantar, cobrindo todas as praças necessárias, associação visual, itens/notas, duplicidade e saídas tardias, sem novas impressões ou dados pessoais no Git. O aumento agregado de três falhas requer correlação temporal se voltar a crescer na operação; não substitui o censo nem justifica iniciar comandos no caixa.
+
