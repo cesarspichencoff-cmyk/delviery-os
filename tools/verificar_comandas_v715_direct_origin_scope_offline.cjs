@@ -72,10 +72,49 @@ try {
    const decision=JSON.parse(r.stdout);
    assert.equal(decision.schema,"deliveryos.live-shadow-decision.v1");
    assert.equal(decision.ready,false);
+   assert.equal(decision.native_business_finality_proven,false);
+   assert.equal(decision.native_revision_complete_proven,false);
+   assert.equal(decision.operational_ready,false);
+   assert.equal(decision.physical_print_authorized,false);
    assert.equal(decision.effects.print,false);
    assert.equal(decision.effects.database_write,false);
    assert.equal(decision.effects.spooler_write,false);
    assert.ok(fs.existsSync(out));
+ });
+ for (const nativeState of ["3","P","X"]) {
+   test("native state "+nativeState+" never self-proves business finality",()=>{
+     const e=event();
+     e.order.IDSTCOMANDA=nativeState;
+     e.native_business_finality_proven=true; // forged self-asserted authorization
+     e.native_revision_complete_proven=true;
+     e.operational_ready=true;
+     e.physical_print_authorized=true;
+     const {r,out}=run(e);
+     assert.ok(r.status===0||r.status===5,r.stderr.slice(0,600));
+     const d=JSON.parse(r.stdout);
+     assert.equal(d.native_business_finality_proven,false);
+     assert.equal(d.native_revision_complete_proven,false);
+     assert.equal(d.operational_ready,false);
+     assert.equal(d.physical_print_authorized,false);
+     assert.equal(d.effects.print,false);
+     assert.equal(d.effects.spooler_write,false);
+     assert.equal(d.effects.database_write,false);
+     assert.equal(JSON.parse(fs.readFileSync(out,"utf8")).physical_print_authorized,false);
+   });
+ }
+ test("scope success and ready upstream never upgrade a self-asserted complete order",()=>{
+   const e=event();
+   e.order.native_application_ack=true;
+   e.order.business_finality_proven=true;
+   e.ready_for_downstream_shadow=true;
+   e.order.observation_scan_complete=true;
+   const {r}=run(e);
+   assert.ok(r.status===0||r.status===5);
+   const d=JSON.parse(r.stdout);
+   assert.equal(d.native_business_finality_proven,false);
+   assert.equal(d.native_revision_complete_proven,false);
+   assert.equal(d.operational_ready,false);
+   assert.equal(d.physical_print_authorized,false);
  });
  console.log("COMANDAS_V715_DIRECT_SCOPE="+cases+"/"+cases+" SYNTHETIC_ONLY NO_HOST NO_PRINT");
 }finally{fs.rmSync(temp,{recursive:true,force:true});}

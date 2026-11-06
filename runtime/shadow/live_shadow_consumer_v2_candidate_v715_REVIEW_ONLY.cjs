@@ -594,7 +594,13 @@ const fingerprint = crypto.createHash("sha256")
 const result = {
   schema: "deliveryos.live-shadow-decision.v1",
   generated_at: new Date().toISOString(),
-  ready: blockers.length === 0,
+  ready: blockers.length === 0, // SHADOW calculation only, not business finality
+  // No native application commit/ACK or independent complete-revision proof.
+  // Even ready=true must never be interpreted as operational authorization.
+  native_business_finality_proven: false,
+  native_revision_complete_proven: false,
+  operational_ready: false,
+  physical_print_authorized: false,
   blocking_reasons: [...new Set(blockers)].sort(),
   fingerprint,
   ...core,
