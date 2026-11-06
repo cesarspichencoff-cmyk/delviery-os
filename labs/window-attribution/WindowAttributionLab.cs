@@ -22,6 +22,54 @@ namespace DeliveryOS.WindowAttributionLab {
     [DllImport("user32.dll")]
     static extern bool IsWindowVisible(IntPtr handle);
 
+    // Different read-only source for the process owner: Windows access token.
+    // The Win32_Process.GetOwnerSid WMI method fails on some CI host contexts.
+    // Never log, write, or return the SID outside the in-memory equality check.
+    const uint ProcessQueryLimitedInformation=0x1000;
+    const uint TokenQuery=0x0008;
+    const int TokenUser=1;
+    [DllImport("kernel32.dll",SetLastError=true)]
+    static extern IntPtr OpenProcess(uint access,bool inherit,uint pid);
+    [DllImport("advapi32.dll",SetLastError=true)]
+    static extern bool OpenProcessToken(IntPtr process,uint access,out IntPtr token);
+    [DllImport("advapi32.dll",SetLastError=true)]
+    static extern bool GetTokenInformation(IntPtr token,int type,IntPtr buffer,int length,out int required);
+    [DllImport("advapi32.dll",EntryPoint="ConvertSidToStringSidW",SetLastError=true)]
+    static extern bool ConvertSidToStringSid(IntPtr sid,out IntPtr stringSid);
+    [DllImport("kernel32.dll",SetLastError=true)]
+    static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll",SetLastError=true)]
+    static extern IntPtr LocalFree(IntPtr pointer);
+    static string ReadProcessOwnerSid(uint pid) {
+      IntPtr process=IntPtr.Zero,token=IntPtr.Zero,buffer=IntPtr.Zero;
+      try {
+        process=OpenProcess(ProcessQueryLimitedInformation,false,pid);
+        if(process==IntPtr.Zero)return null;
+        if(!OpenProcessToken(process,TokenQuery,out token) || token==IntPtr.Zero)return null;
+        int size=0;
+        GetTokenInformation(token,TokenUser,IntPtr.Zero,0,out size);
+        if(size<IntPtr.Size || size>8192)return null;
+        buffer=Marshal.AllocHGlobal(size);
+        int actual=0;
+        if(!GetTokenInformation(token,TokenUser,buffer,size,out actual) ||
+           actual<IntPtr.Size || actual>size)return null;
+        IntPtr sid=Marshal.ReadIntPtr(buffer);
+        if(sid==IntPtr.Zero)return null;
+        IntPtr stringSid=IntPtr.Zero;
+        try{
+          if(!ConvertSidToStringSid(sid,out stringSid) || stringSid==IntPtr.Zero)return null;
+          return Marshal.PtrToStringUni(stringSid);
+        }finally{
+          if(stringSid!=IntPtr.Zero)LocalFree(stringSid);
+        }
+      }catch{return null;}
+      finally{
+        if(buffer!=IntPtr.Zero)Marshal.FreeHGlobal(buffer);
+        if(token!=IntPtr.Zero)CloseHandle(token);
+        if(process!=IntPtr.Zero)CloseHandle(process);
+      }
+    }
+
     sealed class ProcessInfo {
       public uint Id,Parent,Session;
       public string Created,OwnerSid,Name;
@@ -51,11 +99,9 @@ namespace DeliveryOS.WindowAttributionLab {
                 info.Session=Convert.ToUInt32(entry["SessionId"],CultureInfo.InvariantCulture);
                 info.Created=Convert.ToString(entry["CreationDate"]);
                 info.Name=Convert.ToString(entry["Name"]);
-                stage="OWNER_SID_METHOD";
-                using(var owner=entry.InvokeMethod("GetOwnerSid",null,null)) {
-                  if(owner==null || Convert.ToUInt32(owner["ReturnValue"])!=0) return null;
-                  info.OwnerSid=Convert.ToString(owner["Sid"]);
-                }
+                stage="OWNER_TOKEN_READ";
+                info.OwnerSid=ReadProcessOwnerSid(info.Id);
+                if(String.IsNullOrWhiteSpace(info.OwnerSid))return null;
                 data=info;
               }
             }
