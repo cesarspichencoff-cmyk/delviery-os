@@ -75,7 +75,8 @@ function main(){
  }catch{
   result={schema:'deliveryos.native-reader-existing-event-binding.v2',
    state:'HOLD',reason:'LAB_INPUT_UNREADABLE_OR_CHANGED',
-   sourceIdentityVerified:false,sourceFreshnessVerified:false,
+   sourceIdentityVerified:false,sourceVerified:false,
+   completeSqlReadVerified:false,sourceFreshnessVerified:false,
    n2ObservationReadIndependentlyComplete:false,
    ordersPublishable:0,homePublishAuthorized:false,
    customerDataExported:false,rawOrderIdsExported:0,rawHashExported:false,
