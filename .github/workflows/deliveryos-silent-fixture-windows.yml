@@ -4,6 +4,8 @@ on:
     types: [synchronize, reopened]
     branches:
       - integration/deliveryos-v1-connected-20261102
+      # This lab PR targets PR137 directly; never the integration branch.
+      - feat/gestor-shadow-observer-20261103
     paths:
       - .github/workflows/deliveryos-silent-fixture-windows.yml
       - runtime/silent-runner/**
@@ -15,6 +17,15 @@ on:
       - runtime/reporting/native_reader_verified_legacy_hash_v1.cjs
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
       - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
+      - runtime/reporting/native_reader_legacy_ps51_digest_v1.cjs
+      - runtime/reporting/native_reader_n2n3_sanitized_receipt_v2.cjs
+      - runtime/reporting/native_reader_existing_event_binding_v2.cjs
+      - tests/reporting/run-native-reader-legacy-ps51-*.cjs
+      - tests/reporting/run-reader-one-shot-lab-v2-tests.cjs
+      - tests/reporting/build-reader-one-shot-lab-v2-fixture.cjs
+      - tests/reporting/verify-reader-one-shot-v2-windows-lab.ps1
+      - tests/reporting/prepare-reader-v2-ci-exact-blobs.cjs
+      - tests/reporting/fixtures/ps51_legacy_event_oracle_LAB_ONLY.ps1
       - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
       - labs/reader-proof/**
       - tests/reporting/run-reader-one-shot-lab-tests.cjs
@@ -78,7 +89,11 @@ jobs:
           # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
+          # New N3 legacy digest tests with wholly fictional inputs.
+          node tests/reporting/run-native-reader-legacy-ps51-digest-tests.cjs
           node tests/reporting/run-reader-one-shot-lab-tests.cjs
+          # PS5.1 legacy event -> private checkpoint -> v2 HOLD receipt.
+          node tests/reporting/run-reader-one-shot-lab-v2-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
           node tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
@@ -103,10 +118,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Prepare exact committed bytes of pinned v2 modules (EOL-only)
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/reporting/prepare-reader-v2-ci-exact-blobs.cjs
+          if($LASTEXITCODE -ne 0){throw 'READER_V2_SOURCE_BLOB_DRIFT'}
+      - name: Reader v2 PS5.1 one-shot GUI + pinned modules, disposable Windows only
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/reporting/verify-reader-one-shot-v2-windows-lab.ps1
       - name: Compile and verify in isolated Windows runner
         shell: powershell
         run: |
           $ErrorActionPreference='Stop'
+          # Real Windows PowerShell 5.1 oracle, temporary fictional data only.
+          node tests/reporting/run-native-reader-legacy-ps51-oracle-diff-tests.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'PS51_ORACLE_SYNTHETIC_DIFF_FAILED' }
           & ./tests/silent-runner/verify-windows-fixture.ps1
           node tests/reporting/run-diagnostic-readiness-tests.cjs
       - name: Prove dedicated Edge identity inventory in isolated Windows laboratory
