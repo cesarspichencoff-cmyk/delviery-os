@@ -168,13 +168,14 @@ try {
  Check ($rc -eq 21) 'MISSING_LAB_MARKER_BLOCKED'
  # Run a separate one-shot S4U task ONLY on this disposable GitHub Windows VM.
  # Does not modify production task definitions or use any Reader/customer files.
+ # Calibrate a synthetic HWND-to-PID/parent/session/SID probe on this VM first,
+ # independent of the existing disposable S4U task registration fixtures.
+ & (Join-Path $dir 'verify-window-attribution-windows-lab.ps1')
  & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Limited
  & (Join-Path $dir 'verify-s4u-windows-fixture.ps1') -LabRunLevel Highest
  # Compare the *actually observed* SYSTEM+InteractiveToken pairing in a disposable runner.
  # No task is enabled or started by this metadata-only comparison.
  & (Join-Path $dir 'verify-system-logon-metadata-windows-lab.ps1')
- # Calibrate a synthetic HWND-to-PID/parent/session/SID probe on this VM only.
- & (Join-Path $dir 'verify-window-attribution-windows-lab.ps1')
  Write-Output ('SILENT_OBSERVER_WINDOWS_LAB_PASS '+$total+'/'+$total+' NO_VISIBLE_WINDOWS')
 } finally {
  if($running -and !$running.HasExited){$running.Kill();[void]$running.WaitForExit(2000)}
