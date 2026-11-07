@@ -84,3 +84,33 @@ Prova anterior verificada em `ITAIM_REAL_READER_SQL_SOURCE_PROOF_20261104.md` e 
 5. Redesenhar e medir **offline** filtros, paginação/frequência, cobertura e planos do Reader; qualquer alteração de watcher no caixa exige homologação, reversibilidade e aprovação separadas. Não ativar RCSI, SNAPSHOT, `NOLOCK` ou novos hints de isolamento globalmente como tentativa rápida.
 
 **Fronteiras mantidas:** `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `PR_135=DRAFT_HOLD`, `PRINT=HOLD`, `CUTOVER=HOLD`, `SQL_NEW=NOT_EXECUTED`, `HOST_COMMAND=NOT_EXECUTED`, `SERVICE_CHANGE=NOT_EXECUTED`. Este registro e seu eventual commit GitHub têm somente efeito documental; CI offline não constitui prova operacional.
+
+## 7. Segunda auditoria passiva — 07/11, sem escolher um pedido
+
+### 7.1 Código nativo: o deadlock conhecido é de uma LEITURA
+
+Inspeção **somente leitura de arquivo-fonte efetivamente instalado** `C:\Teknisa\odhenPOS\backend_74000\src\Util\MSDEQuery.php`, definição `SQL_ITENS_DETALHADOS` a partir da linha ~2630. O SQL desta rotina começa por **SELECT**, faz `JOIN`/agrupamentos/`UNION` sobre `ITCOMANDAVEN`, `VENDAREST`, `PRODUTO`, `ITMENUCONFTE` e `VENDEDOR`. **Não é uma rotina de INSERT do integrador iFood**. Portanto, o deadlock nativo 40001 de 21:12:59 documenta a interrupção de uma leitura de itens no próprio sistema, **não demonstra que o integrador deixou de gravar o pedido**. Há sobreposição de pelo menos três tabelas (`ITCOMANDAVEN`, `VENDAREST`, `PRODUTO`) com as consultadas pelo Reader V2. É plausível que sessões concorram por recursos semelhantes, mas nem isso demonstra participação no mesmo ciclo de deadlock.
+
+A leitura de `src/Service/Delivery.php`, `src/Controller/Delivery.php`, `src/Service/Order.php` e trechos de `src/Service/Pedido.php` revelou predominantemente rotas do POS para **buscar/manipular pedidos já registrados**; nenhum destes trechos forneceu prova de ser o receptor original da integração iFood → Teknisa. Não generalizar esta conclusão para todo o software, serviços remotos ou outros componentes.
+
+### 7.2 Tráfego Apache: controle negativo, não atestado da integração
+
+Foi lida, sem processo, uma janela das **últimas 10.500 linhas** do arquivo já existente `C:\Teknisa\apache\logs\access.log`. Dessas, **10.458** linhas foram reconhecidas no formato HTTP, cobrindo **06/11 14:11:58 até 07/11 00:09:14 BRT**: **10.457 HTTP 200** e **1 HTTP 500**, às **23:00:55**, rota `RegisterClosingPayments`. No trecho amostrado, não houve resposta HTTP 4xx/5xx próxima do deadlock de 21:12. Esse resultado **não significa que o integrador funcionou**: acesso HTTP 200 de um endpoint local não prova que um pedido iFood específico foi recebido, validado, persistido ou conciliado; uma aplicação pode encapsular erro no corpo HTTP 200; o integrador pode atuar por outro serviço/canal. O único 500 localizado não foi identificado como chamada de ingestão iFood.
+
+### 7.3 Evidência potencial preservada no SQL Server: arquivo de system_health
+
+Foi localizada por **list_directory/get_file_info**, sem abrir processos, a instância `MSSQL14.SQLEXPRESS` e o arquivo existente:
+
+`C:\Program Files\Microsoft SQL Server\MSSQL14.SQLEXPRESS\MSSQL\Log\system_health_0_134384463380220000.xel`
+
+Metadados observados: **criação 06/11 13:45:38 UTC (10:45 BRT)**, **última modificação 07/11 02:43:40 UTC (06/11 23:43 BRT)**, tamanho **5.239.296 bytes**, tipo binário. Portanto, o arquivo cobre temporalmente o jantar e é **candidato prioritário** a conter `xml_deadlock_report` de 21:12. O evento **ainda não foi lido nem confirmado**; intervalo de arquivo não prova que o evento específico tenha sido gravado. Outra instância `MSSQL15.SQLEXPRESS` tem logs antigos (2025) e não é o primeiro alvo.
+
+O conector autorizado recusou `read_file` do XEL com **`Cannot read binary file as text`**. Resolver exigiria parsing/extração com ferramenta apropriada fora do canal passivo disponível. **Não iniciar PowerShell, CMD, sqlcmd, Node, Python, processo, serviço ou SELECT no CAIXA_MOOCA como desvio**. A rotação de arquivos de system_health implica risco de perda da janela antes de uma exportação legítima; a retenção exata não foi verificada.
+
+**Caminho de prova para manutenção futura, com autorização de efeito/privacidade e sem atrapalhar o caixa:** obter cópia íntegra desse XEL por via aprovada e analisá-la em ambiente **isolado**; se houver `xml_deadlock_report` de 21:12:59, extrair somente metadados sanitizados dos **participantes reais** (`spid`, `clientapp`, identificador de processo do host, recurso/lock, vítima, cadeia de esperas, instante) e confrontar com a identidade verificada `TataReaderContinuousWatchV1` e rotina nativa. **Só o grafo pode separar se o Reader estava no ciclo, apenas sofreu bloqueios separados ou estava ausente.** Não exportar SQL literal, UUID, nomes, telefone, endereço, itens, dados fiscais nem strings de clientes a Git. Se não houver registro de deadlock no XEL, manter causa UNKNOWN e buscar o diagnóstico autorizado do integrador sem presumir fonte.
+
+### 7.4 CI do código, independente do incidente operacional
+
+No SHA `87e544c79a56668c987d78fdc6d5d7c04201865d`, CI [#42329410136](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42329410136) **Linux e Windows success**. A execução anterior no SHA `608105db`, CI [#42323673679](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42323673679), teve Windows **failure** em teste V8.59 `NO_CUSTOMER_OR_ORDER_DATA_EXPORTED` (19 cenários anteriores da suíte passaram). Como os commits posteriores foram documentais, o sucesso posterior **não prova que a falha intermitente foi corrigida**; causa/teste ainda `UNKNOWN`. Essa divergência de CI **não demonstra nem refuta** a integração iFood em produção, mas permanece como item de qualidade separado no gate.
+
+**Veredito da segunda auditoria:** `NATIVE_DEADLOCK_VICTIM_SQL=SELECT_PROVEN`; `READER_SHARED_TABLES=OBSERVED`; `XEL_CANDIDATE_FILE=LOCATED_NOT_PARSED`; `HTTP_PATH_IFOOD_AUTHENTICATED=NO`; `INTEGRATION_ROOT_CAUSE=UNKNOWN`; `READ_ONLY_EFECT_BOUNDARY=RESPECTED`; `PRINT=HOLD`; `CUTOVER=HOLD`.
