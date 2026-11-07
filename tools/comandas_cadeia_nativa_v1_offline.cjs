@@ -18,6 +18,7 @@
  * No SQL, host, spooler, queue, sequence write or print. Outputs are virtual.
  */
 const crypto=require("node:crypto"),vm=require("node:vm");
+const {isDeepStrictEqual}=require("node:util");
 const {assessNativeReaderV2}=require("./comandas_reader_v2_view_evidence_v1_offline.cjs");
 const {windowOf,planWindowReview}=require("./comandas_window_station_select_v1_offline.cjs");
 const {projectExpectedRouting}=require("../dist/src/shadow/expectedRouting.js");
@@ -66,7 +67,7 @@ function layer(status,reasons,extra={}){
  * of the exact already-verified native revision can be omitted from virtual
  * tickets. The original event, decision and join remain unchanged.
  */
-function shadowNoteDispositionV1(event,decision,joined,claim){
+function shadowNoteDispositionV1(event,decision,joined,claim,sourceFiles){
  const hold=reason=>({status:"HOLD",reasons:[reason],ticket_join:joined});
  if(claim==null)return {status:"NOT_PROVIDED",reasons:[],ticket_join:joined};
  const hex=x=>typeof x==="string"&&/^[a-f0-9]{64}$/.test(x);
@@ -86,6 +87,30 @@ function shadowNoteDispositionV1(event,decision,joined,claim){
   claim.snapshot_hash!==String(decision.snapshot_hash).toLowerCase()||
   claim.decision_fingerprint!==String(decision.fingerprint).toLowerCase())
   return hold("NOTE_DISPOSITION_NOT_BOUND_TO_NATIVE_REVISION");
+ // The two file digests in the human claim MUST name actual supplied raw JSON
+ // bytes of this exact pair. They are not proof of independent file provenance;
+ // however, without bytes they were merely 64-hex decorative fields and a
+ // forged value could suppress a general note even in the virtual view.
+ const exactFiles=sourceFiles&&typeof sourceFiles==="object"&&
+  !Array.isArray(sourceFiles)&&
+  Object.keys(sourceFiles).sort().join("|")==="decision_json|event_json";
+ if(!exactFiles||typeof sourceFiles.event_json!=="string"||
+    typeof sourceFiles.decision_json!=="string"||
+    !sourceFiles.event_json.length||!sourceFiles.decision_json.length||
+    Buffer.byteLength(sourceFiles.event_json,"utf8")>2_000_000||
+    Buffer.byteLength(sourceFiles.decision_json,"utf8")>2_000_000)
+  return hold("NOTE_SOURCE_FILE_BYTES_REQUIRED_FOR_SHADOW");
+ if(claim.event_file_sha256!==sha(Buffer.from(sourceFiles.event_json,"utf8"))||
+    claim.decision_file_sha256!==sha(Buffer.from(sourceFiles.decision_json,"utf8")))
+  return hold("NOTE_SOURCE_FILE_SHA256_MISMATCH");
+ let parsedEvent,parsedDecision;
+ try{
+  parsedEvent=JSON.parse(sourceFiles.event_json);
+  parsedDecision=JSON.parse(sourceFiles.decision_json);
+ }catch{return hold("NOTE_SOURCE_FILE_JSON_INVALID");}
+ if(!isDeepStrictEqual(parsedEvent,event)||
+    !isDeepStrictEqual(parsedDecision,decision))
+  return hold("NOTE_SOURCE_FILES_NOT_SAME_NATIVE_PAIR");
  const notes=event.order.observation_rows.filter(x=>x?.scope_hint==="order");
  const dnotes=decision.order_observations;
  const jnotes=joined.order_observations;
@@ -178,7 +203,8 @@ function runNativeChainV1(i){
  const explained=new Set(resolution.explained_blockers);
  const routes=i.routing?.products||{};
  const join=N.joinNativeReaderSnapshotV1(e,d,routes);
- const noteReview=join.join?shadowNoteDispositionV1(e,d,join.join,i.note_disposition_claim):null;
+ const noteReview=join.join?shadowNoteDispositionV1(e,d,join.join,
+  i.note_disposition_claim,i.note_source_file_pair):null;
  const catalog={resolved:resolution.resolved.map(x=>x.record_id),
   motor_rerun:resolution.motor_rerun_required,refused:resolution.refused};
  const kitRuleRef=kitRule?.rule?{id:kitRule.rule.id,evidence:kitRule.rule.evidence,

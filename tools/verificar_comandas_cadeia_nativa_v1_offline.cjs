@@ -556,10 +556,12 @@ test("one explicitly reviewed financial general note stays in source but not in 
   order_key_digest:hash(ev.order_key),snapshot_hash:ev.snapshot_hash.toLowerCase(),
   decision_fingerprint:dec.fingerprint.toLowerCase(),note_content_sha256:hash(note),
   event_file_sha256:hash(oldEvent),decision_file_sha256:hash(oldDecision)};
+ const sources={event_json:oldEvent,decision_json:oldDecision};
  const noClaim=chain(ev,dec);
  assert.equal(noClaim.layers.L4.status,"HOLD");
  assert.ok(noClaim.layers.L4.reasons.includes("ORDER_OBSERVATION_RELEVANCE_UNPROVEN_0"));
- const accepted=chain(ev,dec,{note_disposition_claim:claim});
+ const accepted=chain(ev,dec,{note_disposition_claim:claim,
+  note_source_file_pair:sources});
  assert.equal(accepted.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
  assert.equal(accepted.layers.L3.status,"NATIVE_CONTENT_PROVEN");
  assert.equal(accepted.layers.L4.status,"VIRTUAL_VIEWS_READY");
@@ -572,7 +574,8 @@ test("one explicitly reviewed financial general note stays in source but not in 
  assert.equal(JSON.stringify(dec),oldDecision);
  const checkReject=(change,code)=>{
   const invalid={...claim,...change};
-  const r=chain(ev,dec,{note_disposition_claim:invalid});
+  const r=chain(ev,dec,{note_disposition_claim:invalid,
+   note_source_file_pair:sources});
   assert.equal(r.layers.L3.status,"NATIVE_CONTENT_PROVEN");
   assert.equal(r.layers.L4.status,"HOLD");
   assert.ok(r.layers.L4.reasons.includes(code),JSON.stringify(r.layers.L4.reasons));
@@ -585,6 +588,52 @@ test("one explicitly reviewed financial general note stays in source but not in 
  checkReject({classification:"PRODUCTION_RELEVANT"},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
  checkReject({action:"PRINT_ON_CONFERENCE"},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
  checkReject({human_review_reference:""},"NOTE_DISPOSITION_SCOPE_OR_HUMAN_REVIEW_REF_INVALID");
+ const verifySourceHold=(sourcePair,customClaim,code)=>{
+  const r=chain(ev,dec,{note_disposition_claim:customClaim??claim,
+   ...(sourcePair===undefined?{}:{note_source_file_pair:sourcePair})});
+  assert.equal(r.layers.L4.status,"HOLD");
+  assert.ok(r.layers.L4.reasons.includes(code),JSON.stringify(r.layers.L4.reasons));
+  assert.deepEqual(r.views,[]);
+  assert.equal(r.physical_effect_authorized,false);
+  assert.ok(!JSON.stringify(r).includes(note));
+ };
+ verifySourceHold(undefined,claim,"NOTE_SOURCE_FILE_BYTES_REQUIRED_FOR_SHADOW");
+ verifySourceHold({event_json:oldEvent},claim,"NOTE_SOURCE_FILE_BYTES_REQUIRED_FOR_SHADOW");
+ verifySourceHold({event_json:oldEvent,decision_json:oldDecision,
+  claimed_real_proven:true},claim,"NOTE_SOURCE_FILE_BYTES_REQUIRED_FOR_SHADOW");
+ verifySourceHold({...sources,event_json:oldEvent+" "},claim,
+  "NOTE_SOURCE_FILE_SHA256_MISMATCH");
+ verifySourceHold({...sources,decision_json:oldDecision+" "},claim,
+  "NOTE_SOURCE_FILE_SHA256_MISMATCH");
+ verifySourceHold(sources,{...claim,event_file_sha256:"e".repeat(64)},
+  "NOTE_SOURCE_FILE_SHA256_MISMATCH");
+ verifySourceHold(sources,{...claim,decision_file_sha256:"e".repeat(64)},
+  "NOTE_SOURCE_FILE_SHA256_MISMATCH");
+ const tamperedEvent=JSON.stringify({...ev,order:{...ev.order,NRCOMANDA:"TAMPERED"}});
+ verifySourceHold({...sources,event_json:tamperedEvent},
+  {...claim,event_file_sha256:hash(tamperedEvent)},
+  "NOTE_SOURCE_FILES_NOT_SAME_NATIVE_PAIR");
+ const tamperedDecision=JSON.stringify({...dec,blocking_reasons:["TAMPERED"]});
+ verifySourceHold({...sources,decision_json:tamperedDecision},
+  {...claim,decision_file_sha256:hash(tamperedDecision)},
+  "NOTE_SOURCE_FILES_NOT_SAME_NATIVE_PAIR");
+ verifySourceHold({...sources,event_json:"{"},
+  {...claim,event_file_sha256:hash("{")},"NOTE_SOURCE_FILE_JSON_INVALID");
+ verifySourceHold({...sources,decision_json:"{"},
+  {...claim,decision_file_sha256:hash("{")},"NOTE_SOURCE_FILE_JSON_INVALID");
+ const nonCanonicalEvent=JSON.stringify(ev,null,2);
+ const nonCanonicalDecision=JSON.stringify(dec,null,2);
+ const sameObjectWithDifferentRawFileBytes=chain(ev,dec,{
+  note_disposition_claim:{...claim,event_file_sha256:hash(nonCanonicalEvent),
+   decision_file_sha256:hash(nonCanonicalDecision)},
+  note_source_file_pair:{event_json:nonCanonicalEvent,
+   decision_json:nonCanonicalDecision}});
+ assert.equal(sameObjectWithDifferentRawFileBytes.layers.L4.status,"VIRTUAL_VIEWS_READY");
+ assert.equal(sameObjectWithDifferentRawFileBytes.layers.L5.status,"HOLD");
+ assert.equal(sameObjectWithDifferentRawFileBytes.physical_effect_authorized,false);
+ assert.ok(sameObjectWithDifferentRawFileBytes.views.every(x=>!x.text_trace.includes(note)));
+ assert.equal(JSON.stringify(ev),oldEvent);
+ assert.equal(JSON.stringify(dec),oldDecision);
 });
 test("three-view content contract: ids on every view, each product in exactly one station, conference complete",()=>{
  const r=chain(real,decision,attestedLive(real,"037"));
