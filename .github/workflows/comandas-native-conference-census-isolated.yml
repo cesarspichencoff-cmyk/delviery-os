@@ -1,0 +1,28 @@
+name: Comandas native conference census gate isolated
+on:
+  push:
+    branches:
+      - audit/comandas-native-conference-census-gate-20261106
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only native conference census contract (synthetic)
+        run: node tools/verificar_comandas_native_conference_paper_census_review_v1_offline.cjs
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only native conference census contract (synthetic)
+        run: node tools/verificar_comandas_native_conference_paper_census_review_v1_offline.cjs
