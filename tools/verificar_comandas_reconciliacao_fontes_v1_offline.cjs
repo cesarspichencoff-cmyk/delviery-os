@@ -211,5 +211,66 @@ test("15-minute boundary uses exact seconds, no rounding bypass",()=>{
  assert.ok(over.reasons.includes("SOURCE_CAPTURE_WINDOWS_NOT_CONTEMPORANEOUS"));
  assert.equal(over.ready_for_operational_print,false);
 });
+test("coherent foreign iFood merchant rows cannot masquerade as Itaim reconciliation",()=>{
+ const x=clone(source);x.ifood_store="OTHER_STORE_99999";
+ x.ifood.forEach(r=>r.store=x.ifood_store);
+ const r=review(x);
+ assert.equal(r.status,"HOLD");
+ assert.deepEqual(r.reasons,["NOT_ITAIM_IFOOD_TEKNISA_SCOPE"]);
+ assert.equal(r.uuid_to_native_proven,false);
+ assert.equal(r.source_store_mapping_attested,false);
+});
+test("coherent foreign Teknisa native unit cannot masquerade as Itaim",()=>{
+ const x=clone(source);x.native_store="0002/01";
+ x.native.forEach(r=>r.store=x.native_store);
+ const r=review(x);
+ assert.equal(r.status,"HOLD");
+ assert.deepEqual(r.reasons,["NOT_ITAIM_IFOOD_TEKNISA_SCOPE"]);
+ assert.equal(r.ready_for_operational_print,false);
+});
+test("both foreign store labels and all row stores coherently changed still HOLD",()=>{
+ const x=clone(source);x.ifood_store="55000";x.native_store="0001/02";
+ x.ifood.forEach(r=>r.store=x.ifood_store);
+ x.native.forEach(r=>r.store=x.native_store);
+ const r=review(x);
+ assert.equal(r.status,"HOLD");
+ assert.deepEqual(r.reasons,["NOT_ITAIM_IFOOD_TEKNISA_SCOPE"]);
+ assert.deepEqual(r.native_matched_status_codes,{});
+});
+test("native status cannot inject private words through aggregate report keys",()=>{
+ const x=clone(source);
+ const privateString="CLIENTE_SECRETO_TELEFONE_11987654321";
+ x.native[0].status_code=privateString;
+ const r=review(x);
+ assert.equal(r.status,"HOLD");
+ assert.deepEqual(r.reasons,["NATIVE_REQUIRED_FIELD_INVALID"]);
+ assert.equal(JSON.stringify(r).includes(privateString),false);
+ assert.deepEqual(r.native_unmatched_status_codes,{});
+});
+test("prototype-looking status is rejected before tally with no prototype pollution",()=>{
+ const x=clone(source);x.native[2].status_code="__proto__";
+ const r=review(x);
+ assert.equal(r.status,"HOLD");
+ assert.deepEqual(r.reasons,["NATIVE_REQUIRED_FIELD_INVALID"]);
+ assert.equal(Object.prototype.polluted,undefined);
+ assert.equal(Object.hasOwn(r.native_unmatched_status_codes,"__proto__"),false);
+});
+test("unknown short uppercase status remains neutral and its meaning is not inferred",()=>{
+ const x=clone(source);x.native[2].status_code="Z9";
+ const r=review(x);
+ assert.equal(r.status,"DISCREPANCIES_REVIEW");
+ assert.deepEqual(r.native_unmatched_status_codes,{Z9:1});
+ assert.equal(r.uuid_to_native_proven,false);
+ assert.equal(r.ready_for_operational_print,false);
+});
+test("lowercase and long free-text status rejected without a diagnostic echo",()=>{
+ for(const code of ["p","4.1","CONCLUIDO","STATUS DA COMANDA","João"]){
+  const x=clone(source);x.native[0].status_code=code;
+  const r=review(x);
+  assert.equal(r.status,"HOLD");
+  assert.deepEqual(r.reasons,["NATIVE_REQUIRED_FIELD_INVALID"]);
+  assert.equal(JSON.stringify(r.native_unmatched_status_codes).includes(code),false);
+ }
+});
 console.log("COMANDAS_INDEPENDENT_PRESENCE_V1="+total+"/"+total+
  " NO_AUTO_UUID_JOIN NO_PRINT NO_DB NO_SEQUENCE NO_CUSTOMER_IDENTIFIERS");

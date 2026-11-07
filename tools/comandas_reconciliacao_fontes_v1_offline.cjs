@@ -10,6 +10,12 @@ const EFFECTS=Object.freeze({database_read:false,database_write:false,
   network:false,sequence_write:false,print:false,spooler:false,fiscal:false});
 const uuidRegex=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const shortRegex=/^[0-9]{4}$/;
+// This is the Itaim-only reconciliation. Caller-supplied matching store labels
+// are not evidence that an export belongs to the store actually under review.
+const IFOOD_ITAIM_STORE="53069",TEKNISA_ITAIM_STORE="0001/01";
+// Native situation is a short code, never free-form customer/order text.
+// Keep UNKNOWN codes as neutral counters; do not assign them business meaning.
+const nativeStatusCodeRegex=/^[A-Z0-9]{1,3}$/;
 function captureInstant(raw){
  // Date.parse accepts impossible dates like 2026-02-31 and silently rolls
  // them into March. Such normalization must not become capture evidence.
@@ -34,9 +40,13 @@ function validDay(day){
 function groupById(rows){const m=new Map();for(const r of rows){
   const a=m.get(r.short_id)||[];a.push(r);m.set(r.short_id,a);
 }return m;}
-function tally(rows,key){const values={};for(const row of rows){
- const x=row[key];values[x]=(values[x]||0)+1;
-}return Object.fromEntries(Object.entries(values).sort(([a],[b])=>a.localeCompare(b)));}
+function tally(rows,key){
+ const values=new Map();
+ for(const row of rows){
+  const code=row[key];values.set(code,(values.get(code)||0)+1);
+ }
+ return Object.fromEntries([...values.entries()].sort(([a],[b])=>a.localeCompare(b)));
+}
 function reconcilePresence(input){
  const result={
   schema:SCHEMA,mode:"READ_ONLY_REVIEW",ready_for_operational_print:false,
@@ -63,6 +73,10 @@ function reconcilePresence(input){
    typeof native_store!=="string"||!native_store.trim()||
    !Array.isArray(ifood)||!Array.isArray(native))
   return fail("INVALID_BATCH_SCOPE");
+ // Even if both arrays self-consistently claim Pinheiros or another merchant,
+ // they cannot serve as an Itaim iFood-to-Teknisa reconciliation.
+ if(ifood_store!==IFOOD_ITAIM_STORE||native_store!==TEKNISA_ITAIM_STORE)
+  return fail("NOT_ITAIM_IFOOD_TEKNISA_SCOPE");
  const tIfood=captureInstant(ifood_captured_at);
  const tNative=captureInstant(native_captured_at);
  if(tIfood===null||tNative===null)return fail("SOURCE_CAPTURE_TIMESTAMPS_REQUIRED");
@@ -87,7 +101,7 @@ function reconcilePresence(input){
   if(!r||typeof r!=="object"||Array.isArray(r)||
     r.day!==day||r.store!==native_store)return fail("NATIVE_ROW_SCOPE_MISMATCH");
   if(!shortRegex.test(r.short_id)||r.origin!=="DLV_IFO"||
-    typeof r.status_code!=="string"||!r.status_code.trim())
+    typeof r.status_code!=="string"||!nativeStatusCodeRegex.test(r.status_code))
     return fail("NATIVE_REQUIRED_FIELD_INVALID");
  }
  const i=groupById(ifood),n=groupById(native);
