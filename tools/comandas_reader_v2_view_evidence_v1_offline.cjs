@@ -76,6 +76,11 @@ function assessNativeReaderV2(input){
    d.ifood_sequence!==o.NRCOMANDAEXT||
    d.teknisa_sequence!==o.NRCOMANDA)
   return reject("NATIVE_ORDER_FOUR_PART_KEY_OR_ORIGIN_INVALID");
+ // The order key may be perfectly self-consistent for another store.
+ // This reviewer is specifically for Itaim, never for Mooca/Pinheiros.
+ // A coherent foreign key is NOT permission to generate Itaim review views.
+ if(o.CDFILIAL!=="0001"||o.CDLOJA!=="01")
+  return reject("NATIVE_ORDER_OUTSIDE_ITAIM_SCOPE");
  if(!sha(e.snapshot_hash)||!sha(d.snapshot_hash)||
     e.snapshot_hash!==d.snapshot_hash||
     snapshotHash(o)!==e.snapshot_hash.toLowerCase()||

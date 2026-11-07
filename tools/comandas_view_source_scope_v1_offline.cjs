@@ -61,6 +61,10 @@ function assessViewSourceScopes(input){
    typeof n.short_id!=="string"||!/^[0-9]{1,12}$/.test(n.short_id)||
    n.item_rows_complete!==true||n.observation_scan_complete!==true)
   return allHold("NATIVE_REVISION_STRUCTURE_OR_COVERAGE_UNPROVEN");
+ // Defence in depth: a caller can bypass assessNativeReaderV2 and invoke
+ // source-scope review directly. Do not label another store as native evidence.
+ if(n.store_id!=="0001"||n.store_unit!=="01")
+  return allHold("NATIVE_STORE_OUTSIDE_ITAIM_SCOPE");
  const v=input.views;
  if(!Array.isArray(v)||v.length!==3||
    new Set(v.map(x=>x?.id)).size!==3||

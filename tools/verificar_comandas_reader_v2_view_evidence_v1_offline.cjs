@@ -203,6 +203,32 @@ test("wrong four-part Reader key not inferred from timestamp",()=>{
  const x=native();x.event.order_key="0001|01|OTHER|0000348850";
  hold(x,"NATIVE_ORDER_FOUR_PART_KEY_OR_ORIGIN_INVALID");
 });
+test("fully re-keyed foreign filial is rejected despite exact event-decision hashes",()=>{
+ const x=native();
+ x.event.order.CDFILIAL="0002";
+ const o=x.event.order;
+ const newKey=[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join("|");
+ x.event.order_key=newKey;x.decision.order_key=newKey;refresh(x);
+ hold(x,"NATIVE_ORDER_OUTSIDE_ITAIM_SCOPE");
+});
+test("fully re-keyed foreign store unit is rejected even with official-looking iFood claim",()=>{
+ const x=independent(native());
+ x.event.order.CDLOJA="02";
+ const o=x.event.order;
+ const newKey=[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join("|");
+ x.event.order_key=newKey;x.decision.order_key=newKey;
+ x.store_mapping.native_store_unit="02";refresh(x);
+ hold(x,"NATIVE_ORDER_OUTSIDE_ITAIM_SCOPE");
+});
+test("foreign store with recomputed all-order keys and claimed mapping remains HOLD",()=>{
+ const x=independent(native());
+ x.event.order.CDFILIAL="0002";x.event.order.CDLOJA="02";
+ const o=x.event.order;
+ const newKey=[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join("|");
+ x.event.order_key=newKey;x.decision.order_key=newKey;
+ x.store_mapping.native_store_id="0002";x.store_mapping.native_store_unit="02";
+ refresh(x);hold(x,"NATIVE_ORDER_OUTSIDE_ITAIM_SCOPE");
+});
 test("different store ID rejected independently of iFood claim",()=>{
  const x=independent(native());x.event.order.CDFILIAL="0002";refresh(x);
  hold(x,"NATIVE_ORDER_FOUR_PART_KEY_OR_ORIGIN_INVALID");

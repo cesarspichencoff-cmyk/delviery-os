@@ -103,8 +103,8 @@
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",
-      "git_blob": "9b7419aee2d0226701f072f0738bb9381523a223",
-      "bytes": 7639
+      "git_blob": "b48e39db27d9126d4d490af6498238909bba6eb1",
+      "bytes": 7953
     },
     {
       "path": "tools/comandas_strong_key_sequence_v2_review_only.cjs",
@@ -113,8 +113,8 @@
     },
     {
       "path": "tools/comandas_view_source_scope_v1_offline.cjs",
-      "git_blob": "197a65a7c46e0d84796ed97f04758f90107834c0",
-      "bytes": 5219
+      "git_blob": "9f81182176f6218c8950a595050df6d88a887e5c",
+      "bytes": 5474
     },
     {
       "path": "tools/comandas_window_station_select_v1_offline.cjs",

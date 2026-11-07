@@ -59,6 +59,24 @@ check("two production vias use Teknisa only; conference has candidate iFood shor
  assert.equal(r.conference.ifood_item_parity_proven,false);
 });
 const prodFingerprint=r=>JSON.stringify(r.production);
+check("coherent non-Itaim filial and four-part key cannot be native evidence",()=>{
+ const x=fixture();
+ x.native.store_id="0002";x.native.order_key="0002|01|SYNTHETIC_SALE|SYNTHETIC_ORDER";
+ x.store_mapping.native_store_id="0002";
+ const out=safe(x);
+ assert.equal(out.status,"HOLD");
+ assert.deepEqual(out.production.map(v=>v.status),["HOLD","HOLD"]);
+ assert.deepEqual(out.production[0].reasons,["NATIVE_STORE_OUTSIDE_ITAIM_SCOPE"]);
+});
+check("coherent non-Itaim store unit and matching cross-system map remain HOLD",()=>{
+ const x=fixture();
+ x.native.store_unit="02";x.native.order_key="0001|02|SYNTHETIC_SALE|SYNTHETIC_ORDER";
+ x.store_mapping.native_store_unit="02";
+ const out=safe(x);
+ assert.equal(out.status,"HOLD");
+ assert.deepEqual(out.production.map(v=>v.status),["HOLD","HOLD"]);
+ assert.deepEqual(out.conference.reasons,["NATIVE_STORE_OUTSIDE_ITAIM_SCOPE"]);
+});
 check("missing iFood source holds conference without poisoning native production",()=>{
  const a=safe(fixture()),x=fixture();delete x.ifood;
  const b=safe(x);
