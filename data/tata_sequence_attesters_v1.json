@@ -1,0 +1,8 @@
+{
+  "schema": "tata.sequence.attesters.v1",
+  "store": "0001|01",
+  "attesters": [],
+  "writer_key_ids": [],
+  "provisioning": "EMPTY ON PURPOSE. A production attester key is generated on the Itaim host by a separate identity (never the writer), its public key added here by a reviewed commit, and only after César authorizes that host action. Until then no TATÁ number can become LIVE_ATTESTED.",
+  "verification": "src/production/tataSequenceAttestationV1.ts"
+}

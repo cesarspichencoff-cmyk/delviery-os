@@ -1,0 +1,37 @@
+{
+  "schema": "tata.comandas.catalog-equivalence.v1",
+  "purpose": "Resolve a native product to its Academy classification ONLY when every candidate Academy entry is the same product (identical composition text and classification), so the choice cannot change any downstream result.",
+  "academy_catalog": {
+    "repository": "cesarspichencoff-cmyk/tata-academia",
+    "ref": "evolucao/v33-product-pass",
+    "path": "data/app-data.json",
+    "git_blob": "d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22"
+  },
+  "records": [
+    {
+      "id": "EQ-9.15.00.030.00",
+      "canonical_code": "9.15.00.030.00",
+      "native_cdproduto": "0000001459",
+      "native_name": "COMB SUSHI + SASHIMI ESPECIAL 2 P",
+      "native_identity_source": "data/tata_reader_product_identity_observed_crosswalk_20261004_v1.json",
+      "academy_entry_ids": [
+        "combinado_especial_sushi_sashimi_2_pessoas",
+        "combinado_especial_sashimi_sushi_2_pessoas"
+      ],
+      "shared": {
+        "descricao_sha256": "6d1041454a2c960a4b807e55d410e8b0177db476ba67bb9d6f05de4941d75031",
+        "classification": {
+          "family": "combinado",
+          "subfamily": "especial",
+          "station": "combinados"
+        }
+      },
+      "evidence": [
+        "identical descricao (sha256 above) in both Academy entries",
+        "identical classification in both entries",
+        "pinned motor input is the NATIVE name + classification, never the Academy name: identical packaging and kit verdict for either entry (private replay differential)"
+      ],
+      "not_a_human_confirmation": true
+    }
+  ]
+}

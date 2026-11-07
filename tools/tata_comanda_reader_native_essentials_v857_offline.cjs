@@ -62,10 +62,17 @@ function validDate(v){
  new Date(d+"T00:00:00Z").toISOString().slice(0,10)===d?d:null;
 }
 function canonicalProductCode(value){
- const v=clean(value).toUpperCase().replace(/\\./g,"");
- if(!/^[A-Z0-9]{10}$/.test(v))return null;
- return [v.slice(0,1),v.slice(1,3),v.slice(3,5),
-  v.slice(5,8),v.slice(8,10)].join(".");
+ const supplied=clean(value).toUpperCase();
+ // Teknisa historically exposes CDARVPROD as either ten compact symbols or
+ // five exact-length groups. Never discard arbitrary punctuation/separators.
+ const compact=/^[A-Z0-9]{10}$/.test(supplied)
+  ?supplied
+  :/^[A-Z0-9]\.[A-Z0-9]{2}\.[A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{2}$/.test(supplied)
+   ?supplied.replace(/\./g,"")
+   :null;
+ if(compact===null)return null;
+ return [compact.slice(0,1),compact.slice(1,3),compact.slice(3,5),
+  compact.slice(5,8),compact.slice(8,10)].join(".");
 }
 function parsedQuantity(raw){
  if(typeof raw!=="string"||!/^0*[1-9]\d*(?:\.0+)?$/.test(raw))return null;

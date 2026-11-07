@@ -9,6 +9,7 @@ on:
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
       - feat/thermal-v63-packaging-bridge-shadow-20261010
       - validation/thermal-v714-raw-quantity-fail-closed-20261011
+      - fix/comandas-figma-box-count-guard-20261013
 
 permissions:
   contents: read
@@ -62,12 +63,18 @@ jobs:
         run: node tools/verificar_agrupamento_conferencia_v62.js
       - name: Current packaging motor bridge V6.3 (offline, source-pinned)
         run: node tools/verificar_ponte_embalagem_v63.js
+      - name: Product code bound to classification and pinned Academia (offline)
+        run: node tools/verificar_comandas_source_bound_classification_v1_offline.cjs
+      - name: Reader V2 exact source revision to Academy review (Linux offline)
+        run: node tools/verificar_comandas_reader_bound_classification_v1_offline.cjs
       - name: Pinned Academy headless packaging contract V1 (Linux, fake bytes denied)
         run: |
           node --check tools/verificar_contrato_embalagem_v1_private_replay.cjs
           node tools/verificar_contrato_embalagem_v1_offline.cjs
       - name: Three-way physical box and resource coherence V6.4 (offline)
         run: node tools/verificar_coerencia_tres_vias_v64.js
+      - name: Three-way box count is consumable, not reusable (offline)
+        run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
       - name: Reconciled reader ingress and pinned Unified Kit Core V6.6 (offline)
         run: node tools/verificar_ingresso_leitor_v66.js
       - name: Single reviewed future candidate and operational HOLD V7.16
@@ -80,10 +87,134 @@ jobs:
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
       - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
         run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
+      - name: iFood official export x native Teknisa short ID set audit (synthetic no UUID promotion)
+        run: node tools/verificar_comandas_reconciliacao_fontes_v1_offline.cjs
+      - name: Native Teknisa order-time watcher patch contract (synthetic, no service or print)
+        run: node tools/verificar_comandas_reader_native_timestamp_patch_v1_offline.cjs
+      - name: Native status lifecycle transition audit without delivery or print interpretation
+        run: node tools/verificar_comandas_native_status_lifecycle_v1_offline.cjs
+      - name: V714 candidate independently refuses non-iFood and non-Itaim native events (offline)
+        run: node tools/verificar_comandas_v714_itaim_ifood_origin_scope_v1_offline.cjs
+      - name: Reader one-order serializable proposal stays REVIEW ONLY (static, no SQL)
+        run: node tools/verificar_comandas_reader_one_order_serializable_review_only.cjs
+      - name: Stage 3 SERIALIZABLE versus application partial commits (Linux offline)
+        run: node tools/verificar_comandas_reader_serializable_semantic_commit_gap_v1_offline.cjs
+      - name: Reader source revision mixing, ABA and partial-commit counterexamples (Linux offline)
+        run: node tools/verificar_comandas_reader_mixed_revision_risk_v1_offline.cjs
+      - name: Reader SQL snapshot metadata must remain HOLD without independent proof (Linux)
+        run: node tools/verificar_comandas_reader_sql_consistency_gate_v1_offline.cjs
+      - name: Reader crash/restart event-checkpoint boundary stays HOLD (Linux synthetic)
+        run: node tools/verificar_comandas_reader_restart_boundary_review_only.cjs
+      - name: Reader bootstrap vs persisted disposition remains HOLD (Linux offline)
+        run: node tools/verificar_comandas_reader_emission_disposition_review_only.cjs
+      - name: Reader replay ABA rollback and 250 eviction counterexamples (Linux synthetic)
+        run: node tools/verificar_comandas_reader_replay_counterexamples_review_only.cjs
+      - name: Native SQL revision identity is unproven (Linux static review)
+        run: node tools/verificar_comandas_reader_native_revision_capability_review_only.cjs
+      - name: Local observation journal never proves native revisions (Linux synthetic)
+        run: node tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs
+      - name: Candidate SQL plan origin and writer risk HOLD (Linux synthetic)
+        run: node tools/verificar_comandas_reader_one_order_plan_risk_review_only.cjs
+      - name: One-order JOIN cardinality can multiply rows (Linux synthetic)
+        run: node tools/verificar_comandas_reader_join_cardinality_counterexamples_review_only.cjs
+      - name: SQL catalog UNIQUE candidate keys never prove source state (Linux offline)
+        run: node tools/verificar_comandas_reader_join_unique_catalog_review_only.cjs
+      - name: Reader SERIALIZABLE writer lock contention counterexamples (Linux synthetic)
+        run: node tools/verificar_comandas_reader_writer_contention_review_only.cjs
+      - name: Passive paper census D0 D1 D2 evidence gate (Linux synthetic)
+        run: node tools/verificar_comandas_passive_paper_census_review_only.cjs
+      - name: Host shadow candidate effect boundary (offline, no host I/O)
+        run: |
+          node tools/comandas_host_shadow_effect_boundary_v1_offline.cjs --self-test
+          node tools/comandas_host_shadow_effect_boundary_v1_offline.cjs
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
+      - name: TATA Comanda source scoping production native-only conference iFood crosscheck
+        run: node tools/verificar_comandas_view_source_scope_v1_offline.cjs
+      - name: TATA Comanda real-state native Reader V2 pair integrity 3/P/X and item 4 (offline)
+        run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
+      - name: Existing Itaim Reader four-file metadata-only static contract
+        run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
+      - name: Existing Reader metadata diagnosis always remains HOLD (synthetic)
+        run: node tools/verificar_tata_reader_itaim_metadata_review_v1_offline.cjs
+      - name: Real-shape sanitized Reader and shadow trend holds physical effects (offline)
+        run: node tools/verificar_comandas_live_aggregate_trend_v1_offline.cjs
+      - name: TATA Comanda daily sequence candidate V2 no binding or paper authority
+        run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
+      - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
+        run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
+      - name: TATA Comanda Itaim window and station selective shadow route (no print)
+        run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
+      - name: TATA Comanda Reader revision bound to native day and window candidate
+        run: node tools/verificar_comandas_native_window_revision_binding_v1_offline.cjs
+      - name: Kitchen station shadow board from bound preview (no printing)
+        run: node tools/verificar_comandas_shadow_station_board_v1_offline.cjs
+      - name: Academy classification unknown code priority only (non-unique historical)
+        run: node tools/verificar_comandas_packaging_classification_review_v1_offline.cjs
+      - name: Missoshiro and salmon/tuna p1 Conference human constraints (synthetic review only)
+        run: node tools/verificar_comandas_missoshiro_combinado_p1_requirements_review_only.cjs
+      - name: Isolated pinned motor Missoshiro isopor delta and kit bag HOLD (offline)
+        run: node tools/verificar_comandas_missoshiro_motor_delta_candidate_v1_offline.cjs
+      - name: Synthetic Missoshiro plus cold combo explicit P M bags and kit hold (offline)
+        run: node tools/verificar_comandas_missoshiro_p1_conference_kit_bag_overlay_v1_offline.cjs
+      - name: Archive exact-byte classification versus routing coverage (no auto-classification)
+        run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
+      - name: Existing 554-code native catalog versus 463-route archived reconciliation (HOLD)
+        run: node tools/verificar_comandas_catalogos_existentes_v1_offline.cjs
+      - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
+        run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
+      - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
+        run: node tools/verificar_comandas_teknisa_native_print_mode_v1_offline.cjs
+      - name: TATA Comanda Odhen JSON status 202 queue and backup route safety
+        run: node tools/verificar_comandas_peripheral_bridge_ack_backup_v1_offline.cjs
+      - name: TATA Comanda delivery post-sale report source isolated from production and manual path
+        run: node tools/verificar_comandas_teknisa_delivery_report_boundary_v1_offline.cjs
+      - name: TATA Comanda iFood GP local HTTP and Gestor IPC old-print sources separated
+        run: node tools/verificar_comandas_ifood_installed_print_channels_v1_offline.cjs
+      - name: TATA Comanda marketplace preorder and ForSale first native production lineage
+        run: node tools/verificar_comandas_native_first_dispatch_lineage_v1_offline.cjs
+      - name: IFO Retail to native Loja/Caixa review must fail closed without live evidence
+        run: node tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs
+      - name: Synthetic-only atomic strong-key TATA sequence V2 SQLite lab
+        run: node tools/verificar_comandas_sequence_v2_sqlite_lab.cjs
+      - name: TATA number V2 strong key keeps daily 001 and refuses gaps (review only)
+        run: node tools/verificar_comandas_strong_key_sequence_v2_offline.cjs
+      - name: TATA number V2 on native revisions, lab level only (race, crash, cancel, gap, untrusted day)
+        run: node tools/verificar_comandas_sequence_v2_native_lab_v1.cjs
+      - name: TATA number attestation protocol in isolation (separate Ed25519 attester, read-only ledger)
+        run: node tools/verificar_comandas_sequence_v2_attestation_lab_v1.cjs
+      - name: Signed V2 persistent ledger core (synthetic keys, disposable SQLite, never print)
+        run: node tools/verificar_comandas_sequence_v2_authorized_ledger_core_v1.cjs
+      - name: V2 Conference integrated code manifest and no-print boundary (offline)
+        run: node tools/verificar_comandas_conference_v2_manifest_v1.cjs
+      - name: Archived IMP logs must not prove a native first dispatch (no effects)
+        run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
+      - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
+        run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
+      - name: TATA Comanda production planner regression without shift-selected printers
+        run: node tools/verificar_production_print_plan_v1.js
+      - name: TATA Comanda one journal three review layers reject cross-scope attempt and intent reuse
+        run: node tools/verificar_comandas_journal_scope_cross_layer_v1_offline.cjs
+      - name: Passive LogIMP projection refuses non-delivery documents (synthetic)
+        run: node tools/verificar_passive_print_log_v132.js
+      - name: Print field matrix, content-free census, LogIMP metadata reconciliation and read-only runner
+        run: node tools/verificar_comandas_print_provenance_v1_offline.cjs
+      - name: Native chain real revision 9627 through V2 consumer, pinned motor and three virtual views
+        run: node tools/verificar_comandas_cadeia_nativa_v1_offline.cjs
+      - name: Virtual paper from the exact ESC/POS bytes, measured against Figma V4.4/V4.3 (no device)
+        run: node tools/verificar_comandas_papel_virtual_escpos_v1_offline.cjs
+      - name: Shadow homologation candidate measured closure is pinned (no print capability)
+        run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
+      - name: Closed executable shadow pair-replay bundle (no live host, no print)
+        run: node tools/verificar_comandas_shadow_bundle_v1.cjs
+      - name: Private real-catalog replay parses and skips without the Academy checkout
+        run: node tools/comandas_replay_real_privado_p0.cjs
+      - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
+        run: node tools/verificar_production_service_matrix_v1.js
+      - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
+        run: node tools/verificar_comandas_scoped_view_preview_v1_offline.cjs
       - name: TATA Comanda iFood versus Teknisa lifecycle V8.64 (synthetic 219 probes)
         run: node tools/verificar_cruzamento_ifood_teknisa_v864_offline.cjs
       - name: TATA Comanda temporal iFood Teknisa crossing V8.65 (Linux synthetic)
@@ -223,6 +354,8 @@ jobs:
         run: node tools/verificar_auditoria_leitor_v69.js
       - name: Future shift renewal review V7.0 (never modify installed state)
         run: node tools/verificar_revisao_turno_humano_v70.js
+      - name: G2 exact-code classification and missing-route provenance (no promotion)
+        run: node tools/verificar_comandas_classification_gap_v1.cjs
       - name: V8.12 preview-only shift writer static safety gate (no PowerShell on Linux)
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.36 signed shift-scoped authorization expiry revocation and replay (offline Linux)
@@ -323,6 +456,57 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile source contracts and prepare dist for Node tests
         run: npm run build
+      - name: Stage 3 one-order SERIALIZABLE static preflight no SQL (Windows)
+        run: node tools/verificar_comandas_reader_one_order_serializable_review_only.cjs
+      - name: Stage 3 SERIALIZABLE versus application partial commits (Windows offline)
+        run: node tools/verificar_comandas_reader_serializable_semantic_commit_gap_v1_offline.cjs
+      - name: Reader source revision mixing, ABA and partial-commit counterexamples (Windows offline)
+        run: node tools/verificar_comandas_reader_mixed_revision_risk_v1_offline.cjs
+      - name: Reader V2 canonical hash and legacy checkpoint refuse unsafe migration (Windows synthetic)
+        run: node tools/verificar_reader_v2_canonical_upgrade_offline.cjs
+      - name: Existing Reader V2 event bytes must match producer envelope (Windows offline)
+        shell: pwsh
+        run: ./tools/verificar_reader_existing_event_content_REVIEW_ONLY.ps1
+      - name: Existing Reader V2 event byte parity on Windows PowerShell 5.1 (Windows offline)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ps51 = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+          if (-not (Test-Path -LiteralPath $ps51 -PathType Leaf)) { throw 'PS51_NOT_AVAILABLE' }
+          & $ps51 -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\tools\verificar_reader_existing_event_content_REVIEW_ONLY.ps1
+          if ($LASTEXITCODE -ne 0) { throw ('PS51_READER_EVENT_TEST_FAILED_EXIT_'+$LASTEXITCODE) }
+      - name: Legacy Reader event witness reconciliation NEVER migrates checkpoints (Windows offline)
+        run: node tools/verificar_comandas_reader_legacy_event_reconciliation_review_only.cjs
+      - name: Reader crash/restart event-checkpoint boundary stays HOLD (Windows synthetic)
+        run: node tools/verificar_comandas_reader_restart_boundary_review_only.cjs
+      - name: Reader bootstrap vs persisted disposition remains HOLD (Windows offline)
+        run: node tools/verificar_comandas_reader_emission_disposition_review_only.cjs
+      - name: Reader replay ABA rollback and 250 eviction counterexamples (Windows synthetic)
+        run: node tools/verificar_comandas_reader_replay_counterexamples_review_only.cjs
+      - name: Native SQL revision identity is unproven (Windows static review)
+        run: node tools/verificar_comandas_reader_native_revision_capability_review_only.cjs
+      - name: Local observation journal never proves native revisions (Windows synthetic)
+        run: node tools/verificar_comandas_reader_local_receipt_journal_review_only.cjs
+      - name: Candidate SQL plan origin and writer risk HOLD (Windows synthetic)
+        run: node tools/verificar_comandas_reader_one_order_plan_risk_review_only.cjs
+      - name: One-order JOIN cardinality can multiply rows (Windows synthetic)
+        run: node tools/verificar_comandas_reader_join_cardinality_counterexamples_review_only.cjs
+      - name: SQL catalog UNIQUE candidate keys never prove source state (Windows offline)
+        run: node tools/verificar_comandas_reader_join_unique_catalog_review_only.cjs
+      - name: Reader SERIALIZABLE writer lock contention counterexamples (Windows synthetic)
+        run: node tools/verificar_comandas_reader_writer_contention_review_only.cjs
+      - name: Passive paper census D0 D1 D2 evidence gate (Windows synthetic)
+        run: node tools/verificar_comandas_passive_paper_census_review_only.cjs
+      - name: Host shadow candidate effect boundary (offline, no host I/O)
+        run: |
+          node tools/comandas_host_shadow_effect_boundary_v1_offline.cjs --self-test
+          node tools/comandas_host_shadow_effect_boundary_v1_offline.cjs
+      - name: Three-way box accounting consumes unique physical boxes (Windows offline)
+        run: node tools/verificar_coerencia_tres_vias_contagem_v64_offline.cjs
+      - name: Product code bound to classification and pinned Academia (Windows offline)
+        run: node tools/verificar_comandas_source_bound_classification_v1_offline.cjs
+      - name: Reader V2 exact source revision to Academy review (Windows offline)
+        run: node tools/verificar_comandas_reader_bound_classification_v1_offline.cjs
       - name: Three-view identity, archived tickets and Epson bytes V8.71 (offline; no print)
         run: |
           node tools/verificar_real_order_tickets_v46.js
@@ -344,10 +528,118 @@ jobs:
         run: node tools/verificar_comandas_ifood_capture_coherence_v852_offline.js
       - name: iFood x Teknisa x native fiscal minimal real-source bridge V8.55 (offline)
         run: node tools/verificar_comandas_cruzamento_simples_v855_offline.cjs
+      - name: iFood official export x native Teknisa short ID set audit (synthetic no UUID promotion)
+        run: node tools/verificar_comandas_reconciliacao_fontes_v1_offline.cjs
+      - name: Native Teknisa order-time watcher patch contract (synthetic, no service or print)
+        run: node tools/verificar_comandas_reader_native_timestamp_patch_v1_offline.cjs
+      - name: Native status lifecycle transition audit without delivery or print interpretation
+        run: node tools/verificar_comandas_native_status_lifecycle_v1_offline.cjs
+      - name: V714 candidate independently refuses non-iFood and non-Itaim native events (offline)
+        run: node tools/verificar_comandas_v714_itaim_ifood_origin_scope_v1_offline.cjs
+      - name: TATA sequence preview-only writer and self-authorization rejection (disposable Windows)
+        shell: pwsh
+        run: ./tools/verificar_tata_sequence_writer_preview_hold_v1.ps1
       - name: TATA Comanda mandatory iFood sequence items and quantity V8.56 (offline)
         run: node tools/verificar_tata_comanda_essencial_v856_offline.cjs
       - name: TATA Comanda native Reader V2 pair and persisted sequence V8.57 (offline)
         run: node tools/verificar_tata_comanda_reader_native_v857_offline.cjs
+      - name: TATA Comanda source scoping production native-only conference iFood crosscheck
+        run: node tools/verificar_comandas_view_source_scope_v1_offline.cjs
+      - name: TATA Comanda real-state native Reader V2 pair integrity 3/P/X and item 4 (offline)
+        run: node tools/verificar_comandas_reader_v2_view_evidence_v1_offline.cjs
+      - name: Existing Itaim Reader four-file metadata-only static contract
+        run: node tools/verificar_tata_reader_itaim_metadata_v1_static.cjs
+      - name: Existing Reader metadata diagnosis always remains HOLD (synthetic)
+        run: node tools/verificar_tata_reader_itaim_metadata_review_v1_offline.cjs
+      - name: Real-shape sanitized Reader and shadow trend holds physical effects (offline)
+        run: node tools/verificar_comandas_live_aggregate_trend_v1_offline.cjs
+      - name: Existing Reader wrong-host fail-closed on disposable Windows CI only
+        shell: pwsh
+        run: |
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'CI_HOST_MUST_NOT_BE_PRODUCTION_HOST' }
+          $output = & ./tools/tata_reader_itaim_metadata_v1_readonly.ps1 | ConvertFrom-Json
+          if ($output.status -ne 'HOLD' -or
+              $output.host_matches_approved_name -ne $false -or
+              $output.files.Count -ne 0 -or
+              $output.effect_boundary.file_contents_read -ne $false -or
+              $output.effect_boundary.file_write -ne $false -or
+              $output.ready_for_operational_print -ne $false) {
+            throw 'ITAIM_EXISTING_READER_WRONG_HOST_NOT_FAIL_CLOSED'
+          }
+      - name: TATA Comanda daily sequence candidate V2 no binding or paper authority
+        run: node tools/verificar_comandas_sequence_v2_reconciliation_v1_offline.cjs
+      - name: TATA Comanda unproven dual printer role stays HOLD regardless of meal shift
+        run: node tools/verificar_comandas_no_shift_printer_role_v1_offline.cjs
+      - name: TATA Comanda Itaim window and station selective shadow route (no print)
+        run: node tools/verificar_comandas_window_station_select_v1_offline.cjs
+      - name: TATA Comanda Reader revision bound to native day and window candidate
+        run: node tools/verificar_comandas_native_window_revision_binding_v1_offline.cjs
+      - name: Kitchen station shadow board from bound preview (no printing)
+        run: node tools/verificar_comandas_shadow_station_board_v1_offline.cjs
+      - name: Academy classification unknown code priority only (non-unique historical)
+        run: node tools/verificar_comandas_packaging_classification_review_v1_offline.cjs
+      - name: Missoshiro and salmon/tuna p1 Conference human constraints (synthetic review only)
+        run: node tools/verificar_comandas_missoshiro_combinado_p1_requirements_review_only.cjs
+      - name: Isolated pinned motor Missoshiro isopor delta and kit bag HOLD (offline)
+        run: node tools/verificar_comandas_missoshiro_motor_delta_candidate_v1_offline.cjs
+      - name: Synthetic Missoshiro plus cold combo explicit P M bags and kit hold (offline)
+        run: node tools/verificar_comandas_missoshiro_p1_conference_kit_bag_overlay_v1_offline.cjs
+      - name: Archive exact-byte classification versus routing coverage (no auto-classification)
+        run: node tools/verificar_comandas_packaging_route_crosscheck_v1_offline.cjs
+      - name: Existing 554-code native catalog versus 463-route archived reconciliation (HOLD)
+        run: node tools/verificar_comandas_catalogos_existentes_v1_offline.cjs
+      - name: TATA Comanda observed PHP print transport prevents false Windows NUL sink assumptions
+        run: node tools/verificar_comandas_teknisa_transport_census_v1_offline.cjs
+      - name: TATA Comanda native PHP IDIMPPEDPROD N/S/M/T suppression scope review
+        run: node tools/verificar_comandas_teknisa_native_print_mode_v1_offline.cjs
+      - name: TATA Comanda Odhen JSON status 202 queue and backup route safety
+        run: node tools/verificar_comandas_peripheral_bridge_ack_backup_v1_offline.cjs
+      - name: TATA Comanda delivery post-sale report source isolated from production and manual path
+        run: node tools/verificar_comandas_teknisa_delivery_report_boundary_v1_offline.cjs
+      - name: TATA Comanda iFood GP local HTTP and Gestor IPC old-print sources separated
+        run: node tools/verificar_comandas_ifood_installed_print_channels_v1_offline.cjs
+      - name: TATA Comanda marketplace preorder and ForSale first native production lineage
+        run: node tools/verificar_comandas_native_first_dispatch_lineage_v1_offline.cjs
+      - name: IFO Retail to native Loja/Caixa review must fail closed without live evidence
+        run: node tools/verificar_comandas_ifo_retail_mapping_v1_offline.cjs
+      - name: Synthetic-only atomic strong-key TATA sequence V2 SQLite lab
+        run: node tools/verificar_comandas_sequence_v2_sqlite_lab.cjs
+      - name: TATA number V2 strong key keeps daily 001 and refuses gaps (review only)
+        run: node tools/verificar_comandas_strong_key_sequence_v2_offline.cjs
+      - name: TATA number V2 on native revisions, lab level only (race, crash, cancel, gap, untrusted day)
+        run: node tools/verificar_comandas_sequence_v2_native_lab_v1.cjs
+      - name: TATA number attestation protocol in isolation (separate Ed25519 attester, read-only ledger)
+        run: node tools/verificar_comandas_sequence_v2_attestation_lab_v1.cjs
+      - name: Signed V2 persistent ledger core (synthetic keys, disposable SQLite, never print)
+        run: node tools/verificar_comandas_sequence_v2_authorized_ledger_core_v1.cjs
+      - name: V2 Conference integrated code manifest and no-print boundary (offline)
+        run: node tools/verificar_comandas_conference_v2_manifest_v1.cjs
+      - name: Archived IMP logs must not prove a native first dispatch (no effects)
+        run: node tools/verificar_comandas_imp_historical_temporal_gate_v1_offline.cjs
+      - name: TATA Comanda virtual legacy cutover source boundaries (no host or print)
+        run: node tools/verificar_comandas_legacy_virtual_cutover_v1_offline.cjs
+      - name: TATA Comanda production planner regression without shift-selected printers
+        run: node tools/verificar_production_print_plan_v1.js
+      - name: TATA Comanda one journal three review layers reject cross-scope attempt and intent reuse
+        run: node tools/verificar_comandas_journal_scope_cross_layer_v1_offline.cjs
+      - name: Passive LogIMP projection refuses non-delivery documents (synthetic)
+        run: node tools/verificar_passive_print_log_v132.js
+      - name: Print field matrix, content-free census, LogIMP metadata reconciliation and read-only runner
+        run: node tools/verificar_comandas_print_provenance_v1_offline.cjs
+      - name: Native chain real revision 9627 through V2 consumer, pinned motor and three virtual views
+        run: node tools/verificar_comandas_cadeia_nativa_v1_offline.cjs
+      - name: Virtual paper from the exact ESC/POS bytes, measured against Figma V4.4/V4.3 (no device)
+        run: node tools/verificar_comandas_papel_virtual_escpos_v1_offline.cjs
+      - name: Shadow homologation candidate measured closure is pinned (no print capability)
+        run: node tools/verificar_comandas_candidata_homologacao_v1.cjs
+      - name: Closed executable shadow pair-replay bundle (no live host, no print)
+        run: node tools/verificar_comandas_shadow_bundle_v1.cjs
+      - name: Private real-catalog replay parses and skips without the Academy checkout
+        run: node tools/comandas_replay_real_privado_p0.cjs
+      - name: TATA Comanda 463-product historical routing matrix with ambiguous role HOLD
+        run: node tools/verificar_production_service_matrix_v1.js
+      - name: TATA Comanda scoped V4.6 proof native production unaffected by conference iFood mismatch
+        run: node tools/verificar_comandas_scoped_view_preview_v1_offline.cjs
       - name: TATA Comanda exact Academy motor-byte pin V8.62 (offline)
         run: node tools/verificar_tata_comanda_pinned_motor_v862_offline.cjs
       - name: TATA Comanda existing sequence versus atomic-bind boundary V8.58 (offline)
@@ -484,6 +776,8 @@ jobs:
         run: node tools/verificar_comandas_native_item_parity_v89_offline.cjs
       - name: V7.0/V7.4 shift upper-boundary exclusivity matches real Windows V2 (offline)
         run: node tools/verificar_revisao_turno_humano_v70.js
+      - name: G2 exact-code classification and missing-route provenance (no promotion)
+        run: node tools/verificar_comandas_classification_gap_v1.cjs
       - name: V8.12 preview-only PowerShell shift writer adversarial Windows cases
         run: node tools/verificar_comandas_shift_writer_v812_preview_only.cjs
       - name: V8.36 signed shift-scoped authorization expiry revocation and replay (offline Windows)

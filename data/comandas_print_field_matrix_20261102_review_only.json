@@ -1,0 +1,530 @@
+{
+  "schema": "tata.comandas.print-field-matrix.v1.review-only",
+  "as_of": "2026-11-02",
+  "scope": "Itaim 0001/01; campos que o CODIGO manda imprimir por canal, nao conteudo de papel real",
+  "status_vocabulary": [
+    "SOURCE_CODE_PROVEN",
+    "SOURCE_CODE_CONDITIONAL",
+    "SOURCE_CODE_POSSIBLE",
+    "SOURCE_CODE_PROVEN_NOT_PAPER",
+    "REFUTED_ON_OBSERVED_PAPER",
+    "ABSENT_IN_SOURCE",
+    "UNKNOWN_NO_SOURCE",
+    "OBSERVED_TOKENS_TYPE_UNATTRIBUTED",
+    "OBSERVED_METADATA_ONLY",
+    "EXCLUDED_CHANNEL",
+    "DESIGNED_SHADOW_MEASURED",
+    "DESIGNED_SHADOW_BLOCKED_UNTIL_PERSISTED"
+  ],
+  "identity_vocabulary": [
+    "ORDER_REFERENCE_PARTIAL",
+    "ORDER_REFERENCE_WEAK",
+    "DOCUMENT_KIND",
+    "DESTINATION",
+    "CONTENT",
+    "NONE"
+  ],
+  "invariants": {
+    "physical_paper_claimed": false,
+    "strong_four_part_key_printed_by_any_native_channel": false
+  },
+  "fields": [
+    {
+      "id": "NP01",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "quantidade e nome do item",
+      "source_field": "item da comanda",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "CONTENT",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "Production ticket: item quantity/name"
+      }
+    },
+    {
+      "id": "NP02",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "observacao do item",
+      "source_field": "TXPRODCOMVEN",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "CONTENT",
+      "pii": true,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "item-scoped `TXPRODCOMVEN`"
+      }
+    },
+    {
+      "id": "NP03",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "destino tecnico",
+      "source_field": "printerInfo",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "DESTINATION",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "printer destination in `printerInfo`"
+      }
+    },
+    {
+      "id": "NP04",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "COMANDA.: DLV_<NRCOMANDA>",
+      "source_field": "NRCOMANDA",
+      "printed_status": "SOURCE_CODE_CONDITIONAL",
+      "identity_role": "ORDER_REFERENCE_PARTIAL",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "`COMANDA.: DLV_<N>` when the runtime path uses `tipoVenda='C'`"
+      },
+      "condition": "tipoVenda='C' no ramo PHP; nao observado no papel de 30/09"
+    },
+    {
+      "id": "NP05",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "DLV_<NRCOMANDA> e SENHA no papel observado",
+      "source_field": "NRCOMANDA/SENHA",
+      "printed_status": "REFUTED_ON_OBSERVED_PAPER",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "The observed physical ticket checked during this investigation contained neither `DLV_<NRCOMANDA>` nor `SENHA`"
+      }
+    },
+    {
+      "id": "NP06",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "codigo iFood e CDPRODUTO",
+      "source_field": "NRCOMANDAEXT/CDPRODUTO",
+      "printed_status": "ABSENT_IN_SOURCE",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "production lacks `NRCOMANDAEXT` and `CDPRODUTO`"
+      }
+    },
+    {
+      "id": "NP07",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "envio a producao, producao 2 e puxa",
+      "source_field": "impressoraProducao/impressoraProducao2/impressoraPuxa",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "DESTINATION",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "A product may print to production, production 2 and puxa"
+      }
+    },
+    {
+      "id": "NP08",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "selecao por almoco/jantar no gerador",
+      "source_field": "laços de impressora",
+      "printed_status": "ABSENT_IN_SOURCE",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_REVALIDADA_IMPRESSORAS_E_JANELAS_20261027.md",
+        "contains": "não exibem seleção por horário de almoço/jantar"
+      }
+    },
+    {
+      "id": "NP09",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "caixa/embalagem TATA",
+      "source_field": "motor DeliveryOS",
+      "printed_status": "ABSENT_IN_SOURCE",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+        "contains": "The canonical packaging box is not sourced from Odhen print data"
+      }
+    },
+    {
+      "id": "NP10",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "primeira via DLV_IFO por este gerador",
+      "source_field": "callsite",
+      "printed_status": "UNKNOWN_NO_SOURCE",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md",
+        "contains": "não encontrou nesse conjunto uma chamada demonstrada do evento de primeira produção `DLV_IFO`"
+      }
+    },
+    {
+      "id": "NP11",
+      "channel": "NATIVE_PRODUCTION",
+      "field": "rotulos Pedido/Mesa em logs IMP de 04/10",
+      "source_field": "texto do log",
+      "printed_status": "OBSERVED_TOKENS_TYPE_UNATTRIBUTED",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "data/tata_reader_passive_print_log_source_proof_20261005_v1.json",
+        "contains": "\"Mesa\""
+      }
+    },
+    {
+      "id": "DR01",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "cabecalho literal",
+      "source_field": "Relatorio De Entrega",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "DOCUMENT_KIND",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md",
+        "contains": "Relatorio De Entrega"
+      }
+    },
+    {
+      "id": "DR02",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "numero da comanda",
+      "source_field": "NRCOMANDA",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "ORDER_REFERENCE_PARTIAL",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- NRCOMANDA: present."
+      }
+    },
+    {
+      "id": "DR03",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "codigo curto iFood",
+      "source_field": "NRCOMANDAEXT",
+      "printed_status": "SOURCE_CODE_CONDITIONAL",
+      "identity_role": "ORDER_REFERENCE_WEAK",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- NRCOMANDAEXT: present for supported marketplace orders"
+      },
+      "condition": "origem marketplace compativel"
+    },
+    {
+      "id": "DR04",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "itens e quantidades",
+      "source_field": "produto codigo/nome/quantidade",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "CONTENT",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- Items and quantities: present."
+      }
+    },
+    {
+      "id": "DR05",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "observacao de item mesclada",
+      "source_field": "DSOBSDESCIT+DSOBSPEDDIGCMD",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "CONTENT",
+      "pii": true,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- DSOBSDESCIT + DSOBSPEDDIGCMD: printed as merged item-level observation lines"
+      }
+    },
+    {
+      "id": "DR06",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "observacao da comanda",
+      "source_field": "DSOBSCOMANDA",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "CONTENT",
+      "pii": true,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- DSOBSCOMANDA: present as order-level `OBS.:`."
+      }
+    },
+    {
+      "id": "DR07",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "venda restaurante",
+      "source_field": "NRVENDAREST",
+      "printed_status": "ABSENT_IN_SOURCE",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- NRVENDAREST: absent."
+      }
+    },
+    {
+      "id": "DR08",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "observacao de producao",
+      "source_field": "TXPRODCOMVEN",
+      "printed_status": "ABSENT_IN_SOURCE",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "- TXPRODCOMVEN: absent from the delivery report"
+      }
+    },
+    {
+      "id": "DR09",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "cliente, telefone, endereco, pagamento, totais",
+      "source_field": "estrutural",
+      "printed_status": "SOURCE_CODE_POSSIBLE",
+      "identity_role": "NONE",
+      "pii": true,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "The raw print text may contain name, phone, address and payment/total information."
+      }
+    },
+    {
+      "id": "DR10",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "gatilho automatico pos-venda",
+      "source_field": "CAIXA.IDIMPAUTENTREG",
+      "printed_status": "SOURCE_CODE_CONDITIONAL",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md",
+        "contains": "`IMPRIMEDLV_AUTOMATICO` lê **`CAIXA.IDIMPAUTENTREG`**"
+      },
+      "condition": "IDIMPAUTENTREG='S' apos venda de delivery"
+    },
+    {
+      "id": "DR11",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "impressao manual/reimpressao",
+      "source_field": "printDeliveryOrders",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md",
+        "contains": "expõe `printDeliveryOrders`"
+      }
+    },
+    {
+      "id": "DR12",
+      "channel": "NATIVE_DELIVERY_REPORT",
+      "field": "impressora do relatorio",
+      "source_field": "CAIXA.NRSEQIMPRLOJA7/3",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "DESTINATION",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_RAMOS_IMPRESSAO_RELATORIO_DELIVERY_VS_PRODUCAO_20261027.md",
+        "contains": "`CAIXA.NRSEQIMPRLOJA7` com fallback para `NRSEQIMPRLOJA3`"
+      }
+    },
+    {
+      "id": "GP01",
+      "channel": "IFOOD_GP_HTTP",
+      "field": "conteudo do invoice",
+      "source_field": "invoice",
+      "printed_status": "UNKNOWN_NO_SOURCE",
+      "identity_role": "NONE",
+      "pii": true,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md",
+        "contains": "`@ifood/thermal-printer.print(invoice, printerConfig)`"
+      }
+    },
+    {
+      "id": "GP02",
+      "channel": "IFOOD_GP_HTTP",
+      "field": "transporte",
+      "source_field": "Windows RAW via node-printer",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md",
+        "contains": "`printDirect({printer: nome, type:'RAW'})`"
+      }
+    },
+    {
+      "id": "GP03",
+      "channel": "IFOOD_GP_HTTP",
+      "field": "porta local",
+      "source_field": "POST /print",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md",
+        "contains": "porta padrão `4013`"
+      }
+    },
+    {
+      "id": "GM01",
+      "channel": "IFOOD_GESTOR_IPC",
+      "field": "conteudo do invoice",
+      "source_field": "invoice",
+      "printed_status": "UNKNOWN_NO_SOURCE",
+      "identity_role": "NONE",
+      "pii": true,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md",
+        "contains": "Electron `ipc.on('printOrder')`"
+      }
+    },
+    {
+      "id": "GM02",
+      "channel": "IFOOD_GESTOR_IPC",
+      "field": "confirmacao",
+      "source_field": "printOrderReply",
+      "printed_status": "SOURCE_CODE_PROVEN_NOT_PAPER",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_IFOOD_DOIS_CANAIS_IMPRESSAO_INSTALADOS_20261027.md",
+        "contains": "`Successfully printed`"
+      }
+    },
+    {
+      "id": "FI01",
+      "channel": "FISCAL_NFCE",
+      "field": "DANFE/NFC-e",
+      "source_field": "VENDA/NFC-e",
+      "printed_status": "EXCLUDED_CHANNEL",
+      "identity_role": "NONE",
+      "pii": true,
+      "anchor": {
+        "path": "docs/Fiscal_Observation_Architecture_2026-10-05.md",
+        "contains": "Reimpressão DANFE permanece caminho separado de emissão."
+      }
+    },
+    {
+      "id": "TR01",
+      "channel": "ODHEN_LOGIMP",
+      "field": "texto completo do comando",
+      "source_field": "LogIMP",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "NONE",
+      "pii": true,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "`printCommands` writes the complete print command text immediately before the official printer path"
+      }
+    },
+    {
+      "id": "TR02",
+      "channel": "ODHEN_LOGIMP",
+      "field": "arquivo por destino",
+      "source_field": "<AAAA_MM_DD>_IMP_<modelo>_<porta>.txt",
+      "printed_status": "SOURCE_CODE_PROVEN",
+      "identity_role": "DESTINATION",
+      "pii": false,
+      "anchor": {
+        "path": "docs/Passive_Print_Log_Shadow_V132.md",
+        "contains": "_IMP_<modelo>_<porta>.txt"
+      }
+    },
+    {
+      "id": "TR03",
+      "channel": "WINDOWS_QUEUE",
+      "field": "jobs retidos DELIVERY SUSHI 1",
+      "source_field": "Get-PrintJob",
+      "printed_status": "OBSERVED_METADATA_ONLY",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "docs/comandas/AUDITORIA_REVALIDADA_IMPRESSORAS_E_JANELAS_20261027.md",
+        "contains": "`KeepPrintedJobs=true` **somente nessa fila**"
+      }
+    },
+    {
+      "id": "TS01",
+      "channel": "TATA_PRODUCTION_SHADOW",
+      "field": "banner de teste",
+      "source_field": "constante",
+      "printed_status": "DESIGNED_SHADOW_MEASURED",
+      "identity_role": "DOCUMENT_KIND",
+      "pii": false,
+      "anchor": {
+        "path": "src/production/operationalTicketEscposV46.ts",
+        "contains": "TESTE - NAO PRODUZIR"
+      }
+    },
+    {
+      "id": "TS02",
+      "channel": "TATA_PRODUCTION_SHADOW",
+      "field": "praca",
+      "source_field": "estacao",
+      "printed_status": "DESIGNED_SHADOW_MEASURED",
+      "identity_role": "DESTINATION",
+      "pii": false,
+      "anchor": {
+        "path": "src/production/operationalTicketEscposV46.ts",
+        "contains": "\"PRODUCAO \" + uppercase(ticket.station)"
+      }
+    },
+    {
+      "id": "TS03",
+      "channel": "TATA_PRODUCTION_SHADOW",
+      "field": "identificadores iFood/Teknisa/hora",
+      "source_field": "ids",
+      "printed_status": "DESIGNED_SHADOW_MEASURED",
+      "identity_role": "ORDER_REFERENCE_PARTIAL",
+      "pii": false,
+      "anchor": {
+        "path": "src/production/operationalTicketEscposV46.ts",
+        "contains": "\"IFOOD \" + plain(ids.ifood) + \" | TEKNISA \""
+      }
+    },
+    {
+      "id": "TS04",
+      "channel": "TATA_PRODUCTION_SHADOW",
+      "field": "sequencia TATA 001-999",
+      "source_field": "sequencia persistida",
+      "printed_status": "DESIGNED_SHADOW_BLOCKED_UNTIL_PERSISTED",
+      "identity_role": "ORDER_REFERENCE_PARTIAL",
+      "pii": false,
+      "anchor": {
+        "path": "src/production/operationalTicketEscposV46.ts",
+        "contains": "TATA_SEQUENCE_NOT_PROVEN"
+      }
+    },
+    {
+      "id": "TS05",
+      "channel": "TATA_CONFERENCE_SHADOW",
+      "field": "destino conferencia",
+      "source_field": "constante",
+      "printed_status": "DESIGNED_SHADOW_MEASURED",
+      "identity_role": "DOCUMENT_KIND",
+      "pii": false,
+      "anchor": {
+        "path": "src/production/operationalTicketEscposV46.ts",
+        "contains": "p.line(\"CONFERENCIA\", \"DESTINATION\")"
+      }
+    },
+    {
+      "id": "TS06",
+      "channel": "TATA_CONFERENCE_SHADOW",
+      "field": "sem corte nem spooler",
+      "source_field": "GS V",
+      "printed_status": "DESIGNED_SHADOW_MEASURED",
+      "identity_role": "NONE",
+      "pii": false,
+      "anchor": {
+        "path": "src/production/operationalTicketEscposV46.ts",
+        "contains": "No GS V cut command or device/spooler interface, by design."
+      }
+    }
+  ]
+}

@@ -182,7 +182,12 @@ const provenNoEffectRetry = decideProductionPrintSubmission("intent-v880", [
     state: rejectedPreEffect.evidence,
   },
 ]);
-assert.equal(provenNoEffectRetry.decision, "ALLOW_RETRY_PROVEN_NO_EFFECT");
-assert.equal(provenNoEffectRetry.automatic_retry_allowed, true);
+// An isolated spooler classification is not independent evidence that no
+// other transport, backup path, or already-submitted job had physical effect.
+assert.equal(provenNoEffectRetry.decision, "BLOCK_RECONCILIATION_REQUIRED");
+assert.deepEqual(provenNoEffectRetry.blocking_reasons,
+  ["NO_EFFECT_HISTORY_LACKS_INDEPENDENT_ATTESTATION"]);
+assert.equal(provenNoEffectRetry.automatic_retry_allowed, false);
+assert.deepEqual(provenNoEffectRetry.effects, {print:false,spooler_write:false});
 
 console.log("WINDOWS_SPOOLER_EVIDENCE_V880=13/13 OFFLINE NO_PRINT NO_RETRY_ON_CONTRADICTION");

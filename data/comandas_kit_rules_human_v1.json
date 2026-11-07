@@ -1,0 +1,58 @@
+{
+  "schema": "tata.comandas.human-kit-rules.v1",
+  "scope": "EXACT_COMPOSITION_ONLY",
+  "applies_when": "the pinned Academy motor gives no FACT for this exact composition; a motor FACT always wins and a different motor FACT is a conflict (HOLD)",
+  "composition": "exactly one line of the combo below with quantity 1 plus only proven temaki lines whose units add up to temaki_units; any other line means the rule does not apply",
+  "rules": [
+    {
+      "id": "KIT-9.15.00.030.00-x1+TEMAKI-x3",
+      "combo": {
+        "canonical_code": "9.15.00.030.00",
+        "native_cdproduto": "0000001459",
+        "native_name": "COMB SUSHI + SASHIMI ESPECIAL 2 P",
+        "quantity": 1
+      },
+      "temaki_units": 3,
+      "kits": [
+        { "kit": "Kit p/2", "quantidade": 1 },
+        { "kit": "Kit Simples", "quantidade": 1 }
+      ],
+      "evidence": "HUMAN_CONFIRMED_RULE",
+      "decided_by": "César (owner)",
+      "decided_on": "2026-11-02",
+      "source_ref": "https://github.com/cesarspichencoff-cmyk/delviery-os/pull/135#issuecomment-6582963189"
+    },
+    {
+      "id": "KIT-9.15.00.030.00-x1+TEMAKI-x4",
+      "combo": {
+        "canonical_code": "9.15.00.030.00",
+        "native_cdproduto": "0000001459",
+        "native_name": "COMB SUSHI + SASHIMI ESPECIAL 2 P",
+        "quantity": 1
+      },
+      "temaki_units": 4,
+      "kits": [
+        { "kit": "Kit p/2", "quantidade": 1 },
+        { "kit": "Kit p/1", "quantidade": 1 }
+      ],
+      "evidence": "HUMAN_CONFIRMED_RULE",
+      "decided_by": "César (owner)",
+      "decided_on": "2026-11-02",
+      "source_ref": "https://github.com/cesarspichencoff-cmyk/delviery-os/pull/135#issuecomment-6582963189"
+    }
+  ],
+  "preserved_motor_rule": {
+    "temaki_units": 2,
+    "kits": [
+      { "kit": "Kit p/2", "quantidade": 1 },
+      { "kit": "Kit Simples", "quantidade": 1 }
+    ],
+    "source": "pinned Academy motor blob 3167c309 (combinado 2p + 2 temakis, judged 2026-09-22); no record here on purpose"
+  },
+  "not_generalized": [
+    "1 temaki or 5+ temakis",
+    "any other combo, including other 2-person combos",
+    "combo quantity other than 1",
+    "any other item in the same order (sashimi, enrolado, hot dish, dessert, drink)"
+  ]
+}

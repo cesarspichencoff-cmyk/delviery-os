@@ -87,23 +87,39 @@ export function alignProductionPackagingV64(
 export function inspectThreeWayBoxCoherenceV64(tickets:OperationalTicketsResultV45):string[] {
   const failures=new Set<string>();
   const conf=tickets.conference.boxes;
-  const grouped=new Map<string,number>();
+  // The Conference contains an INVENTORY of proven physical boxes,
+  // not a reusable lookup. Consuming one match for each production box
+  // prevents two independent stations/intents from claiming the same box.
+  const remaining=new Map<string,number>();
   for(const c of conf){
+    if(!c.model||c.status!=="PROVEN"||!c.items.length||
+       (c.physical_box_count!==undefined&&c.physical_box_count!==1)){
+      failures.add("CONFERENCE_BOX_NOT_PROVEN");continue;
+    }
     const key=c.model+"|"+sig(c.items.map(i=>({name:i.print_name,quantity:i.quantity})));
-    grouped.set(key,(grouped.get(key)??0)+1);
+    remaining.set(key,(remaining.get(key)??0)+1);
   }
   for(const p of tickets.production)for(const b of p.boxes){
-    if(!b.model||!b.items.length){failures.add("PRODUCTION_BOX_NOT_PROVEN:"+p.station);continue;}
+    if(!b.model||b.status!=="PROVEN"||!b.items.length){
+      failures.add("PRODUCTION_BOX_NOT_PROVEN:"+p.station);continue;
+    }
     const repeats=b.physical_box_count??1;
-    const canSplit=repeats>1 && b.status==="PROVEN" && b.items.length===1
+    if(!Number.isSafeInteger(repeats)||repeats<1){
+      failures.add("PRODUCTION_BOX_COUNT_INVALID:"+p.station);continue;
+    }
+    const canSplit=repeats>1 && b.items.length===1
       && b.items[0].quantity===repeats;
     if(repeats>1&&!canSplit){
       failures.add("PRODUCTION_MULTI_BOX_MEMBERSHIP_UNKNOWN:"+p.station);continue;
     }
     const content=canSplit?[{...b.items[0],quantity:1}]:b.items;
     const key=b.model+"|"+sig(content.map(i=>({name:i.print_name,quantity:i.quantity})));
-    if((grouped.get(key)??0)<repeats)
+    const available=remaining.get(key)??0;
+    if(available<repeats){
       failures.add("CONFERENCE_PRODUCTION_BOX_DIVERGENCE:"+p.station+":"+key);
+    }else{
+      remaining.set(key,available-repeats);
+    }
   }
   if(!tickets.ready_for_semantic_preview)
     failures.add("TICKETS_NOT_SEMANTICALLY_READY");
