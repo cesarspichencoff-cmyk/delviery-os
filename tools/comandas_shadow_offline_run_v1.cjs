@@ -30,12 +30,13 @@ function source(filename,limit){
 }
 function readSourceJSON(filename,limit){
  const b=source(filename,limit);
- return {record:JSON.parse(b.toString("utf8")),hash:sha(b)};
+ return {record:JSON.parse(b.toString("utf8")),hash:sha(b),
+  raw_json:b.toString("utf8")};
 }
 function run(eventPath,decisionPath,reviewClaimPath){
  const proof=verify(ROOT);
- const {record:event,hash:eventSha}=readSourceJSON(eventPath,2000000);
- const {record:decision,hash:decisionSha}=readSourceJSON(decisionPath,3000000);
+ const {record:event,hash:eventSha,raw_json:eventRaw}=readSourceJSON(eventPath,2000000);
+ const {record:decision,hash:decisionSha,raw_json:decisionRaw}=readSourceJSON(decisionPath,3000000);
  if(event.schema!=="deliveryos.tata-reader-stable-order-event.v1"||
    decision.schema!=="deliveryos.live-shadow-decision.v1"||
    typeof event.order_key!=="string"||
@@ -55,6 +56,11 @@ function run(eventPath,decisionPath,reviewClaimPath){
  // No trust is conferred by a label or by a matching self-declared source hash.
  const out=runNativeChainV1({
   event,decision,note_disposition_claim:reviewClaim,
+  // The existing reader already fetched the two exact source files. Pass
+  // their text in memory only for a SHADOW note disposition: the chain checks
+  // both actual file hashes AND semantic equality before excluding any note.
+  // No source content leaves this runner's sanitized output.
+  note_source_file_pair:reviewClaim?{event_json:eventRaw,decision_json:decisionRaw}:undefined,
   routing:readJson(path.join(ROOT,DATA.routing)),
   printer_map:readJson(path.join(ROOT,DATA.printers)),
   calibration:readJson(path.join(ROOT,DATA.calibration)),
