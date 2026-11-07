@@ -25,13 +25,22 @@ function check(input,reason,id=null){
   'conference_print_authorized'])assert.equal(result[k],false,k);
  assert.ok(Object.values(result.effect_permissions).every(x=>x===false));
  assert.equal(result.distinct_products_preserved,true);
+ assert.equal(result.historical_label_candidates_are_current,false);
+ assert.equal(result.historical_native_ids_exposed,false);
+ assert.equal(result.historical_name_match_can_select_active_sku,false);
+ if(id!==null){
+  const h=C.historical_native_label_review.candidates.find(x=>x.academy_entry_id===id);
+  assert.equal(result.historical_label_candidate_count,h?.historical_candidate_rows??null);
+ }else assert.equal(result.historical_label_candidate_count,null);
  assert.ok(!JSON.stringify(result).includes('CUSTOMER_SECRET'));
  return result;
 }
 t('pinned catalog source is the reviewed Academy blob',()=>{
  assert.equal(C.source.git_blob_sha1,'d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22');
  assert.equal(C.source.repository,'cesarspichencoff-cmyk/tata-academia');
- assert.equal(C.native_product_ids_observed_for_these_three,false);
+ assert.equal(C.native_product_ids_in_this_reference,false);
+ assert.equal(C.historical_native_label_review.current_product_activity_proven,false);
+ assert.equal(C.historical_native_label_review.current_reader_order_line_bindings_proven,false);
  assert.equal(C.records.length,3);
 });
 t('two one-person salmon products remain distinct despite matching station',()=>{
@@ -136,6 +145,31 @@ t('null object held',()=>check(null,'REVIEW_ENVELOPE_INVALID'));
 t('arrays held',()=>check([],'REVIEW_ENVELOPE_INVALID'));
 t('numeric name held',()=>check(change(a,'academy_entry_name',5),'REVIEW_ENVELOPE_INVALID'));
 t('null Academy ID held',()=>check(change(a,'academy_entry_id',null),'REVIEW_ENVELOPE_INVALID'));
-if(count!==31)throw Error('IDENTITY_REVIEW_CASE_COUNT_'+count);
+t('historical native catalog is dated, not a current identity proof',()=>{
+ const h=C.historical_native_label_review;
+ assert.equal(h.source_kind,'ARCHIVED_READER_PRODUCT_IDENTITY_CACHE_READ_ONLY');
+ assert.equal(h.cached_product_rows,554);
+ assert.equal(h.original_capture_at,'2026-10-05T15:27:33.4357828-03:00');
+ assert.equal(h.native_ids_and_raw_cache_not_published,true);
+ assert.equal(h.names_are_candidates_not_identifiers,true);
+ assert.equal(h.active_catalog_reconciliation_proven,false);
+ assert.equal(h.candidates.reduce((s,x)=>s+x.historical_candidate_rows,0),5);
+});
+t('two distinct historical MISSOSHIRO identities cannot choose native SKU',()=>{
+ const x=check(m,'ACADEMY_CLASSIFICATION_REVIEW_AND_NATIVE_ID_PENDING',m.academy_entry_id);
+ assert.equal(x.historical_label_candidate_count,2);
+ assert.equal(x.native_cdproduto_bound,false);
+});
+t('two historical salmon tuna one-person label variants cannot choose native SKU',()=>{
+ const x=check(a,'CATALOG_REFERENCE_MATCHES_HUMAN_ROLE_BUT_NATIVE_ID_UNKNOWN',a.academy_entry_id);
+ assert.equal(x.historical_label_candidate_count,2);
+ assert.equal(x.native_cdarvprod_bound,false);
+});
+t('one historical salmon-only label never inherits salmon tuna human rule',()=>{
+ const x=check(s,'NO_EXACT_HUMAN_ASSEMBLY_RULE_FOR_THIS_ENTRY',s.academy_entry_id);
+ assert.equal(x.historical_label_candidate_count,1);
+ assert.equal(x.operational_assembly_plan_authorized,false);
+});
+if(count!==35)throw Error('IDENTITY_REVIEW_CASE_COUNT_'+count);
 console.log('COMANDAS_ASSEMBLY_ACADEMY_IDENTITY='+count+'/'+count+
  ' PINNED_CATALOG_ONLY NO_NATIVE_SKU NO_ASSEMBLY_RELEASE NO_PRINT');

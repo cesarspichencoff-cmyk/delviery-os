@@ -15,6 +15,10 @@ const isObj=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
 const exact=(o,fields)=>isObj(o)&&
  Object.keys(o).sort().join('|')===fields.slice().sort().join('|');
 const records=new Map(data.records.map(x=>[x.id,x]));
+// This is a privacy-minimized, STALE cache census. No CDPRODUTO/CDARVPROD
+// values or underlying cache bytes are present, so it is NOT an identity join.
+const historical=new Map((data.historical_native_label_review?.candidates||[])
+ .map(x=>[x.academy_entry_id,x]));
 const roles=new Set(['MISSOSHIRO','SALMAO_ATUM_P1','NONE']);
 function hold(reason,record=null){
  return Object.freeze({
@@ -26,6 +30,11 @@ function hold(reason,record=null){
    academy_classification_needs_review:record?.review_required??null,
    human_rule_scope:'SYNTHETIC_ONLY_NOT_BOUND_TO_NATIVE_PRODUCT',
    distinct_products_preserved:true,
+   historical_label_candidate_count:record?
+    (historical.get(record.id)?.historical_candidate_rows??null):null,
+   historical_label_candidates_are_current:false,
+   historical_native_ids_exposed:false,
+   historical_name_match_can_select_active_sku:false,
    native_cdproduto_bound:false,native_cdarvprod_bound:false,
    native_order_identity_proven:false,source_freshness_proven:false,
    operational_assembly_plan_authorized:false,
