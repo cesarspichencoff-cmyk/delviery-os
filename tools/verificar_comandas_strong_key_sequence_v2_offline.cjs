@@ -148,7 +148,8 @@ test("canceled item, foreign shop or stale Reader fingerprint never get a candid
  const b=fixture();b.pair.event.order.CDLOJA="02";
  b.pair.event.order_key=b.pair.event.order_key.replace("0001|01|","0001|02|");
  b.pair.decision.order_key=b.pair.event.order_key;refresh(b.pair);
- assert.equal(read(b).reason,"NOT_ITAIM_STORE_UNIT");
+ // The native-pair scope guard refuses a foreign unit before sequence review.
+ assert.equal(read(b).reason,"NATIVE_READER_REVISION_NOT_CONSISTENT");
  const c=fixture();c.pair.event.order.IDSTCOMANDA="P";
  assert.equal(read(c).status,"HOLD");
 });
