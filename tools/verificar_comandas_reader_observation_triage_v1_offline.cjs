@@ -104,7 +104,8 @@ test("out-of-scope shop cannot create a note triage queue",()=>{
  p.event.order_key="0001|02|0000349281|0000348850";
  p.decision.order_key=p.event.order_key;refresh(p);
  const r=call(p);assert.equal(r.status,"HOLD");
- assert.equal(r.reason,"NOT_ITAIM_SCOPE");
+ // Strong-key source-scope gate now rejects before note-triage's own scope check.
+ assert.equal(r.reason,"NATIVE_PAIR_NOT_SELF_CONSISTENT");
  assert.equal(r.print_authorized,false);
 });
 test("native revision change P to X cannot reuse an inventory binding",()=>{
