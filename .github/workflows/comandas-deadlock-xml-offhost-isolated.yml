@@ -1,0 +1,28 @@
+name: Comandas off-host deadlock XML review only
+on:
+  push:
+    branches:
+      - audit/comandas-deadlock-xml-offhost-20261107
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline synthetic deadlock XML guards
+        run: python tools/verificar_comandas_deadlock_graph_participant_review_v1_offline.py
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline synthetic deadlock XML guards
+        run: python tools/verificar_comandas_deadlock_graph_participant_review_v1_offline.py
