@@ -184,13 +184,13 @@ held("order state 4 is refused despite recomputed self-consistent hashes",
 held("item state 6 is refused despite recomputed self-consistent hashes",
  d=>{d.pair.event.order.items[0].IDSTPRCOMVEN="6";refresh(d.pair)},
  "READER_PAIR_NOT_SELF_CONSISTENT");
-held("different store is rejected independently of pair fingerprints",
+held("different store rejected earlier at native-pair gate with rebound fingerprints",
  d=>{
   d.pair.event.order.CDLOJA="02";
   d.pair.event.order_key=["0001","02","0000349281","0000348850"].join("|");
   d.pair.decision.order_key=d.pair.event.order_key;
   refresh(d.pair);
- },"NOT_APPROVED_ITAIM_STORE_SCOPE");
+ },"READER_PAIR_NOT_SELF_CONSISTENT");
 held("archived 14 classification-unknown codes cannot borrow claimed approved status",
  d=>{
   d.pair.event.order.items[0].CDARVPROD="9100500000";
