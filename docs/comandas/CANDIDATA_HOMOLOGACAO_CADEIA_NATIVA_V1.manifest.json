@@ -98,8 +98,8 @@
     },
     {
       "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
-      "git_blob": "161218c40ab002ecd0d8d458ee98dae3371726a1",
-      "bytes": 19768
+      "git_blob": "52d6e66715287f8db027685996d5f79a1ecd9a02",
+      "bytes": 21273
     },
     {
       "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",
@@ -183,6 +183,7 @@
     "crypto",
     "fs",
     "path",
+    "util",
     "vm"
   ],
   "unresolved_relative_requires": [],

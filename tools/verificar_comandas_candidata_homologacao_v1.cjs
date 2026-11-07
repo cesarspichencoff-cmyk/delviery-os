@@ -29,7 +29,7 @@ test("closure is complete and carries no process, network or print capability",(
  assert.deepEqual(now.unresolved_relative_requires,[]);
  assert.deepEqual(now.capability_flags.child_process,[]);
  assert.deepEqual(now.capability_flags.network,[]);
- assert.deepEqual(now.node_builtins,["crypto","fs","path","vm"]);
+ assert.deepEqual(now.node_builtins,["crypto","fs","path","util","vm"]);
  for(const f of now.code){
   const t=fs.readFileSync(path.join(ROOT,f.path),"utf8");
   assert.doesNotMatch(t,/printDirect|\bspawn(?:Sync)?\(|POST \/print|localhost:4013|:3000\/print/,f.path);

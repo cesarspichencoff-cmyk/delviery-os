@@ -23,3 +23,9 @@ O contrato anterior exigia `event_file_sha256` e `decision_file_sha256` no claim
 ### Continuidade
 
 Testes: `tools/verificar_comandas_cadeia_nativa_v1_offline.cjs` dentro da CI original. O resultado só se torna prova de laboratório após conferir **run e SHA exatos**, em Linux e Windows. Não iniciou tarefa/SQL/PowerShell/CMD, serviço, impressão, merge ou deploy no CAIXA_MOOCA.
+
+## Fechamento do contrato byte a byte
+
+O arquivo `tools/comandas_cadeia_nativa_v1_offline.cjs` integra a candidata de homologação pinada. Portanto, **nenhuma alteração de código pode ser aceita com a impressão digital antiga**. A atualização de segurança exige republicar na MESMA PR draft a entrada exata do manifesto `CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json` com o novo blob `52d6e66715287f8db027685996d5f79a1ecd9a02` e seus 21.273 bytes; incluir `node:util` no conjunto de bibliotecas internas e refletir o blob do manifesto no manifesto dependente da Conferência V2. Nenhum módulo instalado ou motor da Academia foi alterado. Esses registros são identificadores de artefatos de laboratório e **não** uma promoção operacional.
+
+Uma CI que falhe por divergência do manifesto é um bloqueio correto, não defeito a ser contornado. A validação deve verificar novamente a clausura total, a mesma identidade byte a byte e a lista de capacidades proibidas, nos dois sistemas. `PRINT=HOLD` e `CUTOVER=HOLD` permanecem.
