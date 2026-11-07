@@ -39,6 +39,7 @@ def _result(reason, **values):
         "event_timestamp_in_target_window_reported": False,
         "event_time_independently_attested": False,
         "graph_integrity_checked": False,
+        "wait_for_cycle_consistency_checked": False,
         "exact_reader_clientapp_match_count": 0,
         "reader_is_victim_in_graph": False,
         "reader_owner_occurrences_in_graph": 0,
@@ -70,6 +71,10 @@ def review_xml_bytes(payload):
     """Return only safe aggregated labels, never any original XML/attributes."""
     if not isinstance(payload, bytes) or not 0 < len(payload) <= MAX_BYTES:
         return _result("INVALID_OR_OVERSIZE_XML")
+    # Only ordinary UTF-8 exports are admitted. UTF-16/32 and binary XEL
+    # are refused to avoid encoded DTD bypasses during untrusted XML parsing.
+    if b"\x00" in payload or payload.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return _result("NON_UTF8_OR_BINARY_XML_REJECTED")
     if re.search(br"<!\s*(?:DOCTYPE|ENTITY)\b", payload, flags=re.I):
         return _result("DTD_OR_ENTITY_DECLARATION_REJECTED")
     try:
@@ -84,8 +89,15 @@ def review_xml_bytes(payload):
         if t is None:
             return _result("EVENT_TIMESTAMP_INVALID_OR_ABSENT")
         event_timestamp_target = abs((t - TARGET_UTC).total_seconds()) <= TARGET_TOLERANCE_S
-        graphs = [el for el in root.iter() if _tag(el) == "deadlock"]
+        # Never accept an unrelated <deadlock> nested elsewhere in an event:
+        # the graph must be in exactly one xml_report/data/value container.
+        data = [e for e in _direct(root, "data")
+                if e.attrib.get("name") == "xml_report"]
+        values = _direct(data[0], "value") if len(data) == 1 else []
+        graphs = _direct(values[0], "deadlock") if len(values) == 1 else []
         if len(graphs) != 1:
+            return _result("XML_REPORT_GRAPH_PATH_INVALID")
+        if sum(_tag(el) == "deadlock" for el in root.iter()) != 1:
             return _result("EXPECTED_ONE_DEADLOCK_GRAPH")
         graph = graphs[0]
     elif _tag(root) == "deadlock":
@@ -108,6 +120,7 @@ def review_xml_bytes(payload):
     if any(v not in known for v in victims):
         return _result("VICTIM_NOT_IN_PROCESS_LIST")
     role_count = {pid: {"owners": 0, "waiters": 0} for pid in identities}
+    wait_for = {pid: set() for pid in identities}
     all_owners, all_waiters = set(), set()
     for resource in rl[0]:
         owners, waiters = _direct(resource, "owner-list"), _direct(resource, "waiter-list")
@@ -124,14 +137,39 @@ def review_xml_bytes(payload):
                 return _result("RESOURCE_REFERS_TO_UNKNOWN_PROCESS")
             role_count[pid][key] += 1
             seen.add(pid)
+        # Graph direction: waiter -> holder of a resource it requests.
+        # Self ownership is not a dependency between distinct processes.
+        for waiter in w:
+            for owner in o:
+                if waiter.attrib["id"] != owner.attrib["id"]:
+                    wait_for[waiter.attrib["id"]].add(owner.attrib["id"])
     if not all_owners or not all_waiters:
         return _result("GRAPH_HAS_NO_LOCK_RELATIONSHIP")
+    # A single blocked SELECT is not a deadlock. Require a directed wait
+    # cycle (at least two distinct processes). This is still only a check
+    # of the supplied XML's internal structure, not authenticated evidence.
+    def has_cycle():
+        for start in known:
+            visited = set()
+            pending = list(wait_for[start])
+            while pending:
+                node = pending.pop()
+                if node == start:
+                    return True
+                if node in visited:
+                    continue
+                visited.add(node)
+                pending.extend(wait_for[node])
+        return False
+    if not has_cycle():
+        return _result("NO_DIRECTED_DEADLOCK_WAIT_CYCLE")
     matched = [p for p in processes if p.attrib.get("clientapp") == READER_CLIENT_APP_EXACT]
     mids = [p.attrib["id"] for p in matched]
     nonmatching = len(processes) - len(matched)
     missing = sum(1 for p in processes if not p.attrib.get("clientapp"))
     details = dict(event_timestamp_in_target_window_reported=event_timestamp_target,
                    graph_integrity_checked=True,
+                   wait_for_cycle_consistency_checked=True,
                    exact_reader_clientapp_match_count=len(mids),
                    reader_is_victim_in_graph=any(pid in victims for pid in mids),
                    reader_owner_occurrences_in_graph=sum(role_count[x]["owners"] for x in mids),

@@ -18,7 +18,20 @@ A documentação oficial Microsoft confirma duas formas de ler XEL em **ambiente
 - Compara horário declaradamente presente no XML com o incidente, normalizado para **2026-11-07 00:12:59 UTC**, tolerância de 10 segundos. Um `.xdl` direto sem timestamp **não** pode ser vinculado a essa ocorrência, embora sua estrutura possa ser examinada em laboratório.
 - Confronta `clientapp` com o **nome literal esperado** `TataReaderContinuousWatchV1` na candidata revisada (não equivale a prova da configuração efetiva de todas as sessões). Relata somente indicadores agregados: quantidade de matches literais, se o processo apontado foi vítima, vezes em listas `owner`/`waiter`, quantidade de outras sessões e ausência de `clientapp`. **Nunca imprime texto SQL, identificador de processo, usuário, máquina, login, nome de cliente, objeto/tabela, recursos ou pedidos.**
 - Mesmo um XML aparentemente coerente com Reader identificado retorna `status=HOLD`, `reader_participation_world_proven=false` e `reader_cause_of_ifood_ingestion_failure_proven=false`. XML fornecido sem prova de origem pode ser fabricado. Um grafo sem match literal do Reader **não** o inocenta de todos os incidentes.
-- `tools/verificar_comandas_deadlock_graph_participant_review_v1_offline.py` valida 25 cenários sintéticos: Reader como proprietário, vítima ou ausente; falsa semelhança de nome, horários, origem incompleta, XML malformado, referências inválidas, DTD/ENTITY, vazamento de campos privados, binário `*.xel` e ausência de efeitos. CI restrita a esta branch de análise, Linux e Windows.
+- `tools/verificar_comandas_deadlock_graph_participant_review_v1_offline.py` valida 30 cenários sintéticos: Reader como proprietário, vítima ou ausente; falsa semelhança de nome, horários, origem incompleta, XML malformado, referências inválidas, DTD/ENTITY, vazamento de campos privados, binário `*.xel` e ausência de efeitos. CI restrita a esta branch de análise, Linux e Windows.
+
+## Revisão adversarial do validador — ciclo de espera obrigatório
+
+**Lacuna encontrada:** a primeira candidata aceitava `owner-list` + `waiter-list` de **um único recurso** como `graph_integrity_checked=true`. Isso é apenas uma espera unilateral: não comprova dependência circular (deadlock). A documentação oficial Microsoft descreve deadlock como **dependência cíclica de pelo menos dois processos/threads** e demonstra um grafo com duas relações opostas. Referências: https://learn.microsoft.com/pt-br/sql/tools/sql-server-profiler/analyze-deadlocks-with-sql-server-profiler?view=sql-server-ver15 e https://learn.microsoft.com/pt-br/sql/relational-databases/sql-server-deadlocks-guide?view=sql-server-ver17.
+
+A versão revisada:
+- constrói uma aresta dirigida `solicitante → proprietário` para cada relação real de espera em recursos; ignora autorrelações;
+- exige que exista um **ciclo dirigido envolvendo pelo menos dois processos distintos**. Apenas uma espera, IDs ligados a terceiros ou bloqueio do próprio processo não satisfazem o critério. Sem ciclo, retorna `NO_DIRECTED_DEADLOCK_WAIT_CYCLE`, `graph_integrity_checked=false` e `HOLD`;
+- só aceita `deadlock` de evento se existir no caminho exato `event[@name=xml_deadlock_report]/data[@name=xml_report]/value/deadlock`; não promove um bloco XML não relacionado;
+- restringe o input a **XML UTF-8**; arquivos UTF-16/32 contendo NUL e o binário XEL não passam pelo parsing, evitando contorno da recusa de declarações DTD/ENTITY codificadas;
+- adiciona `wait_for_cycle_consistency_checked` à saída agregada. Esse sinal é **integridade interna de XML fornecido**, nunca autenticação de origem nem prova de que o Reader causou qualquer falha de ingestão iFood.
+
+A bateria sintética passou de 25 para **30 cenários por sistema**, incluindo um bloqueio unilateral, autorrelações, falso caminho de evento e entidade codificada. A CI deve ser verificada no SHA exato após a alteração.
 
 ## Próximo passo que realmente altera a investigação
 

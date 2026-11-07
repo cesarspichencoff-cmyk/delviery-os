@@ -20,7 +20,10 @@ def graph(process1='TataReaderContinuousWatchV1', process2='TeknisaClient',
       <process id="p1" clientapp="{process1}"><inputbuf>secret SQL CustomerName=PRIVATE_TATA</inputbuf></process>
       <process id="p2" clientapp="{process2}" hostname="PRIVATE_HOST" loginname="PRIVATE_LOGIN" />
       </process-list>
-      <resource-list><keylock objectname="PRIVATE_TABLE"><owner-list><owner id="{resource_owner}" mode="S"/></owner-list><waiter-list><waiter id="{resource_waiter}" mode="X"/></waiter-list></keylock></resource-list>
+      <resource-list>
+      <keylock objectname="PRIVATE_TABLE"><owner-list><owner id="{resource_owner}" mode="S"/></owner-list><waiter-list><waiter id="{resource_waiter}" mode="X"/></waiter-list></keylock>
+      <keylock objectname="PRIVATE_TABLE_SECOND"><owner-list><owner id="{resource_waiter}" mode="S"/></owner-list><waiter-list><waiter id="{resource_owner}" mode="X"/></waiter-list></keylock>
+      </resource-list>
       </deadlock></value></data></event>'''.encode('utf8')
 
 
@@ -74,7 +77,8 @@ def run():
     case('exact app match not operational proof',lambda: assert_fields(
         graph(),'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
         exact_reader_clientapp_match_count=1,
-        reader_owner_occurrences_in_graph=1,reader_is_victim_in_graph=False))
+        reader_owner_occurrences_in_graph=1,reader_is_victim_in_graph=False,
+        reader_waiter_occurrences_in_graph=1,wait_for_cycle_consistency_checked=True))
     case('Reader victim still not proven integration cause',lambda: assert_fields(
         graph(victim='p1',resource_owner='p2',resource_waiter='p1'),
         'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
@@ -123,7 +127,7 @@ def run():
     case('oversize XML refused',lambda:
         expect_reason(b'x'*(MAX_BYTES+1),'INVALID_OR_OVERSIZE_XML'))
     case('invalid bytes refused',lambda:
-        expect_reason(b'\x00\xff\x00','XML_SYNTAX_INVALID'))
+        expect_reason(b'\x00\xff\x00','NON_UTF8_OR_BINARY_XML_REJECTED'))
     case('process list missing refused',lambda:
         expect_reason(graph().replace(b'<process-list>',b'<x-process-list>').replace(
                           b'</process-list>',b'</x-process-list>'),
@@ -134,7 +138,7 @@ def run():
                       'GRAPH_SECTION_MISSING_OR_DUPLICATED'))
     case('two graphs refused',lambda:
         expect_reason(graph().replace(b'</value>',b'<deadlock></deadlock></value>'),
-                      'EXPECTED_ONE_DEADLOCK_GRAPH'))
+                      'XML_REPORT_GRAPH_PATH_INVALID'))
     case('resource without owner refused',lambda:
         expect_reason(graph().replace(b'<owner id="p1" mode="S"/>',b''),
                       'RESOURCE_OWNER_WAITER_ENTRIES_EMPTY'))
@@ -145,9 +149,26 @@ def run():
     case('binary XEL explicitly rejected',extension_test)
     case('empty input cannot claim attestation',lambda:
         expect_reason(b'','INVALID_OR_OVERSIZE_XML'))
-    assert total == 25,total
+    case('single owner/waiter relation is not a deadlock cycle',lambda:
+        expect_reason(graph().replace(
+            b'<keylock objectname="PRIVATE_TABLE_SECOND"><owner-list><owner id="p2" mode="S"/></owner-list><waiter-list><waiter id="p1" mode="X"/></waiter-list></keylock>', b''),
+            'NO_DIRECTED_DEADLOCK_WAIT_CYCLE'))
+    case('two self-contained waits cannot certify deadlock',lambda:
+        expect_reason(graph(resource_owner='p1',resource_waiter='p1'),
+                      'NO_DIRECTED_DEADLOCK_WAIT_CYCLE'))
+    case('XML graph in unrelated data envelope is rejected',lambda:
+        expect_reason(graph().replace(b'<data name="xml_report">',b'<data name="other_data">'),
+                      'XML_REPORT_GRAPH_PATH_INVALID'))
+    case('UTF16 XML with encoded DTD cannot bypass security',lambda:
+        expect_reason(b'\xff\xfe'+(
+            '<!DOCTYPE deadlock [<!ENTITY leak SYSTEM "file:///secret">]><deadlock/>'
+        ).encode('utf-16le'),'NON_UTF8_OR_BINARY_XML_REJECTED'))
+    case('real two-resource loop accepted structurally but never authoritative',lambda:
+        assert_fields(graph(),'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
+                      graph_integrity_checked=True,wait_for_cycle_consistency_checked=True))
+    assert total == 30,total
     print('COMANDAS_DEADLOCK_XML_OFFLINE='+str(total)+'/'+str(total)+
-          ' SYNTHETIC_ONLY NO_XEL_NO_HOST_NO_SQL_NO_PRINT')
+          ' CYCLE_REQUIRED SYNTHETIC_ONLY NO_XEL_NO_HOST_NO_SQL_NO_PRINT')
 
 
 if __name__ == '__main__':
