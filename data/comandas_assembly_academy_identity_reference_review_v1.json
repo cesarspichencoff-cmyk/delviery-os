@@ -1,0 +1,87 @@
+{
+  "schema": "tata.comandas.assembly-academy-identity-reference.v1",
+  "source": {
+    "repository": "cesarspichencoff-cmyk/tata-academia",
+    "ref": "evolucao/v33-product-pass",
+    "path": "data/app-data.json",
+    "git_blob_sha1": "d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22",
+    "retrieved": "2026-11-06",
+    "provenance": "ACADEMY_CATALOG_ONLY_NOT_NATIVE_PRODUCT_ID"
+  },
+  "records": [
+    {
+      "id": "combinado_salmao_1_pessoa",
+      "name": "Combinado Salmão 1 pessoa",
+      "description": "6 sashimis de salmão, 3 nigiris de salmão e 3 rolls.",
+      "family": "combinado",
+      "subfamily": "salmao",
+      "station": "combinados",
+      "menu_status": "PROVEN_PUBLISHED_MENU",
+      "classification_truth_class": "PROVEN_DELIVERYOS_STATION_MATRIX",
+      "review_required": false,
+      "human_assembly_rule_role": null
+    },
+    {
+      "id": "combinado_salmao_atum_1_pessoa",
+      "name": "Combinado Salmão/Atum 1 pessoa",
+      "description": "6 sashimis, 3 nigiris, 3 rolls. obs.: os itens não podem ser alterados ou substituídos",
+      "family": "combinado",
+      "subfamily": "salmao",
+      "station": "combinados",
+      "menu_status": "PROVEN_PUBLISHED_MENU",
+      "classification_truth_class": "PROVEN_DELIVERYOS_STATION_MATRIX",
+      "review_required": false,
+      "human_assembly_rule_role": "SALMAO_ATUM_P1"
+    },
+    {
+      "id": "missoshiro",
+      "name": "Missoshiro",
+      "description": null,
+      "family": "acompanhamento",
+      "subfamily": "sopa",
+      "station": "cozinha_quentes",
+      "menu_status": "PROVEN_PUBLISHED_NAME_ONLY",
+      "classification_truth_class": "UNKNOWN_REVIEW_REQUIRED",
+      "review_required": true,
+      "human_assembly_rule_role": "MISSOSHIRO"
+    }
+  ],
+  "all_records_catalog_only": true,
+  "effect_authority": "NONE",
+  "native_product_ids_in_this_reference": false,
+  "historical_native_label_review": {
+    "source_kind": "ARCHIVED_READER_PRODUCT_IDENTITY_CACHE_READ_ONLY",
+    "original_capture_at": "2026-10-05T15:27:33.4357828-03:00",
+    "passively_rechecked_on": "2026-11-07",
+    "cached_product_rows": 554,
+    "original_cache_not_committed_here": true,
+    "native_ids_and_raw_cache_not_published": true,
+    "names_are_candidates_not_identifiers": true,
+    "current_product_activity_proven": false,
+    "current_reader_order_line_bindings_proven": false,
+    "active_catalog_reconciliation_proven": false,
+    "candidates": [
+      {
+        "academy_entry_id": "missoshiro",
+        "historical_candidate_rows": 2,
+        "normalized_label_group": "MISSOSHIRO",
+        "native_id_pairs_distinct": true,
+        "ambiguity": "TWO_HISTORICAL_NATIVE_IDENTITIES"
+      },
+      {
+        "academy_entry_id": "combinado_salmao_atum_1_pessoa",
+        "historical_candidate_rows": 2,
+        "normalized_label_group": "SALMAO_ATUM_ONE_PERSON_VARIANT_LABELS",
+        "native_id_pairs_distinct": true,
+        "ambiguity": "TWO_HISTORICAL_NATIVE_IDENTITIES"
+      },
+      {
+        "academy_entry_id": "combinado_salmao_1_pessoa",
+        "historical_candidate_rows": 1,
+        "normalized_label_group": "COMBINADO_SALMAO_ONE_PERSON",
+        "native_id_pairs_distinct": true,
+        "ambiguity": "ONE_STALE_LABEL_MATCH_NOT_ACTIVE_PROOF"
+      }
+    ]
+  }
+}
