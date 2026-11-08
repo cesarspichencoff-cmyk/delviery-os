@@ -14,6 +14,11 @@
     <div class="shell-brand">ENTREGAS</div>
     <p id="connLine" class="muted conn" role="status">Conexão…</p>
   </header>
+  <section id="compatibilityHold" class="card" role="alert" hidden>
+    <h2>Aplicativo precisa de atualização</h2>
+    <p>O componente Android System WebView deste aparelho não suporta a versão atual do Entregas. Nenhuma ação foi registrada por esta tela.</p>
+    <p>Informe o responsável para atualizar o componente WebView antes de continuar.</p>
+  </section>
   <main id="main" class="m-main">
     <!-- Fila do aparelho (C5): o que está guardado e o que o servidor recusou. -->
     <p id="queueHoldLine" class="queue-line queue-refused" role="alert" hidden></p>
@@ -74,6 +79,27 @@
     <a href="/console/">Console</a>
     <a href="/ifood-handoff/">Expedição iFood</a>
   </nav>
-  <script type="module" src="/rider-mobile/rider.js"></script>
+  <script>
+    // Guard de compatibilidade antes de carregar ES modules. WebViews antigas
+    // (ex.: Chromium 74) não interpretam optional chaining/nullish coalescing:
+    // antes isto deixava a tela vazia, sem indicar o motivo ao motoboy.
+    (function () {
+      var ok = false;
+      try {
+        ok = new Function("return ({a: 1})?.a === 1 && (null ?? 7) === 7")() === true;
+      } catch (_) { ok = false; }
+      if (!ok) {
+        document.getElementById("compatibilityHold").hidden = false;
+        document.getElementById("main").hidden = true;
+        document.querySelector(".m-nav").hidden = true;
+        document.getElementById("connLine").textContent = "WebView incompatível";
+        return;
+      }
+      var script = document.createElement("script");
+      script.type = "module";
+      script.src = "/rider-mobile/rider.js";
+      document.body.appendChild(script);
+    })();
+  </script>
 </body>
 </html>
