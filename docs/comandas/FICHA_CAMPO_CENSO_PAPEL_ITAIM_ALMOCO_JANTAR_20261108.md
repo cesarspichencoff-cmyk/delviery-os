@@ -11,7 +11,7 @@ A equipe já presente acompanha até **20 pedidos consecutivos** no almoço e at
 **Legenda do quadro (sempre usar o que foi efetivamente visto):**
 
 - **Alias:** somente `A01…A20` para almoço ou `J01…J20` para jantar; a correspondência com a comanda real permanece exclusivamente com a equipe local, nunca no GitHub.
-- **Ligação:** `S` mesmo pedido reconhecido nas vias, `N` vínculo divergente, `?` incerto.
+- **Ligação:** `S` mesmo pedido reconhecido nas vias, `N` **vínculo comprovadamente divergente (anomalia D2)**, `?` vínculo não verificado (amostra incompleta D0). Não usar `N` quando apenas faltou identificação; usar `?`.
 - **Praças necessárias:** `S1` sushi 1, `S2` sushi 2, `Q` enrolados quentes, `C` cozinha, ou `?` se desconhecidas. **Praça necessária é definida pelos itens do pedido, não pela impressora onde saiu papel.**
 - **Papéis observados:** anotar somente praça e quantidade, p.ex. `S1=1 C=1`, distinguindo conferência em `CX` e eventual `GP/Gestor`; escrever `?` quando impressora não acompanhada. `0` é permitido **somente** se a praça foi observada integralmente para aquele pedido.
 - **Itens/qtd e notas:** `S` conferem, `N` divergência, `?` não comparados. Nunca transcrever nomes de produtos, alergias ou texto de observações.
@@ -47,7 +47,7 @@ A equipe já presente acompanha até **20 pedidos consecutivos** no almoço e at
 - Famílias que **de fato apareceram** (não marcar famílias não vistas): `S1` ___ `S2` ___ `Q` ___ `C` ___.
 - Todas as praças necessárias acompanhadas até a saída normal e possível papel tardio? `S/N/?`.
 - Casos com itens e quantidades comparados: _____; com observações comparadas: _____; casos com ligação visual `S`: _____.
-- Total de casos por **tipo de problema**, sem IDs, nomes ou prints: FALTA ___; DUP ___; ROTA ___; CONTEÚDO ___; NOTA ___; TARDIO ___; GP ___; OUTRA ___; não verificados ___.
+- Total de casos por **tipo de problema**, sem IDs, nomes ou prints: FALTA ___; DUP ___; ROTA ___; CONTEÚDO ___; NOTA ___; **VÍNCULO ERRADO** ___; TARDIO ___; GP ___; OUTRA ___; não verificados ___.
 - Combinados de múltiplas praças e eventual exceção de combinado dupla tiveram destino claro? `S/N/?`.
 - Se alguma praça/pedido não foi acompanhado, **nunca completar com zero** ou concluir que o papel não saiu.
 

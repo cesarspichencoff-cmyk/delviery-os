@@ -17,7 +17,7 @@ const FAMILIES=Object.freeze(['SUSHI_1','SUSHI_2','HOT_ROLL','KITCHEN']);
 const ALLOWED_ANOMALIES=Object.freeze([
  'MISSING_PAPER','DUPLICATE','WRONG_STATION','CONTENT_MISMATCH',
  'NOTE_OMITTED','LATE_PAPER','UNEXPECTED_GP_GESTOR','UNREADABLE',
- 'UNKNOWN_ORIGIN','OTHER_WITNESSED_ANOMALY'
+ 'UNKNOWN_ORIGIN','ORDER_IDENTITY_MISMATCH','OTHER_WITNESSED_ANOMALY'
 ]);
 const EFFECTS=Object.freeze({
  sql:false,reader:false,service:false,files:false,network:false,
@@ -99,6 +99,10 @@ function review(input){
    // Explicit NO is a conflict category; a matching tag must not double count.
    if(s.content_compared==='NO')reportedTypes.add('CONTENT_MISMATCH');
    if(s.notes_compared==='NO')reportedTypes.add('NOTE_OMITTED');
+   // On the field sheet, NO means a WITNESSED contradictory order-to-paper
+   // identity. UNKNOWN means no safe correlation could be checked. A known
+   // mismatch must remain an anomaly even when the anomaly tag was omitted.
+   if(s.identity_confirmed==='NO')reportedTypes.add('ORDER_IDENTITY_MISMATCH');
    anomalies+=reportedTypes.size;observed+=s.orders_observed;
    const sampleComplete=s.orders_available>0&&
      s.orders_observed===Math.min(20,s.orders_available)&&

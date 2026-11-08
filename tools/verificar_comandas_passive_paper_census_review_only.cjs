@@ -74,6 +74,19 @@ test('sampling selected successful orders is insufficient',()=>{
 test('unknown paper order identity stays D0',()=>{
  const x=baseline();x.shifts[1].identity_confirmed='UNKNOWN';check(x,D0);
 });
+test('witnessed mismatching paper-to-order identity is D2 even with no anomaly tag',()=>{
+ const x=baseline();x.shifts[0].identity_confirmed='NO';
+ x.shifts[1].stations_covered='PARTIAL';
+ const r=check(x,D2,'AT_LEAST_ONE_REPORTED_ANOMALY_NOT_WORLD_ATTESTED');
+ assert.equal(r.reported_anomalies,1);
+ assert.equal(r.native_paper_sample_proven,false);
+});
+test('explicit identity conflict and matching tag count one anomaly per shift',()=>{
+ const x=baseline();x.shifts[1].identity_confirmed='NO';
+ x.shifts[1].anomalies=['ORDER_IDENTITY_MISMATCH'];
+ const r=check(x,D2);
+ assert.equal(r.reported_anomalies,1);
+});
 test('all stations must be witnessed for observed paper sample',()=>{
  const x=baseline();x.shifts[0].stations_covered='PARTIAL';check(x,D0);
 });
@@ -282,6 +295,6 @@ test('published field grid has all nine columns for every observed-order alias',
   assert.equal(table[i].split('|')[1].trim(),String(i+1).padStart(2,'0'));
  }
 });
-if(passed!==57)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+if(passed!==59)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');
