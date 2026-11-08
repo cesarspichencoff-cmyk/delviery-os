@@ -51,6 +51,9 @@ on:
       - src/platform/run-ledger-shadow-restart-tests.ts
       - src/entregas/ui/rider-mobile/rider.js
       - src/entregas/ui/rider-mobile/queue-health.js
+      - src/product/ui/surfaces/home.js
+      - tests/product/run-m1b-home-visual-truth-tests.ts
+      - tests/reporting/run-deliveryos-home-source-truth-tests.cjs
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
       - src/entregas/ui/rider-mobile/rider-trip-scope.js
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
@@ -124,6 +127,7 @@ jobs:
           node tests/tata-reader/run-file-feed-tests.cjs
           # Rider actor identity + Room queue HOLD; synthetic only, no devices.
           node src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+          node tests/reporting/run-deliveryos-home-source-truth-tests.cjs
           # Gestor: visibility, identity, ambiguity and privacy are fail-closed.
           # These are pure synthetic tests; they never connect to iFood.
           node tests/gestor-shadow/run-visible-detail-probe-tests.cjs
