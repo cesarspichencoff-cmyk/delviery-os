@@ -6,6 +6,8 @@
 
 > **Revisão de 05/11/2026 (PR #135, ainda DRAFT/HOLD):** a classificação abaixo foi alinhada ao classificador offline v2. O documento original foi criado durante a PR #130; sua referência histórica permanece, mas a PR vigente é a #135. Nenhuma observação física foi recebida.
 
+**Ficha curta de campo (20 pedidos por turno, sem PII):** [FICHA_CAMPO_CENSO_PAPEL_ITAIM_ALMOCO_JANTAR_20261108.md](FICHA_CAMPO_CENSO_PAPEL_ITAIM_ALMOCO_JANTAR_20261108.md). O material é para observação passiva já autorizada; nenhuma amostra física foi coletada ou classificada automaticamente.
+
 ## Objetivo
 Decidir por evidência visível se as vias nativas já produzidas para pedidos iFood são suficientes, corretas e recebidas nas **praças efetivamente necessárias**. Se forem, avaliar preservar a produção nativa e desenvolver **apenas a conferência independente**; se não, manter o sistema shadow/HOLD e reabrir a investigação causal. **Um censo nunca autoriza imprimir, desativar, apagar, reprocessar ou modificar a origem.**
 
