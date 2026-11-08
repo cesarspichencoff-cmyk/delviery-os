@@ -6,6 +6,18 @@ on:
       - feat/deliveryos-android-room-recovery-fixed-20261009
       - feat/deliveryos-android-orphan-recovery-20261009
       - feat/deliveryos-android-orphan-recovery-fixed-20261009
+  pull_request:
+    types: [synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-android-room-recovery.yml
+      - android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejection.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejectionRoom.kt
+      - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionTest.kt
+      - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionRoomTest.kt
+      - android/app/src/main/java/br/com/tata/entregas/data/EntregasDatabase.kt
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,6 +30,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -25,7 +39,7 @@ jobs:
       - name: Android JVM Room recovery tests
         working-directory: android
         run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
-      - name: JUnit summary
+      - name: Verify Android Room real-DAO regression and report
         if: always()
         working-directory: android
         run: |
@@ -33,10 +47,23 @@ jobs:
           import glob, xml.etree.ElementTree as ET
           files=glob.glob("app/build/test-results/testDebugUnitTest/*.xml")
           n=fail=err=0
+          suites={}
           for file in files:
             root=ET.parse(file).getroot()
             n+=int(root.attrib.get("tests","0"))
             fail+=int(root.attrib.get("failures","0"))
             err+=int(root.attrib.get("errors","0"))
+            suites[root.attrib.get("name", "")]=int(root.attrib.get("tests","0"))
           print(f"ANDROID_ROOM_JUNIT: suites={len(files)}, tests={n}, failures={fail}, errors={err}")
+          # The build is not proof if Android or the new Room integration never ran.
+          expected={
+            "br.com.tata.entregas.EventBatchHttpRejectionTest": 4,
+            "br.com.tata.entregas.EventBatchHttpRejectionRoomTest": 6,
+            "br.com.tata.entregas.RoomSyncRaceRecoveryTest": 8,
+          }
+          missing={key:minimum for key,minimum in expected.items()
+                   if suites.get(key,0)<minimum}
+          if not files or n==0 or fail or err or missing:
+            raise SystemExit("ANDROID_ROOM_4XX_PROOF_MISSING_OR_FAILED: "+str(missing))
+          print("ANDROID_ROOM_4XX_REAL_DAO_TEST_PASS")
           PY
