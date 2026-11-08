@@ -25,6 +25,7 @@ import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
 import {
   inspectOperationalEvents, queueHoldMessage, verifiedNativeQueueReceipt,
   queuedOperationalActionsMessage, rejectedOperationalActionMessage,
+  canRequestNativeQueueSync, confirmedNativeQueueTransition,
   QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
 } from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
@@ -85,6 +86,11 @@ function activeTrip() {
 const OPEN_STATES = new Set(["pending", "failed", "sending"]);
 let queuePoll = null;
 let queueSeen = "";
+// A primeira leitura nao e transicao. Nunca anunciar uma confirmacao antiga
+// como se fosse resposta ao ultimo toque nesta pagina.
+let lastValidQueue = null;
+let lastConfirmedNotice = "";
+let manualSyncRequested = false;
 // Apenas estado de leitura/gravação LOCAL, sem inventar recibo do servidor.
 let queueHold = null;
 
@@ -171,6 +177,9 @@ function queueOnDevice(key, build) {
     blockQueueActionsImmediately();
     throw new Error(queueHoldMessage(queueHold));
   }
+  // Uma nova intencao reinicia a confirmacao observada da acao anterior.
+  lastConfirmedNotice = "";
+  manualSyncRequested = false;
   scheduleQueuePoll();
   return { result: { ok: true, queued: true } };
 }
@@ -215,7 +224,10 @@ function renderDeviceQueue(serverTrip) {
   const line = $("pendingLine");
   const rejected = $("rejectedLine");
   const hold = $("queueHoldLine");
-  if (!line || !rejected || !hold) return;
+  const requestLine = $("syncRequestLine");
+  const confirmedLine = $("confirmedLine");
+  const syncButton = $("btnSyncNow");
+  if (!line || !rejected || !hold || !requestLine || !confirmedLine || !syncButton) return;
   if (!deviceQueueOn()) {
     hold.hidden = true;
     hold.textContent = "";
@@ -223,11 +235,36 @@ function renderDeviceQueue(serverTrip) {
     line.textContent = "";
     rejected.hidden = true;
     rejected.textContent = "";
+    requestLine.hidden = true;
+    requestLine.textContent = "";
+    confirmedLine.hidden = true;
+    confirmedLine.textContent = "";
+    lastValidQueue = null;
+    lastConfirmedNotice = "";
+    manualSyncRequested = false;
     return;
   }
   const events = deviceEvents();
+  // A ponte "sent" descreve confirmacao POR EVENTO no Room. Mostrar aviso
+  // apenas quando a MESMA identidade passou de aberta a sent nesta pagina.
+  if (!queueHold) {
+    const transition = confirmedNativeQueueTransition(lastValidQueue, events);
+    if (transition) {
+      lastConfirmedNotice = transition;
+      manualSyncRequested = false;
+    }
+    lastValidQueue = events.map((e) => ({
+      event_id: e.event_id, sequence_local: e.sequence_local,
+      kind: e.kind, state: e.state,
+    }));
+  }
   hold.textContent = queueHoldMessage(queueHold);
   hold.hidden = !queueHold;
+  syncButton.hidden = !!queueHold ||
+    !canRequestNativeQueueSync(events, typeof native?.syncNow === "function");
+  syncButton.textContent = "Tentar sincronizar ações";
+  confirmedLine.textContent = queueHold ? "" : lastConfirmedNotice;
+  confirmedLine.hidden = !confirmedLine.textContent;
   const open = events.filter((e) => OPEN_STATES.has(e.state));
   if (open.length) {
     // Um 4xx pode ter chegado ao servidor, mas ainda nao e ACK da acao.
@@ -255,6 +292,18 @@ function renderDeviceQueue(serverTrip) {
     rejected.hidden = true;
     rejected.textContent = "";
   }
+  // Um clique apenas solicita trabalho; NUNCA equivale a ACK do dominio.
+  // Se um evento sumir da janela de leitura sem transicao comprovada, nao
+  // transformar a ausencia em sucesso.
+  if (manualSyncRequested && !queueHold && !open.length && !lastConfirmedNotice) {
+    requestLine.textContent =
+      "Não foi possível comprovar a confirmação no aparelho. Consulte o responsável antes de repetir.";
+  } else {
+    requestLine.textContent = manualSyncRequested && !queueHold
+      ? "Tentativa solicitada ao aparelho. Aguardando confirmação do servidor."
+      : "";
+  }
+  requestLine.hidden = !requestLine.textContent;
   if (open.length) scheduleQueuePoll();
 }
 
@@ -346,7 +395,10 @@ function render() {
     $("syncDetail").textContent = "";
   }
   // Link secundário só em offline real — não em sync pendente online
-  $("btnSyncNow").hidden = !offline;
+  // No Android, a tela nao pode mudar a conexao da fachada DEMO.
+  // O botao nativo e controlado pelo estado legivel da outbox Room abaixo.
+  $("btnSyncNow").hidden = nativeFound.present || !offline;
+  $("btnSyncNow").textContent = "Enviar agora (se a rede voltou)";
 
   // GPS segue o DOMÍNIO (saída aceita no servidor), nunca a intenção guardada.
   const serverTrip = activeTrip();
@@ -590,7 +642,27 @@ $("btnProblem").addEventListener("click", () =>
 );
 
 $("btnSyncNow").addEventListener("click", async () => {
-  // Apenas tenta marcar online — sync é automática no facade
+  if (nativeFound.present) {
+    // O WorkManager decide quando ha rede. A ponte NAO retorna recibo remoto.
+    // Aplicativo antigo, politica ausente e outbox ilegivel nao fazem fallback
+    // silencioso para o endpoint de demonstracao.
+    if (!deviceQueueOn() || queueHold ||
+        typeof native?.syncNow !== "function" ||
+        !canRequestNativeQueueSync(deviceEvents(), true) || queueHold) {
+      renderError($("errorBox"), "Não foi possível solicitar a sincronização nativa. Confira a fila ou peça ajuda.");
+      return;
+    }
+    try {
+      native.syncNow();
+      manualSyncRequested = true;
+      renderDeviceQueue(activeTrip());
+      scheduleQueuePoll();
+    } catch {
+      renderError($("errorBox"), "Não foi possível solicitar a sincronização no aparelho.");
+    }
+    return;
+  }
+  // Somente a demonstracao no navegador altera a conexao da fachada demo.
   try {
     await api("/api/connection", {
       method: "POST",
