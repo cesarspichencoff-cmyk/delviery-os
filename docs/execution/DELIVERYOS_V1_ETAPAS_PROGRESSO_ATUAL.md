@@ -296,3 +296,16 @@ A auditoria completa e os metadados de tamanho/mtime da fonte observada (não ha
 **Testes e prova:** commits de código/teste `61d3588145d8f27dc513aaaa768927eb9e9f5d3b`, `23c77f88c98f46e661a0df10b2f49fb388d70eb3`, `7a032b5059cf5567a0ad07a489d6d00bc41cd410`. A comparação com o HEAD documental anterior `85c28b6` registra apenas **três arquivos modificados**, sem exclusões e sem alteração dos runtimes instalados. A [CI #42436107555](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42436107555) registrou os três primeiros jobs como `completed/success`: contratos estáticos Reader **29/29**, recibo N2/N3 **12/12** e binding **20/20**; avaliação de praça e fixture Edge também concluíram com sucesso. **O job Windows ainda estava `in_progress` na verificação inicial; não declarar 4/4 enquanto não houver resultado final.** Dados exclusivamente fictícios.
 
 **Limites preservados:** `FIELD_N2=HOLD`, `FIELD_N3=HOLD`, `N4=HOLD`, `HOME=HOLD`, `PRINT=HOLD`, `DEPLOY=NO`, `V1_ACCEPTED=0/8`. O teste local de revisão antiga continua condicionado a invocação comprovadamente sem janela, sem shell, sem cópia de conteúdo bruto e a prova independente de completude/identidade da fonte. Nenhuma permissão nova foi inferida.
+
+### Veredito de CI final do bloqueio de observação duplicada
+
+A primeira [CI #42436107555](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42436107555) terminou **FAILURE** no job Windows: o lançador de uso único encerrou com **código 88** porque a nova versão da biblioteca de revisão não correspondia mais ao blob SHA pinado em `NativeReaderOneShotLabLauncher.cs`. Este é o veto esperado de integridade de dependências; os três jobs anteriores tinham passado, mas o ciclo completo **não** foi aprovado. **Não desativamos a conferência de hashes.**
+
+A correção mínima no commit `949bc36ad9c1a3661fa5941a8bb78cd8c2dc9cb0` atualizou **somente o hash Git blob esperado** de `native_reader_producer_contract_review_v1.cjs` para `df99355648bb0e5b506644adaf982dbe936e2818` (blob real versionado). Todas as outras dependências seguem pinadas.
+
+A nova [CI #42436276007](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42436276007), para esse **SHA exato**, terminou **completed/success, 4/4 jobs**:
+- Linux `Static fixture contracts`: `NATIVE_READER_PRODUCER_CONTRACT_REVIEW_PASS 29/29`, `NATIVE_READER_N2N3_SANITIZED_RECEIPT_PASS 12/12`, `NATIVE_READER_EXISTING_EVENT_BINDING_PASS 20/20`; demais contratos do job também passaram.
+- Windows `Windows no-console native fixture`: `SILENT_OBSERVER_WINDOWS_LAB_PASS 45/45`, inventário nativo sem janela `10/10`, integridade do lançador `3/3` com substituições negadas, e `NATIVE_READER_ONE_SHOT_NO_CONSOLE_LAB_PASS 10/10`.
+- Os jobs de vínculo Reader→praça e Edge V3 foram aprovados.
+
+**Prova limitada ao laboratório GitHub.** O watcher instalado, SQL, pedidos reais, tasks, caixa, serviços, impressão e a Home não foram alterados ou exercitados por esses testes. `CODE_READY=YES_FOR_REVIEW`, `CI_PASS=YES_LAB`, `FIELD_N2_N3=HOLD`, `FIELD_INVOCATION=UNPROVEN`, `DEPLOYED=NO`, `V1_ACCEPTED=0/8`. O próximo gate continua sendo o canal de execução local comprovadamente invisível, sob a autorização condicional já registrada, seguido de fonte/completude independente.
