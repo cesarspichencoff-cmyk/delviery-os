@@ -13,6 +13,16 @@ function inspect(w,p){
  check(p.includes('EventBatchHttpRejectionHold.UNATTESTED_BATCH_REJECTION'),'UNATTESTED_HOLD_MISSING');
  check(w.includes('var unreceiptedBatchBlocked = false'),'HOLD_STATE_MISSING');
  check(w.includes('if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()'),'FALSE_WORKER_SUCCESS');
+ const ending=w.split('// Credencial recusada e RETENTAVEL.')[1]?.split('private fun ackJson')[0];
+ check(typeof ending==='string','WORKER_FINAL_BRANCH_MISSING');
+ if(ending){
+   check(ending.includes('if (credencialRecusada) DeviceSession.limparCredencial(db)'),'CREDENTIAL_CLEAR_WITHOUT_EARLY_RETURN_REQUIRED');
+   check(ending.includes('if (gpsDrain.remaining) return Result.retry()'),'GPS_BACKLOG_PRIORITY_REQUIRED');
+   check(ending.includes('if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))'),'RETRIES_MUST_BE_BOUNDED_BEFORE_HOLD');
+   check(!ending.includes('return retryOrYield()'),'EARLY_SUCCESS_COULD_HIDE_UNATTESTED_BATCH');
+   check(ending.indexOf('if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()') <
+         ending.lastIndexOf('return Result.success()'),'BLOCK_MUST_PRECEDE_SUCCESS');
+ }
  const event=w.split('// 2. Eventos operacionais.')[1]?.split('// 3. Pontos de GPS.')[0];
  check(typeof event==='string','OUTBOX_SCOPE_MISSING');
  if(event){
@@ -60,6 +70,18 @@ mutate('do not suppress visible authorization failure',worker,false,
 mutate('do not suppress visible protocol failure',worker,false,
  'unreceiptedBatchBlocked = true\n                    }','unreceiptedBatchBlocked = false\n                    }',
  'REJECTION_BLOCK_NOT_USED');
+mutate('no early success after token renewal',worker,false,
+ 'if (credencialRecusada) DeviceSession.limparCredencial(db)',
+ 'if (credencialRecusada) return retryOrYield()',
+ 'CREDENTIAL_CLEAR_WITHOUT_EARLY_RETURN_REQUIRED');
+mutate('GPS backlog must retain priority',worker,false,
+ 'if (gpsDrain.remaining) return Result.retry()',
+ 'if (gpsDrain.remaining) return Result.success()',
+ 'GPS_BACKLOG_PRIORITY_REQUIRED');
+mutate('retry cap must be checked before reporting success',worker,false,
+ 'if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))',
+ 'if (credencialRecusada || retryable)',
+ 'RETRIES_MUST_BE_BOUNDED_BEFORE_HOLD');
 mutate('pilot 4xx cannot erase platform token',worker,false,
  'unreceiptedBatchBlocked = true\n                    }',
  'unreceiptedBatchBlocked = true\n                        DeviceSession.limparCredencial(db)\n                    }',
