@@ -48,7 +48,8 @@ class SyncWorkerWorkManager4xxTest {
     private fun open(): EntregasDatabase =
         Room.databaseBuilder(context, EntregasDatabase::class.java, dbName).build()
 
-    @Before fun setup() = runBlocking {
+    @Before fun setup() {
+        runBlocking {
         context = RuntimeEnvironment.getApplication()
         dbName = "sync-workmanager-4xx-${System.nanoTime()}.db"
         db = open()
@@ -77,6 +78,7 @@ class SyncWorkerWorkManager4xxTest {
         // Policies are not part of the 4xx receipt proof; no remote call.
         every { anyConstructed<EntregasApi>().policies() } returns
             ApiResult.Retryable("fixture-policy-unavailable", 503)
+        }
     }
 
     @After fun teardown() {
