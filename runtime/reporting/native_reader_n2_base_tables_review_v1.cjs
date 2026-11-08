@@ -68,6 +68,7 @@ function review(input){
    bySku.set(row.CDPRODUTO,(bySku.get(row.CDPRODUTO)||0)+1);
   }
   if(byLine.size!==o.items.length)return hold('BASE_ITEM_ROW_COUNT_MISMATCH');
+  const usedNativeLines=new Set();
   const noteRows=[];
   if(populated(hdr.DSOBSCOMANDA))
    noteRows.push({source_field:'DSOBSCOMANDA',scope_hint:'order',
@@ -75,6 +76,9 @@ function review(input){
   for(let idx=0;idx<o.items.length;idx++){
    const oi=o.items[idx];
    if(!obj(oi)||!populated(oi.NRPRODCOMVEN))return hold('EVENT_ITEM_INVALID');
+   if(usedNativeLines.has(oi.NRPRODCOMVEN))
+    return hold('EVENT_NATIVE_LINE_DUPLICATE_OR_UNMATCHED');
+   usedNativeLines.add(oi.NRPRODCOMVEN);
    const src=byLine.get(oi.NRPRODCOMVEN);
    if(!src||I.some(k=>!eq(src[k],oi[k])))
     return hold('BASE_ITEM_FIELD_OR_LINE_MISMATCH');
@@ -89,6 +93,8 @@ function review(input){
     }
    }
   }
+  if(usedNativeLines.size!==byLine.size)
+   return hold('EVENT_NATIVE_LINE_DUPLICATE_OR_UNMATCHED');
   if(noteRows.length!==o.observation_rows.length)
    return hold('BASE_NOTE_ROW_COUNT_MISMATCH');
   for(let i=0;i<noteRows.length;i++){
