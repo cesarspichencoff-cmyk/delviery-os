@@ -15,10 +15,12 @@ on:
       - android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt
       - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejection.kt
       - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejectionRoom.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/TermAckReceipt.kt
       - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionTest.kt
       - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionRoomTest.kt
       - android/app/src/test/java/br/com/tata/entregas/SyncWorkerWorkManager4xxTest.kt
       - android/app/src/test/java/br/com/tata/entregas/SyncSchedulerWorkManagerTest.kt
+      - android/app/src/test/java/br/com/tata/entregas/TermAckLoopbackHttpRoomTest.kt
       - android/app/src/main/java/br/com/tata/entregas/data/EntregasDatabase.kt
   workflow_dispatch:
 permissions:
@@ -76,6 +78,7 @@ jobs:
             "br.com.tata.entregas.RoomSyncRaceRecoveryTest": 8,
             "br.com.tata.entregas.SyncWorkerWorkManager4xxTest": 7,
             "br.com.tata.entregas.SyncSchedulerWorkManagerTest": 4,
+            "br.com.tata.entregas.TermAckLoopbackHttpRoomTest": 8,
           }
           missing={key:minimum for key,minimum in expected.items()
                    if suites.get(key,0)<minimum}
