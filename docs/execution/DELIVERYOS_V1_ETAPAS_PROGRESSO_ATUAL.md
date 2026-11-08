@@ -309,3 +309,26 @@ A nova [CI #42436276007](https://github.com/cesarspichencoff-cmyk/delviery-os/ac
 - Os jobs de vínculo Reader→praça e Edge V3 foram aprovados.
 
 **Prova limitada ao laboratório GitHub.** O watcher instalado, SQL, pedidos reais, tasks, caixa, serviços, impressão e a Home não foram alterados ou exercitados por esses testes. `CODE_READY=YES_FOR_REVIEW`, `CI_PASS=YES_LAB`, `FIELD_N2_N3=HOLD`, `FIELD_INVOCATION=UNPROVEN`, `DEPLOYED=NO`, `V1_ACCEPTED=0/8`. O próximo gate continua sendo o canal de execução local comprovadamente invisível, sob a autorização condicional já registrada, seguido de fonte/completude independente.
+
+
+## Checkpoint L1/N3 — uma revisão real recalculada no caixa (07/11/2026, noite)
+
+**Mudança explícita de autorização humana:** César liberou o uso de Shell e a leitura do conteúdo de comandas para continuar a investigação. Esta alteração elimina a barreira anterior de `start_process`/leitura de conteúdo **para o ensaio delimitado**, mas **não** autoriza impressão, alteração de pedido/SQL, serviço, agendamento, captura no Gestor, publicação na Home, implantação, merge ou cópia de dados pessoais para GitHub. Não inferir que a permissão técnica de Shell seja garantia de ausência de janela: eventual efeito visual não foi medido.
+
+**Fonte de campo e seleção:** o checkpoint V2 já existente `state/reader-watch-checkpoint-v1.json` tinha `schema=deliveryos.tata-reader-continuous-checkpoint.v1`, `bootstrap_complete=true`, 250 entradas estáveis com `emitted_hash=snapshot_hash`, todas datadas de 07/11 na observação. Foi selecionada **uma** revisão previamente emitida, com horário nativo `2026-11-07T14:10:33.0000000`. O arquivo correspondente já existia e tinha **4.176 bytes**, `mtime=2026-11-07T17:12:38.620Z` (UTC); identidade e SHA textual batiam com a entrada do checkpoint. Identificadores nativos, observações e dados de clientes não foram publicados no relatório.
+
+**Leitura real da revisão selecionada:** `source` nativo `DLV_IFO`, `CDFILIAL=0001`, `CDLOJA=01`, estado `P` **sem atribuir significado operacional**. Quatro linhas de itens, quatro `NRPRODCOMVEN` diferentes, nenhuma duplicação de `CDPRODUTO` nessa amostra, uma observação geral, zero observações ligadas a item. O evento declara `observation_scan_complete=true`; é propriedade autodeclarada, não prova independente de linhas SQL esgotadas.
+
+**Prova nova N3:** um processo Node de uso único foi iniciado por Shell PowerShell no `CAIXA_MOOCA` e leu **somente o mesmo arquivo existente**. Reconstruiu em memória os oito campos do cabeçalho, os cinco campos de cada item e `observation_rows` em ordem, exatamente como o contrato `snapshotHash` versionado, e recalculou SHA-256 canônico com `JSON.stringify`. Resultado sanitizado de saída: `hash_match=true`, `scope_ok=true`, `item_rows=4`, `note_rows=1`, `native_line_unique=true`, `orders_publishable=0`. O primeiro comando Node não executou cálculo por problema de escape de aspas no shell; o método foi substituído por uma invocação que transmite o código por base64 e executa o script em memória, **sem escrever código ou recibo no host**. O segundo processo concluiu normalmente; não declarar a primeira tentativa como sucesso.
+
+**Verificação após a leitura:** o mesmo arquivo permaneceu com **4.176 bytes** e `mtime` idêntico a antes do teste. O heartbeat V2 permaneceu `RUNNING`, com carimbo `2026-11-07T23:03:24.4123889-03:00`, último lote `OK` e `consecutive_failures=0`. Isso apoia ausência de alteração do arquivo e continuidade aparente do Reader, **não** prova isolamento SQL, ausência de janela visível ou inexistência de qualquer efeito em outras superfícies.
+
+**Veredito factual:**
+- `FIELD_ONE_EXISTING_EVENT_READ=YES`.
+- `FIELD_ONE_EVENT_HASH_RECOMPUTED_MATCH=YES` (**N3 parcial, amostra única**).
+- `FIELD_ONE_EVENT_STRUCTURAL_SHAPE=CONSISTENT`.
+- `N2_INDEPENDENT_SQL_ROWSET_COMPLETENESS=UNKNOWN/HOLD`, pois não houve consulta independente nem prova de snapshot transacional.
+- `N3_ALL_EVENTS=UNKNOWN`, `N4_INDEPENDENT_IFOOD_IDENTITY=HOLD`, `N5_HOME_PUBLISH=HOLD`.
+- `CODE_DEPLOYED=NO`, `PRODUCTION_CONFIG_CHANGED=NO`, `V1_ACCEPTED=0/8`.
+
+**Próximo gate de maior valor:** validar por mecanismo independente a completude e a consistência transacional do conjunto de itens/observações **da mesma revisão**, incluindo origem da sessão/credencial, versão do SQL e repetição controlada sem writes. A liberação de Shell e de acesso ao conteúdo não cria autoridade automática para consultar ou alterar o banco de produção; não executar SQL até delimitar expressamente esse efeito. Não multiplicar outras revisões nem publicar o conteúdo na Home como substituto de prova independente.
