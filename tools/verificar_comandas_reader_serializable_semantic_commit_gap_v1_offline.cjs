@@ -113,7 +113,10 @@ test("a later cancel can invalidate previously observed status P without changin
 test("self-reported source exhaustion cannot prove app finalization",()=>{
  const x=privateSnapshotAt(25,true);
  assert.equal(x.status,"PRIVATE_CANONICAL_EVENT_CANDIDATE");
- assert.equal(x.privateEvent.order.observation_scan_complete,true);
+ assert.equal(x.privateEvent.order.observation_scan_complete,false);
+ assert.equal(x.direct_column_rowset_exhausted_reported,true);
+ assert.equal(x.native_child_observation_coverage_proven,false);
+ assert.ok(x.privateEvent.blockers.includes('NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'));
  assert.equal(x.sourceAuthenticated,false);
  neverOperable(x);
 });

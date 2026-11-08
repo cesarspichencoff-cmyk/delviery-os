@@ -74,6 +74,14 @@ A definição `GET_ITEM_ITCOMANDAEST` (~6944) localiza componentes por filial, v
 
 **Próximo gate objetivo:** uma vez identificado o receptor autorizado do pedido iFood, obter evidência de **sinal de fechamento após todos os inserts relevantes** e mapa real das relações das tabelas filhas, antes de planejar leitura com novos JOINs. Até lá `N2_B=UNPROVEN`, `N2_A_LOCK_IMPACT=UNKNOWN`, `STAGE_4=NOT_AUTHORIZED`, `PRINT/CUTOVER=HOLD`.
 
+## Correção de contrato no laboratório — leitura concluída não é observação completa (08/11/2026)
+
+A revisão do montador `tools/comandas_reader_native_note_rowset_v1_review_only.cjs` encontrou uma alegação enganosa: `source_read_exhausted=true` só indica que todas as linhas **projetadas pela consulta candidata** foram entregues, mas o montador emitia `order.observation_scan_complete=true` mesmo sem consultar `OBSITCOMANDAVEN`, `OBSITCOMANDAEST`, `ITCOMANDAEST` ou `OCORRENCIA`.
+
+**Correção fail-closed e offline:** a candidata parcial passa a carregar `order.observation_scan_complete=false`. O campo `direct_column_rowset_exhausted_reported=true` descreve somente o término **alegado** da leitura de colunas diretas; `native_child_item_coverage_proven=false`, `native_child_observation_coverage_proven=false` e `semantic_observation_coverage_proven=false` impedem promoção implícita. O evento inclui o bloqueio `NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ`. Os validadores posteriores que exigirem scan completo passam a bloquear, sem gerar efeitos.
+
+Dois cenários sintéticos extras cobrem notas diretas vazias e três leituras diretas idênticas. O teste existente de intervalo de commits foi ajustado. A CI do SHA exato verifica regressões; **nada demonstra que as relações nativas foram lidas na produção**.
+
 ## Não aplicar correção precipitada
 
 **Não acrescentar JOINs às tabelas faltantes de forma automática.** A tabela de observações é gravada sem campo `CDLOJA` na lista de colunas do INSERT visto; o relacionamento exato e a unicidade/índices precisam de catálogo e prova de identidade. JOINs adicionais sob `SERIALIZABLE` podem multiplicar linhas, exceder a sentinela `TOP(201)`, introduzir scans e **aumentar locks para escritores**. `LOCK_TIMEOUT 100` restringe espera do leitor, não a espera de escritores bloqueados por ele.

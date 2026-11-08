@@ -30,7 +30,12 @@ test('same-row notes produce a canonical event without operational authority',()
  assert.equal(v.realOrderPublishable,false);assert.equal(v.currentSqlSnapshotProven,false);
  assert.equal(v.observationScanIndependentlyProven,false);
  assert.equal(v.itemsCount,2);assert.equal(v.notesCount,3);
- assert.equal(v.privateEvent.order.observation_scan_complete,true);
+ assert.equal(v.privateEvent.order.observation_scan_complete,false);
+ assert.equal(v.direct_column_rowset_exhausted_reported,true);
+ assert.equal(v.native_child_item_coverage_proven,false);
+ assert.equal(v.native_child_observation_coverage_proven,false);
+ assert.equal(v.semantic_observation_coverage_proven,false);
+ assert.ok(v.privateEvent.blockers.includes('NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'));
  assert.equal(v.privateEvent.ready_for_downstream_shadow,false);
  assert.ok(v.privateEvent.blockers.includes('SOURCE_ROWSET_CALLER_NOT_AUTHENTICATED'));
  assert.equal(v.privateEvent.snapshot_hash,snapshotHash(v.privateEvent.order));
@@ -85,6 +90,25 @@ test('no order note and no item notes still hold without independent source proo
  const v=run(x=>x.rows.forEach(r=>{r.DSOBSCOMANDA=null;r.DSOBSPEDDIGCMD=null;r.TXPRODCOMVEN=null;}));
  assert.equal(v.notesCount,0);assert.equal(v.realOrderPublishable,false);
  assert.equal(v.sourceAuthenticated,false);
+});
+test('missing inline notes does not prove native child observations absent',()=>{
+ const v=run(x=>x.rows.forEach(r=>{r.DSOBSCOMANDA=null;
+  r.DSOBSDESCIT=null;r.DSOBSPEDDIGCMD=null;r.TXPRODCOMVEN=null;}));
+ assert.equal(v.notesCount,0);
+ assert.equal(v.privateEvent.order.observation_scan_complete,false);
+ assert.equal(v.semantic_observation_coverage_proven,false);
+ assert.equal(v.privateEvent.ready_for_downstream_shadow,false);
+});
+test('three stable direct-column polls cannot certify later child rows',()=>{
+ const a=run(),b=run(),c=run();
+ assert.equal(a.privateEvent.snapshot_hash,b.privateEvent.snapshot_hash);
+ assert.equal(b.privateEvent.snapshot_hash,c.privateEvent.snapshot_hash);
+ for(const v of [a,b,c]){
+  assert.equal(v.direct_column_rowset_exhausted_reported,true);
+  assert.equal(v.privateEvent.order.observation_scan_complete,false);
+  assert.equal(v.native_child_observation_coverage_proven,false);
+  assert.equal(v.realOrderPublishable,false);
+ }
 });
 test('malformed input blocked',()=>{
  const v=build({rows:input().rows,source_read_exhausted:true,schema:'OTHER'});

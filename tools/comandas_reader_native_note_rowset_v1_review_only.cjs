@@ -22,6 +22,10 @@ const denial=reason=>Object.freeze({
  inputIntegrityChecked:false,sourceAuthenticated:false,
  currentSqlSnapshotProven:false,observationScanIndependentlyProven:false,
  readerVersionProven:false,independentIfoodIdentityProven:false,
+ direct_column_rowset_exhausted_reported:false,
+ native_child_item_coverage_proven:false,
+ native_child_observation_coverage_proven:false,
+ semantic_observation_coverage_proven:false,
  realOrderPublishable:false,printAuthorized:false,
  privateEvent:null,notesCount:0,itemsCount:0,
  effects:Object.freeze({sql:false,write:false,network:false,service:false,
@@ -63,7 +67,11 @@ function build(input){
   const order={};
   for(const k of HEAD)order[k]=first[k];
   order.items=sorted.map(r=>{const v={};for(const k of ITEM)v[k]=r[k];return v;});
-  order.observation_scan_complete=true;
+  // This SELECT only projects inline/header notes. Even when all result
+  // rows are consumed, the native schema can hold separate combo components
+  // and observations in ITCOMANDAEST, OBSITCOMANDAVEN, OBSITCOMANDAEST.
+  // Text descriptions may require OCORRENCIA. Do not certify these joins.
+  order.observation_scan_complete=false;
   order.observation_rows=[];
   for(let i=0;i<sorted.length;i++){
    const r=sorted[i];
@@ -87,12 +95,14 @@ function build(input){
     blockers:['SERVICE_NOT_ATTESTED']},
    ready_for_downstream_shadow:false,
    blockers:['SOURCE_ROWSET_CALLER_NOT_AUTHENTICATED',
-    'READ_COMPLETENESS_NOT_INDEPENDENTLY_ATTESTED'],
+    'READ_COMPLETENESS_NOT_INDEPENDENTLY_ATTESTED',
+    'NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'],
    effects:{sql:false,printer:false,spooler:false,sequence:false,network:false}
   };
   return Object.freeze({...denial('REVIEW_ONLY_SOURCE_AUTHORITY_UNPROVEN'),
    status:'PRIVATE_CANONICAL_EVENT_CANDIDATE',
    inputIntegrityChecked:true,
+   direct_column_rowset_exhausted_reported:true,
    itemsCount:order.items.length,notesCount:order.observation_rows.length,
    privateEvent:event});
  }catch{return denial('INVALID_OR_CONFLICTING_ROWSET')}
