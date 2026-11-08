@@ -269,9 +269,10 @@ test('published field grid has all nine columns for every observed-order alias',
  const fs=require('node:fs'),path=require('node:path');
  const markdown=fs.readFileSync(path.join(__dirname,'..','docs','comandas',
   'FICHA_CAMPO_CENSO_PAPEL_ITAIM_ALMOCO_JANTAR_20261108.md'),'utf8');
- const lines=markdown.split(/\\r?\\n/);
+ const lines=markdown.split(String.fromCharCode(10));
  const header=lines.find(x=>x.startsWith('| Nº |'));
- const table=lines.filter(x=>/^\\| \\d{2} \\|/.test(x));
+ const table=lines.filter(x=>x.startsWith('| ')&&
+   /^[0-9]{2}$/.test((x.split('|')[1]||'').trim()));
  assert.ok(header,'missing field header');
  assert.equal(header.split('|').length-2,9);
  assert.equal(header.split('|').at(-2).trim(),'Cobertura');
