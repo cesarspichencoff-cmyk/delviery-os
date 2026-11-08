@@ -12,7 +12,6 @@ import br.com.tata.entregas.sync.ApiResult
 import br.com.tata.entregas.sync.DeviceSession
 import br.com.tata.entregas.sync.EntregasApi
 import br.com.tata.entregas.sync.SyncWorker
-import io.mockk.anyConstructed
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkConstructor
