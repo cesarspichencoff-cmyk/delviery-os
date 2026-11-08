@@ -1,0 +1,131 @@
+package br.com.tata.entregas
+
+import android.webkit.WebView
+import android.view.ViewGroup
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.testing.WorkManagerTestInitHelper
+import br.com.tata.entregas.data.EntregasDatabase
+import br.com.tata.entregas.sync.SyncWorker
+import br.com.tata.entregas.ui.MainActivity
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+
+/**
+ * Real Android WebView + production JavascriptInterface + SQLite Room +
+ * WorkManager TestDriver. All identities/data are lab-only and no worker
+ * is executed: no server, GPS, term, real delivery or TLS request is used.
+ *
+ * This is not a Xiaomi, a real Rider UI screenshot, or a remote event receipt.
+ */
+@RunWith(AndroidJUnit4::class)
+class RiderWebViewBridgeInstrumentedTest {
+
+    private val labHtml = """
+        <!doctype html>
+        <html><head><meta charset="utf-8"/></head>
+        <body>
+          <button id="record-and-sync" type="button">Tentar sincronizar ações</button>
+          <span id="result">Ainda não solicitado</span>
+          <script>
+            document.getElementById('record-and-sync').onclick = function () {
+              const event = {
+                event_id: 'LAB_WEBVIEW_BRIDGE_EVENT_001',
+                idempotency_key: 'LAB_WEBVIEW_BRIDGE_EVENT_001',
+                command: {
+                  type: 'ConfirmTripDeparture',
+                  command_id: 'LAB_WEBVIEW_BRIDGE_COMMAND_001',
+                  trip_id: 'LAB_WEBVIEW_BRIDGE_TRIP',
+                  occurred_at: '2026-11-08T20:00:00Z'
+                }
+              };
+              const response = JSON.parse(window.EntregasNative.recordOperationalEvent(
+                JSON.stringify(event)
+              ));
+              if (response.ok === true) {
+                window.EntregasNative.syncNow();
+                document.getElementById('result').textContent = 'RECORDED_NOT_ACKED';
+              } else {
+                document.getElementById('result').textContent = 'REFUSED';
+              }
+            };
+          </script>
+        </body></html>
+    """.trimIndent()
+
+    private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String): String {
+        val result = AtomicReference<String>()
+        val completed = CountDownLatch(1)
+        scenario.onActivity { activity ->
+            val container = activity.findViewById<ViewGroup>(android.R.id.content)
+            val web = container.getChildAt(0) as WebView
+            web.evaluateJavascript(script) {
+                result.set(it)
+                completed.countDown()
+            }
+        }
+        assertTrue("WebView JS callback not received", completed.await(15, TimeUnit.SECONDS))
+        return result.get() ?: "null"
+    }
+
+    @Test fun actualWebViewRecordsRoomEventAndRequestsOneNativeWorkWithoutRemoteAck() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        // The test WorkManager does not execute workers by itself.
+        // This prevents external HTTP / background GPS and allows queue inspection.
+        WorkManagerTestInitHelper.initializeTestWorkManager(context)
+
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val container = activity.findViewById<ViewGroup>(android.R.id.content)
+                val web = container.getChildAt(0) as WebView
+                // Inline synthetic HTML on a test-only origin. No real server.
+                web.loadDataWithBaseURL(
+                    "https://10.0.2.2:5193/rider-mobile/",
+                    labHtml, "text/html", "UTF-8", null,
+                )
+            }
+
+            var ready = false
+            repeat(40) {
+                val js = evaluate(scenario,
+                    "Boolean(document.getElementById('record-and-sync') && window.EntregasNative && window.EntregasNative.recordOperationalEvent)")
+                if (js == "true") {
+                    ready = true
+                    return@repeat
+                }
+                Thread.sleep(250)
+            }
+            assertTrue("Real WebView and native bridge were not ready", ready)
+
+            // DOM click runs the same JS -> EntregasJsBridge -> MainActivity
+            // boundary as the real app; not a synthetic native method stub.
+            assertEquals("\"RECORDED_NOT_ACKED\"", evaluate(scenario,
+                "document.getElementById('record-and-sync').click();document.getElementById('result').textContent"))
+
+            val db = EntregasDatabase.get(context)
+            val events = runBlocking { db.outbox().recent(50) }
+            val event = events.single { it.eventId == "LAB_WEBVIEW_BRIDGE_EVENT_001" }
+            assertEquals("pending", event.syncState)
+            assertEquals("LAB_WEBVIEW_BRIDGE_EVENT_001", event.idempotencyKey)
+            assertTrue(event.sequenceLocal > 0)
+            assertFalse("A JS click cannot attest server delivery", event.syncState == "sent")
+
+            val work = WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWork(SyncWorker.UNIQUE_NOW)
+                .get(15, TimeUnit.SECONDS)
+            assertEquals("Duplicate immediate work scheduled", 1, work.size)
+            assertEquals(WorkInfo.State.ENQUEUED, work.single().state)
+        }
+    }
+}
