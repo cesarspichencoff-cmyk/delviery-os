@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.view.ViewGroup
 import android.webkit.WebResourceRequest
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -157,10 +159,27 @@ class RiderRealScreenInstrumentedTest {
         assertEquals("pending", runBlocking { db.outbox().recent(50) }.first { it.eventId == eventId }.syncState)
 
         val testSite = InMemorySite(instrumentation.context)
+        val consoleKinds = mutableSetOf<String>()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val web = webOf(activity)
                 web.webViewClient = testSite
+                web.webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                        if (message.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                            val kind = when {
+                                message.message().contains("Unexpected token") -> "UNEXPECTED_TOKEN"
+                                message.message().contains("SyntaxError") -> "SYNTAX_ERROR"
+                                message.message().contains("module", true) -> "MODULE_ERROR"
+                                message.message().contains("CORS") -> "CORS_ERROR"
+                                message.message().contains("Failed to load") -> "LOAD_ERROR"
+                                else -> "OTHER_CONSOLE_ERROR"
+                            }
+                            synchronized(consoleKinds) { consoleKinds.add(kind) }
+                        }
+                        return true
+                    }
+                }
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
             val shown = until(scenario, """!!document.getElementById('pendingLine') &&
@@ -170,21 +189,24 @@ class RiderRealScreenInstrumentedTest {
             if (!shown) {
                 // Sanitized lab-only diagnostics: booleans, static paths and
                 // DOM readiness, never contents of an order or a native error.
+                // Use ES5 only in this PROBE; an old WebView may not support
+                // optional chaining and must not break the diagnostic itself.
                 val probe = eval(scenario, """
                     JSON.stringify({
                       dom:document.readyState,
                       page:!!document.getElementById('pendingLine'),
-                      queued:!document.getElementById('pendingLine')?.hidden,
-                      sync:!document.getElementById('btnSyncNow')?.hidden,
-                      native:typeof window.EntregasNative?.operationalEvents==='function',
-                      queue:document.getElementById('pendingLine')?.textContent?.includes('guardada'),
-                      riderModule:!!document.querySelector('script[src="/rider-mobile/rider.js"]'),
-                      sourceError:document.body?.textContent?.includes('LAB_ASSET_NOT_FOUND')
+                      queued:!!document.getElementById('pendingLine') && !document.getElementById('pendingLine').hidden,
+                      sync:!!document.getElementById('btnSyncNow') && !document.getElementById('btnSyncNow').hidden,
+                      native:!!window.EntregasNative && typeof window.EntregasNative.operationalEvents==='function',
+                      queue:!!document.getElementById('pendingLine') && document.getElementById('pendingLine').textContent.indexOf('guardada')>=0,
+                      module:!!document.querySelector('script[src="/rider-mobile/rider.js"]')
                     })
                 """.trimIndent())
                 val paths = synchronized(testSite.paths) { testSite.paths.toList().sorted() }
                 val missing = synchronized(testSite.missingAssets) { testSite.missingAssets.toList().sorted() }
-                throw AssertionError("REAL_RIDER_PENDING_NOT_SHOWN probe=$probe assets=$paths missing=$missing")
+                val errors = synchronized(consoleKinds) { consoleKinds.toList().sorted() }
+                val webview = WebView.getCurrentWebViewPackage()?.versionName ?: "unknown"
+                throw AssertionError("REAL_RIDER_PENDING_NOT_SHOWN probe=$probe webview=$webview console=$errors assets=$paths missing=$missing")
             }
             assertTrue("Native sync button is not displayed by actual rider.js",
                 until(scenario, """!document.getElementById('btnSyncNow').hidden"""))
