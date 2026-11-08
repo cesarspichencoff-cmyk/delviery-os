@@ -49,3 +49,22 @@ internal fun confirmsTermAckOnPilot(ack: TermAckEntity, response: JSONObject): B
 
     return true
 }
+
+
+/**
+ * The same receipt-to-Room transition used by SyncWorker and local HTTP QA.
+ *
+ * Never promote a term acknowledgement from HTTP status alone. In particular,
+ * 200 without a matching receipt, 401, 422, and transport ambiguity preserve
+ * the original append-only local acknowledgement for later reconciliation.
+ */
+internal suspend fun persistTermAckOnVerifiedReceipt(
+    db: br.com.tata.entregas.data.EntregasDatabase,
+    ack: TermAckEntity,
+    response: ApiResult<JSONObject>,
+): Boolean {
+    val body = (response as? ApiResult.Ok)?.value ?: return false
+    if (!confirmsTermAckOnPilot(ack, body)) return false
+    db.termAcks().markSent(listOf(ack.acknowledgementId))
+    return true
+}
