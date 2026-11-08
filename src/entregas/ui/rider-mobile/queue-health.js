@@ -32,6 +32,35 @@ export function queueHoldMessage(code) {
   }
 }
 
+/** Mensagem operacional sem supor se a requisicao chegou ao servidor.
+ * "failed" inclui rejeicoes HTTP observadas e falhas sem resposta. O Room
+ * mostra a tentativa LOCAL, nao um ACK de processamento do dominio.
+ * Somente contagens e estados entram no texto, nunca mensagens da API.
+ */
+export function queuedOperationalActionsMessage(raw) {
+  const read = inspectOperationalEvents(raw);
+  if (!read.ok) return "";
+  const open = read.events.filter((e) =>
+    e.state === "pending" || e.state === "failed" || e.state === "sending");
+  if (!open.length) return "";
+  const prefix = open.length === 1
+    ? "1 ação guardada neste aparelho"
+    : `${open.length} ações guardadas neste aparelho`;
+  if (open.some((e) => e.state === "failed"))
+    return prefix + ". A última tentativa não foi confirmada pelo servidor; pode ter chegado até ele. Não repita a confirmação sem verificar.";
+  if (open.some((e) => e.state === "sending"))
+    return prefix + ". Envio em andamento; a confirmação do servidor ainda não chegou ao aparelho.";
+  return prefix + ". Aguardando sincronização; ainda sem confirmação do servidor.";
+}
+
+/** Nunca ecoar last_error ou resposta HTTP arbitraria: podem conter dados
+ * de cliente, infraestrutura ou credenciais. A recusa continua visivel.
+ */
+export function rejectedOperationalActionMessage(event) {
+  if (!event || event.state !== "rejected") return "";
+  return "Ação recusada pelo servidor. Peça ao responsável para verificar o motivo antes de repetir.";
+}
+
 /** A ponte nativa só confirma escrita se ecoar a identidade exata.
  * Não aceitar ok solto, eco divergente ou colisão de event_id. */
 export function verifiedNativeQueueReceipt(reply, requestedEventId) {
