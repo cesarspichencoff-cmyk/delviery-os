@@ -46,6 +46,8 @@ class RiderRealScreenInstrumentedTest {
     private class InMemorySite(private val context: Context) : WebViewClient() {
         var requestsOutsideLab = 0
             private set
+        var blockedGoogleFontStylesheet = 0
+            private set
         var attemptedDemoMutation = 0
             private set
         val paths = mutableSetOf<String>()
@@ -63,6 +65,13 @@ class RiderRealScreenInstrumentedTest {
             view: WebView?, request: WebResourceRequest?,
         ): WebResourceResponse {
             val url = request?.url
+            // Production tokens.css imports public Google Fonts. Keep the
+            // original stylesheet bytes, but prevent ALL external network
+            // requests during the test. System font fallback is sufficient.
+            if (url?.scheme == "https" && url.host == "fonts.googleapis.com") {
+                blockedGoogleFontStylesheet++
+                return response("", "text/css")
+            }
             if (url == null || url.scheme != "https" || url.host != "10.0.2.2" ||
                 url.port != 5193) {
                 requestsOutsideLab++
