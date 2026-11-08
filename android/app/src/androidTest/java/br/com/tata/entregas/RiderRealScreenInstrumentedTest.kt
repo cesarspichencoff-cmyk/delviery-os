@@ -190,7 +190,8 @@ class RiderRealScreenInstrumentedTest {
                         document.getElementById('main').hidden &&
                         window.getComputedStyle(document.getElementById('main')).display==='none' &&
                         window.getComputedStyle(document.querySelector('.m-nav')).display==='none' &&
-                        document.getElementById('connLine').textContent.includes('incompatível')"""))
+                        document.getElementById('compatibilityTitle').textContent.includes('Não foi possível iniciar') &&
+                        document.getElementById('connLine').textContent.includes('indisponível')"""))
                 assertEquals("false", eval(scenario,
                     """!!document.querySelector('script[src="/rider-mobile/rider.js"]')"""))
                 assertEquals("false", eval(scenario,
