@@ -86,10 +86,30 @@ test('complete item+order notes self-consistent still HOLD',()=>{
  assert.equal(x.canonicalContractChecked,true);assert.equal(x.noteRows,3);
  assert.equal(x.state,'HOLD');assert.equal(x.actualNativeSourceAuthenticated,false);
 });
-test('same product code in distinct native lines still separate notes',()=>{
+test('duplicate product code with item note cannot independently prove native line join',()=>{
  const x=run(p=>{p.order.items[1].CDPRODUTO='PROD01';p.order.observation_rows=[
   {source_field:'DSOBSDESCIT',value:'SEM MOLHO',scope_hint:'item',item_index:1,CDPRODUTO:'PROD01',join_proven:true}
- ];},true);assert.equal(x.canonicalContractChecked,true);
+ ];},true);
+ assert.equal(x.reason,'ITEM_OBSERVATION_NATIVE_LINE_AMBIGUOUS');
+ assert.equal(x.canonicalContractChecked,false);
+ assert.equal(x.actualNativeSourceAuthenticated,false);
+ assert.equal(x.ordersPublishable,0);
+});
+test('duplicated product code with order-level note is not falsely treated as item join',()=>{
+ const x=run(p=>{p.order.items[1].CDPRODUTO='PROD01';p.order.observation_rows=[
+  {source_field:'DSOBSCOMANDA',scope_hint:'order',value:'FICT_ORDER_ONLY',join_proven:true}
+ ];},true);
+ assert.equal(x.canonicalContractChecked,true);
+ assert.equal(x.actualNativeSourceAuthenticated,false);
+ assert.equal(x.ordersPublishable,0);
+});
+test('different product line identities do not override a duplicated item product code',()=>{
+ const x=run(p=>{p.order.items[1].CDPRODUTO='PROD01';p.order.items[1].CDARVPROD='DIFFERENT_TREE';p.order.observation_rows=[
+  {source_field:'TXPRODCOMVEN',scope_hint:'item',item_index:0,CDPRODUTO:'PROD01',value:'FICT_NOTE',join_proven:true}
+ ];},true);
+ assert.equal(x.reason,'ITEM_OBSERVATION_NATIVE_LINE_AMBIGUOUS');
+ assert.equal(x.canonicalContractChecked,false);
+ assert.equal(x.ordersPublishable,0);
 });
 test('empty items are blocked',()=>state(p=>{p.order.items=[];},'NATIVE_ITEM_STRUCTURE_INCOMPLETE'));
 test('malformed schema blocked',()=>state(p=>{p.schema='UNKNOWN';},'INVALID_SOURCE_EVENT_ENVELOPE'));
