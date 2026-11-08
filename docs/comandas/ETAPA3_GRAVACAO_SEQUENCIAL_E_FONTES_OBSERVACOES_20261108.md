@@ -37,6 +37,20 @@ A candidata `tools/comandas_reader_one_order_serializable_REVIEW_ONLY.sql` lê *
 
 **Conclusão estrita:** a consulta não comprova cobertura de observações gravadas em tabela separada, componentes promocionais nem descrições associadas, quando esses caminhos se aplicarem. É uma lacuna estrutural **do desenho revisado**, não prova de perdas efetivas em pedidos reais.
 
+## Evidência C — caminho adicional do Pedido nativo e observações de componentes
+
+Leitura passiva complementar em 08/11/2026 dos arquivos **instalados** (código local, não prova de execução para iFood):
+
+- `C:\TEKNISA\odhenPOS\backend_74000\src\Service\Pedido.php`, método `fazPedido` (~linha 51), com 1.440 linhas de arquivo. O trecho ~537–545 distingue combinações em que o produto pai vai a `ITCOMANDAVEN` e os filhos a `ITCOMANDAEST`, de outras em que filhos entram em `ITCOMANDAVEN`.
+- Esse caminho efetua `SQL_INS_ITCOMANDAVEN` (~935), `SQL_INS_OBSITCOMANDAVEN` (~948), `SQL_INS_ITCOMANDAEST` (~990/1047) e **`SQL_INS_OBSITCOMANDAEST`** (~1003/1061), de acordo com o tipo do item. Portanto, observações de componentes de combinações também podem ficar em tabela distinta.
+- Uma seção de impressão dos pedidos aparece após essas escritas (~1077–1095), com opções de tecnologia de impressão. Essa ordem no fonte **não é recibo de papel, nem marca de conclusão de revisão ou garantia de chamada única**.
+- Foram inspecionados passivamente os métodos de `src/Service/Delivery.php`, `src/Service/Order.php`, `src/Controller/Delivery.php` e `src/Controller/Order.php`. Os nomes/rotinas encontrados cobrem leitura, expedição, cancelamento, alteração de pedidos e impressão; nenhum deles atestou **o receptor original** do pedido iFood. Outros módulos ou serviços externos ainda podem existir.
+- Uma leitura completa do arquivo `vendor/odhen/api/src/Service/Venda.php` encontrou `beginTransaction/commit/rollBack` para rotinas de venda e liberação de comanda, **mas nenhuma chamada direta literal a `Comanda::comanda()`**; assim não vincular os commits observados ao `Comanda::comanda` da outra fonte sem rastrear o chamador efetivo. Isso não exclui chamada indireta por outros módulos.
+
+**Nova lacuna N2-B:** além de `OBSITCOMANDAVEN`, `ITCOMANDAEST` e `OCORRENCIA` (identificadas no caminho vendor), a fonte de Pedido nativo utiliza `OBSITCOMANDAEST`. A candidata SQL de quatro tabelas **não acessa nenhuma dessas quatro**. Não presumir que ambas as fontes sejam necessariamente acionadas pelo iFood: a lacuna é a **ausência de demonstração de cobertura para os caminhos inspecionados**, não prova de que pedidos atuais estejam incompletos.
+
+**Decisão:** ampliar mapa de semântica/associação e identificar chamador/commit por evidência independente, não fazer JOIN automático sob `SERIALIZABLE` nem inferir que o gatilho de impressão foi alcançado. Dados transacionais, itens, componentes, observações e papel físico permanecem gates diferentes. `STAGE_4=NOT_AUTHORIZED`, `PRINT=HOLD`, `CUTOVER=HOLD`.
+
 ## Não aplicar correção precipitada
 
 **Não acrescentar JOINs às tabelas faltantes de forma automática.** A tabela de observações é gravada sem campo `CDLOJA` na lista de colunas do INSERT visto; o relacionamento exato e a unicidade/índices precisam de catálogo e prova de identidade. JOINs adicionais sob `SERIALIZABLE` podem multiplicar linhas, exceder a sentinela `TOP(201)`, introduzir scans e **aumentar locks para escritores**. `LOCK_TIMEOUT 100` restringe espera do leitor, não a espera de escritores bloqueados por ele.
