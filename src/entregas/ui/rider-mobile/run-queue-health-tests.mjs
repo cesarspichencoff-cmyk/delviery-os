@@ -85,7 +85,7 @@ test("failed after HTTP 403, 409 and 422 never claims request did not reach serv
 test("mixed pending and failed uses failure warning and exact local count", () => {
   const s=queuedOperationalActionsMessage([ev,{...ev,event_id:"evt-2",sequence_local:2,state:"failed"}]);
   assert.match(s,/2 ações guardadas/);
-  assert.match(s,/não foi confirmada pelo servidor/);
+  assert.match(s,/Há tentativa sem confirmação do servidor/);
   assert.doesNotMatch(s,/aguardando envio/);
 });
 test("terminal sent and rejected are not miscounted as pending", () => {
