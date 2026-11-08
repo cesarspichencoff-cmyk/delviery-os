@@ -74,7 +74,7 @@ jobs:
             "br.com.tata.entregas.EventBatchHttpRejectionTest": 4,
             "br.com.tata.entregas.EventBatchHttpRejectionRoomTest": 6,
             "br.com.tata.entregas.RoomSyncRaceRecoveryTest": 8,
-            "br.com.tata.entregas.SyncWorkerWorkManager4xxTest": 4,
+            "br.com.tata.entregas.SyncWorkerWorkManager4xxTest": 7,
             "br.com.tata.entregas.SyncSchedulerWorkManagerTest": 4,
           }
           missing={key:minimum for key,minimum in expected.items()
