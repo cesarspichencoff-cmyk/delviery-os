@@ -66,12 +66,17 @@ jobs:
                   tree = ET.parse(path).getroot()
               except ET.ParseError:
                   continue
-              label = tree.attrib.get("name", "") + " " + str(path)
-              for name in targets:
-                  if name in label:
-                      counts[name] += int(tree.attrib.get("tests", "0"))
-                      fail += int(tree.attrib.get("failures", "0"))
-                      err += int(tree.attrib.get("errors", "0"))
+              # A single XML suite can contain cases from MULTIPLE classes.
+              # Never attribute suite totals by filename or suite title.
+              for case in tree.findall(".//testcase"):
+                  class_name = case.attrib.get("classname", "")
+                  for target in targets:
+                      if class_name.endswith("." + target) or class_name == target:
+                          counts[target] += 1
+                  if case.find("failure") is not None:
+                      fail += 1
+                  if case.find("error") is not None:
+                      err += 1
           print(f"ANDROID_WEBVIEW_INSTRUMENTED: counts={counts} failures={fail} errors={err}")
           if fail or err or any(counts[name] < expected for name, expected in targets.items()):
               raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
