@@ -341,6 +341,56 @@ jobs:
           Remove-Item -LiteralPath $lab -Recurse -Force
           Write-Host 'NATIVE_READER_ONE_SHOT_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII'
 
+  home-degraded-browser-fixture:
+    name: L4 Home degraded-state Chromium (synthetic only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install declared QA dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile existing product model and read-only preview
+        run: npm run build:platform
+      - name: Install isolated Chromium for visible Home regression
+        run: npx playwright install --with-deps chromium
+      - name: Exercise all Home states in six viewport sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PRODUCT_UI_PORT=5368
+          export M1B_URL=http://127.0.0.1:5368
+          export TMPDIR="$RUNNER_TEMP"
+          if [ -n "${DELIVERYOS_DATABASE_URL:-}" ] || [ -n "${TATA_READER_ROOT:-}" ]; then
+            echo "HOME_L4_BROWSER_LAB_REFUSES_PRODUCTIVE_SOURCE"
+            exit 1
+          fi
+          node dist/tools/product_system_server.js > "$RUNNER_TEMP/deliveryos-home-preview.log" 2>&1 &
+          child=$!
+          trap 'kill "$child" 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+            if curl --fail --silent --max-time 1 "$M1B_URL/api/health" >/dev/null; then break; fi
+            if ! kill -0 "$child" 2>/dev/null; then
+              echo 'HOME_L4_SYNTHETIC_PREVIEW_EXITED'
+              exit 1
+            fi
+            sleep 0.25
+          done
+          curl --fail --silent --max-time 2 "$M1B_URL/api/health" >/dev/null
+          npx tsx tests/product/run-m1b-home-visual-truth-tests.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: l4-home-degraded-visual-fixture
+          path: ${{ runner.temp }}/deliveryos-m1b-home-20261020/
+          retention-days: 7
+          if-no-files-found: warn
+
   native-station-link-review:
     name: Exact Reader line to R5D3 work (synthetic only)
     runs-on: ubuntu-latest
