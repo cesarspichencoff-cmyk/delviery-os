@@ -38,3 +38,29 @@
 **Próximo passo sem interromper produção:** reconciliar esses 14 IDs/códigos com a **mesma versão** do catálogo da Academia e as regras atuais da operação; usar os comparadores já existentes na PR #135 (`comandas_packaging_classification_review_v1_offline.cjs`, `comandas_reader_catalog_identity_crosscheck_v1_offline.cjs`), sem duplicá-los no Delivery OS. Resolver divergências de produto, rota e praça uma por vez com evidência homologável, não por nome isolado. Para a V1, o N4 de identidade iFood independente é obrigatório nas fronteiras de vínculo externo (Conferência e entrega), **não um pré-requisito global para estudar L2 a partir de uma revisão nativa atestada**, conforme `DELIVERYOS_V1_LAUNCH_ACCEPTANCE_20261103.md`.
 
 **Fronteira operacional:** `L1_ATOMICITY=HOLD`, `L2_STATION_AUTHORITY=HOLD`, `L3_PHYSICAL_READY=HOLD`, `L4_HOME=HOLD`, `L5_IFOOD_CROSS_SOURCE_ID=HOLD`, `L6_XIAOMI_FIELD=HOLD`, `L7_END_TO_END=HOLD`, `L8_FIELD_ACCEPTANCE=HOLD`; **0/8 aceites operacionais**. Nenhum merge/deploy/print, serviço, SQL de escrita ou contato com fornecedor.
+
+## Confronto adicional — fonte pinada da Academia (08/11/2026)
+
+**Fonte exata verificada, sem usar nome como autorização:** repositório `cesarspichencoff-cmyk/tata-academia`, branch `evolucao/v33-product-pass`, arquivo `data/app-data.json`, **Git blob `d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22`**, já referenciado na fonte de equivalência da PR #135. A fonte declara `meta.generated_at=2026-08-21` e estado `LAUNCH_HARDENING_CANDIDATE`; há **193 registros em `products`** no conteúdo efetivamente lido. Isso **não é prova** de que a mesma versão esteja em uso pelo time nem de que represente o catálogo SQL de 08/11.
+
+**Método de cruzamento:** comparados os **14 rótulos históricos da matriz de outubro**, que acabaram de apresentar 14/14 equivalências no nome `NMPRODUTO` da Teknisa, apenas por nome normalizado com a mesma regra conservadora (acentos, caixa e espaços). Os objetos `products` da Academia não têm `CDPRODUTO` nem `CDARVPROD` na estrutura examinada. Portanto, esta é uma **comparação nominal de candidatos** e não ligação por identidade validada.
+
+**Resultado:**
+- **4/14** nomes com **uma** coincidência textual; **0** com múltiplos nomes idênticos; **10/14** sem coincidência exata.
+- As **quatro** entradas coincidentes estão marcadas na própria Academia `classification.review_required=true` e `classification.truth_class='UNKNOWN_REVIEW_REQUIRED'`. **0/4 são elegíveis a promoção automática.**
+- Nomes e códigos desses quatro candidatos com respectiva **praça declarada, não homologada**:
+
+| Código | Rótulo do Reader | Praça da Academia candidata | Estado |
+|---|---|---|---|
+| `9.75.00.020.00` | Missoshiro | `cozinha_quentes` | Revisão obrigatória |
+| `9.10.05.040.00` | Tartar de Atum Spicy | `duplas` | Revisão obrigatória |
+| `9.10.05.070.00` | Ceviche | `enrolados_quentes` | Revisão obrigatória |
+| `9.10.05.050.00` | Tartar de Salmão | `enrolados_quentes` | Revisão obrigatória |
+
+**Os outros 10 códigos sem coincidência nominal direta:** `9.10.05.000.00`, `9.10.05.060.00`, `9.15.00.060.00`, `9.10.00.050.00`, `8.00.05.000.00`, `8.20.00.061.00`, `8.00.00.010.00`, `9.15.00.070.00`, `9.99.00.007.00`, `8.20.11.002.00`. Isso não prova ausência do produto; pode haver denominação diferente. Proibido criar correspondência fuzzy/sinônimo para autorizá-los. `Cookie Pistache` (último código) ainda não possui rota no mapa histórico de setembro e esse problema não é corrigido por existir no SQL.
+
+**Fronteira de decisão:** `L2_ACADEMY_EXACT_NAME_CANDIDATES=4/14`; `L2_ACADEMY_NAMES_UNMATCHED=10/14`; `L2_ACADEMY_CANDIDATES_REVIEW_REQUIRED=4/4`; `L2_STATION_AUTHORITY=0/14`. **Nada deve ser enviado à impressora ou à Home por causa deste cruzamento.** A função existente `convergeReaderCatalogClassification` de Comandas exige códigos/IDs exatos e, mesmo para 14/14 correspondências, mantém `classification_approved=false` sem evidência de regra operacional independente.
+
+**Priorização:** revisar primeiro os casos com mais ocorrências históricas e nome não associado, sem confundir frequência com número de pedidos: Carpaccio de Salmão, Tuna Shisso Tartar, Salmão/Atum 1 Pessoa e Shimeji e Shitake. Verificar com o cadastro e a via/rotina interna vigente; **não reabrir** as decisões já tomadas sobre Sushi Quentes ser uma subárea do Sushi e Quentes da Cozinha ser outra unidade operacional.
+
+**L6 em paralelo (Difference Check):** a PR #137 já inclui proteção de `term_ack` com teste real JUnit anterior `254/254`, mas a política `EVENT_BATCH_HTTP_REJECTION_POLICY` permanece `HOLD`: `SyncWorker.kt` ainda chama `db.outbox().markFailed(ids,r.reason)` para `ApiResult.Rejected`. Não converter indiscriminadamente 4xx em `markRejected` permanente: diferenças entre 403 de delegação, erro de domínio, conflito recuperável e commit incerto exigem prova dos recibos e do escopo de credencial. Nenhum código Android foi alterado nesta continuidade, para não introduzir perda silenciosa de eventos.
