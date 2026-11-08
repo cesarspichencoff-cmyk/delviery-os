@@ -51,6 +51,7 @@ class RiderRealScreenInstrumentedTest {
         var attemptedDemoMutation = 0
             private set
         val paths = mutableSetOf<String>()
+        val missingAssets = mutableSetOf<String>()
 
         private fun response(data: String, mime: String = "application/json"): WebResourceResponse =
             WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(data.toByteArray(Charsets.UTF_8)))
@@ -109,6 +110,7 @@ class RiderRealScreenInstrumentedTest {
                 val bytes = context.assets.open(assetPath).use { it.readBytes() }
                 WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
             } catch (_: Exception) {
+                synchronized(missingAssets) { missingAssets.add(assetPath) }
                 response("LAB_ASSET_NOT_FOUND", "text/plain")
             }
         }
@@ -161,11 +163,29 @@ class RiderRealScreenInstrumentedTest {
                 web.webViewClient = testSite
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
-            assertTrue("Production HTML/JS did not render pending native event",
-                until(scenario, """!!document.getElementById('pendingLine') &&
+            val shown = until(scenario, """!!document.getElementById('pendingLine') &&
                  !document.getElementById('pendingLine').hidden &&
                  document.getElementById('pendingLine').textContent.includes('guardada') &&
-                 document.getElementById('btnSyncNow')?.textContent.includes('Tentar sincronizar')"""))
+                 document.getElementById('btnSyncNow')?.textContent.includes('Tentar sincronizar')""")
+            if (!shown) {
+                // Sanitized lab-only diagnostics: booleans, static paths and
+                // DOM readiness, never contents of an order or a native error.
+                val probe = eval(scenario, """
+                    JSON.stringify({
+                      dom:document.readyState,
+                      page:!!document.getElementById('pendingLine'),
+                      queued:!document.getElementById('pendingLine')?.hidden,
+                      sync:!document.getElementById('btnSyncNow')?.hidden,
+                      native:typeof window.EntregasNative?.operationalEvents==='function',
+                      queue:document.getElementById('pendingLine')?.textContent?.includes('guardada'),
+                      riderModule:!!document.querySelector('script[src="/rider-mobile/rider.js"]'),
+                      sourceError:document.body?.textContent?.includes('LAB_ASSET_NOT_FOUND')
+                    })
+                """.trimIndent())
+                val paths = synchronized(testSite.paths) { testSite.paths.toList().sorted() }
+                val missing = synchronized(testSite.missingAssets) { testSite.missingAssets.toList().sorted() }
+                throw AssertionError("REAL_RIDER_PENDING_NOT_SHOWN probe=$probe assets=$paths missing=$missing")
+            }
             assertTrue("Native sync button is not displayed by actual rider.js",
                 until(scenario, """!document.getElementById('btnSyncNow').hidden"""))
             assertEquals("false", eval(scenario,
