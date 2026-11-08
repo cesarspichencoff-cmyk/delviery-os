@@ -18,6 +18,31 @@ const METHODS=Object.freeze(['INDEX_SEEK','CLUSTERED_INDEX_SEEK','INDEX_SCAN',
 const shape=(o,keys)=>o!==null&&typeof o==='object'&&!Array.isArray(o)&&
  Object.keys(o).sort().join('|')===keys.slice().sort().join('|');
 const hash=s=>createHash('sha256').update(s,'utf8').digest('hex');
+// The entire native FROM/JOIN/WHERE/ORDER tail is intentionally pinned.
+// Mere presence of CDLOJA equality is not enough: OR on the JOIN or WHERE
+// can undo the shop boundary while still matching a substring test.
+// Any structural SQL change requires explicit offline review and new fixtures.
+const REVIEWED_NATIVE_TAIL=[
+ "FROM TEKNISA.COMANDAVEN AS c",
+ "INNER JOIN TEKNISA.VENDAREST AS v",
+ "ON v.CDFILIAL=c.CDFILIAL",
+ "AND v.CDLOJA=c.CDLOJA",
+ "AND v.NRVENDAREST=c.NRVENDAREST",
+ "LEFT JOIN TEKNISA.ITCOMANDAVEN AS i",
+ "ON i.CDFILIAL=c.CDFILIAL",
+ "AND i.CDLOJA=c.CDLOJA",
+ "AND i.NRVENDAREST=c.NRVENDAREST",
+ "AND i.NRCOMANDA=c.NRCOMANDA",
+ "LEFT JOIN TEKNISA.PRODUTO AS p",
+ "ON p.CDPRODUTO=i.CDPRODUTO",
+ "WHERE c.CDFILIAL='0001'",
+ "AND c.CDLOJA='01'",
+ "AND c.IDORGCMDVENDA='DLV_IFO'",
+ "AND c.NRVENDAREST=@nrVendaRest",
+ "AND c.NRCOMANDA=@nrComanda",
+ "ORDER BY i.NRPRODCOMVEN ASC",
+ "OPTION (MAXDOP 1);",
+].join(' ').toUpperCase();
 const EFFECTS=Object.freeze({
  sql:false,showplan:false,network:false,files:false,service:false,
  printer:false,sequence:false,checkpoint:false,deploy:false
@@ -43,6 +68,12 @@ function review(input){
   const sql=input.candidate_sql;
   const effective=sql.replace(/\/\*[\s\S]*?\*\//g,' ')
     .replace(/--[^\r\n]*/g,' ');
+  // Match the complete reviewed native data scope, not isolated substrings.
+  const fromAt=effective.search(/\bFROM\s+TEKNISA\.COMANDAVEN\s+AS\s+c\b/i);
+  const nativeTail=fromAt<0?'':effective.slice(fromAt)
+    .replace(/\s+/g,' ').trim().toUpperCase();
+  if(nativeTail!==REVIEWED_NATIVE_TAIL)
+   return hold('CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
   if(!/\bSET TRANSACTION ISOLATION LEVEL SERIALIZABLE\s*;/i.test(effective)||
     !/\bSELECT TOP \(201\)\s/i.test(effective)||
     !/\bSET LOCK_TIMEOUT 100\s*;/i.test(effective)||

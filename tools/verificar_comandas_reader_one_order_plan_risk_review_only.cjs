@@ -67,6 +67,25 @@ test('omitted ITCOMANDAVEN shop equality blocks review',()=>{
  condition(replaceSql('AND i.CDLOJA=c.CDLOJA','AND i.NRCOMANDA=c.NRCOMANDA'),
  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
 });
+test('extra OR on VENDAREST join cannot bypass the store boundary',()=>{
+ condition(replaceSql('AND v.NRVENDAREST=c.NRVENDAREST',
+  "AND v.NRVENDAREST=c.NRVENDAREST OR v.CDLOJA='02'"),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('extra OR on ITCOMANDAVEN join cannot bypass the store boundary',()=>{
+ condition(replaceSql('AND i.NRCOMANDA=c.NRCOMANDA',
+  "AND i.NRCOMANDA=c.NRCOMANDA OR i.CDLOJA='02'"),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('WHERE disjunction cannot widen Itaim scope while equality remains',()=>{
+ condition(replaceSql("AND c.CDLOJA='01'",
+  "AND c.CDLOJA='01' OR c.CDLOJA='02'"),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('a trailing non-SELECT SQL command cannot masquerade as reviewed scope',()=>{
+ condition(x=>x.candidate_sql+=" WAITFOR DELAY '00:00:01';",
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
 test('synthetic candidate with wrong iFood source blocks',()=>{
  condition(replaceSql("c.IDORGCMDVENDA='DLV_IFO'",
  "c.IDORGCMDVENDA='DLV_FAKE'"),'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
@@ -165,6 +184,6 @@ test('omitted plan fields cannot be defaulted',()=>{
 test('unrecognized plan origin fails shape',()=>{
  condition(x=>x.plan.origin='SQL_SERVER_AUTHORIZED','PLAN_SUMMARY_SHAPE_INVALID');
 });
-if(n!==38)throw Error('PLAN_REVIEW_TEST_COUNT_MISMATCH '+n);
+if(n!==42)throw Error('PLAN_REVIEW_TEST_COUNT_MISMATCH '+n);
 console.log('COMANDAS_ONE_ORDER_PLAN_RISK_REVIEW_PASS '+n+'/'+n+
  ' OFFLINE_SYNTHETIC_NO_SQL_OR_SHOWPLAN_NO_PRINT_ALWAYS_HOLD');
