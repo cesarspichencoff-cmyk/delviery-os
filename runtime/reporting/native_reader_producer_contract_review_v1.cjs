@@ -39,6 +39,12 @@ function review(event){
    return out('OBSERVATION_COMPLETENESS_MISSING_OR_UNATTESTED');
   if(!Array.isArray(o.observation_rows)||o.observation_rows.length>400)
    return out('NATIVE_OBSERVATION_ROWS_MISSING_OR_EXCESSIVE');
+  // item_index is assigned by the producer, not an independent native-line witness.
+  // If two native lines share CDPRODUTO, matching that code and an index alone
+  // cannot distinguish which line owns an item-scoped observation.
+  const itemCodeCounts=new Map();
+  for(const item of o.items)
+   itemCodeCounts.set(item.CDPRODUTO,(itemCodeCounts.get(item.CDPRODUTO)||0)+1);
   const seen=new Set();
   for(const row of o.observation_rows){
    if(!obj(row)||!safe(row.source_field)||!safe(row.value)||
@@ -55,6 +61,8 @@ function review(event){
       row.CDPRODUTO!==o.items[row.item_index].CDPRODUTO)
      return out('ITEM_OBSERVATION_JOIN_MISMATCH');
    }
+   if(row.scope_hint==='item'&&itemCodeCounts.get(row.CDPRODUTO)>1)
+    return out('ITEM_OBSERVATION_NATIVE_LINE_AMBIGUOUS');
    const k=row.source_field+'|'+(row.scope_hint==='item'?row.item_index:'ORDER');
    if(seen.has(k))return out('OBSERVATION_NATIVE_FIELD_DUPLICATED');
    seen.add(k);
