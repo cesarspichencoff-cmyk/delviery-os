@@ -1,0 +1,72 @@
+name: DeliveryOS Android WebView emulator lab
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-android-webview-emulator-lab.yml
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderWebViewBridgeInstrumentedTest.kt
+      - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
+      - android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/OperationalEventRecorder.kt
+      - android/app/build.gradle.kts
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deliveryos-webview-emulator-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  webview-bridge-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: KVM for disposable Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android WebView + real Kotlin bridge + Room + WorkManager test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: google_apis
+          arch: x86_64
+          working-directory: android
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest
+      - name: Require executed instrumentation, not just Gradle success
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root = Path("android/app/build/outputs/androidTest-results/connected")
+          files = list(root.rglob("*.xml")) if root.exists() else []
+          target = "RiderWebViewBridgeInstrumentedTest"
+          n = fail = err = 0
+          for path in files:
+              try:
+                  tree = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              name = tree.attrib.get("name","")
+              if target not in name and target not in str(path):
+                  continue
+              n += int(tree.attrib.get("tests", "0"))
+              fail += int(tree.attrib.get("failures", "0"))
+              err += int(tree.attrib.get("errors", "0"))
+          print(f"ANDROID_WEBVIEW_INSTRUMENTED: tests={n} failures={fail} errors={err}")
+          if n < 1 or fail or err:
+              raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
+          print("ANDROID_WEBVIEW_LAB_TEST_PASS_NO_FIELD_CLAIM")
+          PY
