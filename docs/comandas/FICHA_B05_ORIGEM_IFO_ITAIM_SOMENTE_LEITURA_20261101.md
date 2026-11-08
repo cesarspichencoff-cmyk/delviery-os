@@ -100,3 +100,16 @@ A sincronização centralizada é observação **opcional** para esta etapa; qua
 
 **Decisão e próximo portão:** `B05_UNVERIFIED` permanece. Não investigar a origem do iFood por presença de pasta, nome de processo `FosSinc`, código de caixa na venda fiscal ou consulta SQL improvisada. O único portão de identificação é um **vínculo real `IFO → unidade → loja/caixa`**, em fonte de configuração já autorizada e legível sem acessar a aba Token, editar, elevar privilégios ou perturbar caixa. Se indisponível, registrar `B05_SOURCE_ACCESS_UNAVAILABLE`. A investigação de primeira impressão e qualquer extensão da candidata `SERIALIZABLE` permanecem `HOLD`.
 
+## Verificação do observador local e acesso ao Retail (08/11/2026)
+
+**Fatos observados passivamente (CAIXA_MOOCA = PC físico do Itaim), sem execução de código ou SQL:**
+
+- `C:\ProgramData\DeliveryOS-Itaim-Observer\status.json`: registrado em `2026-11-08T07:39:40Z`, `state=OUTSIDE_SERVICE_WINDOW`, `sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `operationalOrderTotal=null`, `noActionExecuted=true`, `customerDataExported=false`.
+- `...\last-window-status.json`: registrado em `2026-11-08T01:59:39Z`, `state=UNAVAILABLE`, `reason=SOURCE_REVISION_PENDING`, `sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `operationalOrderTotal=null`.
+- Trechos dos arquivos já instalados `observer.cjs`, `copiloto_tata_reader_adapter_v1.cjs` e `copiloto_tata_file_feed_v1.cjs` demonstram que este mecanismo usa os **eventos/checkpoint locais do TATÁ Reader**, adapta as revisões e exige fonte autenticada. Sua estrutura **não constitui um observador independente da entrada de pedidos iFood no Retail**. O estado `UNAVAILABLE` não comprova ausência de pedidos no restaurante, apenas impossibilidade desse observador de atestá-los na janela registrada.
+- Tentativa de descobrir sessão de navegador já conectada: a superfície Browser informou que não há contexto de origem autorizado nesta conversa, e o conector Opera informou estar desconectado. **Nenhuma página do Retail foi aberta**, nenhum login/token foi usado, nenhuma tela foi manipulada. `B05_RETAIL_UI_ACCESS=UNAVAILABLE_IN_CURRENT_CHAT`.
+
+**Confronto de evidências:** o Reader pode estar `RUNNING` e seu contador de batches avançar enquanto esse observador permanece `CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`. Os dois sinais não são uma reconciliação independente `pedido aceito no iFood → comanda completa na Teknisa`. Não promover um status local, nome de processo, pasta de logs ou campo autoemitido a prova de configuração `IFO → loja/caixa`.
+
+**Decisão:** manter `B05_UNVERIFIED`, `INGRESS_IFOOD_RUNTIME=UNKNOWN`, `N2_B_COMPLETENESS=UNKNOWN`, `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `PRINT/CUTOVER=HOLD`. O próximo salto exige fonte **independente** e legitimamente acessível da integração (vínculo real Retail `IFO → unidade → loja/caixa` e, posteriormente, evidência do início/final do pedido). Sem esse acesso, não repetir caminho equivalente no observador, nem realizar captura, instrumentação ou SQL no caixa.
+
