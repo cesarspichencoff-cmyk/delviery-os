@@ -32,7 +32,9 @@ function fixture(){
   const key=['0001','01','LABSALE01','LABCMD01'].join('|');
   const event={schema:'deliveryos.tata-reader-stable-order-event.v1',
     order_key:key,snapshot_hash:'',order,
-    ready_for_downstream_shadow:false,blockers:[],
+    // Pure positive-shape fixture: no claimed native-source authority.
+    // The actual PR135 producer explicitly sets false + blockers, tested below.
+    blockers:[],
     service_resolution:{service:null,evidence:'UNKNOWN',source_ref:null,blockers:[]}};
   const decision={schema:'deliveryos.live-shadow-decision.v1',
     order_key:key,snapshot_hash:'',ifood_sequence:'1234',teknisa_sequence:'LABCMD01',
@@ -184,6 +186,36 @@ test('no unrecognised input fields',()=>assert.equal(
   replay({...input(),authToken:'FICTITIOUS'}).reason,'INVALID_ENVELOPE'));
 test('too many snapshots blocked',()=>assert.equal(
   replay(input(Array.from({length:65},fixture))).reason,'INVALID_ENVELOPE'));
+test('native child-table blocker refuses HMAC candidate even if decision is rehashed',()=>{
+  const p=fixture();
+  p.event.blockers=['NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'];
+  const r=replay(input([p]));
+  assert.equal(r.reason,'NATIVE_PAIR_INVALID');
+  assert.equal(r.ordersPublishable,0);
+  assert.equal(r.rows.length,0);
+  assert.equal(r.selfConsistentCandidates,undefined);
+});
+test('explicit native downstream false refuses even with cleared blocker array',()=>{
+  const p=fixture();
+  p.event.ready_for_downstream_shadow=false;
+  p.event.blockers=[];
+  const r=replay(input([p]));
+  assert.equal(r.reason,'NATIVE_PAIR_INVALID');
+  assert.equal(r.rows.length,0);
+  assert.equal(r.operationalEventEmissionAuthorized,false);
+});
+test('spoofed completeness flag cannot override producer native-source veto',()=>{
+  const p=fixture();
+  p.event.order.observation_scan_complete=false;
+  p.event.blockers=['NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'];
+  // An intermediary toggles the flag and rehashes the event and decision.
+  p.event.order.observation_scan_complete=true;
+  refresh(p);
+  const r=replay(input([p]));
+  assert.equal(r.reason,'NATIVE_PAIR_INVALID');
+  assert.equal(r.rows.length,0);
+  assert.equal(r.nativeSourceAuthenticated,false);
+});
 test('no filesystem/network/console/browser dependencies',()=>{
   assert.equal(/require\(['"](?:node:)?(?:fs|http|https|net|child_process)['"]\)/.test(source),false);
   assert.equal(/\b(?:spawn|execFile|Start-Process|ShowWindow|setInterval)\b/.test(source),false);
