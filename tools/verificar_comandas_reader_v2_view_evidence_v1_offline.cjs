@@ -6,6 +6,8 @@ const {snapshotHash,decisionHash}=
  require("./tata_comanda_reader_native_essentials_v857_offline.cjs");
 const {assessNativeReaderV2:review,SCHEMA,EFFECTS}=
  require("./comandas_reader_v2_view_evidence_v1_offline.cjs");
+const {build:buildInlineOnlyRowset}=
+ require("./comandas_reader_native_note_rowset_v1_review_only.cjs");
 const {reviewReaderPrintHistory:reviewAttemptLink,SCHEMA:LINK_SCHEMA,
  EFFECTS:LINK_EFFECTS,orderStationWitnessBindingSha256V1}=
  require("./comandas_reader_print_history_link_v1_offline.cjs");
@@ -28,6 +30,36 @@ function refresh(x){
  x.event.snapshot_hash=snapshotHash(x.event.order);
  x.decision.snapshot_hash=x.event.snapshot_hash;
  x.decision.fingerprint=decisionHash(x.decision);
+ return x;
+}
+function partialInlineSourcePair(){
+ const x=native("3"),o=x.event.order;
+ const orderNote=o.observation_rows.find(r=>r.scope_hint==="order")?.value??null;
+ const headerFields=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA",
+  "NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DTHRABERMESA"];
+ const itemFields=["NRPRODCOMVEN","CDPRODUTO","CDARVPROD",
+  "QTPRODCOMVEN","IDSTPRCOMVEN"];
+ const rowset=o.items.map((item,i)=>{
+  const row={};
+  for(const k of headerFields)row[k]=o[k];
+  for(const k of itemFields)row[k]=item[k];
+  row.DSOBSCOMANDA=orderNote;
+  for(const field of ["DSOBSDESCIT","DSOBSPEDDIGCMD","TXPRODCOMVEN"]){
+   row[field]=o.observation_rows.find(z=>z.scope_hint==="item"&&
+     z.item_index===i&&z.source_field===field)?.value??null;
+  }
+  return row;
+ });
+ const partial=buildInlineOnlyRowset({
+  schema:"tata.comandas.native-note-rowset-input.v1",
+  source_read_exhausted:true,rows:rowset
+ });
+ assert.equal(partial.status,"PRIVATE_CANONICAL_EVENT_CANDIDATE");
+ assert.equal(partial.privateEvent.order.observation_scan_complete,false);
+ assert.ok(partial.privateEvent.blockers.includes(
+  "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ"));
+ x.event=partial.privateEvent;
+ refresh(x);
  return x;
 }
 function independent(x){
@@ -193,6 +225,19 @@ test("duplicate observation source field blocked after rehash",()=>{
  const x=native();x.event.order.observation_rows.push(
   {...x.event.order.observation_rows[0]});refresh(x);
  hold(x,"NATIVE_ITEM_NOTE_DUPLICATE_SOURCE");
+});
+test("actual inline-only rowset builder cannot pass the downstream three-view reviewer",()=>{
+ const x=partialInlineSourcePair();
+ hold(x,"NATIVE_CHILD_TABLE_COVERAGE_BLOCKER_NOT_DISCHARGED");
+});
+test("rehashed forged complete flag cannot conceal upstream native child-table blocker",()=>{
+ const x=partialInlineSourcePair();
+ x.event.order.observation_scan_complete=true;
+ x.decision.observation_scan_complete=true;
+ refresh(x);
+ assert.equal(x.event.snapshot_hash,snapshotHash(x.event.order));
+ assert.equal(x.decision.snapshot_hash,x.event.snapshot_hash);
+ hold(x,"NATIVE_CHILD_TABLE_COVERAGE_BLOCKER_NOT_DISCHARGED");
 });
 test("incomplete observation scan remains HOLD",()=>{
  const x=native();x.decision.observation_scan_complete=false;

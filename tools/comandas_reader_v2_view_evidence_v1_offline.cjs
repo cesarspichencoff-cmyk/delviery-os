@@ -86,6 +86,13 @@ function assessNativeReaderV2(input){
     snapshotHash(o)!==e.snapshot_hash.toLowerCase()||
     !sha(d.fingerprint)||decisionHash(d)!==d.fingerprint.toLowerCase())
   return reject("NATIVE_ORDER_SNAPSHOT_OR_DECISION_FINGERPRINT_INVALID");
+ // A caller may rehash an inline-only source rowset and falsely flip its
+ // completeness flag. An explicit upstream blocker on missing native child
+ // tables must survive this boundary, regardless of self-consistent hashes.
+ // This is contradiction detection, NOT independent source attestation.
+ if(Array.isArray(e.blockers)&&e.blockers.includes(
+   "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ"))
+  return reject("NATIVE_CHILD_TABLE_COVERAGE_BLOCKER_NOT_DISCHARGED");
  if(o.observation_scan_complete!==true||
    d.observation_scan_complete!==true)
   return reject("NATIVE_OBSERVATIONS_SCAN_NOT_COMPLETE");

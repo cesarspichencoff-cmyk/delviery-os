@@ -82,6 +82,14 @@ A revisão do montador `tools/comandas_reader_native_note_rowset_v1_review_only.
 
 Dois cenários sintéticos extras cobrem notas diretas vazias e três leituras diretas idênticas. O teste existente de intervalo de commits foi ajustado. A CI do SHA exato verifica regressões; **nada demonstra que as relações nativas foram lidas na produção**.
 
+## Contraprova entre montador e avaliador de três vias (08/11/2026)
+
+A proteção anterior corrigiu a flag no montador do rowset parcial, mas o avaliador posterior `comandas_reader_v2_view_evidence_v1_offline.cjs` ainda **não verificava o bloqueio explícito de tabelas filhas**. Um chamador equivocado poderia transformar `observation_scan_complete` em `true` tanto no evento quanto na decisão e recalcular os dois hashes, recebendo o diagnóstico de par autoconsistente, apesar de a origem ainda declarar `NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ`.
+
+**Correção offline adicional:** o avaliador de três vias passa a responder `HOLD/NATIVE_CHILD_TABLE_COVERAGE_BLOCKER_NOT_DISCHARGED` sempre que o evento carrega esse bloqueio; a checagem prevalece mesmo que a flag seja forjada e os hashes internos estejam coerentes. Uma prova de integração sintética usa a **saída efetiva** do montador parcial como entrada do avaliador; outra simula a alteração da flag com recomputação dos hashes. Ambas devem continuar bloqueadas em Linux e Windows.
+
+A flag e os bloqueios ainda são alegações locais, não atestados por fonte independente; um payload fabricado sem bloqueios não pode virar prova do mundo real. O objetivo é impedir que **contradições declaradas pela própria cadeia** sejam silenciosamente ignoradas. `PRINT/CUTOVER=HOLD`, sem nova consulta SQL.
+
 ## Não aplicar correção precipitada
 
 **Não acrescentar JOINs às tabelas faltantes de forma automática.** A tabela de observações é gravada sem campo `CDLOJA` na lista de colunas do INSERT visto; o relacionamento exato e a unicidade/índices precisam de catálogo e prova de identidade. JOINs adicionais sob `SERIALIZABLE` podem multiplicar linhas, exceder a sentinela `TOP(201)`, introduzir scans e **aumentar locks para escritores**. `LOCK_TIMEOUT 100` restringe espera do leitor, não a espera de escritores bloqueados por ele.
