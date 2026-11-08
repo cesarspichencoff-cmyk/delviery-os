@@ -47,7 +47,7 @@ export function queuedOperationalActionsMessage(raw) {
     ? "1 ação guardada neste aparelho"
     : `${open.length} ações guardadas neste aparelho`;
   if (open.some((e) => e.state === "failed"))
-    return prefix + ". A última tentativa não foi confirmada pelo servidor; pode ter chegado até ele. Não repita a confirmação sem verificar.";
+    return prefix + ". Há tentativa sem confirmação do servidor; ela pode ter chegado até ele. Não repita a confirmação sem verificar.";
   if (open.some((e) => e.state === "sending"))
     return prefix + ". Envio em andamento; a confirmação do servidor ainda não chegou ao aparelho.";
   return prefix + ". Aguardando sincronização; ainda sem confirmação do servidor.";
