@@ -416,18 +416,20 @@ class SyncWorker(
         // Credencial recusada e RETENTAVEL. Retornar sucesso aqui foi o coracao
         // do P0: o WorkManager dava a sincronizacao por concluida e os pontos
         // ficavam `failed` para sempre, sem nada sinalizar.
-        if (credencialRecusada) {
-            DeviceSession.limparCredencial(db)
-            return retryOrYield()
-        }
-        // Saldo após progresso não é falha esgotada: deve ter continuação,
-        // mesmo se o envio secundário de contagens falhou nesta execução.
+        // O token da PLATAFORMA pode ser renovado sem mexer nos dados Room.
+        // Nao retornar aqui: uma recusa simultanea do lote PILOTO precisa
+        // continuar visivel mesmo apos esgotar o backoff rapido.
+        if (credencialRecusada) DeviceSession.limparCredencial(db)
+        // Saldo de GPS ja coletado precisa continuar: nao atrasar o GPS
+        // porque uma rota operacional distinta devolveu 4xx.
         if (gpsDrain.remaining) return Result.retry()
-        // Other transient work (including GPS platform sync) retains bounded retry.
-        if (retryable) return retryOrYield()
+        // Falhas transitorias ainda recebem somente tentativas rapidas limitadas.
+        // Depois do limite, nao transformar em sucesso uma recusa nao atestada.
+        if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount)) {
+            return Result.retry()
+        }
         // Sem recibo por evento, dar Result.success() seria falso positivo.
-        // Um erro ainda nao conciliado permanece elegivel na fila Room para
-        // a proxima janela, com o MESMO eventId/idempotencyKey.
+        // O evento segue elegivel na fila Room com eventId/idempotencyKey intactos.
         if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()
         return Result.success()
     }
