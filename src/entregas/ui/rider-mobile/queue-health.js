@@ -61,6 +61,46 @@ export function rejectedOperationalActionMessage(event) {
   return "Ação recusada pelo servidor. Peça ao responsável para verificar o motivo antes de repetir.";
 }
 
+/**
+ * O botao manual so agenda o WorkManager quando existe fila legivel e aberta.
+ * O estado de rede da fachada demo NAO decide a disponibilidade da ponte.
+ * 'sending' nao e prova de resposta do servidor; pode exigir recuperacao.
+ */
+export function canRequestNativeQueueSync(raw, nativeSyncAvailable) {
+  const read = inspectOperationalEvents(raw);
+  return nativeSyncAvailable === true && read.ok &&
+    read.events.some((e) => ["pending", "failed", "sending"].includes(e.state));
+}
+
+/**
+ * Indica somente transicoes verificadas NA MESMA identidade local:
+ * pending/failed/sending -> sent. 'sent' no primeiro snapshot da pagina
+ * nao ganha aviso novo; sumico de linha ou rejeicao nao e recibo.
+ *
+ * A ponte nativa declara 'sent' apenas apos recibo por event_id do dominio.
+ * Este texto descreve o REGISTRO do aparelho, nao a entrega fisica.
+ */
+export function confirmedNativeQueueTransition(previous, current) {
+  if (!previous) return "";
+  const old = inspectOperationalEvents(previous);
+  const next = inspectOperationalEvents(current);
+  if (!old.ok || !next.ok) return "";
+  const unique = (events) => new Set(events.map((e) => e.event_id)).size === events.length &&
+    new Set(events.map((e) => e.sequence_local)).size === events.length;
+  if (!unique(old.events) || !unique(next.events)) return "";
+  const was = new Map(old.events.map((e) => [e.event_id, e]));
+  const confirmed = next.events.filter((e) => {
+    const before = was.get(e.event_id);
+    return e.state === "sent" && !!before &&
+      before.sequence_local === e.sequence_local &&
+      ["pending", "failed", "sending"].includes(before.state);
+  });
+  if (!confirmed.length) return "";
+  return confirmed.length === 1
+    ? "O aparelho registrou a confirmação do servidor para 1 ação. Confira o estado atualizado da viagem."
+    : `O aparelho registrou a confirmação do servidor para ${confirmed.length} ações. Confira o estado atualizado da viagem.`;
+}
+
 /** A ponte nativa só confirma escrita se ecoar a identidade exata.
  * Não aceitar ok solto, eco divergente ou colisão de event_id. */
 export function verifiedNativeQueueReceipt(reply, requestedEventId) {
