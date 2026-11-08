@@ -21,6 +21,7 @@ on:
       - android/app/src/test/java/br/com/tata/entregas/SyncWorkerWorkManager4xxTest.kt
       - android/app/src/test/java/br/com/tata/entregas/SyncSchedulerWorkManagerTest.kt
       - android/app/src/test/java/br/com/tata/entregas/TermAckLoopbackHttpRoomTest.kt
+      - android/app/src/test/java/br/com/tata/entregas/SyncWorkerDualLoopbackHttpRoomTest.kt
       - android/app/src/main/java/br/com/tata/entregas/data/EntregasDatabase.kt
   workflow_dispatch:
 permissions:
@@ -79,6 +80,7 @@ jobs:
             "br.com.tata.entregas.SyncWorkerWorkManager4xxTest": 7,
             "br.com.tata.entregas.SyncSchedulerWorkManagerTest": 4,
             "br.com.tata.entregas.TermAckLoopbackHttpRoomTest": 8,
+            "br.com.tata.entregas.SyncWorkerDualLoopbackHttpRoomTest": 4,
           }
           missing={key:minimum for key,minimum in expected.items()
                    if suites.get(key,0)<minimum}
