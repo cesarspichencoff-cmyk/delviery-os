@@ -97,6 +97,8 @@ jobs:
         run: node tools/verificar_comandas_v714_itaim_ifood_origin_scope_v1_offline.cjs
       - name: Reader one-order serializable proposal stays REVIEW ONLY (static, no SQL)
         run: node tools/verificar_comandas_reader_one_order_serializable_review_only.cjs
+      - name: Native note rowset child-table completeness must stay HOLD (Linux synthetic)
+        run: node tools/verificar_comandas_reader_native_note_rowset_v1_review_only.cjs
       - name: Stage 3 SERIALIZABLE versus application partial commits (Linux offline)
         run: node tools/verificar_comandas_reader_serializable_semantic_commit_gap_v1_offline.cjs
       - name: Reader source revision mixing, ABA and partial-commit counterexamples (Linux offline)
@@ -458,6 +460,8 @@ jobs:
         run: npm run build
       - name: Stage 3 one-order SERIALIZABLE static preflight no SQL (Windows)
         run: node tools/verificar_comandas_reader_one_order_serializable_review_only.cjs
+      - name: Native note rowset child-table completeness must stay HOLD (Windows synthetic)
+        run: node tools/verificar_comandas_reader_native_note_rowset_v1_review_only.cjs
       - name: Stage 3 SERIALIZABLE versus application partial commits (Windows offline)
         run: node tools/verificar_comandas_reader_serializable_semantic_commit_gap_v1_offline.cjs
       - name: Reader source revision mixing, ABA and partial-commit counterexamples (Windows offline)
