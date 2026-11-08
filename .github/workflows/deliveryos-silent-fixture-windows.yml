@@ -18,6 +18,10 @@ on:
       - runtime/reporting/native_reader_n2_base_tables_review_v1.cjs
       - tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
       - tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
+      - tests/reporting/run-android-event-batch-4xx-source-contract-tests.cjs
+      - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejection.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt
+      - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionTest.kt
       - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
       - labs/reader-proof/**
       - tests/reporting/run-reader-one-shot-lab-tests.cjs
@@ -83,6 +87,8 @@ jobs:
           node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
           node tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
           node tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
+          # Source binding only: Kotlin compilation has a separate acceptance gate.
+          node tests/reporting/run-android-event-batch-4xx-source-contract-tests.cjs
           node tests/reporting/run-reader-one-shot-lab-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
