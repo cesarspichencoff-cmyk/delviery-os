@@ -27,6 +27,22 @@ def graph(process1='TataReaderContinuousWatchV1', process2='TeknisaClient',
       </deadlock></value></data></event>'''.encode('utf8')
 
 
+
+def graph_with_bystander(reader_in_cycle=False, victim='p2'):
+    # p1 <-> p2 is the genuine cycle; p3 waits for p1 but has no return path.
+    # A matching clientapp on p3 must NOT be called a deadlock-cycle member.
+    p1app = 'TataReaderContinuousWatchV1' if reader_in_cycle else 'TeknisaClient'
+    p3app = 'OtherClient' if reader_in_cycle else 'TataReaderContinuousWatchV1'
+    base = graph(process1=p1app, process2='OtherNativeClient', victim=victim)
+    base = base.replace(b'</process-list>', (
+        '<process id="p3" clientapp="' + p3app + '"/></process-list>').encode('utf8'))
+    base = base.replace(b'</resource-list>', (
+        '<keylock><owner-list><owner id="p1"/></owner-list>'
+        '<waiter-list><waiter id="p3"/></waiter-list></keylock>'
+        '</resource-list>').encode('utf8'))
+    return base
+
+
 def check(payload, reason=None):
     r = review_xml_bytes(payload)
     assert r['status'] == 'HOLD'
@@ -166,9 +182,23 @@ def run():
     case('real two-resource loop accepted structurally but never authoritative',lambda:
         assert_fields(graph(),'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
                       graph_integrity_checked=True,wait_for_cycle_consistency_checked=True))
-    assert total == 30,total
+    case('matching Reader outside the cycle is not a deadlock-cycle participant',
+         lambda: assert_fields(graph_with_bystander(),
+          'EXACT_READER_APP_OUTSIDE_DEADLOCK_CYCLE_NOT_CAUSAL_PROOF',
+          exact_reader_clientapp_match_count=1, reader_in_directed_cycle_count=0,
+          reader_waiter_occurrences_in_graph=1,
+          reader_participation_world_proven=False))
+    case('a graph victim must belong to a directed wait-for cycle',
+         lambda: expect_reason(graph_with_bystander(victim='p3'),
+          'VICTIM_NOT_IN_DIRECTED_DEADLOCK_WAIT_CYCLE'))
+    case('Reader inside actual cycle with unrelated blocked session remains HOLD',
+         lambda: assert_fields(graph_with_bystander(reader_in_cycle=True),
+          'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
+          exact_reader_clientapp_match_count=1,reader_in_directed_cycle_count=1,
+          other_process_count=2))
+    assert total == 33,total
     print('COMANDAS_DEADLOCK_XML_OFFLINE='+str(total)+'/'+str(total)+
-          ' CYCLE_REQUIRED SYNTHETIC_ONLY NO_XEL_NO_HOST_NO_SQL_NO_PRINT')
+          ' VICTIM_AND_READER_CYCLE_MEMBERSHIP_REQUIRED SYNTHETIC_ONLY NO_XEL_NO_HOST_NO_SQL_NO_PRINT')
 
 
 if __name__ == '__main__':

@@ -41,6 +41,7 @@ def _result(reason, **values):
         "graph_integrity_checked": False,
         "wait_for_cycle_consistency_checked": False,
         "exact_reader_clientapp_match_count": 0,
+        "reader_in_directed_cycle_count": 0,
         "reader_is_victim_in_graph": False,
         "reader_owner_occurrences_in_graph": 0,
         "reader_waiter_occurrences_in_graph": 0,
@@ -145,24 +146,26 @@ def review_xml_bytes(payload):
                     wait_for[waiter.attrib["id"]].add(owner.attrib["id"])
     if not all_owners or not all_waiters:
         return _result("GRAPH_HAS_NO_LOCK_RELATIONSHIP")
-    # A single blocked SELECT is not a deadlock. Require a directed wait
-    # cycle (at least two distinct processes). This is still only a check
-    # of the supplied XML's internal structure, not authenticated evidence.
-    def has_cycle():
-        for start in known:
-            visited = set()
-            pending = list(wait_for[start])
-            while pending:
-                node = pending.pop()
-                if node == start:
-                    return True
-                if node in visited:
-                    continue
-                visited.add(node)
-                pending.extend(wait_for[node])
+    # A cycle somewhere in the graph is not enough: a reader session can
+    # merely wait behind a deadlock without itself belonging to the cycle.
+    # Only a path that returns to its own distinct start is cycle membership.
+    def in_directed_cycle(start):
+        visited = set()
+        pending = list(wait_for[start])
+        while pending:
+            node = pending.pop()
+            if node == start:
+                return True
+            if node in visited:
+                continue
+            visited.add(node)
+            pending.extend(wait_for[node])
         return False
-    if not has_cycle():
+    cycle_members = {pid for pid in known if in_directed_cycle(pid)}
+    if not cycle_members:
         return _result("NO_DIRECTED_DEADLOCK_WAIT_CYCLE")
+    if any(pid not in cycle_members for pid in victims):
+        return _result("VICTIM_NOT_IN_DIRECTED_DEADLOCK_WAIT_CYCLE")
     matched = [p for p in processes if p.attrib.get("clientapp") == READER_CLIENT_APP_EXACT]
     mids = [p.attrib["id"] for p in matched]
     nonmatching = len(processes) - len(matched)
@@ -171,6 +174,7 @@ def review_xml_bytes(payload):
                    graph_integrity_checked=True,
                    wait_for_cycle_consistency_checked=True,
                    exact_reader_clientapp_match_count=len(mids),
+                   reader_in_directed_cycle_count=sum(pid in cycle_members for pid in mids),
                    reader_is_victim_in_graph=any(pid in victims for pid in mids),
                    reader_owner_occurrences_in_graph=sum(role_count[x]["owners"] for x in mids),
                    reader_waiter_occurrences_in_graph=sum(role_count[x]["waiters"] for x in mids),
@@ -180,6 +184,8 @@ def review_xml_bytes(payload):
         return _result("GRAPH_TIME_NOT_BOUND_TO_TARGET_INCIDENT", **details)
     if not matched:
         return _result("NO_EXACT_READER_APP_MATCH_NOT_EXCLUSION_PROOF", **details)
+    if not any(pid in cycle_members for pid in mids):
+        return _result("EXACT_READER_APP_OUTSIDE_DEADLOCK_CYCLE_NOT_CAUSAL_PROOF", **details)
     return _result("EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF", **details)
 
 

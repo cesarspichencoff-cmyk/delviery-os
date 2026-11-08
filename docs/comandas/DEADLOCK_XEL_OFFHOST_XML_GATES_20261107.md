@@ -49,6 +49,18 @@ A versão revisada:
 
 A bateria sintética passou de 25 para **30 cenários por sistema**, incluindo um bloqueio unilateral, autorrelações, falso caminho de evento e entidade codificada. A CI deve ser verificada no SHA exato após a alteração.
 
+## Revisão adversarial de participação no ciclo — 08/11/2026
+
+**Lacuna material corrigida em código offline:** a versão anterior verificava apenas que **algum** ciclo existia entre processos. Um terceiro processo `p3`, com `clientapp=TataReaderContinuousWatchV1`, podia estar na lista de processos apenas porque **esperava** por um recurso detido por `p1`, enquanto o ciclo real era `p1↔p2`. Mesmo assim, o retorno anterior podia rotular o match do Reader como existente em um grafo de deadlock, sem distinguir se ele era membro do ciclo.
+
+A candidata revisada calcula o conjunto exato de participantes de **ciclos dirigidos de espera**, com quatro comportamentos:
+- ausência de ciclo continua `NO_DIRECTED_DEADLOCK_WAIT_CYCLE` e `HOLD`;
+- vítima fora de qualquer ciclo é rejeitada com `VICTIM_NOT_IN_DIRECTED_DEADLOCK_WAIT_CYCLE` (inconsistência interna do XML fornecido);
+- coincidência exata do nome de aplicação **apenas fora** do ciclo devolve `EXACT_READER_APP_OUTSIDE_DEADLOCK_CYCLE_NOT_CAUSAL_PROOF`, com `reader_in_directed_cycle_count=0`;
+- Reader em um dos ciclos produz `reader_in_directed_cycle_count>0`, mas mantém o motivo `EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF` e todos os efeitos bloqueados.
+
+Foram acrescentados **três cenários sintéticos** ao verificador, incluindo cadeia com terceiro processo, vítima fora do ciclo e participação real no ciclo com terceiro processo externo; esperado **33 cenários por sistema**. O output continua reduzido a indicadores agregados sem IDs de sessão, SQL literal, nomes de máquinas ou dados de clientes. A integridade do grafo é **estrutural**, não prova de proveniência. Nenhum XEL de produção foi acessado.
+
 ## Próximo passo que realmente altera a investigação
 
 1. **Preservar** o XEL nativo sem alteração e garantir que uma cópia **bit a bit** possa ser obtida por canal autorizado que suporte bytes binários, com integridade SHA-256 verificada no destino. Não há demonstração disso no conector atual; `COPY_AVAILABLE=UNKNOWN`.
