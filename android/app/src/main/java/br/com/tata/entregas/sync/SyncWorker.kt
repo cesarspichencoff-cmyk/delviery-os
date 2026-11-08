@@ -334,9 +334,10 @@ class SyncWorker(
                     // A rejeicao do LOTE nao identifica o resultado por evento.
                     // Nao usar markRejected nem markSent aqui: ambos exigem
                     // recibo por event_id validado pelo dominio.
-                    db.outbox().markFailed(ids, r.reason)
-                    when (classifyEventBatchHttpRejection(
-                        httpStatus = r.status,
+                    when (retainUnreceiptedEventBatch(
+                        db = db,
+                        eventIds = ids,
+                        rejection = r,
                         delegationDenied = dispatch.delegationDenied,
                     )) {
                         EventBatchHttpRejectionHold.PILOT_AUTHORIZATION_BLOCKED ->
