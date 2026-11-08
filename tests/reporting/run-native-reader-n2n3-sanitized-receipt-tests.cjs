@@ -81,6 +81,19 @@ check('PowerShell apostrophe escape hash is NOT a casing fix',()=>{
  const r=review(e);
  assert.equal(r.reason,'N3_HASH_BYTES_NOT_CANONICAL');assertNoRaw(r);
 });
+check('same product on two lines never earns N2 consistency from item_index alone',()=>{
+ const e=base();
+ e.order.items[1].CDPRODUTO=e.order.items[0].CDPRODUTO;
+ // The ambiguous observation points to the other line but shares its code.
+ e.order.observation_rows[0].item_index=1;
+ e.snapshot_hash=snapshotHash(e.order).toUpperCase();
+ const r=review(e);
+ assert.equal(r.detailCode,'ITEM_OBSERVATION_NATIVE_LINE_AMBIGUOUS');
+ assert.equal(r.n2StructureSelfConsistent,false);
+ assert.equal(r.n3CanonicalHashSelfConsistent,false);
+ assert.equal(r.state,'HOLD');
+ assertNoRaw(r);
+});
 check('incorrect item observation join blocks even after recomputed digest',()=>{
  const e=base();e.order.observation_rows[0].CDPRODUTO='WRONG';
  e.snapshot_hash=snapshotHash(e.order).toUpperCase();
