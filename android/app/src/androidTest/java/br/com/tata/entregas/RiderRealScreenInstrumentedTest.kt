@@ -188,6 +188,8 @@ class RiderRealScreenInstrumentedTest {
                     until(scenario, """!!document.getElementById('compatibilityHold') &&
                         !document.getElementById('compatibilityHold').hidden &&
                         document.getElementById('main').hidden &&
+                        window.getComputedStyle(document.getElementById('main')).display==='none' &&
+                        window.getComputedStyle(document.querySelector('.m-nav')).display==='none' &&
                         document.getElementById('connLine').textContent.includes('incompatível')"""))
                 assertEquals("false", eval(scenario,
                     """!!document.querySelector('script[src="/rider-mobile/rider.js"]')"""))
