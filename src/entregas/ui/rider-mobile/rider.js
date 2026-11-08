@@ -245,6 +245,13 @@ function renderDeviceQueue(serverTrip) {
     return;
   }
   const events = deviceEvents();
+  // Perda de leitura ou falha de gravacao invalida a continuidade da
+  // observacao: nao ressuscitar um aviso antigo quando a ponte voltar.
+  if (queueHold) {
+    lastValidQueue = null;
+    lastConfirmedNotice = "";
+    manualSyncRequested = false;
+  }
   // A ponte "sent" descreve confirmacao POR EVENTO no Room. Mostrar aviso
   // apenas quando a MESMA identidade passou de aberta a sent nesta pagina.
   if (!queueHold) {
