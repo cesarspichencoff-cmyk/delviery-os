@@ -111,15 +111,21 @@ test('unreviewed extra SELECT projection is rejected even if FROM is pinned',()=
   'i.DSOBSDESCIT,i.DSOBSPEDDIGCMD,i.TXPRODCOMVEN,c.IDSTCOMANDA'),
   'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
 });
-test('independent review tolerates only harmless SQL comments',()=>{
+test('harmless SQL comment remains HOLD and still requires matching raw plan digest',()=>{
  const x=input();
  x.candidate_sql=x.candidate_sql.replace('SET LOCK_TIMEOUT 100;',
   'SET LOCK_TIMEOUT 100; /* LAB ONLY; unchanged SQL */');
- // This is not a new attestation: nominal inputs still HOLD.
+ // The SHA binds the exact SQL bytes, including non-executable comments.
+ // The prior test omitted this step, so it correctly hit SHA mismatch.
+ const stale=review(x);
+ assert.equal(stale.status,'HOLD');
+ assert.equal(stale.reason,'PLAN_QUERY_SHA_DIFFERS_FROM_CANDIDATE');
+ x.plan.query_sha256=sha(x.candidate_sql);
  const r=review(x);
  assert.equal(r.status,'HOLD');
  assert.equal(r.reason,nominal);
  assert.equal(r.can_query_orders,false);
+ assert.equal(r.writer_lock_impact_proven,false);
 });
 test('synthetic candidate with wrong iFood source blocks',()=>{
  condition(replaceSql("c.IDORGCMDVENDA='DLV_IFO'",
