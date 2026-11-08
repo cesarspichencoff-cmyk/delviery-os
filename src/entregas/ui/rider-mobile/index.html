@@ -90,8 +90,12 @@
       } catch (_) { ok = false; }
       if (!ok) {
         document.getElementById("compatibilityHold").hidden = false;
-        document.getElementById("main").hidden = true;
-        document.querySelector(".m-nav").hidden = true;
+        var main = document.getElementById("main");
+        var nav = document.querySelector(".m-nav");
+        main.hidden = true;
+        main.style.display = "none";
+        nav.hidden = true;
+        nav.style.display = "none";
         document.getElementById("connLine").textContent = "WebView incompatível";
         return;
       }
