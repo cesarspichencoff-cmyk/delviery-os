@@ -22,6 +22,22 @@ const hash=s=>createHash('sha256').update(s,'utf8').digest('hex');
 // Mere presence of CDLOJA equality is not enough: OR on the JOIN or WHERE
 // can undo the shop boundary while still matching a substring test.
 // Any structural SQL change requires explicit offline review and new fixtures.
+// Lock the reviewed session settings AND the 17-column projection, not
+// just their presence. A later SET can silently override isolation/timeout.
+// Structural changes must be reviewed offline; whitespace/comments may vary.
+const REVIEWED_NATIVE_PREFIX=[
+ "SET NOCOUNT ON;",
+ "SET DEADLOCK_PRIORITY LOW;",
+ "SET LOCK_TIMEOUT 100;",
+ "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;",
+ "SELECT TOP (201)",
+ "c.CDFILIAL,c.CDLOJA,c.NRVENDAREST,c.NRCOMANDA,",
+ "c.NRCOMANDAEXT,c.IDORGCMDVENDA,c.IDSTCOMANDA,v.DTHRABERMESA,",
+ "i.NRPRODCOMVEN,i.CDPRODUTO,p.CDARVPROD,i.QTPRODCOMVEN,",
+ "i.IDSTPRCOMVEN,",
+ "c.DSOBSCOMANDA,",
+ "i.DSOBSDESCIT,i.DSOBSPEDDIGCMD,i.TXPRODCOMVEN",
+].join(' ').toUpperCase();
 const REVIEWED_NATIVE_TAIL=[
  "FROM TEKNISA.COMANDAVEN AS c",
  "INNER JOIN TEKNISA.VENDAREST AS v",
@@ -68,6 +84,12 @@ function review(input){
   const sql=input.candidate_sql;
   const effective=sql.replace(/\/\*[\s\S]*?\*\//g,' ')
     .replace(/--[^\r\n]*/g,' ');
+  // Session settings, projection and data scope are independently pinned.
+  const prefixAt=effective.search(/\bFROM\s+TEKNISA\.COMANDAVEN\s+AS\s+c\b/i);
+  const nativePrefix=prefixAt<0?'':effective.slice(0,prefixAt)
+    .replace(/\s+/g,' ').trim().toUpperCase();
+  if(nativePrefix!==REVIEWED_NATIVE_PREFIX)
+   return hold('CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
   // Match the complete reviewed native data scope, not isolated substrings.
   const fromAt=effective.search(/\bFROM\s+TEKNISA\.COMANDAVEN\s+AS\s+c\b/i);
   const nativeTail=fromAt<0?'':effective.slice(fromAt)

@@ -86,6 +86,41 @@ test('a trailing non-SELECT SQL command cannot masquerade as reviewed scope',()=
  condition(x=>x.candidate_sql+=" WAITFOR DELAY '00:00:01';",
   'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
 });
+test('a later READ COMMITTED SET cannot override the reviewed isolation',()=>{
+ condition(replaceSql('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;',
+  'SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;\nSET TRANSACTION ISOLATION LEVEL READ COMMITTED;'),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('a later LOCK_TIMEOUT cannot silently relax writer-risk policy',()=>{
+ condition(replaceSql('SET LOCK_TIMEOUT 100;',
+  'SET LOCK_TIMEOUT 100;\nSET LOCK_TIMEOUT 60000;'),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('a later DEADLOCK_PRIORITY HIGH is not accepted',()=>{
+ condition(replaceSql('SET DEADLOCK_PRIORITY LOW;',
+  'SET DEADLOCK_PRIORITY LOW;\nSET DEADLOCK_PRIORITY HIGH;'),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('unreviewed session settings before SELECT are rejected',()=>{
+ condition(replaceSql('SET NOCOUNT ON;',
+  'SET NOCOUNT ON;\nSET XACT_ABORT OFF;'),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('unreviewed extra SELECT projection is rejected even if FROM is pinned',()=>{
+ condition(replaceSql('i.DSOBSDESCIT,i.DSOBSPEDDIGCMD,i.TXPRODCOMVEN',
+  'i.DSOBSDESCIT,i.DSOBSPEDDIGCMD,i.TXPRODCOMVEN,c.IDSTCOMANDA'),
+  'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('independent review tolerates only harmless SQL comments',()=>{
+ const x=input();
+ x.candidate_sql=x.candidate_sql.replace('SET LOCK_TIMEOUT 100;',
+  'SET LOCK_TIMEOUT 100; /* LAB ONLY; unchanged SQL */');
+ // This is not a new attestation: nominal inputs still HOLD.
+ const r=review(x);
+ assert.equal(r.status,'HOLD');
+ assert.equal(r.reason,nominal);
+ assert.equal(r.can_query_orders,false);
+});
 test('synthetic candidate with wrong iFood source blocks',()=>{
  condition(replaceSql("c.IDORGCMDVENDA='DLV_IFO'",
  "c.IDORGCMDVENDA='DLV_FAKE'"),'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
@@ -184,6 +219,6 @@ test('omitted plan fields cannot be defaulted',()=>{
 test('unrecognized plan origin fails shape',()=>{
  condition(x=>x.plan.origin='SQL_SERVER_AUTHORIZED','PLAN_SUMMARY_SHAPE_INVALID');
 });
-if(n!==42)throw Error('PLAN_REVIEW_TEST_COUNT_MISMATCH '+n);
+if(n!==48)throw Error('PLAN_REVIEW_TEST_COUNT_MISMATCH '+n);
 console.log('COMANDAS_ONE_ORDER_PLAN_RISK_REVIEW_PASS '+n+'/'+n+
  ' OFFLINE_SYNTHETIC_NO_SQL_OR_SHOWPLAN_NO_PRINT_ALWAYS_HOLD');
