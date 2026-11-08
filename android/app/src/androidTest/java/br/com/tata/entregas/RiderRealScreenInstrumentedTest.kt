@@ -182,6 +182,28 @@ class RiderRealScreenInstrumentedTest {
                 }
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
+            val expected = instrumentation.arguments.getString("webviewExpected")
+            if (expected == "legacy") {
+                assertTrue("Old WebView must show an explicit compatibility HOLD",
+                    until(scenario, """!!document.getElementById('compatibilityHold') &&
+                        !document.getElementById('compatibilityHold').hidden &&
+                        document.getElementById('main').hidden &&
+                        document.getElementById('connLine').textContent.includes('incompatível')"""))
+                assertEquals("false", eval(scenario,
+                    """!!document.querySelector('script[src="/rider-mobile/rider.js"]')"""))
+                assertEquals("false", eval(scenario,
+                    """!document.getElementById('btnSyncNow').hidden"""))
+                assertEquals("pending", runBlocking {
+                    db.outbox().recent(50).first { it.eventId == eventId }.syncState
+                })
+                assertEquals(0, testSite.attemptedDemoMutation)
+                assertEquals(0, testSite.requestsOutsideLab)
+                return@use
+            }
+            assertEquals("modern", expected)
+            assertTrue("Modern emulator must NOT be on compatibility HOLD",
+                until(scenario, """!!document.getElementById('compatibilityHold') &&
+                    document.getElementById('compatibilityHold').hidden"""))
             val shown = until(scenario, """!!document.getElementById('pendingLine') &&
                  !document.getElementById('pendingLine').hidden &&
                  document.getElementById('pendingLine').textContent.includes('guardada') &&
