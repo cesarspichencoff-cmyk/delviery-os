@@ -8,6 +8,7 @@ import br.com.tata.entregas.data.DeviceStateEntity
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.GpsPointEntity
 import br.com.tata.entregas.data.OutboxEventEntity
+import br.com.tata.entregas.data.TermAckEntity
 import br.com.tata.entregas.sync.ApiResult
 import br.com.tata.entregas.sync.DeviceSession
 import br.com.tata.entregas.sync.EntregasApi
@@ -44,6 +45,8 @@ class SyncWorkerWorkManager4xxTest {
     private var gpsResult: ApiResult<JSONObject> =
         ApiResult.Retryable("gps-unavailable", 503)
     private var queueResult: ApiResult<JSONObject> = ApiResult.Ok(JSONObject())
+    private var termResult: ApiResult<JSONObject> =
+        ApiResult.Rejected("fixture-term-unconfirmed", 422)
 
     private fun open(): EntregasDatabase =
         Room.databaseBuilder(context, EntregasDatabase::class.java, dbName).build()
@@ -75,6 +78,7 @@ class SyncWorkerWorkManager4xxTest {
         every { anyConstructed<EntregasApi>().sendEvents(any(), any()) } answers { pilotResult }
         every { anyConstructed<EntregasApi>().sendPoints(any(), any()) } answers { gpsResult }
         every { anyConstructed<EntregasApi>().sendQueueDepth(any(), any()) } answers { queueResult }
+        every { anyConstructed<EntregasApi>().sendTermAcknowledgement(any()) } answers { termResult }
         // Policies are not part of the 4xx receipt proof; no remote call.
         every { anyConstructed<EntregasApi>().policies() } returns
             ApiResult.Retryable("fixture-policy-unavailable", 503)
@@ -123,6 +127,35 @@ class SyncWorkerWorkManager4xxTest {
         lastError = null,
         createdAtMs = 1_000L,
     )
+
+    private fun termAck(id: String = "term-fixture-01") = TermAckEntity(
+        acknowledgementId = id,
+        riderId = "actor-fixture",
+        unitId = "ITAIM",
+        termVersion = "term-v1",
+        termMaterialVersion = "material-v1",
+        termHash = "hash-fixture",
+        status = "accepted",
+        acceptedAt = "2026-11-08T12:30:00Z",
+        deviceId = "device-fixture",
+        appVersion = "lab-debug",
+        language = "pt-BR",
+        origin = "rider_app",
+        correlationId = "correlation-fixture",
+        schemaVersion = "consent@1.0.0",
+        syncState = "pending",
+    )
+
+    private fun matchingTermReceipt(ack: TermAckEntity) = JSONObject()
+        .put("ok", true)
+        .put("acknowledgement_id", ack.acknowledgementId)
+        .put("receipt", JSONObject()
+            .put("recibo", ack.acknowledgementId)
+            .put("unidade", ack.unitId)
+            .put("versao_do_termo", ack.termVersion)
+            .put("impressao_do_texto", ack.termHash)
+            .put("aparelho", ack.deviceId)
+            .put("situacao", "aceito"))
 
     private suspend fun invoke(attempt: Int): ListenableWorker.Result {
         val worker = TestListenableWorkerBuilder<SyncWorker>(context)
@@ -206,4 +239,42 @@ class SyncWorkerWorkManager4xxTest {
         assertEquals("failed", remaining.syncState)
         assertEquals(0, db.outbox().rejectedCount())
     }
+    @Test fun term422WithoutPerAckReceiptFailsAndSurvivesSqliteRestart() = runBlocking {
+        val ack = termAck("term-422")
+        db.termAcks().insert(ack)
+        termResult = ApiResult.Rejected("whole-term-422", 422)
+        assertTrue(invoke(0) is ListenableWorker.Result.Failure)
+        db.close()
+        db = open()
+        val row = db.termAcks().byId(ack.acknowledgementId)
+        assertEquals("pending", row?.syncState)
+        assertEquals(listOf(ack.acknowledgementId),
+            db.termAcks().pending().map { it.acknowledgementId })
+    }
+
+    @Test fun malformedHttp200AckAtRetryCapNeverReturnsWorkerSuccess() = runBlocking {
+        val ack = termAck("term-http200-incomplete")
+        db.termAcks().insert(ack)
+        // Server says HTTP 200 but cannot attest THIS device, term and actor.
+        termResult = ApiResult.Ok(JSONObject()
+            .put("ok", true)
+            .put("acknowledgement_id", ack.acknowledgementId))
+        assertTrue(invoke(0) is ListenableWorker.Result.Retry)
+        assertTrue(invoke(2) is ListenableWorker.Result.Failure)
+        db.close()
+        db = open()
+        assertEquals("pending", db.termAcks().byId(ack.acknowledgementId)?.syncState)
+    }
+
+    @Test fun validStoredTermReceiptCompletesWorkerAndPersistsSentAfterRestart() = runBlocking {
+        val ack = termAck("term-valid-receipt")
+        db.termAcks().insert(ack)
+        termResult = ApiResult.Ok(matchingTermReceipt(ack))
+        assertTrue(invoke(0) is ListenableWorker.Result.Success)
+        db.close()
+        db = open()
+        assertEquals("sent", db.termAcks().byId(ack.acknowledgementId)?.syncState)
+        assertEquals(0, db.termAcks().pending().size)
+    }
+
 }
