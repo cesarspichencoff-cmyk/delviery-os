@@ -33,6 +33,27 @@ test('complete empty-note synthetic envelope is self-consistent but NOT authenti
  assert.equal(x.observationScanIndependentlyProven,false);
  assert.equal(x.ordersPublishable,0);assert.equal(x.printAuthorized,false);
 });
+test('PR135 explicit child-table blocker overrides self-signed complete scan',()=>{
+ const v=run(p=>{
+  p.blockers=['NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'];
+  p.ready_for_downstream_shadow=false;
+  p.order.observation_scan_complete=true;
+ });
+ assert.equal(v.reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
+ assert.equal(v.canonicalContractChecked,false);
+ assert.equal(v.ordersPublishable,0);
+ assert.equal(v.actualNativeSourceAuthenticated,false);
+});
+test('declared ready false alone rejects synthetic complete snapshot',()=>{
+ const v=run(p=>{p.ready_for_downstream_shadow=false;p.blockers=[];});
+ assert.equal(v.reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
+ assert.equal(v.ordersPublishable,0);
+});
+test('declared blocker alone cannot be erased by ready true',()=>{
+ const v=run(p=>{p.ready_for_downstream_shadow=true;p.blockers=['CHILD_COVERAGE_UNKNOWN'];});
+ assert.equal(v.reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
+ assert.equal(v.canonicalContractChecked,false);
+});
 test('legacy watcher emitted shape WITHOUT scan proof is blocked',()=>{
  state(p=>{delete p.order.observation_scan_complete;delete p.order.observation_rows;},
  'OBSERVATION_COMPLETENESS_MISSING_OR_UNATTESTED');
