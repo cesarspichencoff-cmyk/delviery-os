@@ -228,14 +228,15 @@ class SyncWorker(
         // 1. Aceites do termo primeiro: são a autorização de tudo o mais.
         val acks = db.termAcks().pending()
         for (ack in acks) {
-            when (val r = piloto.sendTermAcknowledgement(ackJson(ack))) {
+            val r = piloto.sendTermAcknowledgement(ackJson(ack))
+            // The local HTTP fixture exercises this EXACT verification and
+            // Room transition; do not split the critical receipt logic again.
+            val verified = persistTermAckOnVerifiedReceipt(db, ack, r)
+            when (r) {
                 is ApiResult.Ok -> {
-                    // HTTP 200 alone does not attest that the server stored THIS
-                    // actor, device, term version and choice. A mismatched or
-                    // partial response leaves the durable local entry pending.
-                    if (confirmsTermAckOnPilot(ack, r.value)) {
-                        db.termAcks().markSent(listOf(ack.acknowledgementId))
-                    } else {
+                    // HTTP 200 alone cannot attest THIS actor, device, term or
+                    // choice. A partial response leaves the local record pending.
+                    if (!verified) {
                         unconfirmedTermAck = true
                         retryable = true
                     }
