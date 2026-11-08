@@ -265,6 +265,22 @@ test('same anomaly type reported in each distinct shift counts once per shift',(
  x.shifts[1].anomalies=['DUPLICATE'];
  assert.equal(check(x,D2).reported_anomalies,2);
 });
-if(passed!==56)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+test('published field grid has all nine columns for every observed-order alias',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const markdown=fs.readFileSync(path.join(__dirname,'..','docs','comandas',
+  'FICHA_CAMPO_CENSO_PAPEL_ITAIM_ALMOCO_JANTAR_20261108.md'),'utf8');
+ const lines=markdown.split(/\\r?\\n/);
+ const header=lines.find(x=>x.startsWith('| Nº |'));
+ const table=lines.filter(x=>/^\\| \\d{2} \\|/.test(x));
+ assert.ok(header,'missing field header');
+ assert.equal(header.split('|').length-2,9);
+ assert.equal(header.split('|').at(-2).trim(),'Cobertura');
+ assert.equal(table.length,20);
+ for(let i=0;i<table.length;i++){
+  assert.equal(table[i].split('|').length-2,9,'field row '+(i+1));
+  assert.equal(table[i].split('|')[1].trim(),String(i+1).padStart(2,'0'));
+ }
+});
+if(passed!==57)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');
