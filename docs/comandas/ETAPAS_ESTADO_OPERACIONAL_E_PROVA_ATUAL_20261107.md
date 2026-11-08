@@ -1,0 +1,33 @@
+# TATÁ Comandas — posição operacional e critérios de passagem (07/11/2026)
+
+**Fonte operacional do projeto:** PR [#135](https://github.com/cesarspichencoff-cmyk/delviery-os/pull/135), branch `audit/comandas-native-chain-20261102`, último HEAD **`adc9473348dc9aaf3da43afeedb559bd05d580b9`**, CI [#42400009969](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42400009969) `completed/success` em **Linux e Windows**. Conferido antes deste checkpoint. Este é o HEAD de código testado, não a identidade do commit documental novo. Revalidar o HEAD/CI antes de qualquer alteração subsequente.
+
+**Resposta em uma frase:** estamos na **ETAPA 3 DE 6**, em homologação técnica e coleta de evidências, **não** em implementação autorizada no caixa.
+
+| Etapa | Situação comprovada | Falta para mudar a situação |
+| --- | --- | --- |
+| **1. Inventário e preservação do sistema** | **CONCLUÍDA** (04/11; checkpoint e CI no plano da PR #135) | Nenhuma pendência para o gate histórico; preservar componentes e revalidar HEAD |
+| **2. Integridade e testes adversariais offline** | **CONCLUÍDA NO ESCOPO OFFLINE** (04/11; resultados e CI registrados no plano) | O laboratório não prova SQL vivo, saída física, fidelidade de origem ou execução da aplicação |
+| **3. Plano/isolamento SQL e completude de revisão nativa** | **EM ANDAMENTO — GATE 3 NÃO APROVADO** | **N2-A**: plano atribuível à consulta candidata e segurança de locks para escritores; **N2-B**: fronteira independente de revisão semanticamente completa na Teknisa. Sem ambos, não propor ensaio SQL |
+| **4. Uma revisão real controlada** | **NÃO AUTORIZADA** | Nova autorização específica de César, depois dos gates de risco; comparar transação e semântica da mesma revisão sem afetar escritores |
+| **5. Censo físico e comparação de vias** | **PENDENTE**, com observação passiva **já autorizada** e protocolo preparado | Duas amostras reais (almoço e jantar) de papéis **já emitidos naturalmente**, observando até 20 pedidos consecutivos por turno, praças, itens, quantidades, observações, atrasos e duplicidade. Relato de César confirma a via Conferência Teknisa em uso usual, com conteúdo e uma via; **não equivale a censo** |
+| **6. Sequência, impressão supervisionada e aceite** | **NÃO AUTORIZADA / PENDENTE** | Identidade real da sequência, decisão contra duplicidade, supervisão de impressoras, rollback, provas físicas e aceite humano |
+
+## Caminho de menor intervenção que agora tem maior valor
+
+1. **Preservar o que já sai pela Teknisa.** Não ligar uma segunda via TATÁ, não desligar Cozinha/Sushi/Conferência nativas, não usar `ready` da sombra para imprimir nem mexer em fiscal. As três vias TATÁ são **representações virtuais**, com número de produção variável por pedido; não exigir três folhas físicas.
+2. **Paralelizar somente a evidência passiva já autorizada**, sem declarar a Etapa 5 iniciada ou concluída. A ficha completa está em [`CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md`](CENSO_FISICO_PRODUCAO_IFOOD_ITAIM_SEM_EFEITOS_20261102.md). Os dados enviados ao projeto são **somente contagens e flags**, sem pedidos, nomes, fotos, endereços, números fiscais ou conteúdo livre. Se a amostra tiver menos pedidos que 20, informar o total real; nunca escolher apenas pedidos que funcionaram. A ausência de observador ou praça torna a cobertura **desconhecida**, não zero anomalias.
+3. **Decidir a arquitetura pelo resultado real**, sem promoção automática: ausência de censo → `D0` e manter produção nativa; anomalia relatada `D2` → investigar sem mudar impressão; amostra humana completa `D1` → permite apenas **avaliar** a rota conservadora de preservar Cozinha/Sushi e estudar valor adicional da Conferência TATÁ em sombra. Mesmo `D1` continua autorrelato, não prova física autenticada nem permissão de ativação.
+4. **Tratar separadamente a falta de pedidos iFood na Teknisa:** relatada em 06/11, causa ainda **UNKNOWN**. A análise offline de presença por ID curto/dia exige agora Itaim `53069` ↔ `0001/01`, evita divulgação de status livre e passou **36/36 Linux + 36/36 Windows** no SHA citado. Isso **não** é conciliação corrente de 06/11 nem estabelece UUID completo, causa raiz ou inocência/culpa do Reader. Não confundir esse incidente com problema de impressão.
+5. **Somente depois das provas que realmente mudam decisão** reavaliar a candidata `SELECT SERIALIZABLE`, que permanece **HOLD**. `LOCK_TIMEOUT 100` não limita quanto um escritor pode ficar bloqueado; testes sintéticos/PK UNIQUE não resolvem N2-A/N2-B. Evitar novos testes redundantes enquanto não houver hipótese material nova.
+
+## Fatos de laboratório preservados e limitações
+
+- PR #135 `DRAFT/HOLD`, sem merge/deploy; CI [#42400009969](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42400009969) `success` para `adc9473`: cadeia virtual, origem exata do Itaim e conciliação privacy-safe. O verificador Windows V8.59 agora verifica schema/privacidade estrutural (**23/23**) e admite coincidência acidental de dígitos em timestamp; programa PowerShell em si não foi alterado. A hipótese para o falso positivo anterior não foi demonstrada a partir de JSON bruto.
+- PRs auxiliares **#140** (consumidor V7.15 isolado), **#141** (censo exclusivo Conferência), **#142** (identidades históricas de produtos) e **#143** (analisador XEL) permanecem abertas e em rascunho. **Nenhuma delas equivale a mudança no leitor ou impressão operacional.** Não fazer merge lateral apenas porque passaram na CI.
+- Identidades históricas de Missoshiro (2 candidatos), Salmão/Atum p/1 (2) e combinado apenas Salmão p/1 (1) **não** demonstram vínculo ao SKU ativo e item do pedido. Sem produto exato, kits/caixas/sacolas mantêm HOLD fora do laboratório.
+- Um `xml_deadlock_report` real permanece sem leitura binária comprovada; o deadlock nativo de 06/11 atingiu um `SELECT`, o que **não demonstra** por si falha de INSERT iFood. Preservação de XEL é risco operacional documentado separado, não autorização para mexer no caixa.
+- O **CAIXA_MOOCA é host físico do Itaim**, mas está sob **restrição absoluta de leitura passiva**: não iniciar CMD/PowerShell/processo, SQL, janela, serviço, spooler, impressão, varredura ou gravação; inclusive janelas piscando são inaceitáveis.
+- `READY != AUTHORIZED`; `TEST_PASS_LAB != WORLD_PROVEN`; `STAGE_3=IN_PROGRESS`; `STAGE_4=NOT_AUTHORIZED`; `STAGE_5=PENDING`; `PRINT=HOLD`; `CUTOVER=HOLD`.
+
+**Próximo checkpoint que realmente mudará a etapa:** evidência independente de plano/impacto de escritores e de completude semântica para o **Gate 3**; em paralelo, censo passivo real pode decidir a rota de menor risco sem avançar indevidamente uma etapa. Sem uma dessas evidências novas, manter a posição e **não fabricar avanço pela quantidade de testes**.
