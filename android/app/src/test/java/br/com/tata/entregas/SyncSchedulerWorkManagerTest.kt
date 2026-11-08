@@ -1,7 +1,9 @@
 package br.com.tata.entregas
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -77,7 +79,13 @@ class SyncSchedulerWorkManagerTest {
     }
 
     @Test fun legacyImmediateJobIsCancelledWithoutCancellingV2() {
-        val legacy = OneTimeWorkRequestBuilder<SyncWorker>().build()
+        // Reproduce the app's CONNECTED constraint. Without it, the test
+        // harness may begin executing a real Worker before cancellation.
+        val legacy = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(
+                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
+            )
+            .build()
         manager.enqueueUniqueWork(
             "entregas-sync-now", ExistingWorkPolicy.KEEP, legacy,
         ).result.get(15, TimeUnit.SECONDS)
