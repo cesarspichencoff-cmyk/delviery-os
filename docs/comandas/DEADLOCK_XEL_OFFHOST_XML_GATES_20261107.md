@@ -6,6 +6,22 @@
 
 **Verificação passiva de arquivo** (07/11): em `CAIXA_MOOCA`, apenas via `get_file_info`, o arquivo `C:\Program Files\Microsoft SQL Server\MSSQL14.SQLEXPRESS\MSSQL\Log\system_health_0_134384463380220000.xel` existe como binário, tamanho **5.239.296 bytes**, criado em 06/11/2026 às 13:45:38 UTC e modificado em 07/11/2026 às 02:43:40 UTC. O intervalo de tempo de arquivo **inclui** 06/11 às 21:12:59 BRT (07/11 00:12:59 UTC), mas não comprova que o evento foi capturado ou retido. Não existe cópia íntegra verificada neste laboratório. Leituras passivas dos `ERRORLOG`, `ERRORLOG.1` e `ERRORLOG.2` da instância 2017 não revelaram grafo `xml_deadlock_report` legível; a falta de texto não prova a ausência do evento binário. Nenhum XEL foi aberto/decodificado.
 
+## Identidade instalada do cliente SQL — evidência passiva de 08/11
+
+Em **08/11/2026**, foi feita leitura de duas faixas do arquivo **já instalado**, via `read_file` do conector, no `CAIXA_MOOCA`:
+
+`C:\ProgramData\TataComandaReader\bin\tata_reader_continuous_watch_candidate_v2.ps1`
+
+A configuração efetivamente escrita no código junto à criação de `System.Data.SqlClient.SqlConnection` contém a propriedade literal:
+
+`Application Name=TataReaderContinuousWatchV1`
+
+O heartbeat preexistente desse mesmo host declarava `watcher.file_name=tata_reader_continuous_watch_candidate_v2.ps1`, `watcher.sha256_verified=true` e `state=RUNNING` em 08/11 às 02:53 BRT. Essa declaração do supervisor foi lida passivamente, **não** representa reexecução de hash independente nem autenticação das conexões SQL ativas.
+
+**Ganho de prova:** o literal buscado pelo analisador XML não é apenas um nome arbitrado na candidata: ele aparece no arquivo Reader V2 instalado. Isso fortalece o fundamento para pesquisar correspondência **exata** no atributo `clientapp` do grafo real, caso seja extraído legitimamente.
+
+**Limite:** a presença de `Application Name` no código instalado não demonstra qual valor foi efetivamente registrado em cada sessão, que o Reader participou de qualquer ciclo de deadlock, ou a causa da não integração dos pedidos iFood. A ausência de match literal em um único XML não exime o Reader em outros episódios. Nenhum XEL foi lido; nenhum SQL/CMD/PowerShell, processo, alteração de serviço, escrita no host, spooler ou impressão foi acionado. Nenhum segredo, endereço de servidor ou dado de pedido foi incluído neste registro.
+
 ## Por que a cópia ainda é um gate
 
 O conector de leitura disponível classifica o `.xel` como **binário** e possui paginação em linhas de texto; não há operação autenticada de transferência íntegra desse arquivo via esse conector. Tratar um resultado textual ou parcial como a cópia binária original seria prova falsa. Não renomear, mover, rotacionar, remover ou tentar parsear o arquivo em produção e não iniciar CMD, PowerShell, SQL Server Management Studio, novo processo ou consulta no CAIXA_MOOCA.
