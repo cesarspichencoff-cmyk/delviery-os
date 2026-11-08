@@ -81,3 +81,16 @@ Saída de todos: contagens e enums. Texto livre nunca sai da máquina.
 ## 7. Segurança
 
 Efeitos `false`: impressão, spooler, fila, porta, serviço, caixa, Retail, SQL, sequência, fiscal, credencial, leitura de log ou payload, merge, deploy, contato com fornecedor. `PAPER_WORLD_PROVEN=UNKNOWN` · `NATIVE_FIRST_DLV_IFO_SUBMISSION=UNKNOWN` · `10/10=NOT_PROVEN`.
+
+## Auditoria de `LOG/logImpressao` em 08/11 — cupom não equivale à primeira via de produção
+
+Leitura **passiva e limitada** no PC físico Itaim (`CAIXA_MOOCA`), sem SQL, processo, CMD/PowerShell, token, spooler, serviço, exportação de payload ou alteração de arquivo:
+
+- A árvore já existente `C:\Teknisa\LOG\logImpressao\NRORG_5315\` contém pastas `CDFILIAL_0001_CDCAIXA_003` até `010`. Na subpasta `2026_11`, arquivos datados `08-11-2026.txt` estavam presentes nos caixas `004`, `005`, `006`, `008` e `010`. Ausência de arquivo no dia em outras pastas não atesta inatividade desses caixas nem origem `IFO`.
+- Metadados desses cinco arquivos, respectivamente: `004=19.221 bytes/652 linhas`, `005=15.079/513`, `006=24.828/846`, `008=13.009/444`, `010=3.621/124`; os tamanhos e contagens são **metadados de log, não número de cupons/impressões**. O `006` teve última modificação por volta de **15:42:43 BRT** (18:42:43Z) no momento da consulta.
+- Trechos pequenos dos arquivos `004` e `006` mostram estrutura `respostaTransmissao` / `dadosImpressao` / `DSQRCODE` / `TEXTOCUPOM1VIA` (cupom/documento de transmissão), inclusive um cabeçalho com itens; as amostras examinadas de `004/006/008` não apresentaram marcador literal `iFood` ou `DLV_IFO`. Não foram lidos integralmente nem correlacionados com pedidos; nenhum texto integral de cupom, QR, código fiscal, cliente, item ou destino foi persistido neste registro.
+
+**Veredito limitado:** este `logImpressao` **não é evidência suficiente da primeira via nativa de produção `DLV_IFO` nem de papel físico entregue**. O nome do diretório, suas pastas de caixa e a ocorrência de `TEXTOCUPOM1VIA` não identificam o sincronizador iFood. Não confundir esse log de cupom/transmissão com os logs específicos de bridge `IMP` e de praça; mesmo estes, isoladamente, não provam papel recebido. Manter os canais diferenciados na matriz e evitar reler conteúdos de cupom com dados sensíveis apenas para obter status de impressão.
+
+**Caminhos com potencial de mudar a decisão:** censo visual passivo já autorizado para testar saída nativa real, e vínculo oficial Retail `IFO → unidade → loja/caixa` quando acessível por fonte legitimamente autorizada. O primeiro não comprova o commit completo no SQL; o segundo não demonstra saída física. `FIRST_NATIVE_DISPATCH=UNKNOWN`, `PAPER_CENSUS_NOT_YET_COLLECTED`, `PRINT/CUTOVER=HOLD`.
+
