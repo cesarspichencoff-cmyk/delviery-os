@@ -14,6 +14,9 @@ on:
       - runtime/reporting/copiloto_tata_file_feed_v1.cjs
       - runtime/reporting/native_reader_verified_legacy_hash_v1.cjs
       - runtime/reporting/native_reader_producer_contract_review_v1.cjs
+      - runtime/reporting/native_reader_shadow_replay_v1.cjs
+      - tests/reporting/run-native-reader-shadow-replay-tests.cjs
+      - tests/reporting/run-pr135-native-child-observation-l1-contract.cjs
       - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
       - runtime/reporting/native_reader_n2_base_tables_review_v1.cjs
       - tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
@@ -77,6 +80,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      # PR135's reviewed producer: pin the exact commit on an isolated runner.
+      - uses: actions/checkout@v4
+        with:
+          repository: cesarspichencoff-cmyk/delviery-os
+          ref: 17e332e18532678a217c921a584d389f5125c4ea
+          path: pr135-source
+          persist-credentials: false
       - name: Node contract tests (synthetic only)
         run: |
           node tests/silent-runner/run-contract-tests.cjs
@@ -86,6 +96,8 @@ jobs:
           node tests/reporting/run-diagnostic-readiness-tests.cjs
           # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
+          node tests/reporting/run-native-reader-shadow-replay-tests.cjs
+          node tests/reporting/run-pr135-native-child-observation-l1-contract.cjs "$GITHUB_WORKSPACE/pr135-source"
           node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
           node tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
           node tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
