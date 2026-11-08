@@ -18,7 +18,11 @@ import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.sync.OperationalEventRecorder
+import br.com.tata.entregas.sync.EventReceiptDecision
+import br.com.tata.entregas.sync.EventReceiptItem
+import br.com.tata.entregas.sync.decideEventReceipt
 import br.com.tata.entregas.sync.SyncWorker
+import org.json.JSONObject
 import br.com.tata.entregas.ui.MainActivity
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -258,6 +262,59 @@ class RiderRealScreenInstrumentedTest {
             assertEquals(eventId, persisted.idempotencyKey)
             assertEquals("failed", persisted.syncState)
             assertFalse(persisted.syncState == "sent")
+
+            // This is a SYNTHETIC receipt supplied directly to the SAME
+            // validator called by SyncWorker. HTTP and doWork() are covered
+            // separately by the JVM dual-loopback fixture; they are NOT
+            // executed from this Android UI test.
+            val item = listOf(EventReceiptItem(eventId))
+            val missing = decideEventReceipt(
+                item, JSONObject("""{"ok":true,"results":[]}"""),
+            )
+            val wrong = decideEventReceipt(
+                item, JSONObject().put("ok", true).put(
+                    "results", org.json.JSONArray().put(
+                        JSONObject().put("event_id", "LAB_OTHER_EVENT").put("ok", true),
+                    ),
+                ),
+            )
+            assertTrue("Missing per-event receipt must not confirm", missing is EventReceiptDecision.Invalid)
+            assertTrue("Wrong event identity must not confirm", wrong is EventReceiptDecision.Invalid)
+            assertEquals("failed", runBlocking {
+                db.outbox().recent(50).first { it.eventId == eventId }.syncState
+            })
+            assertEquals("false", eval(scenario,
+                """!document.getElementById('confirmedLine').hidden"""))
+
+            val valid = decideEventReceipt(
+                item, JSONObject().put("ok", true).put(
+                    "results", org.json.JSONArray().put(
+                        JSONObject().put("event_id", eventId).put("ok", true),
+                    ),
+                ),
+            )
+            assertTrue("Only matched per-event receipt can advance state",
+                valid is EventReceiptDecision.Apply)
+            val sentIds = (valid as EventReceiptDecision.Apply).sentIds
+            assertEquals(listOf(eventId), sentIds)
+            assertTrue(valid.rejected.isEmpty())
+            assertTrue(valid.retryable.isEmpty())
+            // Mirror the Worker's EXACT DAO transition after validation:
+            // event identity and local sequence must remain stable.
+            runBlocking { db.outbox().markSent(sentIds) }
+            assertTrue("Actual Android rider.js did not show the matched Room confirmation",
+                until(scenario, """!document.getElementById('confirmedLine').hidden &&
+                    document.getElementById('confirmedLine').textContent.includes('confirmação do servidor para 1 ação')"""))
+            assertEquals("false", eval(scenario,
+                """!document.getElementById('pendingLine').hidden"""))
+            assertEquals("false", eval(scenario,
+                """!document.getElementById('btnSyncNow').hidden"""))
+            val afterReceipt = runBlocking {
+                db.outbox().recent(50).first { it.eventId == eventId }
+            }
+            assertEquals("sent", afterReceipt.syncState)
+            assertEquals(persisted.sequenceLocal, afterReceipt.sequenceLocal)
+            assertEquals(persisted.idempotencyKey, afterReceipt.idempotencyKey)
             assertEquals("No demo connection endpoint may run on native screen", 0, testSite.attemptedDemoMutation)
             assertEquals("No cross-origin request should leave fixture", 0, testSite.requestsOutsideLab)
             synchronized(testSite.paths) {
