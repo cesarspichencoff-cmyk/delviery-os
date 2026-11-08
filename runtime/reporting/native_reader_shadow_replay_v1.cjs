@@ -59,6 +59,11 @@ function decisionHash(d){
 function evaluatePair(p,key){
   if(!obj(p)||!obj(p.event)||!obj(p.decision))return null;
   const e=p.event,d=p.decision,o=e.order;
+  // Do not turn a native Reader candidate with declared missing child tables
+  // or source blockers into a self-consistent HMAC row. The producer's
+  // explicit negative authority cannot be overriden by a synthetic decision.
+  if(e.ready_for_downstream_shadow===false||
+    (Array.isArray(e.blockers)&&e.blockers.length>0))return null;
   if(e.schema!=='deliveryos.tata-reader-stable-order-event.v1'||
     d.schema!=='deliveryos.live-shadow-decision.v1'||!obj(o)||
     REQUIRED.some(k=>!Object.hasOwn(o,k))||
