@@ -55,7 +55,7 @@ function review(input){
     return outcome('D0_EVIDENCE_INSUFFICIENT','INVALID_INPUT');
   if(input.shifts.length===0)
     return outcome('D0_EVIDENCE_INSUFFICIENT','NO_FIELD_OBSERVATION');
-  const seen=new Set();
+  const seen=new Set(),days=new Set();
   let anomalies=0,observed=0,complete=true,
       allMix=true,allFamilies=true;
   for(const s of input.shifts){
@@ -94,7 +94,7 @@ function review(input){
          !ALLOWED_ANOMALIES.includes(x))||
       new Set(s.anomalies).size!==s.anomalies.length)
     return outcome('D0_EVIDENCE_INSUFFICIENT','REPORT_SHAPE_OR_PRIVACY_INVALID');
-   seen.add(s.window);
+   seen.add(s.window);days.add(s.day);
    const reportedTypes=new Set(s.anomalies);
    // Explicit NO is a conflict category; a matching tag must not double count.
    if(s.content_compared==='NO')reportedTypes.add('CONTENT_MISMATCH');
@@ -120,11 +120,17 @@ function review(input){
   }
   const counts={reported_anomalies:anomalies,
     shifts_reported:seen.size,observed_orders:observed,
-    sample_mix_complete_reported:seen.size===2&&allMix,
-    preparation_family_coverage_reported:seen.size===2&&allFamilies};
+    sample_mix_complete_reported:seen.size===2&&days.size===1&&allMix,
+    preparation_family_coverage_reported:seen.size===2&&days.size===1&&allFamilies};
   if(anomalies>0)
     return outcome('D2_ANOMALIA_RELATADA_REQUER_APURACAO',
       'AT_LEAST_ONE_REPORTED_ANOMALY_NOT_WORLD_ATTESTED',counts);
+  // Both shifts must describe the same operational calendar day. Two
+  // individually complete shifts from different days cannot prove a single
+  // day's lunch+dinner paper coverage. Preserve D2 anomaly precedence above.
+  if(seen.size===2&&days.size!==1)
+    return outcome('D0_EVIDENCE_INSUFFICIENT',
+      'CROSS_DAY_SHIFT_SAMPLES_NOT_ONE_OPERATIONAL_DAY',counts);
   if(seen.size!==2||!complete)
     return outcome('D0_EVIDENCE_INSUFFICIENT',
       'INCOMPLETE_OR_UNVERIFIED_SHIFT_SAMPLE',counts);

@@ -51,6 +51,22 @@ test('two explicitly reported complete samples get only provisional D1',()=>{
  assert.equal(r.shifts_reported,2);assert.equal(r.observed_orders,40);
  assert.equal(r.native_paper_sample_proven,false);
 });
+test('two complete shifts from different dates cannot become same-day D1',()=>{
+ const x=baseline();x.shifts[1].day='2026-11-05';
+ const r=check(x,D0,'CROSS_DAY_SHIFT_SAMPLES_NOT_ONE_OPERATIONAL_DAY');
+ assert.equal(r.shifts_reported,2);
+ assert.equal(r.observed_orders,40);
+ assert.equal(r.sample_mix_complete_reported,false);
+ assert.equal(r.preparation_family_coverage_reported,false);
+});
+test('witnessed identity anomaly remains D2 even across different dates',()=>{
+ const x=baseline();x.shifts[1].day='2026-11-05';
+ x.shifts[0].identity_confirmed='NO';
+ const r=check(x,D2,'AT_LEAST_ONE_REPORTED_ANOMALY_NOT_WORLD_ATTESTED');
+ assert.equal(r.reported_anomalies,1);
+ assert.equal(r.sample_mix_complete_reported,false);
+ assert.equal(r.preparation_family_coverage_reported,false);
+});
 test('sample fewer than twenty when shift had more is incomplete',()=>{
  const x=baseline();x.shifts[0].orders_observed=19;check(x,D0);
 });
@@ -295,6 +311,6 @@ test('published field grid has all nine columns for every observed-order alias',
   assert.equal(table[i].split('|')[1].trim(),String(i+1).padStart(2,'0'));
  }
 });
-if(passed!==59)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+if(passed!==61)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');

@@ -4,7 +4,7 @@
 
 ## Como preencher sem interferir no restaurante
 
-A equipe já presente acompanha até **20 pedidos consecutivos** no almoço e até **20 no jantar** (ou todos os pedidos disponíveis, se menos de 20), sem escolher só pedidos sem problema. Use **uma cópia desta ficha por turno**, uma testemunha local por impressora acompanhada e um coordenador para conciliar os papéis. **Não gerar pedido de teste, reimprimir, clicar em imprimir, limpar fila, abrir aplicativo/parametrização, mudar serviço, tocar em terminal ou ligar/desligar impressoras.** Se a observação atrapalhar a operação, pare e registre cobertura parcial.
+A equipe já presente acompanha até **20 pedidos consecutivos** no almoço e até **20 no jantar** (ou todos os pedidos disponíveis, se menos de 20), sem escolher só pedidos sem problema. Use **uma cópia desta ficha por turno**, com **a mesma data local para combinar almoço e jantar em um D1 do mesmo dia** (datas distintas exigem D0 na avaliação conjunta), uma testemunha local por impressora acompanhada e um coordenador para conciliar os papéis. **Não gerar pedido de teste, reimprimir, clicar em imprimir, limpar fila, abrir aplicativo/parametrização, mudar serviço, tocar em terminal ou ligar/desligar impressoras.** Se a observação atrapalhar a operação, pare e registre cobertura parcial.
 
 **Cabeçalho:** Data local: ________  Turno: ALMOÇO / JANTAR  Início: ____  Fim: ____  Pessoas acompanhando (referência local, não publicar): ________
 
