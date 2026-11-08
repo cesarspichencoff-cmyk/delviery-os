@@ -213,6 +213,9 @@ class SyncWorker(
         // Pilot 401 is an authorization block, not a successful transfer.
         // Keep Room data; do not clear the separate platform session.
         var pilotAuthorizationBlocked = false
+        // Um HTTP 4xx sem recibo por event_id nao e aceite remoto, nem
+        // recusa individual definitiva. Exibir falha, preservando a fila Room.
+        var unreceiptedBatchBlocked = false
         // Houve 401 da PLATAFORMA depois de ja termos autenticado? Entao o
         // token nao serve, e o lote precisa voltar para a fila — nunca ser
         // descartado.
@@ -327,7 +330,21 @@ class SyncWorker(
                         pilotAuthorizationBlocked = true
                     }
                 }
-                is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
+                is ApiResult.Rejected -> {
+                    // A rejeicao do LOTE nao identifica o resultado por evento.
+                    // Nao usar markRejected nem markSent aqui: ambos exigem
+                    // recibo por event_id validado pelo dominio.
+                    db.outbox().markFailed(ids, r.reason)
+                    when (classifyEventBatchHttpRejection(
+                        httpStatus = r.status,
+                        delegationDenied = dispatch.delegationDenied,
+                    )) {
+                        EventBatchHttpRejectionHold.PILOT_AUTHORIZATION_BLOCKED ->
+                            pilotAuthorizationBlocked = true
+                        EventBatchHttpRejectionHold.UNATTESTED_BATCH_REJECTION ->
+                            unreceiptedBatchBlocked = true
+                    }
+                }
             }
         }
 
@@ -408,7 +425,10 @@ class SyncWorker(
         if (gpsDrain.remaining) return Result.retry()
         // Other transient work (including GPS platform sync) retains bounded retry.
         if (retryable) return retryOrYield()
-        if (pilotAuthorizationBlocked) return Result.failure()
+        // Sem recibo por evento, dar Result.success() seria falso positivo.
+        // Um erro ainda nao conciliado permanece elegivel na fila Room para
+        // a proxima janela, com o MESMO eventId/idempotencyKey.
+        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()
         return Result.success()
     }
 
