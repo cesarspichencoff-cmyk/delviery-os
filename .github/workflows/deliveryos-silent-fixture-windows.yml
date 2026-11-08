@@ -50,6 +50,9 @@ on:
       - src/product/eventos/ledger-shadow.ts
       - src/platform/run-ledger-shadow-restart-tests.ts
       - src/entregas/ui/rider-mobile/rider.js
+      - src/entregas/ui/rider-mobile/native-bridge.js
+      - src/entregas/ui/rider-mobile/index.html
+      - tests/product/run-rider-native-sync-browser-tests.mjs
       - src/entregas/ui/rider-mobile/queue-health.js
       - src/product/ui/surfaces/home.js
       - tests/product/run-m1b-home-visual-truth-tests.ts
@@ -383,6 +386,17 @@ jobs:
           done
           curl --fail --silent --max-time 2 "$M1B_URL/api/health" >/dev/null
           npx tsx tests/product/run-m1b-home-visual-truth-tests.ts
+      - name: Verify rider queue recovery and receipts in actual Chromium
+        env:
+          RIDER_QA_ARTIFACTS: ${{ runner.temp }}/deliveryos-rider-native-sync
+        run: node tests/product/run-rider-native-sync-browser-tests.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: l6-rider-native-sync-browser-fixture
+          path: ${{ runner.temp }}/deliveryos-rider-native-sync/
+          retention-days: 7
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
