@@ -103,6 +103,20 @@ denied('duplicated native line identity cannot masquerade as second item',
  x=>{const row=copy(x.base.itemRows[0]);x.base.itemRows.push(row);
   const it=copy(x.event.order.items[0]);it.NRPRODCOMVEN='LINE_2';x.event.order.items.push(it);reh(x)},
  'BASE_ITEM_LINE_DUPLICATE_OR_INVALID');
+test('duplicated EVENT native line cannot reuse one source line and skip another',()=>{
+ const x=fixture();
+ // The source has distinct native lines; a malformed event repeats the first.
+ // With only a count check, this falsely matched before the bijection gate.
+ const old=copy(x.event.order.items[0]);
+ x.event.order.items.push(old);
+ x.event.order.observation_rows=[];
+ x.base.itemRows[0].DSOBSPEDDIGCMD=null;
+ x.base.itemRows.push({...x.base.itemRows[0],NRPRODCOMVEN:'LINE_2'});
+ reh(x);
+ const r=safety(review(x));
+ assert.equal(r.reason,'EVENT_NATIVE_LINE_DUPLICATE_OR_UNMATCHED');
+ assert.equal(r.itemsMatching,false);
+});
 test('repeated product code with item note is rejected independent of item index',()=>{
  const x=fixture(),more=copy(x.event.order.items[0]);more.NRPRODCOMVEN='LINE_2';
  x.event.order.items.push(more);
