@@ -20,8 +20,10 @@ on:
       - tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
       - tests/reporting/run-android-event-batch-4xx-source-contract-tests.cjs
       - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejection.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejectionRoom.kt
       - android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt
       - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionTest.kt
+      - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionRoomTest.kt
       - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
       - labs/reader-proof/**
       - tests/reporting/run-reader-one-shot-lab-tests.cjs
