@@ -8,7 +8,11 @@ import br.com.tata.entregas.sync.ApiResult
 import br.com.tata.entregas.sync.EntregasApi
 import br.com.tata.entregas.sync.persistTermAckOnVerifiedReceipt
 import br.com.tata.entregas.sync.termAckWireJson
-import com.sun.net.httpserver.HttpServer
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import kotlin.concurrent.thread
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.After
@@ -22,7 +26,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -38,7 +41,8 @@ class TermAckLoopbackHttpRoomTest {
     private lateinit var context: Context
     private lateinit var dbName: String
     private lateinit var db: EntregasDatabase
-    private lateinit var server: HttpServer
+    private lateinit var server: ServerSocket
+    private lateinit var serverThread: Thread
     private lateinit var api: EntregasApi
 
     @Volatile private var responseStatus = 200
@@ -50,28 +54,71 @@ class TermAckLoopbackHttpRoomTest {
         context = RuntimeEnvironment.getApplication()
         dbName = "term-loopback-room-${System.nanoTime()}.db"
         db = Room.databaseBuilder(context, EntregasDatabase::class.java, dbName).build()
-        server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        server.createContext("/api/term/acknowledge") { request ->
-            try {
-                lastAuthorization = request.requestHeaders.getFirst("Authorization")
-                requestBodies.add(
-                    request.requestBody.bufferedReader(Charsets.UTF_8).use { it.readText() },
-                )
-                val bytes = responseBody.toByteArray(Charsets.UTF_8)
-                request.responseHeaders.set("Content-Type", "application/json; charset=utf-8")
-                request.sendResponseHeaders(responseStatus, bytes.size.toLong())
-                request.responseBody.use { it.write(bytes) }
-            } finally {
-                request.close()
+        // Android test compilation intentionally excludes JDK's HttpServer.
+        // Use only java.net APIs available to both Android's JVM stub and JDK.
+        server = ServerSocket(0, 16, InetAddress.getByName("127.0.0.1"))
+        server.soTimeout = 1_000
+        serverThread = thread(name = "term-ack-loopback-fixture", isDaemon = true) {
+            while (!server.isClosed) {
+                try {
+                    server.accept().use { socket ->
+                        socket.soTimeout = 1_500
+                        val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
+                        val first = reader.readLine() ?: return@use
+                        if (!first.startsWith("POST /api/term/acknowledge HTTP/1."))
+                            return@use
+                        var length = 0
+                        var authorization: String? = null
+                        while (true) {
+                            val line = reader.readLine() ?: break
+                            if (line.isEmpty()) break
+                            if (line.startsWith("Content-Length:", ignoreCase = true))
+                                length = line.substringAfter(':').trim().toIntOrNull() ?: 0
+                            if (line.startsWith("Authorization:", ignoreCase = true))
+                                authorization = line.substringAfter(':').trim()
+                        }
+                        lastAuthorization = authorization
+                        require(length in 1..16_384) { "LAB_HTTP_BODY_LENGTH_INVALID" }
+                        val chars = CharArray(length)
+                        var offset = 0
+                        while (offset < chars.size) {
+                            val read = reader.read(chars, offset, chars.size - offset)
+                            if (read < 0) break
+                            offset += read
+                        }
+                        requestBodies.add(String(chars, 0, offset))
+                        val bytes = responseBody.toByteArray(Charsets.UTF_8)
+                        val status = responseStatus
+                        val label = when (status) {
+                            200 -> "OK"
+                            401 -> "Unauthorized"
+                            422 -> "Unprocessable Entity"
+                            else -> "Fixture"
+                        }
+                        val header = "HTTP/1.1 " + status + " " + label + "\r\n" +
+                            "Content-Type: application/json; charset=utf-8\r\n" +
+                            "Content-Length: " + bytes.size + "\r\n" +
+                            "Connection: close\r\n\r\n"
+                        socket.getOutputStream().use { output ->
+                            output.write(header.toByteArray(Charsets.US_ASCII))
+                            output.write(bytes)
+                            output.flush()
+                        }
+                    }
+                } catch (_: SocketTimeoutException) {
+                    // Loopback fixture idle; no outside traffic or service.
+                } catch (e: SocketException) {
+                    if (!server.isClosed) throw e
+                }
             }
         }
-        server.start()
-        assertTrue(server.address.address.isLoopbackAddress)
-        api = EntregasApi("http://127.0.0.1:${server.address.port}", { null }, 1_500)
+        assertTrue(server.inetAddress.isLoopbackAddress)
+        api = EntregasApi("http://127.0.0.1:" + server.localPort, { null }, 1_500)
     }
 
     @After fun teardown() {
-        if (::server.isInitialized) server.stop(0)
+        if (::server.isInitialized) server.close()
+        if (::serverThread.isInitialized) serverThread.join(1_500)
         if (::db.isInitialized) db.close()
         if (::context.isInitialized && ::dbName.isInitialized)
             context.deleteDatabase(dbName)
@@ -206,7 +253,7 @@ class TermAckLoopbackHttpRoomTest {
     @Test fun localTransportConnectionRefusedIsRetryableWithoutChangingRoom() = runBlocking {
         val a = ack("server-unavailable")
         db.termAcks().insert(a)
-        server.stop(0)
+        server.close()
         val result = request(a)
         assertTrue(result is ApiResult.Retryable)
         assertFalse(persistTermAckOnVerifiedReceipt(db, a, result))
