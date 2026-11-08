@@ -50,8 +50,8 @@ namespace DeliveryOS.ReaderLab {
     "18f98521c3756ce26b4fe6645ed6cb0b3baff6e5",
     "0f44bccd8acaf41465d3e8d8b15074badd0e7047",
     "6199f42c84a8fbf8170da9d05d0bbf024fc7dd1f",
-    "df99355648bb0e5b506644adaf982dbe936e2818",
-    "72077ffe6710f32117de34b2d1e43bc22039c51a"
+    "70528fe678db944a4c098688fa608bbaef0ec3c0",
+    "0d9fbe032e30371becc1fa1d469dac05131a92b5"
    };
    for(int i=0;i<names.Length;i++)
     if(!CheckGitBlob(Path.Combine(workspace,"runtime","reporting",names[i]),
