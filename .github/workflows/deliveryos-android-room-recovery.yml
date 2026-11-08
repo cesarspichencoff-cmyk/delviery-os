@@ -56,6 +56,18 @@ jobs:
             err+=int(root.attrib.get("errors","0"))
             suites[root.attrib.get("name", "")]=int(root.attrib.get("tests","0"))
           print(f"ANDROID_ROOM_JUNIT: suites={len(files)}, tests={n}, failures={fail}, errors={err}")
+          # Fixture-only diagnostics; never print app payloads or test stdout.
+          if fail or err:
+            for file in files:
+              suite=ET.parse(file).getroot()
+              for case in suite.findall(".//testcase"):
+                for tag in ("failure","error"):
+                  node=case.find(tag)
+                  if node is not None:
+                    typ=node.attrib.get("type","unknown")[:120]
+                    msg=node.attrib.get("message","").splitlines()
+                    short=msg[0][:180] if msg else ""
+                    print(f"ANDROID_JUNIT_FAIL_TYPE: {suite.attrib.get('name','')[:95]} {case.attrib.get('name','')[:95]} {typ} {short}")
           # The build is not proof if Android or the new Room integration never ran.
           expected={
             "br.com.tata.entregas.EventBatchHttpRejectionTest": 4,
