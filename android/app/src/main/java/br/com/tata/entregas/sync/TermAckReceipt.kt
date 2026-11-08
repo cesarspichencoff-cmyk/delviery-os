@@ -68,3 +68,22 @@ internal suspend fun persistTermAckOnVerifiedReceipt(
     db.termAcks().markSent(listOf(ack.acknowledgementId))
     return true
 }
+
+
+/** Exact wire body used by the Worker and by its loopback HTTP contract test. */
+internal fun termAckWireJson(ack: TermAckEntity): JSONObject = JSONObject().apply {
+    put("acknowledgement_id", ack.acknowledgementId)
+    put("rider_id", ack.riderId)
+    put("unit_id", ack.unitId)
+    put("term_version", ack.termVersion)
+    put("term_material_version", ack.termMaterialVersion)
+    put("term_hash", ack.termHash)
+    put("status", ack.status)
+    put("accepted_at", ack.acceptedAt)
+    put("device_id", ack.deviceId)
+    put("app_version", ack.appVersion)
+    put("language", ack.language)
+    put("origin", ack.origin)
+    put("correlation_id", ack.correlationId)
+    put("schema_version", ack.schemaVersion)
+}
