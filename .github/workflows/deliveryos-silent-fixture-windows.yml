@@ -30,6 +30,8 @@ on:
       - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
       - labs/reader-proof/**
       - tests/reporting/run-reader-one-shot-lab-tests.cjs
+      - tests/reporting/run-reader-one-shot-dependency-pin-tests.cjs
+      - labs/reader-proof/NativeReaderOneShotLabLauncher.cs
       - tests/reporting/build-reader-one-shot-lab-fixture.cjs
       - runtime/tata-reader/tata_reader_health_v1.cjs
       - tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
@@ -110,6 +112,7 @@ jobs:
           node tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
           # Source binding only: Kotlin compilation has a separate acceptance gate.
           node tests/reporting/run-android-event-batch-4xx-source-contract-tests.cjs
+          node tests/reporting/run-reader-one-shot-dependency-pin-tests.cjs
           node tests/reporting/run-reader-one-shot-lab-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
