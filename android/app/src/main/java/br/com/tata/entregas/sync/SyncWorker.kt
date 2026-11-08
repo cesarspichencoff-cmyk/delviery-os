@@ -228,7 +228,7 @@ class SyncWorker(
         // 1. Aceites do termo primeiro: são a autorização de tudo o mais.
         val acks = db.termAcks().pending()
         for (ack in acks) {
-            val r = piloto.sendTermAcknowledgement(ackJson(ack))
+            val r = piloto.sendTermAcknowledgement(termAckWireJson(ack))
             // The local HTTP fixture exercises this EXACT verification and
             // Room transition; do not split the critical receipt logic again.
             val verified = persistTermAckOnVerifiedReceipt(db, ack, r)
@@ -448,22 +448,6 @@ class SyncWorker(
         return Result.success()
     }
 
-    private fun ackJson(ack: br.com.tata.entregas.data.TermAckEntity) = JSONObject().apply {
-        put("acknowledgement_id", ack.acknowledgementId)
-        put("rider_id", ack.riderId)
-        put("unit_id", ack.unitId)
-        put("term_version", ack.termVersion)
-        put("term_material_version", ack.termMaterialVersion)
-        put("term_hash", ack.termHash)
-        put("status", ack.status)
-        put("accepted_at", ack.acceptedAt)
-        put("device_id", ack.deviceId)
-        put("app_version", ack.appVersion)
-        put("language", ack.language)
-        put("origin", ack.origin)
-        put("correlation_id", ack.correlationId)
-        put("schema_version", ack.schemaVersion)
-    }
 }
 
 object SyncScheduler {
