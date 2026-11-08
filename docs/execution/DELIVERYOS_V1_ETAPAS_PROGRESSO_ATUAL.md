@@ -542,3 +542,16 @@ A validação anterior `264/264` tinha **Room e DAO reais**, mas o resultado de 
 
 **Limites:** `L4_REAL_LIVE=HOLD`; `L4_BROWSER_SYNTHETIC=PASS`; `L6_4XX_COPY=PASS_SYNTHETIC`; `L6_XIAOMI=NOT_RUN`; `L6_HTTP_REAL_RECEIPT=UNKNOWN`; `L6_REJECTION_POLICY=HOLD`; `L7=HOLD`; `L8=HOLD`; `HOME_PRODUCTION=HOLD`; `PRINT=HOLD`; `DEPLOY=NO`. Nenhum acesso ao CAIXA_MOOCA, servidor produtivo, GPS real, cliente, aparelho, impressora ou serviço. **Próximo passo material:** aprofundar a L6 com recibo de servidor e feedback real de confirmação, sem tomar 272 testes Android ou 24 telas simuladas como evidência de campo.
 
+
+## Checkpoint Delivery OS L6 — aceite de termo só com recibo remoto (08/11/2026)
+
+Continuidade restrita ao **Delivery OS V1 do Itaim**, PR #137, sem trabalhar na fonte de comandas. A questão de lançamento continua medida por **8 critérios de aceite real, ainda 0/8 completos**, não por porcentagem estimada de testes.
+
+**Falha encontrada e corrigida no `SyncWorker.doWork()`:** um aceite de termo enviado à rota do piloto podia permanecer **`pending`** no Room e, ainda assim, o Worker retornar **`Result.success()`** após HTTP 422 ou depois do limite de tentativas rápidas com HTTP 200 sem recibo válido. Introduzido `unconfirmedTermAck` em todas as respostas sem recibo individual atestado; a saída `Result.failure()` agora impede falso sucesso após a política de retry existente. Nenhuma alteração de banco, GPS, protocolo HTTP, token, consentimento, Home ou interface. O ack local não é descartado nem promovido a `sent` sem recibo.
+
+**Prova:** 3 cenários novos com `SyncWorker` real + Room SQLite com fechamento/reabertura: 422 sem recibo → `Failure` e `pending`; 200 incompleto → `Retry` inicial e `Failure` após teto, persistindo `pending`; recibo completo e identificado → `Success` e `sent` persistente. Código `deecaf208f3070711fcd45e30751b8ef99f27995`, [CI Android #42503703220](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42503703220) **`completed/success`, 26 suítes, 275/275, 0 falhas**; [CI geral #42503703221](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42503703221) **`completed/success`, 5/5 jobs**. A guarda estática foi atualizada para exigir a condição mais forte de falha sem recibo, não relaxada.
+
+**Relatório completo:** [`DELIVERYOS_L6_TERM_ACK_WORKMANAGER_RECEIPT_FAIL_CLOSED_20261108.md`](./DELIVERYOS_L6_TERM_ACK_WORKMANAGER_RECEIPT_FAIL_CLOSED_20261108.md).
+
+**Pendente real:** termo e ACK contra servidor real, feedback de pendência no motoboy, aparelho Xiaomi, GPS consentido, Home conectada a fatos reais, ciclo integrado e segurança no campo. `L6_TERM_WORK_RESULT=LAB_PASS`; `L6_ACK_REAL=UNKNOWN`; `L6_XIAOMI=NOT_RUN`; `HOME=HOLD`; `PRINT=HOLD`; `L7=HOLD`; `L8=HOLD`. **0/8 aceites integrais; sem instalação, deploy, merge, impressão ou alteração no caixa.**
+
