@@ -17,6 +17,7 @@ on:
       - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
       - runtime/reporting/native_reader_n2_base_tables_review_v1.cjs
       - tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
+      - tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
       - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
       - labs/reader-proof/**
       - tests/reporting/run-reader-one-shot-lab-tests.cjs
@@ -81,6 +82,7 @@ jobs:
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
           node tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
+          node tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
           node tests/reporting/run-reader-one-shot-lab-tests.cjs
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
@@ -106,6 +108,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify SQL DMV baseline PowerShell syntax without running SQL
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $tokens=$null
+          $errors=$null
+          $probe=(Resolve-Path -LiteralPath 'labs/reader-proof/ReaderSqlDmvBaselineReviewOnly.ps1').Path
+          [System.Management.Automation.Language.Parser]::ParseFile($probe,[ref]$tokens,[ref]$errors) | Out-Null
+          if($errors.Count -ne 0){ throw ('READER_DMV_BASELINE_PS_PARSE_ERRORS_'+$errors.Count) }
+          Write-Host 'READER_SQL_DMV_BASELINE_WINDOWS_PARSE_PASS 1/1 NO_SQL'
+
       - name: Compile and verify in isolated Windows runner
         shell: powershell
         run: |
