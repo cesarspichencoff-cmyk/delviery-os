@@ -51,6 +51,29 @@ Leitura passiva complementar em 08/11/2026 dos arquivos **instalados** (código 
 
 **Decisão:** ampliar mapa de semântica/associação e identificar chamador/commit por evidência independente, não fazer JOIN automático sob `SERIALIZABLE` nem inferir que o gatilho de impressão foi alcançado. Dados transacionais, itens, componentes, observações e papel físico permanecem gates diferentes. `STAGE_4=NOT_AUTHORIZED`, `PRINT=HOLD`, `CUTOVER=HOLD`.
 
+## Evidência D — estrutura SQL das relações filhas, observada sem acessar o banco
+
+Em continuidade, foram lidas por **leitura passiva** as definições de SQL em
+`C:\TEKNISA\odhenPOS\backend_74000\src\Util\MSDEQuery.php` (arquivo instalado, 7.651 linhas; modificado em 09/06/2026).
+A inspeção verificou apenas nomes de relações e colunas do SQL PHP; **não executou nenhum comando SQL**.
+
+| Definição nativa | Relação gravada | Vínculo estrutural exposto pelo SQL |
+|---|---|---|
+| `SQL_INS_ITCOMANDAVEN` (~3496) | `ITCOMANDAVEN` | `CDFILIAL`, `NRVENDAREST`, `NRCOMANDA`, `NRPRODCOMVEN`, `CDLOJA`; produto e campos adicionais |
+| `SQL_INS_ITCOMANDAEST` (~3519) | `ITCOMANDAEST` | `CDFILIAL`, `NRVENDAREST`, `NRCOMANDA`, `NRPRODCOMVEN`, `CDPRODUTO`; componentes promocionais |
+| `SQL_INS_OBSITCOMANDAVEN` (~3590) | `OBSITCOMANDAVEN` | `CDFILIAL`, `NRVENDAREST`, `NRCOMANDA`, `NRPRODCOMVEN`, `CDGRPOCOR`, `CDOCORR` |
+| `SQL_INS_OBSITCOMANDAEST` (~3599) | `OBSITCOMANDAEST` | `CDFILIAL`, `NRVENDAREST`, `NRCOMANDA`, `NRPRODCOMVEN`, `CDPRODUTO`, `CDGRPOCOR`, `CDOCORR` |
+
+A definição `GET_ITEM_ITCOMANDAEST` (~6944) localiza componentes por filial, venda, comanda, sequência do produto e código de produto; `ATUALIZA_ITEM_ITCOMANDAEST` (~6954) utiliza os mesmos predicados. Isso sustenta a **proposta de vínculo lógico**, mas **não prova chave primária, índices UNIQUE, cardinalidade, ausência de colisões entre lojas ou custo de JOIN**.
+
+**Risco de identidade:** as definições de `INSERT` das relações filhas acima não incluem `CDLOJA` nas colunas de `ITCOMANDAEST`, `OBSITCOMANDAVEN` ou `OBSITCOMANDAEST`. Nunca ligar filhas apenas por número de comanda ou produto: o escopo e a unicidade real precisam ser comprovados. Em paralelo, `OCORRENCIA` fornece os textos de códigos `CDGRPOCOR/CDOCORR` no SQL nativo de consulta `GET_LASTSALE_PRODUCT_OBSERVATIONS` (outro módulo, ~1281–1317), mas a identidade e a cardinalidade desse catálogo ainda não foram atestadas no banco.
+
+**Diferença entre evidências:** esses nomes e colunas são `SOURCE_CODE_OBSERVED`, não `CURRENT_DB_SCHEMA_VERIFIED`. A consulta candidata sob `SERIALIZABLE` **permanece intacta**; acrescentar JOINs agora aumentaria a superfície de bloqueio sem comprovar completude semântica.
+
+**Roteamento de investigação:** a aplicação local contém `vendor/odhen/api/service/index.php`, mas sua rota examinada trata de operações SAT; ela não é prova do receptor iFood. O serviço `Comanda::comanda()` pode ser invocado de outros módulos ou por integração remota. `INGRESS_CALLER=UNKNOWN` e `TRANSACTION_COMMIT_BOUNDARY=UNKNOWN`. Não ampliar indefinidamente a inspeção do POS como substituto de uma evidência independente do integrador.
+
+**Próximo gate objetivo:** uma vez identificado o receptor autorizado do pedido iFood, obter evidência de **sinal de fechamento após todos os inserts relevantes** e mapa real das relações das tabelas filhas, antes de planejar leitura com novos JOINs. Até lá `N2_B=UNPROVEN`, `N2_A_LOCK_IMPACT=UNKNOWN`, `STAGE_4=NOT_AUTHORIZED`, `PRINT/CUTOVER=HOLD`.
+
 ## Não aplicar correção precipitada
 
 **Não acrescentar JOINs às tabelas faltantes de forma automática.** A tabela de observações é gravada sem campo `CDLOJA` na lista de colunas do INSERT visto; o relacionamento exato e a unicidade/índices precisam de catálogo e prova de identidade. JOINs adicionais sob `SERIALIZABLE` podem multiplicar linhas, exceder a sentinela `TOP(201)`, introduzir scans e **aumentar locks para escritores**. `LOCK_TIMEOUT 100` restringe espera do leitor, não a espera de escritores bloqueados por ele.
