@@ -20,9 +20,9 @@ const header=()=>({
  NRCOMANDA:'LABCMD',NRCOMANDAEXT:'1234',IDORGCMDVENDA:'DLV_IFO',
  IDSTCOMANDA:'3',DSOBSCOMANDA:'FICTICIO'
 });
-const sale=()=>({CDFILIAL:'0001',NRVENDAREST:'LABSALE',
+const sale=()=>({CDFILIAL:'0001',CDLOJA:'01',NRVENDAREST:'LABSALE',
  DTHRABERMESA:'2026-11-04T18:30:00.0000000'});
-const item=(line,cd='LABPROD')=>({CDFILIAL:'0001',
+const item=(line,cd='LABPROD')=>({CDFILIAL:'0001',CDLOJA:'01',
  NRVENDAREST:'LABSALE',NRCOMANDA:'LABCMD',NRPRODCOMVEN:String(line).padStart(6,'0'),
  CDPRODUTO:cd,QTPRODCOMVEN:'1.000',IDSTPRCOMVEN:'4',
  DSOBSDESCIT:null,DSOBSPEDDIGCMD:null,TXPRODCOMVEN:null});
@@ -43,9 +43,10 @@ function joinFixture(t){
      c.IDORGCMDVENDA!=='DLV_IFO'||c.NRVENDAREST!=='LABSALE'||
      c.NRCOMANDA!=='LABCMD')continue;
   const matchingSales=t.sales.filter(v=>v.CDFILIAL===c.CDFILIAL&&
-   v.NRVENDAREST===c.NRVENDAREST);
+   v.CDLOJA===c.CDLOJA&&v.NRVENDAREST===c.NRVENDAREST);
   const matchingItems=t.items.filter(i=>i.CDFILIAL===c.CDFILIAL&&
-   i.NRVENDAREST===c.NRVENDAREST&&i.NRCOMANDA===c.NRCOMANDA);
+   i.CDLOJA===c.CDLOJA&&i.NRVENDAREST===c.NRVENDAREST&&
+   i.NRCOMANDA===c.NRCOMANDA);
   for(const v of matchingSales){
    // LEFT JOIN item, LEFT JOIN product; zero items yields a null-extended row.
    for(const i of matchingItems.length?matchingItems:[null]){
@@ -91,8 +92,11 @@ test('candidate uses two separate LEFT JOINs, not guarantee of one row per item'
 test('PRODUCT join only on CDPRODUTO; catalog index prefixes do not prove uniqueness',()=>{
  assert.match(query,/ON p\.CDPRODUTO=i\.CDPRODUTO/i);
 });
-test('SALE join only matches two fields; uniqueness not proven by its text',()=>{
- assert.match(query,/ON v\.CDFILIAL=c\.CDFILIAL\s+AND v\.NRVENDAREST=c\.NRVENDAREST/i);
+test('SALE join includes store code, while uniqueness still requires native proof',()=>{
+ assert.match(query,/ON v\.CDFILIAL=c\.CDFILIAL\s+AND v\.CDLOJA=c\.CDLOJA\s+AND v\.NRVENDAREST=c\.NRVENDAREST/i);
+});
+test('ITEM join includes store code and native order key',()=>{
+ assert.match(query,/ON i\.CDFILIAL=c\.CDFILIAL\s+AND i\.CDLOJA=c\.CDLOJA\s+AND i\.NRVENDAREST=c\.NRVENDAREST\s+AND i\.NRCOMANDA=c\.NRCOMANDA/i);
 });
 test('order key includes four native identity components',()=>{
  assert.match(query,/c\.CDFILIAL='0001'/i);
@@ -120,6 +124,26 @@ test('duplicated PRODUCT rows identical still multiply a native item',()=>{
  const t=model();t.products.push({...t.products[0]});
  assert.equal(joinFixture(t).length,3);
  assertHold(assemble(t),'NATIVE_ITEM_LINE_KEY_DUPLICATE');
+});
+test('foreign VENDAREST with reused sale key is excluded by exact store join',()=>{
+ const t=model();t.sales.push({...sale(),CDLOJA:'02'});
+ assert.equal(joinFixture(t).length,2);
+ assert.equal(assemble(t).status,'PRIVATE_CANONICAL_EVENT_CANDIDATE');
+});
+test('only foreign VENDAREST with reused sale key returns no candidate',()=>{
+ const t=model({sales:[{...sale(),CDLOJA:'02'}]});
+ assert.equal(joinFixture(t).length,0);
+ assertHold(assemble(t),'BOUNDED_EXHAUSTED_SOURCE_ROWSET_NOT_SUPPLIED');
+});
+test('foreign ITCOMANDAVEN item with reused sale and comanda key is excluded',()=>{
+ const t=model();t.items.push({...item(3),CDLOJA:'02'});
+ assert.equal(joinFixture(t).length,2);
+ assert.equal(assemble(t).status,'PRIVATE_CANONICAL_EVENT_CANDIDATE');
+});
+test('only foreign ITCOMANDAVEN items produce null extended row and HOLD',()=>{
+ const t=model({items:[{...item(1),CDLOJA:'02'}]});
+ assert.equal(joinFixture(t).length,1);
+ assertHold(assemble(t),'NATIVE_SOURCE_COLUMNS_OR_VALUES_UNTRUSTED');
 });
 test('two VENDAREST rows for same join key multiply every item',()=>{
  const t=model();t.sales.push({...t.sales[0]});
@@ -222,6 +246,6 @@ test('catalog uniqueness for COMANDAVEN, VENDAREST and PRODUTO is still unknown'
  assert.equal(r.sourceAuthenticated,false);
  assert.equal(r.printAuthorized,false);
 });
-if(n!==30)throw Error('JOIN_CARDINALITY_EXPECTED_30_GOT_'+n);
+if(n!==35)throw Error('JOIN_CARDINALITY_EXPECTED_35_GOT_'+n);
 console.log('COMANDAS_JOIN_CARDINALITY_COUNTEREXAMPLES_PASS '+n+'/'+n+
  ' SYNTHETIC_ONLY_NO_SQL_NO_PRINT_ALWAYS_HOLD');

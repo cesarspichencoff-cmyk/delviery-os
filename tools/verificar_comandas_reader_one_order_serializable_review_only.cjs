@@ -44,8 +44,15 @@ test('joins preserve item-to-order and product routing',()=>{
  for(const name of ['TEKNISA.COMANDAVEN','TEKNISA.VENDAREST',
   'TEKNISA.ITCOMANDAVEN','TEKNISA.PRODUTO'])assert.ok(sql.includes(name));
  for(const name of ['i.NRCOMANDA=c.NRCOMANDA','i.NRVENDAREST=c.NRVENDAREST',
-  'i.CDFILIAL=c.CDFILIAL','p.CDPRODUTO=i.CDPRODUTO'])assert.ok(sql.includes(name));
+  'i.CDFILIAL=c.CDFILIAL','i.CDLOJA=c.CDLOJA',
+  'v.CDLOJA=c.CDLOJA','p.CDPRODUTO=i.CDPRODUTO'])assert.ok(sql.includes(name));
  assert.match(sql,/ORDER BY i\.NRPRODCOMVEN ASC/i);
+});
+test('VENDAREST and ITCOMANDAVEN both join on native shop code',()=>{
+ // Those columns are present in the installed Teknisa INSERT statements.
+ // A reused sale and comanda number from another shop must not join Itaim.
+ assert.match(sql,/INNER JOIN TEKNISA\.VENDAREST AS v\s+ON v\.CDFILIAL=c\.CDFILIAL\s+AND v\.CDLOJA=c\.CDLOJA\s+AND v\.NRVENDAREST=c\.NRVENDAREST/i);
+ assert.match(sql,/LEFT JOIN TEKNISA\.ITCOMANDAVEN AS i\s+ON i\.CDFILIAL=c\.CDFILIAL\s+AND i\.CDLOJA=c\.CDLOJA\s+AND i\.NRVENDAREST=c\.NRVENDAREST\s+AND i\.NRCOMANDA=c\.NRCOMANDA/i);
 });
 test('native order parameters use exact varchar10 types observed in Itaim SQL catalog',()=>{
  assert.match(template,/COMANDAVEN\.NRVENDAREST is varchar\(10\), NRCOMANDA is varchar\(10\)/);

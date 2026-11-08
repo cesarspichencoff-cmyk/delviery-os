@@ -53,6 +53,8 @@ function review(input){
     !/\bc\.IDORGCMDVENDA='DLV_IFO'/i.test(effective)||
     !/\bc\.NRVENDAREST=@nrVendaRest/i.test(effective)||
     !/\bc\.NRCOMANDA=@nrComanda/i.test(effective)||
+    !/\bv\.CDLOJA\s*=\s*c\.CDLOJA\b/i.test(effective)||
+    !/\bi\.CDLOJA\s*=\s*c\.CDLOJA\b/i.test(effective)||
     (effective.match(/\bSELECT\b/gi)||[]).length!==1||
     /\b(?:NOLOCK|READPAST|BEGIN TRAN|INSERT|UPDATE|DELETE|MERGE|TRUNCATE|ALTER|EXEC|EXECUTE)\b/i.test(effective))
    return hold('CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');

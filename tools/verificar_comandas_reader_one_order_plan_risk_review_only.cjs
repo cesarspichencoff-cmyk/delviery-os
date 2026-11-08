@@ -59,6 +59,14 @@ test('mismatched plan digest blocks',()=>condition(x=>x.plan.query_sha256='f'.re
 test('synthetic candidate with wrong branch store blocks',()=>{
  condition(replaceSql("c.CDLOJA='01'","c.CDLOJA='99'"),'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
 });
+test('omitted VENDAREST shop equality blocks review',()=>{
+ condition(replaceSql('AND v.CDLOJA=c.CDLOJA','AND v.NRVENDAREST=c.NRVENDAREST'),
+ 'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
+test('omitted ITCOMANDAVEN shop equality blocks review',()=>{
+ condition(replaceSql('AND i.CDLOJA=c.CDLOJA','AND i.NRCOMANDA=c.NRCOMANDA'),
+ 'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
+});
 test('synthetic candidate with wrong iFood source blocks',()=>{
  condition(replaceSql("c.IDORGCMDVENDA='DLV_IFO'",
  "c.IDORGCMDVENDA='DLV_FAKE'"),'CANDIDATE_SQL_SCOPE_OR_POLICY_CHANGED');
@@ -157,6 +165,6 @@ test('omitted plan fields cannot be defaulted',()=>{
 test('unrecognized plan origin fails shape',()=>{
  condition(x=>x.plan.origin='SQL_SERVER_AUTHORIZED','PLAN_SUMMARY_SHAPE_INVALID');
 });
-if(n!==36)throw Error('PLAN_REVIEW_TEST_COUNT_MISMATCH '+n);
+if(n!==38)throw Error('PLAN_REVIEW_TEST_COUNT_MISMATCH '+n);
 console.log('COMANDAS_ONE_ORDER_PLAN_RISK_REVIEW_PASS '+n+'/'+n+
  ' OFFLINE_SYNTHETIC_NO_SQL_OR_SHOWPLAN_NO_PRINT_ALWAYS_HOLD');
