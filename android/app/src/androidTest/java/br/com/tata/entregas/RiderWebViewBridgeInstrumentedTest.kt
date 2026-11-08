@@ -86,6 +86,24 @@ class RiderWebViewBridgeInstrumentedTest {
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            // MainActivity asynchronously enqueues the periodic worker before
+            // loading its initial page. On newer Android engines that delayed
+            // load can replace the laboratory HTML after injection.
+            // Observe that INITIAL navigation was requested first.
+            var initialRequested = false
+            for (attempt in 0 until 60) {
+                scenario.onActivity { activity ->
+                    val web = (activity.findViewById<ViewGroup>(android.R.id.content))
+                        .getChildAt(0) as WebView
+                    initialRequested = web.url?.startsWith(
+                        br.com.tata.entregas.BuildConfig.ENTREGAS_BASE_URL,
+                    ) == true
+                }
+                if (initialRequested) break
+                Thread.sleep(250)
+            }
+            assertTrue("Initial MainActivity navigation was not observed", initialRequested)
+
             scenario.onActivity { activity ->
                 val container = activity.findViewById<ViewGroup>(android.R.id.content)
                 val web = container.getChildAt(0) as WebView
@@ -106,7 +124,19 @@ class RiderWebViewBridgeInstrumentedTest {
                 }
                 Thread.sleep(250)
             }
-            assertTrue("Real WebView and native bridge were not ready", ready)
+            if (!ready) {
+                val probe = evaluate(scenario, """
+                    JSON.stringify({
+                      dom:document.readyState,
+                      button:!!document.getElementById('record-and-sync'),
+                      native:!!window.EntregasNative,
+                      record:!!window.EntregasNative &&
+                          typeof window.EntregasNative.recordOperationalEvent==='function'
+                    })
+                """.trimIndent())
+                throw AssertionError("LAB_BRIDGE_NOT_READY probe=$probe webview=" +
+                    (WebView.getCurrentWebViewPackage()?.versionName ?: "unknown"))
+            }
 
             // DOM click runs the same JS -> EntregasJsBridge -> MainActivity
             // boundary as the real app; not a synthetic native method stub.
