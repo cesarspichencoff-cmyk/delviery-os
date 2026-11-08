@@ -7,6 +7,9 @@ on:
     paths:
       - .github/workflows/deliveryos-android-webview-emulator-lab.yml
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderWebViewBridgeInstrumentedTest.kt
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderRealScreenInstrumentedTest.kt
+      - src/entregas/ui/rider-mobile/**
+      - src/entregas/ui/shared/**
       - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
       - android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt
       - android/app/src/main/java/br/com/tata/entregas/sync/OperationalEventRecorder.kt
@@ -52,21 +55,25 @@ jobs:
           import xml.etree.ElementTree as ET
           root = Path("android/app/build/outputs/androidTest-results/connected")
           files = list(root.rglob("*.xml")) if root.exists() else []
-          target = "RiderWebViewBridgeInstrumentedTest"
-          n = fail = err = 0
+          targets = {
+              "RiderWebViewBridgeInstrumentedTest": 1,
+              "RiderRealScreenInstrumentedTest": 1,
+          }
+          counts = {name: 0 for name in targets}
+          fail = err = 0
           for path in files:
               try:
                   tree = ET.parse(path).getroot()
               except ET.ParseError:
                   continue
-              name = tree.attrib.get("name","")
-              if target not in name and target not in str(path):
-                  continue
-              n += int(tree.attrib.get("tests", "0"))
-              fail += int(tree.attrib.get("failures", "0"))
-              err += int(tree.attrib.get("errors", "0"))
-          print(f"ANDROID_WEBVIEW_INSTRUMENTED: tests={n} failures={fail} errors={err}")
-          if n < 1 or fail or err:
+              label = tree.attrib.get("name", "") + " " + str(path)
+              for name in targets:
+                  if name in label:
+                      counts[name] += int(tree.attrib.get("tests", "0"))
+                      fail += int(tree.attrib.get("failures", "0"))
+                      err += int(tree.attrib.get("errors", "0"))
+          print(f"ANDROID_WEBVIEW_INSTRUMENTED: counts={counts} failures={fail} errors={err}")
+          if fail or err or any(counts[name] < expected for name, expected in targets.items()):
               raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
-          print("ANDROID_WEBVIEW_LAB_TEST_PASS_NO_FIELD_CLAIM")
+          print("ANDROID_WEBVIEW_REAL_RIDER_UI_LAB_PASS_NO_REMOTE_RECEIPT")
           PY
