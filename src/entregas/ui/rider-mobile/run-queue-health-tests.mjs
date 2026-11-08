@@ -7,7 +7,8 @@ const source = readFileSync(new URL("queue-health.js", dir), "utf8");
 const exported = await import("data:text/javascript;base64," +
   Buffer.from(source).toString("base64"));
 const { inspectOperationalEvents, queueHoldMessage,
-  QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK } = exported;
+  QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
+  queuedOperationalActionsMessage, rejectedOperationalActionMessage } = exported;
 let pass = 0;
 function test(label, fn) {
   fn();
@@ -60,6 +61,52 @@ test("write HOLD says explicitly that the action is unconfirmed", () => {
 test("unknown code does not invent a warning", () => {
   assert.equal(queueHoldMessage("SOMETHING_ELSE"),"");
 });
+test("pending is stored locally, never represented as server receipt", () => {
+  const s=queuedOperationalActionsMessage([ev]);
+  assert.match(s,/1 ação guardada/);
+  assert.match(s,/sem confirmação do servidor/);
+  assert.doesNotMatch(s,/entregue|confirmad[ao] pelo servidor/i);
+});
+test("sending is in flight, not necessarily received or accepted", () => {
+  const s=queuedOperationalActionsMessage([{...ev,state:"sending"}]);
+  assert.match(s,/Envio em andamento/);
+  assert.match(s,/ainda não chegou ao aparelho/);
+});
+test("failed after HTTP 403, 409 and 422 never claims request did not reach server", () => {
+  for(const code of [403,409,422]) {
+    const s=queuedOperationalActionsMessage([{
+      ...ev,state:"failed",last_error:`HTTP ${code}: token FICT_SECRET e cliente FICT_PERSON`,
+    }]);
+    assert.match(s,/pode ter chegado até ele/);
+    assert.match(s,/Não repita a confirmação sem verificar/);
+    assert.doesNotMatch(s,/não chegou ao servidor|FICT_SECRET|FICT_PERSON|HTTP 403|HTTP 409|HTTP 422/i);
+  }
+});
+test("mixed pending and failed uses failure warning and exact local count", () => {
+  const s=queuedOperationalActionsMessage([ev,{...ev,event_id:"evt-2",sequence_local:2,state:"failed"}]);
+  assert.match(s,/2 ações guardadas/);
+  assert.match(s,/não foi confirmada pelo servidor/);
+  assert.doesNotMatch(s,/aguardando envio/);
+});
+test("terminal sent and rejected are not miscounted as pending", () => {
+  assert.equal(queuedOperationalActionsMessage([{...ev,state:"sent"}]),"");
+  assert.equal(queuedOperationalActionsMessage([{...ev,state:"rejected"}]),"");
+});
+test("malformed native queue is not presented as empty successful queue", () => {
+  assert.equal(queuedOperationalActionsMessage(null),"");
+  assert.equal(queuedOperationalActionsMessage([{...ev,state:"unknown"}]),"");
+});
+test("terminal rejection remains visible without disclosing untrusted error text", () => {
+  const s=rejectedOperationalActionMessage({
+    ...ev,state:"rejected",last_error:"dominio_recusou: FICT_PRIVATE_SENTINEL TOKEN_ABCDE endereço do cliente",
+  });
+  assert.match(s,/Ação recusada pelo servidor/);
+  assert.match(s,/responsável/);
+  for(const v of ["FICT_PRIVATE_SENTINEL","TOKEN_ABCDE","endereço do cliente","dominio_recusou"])
+    assert.equal(s.includes(v),false);
+  assert.equal(rejectedOperationalActionMessage({...ev,state:"failed",last_error:"403"}),"");
+});
+
 const scopeSource = readFileSync(new URL("rider-trip-scope.js",dir),"utf8");
 const { selectActiveRiderTrip } = await import("data:text/javascript;base64," +
   Buffer.from(scopeSource).toString("base64"));
@@ -140,6 +187,12 @@ test("native write rejects uncertain or terminal receipts", () => {
       assert.equal(exported.verifiedNativeQueueReceipt(r,"e-1"),false);
 });
 
+test("live rider UI uses safe queue and rejection messages, never raw HTTP error", () => {
+  assert.match(ui,/queuedOperationalActionsMessage\(events\)/);
+  assert.match(ui,/rejectedOperationalActionMessage\(recusa\)/);
+  assert.doesNotMatch(ui,/última tentativa não chegou ao servidor/);
+  assert.doesNotMatch(ui,/String\(recusa\.last_error/);
+});
 test("page has accessible alert independent of the server rejection", () => {
   assert.match(html,/id="queueHoldLine"[^>]*role="alert"/);
   assert.match(html,/id="rejectedLine"[^>]*role="alert"/);
