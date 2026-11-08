@@ -376,3 +376,30 @@ A nova [CI #42436276007](https://github.com/cesarspichencoff-cmyk/delviery-os/ac
 4. Só após prova e autorização próprias considerar fonte transacional em campo; em seguida, identidade iFood independente. `N2_ATOMICITY=HOLD`, `N4_IFOOD=HOLD`, `N5_HOME=HOLD`, `PRINT=HOLD`, `DEPLOYED=NO`, **V1=0/8 aceites operacionais**.
 
 **Referências técnicas:** Microsoft Learn: `SET TRANSACTION ISOLATION LEVEL`, `SET LOCK_TIMEOUT`, `SET SHOWPLAN_XML`. Permanecem separados os conceitos `MODEL_TEST_PASS`, `ACTUAL_SQL_READ_PROVEN` e `ATOMIC_CAPTURE_PROVEN`.
+
+## Checkpoint L1 — plano estimado da consulta serializable, sem executar SELECT (07/11/2026, 23h50–23h56 BRT)
+
+**Retomada e prova de código:** PR #137 continuou aberta, DRAFT/HOLD, no commit `d95d084a3113d4a2a3fa047a4428b46174faf5bb`. A CI [#42439332392](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42439332392) foi verificada como `completed/success`, **4/4 jobs**; a suíte `NATIVE_READER_N2_BASE_TABLES_REVIEW_PASS 22/22 SYNTHETIC_ONLY` incluiu a nova trava de uso bijetivo de linhas nativas. **É prova de código e laboratório, não execução do novo verificador no caixa.**
+
+**Plano investigado:** fonte **existente e não executada em produção** da PR #135, `tools/comandas_reader_one_order_serializable_REVIEW_ONLY.sql`, **Git blob `8ca857f8ec29a4718122a7ad7433b9d9dda101d5`**. Exige uma comanda, unidade `0001/01`, `DLV_IFO` exato, junções com `CDLOJA` em VENDAREST e ITCOMANDAVEN, `TOP (201)` como sentinela, `OPTION (MAXDOP 1)` e as 17 colunas nativas de cabeçalho/itens/notas. Não houve edição dessa candidata nem instalação no Reader.
+
+**Mecanismo efetivamente usado:** conexão **não-poolizada**, autenticada pelo Windows e restrita ao banco `teknisa` no `(local)\SQLEXPRESS`; configurações **somente da sessão da auditoria** para compilação em `SERIALIZABLE`. `SET SHOWPLAN_XML ON` executado isoladamente, seguido de uma consulta constante de controle para provar que a sessão realmente devolvia XML do plano **sem executar o SELECT**. A primeira tentativa de obter o plano parametrizado por `SqlCommand` não retornou conjunto de resultados XML (nenhuma coluna), embora o controle estivesse em modo SHOWPLAN: **não considerar essa tentativa um plano obtido**. Em contrarota, a consulta exata do template foi compilada com `DECLARE` de **duas variáveis locais `varchar(10)`**, cujos valores vieram apenas da revisão real já analisada; as variáveis e dados de pedido não foram publicados. A saída foi somente resumo do XML, sem SQL bruto, números de comandas, notas, XML integral ou credenciais. `SHOWPLAN_XML` foi desligado e a conexão descartada. Nenhum SELECT de pedidos foi executado nessa operação de compilação.
+
+**Plano estimado obtido do SQL Server real:**
+- `status=ESTIMATED_PLAN_CAPTURED`, `operator_count=8`; compilação medida em **17 ms** (não é duração de consulta de pedido).
+- `VENDAREST`: **Clustered Index Seek**, `EstimateRows=1`.
+- `COMANDAVEN`: **Clustered Index Seek**, `EstimateRows=1`.
+- `ITCOMANDAVEN`: **Clustered Index Seek**, `EstimateRows=3.91516`.
+- `PRODUTO`: **Index Seek**, `EstimateRows=1`.
+- **0** elementos de índice ausente, **0** `PlanAffectingConvert`, nenhuma string `CONVERT_IMPLICIT` no XML; nenhum operador `Index Scan`/`Table Scan` apareceu no conjunto de operadores de acesso reportado.
+- Nenhum plano XML foi gravado no caixa ou no repositório; não houve execução da candidata `SERIALIZABLE`.
+
+**Interpretação limitada:** o resultado **reduz a incerteza de acesso/índice da candidata** sob as condições dessa compilação e é materialmente melhor que depender apenas do plano **diferente** em cache do watcher. Mas as variáveis locais não garantem a mesma escolha do otimizador da futura chamada parametrizada; custos e estimativas podem variar com estatísticas, parâmetros e concorrência. Um `Seek` **não garante ausência de bloqueios de intervalo ou de escritores** em `SERIALIZABLE`. `LOCK_TIMEOUT=100` limita a espera **do leitor**, não quanto tempo ele pode bloquear operações do caixa. Não há medição de locks reais, latência do PDV ou plano real de execução dessa candidata. Não usar o tempo de compilação para estimar duração em produção.
+
+**Verificação pós-teste no host:** heartbeat do Reader às `2026-11-07T23:56:11.8047784-03:00`: `RUNNING`, último lote `OK`, `poll_errors=0`, `consecutive_failures=0`, `watcher.sha256_verified=true`. A ausência de falha agregada observada não prova inexistência de qualquer efeito visual do Shell.
+
+**Portões mantidos:** `ESTIMATED_ONE_ORDER_PLAN=OBSERVED_ON_REAL_SQL`; `SERIALIZABLE_QUERY_EXECUTED=NO`; `WRITER_LOCK_IMPACT=UNKNOWN`; `N2_CAPTURE_ATOMICITY=NOT_PROVEN`; `N3_ONE_EVENT_HASH=VERIFIED`; `N4_IFOOD_UUID=HOLD`; `N5_HOME=HOLD`; `PRINT=HOLD`; `DEPLOYED=NO`; `V1_ACCEPTED=0/8`.
+
+**Próximo gate responsável:** preparar avaliação supervisionada de lock e latência do PDV **antes** de qualquer piloto com `SERIALIZABLE`; essa consulta pode atrasar escritores e precisa de uma decisão humana específica sobre janela/condições de ensaio, não é efeito automaticamente autorizado por "pode continuar". Até lá, manter Reader V2 instalado e PR #137 em DRAFT/HOLD.
+
+**Referência de sintaxe e limite:** Microsoft Learn, `SET SHOWPLAN_XML` (plano sem executar query) e `SET TRANSACTION ISOLATION LEVEL` (bloqueios de intervalo em `SERIALIZABLE`).
