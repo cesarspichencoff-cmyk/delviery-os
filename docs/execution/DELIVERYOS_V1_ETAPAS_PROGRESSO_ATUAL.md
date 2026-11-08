@@ -265,3 +265,22 @@ A auditoria completa e os metadados de tamanho/mtime da fonte observada (não ha
 - **Próximo passo que realmente altera a situação:** validar previamente um canal de invocação local que não crie janela e que emita apenas recibo sanitizado, com identidade, isolamento e reversão; só então, sob autorização condicional ainda aplicável e gatilhos exatos, analisar UMA revisão já emitida, e confrontar uma prova independente de completude/SQL. **Não repetir testes de laboratório idênticos para mascarar a falta de prova de campo.**
 
 **Efeitos desta rodada:** comparação GitHub, leitura de documentos e de dois status agregados já existentes; nenhuma execução, comando, SQL, serviço, tarefa, GetIn, impressão, armazenamento ou pedido no `CAIXA_MOOCA`. `L1=PARTIAL`, `V1_ACCEPTED=0/8`.
+
+
+## Checkpoint L1 — retomada de 07/11/2026 (22h44 BRT, somente leitura passiva)
+
+**Escopo:** PR #137 DRAFT/HOLD no HEAD `85d68758e6c4ab62bded8d0e16606e4aac1e540c`. A continuidade é da etapa **L1 de L8**, com N1 parcialmente comprovado e **N2/N3/N4/N5 em HOLD**. Continuam **0/8 aceites operacionais**. Não atribuir à retomada nova permissão para executar código no caixa.
+
+**Prova contemporânea obtida no `CAIXA_MOOCA`:** o dispositivo estava online. A leitura passiva dos dois arquivos agregados preexistentes foi feita por `read_multiple_files` do conector, **sem execução de shell/processo e sem abrir eventos brutos**:
+
+- `C:\\ProgramData\\TataComandaReader\\state\\reader-heartbeat-v1.json`: supervisor `RUNNING`, registro às `2026-11-07T22:44:29.1100041-03:00`, último lote #14178 com `outcome=OK`, encerrado às `22:44:03-03:00`, `polls=20`, `poll_errors=0`, `snapshots_observed=1000`, `events_emitted=0`, `duplicates_suppressed=1000`, `consecutive_failures=0`. Isso comprova o estado **da amostra consultada**, não completude transacional nem funcionamento indefinido.
+- `C:\\ProgramData\\DeliveryOS-Itaim-Observer\\status.json`: carimbo `2026-11-08T01:43:39.661Z` (07/11 22h43 em São Paulo), `schedule=DINNER`, `state=OBSERVED_RECORDS`, `filesRead=250`, `ignoredHistorical=246`, `projectedOrderCount=4`, `sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `operationalOrderTotal=null`, `noActionExecuted=true`. **Quatro é contagem diagnóstica, não quatro pedidos operacionais comprovados.**
+- Relatório `delivery-report-current.proof.json` ainda se refere a um materializado **histórico de 05/10/2026**; não foi promovido a relatório atualizado de pedidos.
+
+**Reconciliado com o checkpoint de 06/11:** N3 tem paridades históricas em amostras de 100/100 e 240/240, mas não demonstra a revisão completa selecionada, caracteres especiais nem independência do hash. N2 segue sem prova independente de todos os itens e observações sob isolamento SQL real; `READ COMMITTED` com RCSI desativado não garante um snapshot coerente entre consultas. N4 carece de identidade iFood, escopo estrito `DLV_IFO` e frescor com proveniência independente; N5/Home permanece sem fonte publicável.
+
+**Bloqueio de execução preservado:** há código de laboratório para examinar uma revisão existente e emitir somente um recibo sanitizado, mas não um canal **de campo** já comprovado que execute localmente sem abrir janela/console ou exportar conteúdo bruto. `read_file` não serve para ler evento de cliente, porque transfere seu conteúdo; `start_process` não comprova nascimento invisível no Windows do operador. A autorização condicional anterior para **uma** revisão antiga permanece restrita àquelas salvaguardas, e não autoriza alterações de agendamentos, Reader, SQL, Gestor, impressora ou produção.
+
+**Efeito desta retomada:** leitura passiva de arquivos agregados, revalidação da PR/branch e atualização documental neste commit. **Nenhum comando ou PowerShell, processo, tarefa, login, SQL, evento bruto, cópia de PII, implantação, envio, impressão, alteração de Home ou novo gasto.**
+
+**Próximo gate material:** comprovar por canal independente e autorizável a invocação de um executor local que **nasça invisível**, use arquivo já emitido **sem exportar bruto**, remova a matéria-prima de memória após produzir **apenas recibo sanitizado**, com atestação separada da completude SQL e rollback. Não repetir fixtures sintéticas equivalentes nem converter saúde do Reader em verdade operacional. Até lá `CODE_READY=PARTIAL`, `CI_PASS=LAB_ONLY`, `FIELD_PROVEN_N2_N3=NO`, `DEPLOYED_V1=NO`, `V1_ACCEPTED=0/8`.
