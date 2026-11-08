@@ -454,3 +454,15 @@ A prova, o método e os limites estão preservados em [`DELIVERYOS_L2_CURRENT_NA
 
 **Estado:** `L2_PRODAMBIENTE_USED=false/NO_ROWS_OBSERVED`; `L2_14_PRODUCT_ROUTING=UNKNOWN`; `L3_READY=HOLD`; `N2_ATOMICITY=HOLD`; `N4_CROSS_SOURCE=HOLD_AT_EXPLICIT_JOIN`; `HOME=HOLD`; `PRINT=HOLD`; `DEPLOY=NO`; **V1=0/8 aceites operacionais**. Não houve piloto `SERIALIZABLE`, ação sobre impressora ou novo agendamento.
 
+
+## Checkpoint L3 — candidatas SQL de primeiro despacho sem registros (08/11/2026)
+
+**CI anterior comprovada:** GitHub Actions [#42453593937](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42453593937), relativo ao commit `cc44c9a8f6427e12aa28fe0320f273d4fe22d724`, encerrado como **`completed/success`**. A CI deste novo checkpoint documental exige verificação separada antes de ser chamada de aprovada.
+
+**Diferença investigada:** a PR #135 já tinha verificadores offline que recusam impressão manual, relatório de entrega, fiscal, evento 307 e símbolos estáticos como substitutos da primeira via automática de uma revisão `DLV_IFO`; não foi recriado outro gate. Uma nova procura de **metadados SQL somente leitura** localizou `ITCMDVENORIG` e `PEDIDOFOS` como tabelas candidatas pelo nome de colunas. `ITCMDVENORIG` guarda a chave de cabeçalho e identificador de item; `PEDIDOFOS` possui indicadores de impressão e `NRCOMANDA`, mas **não guarda `NRVENDAREST`**. Não foi usada junção por número parcial.
+
+**Resultado de campo:** uma consulta parametrizada por `CDFILIAL='0001'`, `CDLOJA='01'`, `NRVENDAREST` e `NRCOMANDA` de uma revisão histórica conhecida encontrou **zero linhas em `ITCMDVENORIG`** (17 ms); `sys.partitions` indicou contagem zero também para `PEDIDOFOS`; e a contra-verificação exata `EXISTS` encontrou **`false` para as duas tabelas inteiras** (13 ms), sem trazer dados de pedidos. A primeira tentativa de contagem encontrou um erro de tratamento de `SUM(NULL)`, corrigido antes do resultado válido. A ausência das duas tabelas é evidência **pontual nesta base**, não prova de inexistência de impressão em outros componentes.
+
+**Conclusão limitada:** ambas as tabelas ficam fora da rota de prova da primeira emissão **neste estado da base**. `HISTPEDCONS` tinha histórico do pedido, mas não prova envio de via. `L3_FIRST_NATIVE_DISPATCH=UNKNOWN`, `N2_ATOMICITY=HOLD`, `L2_STATION_AUTHORITY=HOLD`, `N4_IFOOD_BINDING=HOLD`, `HOME=HOLD`, `PRINT=HOLD`, **V1=0/8**. Sem comando de impressão, DML/DDL, configuração SQL, serviço, deploy, merge ou contato com o fornecedor.
+
+**Relatório reproduzível e limites:** [`DELIVERYOS_L3_NATIVE_FIRST_DISPATCH_SQL_SOURCE_ELIMINATION_20261108.md`](./DELIVERYOS_L3_NATIVE_FIRST_DISPATCH_SQL_SOURCE_ELIMINATION_20261108.md). O próximo trabalho relevante não é varrer mais tabelas vazias, e sim capturar — quando houver fonte legítima e efetiva — o elo causal entre a revisão de quatro partes `DLV_IFO` e **a primeira tentativa automática real** de produção, praça e destino, sempre separado de entrega/reimpressão e sem intervenção operacional não autorizada.
