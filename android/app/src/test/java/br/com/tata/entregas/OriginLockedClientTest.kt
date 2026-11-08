@@ -54,7 +54,7 @@ class OriginLockedClientTest {
     @Test fun userInfoAndMissingRequestAreBlocked() {
         val client = OriginLockedClient("https://pilot.example")
         assertTrue(wouldBlock(client, "https://user@pilot.example/rider-mobile/"))
-        assertTrue(client.shouldOverrideUrlLoading(null, null))
+        assertTrue(client.shouldOverrideUrlLoading(null, null as WebResourceRequest?))
     }
 
     @Test fun explicitPilotPortKeepsOnlyThatOrigin() {
