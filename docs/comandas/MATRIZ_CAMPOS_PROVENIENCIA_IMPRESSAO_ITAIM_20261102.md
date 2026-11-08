@@ -94,3 +94,23 @@ Leitura **passiva e limitada** no PC físico Itaim (`CAIXA_MOOCA`), sem SQL, pro
 
 **Caminhos com potencial de mudar a decisão:** censo visual passivo já autorizado para testar saída nativa real, e vínculo oficial Retail `IFO → unidade → loja/caixa` quando acessível por fonte legitimamente autorizada. O primeiro não comprova o commit completo no SQL; o segundo não demonstra saída física. `FIRST_NATIVE_DISPATCH=UNKNOWN`, `PAPER_CENSUS_NOT_YET_COLLECTED`, `PRINT/CUTOVER=HOLD`.
 
+## Metadados atuais do bridge de produção — almoço de domingo 08/11/2026
+
+Leitura **apenas de nomes e metadados** (sem abrir conteúdo dos arquivos) no PC físico Itaim, pasta preexistente `C:\TEKNISA\odhen-perifericos\Log\112026\`, arquivo do dia `2026_11_08_IMP.txt` e seis destinos `2026_11_08_IMP_16_*.` A associação dos arquivos às praças usa o mapa versionado `data/runtime_printer_map_v1.json` capturado em 30/09, **não** um novo inventário da configuração atual.
+
+| Arquivo/estação indicada pelo mapa | Tamanho da fonte | Última escrita UTC observada |
+|---|---:|---|
+| Geral `IMP` | 430.485 bytes | 18:37:17 |
+| BALCAOSUSHI2 | 88.304 bytes | 18:37:17 |
+| COZINHA | 99.610 bytes | 18:37:16 |
+| BALCAOSUSHI1 | 68.091 bytes | 18:37:16 |
+| DELIVERY SUSHI 1 | 44.879 bytes | 18:01:15 |
+| DELIVERY SUSHI 2 | 40.441 bytes | 18:14:14 |
+| BAR / CAIXA2 (**IP compartilhado no mapa; destino físico não atestado**) | 89.160 bytes | 18:36:20 |
+
+**Igualdade aritmética observada:** `88.304+99.610+68.091+44.879+40.441+89.160=430.485` bytes, igual ao arquivo geral. Não foi comprovada igualdade byte a byte, exaustividade dos logs, número de submissões ou entrega física. Não foram lidos os conteúdos.
+
+**Achado que muda a observação:** os metadados de `DELIVERY SUSHI 1` e `DELIVERY SUSHI 2` têm última escrita às **15:01:15** e **15:14:14 BRT**, respectivamente, dentro do almoço de domingo (até 16h30 segundo horário operacional informado). O projeto registrava essas impressoras como **informadas desligadas no almoço**, mas **não revalidou o estado de energia nem a identidade do autor do log hoje**. Portanto, nenhuma das duas pode ser chamada de fisicamente ativa, emitente de pedido iFood ou origem de impressão duplicada com base neste dado. Um log `IMP` é registro do bridge e pode conter categorias diversas.
+
+**Decisão:** reforçar no censo já autorizado a verificação visual de eventual saída tardia de `DELIVERY SUSHI 1/2` **somente quando ocorrer naturalmente**, sem ligar impressora, consultar fila, reimprimir ou criar pedido de teste. Se a cobertura da praça não existir ou não puder ser observada, marcar `UNKNOWN/PARCIAL`, jamais 0 ou conformidade. `PRINT_PHYSICAL=UNKNOWN`; `IFO_FIRST_DISPATCH=UNKNOWN`; `STAGE_3=IN_PROGRESS`; `PRINT/CUTOVER=HOLD`.
+
