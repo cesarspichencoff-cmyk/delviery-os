@@ -8,7 +8,8 @@ const exported = await import("data:text/javascript;base64," +
   Buffer.from(source).toString("base64"));
 const { inspectOperationalEvents, queueHoldMessage,
   QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
-  queuedOperationalActionsMessage, rejectedOperationalActionMessage } = exported;
+  queuedOperationalActionsMessage, rejectedOperationalActionMessage,
+  canRequestNativeQueueSync, confirmedNativeQueueTransition } = exported;
 let pass = 0;
 function test(label, fn) {
   fn();
@@ -107,6 +108,52 @@ test("terminal rejection remains visible without disclosing untrusted error text
   assert.equal(rejectedOperationalActionMessage({...ev,state:"failed",last_error:"403"}),"");
 });
 
+test("native manual sync requires a valid open Room record and real bridge method",()=>{
+  assert.equal(canRequestNativeQueueSync([ev],true),true);
+  for (const state of ["pending","failed","sending"])
+    assert.equal(canRequestNativeQueueSync([{...ev,state}],true),true);
+  for (const state of ["sent","rejected"])
+    assert.equal(canRequestNativeQueueSync([{...ev,state}],true),false);
+  for (const invalid of [null,{},[{...ev,state:"unknown"}],[]])
+    assert.equal(canRequestNativeQueueSync(invalid,true),false);
+  assert.equal(canRequestNativeQueueSync([ev],false),false);
+  assert.equal(canRequestNativeQueueSync([ev],undefined),false);
+});
+test("first sight of already sent event never announces a fresh server receipt",()=>{
+  assert.equal(confirmedNativeQueueTransition(null,[{...ev,state:"sent"}]),"");
+  assert.equal(confirmedNativeQueueTransition([], [{...ev,state:"sent"}]),"");
+});
+test("exact local identity pending to sent yields one receipt notice",()=>{
+  const text=confirmedNativeQueueTransition([ev],[{...ev,state:"sent"}]);
+  assert.match(text,/O aparelho registrou a confirmação do servidor para 1 ação/);
+  assert.doesNotMatch(text,/entrega fisica|entrega concluida/i);
+});
+test("failed or sending to sent also counts exact receipt, but never a rejection",()=>{
+  for (const start of ["failed","sending"]) {
+    assert.match(confirmedNativeQueueTransition([{...ev,state:start}],
+      [{...ev,state:"sent"}]),/1 ação/);
+  }
+  assert.equal(confirmedNativeQueueTransition([ev],[{...ev,state:"rejected"}]),"");
+  assert.equal(confirmedNativeQueueTransition([ev],[]),"");
+});
+test("different event id or sequence cannot borrow another receipt",()=>{
+  assert.equal(confirmedNativeQueueTransition([ev],[{...ev,event_id:"other",state:"sent"}]),"");
+  assert.equal(confirmedNativeQueueTransition([ev],[{...ev,sequence_local:7,state:"sent"}]),"");
+  assert.equal(confirmedNativeQueueTransition([ev],[{...ev,state:"failed"}]),"");
+});
+test("duplicate native identities and malformed reads never certify a receipt",()=>{
+  assert.equal(confirmedNativeQueueTransition([ev,ev],[{...ev,state:"sent"}]),"");
+  assert.equal(confirmedNativeQueueTransition([ev],[{...ev,state:"sent"},{...ev,state:"sent"}]),"");
+  assert.equal(confirmedNativeQueueTransition([ev],null),"");
+  assert.equal(confirmedNativeQueueTransition(null,[ev]),"");
+});
+test("only proven transitioned event IDs are counted in mixed queue",()=>{
+  const second={...ev,event_id:"evt-fixture-2",sequence_local:2};
+  const text=confirmedNativeQueueTransition([ev,second],
+    [{...ev,state:"sent"},{...second,state:"failed"}]);
+  assert.match(text,/1 ação/);
+  assert.doesNotMatch(text,/2 ações/);
+});
 const scopeSource = readFileSync(new URL("rider-trip-scope.js",dir),"utf8");
 const { selectActiveRiderTrip } = await import("data:text/javascript;base64," +
   Buffer.from(scopeSource).toString("base64"));
@@ -187,6 +234,18 @@ test("native write rejects uncertain or terminal receipts", () => {
       assert.equal(exported.verifiedNativeQueueReceipt(r,"e-1"),false);
 });
 
+test("native manual sync uses bridge instead of demo connection and makes ACK visible only on transition",()=>{
+  const bridge=readFileSync(new URL("native-bridge.js",dir),"utf8");
+  assert.match(bridge,/syncNow: typeof n\.syncNow === "function" \? \(\) => n\.syncNow\(\) : null/);
+  assert.match(ui,/if \(nativeFound\.present\) \{/);
+  assert.match(ui,/native\.syncNow\(\)/);
+  assert.match(ui,/confirmedNativeQueueTransition\(lastValidQueue, events\)/);
+  assert.match(ui,/manualSyncRequested = true/);
+  assert.match(ui,/nativeFound\.present \|\| !offline/);
+  const html=readFileSync(new URL("index.html",dir),"utf8");
+  assert.match(html,/id="syncRequestLine"/);
+  assert.match(html,/id="confirmedLine"/);
+});
 test("live rider UI uses safe queue and rejection messages, never raw HTTP error", () => {
   assert.match(ui,/queuedOperationalActionsMessage\(events\)/);
   assert.match(ui,/rejectedOperationalActionMessage\(recusa\)/);
