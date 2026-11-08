@@ -71,7 +71,7 @@ function nativeInit(initial,hasSync=true,badRead=false,throwSync=false) {
   const seed=JSON.stringify({queue:initial,calls:0,badRead,throwSync});
   return "(function(){const fixture="+seed+";window.__riderLab=fixture;"+
     "const bridge={"+
-    "capabilities:()=>JSON.stringify({device_id:'DEVICE-LAB',app_version:'lab'}),"+
+    "capabilities:()=>JSON.stringify({device_id:'DEVICE-LAB',device_proof_sha256:'a'.repeat(64),app_version:'lab'}),"+
     "status:()=>JSON.stringify({blocks:'permission_missing',active_trip_id:null}),"+
     "requestLocationPermission:()=>{},openAppSettings:()=>{},"+
     "startTripCapture:()=>{},stopTripCapture:()=>{},"+
