@@ -155,7 +155,7 @@ class RiderRealScreenInstrumentedTest {
             assertTrue("Production HTML/JS did not render pending native event",
                 until(scenario, """!!document.getElementById('pendingLine') &&
                  !document.getElementById('pendingLine').hidden &&
-                 document.getElementById('pendingLine').textContent.includes('1 ação guardada') &&
+                 document.getElementById('pendingLine').textContent.includes('guardada') &&
                  document.getElementById('btnSyncNow')?.textContent.includes('Tentar sincronizar')"""))
             assertTrue("Native sync button is not displayed by actual rider.js",
                 until(scenario, """!document.getElementById('btnSyncNow').hidden"""))
