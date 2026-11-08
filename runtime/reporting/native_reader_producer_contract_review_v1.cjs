@@ -26,6 +26,13 @@ function review(event){
   if(!obj(event)||event.schema!=='deliveryos.tata-reader-stable-order-event.v1'||
     !obj(event.order))return out('INVALID_SOURCE_EVENT_ENVELOPE');
   const o=event.order;
+  // A declaracao explicita de lacuna do proprio produtor prevalece sobre
+  // campos de completude fornecidos depois por um caller/sombra. O fluxo
+  // nativo da PR135 hoje declara filhos/observacoes nao verificados.
+  // Isso nao autentica os casos sem flags; eles seguem HOLD por origem.
+  if(event.ready_for_downstream_shadow===false||
+    (Array.isArray(event.blockers)&&event.blockers.length>0))
+   return out('NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
   if(FIELDS.some(k=>!Object.hasOwn(o,k))||o.CDFILIAL!=='0001'||
     o.CDLOJA!=='01'||o.IDORGCMDVENDA!=='DLV_IFO')
    return out('NATIVE_ITAIM_SCOPE_OR_REQUIRED_FIELDS_INVALID');
