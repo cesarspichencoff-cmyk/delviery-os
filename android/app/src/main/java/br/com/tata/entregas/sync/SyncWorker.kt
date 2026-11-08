@@ -216,6 +216,10 @@ class SyncWorker(
         // Um HTTP 4xx sem recibo por event_id nao e aceite remoto, nem
         // recusa individual definitiva. Exibir falha, preservando a fila Room.
         var unreceiptedBatchBlocked = false
+        // Acknowledgements without a matching durable server receipt remain
+        // PENDING in Room. Even after fast retries, WorkManager must NOT
+        // report the entire job as successful.
+        var unconfirmedTermAck = false
         // Houve 401 da PLATAFORMA depois de ja termos autenticado? Entao o
         // token nao serve, e o lote precisa voltar para a fila — nunca ser
         // descartado.
@@ -232,18 +236,26 @@ class SyncWorker(
                     if (confirmsTermAckOnPilot(ack, r.value)) {
                         db.termAcks().markSent(listOf(ack.acknowledgementId))
                     } else {
+                        unconfirmedTermAck = true
                         retryable = true
                     }
                 }
-                is ApiResult.Retryable -> retryable = true
+                is ApiResult.Retryable -> {
+                    unconfirmedTermAck = true
+                    retryable = true
+                }
                 is ApiResult.Unauthorized -> {
                     // The legacy pilot route still lacks proven authenticated
                     // actor/session plumbing. Never call this remote acceptance.
+                    unconfirmedTermAck = true
                     pilotAuthorizationBlocked = true
                 }
                 is ApiResult.Rejected -> {
-                    // Local consent is not remote acceptance; preserve the
-                    // append-only evidence for a supervised resolution.
+                    // An HTTP 4xx without THIS acknowledgement's receipt
+                    // is not a terminal per-record refusal or success.
+                    // Preserve the append-only Room record pending, and
+                    // require human review of any enduring rejection.
+                    unconfirmedTermAck = true
                     if (r.status == 403) pilotAuthorizationBlocked = true
                 }
             }
@@ -431,7 +443,7 @@ class SyncWorker(
         }
         // Sem recibo por evento, dar Result.success() seria falso positivo.
         // O evento segue elegivel na fila Room com eventId/idempotencyKey intactos.
-        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()
+        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || unconfirmedTermAck) return Result.failure()
         return Result.success()
     }
 
