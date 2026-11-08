@@ -182,7 +182,7 @@ class RiderRealScreenInstrumentedTest {
                 }
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
-            val expected = instrumentation.arguments.getString("webviewExpected")
+            val expected = InstrumentationRegistry.getArguments().getString("webviewExpected")
             if (expected == "legacy") {
                 assertTrue("Old WebView must show an explicit compatibility HOLD",
                     until(scenario, """!!document.getElementById('compatibilityHold') &&
