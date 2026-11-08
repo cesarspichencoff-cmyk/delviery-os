@@ -24,6 +24,7 @@ import {
 import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
 import {
   inspectOperationalEvents, queueHoldMessage, verifiedNativeQueueReceipt,
+  queuedOperationalActionsMessage, rejectedOperationalActionMessage,
   QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
 } from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
@@ -229,9 +230,8 @@ function renderDeviceQueue(serverTrip) {
   hold.hidden = !queueHold;
   const open = events.filter((e) => OPEN_STATES.has(e.state));
   if (open.length) {
-    const failed = open.some((e) => e.state === "failed");
-    const n = open.length === 1 ? "1 ação guardada" : `${open.length} ações guardadas`;
-    line.textContent = `${n} neste aparelho, aguardando envio${failed ? " — a última tentativa não chegou ao servidor" : ""}.`;
+    // Um 4xx pode ter chegado ao servidor, mas ainda nao e ACK da acao.
+    line.textContent = queuedOperationalActionsMessage(events);
     line.hidden = false;
   } else {
     line.hidden = true;
@@ -248,8 +248,8 @@ function renderDeviceQueue(serverTrip) {
     (serverTrip && events.find((e) => e.state === "rejected" && e.trip_id === serverTrip.trip_id)) ||
     (maisRecente && maisRecente.state === "rejected" ? maisRecente : null);
   if (recusa) {
-    const motivo = String(recusa.last_error || "sem motivo informado").replace(/^dominio_recusou:\s*/, "");
-    rejected.textContent = `Ação recusada pelo servidor: ${motivo}`;
+    // last_error vem da fonte remota: nunca mostrar payload livre a um motoboy.
+    rejected.textContent = rejectedOperationalActionMessage(recusa);
     rejected.hidden = false;
   } else {
     rejected.hidden = true;
