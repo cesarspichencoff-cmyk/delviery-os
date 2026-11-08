@@ -87,6 +87,13 @@ jobs:
           ref: 17e332e18532678a217c921a584d389f5125c4ea
           path: pr135-source
           persist-credentials: false
+      - name: Compile pinned PR135 producer dependencies on disposable runner
+        run: |
+          # The actual source imports compiled domain helpers. No production
+          # credentials, SQL, POS host, real orders or runner deployment.
+          cd "$GITHUB_WORKSPACE/pr135-source"
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
       - name: Node contract tests (synthetic only)
         run: |
           node tests/silent-runner/run-contract-tests.cjs
