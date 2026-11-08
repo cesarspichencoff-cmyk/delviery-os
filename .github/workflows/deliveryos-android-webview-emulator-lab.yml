@@ -46,7 +46,7 @@ jobs:
           working-directory: android
           emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
           script: |
-            bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest
+            bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest,br.com.tata.entregas.RiderRealScreenInstrumentedTest
       - name: Require executed instrumentation, not just Gradle success
         if: always()
         run: |
