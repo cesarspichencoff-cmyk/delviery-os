@@ -50,7 +50,7 @@ namespace DeliveryOS.ReaderLab {
     "18f98521c3756ce26b4fe6645ed6cb0b3baff6e5",
     "0f44bccd8acaf41465d3e8d8b15074badd0e7047",
     "6199f42c84a8fbf8170da9d05d0bbf024fc7dd1f",
-    "c753ac8c16aa1266b3eba2ba478614e49fc94e85",
+    "df99355648bb0e5b506644adaf982dbe936e2818",
     "72077ffe6710f32117de34b2d1e43bc22039c51a"
    };
    for(int i=0;i<names.Length;i++)
