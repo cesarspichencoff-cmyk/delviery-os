@@ -23,6 +23,8 @@ on:
       - android/app/src/test/java/br/com/tata/entregas/TermAckLoopbackHttpRoomTest.kt
       - android/app/src/test/java/br/com/tata/entregas/SyncWorkerDualLoopbackHttpRoomTest.kt
       - android/app/src/main/java/br/com/tata/entregas/data/EntregasDatabase.kt
+      - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
+      - android/app/src/test/java/br/com/tata/entregas/OriginLockedClientTest.kt
   workflow_dispatch:
 permissions:
   contents: read
@@ -79,6 +81,7 @@ jobs:
             "br.com.tata.entregas.RoomSyncRaceRecoveryTest": 8,
             "br.com.tata.entregas.SyncWorkerWorkManager4xxTest": 7,
             "br.com.tata.entregas.SyncSchedulerWorkManagerTest": 4,
+            "br.com.tata.entregas.OriginLockedClientTest": 7,
             "br.com.tata.entregas.TermAckLoopbackHttpRoomTest": 8,
             "br.com.tata.entregas.SyncWorkerDualLoopbackHttpRoomTest": 4,
           }
