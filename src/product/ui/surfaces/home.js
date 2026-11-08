@@ -166,7 +166,7 @@ function faixaTecnica(vm) {
     <span class="org-tecnico__ponto" aria-hidden="true"></span>
     <span class="org-tecnico__texto">${esc(nomes)} sem leitura confiavel${
       h ? ` · ultima leitura as ${esc(h)}` : ""
-    }. O resto da operacao segue normal.</span>
+    }. As demais areas so podem ser avaliadas com leitura confiavel.</span>
   </div>`;
 }
 
