@@ -22,7 +22,7 @@ function inspect(w,p,h,t){
    check(final.includes('if (gpsDrain.remaining) return Result.retry()'),'GPS_BACKLOG_PRIORITY_REQUIRED');
    check(final.includes('if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))'),'RETRIES_MUST_BE_BOUNDED');
    check(!final.includes('return retryOrYield()'),'EARLY_SUCCESS_AFTER_RETRY_CAP');
-   const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()';
+   const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || unconfirmedTermAck) return Result.failure()';
    check(final.includes(hold)&&final.indexOf(hold)<final.lastIndexOf('return Result.success()'),'FALSE_WORKER_SUCCESS');
  }
  const event=w.split('// 2. Eventos operacionais.')[1]?.split('// 3. Pontos de GPS.')[0];
@@ -72,7 +72,7 @@ function mutant(label,which,original,replacement,expected){
 }
 mutant('403 remains authorization',1,'httpStatus == 403 || delegationDenied','false','AUTH_CLASSIFICATION_MISSING');
 mutant('hold precedes worker success',0,
- 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.failure()',
+ 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || unconfirmedTermAck) return Result.failure()',
  'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.success()',
  'FALSE_WORKER_SUCCESS');
 mutant('worker actually calls Room helper',0,
