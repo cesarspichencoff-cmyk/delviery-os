@@ -555,3 +555,16 @@ Continuidade restrita ao **Delivery OS V1 do Itaim**, PR #137, sem trabalhar na 
 
 **Pendente real:** termo e ACK contra servidor real, feedback de pendência no motoboy, aparelho Xiaomi, GPS consentido, Home conectada a fatos reais, ciclo integrado e segurança no campo. `L6_TERM_WORK_RESULT=LAB_PASS`; `L6_ACK_REAL=UNKNOWN`; `L6_XIAOMI=NOT_RUN`; `HOME=HOLD`; `PRINT=HOLD`; `L7=HOLD`; `L8=HOLD`. **0/8 aceites integrais; sem instalação, deploy, merge, impressão ou alteração no caixa.**
 
+
+## Checkpoint L6 — HTTP loopback real e Room 283/283 (08/11/2026)
+
+**Foco:** exclusivamente Delivery OS Itaim, sem abrir/alterar o trabalho de comandas em outra frente. A diferença anterior era entre testar `doWork()` com respostas MockK e realmente transmitir bytes HTTP, analisar o corpo e vincular o recibo à linha persistida no Room.
+
+**Executado em PR #137 DRAFT/HOLD:** extração para `TermAckReceipt.kt` das funções **`termAckWireJson`** (14 campos exatos já enviados pelo Worker) e **`persistTermAckOnVerifiedReceipt`** (só atualiza `term_ack.sent` após `ApiResult.Ok` com recibo por ID/termo/unidade/aparelho/status validado). `SyncWorker` chama as mesmas funções, sem alterar a política anterior de `unconfirmedTermAck`. Criada `TermAckLoopbackHttpRoomTest.kt` com **8 testes HTTP de rede local de verdade** em servidor `127.0.0.1` efêmero, cliente `EntregasApi` real e SQLite/Room em arquivo: 200 correto, 200 incompleto, dispositivo divergente, 401, 422, JSON inválido, reenvio de identidade idêntica com recibo idempotente e conexão recusada. CI exige que a suíte nova seja executada; nenhuma biblioteca paga ou serviço persistente.
+
+**Falha e contra-rota comprovadas:** a primeira compilação [#42510186320](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42510186320) falhou por indisponibilidade de `com.sun.net.httpserver.HttpServer` na classpath Android. Não mascarada como problema do app. Em vez de forçar módulos JDK ou trazer dependência, a bancada foi substituída por `java.net.ServerSocket` com endereço de loopback restrito.
+
+**Prova no commit de código `f1667689939dc20c92e1204465d471474c0c37ee`:** [CI Android #42510602760](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42510602760) **`completed/success`, 27 suítes, 283/283 testes, 0 falhas e 0 erros**; [CI geral #42510602769](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42510602769) **`completed/success`, 5/5 jobs**. Relatório [`DELIVERYOS_L6_TERM_ACK_LOOPBACK_HTTP_ROOM_20261108.md`](./DELIVERYOS_L6_TERM_ACK_LOOPBACK_HTTP_ROOM_20261108.md).
+
+**Fronteira:** `L6_TERM_HTTP_LOOPBACK=PASS_REAL_HTTP_IN_LAB`; `L6_TERM_ROOM_RESTART=PASS`; `L6_SYNCWORKER_DOWORK=PASS_WITH_MOCK_HTTP`; **não** foi executado `doWork()` com HTTP real no mesmo teste, nem TLS/servidor piloto verdadeiro, Xiaomi, rede móvel, Doze, interface de aviso observada, GPS de campo ou autorização de operação. `L6_PILOT_ACK_FIELD=UNKNOWN`; `L6_XIAOMI=NOT_RUN`; `L4_HOME_REAL=HOLD`; `L7_INTEGRATED_JOURNEY=HOLD`; `L8_FIELD_APPROVAL=HOLD`. Não houve impressão, caixa, deploy, merge ou custo. **Delivery OS V1=0/8 aceites integrais de campo.** Próximo passo seguro: prova do Worker completo com endpoints de bancada separados e dados descartáveis, antes do Xiaomi supervisionado.
+
