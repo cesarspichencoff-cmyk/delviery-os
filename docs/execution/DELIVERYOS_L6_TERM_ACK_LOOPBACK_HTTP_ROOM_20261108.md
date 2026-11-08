@@ -11,7 +11,7 @@ O ganho atual foi atravessar a rota HTTP real de laboratório, preservando o mes
 ## Implementação estritamente delimitada
 
 1. `android/app/src/main/java/br/com/tata/entregas/sync/TermAckReceipt.kt`: foram extraídos dois pontos reutilizáveis:
-   - `termAckWireJson(ack)`, com os mesmos 13 campos já enviados pelo `SyncWorker` (identidade do aceite, ator, unidade, termo, hash, estado, data, aparelho e metadados);
+   - `termAckWireJson(ack)`, com os mesmos 14 campos já enviados pelo `SyncWorker` (identidade do aceite, ator, unidade, termo, hash, estado, data, aparelho e metadados);
    - `persistTermAckOnVerifiedReceipt(db, ack, response)`, que aceita somente `ApiResult.Ok` com `confirmsTermAckOnPilot` verdadeiro e então chama o DAO Room `termAcks().markSent`. Qualquer resposta sem recibo exato retorna falso e **não escreve em Room**.
 2. `SyncWorker.kt`: substitui o encoder privado e a gravação inline por **essas mesmas duas funções**, sem alterar a política já comprovada de `unconfirmedTermAck`, tentativas rápidas, `Result.failure()`, sessão, GPS ou eventos operacionais.
 3. `android/app/src/test/java/br/com/tata/entregas/TermAckLoopbackHttpRoomTest.kt`: oito testes Robolectric com **`EntregasApi.sendTermAcknowledgement` real**, servidor TCP HTTP/1.1 efêmero ligado **exclusivamente a `127.0.0.1`**, JSON real do Worker e banco SQLite/Room em arquivo. O teste de sucesso fecha/reabre o Room para verificar `sent` persistente.
@@ -34,7 +34,7 @@ O teste de sucesso confere o JSON de saída enviado ao servidor de bancada (ID, 
 
 ## Falha inicial, causa e contra-rota
 
-A primeira CI [#42510186320?](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42510186320) **não** é a prova atual: o commit `937a4394a35fd76b61bffa227fbd4add2ab6bd22` falhou na compilação de teste porque `com.sun.net.httpserver.HttpServer` não está disponível na classpath do Android Gradle Plugin. **Zero testes dessa nova suíte foram executados nessa tentativa**.
+A primeira CI [#42510186320](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42510186320) **não** é a prova atual: o commit `937a4394a35fd76b61bffa227fbd4add2ab6bd22` falhou na compilação de teste porque `com.sun.net.httpserver.HttpServer` não está disponível na classpath do Android Gradle Plugin. **Zero testes dessa nova suíte foram executados nessa tentativa**.
 
 Em vez de adicionar dependências de servidor, tentar forçar módulos JVM à classpath Android ou ignorar a falha, a bancada foi reescrita para usar apenas `java.net.ServerSocket` e APIs padrão. Mantidos os oito cenários, sem alterar o cliente HTTP ou a semântica do domínio.
 
