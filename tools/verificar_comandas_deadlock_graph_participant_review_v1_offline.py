@@ -43,6 +43,23 @@ def graph_with_bystander(reader_in_cycle=False, victim='p2'):
     return base
 
 
+def graph_with_separate_cycles(victim='p2'):
+    # Two disconnected cycles: p1 <-> p2 (reported victim p2)
+    # and p3 <-> p4 (Reader p3). No Reader causal attribution to p2.
+    base = graph(process1='NativeA',process2='NativeB',victim=victim)
+    base = base.replace(b'</process-list>',(
+        b'<process id="p3" clientapp="TataReaderContinuousWatchV1"/>'
+        b'<process id="p4" clientapp="NativeC"/>'
+        b'</process-list>'))
+    base = base.replace(b'</resource-list>',(
+        b'<keylock><owner-list><owner id="p3"/></owner-list>'
+        b'<waiter-list><waiter id="p4"/></waiter-list></keylock>'
+        b'<keylock><owner-list><owner id="p4"/></owner-list>'
+        b'<waiter-list><waiter id="p3"/></waiter-list></keylock>'
+        b'</resource-list>'))
+    return base
+
+
 def check(payload, reason=None):
     r = review_xml_bytes(payload)
     assert r['status'] == 'HOLD'
@@ -196,9 +213,22 @@ def run():
           'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
           exact_reader_clientapp_match_count=1,reader_in_directed_cycle_count=1,
           other_process_count=2))
-    assert total == 33,total
+    case('Reader in disconnected cycle is not in reported victim cycle',
+         lambda: assert_fields(graph_with_separate_cycles(),
+          'EXACT_READER_APP_IN_SEPARATE_CYCLE_NOT_CAUSAL_PROOF',
+          exact_reader_clientapp_match_count=1,
+          reader_in_directed_cycle_count=1,reader_in_victim_cycle_count=0))
+    case('changing reported victim to Reader cycle binds that cycle only',
+         lambda: assert_fields(graph_with_separate_cycles(victim='p4'),
+          'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
+          reader_in_directed_cycle_count=1,reader_in_victim_cycle_count=1))
+    case('normal Reader-victim shared cycle has explicit membership',
+         lambda: assert_fields(graph(),
+          'EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF',
+          reader_in_directed_cycle_count=1,reader_in_victim_cycle_count=1))
+    assert total == 36,total
     print('COMANDAS_DEADLOCK_XML_OFFLINE='+str(total)+'/'+str(total)+
-          ' VICTIM_AND_READER_CYCLE_MEMBERSHIP_REQUIRED SYNTHETIC_ONLY NO_XEL_NO_HOST_NO_SQL_NO_PRINT')
+          ' VICTIM_CYCLE_ASSOCIATION_REQUIRED SYNTHETIC_ONLY NO_XEL_NO_HOST_NO_SQL_NO_PRINT')
 
 
 if __name__ == '__main__':

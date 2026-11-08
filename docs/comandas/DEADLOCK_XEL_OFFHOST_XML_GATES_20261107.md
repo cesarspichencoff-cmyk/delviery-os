@@ -61,6 +61,14 @@ A candidata revisada calcula o conjunto exato de participantes de **ciclos dirig
 
 Foram acrescentados **três cenários sintéticos** ao verificador, incluindo cadeia com terceiro processo, vítima fora do ciclo e participação real no ciclo com terceiro processo externo; esperado **33 cenários por sistema**. O output continua reduzido a indicadores agregados sem IDs de sessão, SQL literal, nomes de máquinas ou dados de clientes. A integridade do grafo é **estrutural**, não prova de proveniência. Nenhum XEL de produção foi acessado.
 
+## Ciclos desconectados: vínculo com a vítima (08/11/2026)
+
+A auditoria adversarial posterior revelou outra distinção necessária. Um XML fornecido poderia conter **dois ciclos desconectados**: a vítima informada pelo evento pertence ao ciclo A e o Reader, por coincidência do `clientapp`, pertence somente ao ciclo B. A métrica `reader_in_directed_cycle_count` anterior indicaria participação em *algum* ciclo, o que não basta para vincular o Reader à vítima do incidente.
+
+O analisador offline agora exige **alcançabilidade em ambos os sentidos** entre cada sessão atribuída ao Reader e uma das vítimas informadas, isto é, que compartilhem o mesmo componente fortemente conexo do grafo. O novo campo agregado `reader_in_victim_cycle_count` é zero quando a sessão está apenas em outro ciclo. Nesse caso, o motivo fica `EXACT_READER_APP_IN_SEPARATE_CYCLE_NOT_CAUSAL_PROOF`. A associação continua somente **estrutural**, nunca comprovação de participação real, bloqueio de escritores ou causa de pedidos não integrados.
+
+Três cenários adicionais cobrem ciclos desconectados com Reader fora do ciclo da vítima, vítima no ciclo do Reader e ciclo normal compartilhado. Total esperado: **36 testes sintéticos por sistema**, ainda sem ler XEL real ou executar qualquer processo no caixa. A CI do commit exato é obrigatória antes de declarar aprovação.
+
 ## Próximo passo que realmente altera a investigação
 
 1. **Preservar** o XEL nativo sem alteração e garantir que uma cópia **bit a bit** possa ser obtida por canal autorizado que suporte bytes binários, com integridade SHA-256 verificada no destino. Não há demonstração disso no conector atual; `COPY_AVAILABLE=UNKNOWN`.

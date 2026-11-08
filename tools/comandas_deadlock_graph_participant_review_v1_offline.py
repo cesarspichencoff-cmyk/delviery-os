@@ -42,6 +42,7 @@ def _result(reason, **values):
         "wait_for_cycle_consistency_checked": False,
         "exact_reader_clientapp_match_count": 0,
         "reader_in_directed_cycle_count": 0,
+        "reader_in_victim_cycle_count": 0,
         "reader_is_victim_in_graph": False,
         "reader_owner_occurrences_in_graph": 0,
         "reader_waiter_occurrences_in_graph": 0,
@@ -166,6 +167,25 @@ def review_xml_bytes(payload):
         return _result("NO_DIRECTED_DEADLOCK_WAIT_CYCLE")
     if any(pid not in cycle_members for pid in victims):
         return _result("VICTIM_NOT_IN_DIRECTED_DEADLOCK_WAIT_CYCLE")
+    # Multiple distinct cycles may appear in an untrusted supplied graph.
+    # The matching application must share a *strongly connected* cycle with
+    # a reported victim, not merely be involved in some unrelated cycle.
+    def reaches(start, target):
+        visited = set()
+        pending = [start]
+        while pending:
+            node = pending.pop()
+            if node == target:
+                return True
+            if node in visited:
+                continue
+            visited.add(node)
+            pending.extend(wait_for[node])
+        return False
+    victim_cycle_members = {
+        pid for pid in cycle_members
+        if any(reaches(pid, victim) and reaches(victim, pid) for victim in victims)
+    }
     matched = [p for p in processes if p.attrib.get("clientapp") == READER_CLIENT_APP_EXACT]
     mids = [p.attrib["id"] for p in matched]
     nonmatching = len(processes) - len(matched)
@@ -175,6 +195,7 @@ def review_xml_bytes(payload):
                    wait_for_cycle_consistency_checked=True,
                    exact_reader_clientapp_match_count=len(mids),
                    reader_in_directed_cycle_count=sum(pid in cycle_members for pid in mids),
+                   reader_in_victim_cycle_count=sum(pid in victim_cycle_members for pid in mids),
                    reader_is_victim_in_graph=any(pid in victims for pid in mids),
                    reader_owner_occurrences_in_graph=sum(role_count[x]["owners"] for x in mids),
                    reader_waiter_occurrences_in_graph=sum(role_count[x]["waiters"] for x in mids),
@@ -186,6 +207,8 @@ def review_xml_bytes(payload):
         return _result("NO_EXACT_READER_APP_MATCH_NOT_EXCLUSION_PROOF", **details)
     if not any(pid in cycle_members for pid in mids):
         return _result("EXACT_READER_APP_OUTSIDE_DEADLOCK_CYCLE_NOT_CAUSAL_PROOF", **details)
+    if not any(pid in victim_cycle_members for pid in mids):
+        return _result("EXACT_READER_APP_IN_SEPARATE_CYCLE_NOT_CAUSAL_PROOF", **details)
     return _result("EXACT_READER_APP_IN_UNATTESTED_GRAPH_NOT_CAUSAL_PROOF", **details)
 
 
