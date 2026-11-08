@@ -50,7 +50,7 @@ function inspect(w,p,h,t){
  check(h.includes('eventIds.all { it.isNotBlank() }'),'BLANK_IDS_NOT_REFUSED');
  check(!h.includes('db.outbox().markSent(')&&!h.includes('db.outbox().markRejected('),'ROOM_HELPER_TERMINAL_EFFECT');
  check(t.includes('Room.databaseBuilder(context, EntregasDatabase::class.java, dbName)'),'ROOM_TEST_NOT_FILE_BASED');
- check(t.includes('db.close()')&&t.includes('db = open()'),'ROOM_TEST_MISSING_REOPEN');
+ check(t.includes('db.close()\n        db = open()\n        val saved = db.outbox().nextBatch(20).single()'),'ROOM_TEST_MISSING_REOPEN');
  check(t.includes('original.idempotencyKey'),'ROOM_TEST_NOT_CHECKING_IDEMPOTENCY');
  check(t.includes('respostaAtrasadaNaoReabreEventoTerminal'),'ROOM_TEST_TERMINAL_RACE_MISSING');
  return fail;
@@ -104,7 +104,9 @@ mutant('local duplicate IDs not accepted',2,
  'eventIds.size == eventIds.toSet().size','true',
  'DUPLICATE_IDS_NOT_REFUSED');
 mutant('Room tests must close and reopen file',3,
- 'db = open()','// reopen suppressed','ROOM_TEST_MISSING_REOPEN');
+ 'db.close()\n        db = open()\n        val saved = db.outbox().nextBatch(20).single()',
+ 'db.close()\n        // reopen suppressed\n        val saved = db.outbox().nextBatch(20).single()',
+ 'ROOM_TEST_MISSING_REOPEN');
 mutant('retry does not report success early',0,
  'if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))',
  'if (credencialRecusada || retryable)',
