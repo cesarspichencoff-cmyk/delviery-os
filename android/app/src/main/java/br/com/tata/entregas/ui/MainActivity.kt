@@ -298,19 +298,41 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
 }
 
 /**
- * Só carrega a origem do piloto. Qualquer outro endereço sai para o navegador
- * do sistema — assim uma página injetada nunca roda com acesso à ponte nativa.
+ * A ponte JavaScript nativa pertence exclusivamente à origem do piloto.
+ * A navegação fora dessa origem é BLOQUEADA na WebView (não é aberta
+ * automaticamente no navegador do sistema).
+ *
+ * Host isolado é insuficiente: protocolo e porta diferentes são origens
+ * diferentes e não podem ganhar acesso à ponte do aparelho.
  */
 class OriginLockedClient(baseUrl: String) : WebViewClient() {
-    private val allowedHost = Uri.parse(baseUrl).host
+    private val allowedOrigin = Uri.parse(baseUrl)
+
+    private fun effectivePort(uri: Uri): Int = when {
+        uri.port >= 0 -> uri.port
+        uri.scheme.equals("https", ignoreCase = true) -> 443
+        uri.scheme.equals("http", ignoreCase = true) -> 80
+        else -> -1
+    }
+
+    internal fun isAllowedNavigation(target: Uri?): Boolean {
+        if (target == null) return false
+        val allowedScheme = allowedOrigin.scheme?.lowercase() ?: return false
+        val targetScheme = target.scheme?.lowercase() ?: return false
+        val allowedHost = allowedOrigin.host?.lowercase() ?: return false
+        val targetHost = target.host?.lowercase() ?: return false
+        if (allowedScheme != "https" && allowedScheme != "http") return false
+        return targetScheme == allowedScheme &&
+            targetHost == allowedHost &&
+            target.userInfo == null &&
+            allowedOrigin.userInfo == null &&
+            effectivePort(target) == effectivePort(allowedOrigin)
+    }
 
     override fun shouldOverrideUrlLoading(
         view: WebView?,
         request: android.webkit.WebResourceRequest?,
-    ): Boolean {
-        val host = request?.url?.host ?: return true
-        return host != allowedHost
-    }
+    ): Boolean = !isAllowedNavigation(request?.url)
 
     /**
      * Certificado inválido derruba o carregamento, sempre.
