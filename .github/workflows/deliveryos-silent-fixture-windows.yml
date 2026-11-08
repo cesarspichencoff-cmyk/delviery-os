@@ -50,6 +50,8 @@ on:
       - src/product/eventos/ledger-shadow.ts
       - src/platform/run-ledger-shadow-restart-tests.ts
       - src/entregas/ui/rider-mobile/rider.js
+      - src/entregas/ui/rider-mobile/queue-health.js
+      - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
       - src/entregas/ui/rider-mobile/rider-trip-scope.js
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
       - runtime/reporting/gestor_visible_detail_probe_v1.js
