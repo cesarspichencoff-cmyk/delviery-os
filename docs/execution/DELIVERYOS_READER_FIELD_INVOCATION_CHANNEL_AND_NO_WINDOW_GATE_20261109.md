@@ -30,7 +30,7 @@ Leitura passiva de `C:\ProgramData\DeliveryOS-Itaim-Observer\status.json`:
 - `filesRead=250`, `ignoredHistorical=245`, `projectedOrderCount=5`.
 - **`sourceMode=CONTROL_DIAGNOSTIC_NOT_REAL_PROOF`, `liveSourceVerified=false`, `operationalOrderTotal=null`**. Os cinco são projeções do diagnóstico, não cinco pedidos reais homologados.
 
-Nenhuma revisão real, nota de cliente, identificador de pedido ou arquivo de conteúdo foi aberta nesta rodada. Não houve CMD, PowerShell, consulta SQL, novo processo, instalação, alteração de configuração, serviço, tarefa agendada, fila, impressora, merge ou deploy.
+Nenhuma revisão real, nota de cliente, identificador de pedido ou arquivo de conteúdo foi aberta nesta rodada. Não foram invocados `start_process` ou `interact_with_process`, nem shell/CMD/PowerShell por comando do assistente. Não houve consulta SQL, instalação, alteração de configuração, serviço, tarefa agendada, fila, impressora, merge ou deploy. **Não há instrumentação que permita afirmar ausência absoluta de subprocessos auxiliares internos às ferramentas passivas**; a garantia se limita às ações explicitamente solicitadas e ao não uso de rotas de execução.
 
 ## O que já existe — não repetir laboratório equivalente
 
