@@ -11,7 +11,7 @@ namespace DeliveryOS.ReaderLab {
   const string LabName="deliveryos-reader-proof-lab";
   const string Marker="DELIVERYOS_READER_PROOF_LAB_ONLY_V1";
   const string ApprovedRepository="cesarspichencoff-cmyk/delviery-os";
-  const string ApprovedScriptGitBlob="5f1077ea5f58e928b482d2b72f3e7b7dc9db4b6e";
+  const string ApprovedScriptGitBlob="d142c917a7e7a632b02650260de5f06baa842954";
   // The launcher is a CI test artifact, not the field program.
   static bool ApprovedRunner() {
    return String.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"),"true",
@@ -41,6 +41,7 @@ namespace DeliveryOS.ReaderLab {
   static bool DependenciesMatch(string workspace) {
    var names=new[]{
     "native_reader_existing_event_binding_v1.cjs",
+    "native_reader_legacy_one_shot_review_v1.cjs",
     "native_reader_n2n3_sanitized_receipt_v1.cjs",
     "native_reader_verified_legacy_hash_v1.cjs",
     "native_reader_producer_contract_review_v1.cjs",
@@ -48,6 +49,7 @@ namespace DeliveryOS.ReaderLab {
    };
    var expected=new[]{
     "1552a560af3018a0d1b7c971528eb81287571502",
+    "a6ef7d2e4cd91946399d5a557c021735e1a56933",
     "0f44bccd8acaf41465d3e8d8b15074badd0e7047",
     "6199f42c84a8fbf8170da9d05d0bbf024fc7dd1f",
     "70528fe678db944a4c098688fa608bbaef0ec3c0",
@@ -108,7 +110,9 @@ namespace DeliveryOS.ReaderLab {
    if(String.Equals(Environment.MachineName,ForbiddenHost,
        StringComparison.OrdinalIgnoreCase))return 77;
    if(!ApprovedRunner())return 87;
-   if(args==null||args.Length!=3||!args[0].StartsWith("--lab-dir=",StringComparison.Ordinal)||
+   if(args==null||(args.Length!=3&&args.Length!=4)||
+      (args.Length==4&&!String.Equals(args[3],"--fixture-mode=legacy",StringComparison.Ordinal))||
+      !args[0].StartsWith("--lab-dir=",StringComparison.Ordinal)||
       !args[1].StartsWith("--node-path=",StringComparison.Ordinal)||
       !args[2].StartsWith("--script-path=",StringComparison.Ordinal))return 78;
    string lab; if(!ValidRoot(args[0].Substring("--lab-dir=".Length),out lab))return 79;
@@ -125,7 +129,8 @@ namespace DeliveryOS.ReaderLab {
     if(!ScriptIdentity(script))return 88;
     if(File.Exists(Path.Combine(lab,"receipt.json")))return 81;
     var settings=new ProcessStartInfo {
-     FileName=node,Arguments=Arg(script)+" "+Arg("--lab-dir="+lab),
+     FileName=node,Arguments=Arg(script)+" "+Arg("--lab-dir="+lab)+
+       (args.Length==4?" "+Arg("--fixture-mode=legacy"):""),
      WorkingDirectory=lab,UseShellExecute=false,CreateNoWindow=true,
      WindowStyle=ProcessWindowStyle.Hidden,
      RedirectStandardOutput=true,RedirectStandardError=true
