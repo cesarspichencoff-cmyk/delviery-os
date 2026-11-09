@@ -156,6 +156,53 @@ try{
   assert.equal(fs.existsSync(output),false);
   assert.equal(result.stdout,"");
  });
+ check("duplicate native product ID fails closed instead of last-win",()=>{
+  const file=path.join(sandbox,"product-identity-cache-v1.json");
+  const original=fs.readFileSync(file);
+  try{
+    const data=JSON.parse(original);
+    data.rows.push({...data.rows[0],canonical:"9.99.99.999.99"});
+    fs.writeFileSync(file,JSON.stringify(data));
+    const output=path.join(outDir,"duplicate-native-id.json");
+    const p=run(eventPath,output);
+    assert.notEqual(p.status,0);
+    assert.match(p.stderr,/LAB_NATIVE_PRODUCT_DUPLICATE_KEY_HOLD/);
+    assert.equal(fs.existsSync(output),false);
+    assert.equal(p.stdout,"");
+  }finally{fs.writeFileSync(file,original);}
+ });
+ check("duplicate normalized Academy name is never silently substituted",()=>{
+  const file=path.join(sandbox,"app-data.json");
+  const original=fs.readFileSync(file);
+  try{
+    fs.writeFileSync(file,JSON.stringify({products:[
+     {nome:"FAKE DUPLA",classification:{family:"dupla",review_required:false}},
+     {nome:"fake dupla",classification:{family:"bebida",review_required:false}}
+    ]}));
+    const output=path.join(outDir,"duplicate-academy-name.json");
+    const p=run(eventPath,output);
+    assert.notEqual(p.status,0);
+    assert.match(p.stderr,/LAB_ACADEMY_PRODUCT_NAME_DUPLICATE_KEY_HOLD/);
+    assert.equal(fs.existsSync(output),false);
+    assert.equal(p.stdout,"");
+  }finally{fs.writeFileSync(file,original);}
+ });
+ check("duplicate alias is never used as arbitrary classification",()=>{
+  const file=path.join(sandbox,"product-aliases-v1.json");
+  const original=fs.readFileSync(file);
+  try{
+    const data=JSON.parse(original);
+    data.aliases.push({...data.aliases[0],live_name:"fake dupla",
+      classification:{family:"bebida",review_required:false}});
+    fs.writeFileSync(file,JSON.stringify(data));
+    const output=path.join(outDir,"duplicate-alias.json");
+    const p=run(eventPath,output);
+    assert.notEqual(p.status,0);
+    assert.match(p.stderr,/LAB_APPROVED_ALIAS_NAME_DUPLICATE_KEY_HOLD/);
+    assert.equal(fs.existsSync(output),false);
+    assert.equal(p.stdout,"");
+  }finally{fs.writeFileSync(file,original);}
+ });
  check("existing output is never overwritten",()=>{
   const before=fs.readFileSync(decisionPath);
   const v=run(eventPath,decisionPath);
@@ -237,6 +284,6 @@ try{
  fs.rmSync(sandbox,{recursive:true,force:true});
 }
 check("disposable lab root removed",()=>assert.equal(fs.existsSync(sandbox),false));
-if(count!==14)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
+if(count!==17)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
 console.log("COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS "+count+"/"+count+
  " SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT");
