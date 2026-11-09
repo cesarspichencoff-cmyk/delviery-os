@@ -10,6 +10,8 @@ on:
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderRealScreenInstrumentedTest.kt
       - src/entregas/ui/rider-mobile/**
       - src/entregas/ui/shared/**
+      - tools/entregas_pilot_server.ts
+      - src/entregas/ui/run-rider-bridge-tests.ts
       - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
       - android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt
       - android/app/src/main/java/br/com/tata/entregas/bridge/OriginBoundNativeBridge.kt
@@ -98,3 +100,21 @@ jobs:
               raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
           print("ANDROID_WEBVIEW_MODERN_OR_LEGACY_GATE_PASS_NO_REMOTE_RECEIPT")
           PY
+
+  rider-pilot-csp-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned project dependencies
+        run: npm ci --ignore-scripts
+      - name: Install isolated Chromium for functional pilot session test
+        run: npx playwright install --with-deps chromium
+      - name: Prove real pilot login, exact rider CSP headers and existing GPS gates
+        run: npx --yes tsx src/entregas/ui/run-rider-bridge-tests.ts
