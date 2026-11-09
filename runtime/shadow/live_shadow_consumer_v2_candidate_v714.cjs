@@ -1,3 +1,4 @@
+// OFFLINE PRIVACY AND HOST PATH GUARD — NO CAIXA INSTALLATION
 // BEGIN V714 CANDIDATE — SOURCE-IDENTITY AT PARSE TIME
 // All eight source hashes correspond to the exact bytes consumed.
 // The original V7.13 behavior is preserved except for source-race rejection.
@@ -135,20 +136,58 @@ function classificationFromPackagingFactStrict(name, routes) {
     truth_class:"PROVEN_ACADEMIA_PACKAGING_RULE",
     review_required:false
   };
-}function writeAtomicJson(outPath, value) {
-  const tmp = outPath + ".tmp." + process.pid + "." + Date.now();
-  fs.writeFileSync(tmp, JSON.stringify(value, null, 2) + "\n", {encoding:"utf8"});
-  fs.renameSync(tmp, outPath);
+}
+// This candidate is review-only. Input and private decision output are ONLY
+// permitted under an isolated, separately approved copy of the package;
+// no implicit ProgramData reads or arbitrary destination files.
+function isolatedFilePath(file, subdir, mode) {
+  const root = path.join(__dirname, subdir);
+  const target = typeof file === "string" ? path.resolve(file) : "";
+  if (!target || path.dirname(target) !== root ||
+      !/^[A-Za-z0-9_-]{1,130}\.json$/.test(path.basename(target)) ||
+      !fs.existsSync(root) || !fs.statSync(root).isDirectory() ||
+      fs.lstatSync(root).isSymbolicLink())
+    throw new Error("ISOLATED_SHADOW_" + mode + "_PATH_REQUIRED");
+  if (mode === "INPUT") {
+    if (!fs.existsSync(target) || fs.lstatSync(target).isSymbolicLink() ||
+        !fs.statSync(target).isFile())
+      throw new Error("ISOLATED_SHADOW_INPUT_NOT_REGULAR_FILE");
+  } else if (fs.existsSync(target)) {
+    throw new Error("ISOLATED_SHADOW_OUTPUT_ALREADY_EXISTS");
+  }
+  return target;
+}
+function writeAtomicJson(outPath, value) {
+  const target = isolatedFilePath(outPath, "isolated-decisions", "OUTPUT");
+  const tmp = target + ".tmp." + process.pid + "." + Date.now();
+  fs.writeFileSync(tmp, JSON.stringify(value, null, 2) + "\n",
+    {encoding:"utf8",flag:"wx",mode:0o600});
+  try {
+    // Hard-link creation is exclusive: never replace a pre-existing decision.
+    fs.linkSync(tmp, target);
+  } finally {
+    fs.unlinkSync(tmp);
+  }
 }
 
 const eventPath = process.argv[2];
 const outPath = process.argv[3] || null;
 if (!eventPath) throw new Error("EVENT_PATH_REQUIRED");
-
-const event = readJson(eventPath);
+const event = readJson(isolatedFilePath(eventPath, "isolated-events", "INPUT"));
 if (event.schema !== "deliveryos.tata-reader-stable-order-event.v1") {
   throw new Error("EVENT_SCHEMA_MISMATCH");
 }
+// Enforce the Itaim iFood native identity *inside* this consumer, not in
+// a sidecar. A mismatched event is rejected before catalog/decision processing.
+const native=event.order;
+const parts=[native?.CDFILIAL,native?.CDLOJA,
+  native?.NRVENDAREST,native?.NRCOMANDA];
+if (!native || native.IDORGCMDVENDA!=="DLV_IFO" ||
+    parts[0]!=="0001" || parts[1]!=="01" ||
+    parts.some(x=>typeof x!=="string" || x.length<1 || x.length>10 ||
+      /[|\\x00-\\x1f\\x7f]/.test(x)) ||
+    event.order_key!==parts.join("|"))
+  throw new Error("ITAIM_NATIVE_IFOOD_IDENTITY_NOT_PROVEN");
 
 const cache = readJson(path.join(here, "product-identity-cache-v1.json"));
 const academy = readJson(path.join(here, "app-data.json"));
@@ -532,25 +571,11 @@ if (!packaging) {
 }
 if (!kits || kits.status !== "FACT") blockers.push("KITS_NOT_FACT");
 
-let sequence = null;
-const seqPath = "C:\\ProgramData\\TataComandaReader\\state\\tata-sequence-state.json";
-if (fs.existsSync(seqPath)) {
-  const s = readJson(seqPath);
-  if (
-    s.schema === "deliveryos.tata-sequence-state.v1" &&
-    Number(s.next_value) >= 1 &&
-    Number(s.next_value) <= 999
-  ) {
-    sequence = {
-      shadow_candidate: String(Number(s.next_value)).padStart(3, "0"),
-      binding_written: false
-    };
-  } else {
-    blockers.push("TATA_SEQUENCE_STATE_INVALID");
-  }
-} else {
-  blockers.push("TATA_SEQUENCE_STATE_MISSING");
-}
+// Never inspect the installed Reader's operational state as a side effect.
+// The real production sequence requires a separately authorized, attested
+// writer/reader protocol; this offline consumer never provides it.
+const sequence = null;
+blockers.push("TATA_SEQUENCE_INDEPENDENT_ATTESTATION_NOT_AVAILABLE");
 
 const core = {
   order_key: event.order_key,
@@ -592,5 +617,16 @@ const result = {
 };
 
 if (outPath) writeAtomicJson(outPath, result);
-process.stdout.write(JSON.stringify(result) + "\n");
+// Stdout is intentionally content-free. Raw orders, notes, packaging and
+// native keys remain only in the isolated private decision file if requested.
+process.stdout.write(JSON.stringify({
+  schema:"tata.comandas.shadow-redacted-cli.v1",
+  review_only:true,
+  private_decision_file_requested:Boolean(outPath),
+  blockers_count:result.blocking_reasons.length,
+  item_count:result.items.length,
+  source_revision_independently_attested:false,
+  operational_ready:false,
+  print_authorized:false
+}) + "\n");
 process.exit(result.ready ? 0 : 5);
