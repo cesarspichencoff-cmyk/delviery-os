@@ -3,7 +3,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {spawnSync}=require('node:child_process');
-const {build,makeEvent,eventPath,checkpointPath}=
+const {build,buildLegacy,makeEvent,eventPath,checkpointPath}=
  require('./build-reader-one-shot-lab-fixture.cjs');
 const cli=path.resolve(__dirname,'../../labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs');
 let passed=0;
@@ -13,8 +13,14 @@ function scope(fn){
  const lab=path.join(base,'deliveryos-reader-proof-lab');
  try{build(lab);return fn(lab);}finally{fs.rmSync(base,{recursive:true,force:true});}
 }
-function run(lab){
- return spawnSync(process.execPath,[cli,'--lab-dir='+lab],{encoding:'utf8',
+function scopeLegacy(fn){
+ const base=fs.mkdtempSync(path.join(os.tmpdir(),'reader-legacy-receipt-'));
+ const lab=path.join(base,'deliveryos-reader-proof-lab');
+ try{buildLegacy(lab);return fn(lab);}finally{fs.rmSync(base,{recursive:true,force:true});}
+}
+function run(lab,legacy=false){
+ return spawnSync(process.execPath,
+  [cli,'--lab-dir='+lab,...(legacy?['--fixture-mode=legacy']:[])],{encoding:'utf8',
   timeout:4000,env:{...process.env,DELIVERYOS_READER_LAB_HOLD_MS:'0'}});
 }
 function file(lab){
@@ -154,5 +160,72 @@ check('checkpoint without canonical V2 origin cannot produce false receipt',()=>
  const r=safe(lab,run(lab));
  assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
  assert.equal(r.ordersPublishable,0);
+}));
+check('legacy-only fixture yields the same no-PII HOLD receipt',()=>scopeLegacy(lab=>{
+ const r=safe(lab,run(lab,true));
+ assert.equal(r.reason,'N2_N3_SELF_CONSISTENT_SOURCE_UNATTESTED');
+ assert.equal(r.legacyDiagnosticOnly,true);
+ assert.equal(r.legacyUppercaseNormalized,true);
+ assert.equal(r.checkpointBound,true);
+ assert.equal(r.itemRows,1);assert.equal(r.noteRows,1);
+}));
+check('legacy fixture cannot be selected through canonical V2 mode',()=>scopeLegacy(lab=>{
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+ assert.equal(r.ordersPublishable,0);
+}));
+check('canonical V2 fixture cannot be selected through legacy mode',()=>scope(lab=>{
+ const r=safe(lab,run(lab,true));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+ assert.equal(r.ordersPublishable,0);
+}));
+check('legacy receipt cannot be replaced on a second invocation',()=>scopeLegacy(lab=>{
+ safe(lab,run(lab,true));const first=file(lab);
+ const r=run(lab,true);
+ assert.notEqual(r.status,0);assert.equal(r.stdout,'');assert.equal(r.stderr,'');
+ assert.equal(file(lab),first);
+}));
+check('legacy source bytes stay unchanged after local review',()=>scopeLegacy(lab=>{
+ const dir=path.join(lab,'reader-events-v1');
+ const names=fs.readdirSync(dir);
+ assert.equal(names.length,1);
+ const p=path.join(dir,names[0]),before=fs.readFileSync(p,'utf8');
+ safe(lab,run(lab,true));
+ assert.equal(fs.readFileSync(p,'utf8'),before);
+}));
+check('historical event changed under old hash cannot be passed as migration',()=>scopeLegacy(lab=>{
+ const dir=path.join(lab,'reader-events-v1');
+ const p=path.join(dir,fs.readdirSync(dir)[0]);
+ const e=JSON.parse(fs.readFileSync(p,'utf8'));
+ e.order.items[0].QTPRODCOMVEN='16.000';
+ fs.writeFileSync(p,JSON.stringify(e)+'\n');
+ const r=safe(lab,run(lab,true));
+ assert.equal(r.reason,'N3_HASH_BYTES_NOT_CANONICAL');
+ assert.equal(r.checkpointBound,false);
+}));
+check('legacy mode refuses marker-only spoofing of a canonical checkpoint',()=>scopeLegacy(lab=>{
+ const cp=checkpointPath(lab);
+ const body=JSON.parse(fs.readFileSync(cp,'utf8'));
+ body.hash_contract_version='NODE_CANONICAL_JSON_SHA256_V1';
+ body.checkpoint_origin='FRESH_NODE_CANONICAL_V2';
+ body.checkpoint_generation='1234567890abcdef1234567890abcdef';
+ fs.writeFileSync(cp,JSON.stringify(body)+'\n');
+ const r=safe(lab,run(lab,true));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+}));
+check('unknown fixture mode fails without any receipt or stdout',()=>scopeLegacy(lab=>{
+ const r=spawnSync(process.execPath,[cli,'--lab-dir='+lab,
+  '--fixture-mode=production'],{encoding:'utf8',timeout:4000});
+ assert.notEqual(r.status,0);
+ assert.equal(r.stdout,'');assert.equal(r.stderr,'');
+ assert.equal(fs.existsSync(path.join(lab,'receipt.json')),false);
+}));
+check('legacy emitted file missing never fabricates a candidate',()=>scopeLegacy(lab=>{
+ const cp=checkpointPath(lab),c=JSON.parse(fs.readFileSync(cp,'utf8'));
+ c.entries[0].snapshot_hash='A'.repeat(64);
+ c.entries[0].emitted_hash='A'.repeat(64);
+ fs.writeFileSync(cp,JSON.stringify(c)+'\n');
+ const r=safe(lab,run(lab,true));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
 }));
 console.log('NATIVE_READER_ONE_SHOT_LAB_PASS '+passed+'/'+passed+' SYNTHETIC_ONLY');
