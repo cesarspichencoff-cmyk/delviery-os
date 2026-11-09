@@ -47,7 +47,7 @@ namespace DeliveryOS.ReaderLab {
     "native_reader_shadow_replay_v1.cjs"
    };
    var expected=new[]{
-    "18f98521c3756ce26b4fe6645ed6cb0b3baff6e5",
+    "1552a560af3018a0d1b7c971528eb81287571502",
     "0f44bccd8acaf41465d3e8d8b15074badd0e7047",
     "6199f42c84a8fbf8170da9d05d0bbf024fc7dd1f",
     "70528fe678db944a4c098688fa608bbaef0ec3c0",
