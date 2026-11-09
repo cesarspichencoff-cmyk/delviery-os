@@ -1,0 +1,26 @@
+name: Comandas V715 direct scope offline (isolated)
+on:
+  push:
+    branches:
+      - audit/comandas-v715-direct-itaim-scope-lab-20261106
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verificar_comandas_v715_direct_origin_scope_offline.cjs
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verificar_comandas_v715_direct_origin_scope_offline.cjs
