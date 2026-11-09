@@ -25,6 +25,11 @@ on:
       - android/app/src/main/java/br/com/tata/entregas/data/EntregasDatabase.kt
       - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
       - android/app/src/test/java/br/com/tata/entregas/OriginLockedClientTest.kt
+      - android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt
+      - android/app/src/main/java/br/com/tata/entregas/bridge/OriginBoundNativeBridge.kt
+      - android/app/src/test/java/br/com/tata/entregas/OriginBoundNativeBridgeTest.kt
+      - android/app/build.gradle.kts
+      - android/gradle/libs.versions.toml
   workflow_dispatch:
 permissions:
   contents: read
