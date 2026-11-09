@@ -10,6 +10,9 @@ on:
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderHttpsWorkerEndToEndInstrumentedTest.kt
       - android/app/src/main/java/br/com/tata/entregas/sync/**
       - android/app/src/main/java/br/com/tata/entregas/data/**
+      - android/app/src/main/java/br/com/tata/entregas/bridge/**
+      - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
+      - android/gradle/libs.versions.toml
       - src/entregas/ui/rider-mobile/**
       - android/app/build.gradle.kts
   workflow_dispatch:
