@@ -4,7 +4,7 @@
   "scope": "SINGLE_CONFERENCE_CONTENT_FROM_SAME_NATIVE_REVISION",
   "base_shadow_candidate": {
     "path": "docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json",
-    "git_blob": "d50fe5c585645a51da440d946a47e93f71eb97b9"
+    "git_blob": "6697d16605c48b2f9b96ed9aa5799c6f4d0b5ae9"
   },
   "additional_runtime_modules": [
     {
