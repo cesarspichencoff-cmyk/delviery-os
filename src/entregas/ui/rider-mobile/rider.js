@@ -6,6 +6,7 @@ import {
   api,
   newCommandId,
   createPendingCommands,
+  escapeHtml,
 } from "../shared/client.js";
 import {
   createConsentScreen,
@@ -452,7 +453,7 @@ function render() {
     $("stopCard").innerHTML = t.deliveries
       .map(
         (d) =>
-          `<div class="meta">${d.planned_stop_order}. ${d.order_ref} ${chip(d.state)}</div>`,
+          `<div class="meta">${escapeHtml(d.planned_stop_order)}. ${escapeHtml(d.order_ref)} ${chip(d.state)}</div>`,
       )
       .join("");
     $("nextLine").textContent = "";
@@ -470,7 +471,7 @@ function render() {
     $("stopSub").textContent = `Pedido ${s.order_ref}`;
     $("stopCard").hidden = false;
     $("stopCard").className = "card stop-card";
-    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
+    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${escapeHtml(s.order_ref)}</div>
       <div class="meta">${chip(s.state)}</div>`;
     const next = t.deliveries.find(
       (d) => d.active && d.planned_stop_order === order + 1,
@@ -501,7 +502,7 @@ function render() {
     $("stopSub").textContent = "Entregue o pedido e confirme quando o cliente receber.";
     $("stopCard").hidden = false;
     $("stopCard").className = "card stop-card edge-green";
-    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
+    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${escapeHtml(s.order_ref)}</div>
       <div class="meta">${chip(s.state)}</div>
       <div class="mark">${s._pending === "arrive" ? "CHEGADA GUARDADA · AGUARDANDO ENVIO" : "CHEGADA REGISTRADA"}</div>`;
     $("nextLine").textContent = "";
