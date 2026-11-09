@@ -2,6 +2,11 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
+  <!-- Client-side defense-in-depth for the standalone rider page.
+       frame-ancestors cannot be enforced by a meta CSP and must be set by
+       the serving HTTPS endpoint before any field release. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; script-src-attr 'none'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; child-src 'none'; object-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>ENTREGAS · Motoboy</title>
   <link rel="stylesheet" href="/shared/tokens.css" />
