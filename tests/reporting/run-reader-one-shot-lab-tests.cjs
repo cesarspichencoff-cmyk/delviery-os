@@ -47,7 +47,7 @@ check('raw event is never modified by the one-shot evaluator',()=>scope(lab=>{
  const p=eventPath(lab),before=fs.readFileSync(p,'utf8');
  safe(lab,run(lab));assert.equal(fs.readFileSync(p,'utf8'),before);
 }));
-check('legacy apostrophe-escaped digest is rejected without private output',()=>scope(lab=>{
+check('noncanonical apostrophe-escaped digest is rejected without private output',()=>scope(lab=>{
  const p=eventPath(lab),e=makeEvent();
  const keys=['CDFILIAL','CDLOJA','NRVENDAREST','NRCOMANDA','NRCOMANDAEXT',
   'IDORGCMDVENDA','IDSTCOMANDA','DTHRABERMESA'];
@@ -56,7 +56,7 @@ check('legacy apostrophe-escaped digest is rejected without private output',()=>
   ['NRPRODCOMVEN','CDPRODUTO','CDARVPROD','QTPRODCOMVEN','IDSTPRCOMVEN'].map(k=>[k,i[k]])));
  basis.observation_rows=e.order.observation_rows;
  const ps=JSON.stringify(basis).replace("L'ação",'L\\u0027ação');
- e.snapshot_hash=require('node:crypto').createHash('sha256').update(ps).digest('hex').toUpperCase();
+ e.snapshot_hash=require('node:crypto').createHash('sha256').update(ps).digest('hex');
  // Keep an exact checkpoint/file pair; the mismatch must be CANONICAL,
  // not a missing file or a changed checkpoint pointer.
  fs.rmSync(p);
@@ -109,14 +109,14 @@ check('caller claims of real source do not authorize publication',()=>scope(lab=
 }));
 check('checkpoint with missing emitted file does not create or read orders',()=>scope(lab=>{
  const cp=JSON.parse(fs.readFileSync(checkpointPath(lab),'utf8'));
- cp.entries[0].snapshot_hash='A'.repeat(64);
- cp.entries[0].emitted_hash='A'.repeat(64);
+ cp.entries[0].snapshot_hash='a'.repeat(64);
+ cp.entries[0].emitted_hash='a'.repeat(64);
  fs.writeFileSync(checkpointPath(lab),JSON.stringify(cp)+'\n');
  const r=safe(lab,run(lab));
  assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
  assert.equal(fs.existsSync(eventPath(lab)),true);
 }));
-check('tampered legacy event quantity stays HOLD despite original filename',()=>scope(lab=>{
+check('tampered V2 event quantity stays HOLD despite original filename',()=>scope(lab=>{
  const p=eventPath(lab),event=JSON.parse(fs.readFileSync(p,'utf8'));
  event.order.items[0].QTPRODCOMVEN='17.000';
  fs.writeFileSync(p,JSON.stringify(event)+'\n');
@@ -137,5 +137,22 @@ check('checkpoint symlink cannot escape the sandbox',()=>scope(lab=>{
  catch(e){if(process.platform==='win32'&&e.code==='EPERM')return;throw e;}
  const r=safe(lab,run(lab));
  assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+}));
+check('legacy uppercase event filename cannot be selected from canonical checkpoint',()=>scope(lab=>{
+ const cp=JSON.parse(fs.readFileSync(checkpointPath(lab),'utf8'));
+ cp.entries[0].snapshot_hash=cp.entries[0].snapshot_hash.toUpperCase();
+ cp.entries[0].emitted_hash=cp.entries[0].emitted_hash.toUpperCase();
+ fs.writeFileSync(checkpointPath(lab),JSON.stringify(cp)+'\n');
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+ assert.equal(fs.existsSync(eventPath(lab)),true);
+}));
+check('checkpoint without canonical V2 origin cannot produce false receipt',()=>scope(lab=>{
+ const cp=JSON.parse(fs.readFileSync(checkpointPath(lab),'utf8'));
+ delete cp.checkpoint_origin;
+ fs.writeFileSync(checkpointPath(lab),JSON.stringify(cp)+'\n');
+ const r=safe(lab,run(lab));
+ assert.equal(r.reason,'LAB_INPUT_UNREADABLE_OR_CHANGED');
+ assert.equal(r.ordersPublishable,0);
 }));
 console.log('NATIVE_READER_ONE_SHOT_LAB_PASS '+passed+'/'+passed+' SYNTHETIC_ONLY');
