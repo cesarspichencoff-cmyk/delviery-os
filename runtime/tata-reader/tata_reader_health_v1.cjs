@@ -106,10 +106,11 @@ function verdict(v, reasons, extra) {
  * @param {object|null} [input.hostStatus]     continuous-host-status.json (ou null)
  * @param {object|null} [input.consumerStatus] shadow-consumer-status.json (ou null)
  * @param {number|null} [input.checkpointMtimeMs] mtime do checkpoint do watcher
+ * @param {object|null} [input.previousHeartbeat] heartbeat anterior ja obtido e da mesma execucao
  * @param {object} [input.thresholds]          sobrescrita explicita dos limiares
  */
 // Compares two already supplied supervisor snapshots. Never reads logs, SQL,
- // orders or host processes; absence of a trustworthy baseline is UNKNOWN.
+// orders or host processes; an unverified baseline does not supply a trend.
 function failureCounterDelta(current, previous, nowMs, windowSeconds) {
   if (!isObj(current) || !isObj(previous) ||
       current.schema !== HEARTBEAT_SCHEMA || previous.schema !== HEARTBEAT_SCHEMA ||
@@ -364,8 +365,10 @@ module.exports = {
 };
 
 // ------------------------------------------------------------------ CLI ----
-// node tata_reader_health_v1.cjs [--heartbeat p] [--host-status p]
-//   [--consumer-status p] [--checkpoint p] [--now ISO]
+// node tata_reader_health_v1.cjs [--heartbeat p] [--previous-heartbeat p]
+//   [--host-status p] [--consumer-status p] [--checkpoint p] [--now ISO]
+// The optional prior heartbeat must be an existing snapshot taken separately.
+// This CLI does not capture history, create state, install a task or schedule a run.
 // Saida: JSON do veredito; codigo 0 HEALTHY, 1 DEGRADED, 2 STALLED/DOWN/FATAL,
 // 3 UNKNOWN. Arquivo ausente = sinal ausente (nunca erro silencioso); arquivo
 // presente e ilegivel = sinal invalido.
@@ -377,7 +380,7 @@ if (require.main === module) {
     const k = args[i];
     const v = args[i + 1];
     if (!k || !k.startsWith("--") || v === undefined) {
-      console.error("USO: --heartbeat <p> --host-status <p> --consumer-status <p> --checkpoint <p> [--now ISO]");
+      console.error("USO: --heartbeat <p> [--previous-heartbeat <p>] --host-status <p> --consumer-status <p> --checkpoint <p> [--now ISO]");
       process.exit(64);
     }
     opt[k.slice(2)] = v;
@@ -392,6 +395,10 @@ if (require.main === module) {
   const r = evaluateTataReaderHealthV1({
     nowMs,
     heartbeat: readDoc(opt.heartbeat),
+    // Optional file, supplied explicitly by the caller: never writes baseline
+    // or infers a previous heartbeat from the same live overwritten path.
+    previousHeartbeat: opt["previous-heartbeat"] ?
+      readDoc(opt["previous-heartbeat"]) : null,
     hostStatus: opt["host-status"] ? readDoc(opt["host-status"]) : null,
     consumerStatus: opt["consumer-status"] ? readDoc(opt["consumer-status"]) : null,
     checkpointMtimeMs: ck,
