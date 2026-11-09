@@ -82,6 +82,8 @@ function thresholdsFrom(heartbeat, override = {}) {
     data_stale_after_s: 2 * batchSeconds + stall + backoff,
     // O checkpoint e gravado a cada poll bem-sucedido.
     checkpoint_stale_after_s: stall + backoff + 30,
+    // Optional paired-status history (same machine/run), not a claim of SQL cause.
+    failure_trend_window_s: 4 * 60 * 60,
   };
   return { ...t, ...override };
 }
@@ -106,6 +108,29 @@ function verdict(v, reasons, extra) {
  * @param {number|null} [input.checkpointMtimeMs] mtime do checkpoint do watcher
  * @param {object} [input.thresholds]          sobrescrita explicita dos limiares
  */
+// Compares two already supplied supervisor snapshots. Never reads logs, SQL,
+ // orders or host processes; absence of a trustworthy baseline is UNKNOWN.
+function failureCounterDelta(current, previous, nowMs, windowSeconds) {
+  if (!isObj(current) || !isObj(previous) ||
+      current.schema !== HEARTBEAT_SCHEMA || previous.schema !== HEARTBEAT_SCHEMA ||
+      !isObj(current.supervisor) || !isObj(previous.supervisor) ||
+      typeof current.supervisor.run_id !== "string" ||
+      current.supervisor.run_id.length < 8 ||
+      current.supervisor.run_id !== previous.supervisor.run_id) return null;
+  const curTime = parseInstant(current.written_at);
+  const prevTime = parseInstant(previous.written_at);
+  const windowS = posInt(windowSeconds, 4 * 60 * 60);
+  if (curTime === null || prevTime === null || curTime <= prevTime ||
+      curTime > nowMs + 5000 || prevTime > nowMs ||
+      nowMs - prevTime > windowS * 1000) return null;
+  if (!Number.isSafeInteger(current.seq) || !Number.isSafeInteger(previous.seq) ||
+      current.seq <= previous.seq) return null;
+  const a = current.totals?.failed, b = previous.totals?.failed;
+  if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b) || a < 0 || b < 0)
+    return null;
+  return a - b;
+}
+
 function evaluateTataReaderHealthV1(input) {
   if (!isObj(input) || !Number.isFinite(input.nowMs)) throw new Error("HEALTH_INPUT_NOW_REQUIRED");
   const { nowMs } = input;
@@ -126,6 +151,7 @@ function evaluateTataReaderHealthV1(input) {
     host_state: null,
     consumer_state: null,
     consecutive_failures: null,
+    failure_delta_since_baseline: null,
     last_batch_outcome: null,
     last_error_class: null,
     watcher_sha256_verified: null,
@@ -186,6 +212,9 @@ function evaluateTataReaderHealthV1(input) {
   }
 
   const t = thresholdsFrom(hb, input.thresholds);
+  const failureDelta = failureCounterDelta(hb, input.previousHeartbeat ?? null,
+    nowMs, t.failure_trend_window_s);
+  evidence.failure_delta_since_baseline = failureDelta;
   evidence.heartbeat_state = String(hb.state ?? "");
   evidence.consecutive_failures = Number.isInteger(hb.consecutive_failures) ? hb.consecutive_failures : null;
   evidence.last_batch_outcome = isObj(hb.last_batch) ? hb.last_batch.outcome ?? null : null;
@@ -237,6 +266,13 @@ function evaluateTataReaderHealthV1(input) {
   if ((evidence.consecutive_failures ?? 0) > 0) {
     reasons.push("RECENT_FAILURES");
     if (evidence.last_error_class) reasons.push(`LAST_ERROR_${evidence.last_error_class}`);
+    return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
+  }
+  // A recovered last batch must not conceal new failures found between
+  // two recent, same-run heartbeat snapshots. No baseline => no trend claim.
+  if (failureDelta !== null && failureDelta !== 0) {
+    reasons.push(failureDelta > 0 ? "NEW_WATCHER_FAILURES_SINCE_BASELINE" :
+      "WATCHER_FAILURE_COUNTER_REGRESSED");
     return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
   }
   if (consumerFailed || consumerInvalid || !evidence.watcher_sha256_verified || ages.checkpoint_s === null) {
