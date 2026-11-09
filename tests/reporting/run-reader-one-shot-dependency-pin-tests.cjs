@@ -21,8 +21,8 @@ function quotedArray(source,name){
 }
 function check(source=cs,overrides={}){
  const names=quotedArray(source,'names'),pins=quotedArray(source,'expected');
- if(names.length!==5||pins.length!==5||new Set(names).size!==5)
-  return 'EXACT_FIVE_DEPENDENCY_PINS_REQUIRED';
+ if(names.length!==6||pins.length!==6||new Set(names).size!==6)
+  return 'EXACT_SIX_DEPENDENCY_PINS_REQUIRED';
  if(!source.includes('return DependenciesMatch(workspace);'))
   return 'DEPENDENCY_CHECK_MUST_REMAIN_ACTIVE';
  const scriptMatch=/const string ApprovedScriptGitBlob="([a-f0-9]{40})";/.exec(source);
@@ -47,9 +47,14 @@ test('modifying a dependency with unchanged pin fails before Windows',()=>{
  assert.equal(check(cs,{[which]:'// SYNTHETIC MUTATION'}),'DEPENDENCY_GIT_BLOB_PIN_STALE:native_reader_shadow_replay_v1.cjs');
 });
 test('stale PIN in launcher fails even if source is untouched',()=>{
- const old=quotedArray(cs,'expected')[4];
+ const old=quotedArray(cs,'expected')[5];
  assert.equal(check(cs.replace(old,'0'.repeat(40))),
   'DEPENDENCY_GIT_BLOB_PIN_STALE:native_reader_shadow_replay_v1.cjs');
+});
+test('legacy reviewer mutation is rejected before any Windows launch',()=>{
+ const which='runtime/reporting/native_reader_legacy_one_shot_review_v1.cjs';
+ assert.equal(check(cs,{[which]:'// LAB TAMPER'}),
+  'DEPENDENCY_GIT_BLOB_PIN_STALE:native_reader_legacy_one_shot_review_v1.cjs');
 });
 test('removing mandatory dependency verification is rejected',()=>{
  assert.equal(check(cs.replace('return DependenciesMatch(workspace);','return true;')),
