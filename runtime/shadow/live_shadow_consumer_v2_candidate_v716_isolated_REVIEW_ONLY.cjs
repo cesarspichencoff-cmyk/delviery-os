@@ -205,6 +205,34 @@ if(!hdr||hdr.IDORGCMDVENDA!=="DLV_IFO"||
    event.order_key!==parts.join("|"))
  throw new Error("LAB_ITAIM_NATIVE_IFOOD_SCOPE_INVALID");
 
+// Recompute the exact Reader V2 snapshot projection (same eight header
+// fields, five fields per item, and canonical observation row order).
+// This proves only self-consistency of the supplied event, NOT source
+// authenticity or finality of the application's database transaction.
+function canonicalSnapshotHashV716(order){
+  const head=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA",
+    "NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DTHRABERMESA"];
+  const itemKeys=["NRPRODCOMVEN","CDPRODUTO","CDARVPROD",
+    "QTPRODCOMVEN","IDSTPRCOMVEN"];
+  if(!order||!Array.isArray(order.items)||
+    !Array.isArray(order.observation_rows)||order.items.length<1||
+    order.items.length>200||
+    head.some(k=>!Object.hasOwn(order,k))||
+    order.items.some(i=>!i||itemKeys.some(k=>!Object.hasOwn(i,k))))
+    return null;
+  const basis={};
+  for(const k of head)basis[k]=order[k];
+  basis.items=order.items.map(item=>{
+    const fields={};for(const k of itemKeys)fields[k]=item[k];return fields;
+  });
+  if(order.observation_rows.length)basis.observation_rows=order.observation_rows;
+  return crypto.createHash("sha256").update(JSON.stringify(basis)).digest("hex");
+}
+if(typeof event.snapshot_hash!=="string"||
+  !/^[a-f0-9]{64}$/i.test(event.snapshot_hash)||
+  canonicalSnapshotHashV716(hdr)!==event.snapshot_hash.toLowerCase())
+  throw new Error("LAB_NATIVE_SNAPSHOT_HASH_INVALID_NO_OUTPUT");
+
 const cache = readJson(path.join(here, "product-identity-cache-v1.json"));
 const academy = readJson(path.join(here, "app-data.json"));
 const aliases = readJson(path.join(here, "product-aliases-v1.json"));
