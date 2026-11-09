@@ -13,6 +13,7 @@ import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.sync.SyncWorker
 import br.com.tata.entregas.ui.MainActivity
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -177,6 +178,75 @@ class RiderWebViewBridgeInstrumentedTest {
                 .get(15, TimeUnit.SECONDS)
             assertEquals("Duplicate immediate work scheduled", 1, work.size)
             assertEquals(WorkInfo.State.ENQUEUED, work.single().state)
+
+            // Separate CSP-free lab page: the sandbox frame MUST execute and
+            // reach the raw Java interface. This proves the native capability
+            // check independent of the production HTML's additional CSP.
+            val forgedEventId = "LAB_SANDBOX_FORGED_EVENT_001"
+            val forged = JSONObject().apply {
+                put("event_id", forgedEventId)
+                put("idempotency_key", forgedEventId)
+                put("command", JSONObject().apply {
+                    put("type", "ConfirmTripDeparture")
+                    put("command_id", "LAB_SANDBOX_COMMAND_001")
+                    put("trip_id", "LAB_SANDBOX_TRIP_001")
+                    put("occurred_at", "2026-11-08T20:00:00Z")
+                })
+            }.toString()
+            val child = """
+              (function () {
+                var hasRaw = !!window.EntregasNativeRaw;
+                var blockedParent = false;
+                try { window.top.EntregasNative; } catch (_) { blockedParent = true; }
+                var response = "NO_RAW_BRIDGE";
+                if (hasRaw) {
+                  try {
+                    response = String(window.EntregasNativeRaw.recordOperationalEvent(
+                      "INVALID_SANDBOX_PROOF", ${JSONObject.quote(forged)}
+                    ));
+                  } catch (_) { response = "BRIDGE_CALL_EXCEPTION"; }
+                }
+                parent.postMessage({
+                  kind:"LAB_SANDBOX_NATIVE_RESULT",raw:hasRaw,
+                  publicFacade:typeof window.EntregasNative,
+                  blockedParent:blockedParent,response:response
+                },"*");
+              })();
+            """.trimIndent()
+            val html = "<!doctype html><script>" + child + "</script>"
+            val attack = """
+                (function () {
+                  window.__labSandboxResult = null;
+                  window.addEventListener('message',function (m) {
+                    if (m.data && m.data.kind === 'LAB_SANDBOX_NATIVE_RESULT')
+                      window.__labSandboxResult = m.data;
+                  });
+                  var frame = document.createElement("iframe");
+                  frame.setAttribute("sandbox","allow-scripts");
+                  frame.srcdoc = ${JSONObject.quote(html)};
+                  document.body.appendChild(frame);
+                  return true;
+                })();
+            """.trimIndent()
+            assertEquals("true", evaluate(scenario, attack))
+            var received = false
+            repeat(45) {
+                if (evaluate(scenario, "!!window.__labSandboxResult") == "true") {
+                    received = true
+                    return@repeat
+                }
+                Thread.sleep(150)
+            }
+            assertTrue("Sandbox attack did not execute", received)
+            assertEquals("true", evaluate(scenario, """
+                window.__labSandboxResult.raw === true &&
+                window.__labSandboxResult.publicFacade === 'undefined' &&
+                window.__labSandboxResult.blockedParent === true &&
+                window.__labSandboxResult.response.indexOf('native_origin_denied') >= 0
+            """.trimIndent()))
+            assertTrue("Sandbox iframe forged event reached Room", runBlocking {
+                db.outbox().recent(100).none { it.eventId == forgedEventId }
+            })
         }
     }
 }
