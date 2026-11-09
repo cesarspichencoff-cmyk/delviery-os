@@ -22,7 +22,13 @@ function secureRoot(root){
  if(typeof root!=='string'||!path.isAbsolute(root)||
     path.basename(root)!==NAME)throw Error('PROJECTOR_LOCK_INVALID_ROOT');
  const absolute=path.resolve(root);
- if(fs.realpathSync(absolute)!==absolute||
+ const tempRoot=path.resolve(os.tmpdir())+path.sep;
+ const eq=(a,b)=>process.platform==='win32'?
+   a.toLowerCase()===b.toLowerCase():a===b;
+ if(!(process.platform==='win32'?
+      absolute.toLowerCase().startsWith(tempRoot.toLowerCase()):
+      absolute.startsWith(tempRoot)))throw Error('PROJECTOR_LOCK_NOT_DISPOSABLE_TEMP');
+ if(!eq(fs.realpathSync(absolute),absolute)||
     fs.lstatSync(absolute).isSymbolicLink()||
     !fs.lstatSync(absolute).isDirectory())
   throw Error('PROJECTOR_LOCK_ROOT_ALIAS');
@@ -37,7 +43,7 @@ function secureRoot(root){
   if(!fs.existsSync(dir))fs.mkdirSync(dir);
   if(fs.lstatSync(dir).isSymbolicLink()||
      !fs.lstatSync(dir).isDirectory()||
-     fs.realpathSync(dir)!==dir)
+     !eq(fs.realpathSync(dir),dir))
    throw Error('PROJECTOR_LOCK_DIRECTORY_ALIAS');
  }
  return path.join(report,'projector.lock');
