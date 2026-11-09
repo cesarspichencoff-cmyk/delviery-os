@@ -181,7 +181,12 @@ export function chip(state) {
     excecao: ["Problema na expedição", "danger"],
     cancelado: ["Cancelada", "neutral"],
   };
-  const [label, cls] = map[state] || [String(state ?? ""), "neutral"];
+  // Ignore inherited keys such as "__proto__" and "constructor".
+  // Those are not status labels, and treating them as tuple data would crash
+  // the screen when an unknown state reaches the client.
+  const pair = Object.prototype.hasOwnProperty.call(map, state)
+    ? map[state] : [String(state ?? ""), "neutral"];
+  const [label, cls] = pair;
   return `<span class="chip ${cls}" role="status">${escapeHtml(label)}</span>`;
 }
 
