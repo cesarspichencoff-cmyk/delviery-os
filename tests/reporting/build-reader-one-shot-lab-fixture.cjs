@@ -19,7 +19,7 @@ function makeEvent(){
  };
  return {schema:'deliveryos.tata-reader-stable-order-event.v1',
   order_key:'0001|01|FICT_SALE|FICT_COMMAND',
-  snapshot_hash:snapshotHash(order).toUpperCase(),order};
+  snapshot_hash:snapshotHash(order),order};
 }
 function eventPath(dir,event=makeEvent()){
  return path.join(dir,'reader-events-v1',
@@ -40,6 +40,9 @@ function build(dir){
   JSON.stringify(event)+'\n',{flag:'wx'});
  const checkpoint={
   schema:'deliveryos.tata-reader-continuous-checkpoint.v1',
+  hash_contract_version:'NODE_CANONICAL_JSON_SHA256_V1',
+  checkpoint_origin:'FRESH_NODE_CANONICAL_V2',
+  checkpoint_generation:'1234567890abcdef1234567890abcdef',
   bootstrap_complete:true,entries:[{
    order_key:event.order_key,snapshot_hash:event.snapshot_hash,
    emitted_hash:event.snapshot_hash,stable_count:2,
