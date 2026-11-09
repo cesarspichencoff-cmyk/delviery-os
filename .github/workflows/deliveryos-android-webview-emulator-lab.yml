@@ -12,6 +12,9 @@ on:
       - src/entregas/ui/shared/**
       - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
       - android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt
+      - android/app/src/main/java/br/com/tata/entregas/bridge/OriginBoundNativeBridge.kt
+      - android/app/src/test/java/br/com/tata/entregas/OriginBoundNativeBridgeTest.kt
+      - android/gradle/libs.versions.toml
       - android/app/src/main/java/br/com/tata/entregas/sync/OperationalEventRecorder.kt
       - android/app/build.gradle.kts
   workflow_dispatch:
