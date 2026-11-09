@@ -297,5 +297,84 @@ test("rider CSP forbids inline scripts and nested frames", () => {
   assert.match(html, /connect-src 'self'/);
   assert.doesNotMatch(html, /<script(?![^>]*src=)/i);
 });
+// This is the same pure function imported and executed by rider.js before
+// any native Room write. It must reject mismatched field identities.
+const guardSource = readFileSync(new URL("rider-command-context.js", dir), "utf8");
+const { riderCommandContext } = await import("data:text/javascript;base64," +
+  Buffer.from(guardSource).toString("base64"));
+const actor = { actor_id: "rider-itaim-lab", role: "motoboy_interno" };
+const trip = { trip_id: "LAB_TRIP_ITAIM", courier_actor_id: actor.actor_id };
+const authenticated = {
+  nativePresent: true,
+  nativeAvailable: true,
+  snapshot: { unit_id: "ITAIM", actor: { ...actor }, trips: [{ ...trip }] },
+  sessionActor: { ...actor },
+  trip: { ...trip },
+};
+test("actual native guard accepts only assigned authenticated Itaim rider", () => {
+  assert.deepEqual(riderCommandContext(authenticated), {
+    unit_id: "ITAIM", actor,
+  });
+  assert.match(ui, /import \{ riderCommandContext \} from "\.\/rider-command-context\.js"/);
+  assert.match(ui, /function commandContext\(trip\) \{\s*return riderCommandContext\(/);
+  assert.equal((ui.match(/\.\.\.commandContext\(t\)/g) || []).length, 5);
+});
+test("native identity guard rejects every other unit", () => {
+  for (const unit_id of ["MOOCA", "PINHEIROS", "demo-unit", "", null]) {
+    assert.throws(() => riderCommandContext({
+      ...authenticated,
+      snapshot: { ...authenticated.snapshot, unit_id },
+    }), /confirmar sua unidade e viagem/);
+  }
+});
+test("native identity guard rejects session actor or role mismatch", () => {
+  const variants = [
+    null,
+    { actor_id: "rider-intruso", role: "motoboy_interno" },
+    { actor_id: actor.actor_id, role: "admin" },
+    { actor_id: " " + actor.actor_id, role: "motoboy_interno" },
+    { actor_id: "", role: "motoboy_interno" },
+  ];
+  for (const sessionActor of variants)
+    assert.throws(() => riderCommandContext({ ...authenticated, sessionActor }),
+      /confirmar sua unidade e viagem/);
+  for (const actorOverride of [
+    null, { actor_id: "outro", role: "motoboy_interno" },
+    { actor_id: actor.actor_id, role: "admin" },
+  ]) {
+    assert.throws(() => riderCommandContext({
+      ...authenticated,
+      snapshot: { ...authenticated.snapshot, actor: actorOverride },
+    }), /confirmar sua unidade e viagem/);
+  }
+});
+test("native identity guard rejects another rider's trip and missing trip", () => {
+  for (const variant of [
+    null,
+    { trip_id: "LAB_TRIP_ITAIM", courier_actor_id: "outro" },
+    { trip_id: "LAB_TRIP_OUTRO", courier_actor_id: actor.actor_id },
+    { trip_id: "", courier_actor_id: actor.actor_id },
+  ]) assert.throws(() => riderCommandContext({
+    ...authenticated, trip: variant,
+  }), /confirmar sua unidade e viagem/);
+  for (const trips of [
+    [], null,
+    [{ trip_id: "LAB_TRIP_ITAIM", courier_actor_id: "outro" }],
+    [{ trip_id: "LAB_TRIP_OUTRO", courier_actor_id: actor.actor_id }],
+  ]) assert.throws(() => riderCommandContext({
+    ...authenticated, snapshot: { ...authenticated.snapshot, trips },
+  }), /confirmar sua unidade e viagem/);
+});
+test("native identity guard rejects bridge unavailability without demo fallback", () => {
+  assert.throws(() => riderCommandContext({
+    ...authenticated, nativeAvailable: false,
+  }), /confirmar sua unidade e viagem/);
+  assert.deepEqual(riderCommandContext({
+    ...authenticated, nativePresent: false, nativeAvailable: false,
+  }), {
+    unit_id: "demo-unit",
+    actor: { actor_id: "rid-demo", role: "motoboy_interno" },
+  });
+});
 console.log("RIDER_NATIVE_QUEUE_HOLD_FIXTURE_PASS "+pass+"/"+pass+
   " (NO_NATIVE_DEVICE_OR_BROWSER)");
