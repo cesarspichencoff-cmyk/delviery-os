@@ -127,11 +127,13 @@ test('current PR135 V7.16 disposable subprocess remains HOLD and cannot export c
  assert.equal(child.error,undefined,String(child.error));
  assert.equal(child.status,0,child.stderr);
  assert.equal(child.stderr,'');
- assert.match(child.stdout,/COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS 17\/17 SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT/);
+ assert.match(child.stdout,/COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS 19\/19 SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT/);
  for(const rule of [
   /duplicate native product ID fails closed instead of last-win/,
   /duplicate normalized Academy name is never silently substituted/,
   /duplicate alias is never used as arbitrary classification/,
+  /malformed private JSON has sanitized stderr and no decision/,
+  /stale interrupted temp file is never promoted as final decision/,
  ])assert.match(child.stdout,rule);
  assert.doesNotMatch(child.stdout,/PRIVATE_FAKE_NOTE_MUST_NOT_REACH_PUBLIC_STDOUT|FAKESALE|PRIVATE_CHANGED_FAKE_NOTE/);
 });
