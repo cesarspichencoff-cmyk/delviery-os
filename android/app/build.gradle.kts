@@ -210,6 +210,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
+    implementation(libs.androidx.webkit)
     implementation(libs.androidx.lifecycle.service)
     implementation(libs.androidx.lifecycle.runtime)
 
