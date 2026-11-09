@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import br.com.tata.entregas.BuildConfig
 import br.com.tata.entregas.bridge.Bridge
 import br.com.tata.entregas.bridge.EntregasJsBridge
+import br.com.tata.entregas.bridge.OriginBoundNativeBridge
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.TermAckEntity
 import br.com.tata.entregas.location.DeviceId
@@ -75,6 +76,9 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
         db = EntregasDatabase.get(this)
         TripNotification.ensureChannel(this)
 
+        // Fresh 256-bit capability per Activity lifetime. This is NOT a
+        // device credential or session token, and never goes to a server.
+        val bridgeCapability = OriginBoundNativeBridge.newCapability()
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -101,7 +105,18 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             // aparelho do motoboy. Um PDF de pedido salvo na pasta pública
             // sobreviveria ao encerramento da viagem.
             setDownloadListener { _, _, _, _, _ -> }
-            addJavascriptInterface(EntregasJsBridge(this@MainActivity), Bridge.JS_INTERFACE_NAME)
+            // Raw Java bridge remains visible to every iframe by Android
+            // design, but NONE of its methods work without the capability.
+            addJavascriptInterface(
+                EntregasJsBridge(this@MainActivity, bridgeCapability),
+                Bridge.RAW_JS_INTERFACE_NAME,
+            )
+            // Before loading any page, inject a PUBLIC compatibility facade
+            // only in trusted /rider-mobile/ top documents. Unsupported
+            // WebViews get NO facade and remain blocked by compatibilityHold.
+            OriginBoundNativeBridge.install(
+                this, BuildConfig.ENTREGAS_BASE_URL, bridgeCapability,
+            )
         }
         // Cookies de terceiros não têm uso aqui — só falamos com o piloto.
         android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
