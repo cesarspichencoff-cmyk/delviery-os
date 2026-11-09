@@ -7,6 +7,7 @@ const remote=process.argv[2];
 if(!remote||!path.isAbsolute(remote))throw Error('PINNED_PR135_WORKTREE_REQUIRED');
 const {build}=require(path.join(remote,'tools/comandas_reader_native_note_rowset_v1_review_only.cjs'));
 const {review}=require('../../runtime/reporting/native_reader_producer_contract_review_v1.cjs');
+const {adaptStableTataOrderV1}=require('../../runtime/reporting/copiloto_tata_reader_adapter_v1.cjs');
 const shadow=require('../../runtime/reporting/native_reader_shadow_replay_v1.cjs');
 const clone=x=>JSON.parse(JSON.stringify(x));
 const raw={
@@ -39,6 +40,35 @@ test('PR137 reviewer refuses PR135 raw private candidate before claiming self-co
  assert.equal(r.reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
  assert.equal(r.canonicalContractChecked,false);
  assert.equal(r.ordersPublishable,0);
+});
+const realItScope={
+ unitId:'ITAIM',sourceUnitId:'0001',sourceStoreId:'01',
+ mappingEvidenceRef:'LAB_NO_FIELD_AUTHORITY',sourceMode:'real'
+};
+test('Copiloto reader adapter keeps PR135 incomplete child scan out of Home',()=>{
+ const r=adaptStableTataOrderV1(clone(original),realItScope);
+ assert.equal(r.state,'blocked');
+ assert.equal(r.reason,'READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+ assert.equal(r.revision,null);
+});
+test('forged downstream-ready flags do not manufacture complete child evidence',()=>{
+ const forged=clone(original);
+ forged.ready_for_downstream_shadow=true;
+ forged.blockers=[];
+ forged.service_resolution={
+   service:'LUNCH',evidence:'HUMAN_CONFIRMED_RULE',
+   source_ref:'LAB_UNVERIFIED',blockers:[]
+ };
+ forged.observed_at='2026-11-08T12:31:00-03:00';
+ forged.effects={
+   database_read:true,database_write:false,network_call:false,
+   odhen_write:false,print:false,spooler_write:false,
+   fiscal_action:false,sefaz_call:false,cutover:false
+ };
+ const r=adaptStableTataOrderV1(forged,realItScope);
+ assert.equal(r.state,'blocked');
+ assert.equal(r.reason,'READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+ assert.equal(r.revision,null);
 });
 function pair(event){
  const o=event.order;
