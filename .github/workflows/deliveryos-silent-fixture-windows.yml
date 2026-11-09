@@ -346,6 +346,62 @@ jobs:
              $r.Contains('FICT_PRIVATE_SENTINEL')) { throw 'ONE_SHOT_RECEIPT_PRIVACY_FAILED' }
           Remove-Item -LiteralPath $lab -Recurse -Force
           Write-Host 'NATIVE_READER_ONE_SHOT_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII'
+          # Separate historical checkpoint fixture: no new Windows service, no POS.
+          # The SAME pinned GUI launcher takes an explicit fourth argument.
+          node tests/reporting/build-reader-one-shot-lab-fixture.cjs "--lab-dir=$lab" "--fixture-mode=legacy"
+          if($LASTEXITCODE -ne 0) { throw 'ONE_SHOT_LEGACY_FIXTURE_BUILD_FAILED' }
+          $legacyModule=(Resolve-Path -LiteralPath 'runtime/reporting/native_reader_legacy_one_shot_review_v1.cjs').Path
+          $legacyOriginal=[IO.File]::ReadAllBytes($legacyModule)
+          $legacyArgv=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),
+            ('"--script-path='+$script+'"'),'"--fixture-mode=legacy"')
+          try {
+            [IO.File]::WriteAllText($legacyModule,'// TAMPERED_LEGACY_REVIEWER_DO_NOT_RUN')
+            $blocked=Start-Process -FilePath $guiExe -ArgumentList $legacyArgv -Wait -PassThru
+            if($blocked.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+              { throw 'ONE_SHOT_TAMPERED_LEGACY_REVIEWER_ACCEPTED' }
+          } finally { [IO.File]::WriteAllBytes($legacyModule,$legacyOriginal) }
+          $wrongMode=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),
+            ('"--script-path='+$script+'"'),'"--fixture-mode=production"')
+          $bad=Start-Process -FilePath $guiExe -ArgumentList $wrongMode -Wait -PassThru
+          if($bad.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+            { throw 'ONE_SHOT_UNKNOWN_MODE_ACCEPTED' }
+          $legacyFocus=[ReaderOneShotWindowAudit]::GetForegroundWindow()
+          $legacyParent=Start-Process -FilePath $guiExe -ArgumentList $legacyArgv -PassThru
+          Start-Sleep -Milliseconds 120
+          if($legacyParent.HasExited) { throw ('ONE_SHOT_LEGACY_EARLY_EXIT_'+$legacyParent.ExitCode) }
+          $legacyChildren=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$($legacyParent.Id)")
+          $legacyNode=@($legacyChildren | Where-Object { $_.Name -eq 'node.exe' })
+          if($legacyNode.Count -ne 1) { throw 'ONE_SHOT_LEGACY_NODE_CHILD_NOT_UNIQUE' }
+          $legacyNodePid=[uint32]$legacyNode[0].ProcessId
+          $legacySamples=0
+          for($i=0;$i -lt 10;$i++){
+            if($legacyParent.HasExited) { throw 'ONE_SHOT_LEGACY_ENDED_BEFORE_SAMPLES' }
+            if([ReaderOneShotWindowAudit]::Visible([uint32]$legacyParent.Id) -ne 0 -or
+               [ReaderOneShotWindowAudit]::Visible($legacyNodePid) -ne 0)
+              { throw 'ONE_SHOT_LEGACY_VISIBLE_WINDOW' }
+            $legacySamples++
+            Start-Sleep -Milliseconds 70
+          }
+          if(-not $legacyParent.WaitForExit(6000)) { $legacyParent.Kill();throw 'ONE_SHOT_LEGACY_TIMEOUT' }
+          if($legacyParent.ExitCode -ne 0) { throw ('ONE_SHOT_LEGACY_EXIT_'+$legacyParent.ExitCode) }
+          if([ReaderOneShotWindowAudit]::GetForegroundWindow() -ne $legacyFocus)
+            { throw 'ONE_SHOT_LEGACY_FOCUS_CHANGED' }
+          $receiptRaw=Get-Content -LiteralPath (Join-Path $lab 'receipt.json') -Raw
+          $receiptLegacy=$receiptRaw | ConvertFrom-Json
+          if($receiptLegacy.state -ne 'HOLD' -or
+             $receiptLegacy.legacyDiagnosticOnly -ne $true -or
+             $receiptLegacy.legacyUppercaseNormalized -ne $true -or
+             $receiptLegacy.checkpointBound -ne $true -or
+             $receiptLegacy.itemRows -ne 1 -or $receiptLegacy.noteRows -ne 1 -or
+             $receiptLegacy.ordersPublishable -ne 0 -or
+             $receiptLegacy.homePublishAuthorized -ne $false -or
+             $receiptLegacy.sourceIdentityVerified -ne $false -or
+             $receiptLegacy.n2ObservationReadIndependentlyComplete -ne $false -or
+             $receiptLegacy.customerDataExported -ne $false -or
+             $receiptRaw.Contains('FICT_PRIVATE_SENTINEL')) { throw 'ONE_SHOT_LEGACY_RECEIPT_PRIVACY_FAILED' }
+          Remove-Item -LiteralPath $lab -Recurse -Force
+          Write-Host 'NATIVE_READER_LEGACY_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII'
+          Write-Host 'NATIVE_READER_LEGACY_LAUNCHER_PIN_MODE_DENIAL_PASS 2/2 LAB_ONLY'
 
   home-degraded-browser-fixture:
     name: L4 Home degraded-state Chromium (synthetic only)
