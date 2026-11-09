@@ -18,6 +18,9 @@ on:
       - tests/reporting/run-native-reader-shadow-replay-tests.cjs
       - tests/reporting/run-pr135-native-child-observation-l1-contract.cjs
       - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
+      - runtime/reporting/native_reader_existing_event_binding_v1.cjs
+      - tests/reporting/run-native-reader-existing-event-binding-tests.cjs
+      - tests/reporting/build-reader-one-shot-lab-fixture.cjs
       - runtime/reporting/native_reader_n2_base_tables_review_v1.cjs
       - tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
       - tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
