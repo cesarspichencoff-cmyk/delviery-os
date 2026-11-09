@@ -404,7 +404,8 @@ async function main(): Promise<void> {
           const external = await page.request.get(`${p.base}/rider-mobile/pilot-session-boot.js`);
           assert.equal(external.status(), 200);
           assert.match(await external.text(), /window\.entregasPilotLogin/);
-          assert.equal(await page.evaluate(() => typeof window.entregasPilotLogin), "function");
+          assert.equal(await page.evaluate(() =>
+            typeof (window as unknown as { entregasPilotLogin?: unknown }).entregasPilotLogin), "function");
         });
         await teste("A1 sem EntregasNative, a saída confirma e a viagem vai para em_rota", async () => {
           await confirmarSaida(page);
