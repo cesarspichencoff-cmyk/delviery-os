@@ -73,7 +73,7 @@ const fixture=path.join(__dirname,"fixtures","canonical-packaging-v63-pinned.js"
 if(!fs.existsSync(fixture))throw new Error("PINNED_MOTOR_FIXTURE_MISSING");
 const source=fs.readFileSync(fixture,"utf8"),buf=Buffer.from(source,"utf8");
 const sha=crypto.createHash("sha1").update(Buffer.concat([
- Buffer.from("blob "+buf.length+"\\0"),buf])).digest("hex");
+ Buffer.from("blob "+buf.length+"\0"),buf])).digest("hex");
 test("fixture matches exact pinned Academy blob",()=>assert.equal(sha,PINNED_MOTOR_GIT_BLOB));
 const realm=Object.create(null);vm.runInNewContext(source,realm,{timeout:2500});
 const motor=realm.TATAPackaging;
