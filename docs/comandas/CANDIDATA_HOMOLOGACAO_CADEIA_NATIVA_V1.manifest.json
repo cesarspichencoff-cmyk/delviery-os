@@ -13,8 +13,8 @@
     },
     {
       "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
-      "git_blob": "8e75fea85437d063c2f6ee2df09ee33962d42ce6",
-      "bytes": 25495
+      "git_blob": "f3c7cd4fcfeecaf212f8f867c668030b9c65a17d",
+      "bytes": 27623
     },
     {
       "path": "src/production/annotationLinePlanV67.ts",
