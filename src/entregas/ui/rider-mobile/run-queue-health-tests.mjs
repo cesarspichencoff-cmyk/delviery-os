@@ -299,6 +299,7 @@ test("rider CSP forbids inline scripts and nested frames", () => {
 });
 // This is the same pure function imported and executed by rider.js before
 // any native Room write. It must reject mismatched field identities.
+{
 const guardSource = readFileSync(new URL("rider-command-context.js", dir), "utf8");
 const { riderCommandContext } = await import("data:text/javascript;base64," +
   Buffer.from(guardSource).toString("base64"));
@@ -376,5 +377,6 @@ test("native identity guard rejects bridge unavailability without demo fallback"
     actor: { actor_id: "rid-demo", role: "motoboy_interno" },
   });
 });
+}
 console.log("RIDER_NATIVE_QUEUE_HOLD_FIXTURE_PASS "+pass+"/"+pass+
   " (NO_NATIVE_DEVICE_OR_BROWSER)");
