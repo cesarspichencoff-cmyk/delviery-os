@@ -220,4 +220,66 @@ check("CLI refuses to classify replayed sequence as historical trend",()=>{
   assert.equal(r.evidence.failure_delta_since_baseline,null);
 });
 
+// Grounded in the installed V2 consumer status shape: RUNNING and updated_at.
+// A stale status is not evidence that the downstream consumer is still alive.
+check("stale RUNNING consumer never makes a healthy Reader verdict",()=>{
+ const c=consumer();c.updated_at=stamp(4*60*60*1000);
+ const r=evaluate(c);
+ assert.equal(r.verdict,"DEGRADED");
+ assert.equal(r.source_state,"parcial");
+ assert(r.reasons.includes("CONSUMER_STATUS_STALE"));
+ assert(r.ages_seconds.consumer_status_s>r.thresholds.consumer_status_stale_after_s);
+ assert.equal(r.evidence.last_batch_outcome,"OK");
+});
+check("consumer timestamp missing is degraded, even with valid V2 schema",()=>{
+ const c=consumer();delete c.updated_at;
+ const r=evaluate(c);
+ assert.equal(r.verdict,"DEGRADED");
+ assert(r.reasons.includes("CONSUMER_STATUS_TIMESTAMP_INVALID"));
+ assert.equal(r.ages_seconds.consumer_status_s,null);
+});
+check("malformed consumer timestamp is not silently considered fresh",()=>{
+ const c=consumer();c.updated_at="not-a-time";
+ const r=evaluate(c);
+ assert.equal(r.verdict,"DEGRADED");
+ assert(r.reasons.includes("CONSUMER_STATUS_TIMESTAMP_INVALID"));
+});
+check("consumer timestamp from distant future cannot grant health",()=>{
+ const c=consumer();c.updated_at=stamp(-180000);
+ const r=evaluate(c);
+ assert.equal(r.verdict,"DEGRADED");
+ assert(r.reasons.includes("CONSUMER_STATUS_FROM_FUTURE"));
+});
+check("at declared consumer staleness boundary, no false downgrade",()=>{
+ const t=evaluate().thresholds.consumer_status_stale_after_s;
+ const c=consumer();c.updated_at=stamp(t*1000);
+ const r=evaluate(c);
+ assert.equal(r.verdict,"HEALTHY");
+ assert.equal(r.ages_seconds.consumer_status_s,t);
+});
+check("one second beyond declared consumer staleness is degraded",()=>{
+ const t=evaluate().thresholds.consumer_status_stale_after_s;
+ const c=consumer();c.updated_at=stamp((t+1)*1000);
+ const r=evaluate(c);
+ assert.equal(r.verdict,"DEGRADED");
+ assert(r.reasons.includes("CONSUMER_STATUS_STALE"));
+});
+check("old RUNNING host marker is not a substitute for a fresh heartbeat",()=>{
+ const h=heartbeat();h.written_at=stamp(12*60*1000);
+ const host={schema:"deliveryos.tata-reader-continuous-host-status.v2",
+   state:"RUNNING",updated_at:stamp(11*24*60*60*1000)};
+ const r=review({nowMs:now,heartbeat:h,hostStatus:host,
+   consumerStatus:consumer(),checkpointMtimeMs:now-1000});
+ assert.equal(r.verdict,"STALLED");
+ assert(r.ages_seconds.host_status_s>10*24*60*60);
+ assert(r.reasons.includes("SUPERVISOR_SILENT"));
+});
+check("a recent consumer cannot by itself prove real orders or print authority",()=>{
+ const r=evaluate(consumer());
+ assert.equal(r.verdict,"HEALTHY");
+ assert.equal(r.ages_seconds.consumer_status_s,2);
+ assert.equal(Object.hasOwn(r,"ordersPublishable"),false);
+ assert.equal(Object.hasOwn(r,"printAuthorized"),false);
+});
+
 console.log("TATA_READER_CONSUMER_V2_HEALTH_GATE_PASS "+passed+"/"+passed+" SYNTHETIC_ONLY");
