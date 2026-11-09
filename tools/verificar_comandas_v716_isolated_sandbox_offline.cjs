@@ -30,7 +30,10 @@ check("new fork has no operational state access or full-result stdout",()=>{
  assert.match(s,/LAB_ITAIM_NATIVE_IFOOD_SCOPE_INVALID/);
  assert.match(s,/LAB_NATIVE_SNAPSHOT_HASH_INVALID_NO_OUTPUT/);
  assert.match(s,/OFFHOST_LAB_ONLY_NO_PRODUCTION_SEQUENCE/);
- assert.match(s,/fs\.openSync\(target,"wx",0o600\)/);
+ assert.match(s,/fs\\.openSync\\(tmp,"wx",0o600\\)/);
+ assert.match(s,/fs\\.fsyncSync\\(handle\\)/);
+ assert.match(s,/fs\\.linkSync\\(tmp,target\\)/);
+ assert.match(s,/fs\\.unlinkSync\\(tmp\\)/);
  assert.match(s,/fs\.lstatSync\(root\)\.isSymbolicLink\(\)/);
  assert.doesNotMatch(s,/require\(["'](?:node:)?(?:net|http|https|child_process|serialport)["']\)/);
 });
@@ -203,6 +206,35 @@ try{
     assert.equal(p.stdout,"");
   }finally{fs.writeFileSync(file,original);}
  });
+ check("malformed private JSON has sanitized stderr and no decision",()=>{
+  const input=path.join(eventDir,"malformed-note.json");
+  const output=path.join(outDir,"malformed-private.json");
+  const secret="PRIVATE_FAKE_CONTENT_MUST_NOT_ESCAPE_JSON_PARSE";
+  fs.writeFileSync(input,'{"schema":"broken","note":"'+secret+'",');
+  const result=run(input,output);
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/LAB_JSON_SOURCE_INVALID/);
+  assert.ok(!result.stderr.includes(secret));
+  assert.equal(result.stdout,"");
+  assert.equal(fs.existsSync(output),false);
+ });
+ check("stale interrupted temp file is never promoted as final decision",()=>{
+  const output=path.join(outDir,"new-atomic-decision.json");
+  const stale=output+".tmp-STALE_PARTIAL_FICTION";
+  fs.writeFileSync(stale,'{"incomplete":');
+  try{
+    const result=run(eventPath,output);
+    assert.equal(result.status,5,result.stderr);
+    assert.equal(result.stderr,"");
+    const decision=JSON.parse(fs.readFileSync(output,"utf8"));
+    assert.equal(decision.ready,false);
+    assert.equal(decision.effects.print,false);
+    assert.equal(fs.readFileSync(stale,"utf8"),'{"incomplete":');
+    assert.equal(fs.readdirSync(outDir).some(n=>
+      n.startsWith("new-atomic-decision.json.tmp-")&&n!==
+       path.basename(stale)),false);
+  }finally{fs.unlinkSync(stale);}
+ });
  check("existing output is never overwritten",()=>{
   const before=fs.readFileSync(decisionPath);
   const v=run(eventPath,decisionPath);
@@ -284,6 +316,6 @@ try{
  fs.rmSync(sandbox,{recursive:true,force:true});
 }
 check("disposable lab root removed",()=>assert.equal(fs.existsSync(sandbox),false));
-if(count!==17)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
+if(count!==19)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
 console.log("COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS "+count+"/"+count+
  " SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT");
