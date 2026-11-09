@@ -31,6 +31,7 @@ import {
 } from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
 import { selectActiveRiderTrip } from "./rider-trip-scope.js";
+import { riderCommandContext } from "./rider-command-context.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -569,26 +570,13 @@ async function act(fn) {
  * Standalone browser demo retains its original synthetic identity.
  */
 function commandContext(trip) {
-  if (!nativeFound.present) {
-    return { unit_id: "demo-unit", actor: { actor_id: "rid-demo", role: "motoboy_interno" } };
-  }
-  const rider = cap.me;
-  const snapshotActor = snap?.actor;
-  if (!native || snap?.unit_id !== "ITAIM" ||
-      !rider || rider.role !== "motoboy_interno" ||
-      typeof rider.actor_id !== "string" || !rider.actor_id.trim() ||
-      !snapshotActor || snapshotActor.role !== "motoboy_interno" ||
-      snapshotActor.actor_id !== rider.actor_id ||
-      !trip || trip.courier_actor_id !== rider.actor_id ||
-      !Array.isArray(snap.trips) ||
-      !snap.trips.some((t) => t.trip_id === trip.trip_id &&
-        t.courier_actor_id === rider.actor_id)) {
-    throw new Error("Não foi possível confirmar sua unidade e viagem. Atualize a tela antes de registrar.");
-  }
-  return {
-    unit_id: "ITAIM",
-    actor: { actor_id: rider.actor_id, role: "motoboy_interno" },
-  };
+  return riderCommandContext({
+    nativePresent: nativeFound.present,
+    nativeAvailable: !!native,
+    snapshot: snap,
+    sessionActor: cap.me,
+    trip,
+  });
 }
 
 function actDepart(t) {
