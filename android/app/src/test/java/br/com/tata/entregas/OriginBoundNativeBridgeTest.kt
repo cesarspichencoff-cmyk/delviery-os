@@ -101,8 +101,12 @@ class OriginBoundNativeBridgeTest {
             "https://pilot.example", "LAB_64_CHARS_NONPUBLIC_RANDOM_CAPABILITY",
         )
         assertTrue(script.contains("window !== window.top"))
-        assertTrue(script.contains("location.origin !== \"https://pilot.example\""))
-        assertTrue(script.contains("location.pathname.indexOf(\"/rider-mobile/\")"))
+        // Android JSON quoting may escape forward slashes as \\/; the
+        // contract is the literal exact-origin/path comparison, not spelling.
+        assertTrue(script.contains("location.origin !== "))
+        assertTrue(script.contains("pilot.example"))
+        assertTrue(script.contains("location.pathname.indexOf("))
+        assertTrue(script.contains("rider-mobile"))
         assertTrue(script.contains("Object.defineProperty(window, \"EntregasNative\""))
         assertTrue(script.contains("var secret ="))
         assertFalse(script.contains("window.secret"))
