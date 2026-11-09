@@ -37,11 +37,24 @@ test("closure is complete and carries no process, network or print capability",(
 });
 test("consumer and motor are the already-pinned bytes, not new forks",()=>{
  const consumer=now.code.find(f=>f.path==="runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
- assert.equal(consumer.git_blob,"8e75fea85437d063c2f6ee2df09ee33962d42ce6");
+ assert.equal(consumer.git_blob,"f3c7cd4fcfeecaf212f8f867c668030b9c65a17d");
  const motor=now.runtime_data.find(f=>f.path==="tools/fixtures/canonical-packaging-v63-pinned.js");
  assert.equal(motor.git_blob,"3167c309f02a0ad5a84fb43043b8866e3bee873c");
  // The only file writer in the closure is the consumer's own evidence file.
  assert.deepEqual(now.capability_flags.file_write,["runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs"]);
+});
+test("candidate protects host paths, source scope and stdout privacy",()=>{
+ const source=fs.readFileSync(path.join(ROOT,
+  "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs"),"utf8");
+ assert.match(source,/isolatedFilePath\(eventPath, "isolated-events", "INPUT"\)/);
+ assert.match(source,/isolatedFilePath\(outPath, "isolated-decisions", "OUTPUT"\)/);
+ assert.match(source,/ITAIM_NATIVE_IFOOD_IDENTITY_NOT_PROVEN/);
+ assert.match(source,/TATA_SEQUENCE_INDEPENDENT_ATTESTATION_NOT_AVAILABLE/);
+ assert.match(source,/tata\.comandas\.shadow-redacted-cli\.v1/);
+ assert.doesNotMatch(source,/C:\\\\ProgramData\\\\TataComandaReader/);
+ assert.doesNotMatch(source,/process\.stdout\.write\(JSON\.stringify\(result\)/);
+ assert.ok(source.indexOf("ITAIM_NATIVE_IFOOD_IDENTITY_NOT_PROVEN")<
+   source.indexOf('const cache = readJson'));
 });
 test("manifest declares no install, service, queue, print or sequence effect",()=>{
  for(const v of Object.values(now.effects))assert.equal(v,false);
