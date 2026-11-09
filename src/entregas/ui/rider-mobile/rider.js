@@ -563,6 +563,34 @@ async function act(fn) {
   }
 }
 
+/**
+ * Native commands must belong to the authenticated Itaim rider, never to
+ * the hard-coded demo actor. Validate BEFORE creating the Room event.
+ * Standalone browser demo retains its original synthetic identity.
+ */
+function commandContext(trip) {
+  if (!nativeFound.present) {
+    return { unit_id: "demo-unit", actor: { actor_id: "rid-demo", role: "motoboy_interno" } };
+  }
+  const rider = cap.me;
+  const snapshotActor = snap?.actor;
+  if (!native || snap?.unit_id !== "ITAIM" ||
+      !rider || rider.role !== "motoboy_interno" ||
+      typeof rider.actor_id !== "string" || !rider.actor_id.trim() ||
+      !snapshotActor || snapshotActor.role !== "motoboy_interno" ||
+      snapshotActor.actor_id !== rider.actor_id ||
+      !trip || trip.courier_actor_id !== rider.actor_id ||
+      !Array.isArray(snap.trips) ||
+      !snap.trips.some((t) => t.trip_id === trip.trip_id &&
+        t.courier_actor_id === rider.actor_id)) {
+    throw new Error("Não foi possível confirmar sua unidade e viagem. Atualize a tela antes de registrar.");
+  }
+  return {
+    unit_id: "ITAIM",
+    actor: { actor_id: rider.actor_id, role: "motoboy_interno" },
+  };
+}
+
 function actDepart(t) {
   return act(async () => {
     if (!confirm("Confirmar saída da loja?")) return;
@@ -570,9 +598,8 @@ function actDepart(t) {
       type: "ConfirmTripDeparture",
       command_id: cid("dep"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   });
 }
@@ -584,10 +611,9 @@ function actArrive(t, s) {
       type: "RecordArrivalReported",
       command_id: cid("arr"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   });
 }
@@ -599,10 +625,9 @@ function actConfirm(t, s) {
       type: "ConfirmDelivery",
       command_id: cid("cf"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   });
 }
@@ -623,10 +648,9 @@ $("btnNotFound").addEventListener("click", () =>
       type: "RecordCustomerNotFound",
       command_id: cid("nf"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   }),
 );
@@ -638,13 +662,12 @@ $("btnProblem").addEventListener("click", () =>
       type: "CreateOccurrence",
       command_id: cid("oc"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       occurrence_id: newCommandId("OCC-M"),
       occurrence_type: "campo",
       report: "Problema registrado pelo motoboy (demo)",
       blocks_availability: false,
       related_trip_id: t?.trip_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   }),
 );
