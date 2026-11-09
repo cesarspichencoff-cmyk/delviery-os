@@ -52,4 +52,12 @@ Um canal só será elegível quando existir evidência independente dos pontos:
 
 **Decisão:** bloquear as rotas de execução que não comprovem a proteção de tela. Priorizar uma *nova superfície de invocação* de verdade em vez de repetir variações de `winexe` na CI. Não considerar novas suítes sintéticas substitutos para a prova em campo.
 
+## Auditoria adicional — validade temporal do consumidor sombra
+
+Inspeção passiva de arquivo de status já existente confirmou `deliveryos.live-shadow-consumer-status.v2`, `state=RUNNING` e `updated_at=2026-11-09T22:56:23.260Z`; sem dados de pedido exportados. Metadados do antigo `continuous-host-status.json` indicam última atualização em **29/10/2026**, apesar de marcar RUNNING — sua idade impede usá-lo como prova independente de atividade atual. O heartbeat recente continua a evidência própria de progresso do supervisor; host-status antigo não pode resgatar heartbeat parado.
+
+**Falha de diagnóstico corrigida no código da PR #137:** o avaliador aceitava `consumer.state=RUNNING` sem validar `consumer.updated_at`. Agora registra `consumer_status_s` e degrada quando consumidor informado está desatualizado, sem horário válido ou com timestamp excessivamente futuro. Limite derivado da cadência de heartbeat, preservando `consumer=null` como ausência de prova específica. Validação **sintética** no SHA de código `1a9d745b1b5b0b854b3cd6dd4f2fdc363260a5f9`: **36/36** testes do avaliador e **4/4 workflows SUCCESS** (Windows/contratos [#42716463499](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42716463499), Room [#42716463454](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42716463454), HTTPS [#42716463306](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42716463306), WebView [#42716463378](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42716463378)).
+
+**Efeito:** somente revisão de código e testes GitHub, **não** implantação do novo diagnóstico no caixa. Não melhora por inferência N2-A/N2-B, origem iFood ou sessão real. A PR #135 recebeu documento passivo de falhas SQL adicionais sob HEAD documental `2d84be98cc2c8b431e916fdd8e02c8fbba31c29f`; o hash do produtor da PR #135 fixado nos testes cruzados permanece o de código já validado, não se justifica recadastrar pins por mudança documental.
+
 **Status:** `N1_FIELD_INVOCATION=UNPROVEN`; `N2/N3=HOLD`; `L1_PARTIAL`; `V1_OPERATIONAL_ACCEPTANCE=0/8`. PRs #135 e #137 DRAFT/HOLD; nenhuma homologação operacional alterada.
