@@ -36,12 +36,11 @@ const check=(input=event(),src=source)=>{
  assert.ok(!JSON.stringify(out).includes("FAKESALE"));
  return out;
 };
-test("pinned V714 review candidate rejects foreign origin and operational effects",()=>{
- assert.equal(PINNED_V714_BLOB,"f3c7cd4fcfeecaf212f8f867c668030b9c65a17d");
+test("pinned original V714 is preserved and only preflight is evaluated",()=>{
+ assert.equal(PINNED_V714_BLOB,"8e75fea85437d063c2f6ee2df09ee33962d42ce6");
  assert.equal(check().reason,"EXACT_SCOPE_IS_ONLY_UNATTESTED_CANDIDATE");
  assert.equal(check().exact_itaim_ifood_scope_syntactically_matching,true);
- assert.equal(source.includes("ITAIM_NATIVE_IFOOD_IDENTITY_NOT_PROVEN"),true);
- assert.equal(source.includes("TATA_SEQUENCE_INDEPENDENT_ATTESTATION_NOT_AVAILABLE"),true);
+ assert.equal(source.includes("nativeItaimIfoodScopeReasonsV1"),false);
 });
 test("upstream ready cannot promote unrelated native DLV source",()=>{
  const x=event();x.order.IDORGCMDVENDA="DLV_NMO";
