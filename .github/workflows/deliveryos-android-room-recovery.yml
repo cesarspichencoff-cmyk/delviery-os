@@ -48,6 +48,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
       - name: Android JVM Room recovery tests
         working-directory: android
         run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
