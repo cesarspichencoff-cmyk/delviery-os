@@ -169,6 +169,7 @@ function safeInputPath(file){
   const root=path.join(actualRoot,"isolated-events");
   const target=labPath(file);
   if(path.dirname(target)!==root||
+     fs.lstatSync(root).isSymbolicLink()||!fs.statSync(root).isDirectory()||
      !/^[A-Za-z0-9_-]{1,110}\.json$/.test(path.basename(target)))
     throw new Error("LAB_INPUT_NOT_IN_EVENTS_DIRECTORY");
   return labExistingFile(target);
