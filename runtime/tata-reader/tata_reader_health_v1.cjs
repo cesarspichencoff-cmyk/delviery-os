@@ -84,6 +84,8 @@ function thresholdsFrom(heartbeat, override = {}) {
     checkpoint_stale_after_s: stall + backoff + 30,
     // Optional paired-status history (same machine/run), not a claim of SQL cause.
     failure_trend_window_s: 4 * 60 * 60,
+    // A downstream RUNNING flag without a recent update is NOT current proof.
+    consumer_status_stale_after_s: Math.max(90, 2 * batchSeconds + stall + backoff),
   };
   return { ...t, ...override };
 }
@@ -146,6 +148,7 @@ function evaluateTataReaderHealthV1(input) {
     last_success_s: null,
     checkpoint_s: age(nowMs, ckMs),
     host_status_s: null,
+    consumer_status_s: null,
   };
   const evidence = {
     heartbeat_state: null,
@@ -181,6 +184,14 @@ function evaluateTataReaderHealthV1(input) {
       reasons.push("CONSUMER_STATUS_SCHEMA_INVALID");
     } else {
       evidence.consumer_state = consumer.state;
+      ages.consumer_status_s = age(nowMs, parseInstant(consumer.updated_at));
+      if (ages.consumer_status_s === null) {
+        consumerInvalid = true;
+        reasons.push("CONSUMER_STATUS_TIMESTAMP_INVALID");
+      } else if (ages.consumer_status_s < -120) {
+        consumerInvalid = true;
+        reasons.push("CONSUMER_STATUS_FROM_FUTURE");
+      }
       if (evidence.consumer_state !== "RUNNING") {
         consumerFailed = true;
         reasons.push(evidence.consumer_state === "FAILED" ?
@@ -264,6 +275,11 @@ function evaluateTataReaderHealthV1(input) {
     return verdict("STALLED", reasons, { ...extra(), thresholds: t });
   }
   if (ages.checkpoint_s === null) reasons.push("CHECKPOINT_UNOBSERVED");
+  if (ages.consumer_status_s !== null &&
+      ages.consumer_status_s > t.consumer_status_stale_after_s) {
+    consumerInvalid = true;
+    reasons.push("CONSUMER_STATUS_STALE");
+  }
   if ((evidence.consecutive_failures ?? 0) > 0) {
     reasons.push("RECENT_FAILURES");
     if (evidence.last_error_class) reasons.push(`LAST_ERROR_${evidence.last_error_class}`);
