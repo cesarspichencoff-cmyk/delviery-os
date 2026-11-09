@@ -468,6 +468,13 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
 }
 
 /** Injeta banner de piloto e esconde demo dock via snippet no HTML */
+/** Only the rider DOCUMENT gets its dedicated hardened headers/boot. */
+function isRiderIndexPath(pathname: string): boolean {
+  return pathname === "/rider-mobile" ||
+    pathname === "/rider-mobile/" ||
+    pathname === "/rider-mobile/index.html";
+}
+
 function transformHtml(html: string, pathname: string): string {
   let out = html.replace(
     /AMBIENTE DE DEMONSTRAÇÃO[^<]*/g,
@@ -499,7 +506,18 @@ function transformHtml(html: string, pathname: string): string {
   // Authorization — e a primeira leitura voltava 401, deixando a tela presa em
   // "Carregando…". Clássico e no <head>, ele roda durante o parse, antes de
   // qualquer módulo (test:entregas:rider-bridge, cenário A, prova com Chromium).
-  if (!out.includes("pilot-session-boot")) {
+  if (isRiderIndexPath(pathname)) {
+    // The CSP lives in the original rider HTML and must be parsed BEFORE
+    // this synchronous, same-origin classic bootstrap. Fail closed rather
+    // than silently reintroducing an inline script or unauthenticated UI.
+    if (!out.includes('http-equiv="Content-Security-Policy"')) {
+      throw new Error("RIDER_CSP_REQUIRED_BEFORE_BOOT");
+    }
+    const marker = "<title>ENTREGAS · Motoboy</title>";
+    if (!out.includes(marker)) throw new Error("RIDER_BOOT_MARKER_MISSING");
+    out = out.replace(marker,
+      '<script src="/rider-mobile/pilot-session-boot.js"></script>\n  ' + marker);
+  } else if (!out.includes("pilot-session-boot")) {
     const boot = `<script>
 /* pilot-session-boot */
 const TOKEN_KEY = "entregas_pilot_token";
@@ -1272,7 +1290,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     if (ext === ".html") {
       body = transformHtml(body.toString("utf8"), path);
     }
-    res.writeHead(200, { "Content-Type": mime[ext] || "text/plain" });
+    // The meta policy governs scripts/subframes. frame-ancestors is only
+    // enforceable via HTTP response headers, never via a meta CSP.
+    // Keep all other static routes exactly as before.
+    const riderHeaders = ext === ".html" && isRiderIndexPath(path) ? {
+      "Content-Security-Policy": "frame-ancestors 'none'",
+      "X-Frame-Options": "DENY",
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "no-store",
+    } : {};
+    res.writeHead(200, { "Content-Type": mime[ext] || "text/plain", ...riderHeaders });
     res.end(body);
   } catch (e) {
     const technical = e instanceof Error ? e.message : String(e);
