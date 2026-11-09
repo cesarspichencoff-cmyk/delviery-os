@@ -15,9 +15,9 @@ A equipe já presente acompanha até **20 pedidos consecutivos** no almoço e at
 - **Praças necessárias:** `S1` sushi 1, `S2` sushi 2, `Q` enrolados quentes, `C` cozinha, ou `?` se desconhecidas. **Praça necessária é definida pelos itens do pedido, não pela impressora onde saiu papel.**
 - **Papéis observados:** anotar somente praça e quantidade, p.ex. `S1=1 C=1`, distinguindo conferência em `CX` e eventual `GP/Gestor`; escrever `?` quando impressora não acompanhada. `0` é permitido **somente** se a praça foi observada integralmente para aquele pedido.
 - **Itens/qtd e notas:** `S` conferem, `N` divergência, `?` não comparados. Nunca transcrever nomes de produtos, alergias ou texto de observações.
-- **Tardio/reprint:** `S/N/?`, sem manipular fila. **Anomalia:** `FALTA`, `DUP`, `ROTA`, `CONTEÚDO`, `NOTA`, `TARDIO`, `GP`, `OUTRA`, `?`, ou `NENHUMA` apenas se coberto. **Cobertura:** `TOTAL`, `PARCIAL`, `?`.
+- **Tardio/reprint ocorreu?** `S` = foi visto papel tardio ou reimpressão; registrar `TARDIO` (ou `DUP`/`OUTRA`, conforme o fato) como anomalia relatada `D2`, sem presumir a causa. `N` = não foi visto, **somente após acompanhamento integral** de todas as saídas relevantes para aquele pedido. `?` = não verificado, amostra insuficiente `D0` se não houver outra anomalia. **`S` não significa que a verificação foi concluída.** Não manipular fila. **Anomalia:** `FALTA`, `DUP`, `ROTA`, `CONTEÚDO`, `NOTA`, `TARDIO`, `GP`, `OUTRA`, `?`, ou `NENHUMA` apenas se coberto. **Cobertura:** `TOTAL`, `PARCIAL`, `?`.
 
-| Nº | Ligação S/N/? | Praças necessárias | Papéis observados | Itens/qtd S/N/? | Notas S/N/? | Tardio/reprint S/N/? | Anomalia | Cobertura |
+| Nº | Ligação S/N/? | Praças necessárias | Papéis observados | Itens/qtd S/N/? | Notas S/N/? | Tardio/reprint ocorreu? S/N/? | Anomalia | Cobertura |
 |---|---|---|---|---|---|---|---|---|
 | 01 |  |  |  |  |  |  |  |  |
 | 02 |  |  |  |  |  |  |  |  |
@@ -46,6 +46,7 @@ A equipe já presente acompanha até **20 pedidos consecutivos** no almoço e at
 - Composição observada: uma praça ____; várias praças ____; composição desconhecida ____.
 - Famílias que **de fato apareceram** (não marcar famílias não vistas): `S1` ___ `S2` ___ `Q` ___ `C` ___.
 - Todas as praças necessárias acompanhadas até a saída normal e possível papel tardio? `S/N/?`.
+- **Verificação de saída tardia concluída para todos os pedidos e destinos relevantes? `S/N/?`** Este é um campo **diferente** de `Tardio/reprint ocorreu?`: na conversão para o classificador, `late_output_checked=YES` significa que a verificação foi concluída, **não** que houve ou não houve papel tardio. Se qualquer linha marcar `Tardio/reprint ocorreu? S`, relatar a categoria correspondente e manter `D2` mesmo quando `late_output_checked=YES`. Se a verificação não foi concluída, usar `NO/UNKNOWN`; não fabricar conformidade `D1`.
 - Casos com itens e quantidades comparados: _____; com observações comparadas: _____; casos com ligação visual `S`: _____.
 - Total de casos por **tipo de problema**, sem IDs, nomes ou prints: FALTA ___; DUP ___; ROTA ___; CONTEÚDO ___; NOTA ___; **VÍNCULO ERRADO** ___; TARDIO ___; GP ___; OUTRA ___; não verificados ___.
 - Combinados de múltiplas praças e eventual exceção de combinado dupla tiveram destino claro? `S/N/?`.
