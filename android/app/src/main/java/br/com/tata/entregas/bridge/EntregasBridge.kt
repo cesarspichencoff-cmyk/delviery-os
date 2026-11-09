@@ -6,6 +6,7 @@ import br.com.tata.entregas.location.GateDecision
 import br.com.tata.entregas.location.CanonicalGpsPoint
 import org.json.JSONObject
 import java.lang.ref.WeakReference
+import java.security.MessageDigest
 
 /**
  * Ponte Kotlin <-> interface.
@@ -21,6 +22,7 @@ import java.lang.ref.WeakReference
 object Bridge {
 
     const val JS_INTERFACE_NAME = "EntregasNative"
+    const val RAW_JS_INTERFACE_NAME = "EntregasNativeRaw"
     const val BRIDGE_VERSION = "android-bridge@1.0.0"
 
     private var webViewRef: WeakReference<WebView>? = null
@@ -91,15 +93,19 @@ object Bridge {
 }
 
 /**
- * Superfície `@JavascriptInterface`.
+ * Raw JNI interface is visible to EVERY iframe by Android design. Therefore
+ * EVERY @JavascriptInterface method must verify the caller's ephemeral
+ * 256-bit capability before performing actions or disclosing data.
  *
- * Só métodos que a interface realmente precisa. Cada um é uma AÇÃO do
- * aparelho — nunca uma regra de negócio. Isto é deliberado: `addJavascriptInterface`
- * é uma superfície de ataque, e quanto menor, melhor.
+ * Only the top-level exact-origin document obtains the public facade through
+ * an AndroidX WebKit document-start script. No unguarded legacy fallback.
  */
 class EntregasJsBridge(
     private val handler: NativeActions,
+    capability: String,
 ) {
+    private val expected = capability.toByteArray(Charsets.UTF_8)
+
     interface NativeActions {
         fun startTripCapture(tripId: String)
         fun stopTripCapture()
@@ -115,60 +121,66 @@ class EntregasJsBridge(
         fun operationalEventsJson(): String
     }
 
-    @JavascriptInterface
-    fun version(): String = Bridge.BRIDGE_VERSION
+    private fun authorized(proof: String?): Boolean =
+        proof != null && MessageDigest.isEqual(expected, proof.toByteArray(Charsets.UTF_8))
 
-    /** Sem `trip_id`, não liga. A trava é aqui e também no serviço. */
+    private fun deniedJson(): String = """{"ok":false,"error":"native_origin_denied"}"""
+
     @JavascriptInterface
-    fun startTripCapture(tripId: String?) {
-        if (tripId.isNullOrBlank()) return
+    fun version(proof: String?): String =
+        if (authorized(proof)) Bridge.BRIDGE_VERSION else "native_origin_denied"
+
+    @JavascriptInterface
+    fun startTripCapture(proof: String?, tripId: String?) {
+        if (!authorized(proof) || tripId.isNullOrBlank()) return
         handler.startTripCapture(tripId)
     }
 
     @JavascriptInterface
-    fun stopTripCapture() = handler.stopTripCapture()
+    fun stopTripCapture(proof: String?) {
+        if (authorized(proof)) handler.stopTripCapture()
+    }
 
     @JavascriptInterface
-    fun capabilities(): String = handler.capabilitiesJson()
+    fun capabilities(proof: String?): String =
+        if (authorized(proof)) handler.capabilitiesJson() else deniedJson()
 
     @JavascriptInterface
-    fun status(): String = handler.statusJson()
+    fun status(proof: String?): String =
+        if (authorized(proof)) handler.statusJson() else deniedJson()
 
     @JavascriptInterface
-    fun requestLocationPermission() = handler.requestLocationPermission()
+    fun requestLocationPermission(proof: String?) {
+        if (authorized(proof)) handler.requestLocationPermission()
+    }
 
     @JavascriptInterface
-    fun openAppSettings() = handler.openAppSettings()
+    fun openAppSettings(proof: String?) {
+        if (authorized(proof)) handler.openAppSettings()
+    }
 
     @JavascriptInterface
-    fun recordTermAcknowledgement(json: String?): String =
-        handler.recordTermAcknowledgement(json.orEmpty())
+    fun recordTermAcknowledgement(proof: String?, json: String?): String =
+        if (authorized(proof)) handler.recordTermAcknowledgement(json.orEmpty()) else deniedJson()
 
     @JavascriptInterface
-    fun receipt(acknowledgementId: String?): String =
-        handler.receiptJson(acknowledgementId.orEmpty())
+    fun receipt(proof: String?, acknowledgementId: String?): String =
+        if (authorized(proof)) handler.receiptJson(acknowledgementId.orEmpty()) else deniedJson()
 
     @JavascriptInterface
-    fun syncNow() = handler.requestSyncNow()
+    fun syncNow(proof: String?) {
+        if (authorized(proof)) handler.requestSyncNow()
+    }
 
-    /**
-     * Políticas de `/api/policies` repassadas pela página (Q-018). Quem busca
-     * é a rider-mobile, com a sessão do motoboy; aqui só se guarda.
-     */
     @JavascriptInterface
-    fun applyServerPolicies(json: String?): String =
-        handler.applyServerPoliciesJson(json.orEmpty())
+    fun applyServerPolicies(proof: String?, json: String?): String =
+        if (authorized(proof)) handler.applyServerPoliciesJson(json.orEmpty()) else deniedJson()
 
-    /**
-     * Ação do motoboy para a fila do aparelho (C5). O Kotlin guarda, em ordem e
-     * com identidade estável, e o SyncWorker envia; quem julga a transição é o
-     * domínio no servidor. A página só usa isto quando o servidor anuncia a fila.
-     */
     @JavascriptInterface
-    fun recordOperationalEvent(json: String?): String =
-        handler.recordOperationalEventJson(json.orEmpty())
+    fun recordOperationalEvent(proof: String?, json: String?): String =
+        if (authorized(proof)) handler.recordOperationalEventJson(json.orEmpty()) else deniedJson()
 
-    /** O que está guardado no aparelho e em que estado — sem o corpo do comando. */
     @JavascriptInterface
-    fun operationalEvents(): String = handler.operationalEventsJson()
+    fun operationalEvents(proof: String?): String =
+        if (authorized(proof)) handler.operationalEventsJson() else deniedJson()
 }
