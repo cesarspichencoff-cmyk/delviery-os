@@ -53,3 +53,27 @@ O script instalado inspecionado contém `CommandTimeout=5` e `SET LOCK_TIMEOUT 2
 **Próxima prova que muda decisão:** obter um recibo primário, autorizado e correlacionável de **ingestão → gravação completa**; em separado, medir efeito da leitura sobre escritores em ambiente seguro e autorizado, antes de qualquer alteração de frequência/SQL. Sem essa evidência, não ajustar o Reader instalado por tentativa, não ativar impressão própria do iFood (relatada OFF por César), não imprimir TATÁ e não promover `RUNNING` ou `ready_count` a `WORLD_PROVEN`.
 
 **Portões:** `STAGE_3=IN_PROGRESS`, `STAGE_4=NOT_AUTHORIZED`, `STAGE_5=PAPER_CENSUS_PENDING`, `PRINT=HOLD`, `CUTOVER=HOLD`.
+
+
+## Complemento — jantar de 09/11, nova falha e recuperação observada
+
+**Leitura posterior, sem execução:** o mesmo `continuous-watcher.stderr.log`, agora com 5.093 linhas e última modificação 20:09:14 BRT, passou a conter mais **dois `BATCH_FAILED`** após o recorte original:
+- **20:09:09 BRT**, sequência local **16864**, `Read()` → `Tempo limite da solicitação de bloqueio excedido`;
+- **20:09:14 BRT**, sequência local **16865**, mesma falha em `Read()`.
+
+**Total identificável do dia no log até 20:09:14:** os **cinco** eventos do recorte anterior, mais **dois** no jantar, perfazem **sete falhas identificadas em 09/11**, sendo **cinco lock timeouts** e **dois command timeouts**. Contagem do log examinado, não do sistema iFood nem de todas as requisições SQL do host. Os dois eventos do jantar ocorreram em lotes consecutivos, não numa única consulta.
+
+**Contraprova de recuperação do Reader:** leitura posterior do arquivo já existente `state/reader-heartbeat-v1.json`, datado de **09/11 20:18:58 BRT**, apresentou:
+- `state=RUNNING`, supervisor PID **19140**, `watcher.sha256_verified=true`, `consecutive_failures=0`;
+- último lote **#16874** concluído às **20:18:22 BRT** como `OK`, 20 polls, 0 poll errors e 0 eventos novos nesse lote;
+- acumulados **16.874 lotes**, **627 lotes com falha**, **7.173 eventos emitidos** e **16.230.940 snapshots duplicados suprimidos** pelo próprio Reader.
+
+Esses contadores são **internos ao Reader**. `snapshots_observed=1000` e `duplicates_suppressed=1000` no último lote significam que não houve alteração observada **dentro do escopo do Reader naquele lote**, não que a demanda iFood fosse zero. A última falha registrada no arquivo às 20:09 não é uma medição completa da base ou da integração, e o status `RUNNING` não prova todos os polls futuros.
+
+**Confronto cruzado com Delivery OS PR #137, no HEAD observado `0046b9dc2ac26b677e1a807339ed334cd01576f2`:**
+- Em [linha de base SQL e histórico nativo](https://github.com/cesarspichencoff-cmyk/delviery-os/blob/0046b9dc2ac26b677e1a807339ed334cd01576f2/docs/execution/DELIVERYOS_L1_SQL_LOCK_BASELINE_AND_NATIVE_LOG_AUDIT_20261108.md), o catálogo da Teknisa apresentou `CMD_LOG`, `ITCMD_LOG`, `HISTPEDCONS`; uma comanda histórica mostrou **4/4 itens equivalentes no histórico de inserções**, mas não há cobertura demonstrada de atualizações, loja e notas nas trilhas de item, nem evento final de commit da aplicação. **Não promover 4/4 a completude semântica**.
+- A mesma fonte relata **plano estimado** anterior da candidata com quatro seeks, mas **não execução da candidata sob SERIALIZABLE nem medição de bloqueio dos escritores em pico**. Não reutilizar como prova N2-A.
+- [Revisão da origem do primeiro despacho](https://github.com/cesarspichencoff-cmyk/delviery-os/blob/0046b9dc2ac26b677e1a807339ed334cd01576f2/docs/execution/DELIVERYOS_L3_NATIVE_FIRST_DISPATCH_SQL_SOURCE_ELIMINATION_20261108.md) encontrou `ITCMDVENORIG` e `PEDIDOFOS` **vazias no instante avaliado**. Não insistir nessas tabelas como evidência de primeira impressão sem mudança comprovada da fonte.
+- [Proteção de tela e invocação do Reader](https://github.com/cesarspichencoff-cmyk/delviery-os/blob/0046b9dc2ac26b677e1a807339ed334cd01576f2/docs/execution/DELIVERYOS_READER_FIELD_INVOCATION_CHANNEL_AND_NO_WINDOW_GATE_20261109.md) reforça que o canal remoto atual não garante invocação sem console/foco. Não experimentar `start_process`, PowerShell ou SQL em `CAIXA_MOOCA` para fechar esses gates.
+
+**Decisão:** `READER_NOV09_DINNER_READ_LOCK_ERRORS=OBSERVED`; `READER_RECOVERY_AFTER_ERRORS=OBSERVED_ONCE`; `IFOOD_ORDER_MISSING_CAUSE=UNKNOWN`; `WRITER_BLOCKED_BY_READER=UNPROVEN`; `N2_A/N2_B=HOLD`. Priorizar a prova independente de integração e completude, e não aumentar locks ou tocar no Reader em funcionamento.
