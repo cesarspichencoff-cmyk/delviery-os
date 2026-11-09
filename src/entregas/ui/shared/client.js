@@ -146,6 +146,18 @@ export function renderError(box, msg) {
   box.textContent = msg;
 }
 
+/**
+ * Any identifier or unknown status received from a server is text, not HTML.
+ * A rider order_ref can appear inside an innerHTML template; escaping at the
+ * interpolation boundary prevents markup/event-handler injection.
+ */
+export function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;",
+  })[ch]);
+}
+
 /** Rótulos humanos — sem jargão de domínio na UI */
 export function chip(state) {
   const map = {
@@ -169,8 +181,8 @@ export function chip(state) {
     excecao: ["Problema na expedição", "danger"],
     cancelado: ["Cancelada", "neutral"],
   };
-  const [label, cls] = map[state] || [state, "neutral"];
-  return `<span class="chip ${cls}" role="status">${label}</span>`;
+  const [label, cls] = map[state] || [String(state ?? ""), "neutral"];
+  return `<span class="chip ${cls}" role="status">${escapeHtml(label)}</span>`;
 }
 
 /**
