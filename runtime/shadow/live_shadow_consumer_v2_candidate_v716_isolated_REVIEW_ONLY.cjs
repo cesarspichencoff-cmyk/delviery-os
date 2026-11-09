@@ -169,7 +169,7 @@ function safeInputPath(file){
   const root=path.join(actualRoot,"isolated-events");
   const target=labPath(file);
   if(path.dirname(target)!==root||
-     !/^[A-Za-z0-9_-]{1,110}\\.json$/.test(path.basename(target)))
+     !/^[A-Za-z0-9_-]{1,110}\.json$/.test(path.basename(target)))
     throw new Error("LAB_INPUT_NOT_IN_EVENTS_DIRECTORY");
   return labExistingFile(target);
 }
@@ -177,7 +177,7 @@ function safeOutputPath(file){
   const root=path.join(actualRoot,"isolated-decisions");
   const target=labPath(file);
   if(path.dirname(target)!==root||
-     !/^[A-Za-z0-9_-]{1,110}\\.json$/.test(path.basename(target))||
+     !/^[A-Za-z0-9_-]{1,110}\.json$/.test(path.basename(target))||
      fs.lstatSync(root).isSymbolicLink()||!fs.statSync(root).isDirectory())
     throw new Error("LAB_OUTPUT_NOT_IN_DECISIONS_DIRECTORY");
   if(fs.existsSync(target))throw new Error("LAB_DECISION_ALREADY_EXISTS");
@@ -186,7 +186,7 @@ function safeOutputPath(file){
 function writeAtomicJson(outPath,value){
   const target=safeOutputPath(outPath);
   const handle=fs.openSync(target,"wx",0o600);
-  try{fs.writeFileSync(handle,JSON.stringify(value)+"\\n",{encoding:"utf8"});}
+  try{fs.writeFileSync(handle,JSON.stringify(value)+"\n",{encoding:"utf8"});}
   finally{fs.closeSync(handle);}
 }
 const eventPath=process.argv[2];
@@ -200,7 +200,7 @@ const parts=[hdr?.CDFILIAL,hdr?.CDLOJA,hdr?.NRVENDAREST,hdr?.NRCOMANDA];
 if(!hdr||hdr.IDORGCMDVENDA!=="DLV_IFO"||
    parts[0]!=="0001"||parts[1]!=="01"||
    parts.some(v=>typeof v!=="string"||v.length<1||v.length>10||
-     /[|\\x00-\\x1f\\x7f]/.test(v))||
+     /[|\x00-\x1f\x7f]/.test(v))||
    event.order_key!==parts.join("|"))
  throw new Error("LAB_ITAIM_NATIVE_IFOOD_SCOPE_INVALID");
 
@@ -641,5 +641,5 @@ process.stdout.write(JSON.stringify({
  real_order_proven:false,
  production_sequence_authorized:false,
  print_authorized:false
-})+"\\n");
+})+"\n");
 process.exit(result.ready ? 0 : 5);
