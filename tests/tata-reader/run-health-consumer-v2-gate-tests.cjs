@@ -68,4 +68,83 @@ check("missing consumer is not proof but legacy policy stays unchanged",()=>{
   const r=evaluate(null);assert.equal(r.verdict,"HEALTHY");
   assert.equal(r.evidence.consumer_state,null);
 });
+// An intermittent SQL/Reader failure may be followed by a successful last
+// batch; when a same-run baseline is provided, the health must not go green.
+function pair(failuresNow=625,failuresBefore=620) {
+  const h=heartbeat(),before=heartbeat();
+  h.supervisor={run_id:"fictional-supervisor-run-1"};
+  before.supervisor={run_id:"fictional-supervisor-run-1"};
+  h.seq=210;before.seq=180;
+  h.totals={failed:failuresNow};
+  before.totals={failed:failuresBefore};
+  before.written_at=stamp(5*60*1000);
+  return {h,before};
+}
+function compare(h,before) {
+  return review({nowMs:now,heartbeat:h,previousHeartbeat:before,
+    consumerStatus:consumer(),checkpointMtimeMs:now-1000});
+}
+check("recovered last batch stays DEGRADED after new batch failures",()=>{
+  const {h,before}=pair();
+  assert.equal(h.last_batch.outcome,"OK");
+  assert.equal(h.consecutive_failures,0);
+  const r=compare(h,before);
+  assert.equal(r.verdict,"DEGRADED");
+  assert.equal(r.evidence.failure_delta_since_baseline,5);
+  assert(r.reasons.includes("NEW_WATCHER_FAILURES_SINCE_BASELINE"));
+});
+check("unchanged counter across recent same-run snapshots stays healthy",()=>{
+  const {h,before}=pair(620,620);
+  const r=compare(h,before);
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,0);
+});
+check("regressed counter inside same run is inconsistent, not healthy",()=>{
+  const {h,before}=pair(618,620);
+  const r=compare(h,before);
+  assert.equal(r.verdict,"DEGRADED");
+  assert.equal(r.evidence.failure_delta_since_baseline,-2);
+  assert(r.reasons.includes("WATCHER_FAILURE_COUNTER_REGRESSED"));
+});
+check("baseline from another supervisor run cannot fabricate a delta",()=>{
+  const {h,before}=pair();
+  before.supervisor.run_id="fictional-supervisor-run-2";
+  const r=compare(h,before);
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("old baseline is not classified as recent failure",()=>{
+  const {h,before}=pair();
+  before.written_at=stamp(5*60*60*1000);
+  const r=compare(h,before);
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("future baseline cannot fabricate a valid delta",()=>{
+  const {h,before}=pair();
+  before.written_at=stamp(-10000);
+  const r=compare(h,before);
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("replayed or unordered sequence cannot invent an interval",()=>{
+  const {h,before}=pair();
+  before.seq=h.seq;
+  const r=compare(h,before);
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("missing or malformed baseline counters do not grant trend proof",()=>{
+  const {h,before}=pair();
+  before.totals={failed:"not-number"};
+  const r=compare(h,before);
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("no baseline keeps legacy health semantics without historical claim",()=>{
+  const r=evaluate();
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+
 console.log("TATA_READER_CONSUMER_V2_HEALTH_GATE_PASS "+passed+"/"+passed+" SYNTHETIC_ONLY");
