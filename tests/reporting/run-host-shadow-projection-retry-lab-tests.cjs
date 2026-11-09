@@ -108,4 +108,82 @@ check("lab candidate has no direct production root or unbounded service loop",()
   assert(s.includes("LAB_CYCLE_BOUND_REQUIRED"));
   assert(s.includes("CAIXA_MOOCA"));
 });
+// NEW DIFFERENCE: tests actual ownership protocol, not another retry simulation.
+// Installs no service and never reads production paths; uses disposable /tmp only.
+const ownerLock=require("../../labs/reporting/projector_owner_lock_lab_v1.cjs");
+function ownerLab(fn){
+ const outer=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-owner-lock-"));
+ const root=path.join(outer,"deliveryos-projector-lab");
+ fs.mkdirSync(root);
+ fs.writeFileSync(path.join(root,"LAB_ONLY.txt"),ownerLock.MARKER+"\n");
+ try{return fn(root,path.join(root,"state","reporting-v1","projector.lock"))}
+ finally{fs.rmSync(outer,{recursive:true,force:true})}
+}
+check("atomic lock admits one owner and blocks second without deletion",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root),b=ownerLock.acquire(root);
+ assert.equal(a.state,"PRIVATE_LOCK_ACQUIRED");
+ assert.equal(b.state,"HOLD");
+ assert.equal(b.reason,"EXISTING_LOCK_UNVERIFIED");
+ assert.equal(fs.existsSync(lock),true);
+ assert.equal(ownerLock.release(root,a.privateLease).state,"RELEASED_OWN_LOCK");
+ assert.equal(fs.existsSync(lock),false);
+}));
+check("120-second stale lock remains intact even though old projector would evict",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root);
+ const bytes=fs.readFileSync(lock,"utf8");
+ const old=new Date(Date.now()-210000);
+ fs.utimesSync(lock,old,old);
+ const b=ownerLock.acquire(root);
+ assert.equal(b.reason,"EXISTING_LOCK_UNVERIFIED");
+ assert.equal(fs.readFileSync(lock,"utf8"),bytes);
+ assert.equal(ownerLock.release(root,a.privateLease).state,"RELEASED_OWN_LOCK");
+}));
+check("release without current ownership never removes lock",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root);
+ const forged={...a.privateLease,token:"a".repeat(64)};
+ assert.equal(ownerLock.release(root,forged).reason,"OWNER_IDENTITY_CHANGED");
+ assert.equal(fs.existsSync(lock),true);
+ assert.equal(ownerLock.release(root,a.privateLease).state,"RELEASED_OWN_LOCK");
+}));
+check("modified owner file cannot be deleted by original holder",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root);
+ const copy=JSON.parse(fs.readFileSync(lock,"utf8"));
+ copy.token="b".repeat(64);
+ fs.writeFileSync(lock,JSON.stringify(copy)+"\n");
+ const old=fs.readFileSync(lock,"utf8");
+ assert.equal(ownerLock.release(root,a.privateLease).reason,"OWNER_IDENTITY_CHANGED");
+ assert.equal(fs.readFileSync(lock,"utf8"),old);
+}));
+check("a malformed existing lock is never reset by the candidate",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root);
+ fs.writeFileSync(lock,"DO_NOT_REMOVE");
+ const b=ownerLock.acquire(root);
+ assert.equal(b.reason,"EXISTING_LOCK_UNVERIFIED");
+ assert.equal(ownerLock.release(root,a.privateLease).state,"HOLD");
+ assert.equal(fs.readFileSync(lock,"utf8"),"DO_NOT_REMOVE");
+}));
+check("new acquisition succeeds after an authorized same-owner release",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root);
+ assert.equal(ownerLock.release(root,a.privateLease).state,"RELEASED_OWN_LOCK");
+ const b=ownerLock.acquire(root);
+ assert.equal(b.state,"PRIVATE_LOCK_ACQUIRED");
+ assert.notEqual(b.privateLease.token,a.privateLease.token);
+ assert.equal(ownerLock.release(root,b.privateLease).state,"RELEASED_OWN_LOCK");
+}));
+check("nonce and sandbox path never enter a serialized decision",()=>ownerLab((root,lock)=>{
+ const a=ownerLock.acquire(root),v=JSON.stringify(a);
+ assert.equal(v.includes(a.privateLease.token),false);
+ assert.equal(v.includes(root),false);
+ assert.equal(a.staleLockReclaimed,false);
+ assert.equal(a.releaseAtomicAgainstExternalUnlink,false);
+ assert.equal(a.fieldAuthorized,false);
+ assert.equal(a.sqlExecuted,false);
+ assert.equal(a.printAuthorized,false);
+ assert.equal(ownerLock.release(root,a.privateLease).state,"RELEASED_OWN_LOCK");
+}));
+check("unsafe root or missing marker is denied without creating a lock",()=>{
+ const r=ownerLock.acquire(path.resolve(os.tmpdir(),"not-approved"));
+ assert.equal(r.state,"HOLD");
+ assert.equal(r.reason,"LAB_GUARD_FAILED");
+});
 console.log("TATA_REPORTING_LOCKED_RETRY_LAB_PASS "+cases+"/"+cases+" SYNTHETIC_ONLY");
