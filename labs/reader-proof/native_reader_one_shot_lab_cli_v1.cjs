@@ -7,6 +7,8 @@ const path=require('node:path');
 const os=require('node:os');
 const {selectOne,reviewOne}=
  require('../../runtime/reporting/native_reader_existing_event_binding_v1.cjs');
+const {selectOneLegacy,reviewOneLegacy}=
+ require('../../runtime/reporting/native_reader_legacy_one_shot_review_v1.cjs');
 
 const MARKER='DELIVERYOS_READER_PROOF_LAB_ONLY_V1';
 const LAB_NAME='deliveryos-reader-proof-lab';
@@ -48,7 +50,12 @@ function boundedRead(file){
  }finally{fs.closeSync(fd);}
 }
 function main(){
- const lab=safeLabDirectory(process.argv.slice(2));
+ const argv=process.argv.slice(2);
+ // Only one explicit legacy-fixture switch, always after the lab root.
+ // This does not allow changing the read root to a real POS directory.
+ const legacy=argv.length===2&&argv[1]==='--fixture-mode=legacy';
+ if(argv.length!==1&&!legacy)return 77;
+ const lab=safeLabDirectory([argv[0]]);
  if(!lab)return 77;
  const dest=path.join(lab,'receipt.json');
  // Refuse to overwrite any existing receipt, including links.
@@ -58,8 +65,9 @@ function main(){
   // LAB only: select one emitted revision from the fixture checkpoint.
   // No raw copy. The event stays under its canonical, pre-existing filename.
   const checkpoint=boundedRead(path.join(lab,'synthetic-checkpoint.json'));
-  const choice=selectOne(checkpoint);
-  if(choice.state!=='CANDIDATE_PRIVATE_UNVERIFIED')
+  const choice=legacy?selectOneLegacy(checkpoint):selectOne(checkpoint);
+  if(choice.state!==(legacy?'PRIVATE_LEGACY_CANDIDATE_UNVERIFIED':
+      'CANDIDATE_PRIVATE_UNVERIFIED'))
    throw Error('CHECKPOINT_HOLD');
   const dir=path.join(lab,'reader-events-v1');
   const d=fs.lstatSync(dir);
@@ -67,11 +75,15 @@ function main(){
      fs.realpathSync(dir)!==path.resolve(dir))
    throw Error('EVENT_DIRECTORY_INVALID');
   const file=choice.privateDescriptor.event_filename;
-  if(!/^[A-Za-z0-9_-]{1,64}_[0-9a-f]{64}\.json$/.test(file))
+  if(!(legacy?/^[A-Za-z0-9_-]{1,64}_[0-9A-F]{64}\.json$/.test(file):
+      /^[A-Za-z0-9_-]{1,64}_[0-9a-f]{64}\.json$/.test(file)))
    throw Error('EVENT_FILENAME_INVALID');
-  result=reviewOne(checkpoint,boundedRead(path.join(dir,file)));
+  // Legacy and canonical selectors never silently translate one another.
+  const event=boundedRead(path.join(dir,file));
+  result=legacy?reviewOneLegacy(checkpoint,event):reviewOne(checkpoint,event);
  }catch{
-  result={schema:'deliveryos.native-reader-existing-event-binding.v1',
+  result={schema:legacy?'deliveryos.native-reader-legacy-one-shot-review.v1':
+    'deliveryos.native-reader-existing-event-binding.v1',
    state:'HOLD',reason:'LAB_INPUT_UNREADABLE_OR_CHANGED',
    sourceIdentityVerified:false,sourceFreshnessVerified:false,
    n2ObservationReadIndependentlyComplete:false,
