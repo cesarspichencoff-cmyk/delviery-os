@@ -264,9 +264,32 @@ if (orderOverrides.schema !== "deliveryos.human-exact-order-overrides.v1") throw
 if (routing.schema !== "deliveryos.odhen.product-routing.compact.v1") throw new Error("ROUTING_SCHEMA_MISMATCH");
 if (printerMap.schema !== "deliveryos.runtime-printer-map.v1") throw new Error("PRINTER_MAP_SCHEMA_MISMATCH");
 
-const cacheByProduct = new Map(cache.rows.map(r => [String(r.CDPRODUTO), r]));
-const academyByName = new Map((academy.products || []).map(p => [norm(p.nome), p]));
-const aliasByName = new Map((aliases.aliases || []).map(a => [norm(a.live_name), a]));
+// Never let Map's implicit last-wins turn duplicate native IDs, Academy
+// names or approved aliases into a silently substituted product identity.
+// Production catalogs can have legitimate ambiguity: this laboratory
+// candidate refuses to choose without independent resolution.
+function indexUniqueV716(rows,keyOf,label){
+  if(!Array.isArray(rows)||rows.length>10000)
+    throw new Error("LAB_"+label+"_CATALOG_STRUCTURE_INVALID");
+  const index=new Map();
+  for(const row of rows){
+    if(!row||typeof row!=="object"||Array.isArray(row))
+      throw new Error("LAB_"+label+"_CATALOG_ROW_INVALID");
+    const key=keyOf(row);
+    if(typeof key!=="string"||!key||key!==key.trim()||key.length>250)
+      throw new Error("LAB_"+label+"_CATALOG_KEY_INVALID");
+    if(index.has(key))throw new Error("LAB_"+label+"_DUPLICATE_KEY_HOLD");
+    index.set(key,row);
+  }
+  return index;
+}
+const cacheByProduct=indexUniqueV716(cache.rows,
+  r=>r.CDPRODUTO===null||r.CDPRODUTO===undefined?"":String(r.CDPRODUTO),
+  "NATIVE_PRODUCT");
+const academyByName=indexUniqueV716(academy.products,
+  p=>norm(p.nome),"ACADEMY_PRODUCT_NAME");
+const aliasByName=indexUniqueV716(aliases.aliases,
+  a=>norm(a.live_name),"APPROVED_ALIAS_NAME");
 // V8.45: A duplicated printer code is ambiguous, even if its last row has
 // a plausible address. Keep the first row for review; NEVER silently last-win.
 const printerByCode = new Map();
