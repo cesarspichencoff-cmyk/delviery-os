@@ -446,8 +446,8 @@ jobs:
             $sampled=0
             for($i=0;$i -lt 10;$i++) {
               if($controller.HasExited) { throw 'REMOTE_SHELL_ENDED_BEFORE_VISIBILITY_SAMPLES' }
-              foreach($pid in @($shellPid,$guiPid,$readerNodePid)){
-                if([ReaderOneShotWindowAudit]::Visible([uint32]$pid) -ne 0)
+              foreach($samplePid in @($shellPid,$guiPid,$readerNodePid)){
+                if([ReaderOneShotWindowAudit]::Visible([uint32]$samplePid) -ne 0)
                   { throw 'REMOTE_SHELL_VISIBLE_WINDOW' }
               }
               if([ReaderOneShotWindowAudit]::GetForegroundWindow() -ne $remoteFocus)
