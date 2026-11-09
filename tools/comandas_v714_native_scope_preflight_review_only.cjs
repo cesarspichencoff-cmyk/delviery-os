@@ -1,11 +1,11 @@
 "use strict";
 /**
- * REVIEW-ONLY PRE-FLIGHT for a future in-memory V7.14 consumer candidate.
+ * REVIEW-ONLY PRE-FLIGHT for the updated isolated V7.14 consumer candidate.
  * It does NOT mutate or execute the pinned consumer, and is NOT imported by
  * installed runtime. Matching identity is NEVER a print/dispatch attestation.
  */
 const crypto=require("node:crypto");
-const PINNED_V714_BLOB="8e75fea85437d063c2f6ee2df09ee33962d42ce6";
+const PINNED_V714_BLOB="f3c7cd4fcfeecaf212f8f867c668030b9c65a17d";
 const SCHEMA="tata.comandas.v714-origin-preflight-review.v1";
 const EFFECTS=Object.freeze({
  sql:false,files_read:false,files_write:false,network:false,
