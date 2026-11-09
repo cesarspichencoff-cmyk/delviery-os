@@ -94,7 +94,10 @@ function readJson(p) {
   } else {
     text = buf.toString("utf8").replace(/^\uFEFF/, "");
   }
-  return JSON.parse(text);
+  // Node's JSON.parse SyntaxError can quote the malformed source near the
+  // failure, including customer notes. Never propagate those bytes to stderr.
+  try{return JSON.parse(text);}
+  catch{throw new Error("LAB_JSON_SOURCE_INVALID");}
 }
 function norm(s) {
   return String(s ?? "")
@@ -186,9 +189,22 @@ function safeOutputPath(file){
 }
 function writeAtomicJson(outPath,value){
   const target=safeOutputPath(outPath);
-  const handle=fs.openSync(target,"wx",0o600);
-  try{fs.writeFileSync(handle,JSON.stringify(value)+"\n",{encoding:"utf8"});}
-  finally{fs.closeSync(handle);}
+  // A crash during a direct write would leave a partial decision under its
+  // final name. Stage in the same directory; publish only after full fsync.
+  // Hard-link creation is exclusive and never replaces an existing decision.
+  const tmp=target+".tmp-"+crypto.randomBytes(12).toString("hex");
+  let opened=false;
+  try{
+    const handle=fs.openSync(tmp,"wx",0o600);
+    opened=true;
+    try{
+      fs.writeFileSync(handle,JSON.stringify(value)+"\n",{encoding:"utf8"});
+      fs.fsyncSync(handle);
+    }finally{fs.closeSync(handle);}
+    fs.linkSync(tmp,target);
+  }finally{
+    if(opened&&fs.existsSync(tmp))fs.unlinkSync(tmp);
+  }
 }
 const eventPath=process.argv[2];
 const outPath=process.argv[3]||null;
