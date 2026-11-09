@@ -181,11 +181,9 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             assertEquals("true", eval(scenario,
                 """document.getElementById('btnSecondary').click();true"""))
             var original: br.com.tata.entregas.data.OutboxEventEntity? = null
-            repeat(70) {
-                original = runBlocking {
-                    db.outbox().recent(50).singleOrNull()
-                }
-                if (original != null) return@repeat
+            for (attempt in 0 until 70) {
+                original = runBlocking { db.outbox().recent(50).singleOrNull() }
+                if (original != null) break
                 Thread.sleep(100)
             }
             val staged = original ?: throw AssertionError(
@@ -212,9 +210,12 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             assertEquals("false", eval(scenario,
                 """!document.getElementById('confirmedLine').hidden"""))
             val originalEntity = staged
-            val past = allWork(context).map { it.id }.toSet()
-            eval(scenario, """document.getElementById('btnSyncNow').click();true""")
-            val first = awaitNewWork(context, past)
+            // A REAL native producer already calls SyncScheduler.requestNow()
+            // as soon as it records an event. ExistingWorkPolicy.KEEP must
+            // prevent an extra job; no human retry button is required yet.
+            val first = awaitNewWork(context, emptySet())
+            assertEquals("An automatic initial sync must be queued",
+                WorkInfo.State.ENQUEUED, first.state)
             val driver = WorkManagerTestInitHelper.getTestDriver(context)
                 ?: throw AssertionError("LAB_TEST_DRIVER_MISSING")
             driver.setAllConstraintsMet(first.id)
