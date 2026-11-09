@@ -124,6 +124,27 @@ class RiderWebViewBridgeInstrumentedTest {
                 }
                 Thread.sleep(250)
             }
+            val legacy = InstrumentationRegistry.getArguments()
+                .getString("webviewExpected") == "legacy"
+            if (!ready && legacy) {
+                // Old WebView with no document-start support must never fall
+                // back to the public unguarded Java bridge. The raw transport
+                // is present, but no action can be sent without its secret.
+                assertEquals("true", evaluate(scenario,
+                    """!!window.EntregasNativeRaw &&
+                       typeof window.EntregasNativeRaw.recordOperationalEvent==='function'"""))
+                val denied = evaluate(scenario,
+                    """window.EntregasNativeRaw.recordOperationalEvent(
+                        'LAB_WRONG_CAPABILITY',
+                        '{"event_id":"LAB_UNAUTHORIZED_BRIDGE_EVENT"}')""")
+                assertTrue("Legacy iframe-accessible raw bridge was not denied",
+                    denied.contains("native_origin_denied"))
+                val db = EntregasDatabase.get(context)
+                assertTrue(runBlocking {
+                    db.outbox().recent(50).none { it.eventId == "LAB_UNAUTHORIZED_BRIDGE_EVENT" }
+                })
+                return@use
+            }
             if (!ready) {
                 val probe = evaluate(scenario, """
                     JSON.stringify({
