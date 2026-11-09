@@ -154,6 +154,33 @@ try{
   assert.notEqual(v.status,0);
   assert.equal(fs.existsSync(dest),false);
  });
+ check("real pinned Itaim routing remains dual-role HOLD on fictional order",()=>{
+  const sources=[
+   ["routing.json","data/odhen_product_routing_compact_v1.json",
+    "d7d4d25bcb882370a37cf748d2d79139b07159a0"],
+   ["printer-map.json","data/runtime_printer_map_v1.json",
+    "24a3b068598798209f7d9f8492c9cbb3aa973dab"],
+   ["non-production.json","data/non_production_delivery_items_v1.json",
+    "e14326430770551e132bf6e0f8b54376dee56e6a"]
+  ];
+  for(const [target,source,expected] of sources){
+   const bytes=fs.readFileSync(path.join(root,source));
+   assert.equal(blob(bytes),expected,source);
+   fs.writeFileSync(path.join(sandbox,target),bytes);
+  }
+  const output=path.join(outDir,"real-config-fake-order.json");
+  const child=run(eventPath,output);
+  assert.equal(child.status,5,child.stderr);
+  assert.equal(child.stderr,"");
+  assert.ok(!child.stdout.includes(note));
+  const decision=JSON.parse(fs.readFileSync(output,"utf8"));
+  assert.equal(decision.ready,false);
+  assert.ok(decision.blocking_reasons.includes(
+   "SUSHI1_DUAL_PRODUCTION_ROLE_UNPROVEN_9.10.05.072.00"));
+  assert.deepEqual(decision.items[0].targets,[]);
+  assert.equal(decision.effects.print,false);
+  assert.equal(decision.effects.spooler_write,false);
+ });
  check("no output request never writes decision and logs only safe summary",()=>{
   const entries=fs.readdirSync(outDir);
   const v=run();
@@ -168,6 +195,6 @@ try{
  fs.rmSync(sandbox,{recursive:true,force:true});
 }
 check("disposable lab root removed",()=>assert.equal(fs.existsSync(sandbox),false));
-if(count!==11)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
+if(count!==12)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
 console.log("COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS "+count+"/"+count+
  " SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT");
