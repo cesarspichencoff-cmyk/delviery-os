@@ -265,5 +265,31 @@ test("route action remains available when only local write is held", () => {
   assert.match(ui,/primary\.disabled = blocked && primary\.textContent !== "Abrir rota"/);
   assert.match(ui,/secondary\.disabled = blocked/);
 });
+// Rendering safety in the same real UI source that owns the Android bridge.
+const clientSource = readFileSync(new URL("../shared/client.js", dir), "utf8");
+const client = await import("data:text/javascript;base64," +
+  Buffer.from(clientSource).toString("base64"));
+test("untrusted order references are text, never executable HTML", () => {
+  const forged = 'P-<img src=x onerror="window.__attack=1">&\'';
+  const escaped = client.escapeHtml(forged);
+  assert.equal(escaped, 'P-&lt;img src=x onerror=&quot;window.__attack=1&quot;&gt;&amp;&#39;');
+  assert.doesNotMatch(escaped, /<img|<script|onerror="/i);
+  assert.match(ui, /escapeHtml\(d\.order_ref\)/);
+  assert.match(ui, /escapeHtml\(s\.order_ref\)/);
+  assert.match(ui, /escapeHtml\(d\.planned_stop_order\)/);
+});
+test("unknown server status is escaped inside shared HTML chip", () => {
+  const markup = client.chip('<svg onload="window.__attack=1">');
+  assert.match(markup, /&lt;svg/);
+  assert.doesNotMatch(markup, /<svg|onload="/i);
+});
+test("rider CSP forbids inline scripts and nested frames", () => {
+  assert.match(html, /http-equiv="Content-Security-Policy"/);
+  assert.match(html, /script-src 'self'/);
+  assert.match(html, /script-src-attr 'none'/);
+  assert.match(html, /frame-src 'none'/);
+  assert.match(html, /connect-src 'self'/);
+  assert.doesNotMatch(html, /<script(?![^>]*src=)/i);
+});
 console.log("RIDER_NATIVE_QUEUE_HOLD_FIXTURE_PASS "+pass+"/"+pass+
   " (NO_NATIVE_DEVICE_OR_BROWSER)");
