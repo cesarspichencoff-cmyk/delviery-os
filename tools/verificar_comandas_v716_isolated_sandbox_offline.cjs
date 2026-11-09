@@ -30,10 +30,10 @@ check("new fork has no operational state access or full-result stdout",()=>{
  assert.match(s,/LAB_ITAIM_NATIVE_IFOOD_SCOPE_INVALID/);
  assert.match(s,/LAB_NATIVE_SNAPSHOT_HASH_INVALID_NO_OUTPUT/);
  assert.match(s,/OFFHOST_LAB_ONLY_NO_PRODUCTION_SEQUENCE/);
- assert.match(s,/fs\\.openSync\\(tmp,"wx",0o600\\)/);
- assert.match(s,/fs\\.fsyncSync\\(handle\\)/);
- assert.match(s,/fs\\.linkSync\\(tmp,target\\)/);
- assert.match(s,/fs\\.unlinkSync\\(tmp\\)/);
+ assert.equal(s.includes('fs.openSync(tmp,"wx",0o600)'),true);
+ assert.equal(s.includes('fs.fsyncSync(handle)'),true);
+ assert.equal(s.includes('fs.linkSync(tmp,target)'),true);
+ assert.equal(s.includes('fs.unlinkSync(tmp)'),true);
  assert.match(s,/fs\.lstatSync\(root\)\.isSymbolicLink\(\)/);
  assert.doesNotMatch(s,/require\(["'](?:node:)?(?:net|http|https|child_process|serialport)["']\)/);
 });
