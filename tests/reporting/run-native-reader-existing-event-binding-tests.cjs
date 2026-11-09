@@ -9,6 +9,9 @@ function prepare(){
  const event=makeEvent(),h=event.snapshot_hash;
  return {event,checkpoint:{
   schema:'deliveryos.tata-reader-continuous-checkpoint.v1',
+  hash_contract_version:'NODE_CANONICAL_JSON_SHA256_V1',
+  checkpoint_origin:'FRESH_NODE_CANONICAL_V2',
+  checkpoint_generation:'abcdef0123456789abcdef0123456789',
   bootstrap_complete:true,entries:[{
    order_key:event.order_key,stable_count:3,snapshot_hash:h,emitted_hash:h,
    last_seen_order_time:'2026-11-05T11:59:00.0000000'
@@ -52,7 +55,7 @@ check('sanitized result remains without a private descriptor after binding',()=>
  assert.equal(JSON.stringify(r).includes('FICT_COMMAND'),false);
  assert.equal(JSON.stringify(r).includes(event.snapshot_hash),false);
 });
-check('real-proof-shaped but synthetic event gets sanitized checkpoint binding',()=>{
+check('V2-shaped but synthetic event gets sanitized checkpoint binding',()=>{
  const {checkpoint,event}=prepare(),raw=JSON.stringify(event);
  const r=reviewOne(checkpoint,event);
  assert.equal(r.state,'HOLD');assert.equal(r.checkpointBound,true);
@@ -60,7 +63,7 @@ check('real-proof-shaped but synthetic event gets sanitized checkpoint binding',
  assert.equal(r.n3CanonicalHashSelfConsistent,true);
  assert.equal(r.sourceFreshnessVerified,false);
  assert.equal(r.completeSqlReadVerified,false);
- assert.equal(r.legacyUppercaseNormalized,true);
+ assert.equal(r.legacyUppercaseNormalized,false);
  assert.equal(JSON.stringify(event),raw);
  safe(r);
 });
@@ -158,5 +161,50 @@ check('invalid checkpoint is consistently HOLD',()=>{
   const r=selectOne(cp);assert.equal(r.state,'HOLD');
   assert.equal(r.privateDescriptor,null);
  }
+});
+check('legacy uppercase checkpoint is NEVER silently migrated to V2',()=>{
+ const {checkpoint,event}=prepare();
+ checkpoint.entries[0].snapshot_hash=event.snapshot_hash.toUpperCase();
+ checkpoint.entries[0].emitted_hash=event.snapshot_hash.toUpperCase();
+ const r=selectOne(checkpoint);
+ assert.equal(r.reason,'CHECKPOINT_HASH_OR_STABILITY_INVALID');
+ assert.equal(r.privateDescriptor,null);safe(r);
+});
+check('old checkpoint missing origin/generation cannot select private filename',()=>{
+ const {checkpoint}=prepare();delete checkpoint.hash_contract_version;
+ const r=selectOne(checkpoint);
+ assert.equal(r.reason,'CHECKPOINT_V2_FORMAT_OR_ORIGIN_UNVERIFIED');
+ assert.equal(r.privateDescriptor,null);
+});
+check('spoofed old checkpoint with marker but missing V2 generation stays HOLD',()=>{
+ const {checkpoint}=prepare();delete checkpoint.checkpoint_generation;
+ const r=selectOne(checkpoint);
+ assert.equal(r.reason,'CHECKPOINT_V2_FORMAT_OR_ORIGIN_UNVERIFIED');
+ assert.equal(r.privateDescriptor,null);
+});
+check('origin, hash contract and generation must all match canonical V2',()=>{
+ for(const [field,value] of [
+  ['hash_contract_version','LEGACY_SHA256_UPPERCASE'],
+  ['checkpoint_origin','LEGACY_MARKER_ONLY'],
+  ['checkpoint_generation','A'.repeat(32)],
+  ['checkpoint_generation','not-a-generation'],
+ ]) {
+  const {checkpoint}=prepare();
+  checkpoint[field]=value;
+  const r=selectOne(checkpoint);
+  assert.equal(r.state,'HOLD',field);
+  assert.equal(r.reason,'CHECKPOINT_V2_FORMAT_OR_ORIGIN_UNVERIFIED',field);
+ }
+});
+check('even a V2-marked checkpoint rejects a second entry in legacy hash case',()=>{
+ const {checkpoint,event}=prepare();
+ checkpoint.entries.push({...checkpoint.entries[0],
+  order_key:'0001|01|OLDER|S2',
+  last_seen_order_time:'2026-11-04T11:00:00.0000000',
+  snapshot_hash:event.snapshot_hash.toUpperCase(),
+  emitted_hash:event.snapshot_hash.toUpperCase()});
+ const r=selectOne(checkpoint);
+ assert.equal(r.reason,'CHECKPOINT_HASH_OR_STABILITY_INVALID');
+ assert.equal(r.privateDescriptor,null);
 });
 console.log('NATIVE_READER_EXISTING_EVENT_BINDING_PASS '+count+'/'+count+' SYNTHETIC_ONLY');
