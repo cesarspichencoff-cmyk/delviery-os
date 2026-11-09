@@ -43,15 +43,8 @@ function inspect(manifest, source) {
     if (/ProgramData.{0,90}TataComandaReader/s.test(source)) {
       reasons.push("OPERATIONAL_READER_STATE_REFERENCE");
     }
-    const exposesOutput = /writeAtomicJson\s*\(\s*outPath\s*,\s*result\s*\)/.test(source) ||
-      (/fs\.writeFileSync\s*\(/.test(source) && /process\.argv\s*\[\s*3\s*\]/.test(source));
-    // A declared confined writer still requires real OS isolation and
-    // authorization. This is only a static regression, never a host grant.
-    const outputConfinementDeclared =
-      /isolatedFilePath\(outPath, "isolated-decisions", "OUTPUT"\)/.test(source) &&
-      /fs\.linkSync\(tmp, target\)/.test(source) &&
-      /flag:"wx"/.test(source);
-    if (exposesOutput && !outputConfinementDeclared) {
+    if (/writeAtomicJson\s*\(\s*outPath\s*,\s*result\s*\)/.test(source) ||
+        (/fs\.writeFileSync\s*\(/.test(source) && /process\.argv\s*\[\s*3\s*\]/.test(source))) {
       reasons.push("UNCONFINED_OUTPUT_FILE_WRITE");
     }
     if (/process\.stdout\.write\s*\(\s*JSON\.stringify\s*\(\s*result\s*\)/.test(source)) {
@@ -123,16 +116,14 @@ function runRepositoryAudit() {
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot,MANIFEST),"utf8"));
   const source = fs.readFileSync(path.join(repoRoot,CONSUMER),"utf8");
   const report = inspect(manifest,source);
-  assert(report.reasons.includes("FILE_WRITE_DECLARED_IN_MANIFEST"));
-  for (const hazard of EXPECTED_KNOWN_HAZARDS.slice(1)) {
-    assert(!report.reasons.includes(hazard),
-      "UPDATED_CANDIDATE_STILL_HAS_RETIRED_HAZARD: " + hazard);
+  for (const expected of EXPECTED_KNOWN_HAZARDS) {
+    assert(report.reasons.includes(expected),
+      "CHANGED_CANDIDATE_REQUIRES_EXPLICIT_REVIEW: " + expected);
   }
   assert(report.reasons.includes("HOST_ISOLATION_NOT_PROVEN"));
-  assert(report.reasons.includes("OPERATIONAL_AUTHORIZATION_NOT_GRANTED"));
   assert(Object.values(report.permitted_actions).every(v=>v === false));
   console.log(JSON.stringify(report));
-  console.log("COMANDAS_HOST_SHADOW_BOUNDARY_V1=HOLD REVIEWED_HOST_EFFECTS_NOT_AUTHORIZED");
+  console.log("COMANDAS_HOST_SHADOW_BOUNDARY_V1=HOLD KNOWN_HAZARDS=4/4 NO_HOST_IO");
 }
 
 if (require.main === module) {
