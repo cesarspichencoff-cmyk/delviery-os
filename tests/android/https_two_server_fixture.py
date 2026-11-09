@@ -5,9 +5,10 @@ Exposes only 127.0.0.1:8080 (platform) and 127.0.0.1:5193 (pilot).
 Android emulator reaches both via 10.0.2.2 using a test-only CA and strict TLS.
 Never logs body, authorization values, device_secret or customer data.
 
-Pilot /api/events/batch: first delivery => 422 without event receipt;
-second delivery => exact id-scoped HTTP 200 receipt. EventId and
-idempotency_key MUST remain identical. Other routes fail closed.
+Pilot /api/events/batch: FIRST authentic UI-generated LAB action => 422 without
+per-event receipt; second identical action => exact id-scoped HTTP 200
+receipt. Dynamic event ID, command and idempotency key are compared.
+All other routes fail closed.
 """
 import argparse
 import json
@@ -18,7 +19,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PLATFORM_TOKEN = "LAB_PLATFORM_SESSION_NONPROD"
 PILOT_TOKEN = "pt1.labwrite.signedfixture"
-EVENT = "LAB_HTTPS_WORKER_UI_EVENT_001"
+TRIP = "LAB_HTTPS_UI_TRIP_001"
+DELIVERY = "LAB_HTTPS_UI_DELIVERY_001"
 ACTOR = "rider-lab"
 state = {"device": None, "event_attempts": 0, "identity": None}
 lock = threading.Lock()
@@ -55,8 +57,22 @@ class LabHandler(BaseHTTPRequestHandler):
             if not platform and path == "/api/session":
                 return self.send(200, {"actor": {"actor_id": ACTOR, "role": "motoboy_interno"}})
             if not platform and path == "/api/snapshot":
-                return self.send(200, {"actor": {"actor_id": ACTOR, "role": "motoboy_interno"},
-                                       "connection": "online", "pending_sync": 0, "trips": []})
+                return self.send(200, {
+                    "unit_id": "ITAIM",
+                    "actor": {"actor_id": ACTOR, "role": "motoboy_interno"},
+                    "connection": "online", "pending_sync": 0,
+                    "ready_orders": [],
+                    "trips": [{
+                        "trip_id": TRIP, "state": "em_rota",
+                        "courier_actor_id": ACTOR,
+                        "deliveries": [{
+                            "delivery_id": DELIVERY,
+                            "order_ref": "LAB_HTTPS_UI_ORDER_001",
+                            "state": "em_rota", "active": True,
+                            "planned_stop_order": 1,
+                        }],
+                    }],
+                })
             return self.send(404, {"error": "LAB_ROUTE_NOT_FOUND"})
         if self.command != "POST":
             return self.send(405, {"error": "LAB_METHOD_DENIED"})
@@ -111,13 +127,30 @@ class LabHandler(BaseHTTPRequestHandler):
             if not isinstance(events, list) or len(events) != 1:
                 return self.send(422, {"human": "LAB_BATCH_CARDINALITY"})
             item = events[0]
-            if (item.get("event_id") != EVENT or
-                item.get("kind") != "ConfirmTripDeparture" or
-                item.get("idempotency_key") != EVENT):
+            event_id = item.get("event_id")
+            command = item.get("command")
+            if (not isinstance(event_id, str) or
+                not re.fullmatch(r"ev-[A-Za-z0-9_-]{16,120}", event_id) or
+                item.get("idempotency_key") != event_id or
+                item.get("kind") != "RecordArrivalReported" or
+                not isinstance(command, dict) or
+                command.get("type") != "RecordArrivalReported" or
+                command.get("unit_id") != "ITAIM" or
+                command.get("trip_id") != TRIP or
+                command.get("delivery_id") != DELIVERY or
+                command.get("actor") != {
+                    "actor_id": ACTOR, "role": "motoboy_interno",
+                } or
+                not isinstance(command.get("command_id"), str) or
+                not re.fullmatch(r"arr-[A-Za-z0-9_-]{16,120}",
+                                 command["command_id"]) or
+                not isinstance(command.get("occurred_at"), str)):
                 return self.send(422, {"human": "LAB_IDENTITY_MISMATCH"})
             with lock:
-                signature = (item.get("event_id"), item.get("idempotency_key"),
-                             item.get("sequence_local"), item.get("command"))
+                # An HTTP retry is the SAME intention, not merely the same
+                # event ID. A changed payload is an integrity violation.
+                signature = (event_id, item.get("idempotency_key"),
+                             item.get("sequence_local"), command)
                 if state["identity"] is None:
                     state["identity"] = signature
                 elif state["identity"] != signature:
@@ -128,7 +161,7 @@ class LabHandler(BaseHTTPRequestHandler):
             if attempt == 1:
                 return self.send(422, {"human": "LAB_HTTP_422_WITHOUT_EVENT_RECEIPT"})
             return self.send(200, {"ok": True, "results": [
-                {"event_id": EVENT, "ok": True},
+                {"event_id": event_id, "ok": True},
             ]})
 
         return self.send(404, {"error": "LAB_UNEXPECTED_ENDPOINT"})
