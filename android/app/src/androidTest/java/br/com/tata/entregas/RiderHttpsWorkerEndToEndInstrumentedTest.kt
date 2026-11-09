@@ -13,7 +13,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import br.com.tata.entregas.data.EntregasDatabase
-import br.com.tata.entregas.sync.OperationalEventRecorder
 import br.com.tata.entregas.sync.SyncWorker
 import br.com.tata.entregas.ui.MainActivity
 import kotlinx.coroutines.runBlocking
@@ -24,6 +23,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
 import java.util.UUID
+import org.json.JSONObject
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -36,9 +37,11 @@ import java.util.concurrent.atomic.AtomicReference
  */
 @RunWith(AndroidJUnit4::class)
 class RiderHttpsWorkerEndToEndInstrumentedTest {
-    private val eventId = "LAB_HTTPS_WORKER_UI_EVENT_001"
+    private val tripId = "LAB_HTTPS_UI_TRIP_001"
+    private val deliveryId = "LAB_HTTPS_UI_DELIVERY_001"
 
     private class LabSite(private val context: Context) : WebViewClient() {
+        val policiesServed = AtomicBoolean(false)
         private fun text(data: String, mime: String = "application/json") =
             WebResourceResponse(mime, "UTF-8",
                 ByteArrayInputStream(data.toByteArray(Charsets.UTF_8)))
@@ -58,8 +61,22 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             val path = url.path ?: "/"
             when (path) {
                 "/api/session" -> return text("""{"actor":{"actor_id":"rider-lab","role":"motoboy_interno"}}""")
-                "/api/policies" -> return text("""{"flags":{"offline_queue_enabled":true,"gps_capture_enabled":false},"term":{"publishable":false}}""")
-                "/api/snapshot" -> return text("""{"actor":{"actor_id":"rider-lab","role":"motoboy_interno"},"connection":"online","pending_sync":0,"trips":[]}""")
+                "/api/policies" -> {
+                    policiesServed.set(true)
+                    return text("""{"flags":{"offline_queue_enabled":true,"gps_capture_enabled":false},"term":{"publishable":false}}""")
+                }
+                "/api/snapshot" -> return text("""{
+                    "unit_id":"ITAIM",
+                    "actor":{"actor_id":"rider-lab","role":"motoboy_interno"},
+                    "connection":"online","pending_sync":0,"ready_orders":[],
+                    "trips":[{
+                      "trip_id":"LAB_HTTPS_UI_TRIP_001","state":"em_rota",
+                      "courier_actor_id":"rider-lab",
+                      "deliveries":[{"delivery_id":"LAB_HTTPS_UI_DELIVERY_001",
+                      "order_ref":"LAB_HTTPS_UI_ORDER_001","state":"em_rota",
+                      "active":true,"planned_stop_order":1}]
+                    }]
+                }""")
             }
             if (path.startsWith("/api/") || !Regex("^/[A-Za-z0-9_./-]+$").matches(path) ||
                 path.contains("..")) return text("LAB_ROUTE_DENIED", "text/plain")
@@ -128,32 +145,73 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
         val db = EntregasDatabase.get(context)
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
 
-        val json = """
-          {"event_id":"$eventId","idempotency_key":"$eventId","command":{
-            "type":"ConfirmTripDeparture",
-            "command_id":"LAB_HTTPS_UI_COMMAND_001",
-            "trip_id":"LAB_HTTPS_UI_TRIP_001",
-            "occurred_at":"2026-11-08T21:00:00Z"}}
-        """.trimIndent()
-        val recorded = runBlocking {
-            OperationalEventRecorder.record(db, json, System.currentTimeMillis())
-        }
-        assertTrue(recorded is OperationalEventRecorder.Result.Recorded)
-        val original = runBlocking { db.outbox().recent(50).single { it.eventId == eventId } }
-        assertEquals("pending", original.syncState)
-
+        // A real action must originate in the rider UI; no pre-seeded Room
+        // row, synthetic bridge invocation or direct DAO transition.
+        assertTrue("LAB_QUEUE_NOT_EMPTY_BEFORE_HUMAN_ACTION", runBlocking {
+            db.outbox().recent(50).isEmpty()
+        })
+        val testSite = LabSite(
+            androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation().context,
+        )
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { a ->
                 val web = a.findViewById<ViewGroup>(android.R.id.content).getChildAt(0) as WebView
-                web.webViewClient = LabSite(
-                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().context)
+                web.webViewClient = testSite
                 web.loadUrl("https://10.0.2.2:5193/rider-mobile/")
             }
-            assertTrue("LAB_REAL_RIDER_NOT_READY",
+            assertTrue("Real rider Cheguei button did not become available",
                 until(scenario, """document.getElementById('compatibilityHold').hidden &&
-                    !document.getElementById('pendingLine').hidden &&
-                    !document.getElementById('btnSyncNow').hidden"""))
-            assertEquals("false", eval(scenario, """!document.getElementById('confirmedLine').hidden"""))
+                    !document.getElementById('btnSecondary').hidden &&
+                    !document.getElementById('btnSecondary').disabled &&
+                    document.getElementById('btnSecondary').textContent === 'Cheguei'"""))
+            assertTrue("Rider did not retrieve offline queue policy",
+                (0 until 50).any {
+                    if (testSite.policiesServed.get()) true
+                    else { Thread.sleep(100); false }
+                })
+            // Allow the asynchronous native policy application and render to
+            // complete before the human UI action. No state is faked.
+            Thread.sleep(500)
+            assertEquals("false", eval(scenario,
+                """!document.getElementById('confirmedLine').hidden"""))
+            // Trigger the ACTUAL button and rider.js actArrive() handler.
+            // In contrast to direct native calls, this exercises trip scope,
+            // unit, session actor, event identity and Room producer.
+            assertEquals("true", eval(scenario,
+                """document.getElementById('btnSecondary').click();true"""))
+            var original: br.com.tata.entregas.data.OutboxEventEntity? = null
+            repeat(70) {
+                original = runBlocking {
+                    db.outbox().recent(50).singleOrNull()
+                }
+                if (original != null) return@repeat
+                Thread.sleep(100)
+            }
+            val staged = original ?: throw AssertionError(
+                "REAL_RIDER_CHEGUEI_DID_NOT_RECORD_IN_ROOM: " +
+                    eval(scenario, "document.getElementById('errorBox').textContent"),
+            )
+            val eventId = staged.eventId
+            assertTrue("UI action ID must be generated, not a fixed fixture",
+                eventId.startsWith("ev-"))
+            assertEquals("pending", staged.syncState)
+            assertEquals(eventId, staged.idempotencyKey)
+            assertEquals(tripId, staged.tripId)
+            assertEquals("RecordArrivalReported", staged.kind)
+            val command = JSONObject(staged.payload)
+            assertEquals("ITAIM", command.getString("unit_id"))
+            assertEquals(tripId, command.getString("trip_id"))
+            assertEquals(deliveryId, command.getString("delivery_id"))
+            assertEquals("rider-lab", command.getJSONObject("actor").getString("actor_id"))
+            assertEquals("motoboy_interno",
+                command.getJSONObject("actor").getString("role"))
+            assertTrue("Actual rider UI did not display locally queued action",
+                until(scenario, """!document.getElementById('pendingLine').hidden &&
+                    document.getElementById('pendingLine').textContent.includes('guardada')"""))
+            assertEquals("false", eval(scenario,
+                """!document.getElementById('confirmedLine').hidden"""))
+            val originalEntity = staged
             val past = allWork(context).map { it.id }.toSet()
             eval(scenario, """document.getElementById('btnSyncNow').click();true""")
             val first = awaitNewWork(context, past)
@@ -164,8 +222,8 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
                 awaitWork(context, first.id, WorkInfo.State.FAILED))
             val notAccepted = runBlocking { db.outbox().recent(50).single { it.eventId == eventId } }
             assertEquals("failed", notAccepted.syncState)
-            assertEquals(original.sequenceLocal, notAccepted.sequenceLocal)
-            assertEquals(original.idempotencyKey, notAccepted.idempotencyKey)
+            assertEquals(originalEntity.sequenceLocal, notAccepted.sequenceLocal)
+            assertEquals(originalEntity.idempotencyKey, notAccepted.idempotencyKey)
             assertTrue("UI showed ACK before server receipt",
                 until(scenario, """document.getElementById('pendingLine').textContent.includes('sem confirmação do servidor') &&
                     document.getElementById('confirmedLine').hidden"""))
@@ -179,8 +237,8 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
                 awaitWork(context, second.id, WorkInfo.State.SUCCEEDED))
             val accepted = runBlocking { db.outbox().recent(50).single { it.eventId == eventId } }
             assertEquals("sent", accepted.syncState)
-            assertEquals(original.idempotencyKey, accepted.idempotencyKey)
-            assertEquals(original.sequenceLocal, accepted.sequenceLocal)
+            assertEquals(originalEntity.idempotencyKey, accepted.idempotencyKey)
+            assertEquals(originalEntity.sequenceLocal, accepted.sequenceLocal)
             assertTrue("Actual rider UI failed to show this server receipt",
                 until(scenario, """!document.getElementById('confirmedLine').hidden &&
                   document.getElementById('confirmedLine').textContent.includes('confirmação do servidor para 1 ação')"""))
