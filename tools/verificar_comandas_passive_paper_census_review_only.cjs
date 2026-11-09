@@ -311,6 +311,17 @@ test('published field grid has all nine columns for every observed-order alias',
   assert.equal(table[i].split('|')[1].trim(),String(i+1).padStart(2,'0'));
  }
 });
-if(passed!==61)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
+test('field guide distinguishes late output occurrence from complete check',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const markdown=fs.readFileSync(path.join(__dirname,'..','docs','comandas',
+  'FICHA_CAMPO_CENSO_PAPEL_ITAIM_ALMOCO_JANTAR_20261108.md'),'utf8');
+ assert.match(markdown,/Tardio\/reprint ocorreu\? S\/N\/\?/);
+ assert.match(markdown,/`S` = foi visto papel tardio ou reimpressão/);
+ assert.match(markdown,/`N` = não foi visto, \*\*somente após acompanhamento integral\*\*/);
+ assert.match(markdown,/anomalia relatada `D2`/);
+ assert.match(markdown,/`late_output_checked=YES` significa que a verificação foi concluída/);
+ assert.match(markdown,/manter `D2` mesmo quando `late_output_checked=YES`/);
+});
+if(passed!==62)throw Error('CENSUS_REVIEW_CASE_COUNT_'+passed);
 console.log('COMANDAS_PASSIVE_PAPER_CENSUS_REVIEW_PASS '+passed+'/'+passed+
  ' HUMAN_REPORT_UNATTESTED_NO_REAL_PAPER_NO_PRINT');
