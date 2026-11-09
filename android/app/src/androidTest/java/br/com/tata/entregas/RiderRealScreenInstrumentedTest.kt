@@ -322,6 +322,70 @@ class RiderRealScreenInstrumentedTest {
                 assertTrue("Actual rider.js not requested", "/rider-mobile/rider.js" in testSite.paths)
                 assertTrue("Actual /api/policies not requested", "/api/policies" in testSite.paths)
             }
+
+            // Security adversary: an opaque sandboxed iframe gets the raw
+            // Java object injected by Android but MUST NOT have access to the
+            // top frame's private capability or privileged facade.
+            val forgedEventId = "LAB_SANDBOX_FORGED_EVENT_001"
+            val forged = JSONObject().apply {
+                put("event_id", forgedEventId)
+                put("idempotency_key", forgedEventId)
+                put("command", JSONObject().apply {
+                    put("type", "ConfirmTripDeparture")
+                    put("command_id", "LAB_SANDBOX_COMMAND_001")
+                    put("trip_id", "LAB_SANDBOX_TRIP_001")
+                    put("occurred_at", "2026-11-08T20:00:00Z")
+                })
+            }.toString()
+            val childScript = """
+                (function () {
+                  var raw = !!window.EntregasNativeRaw;
+                  var result = "RAW_MISSING";
+                  var blockedTop = false;
+                  try { window.top.EntregasNative; }
+                  catch (_) { blockedTop = true; }
+                  if (raw) {
+                    try {
+                      result = String(window.EntregasNativeRaw.recordOperationalEvent(
+                        "WRONG_IFRAME_NONCE", ${JSONObject.quote(forged)}
+                      ));
+                    } catch (_) { result = "RAW_CALL_EXCEPTION"; }
+                  }
+                  parent.postMessage({
+                    kind: "LAB_NATIVE_IFRAME_PROBE",
+                    raw: raw,
+                    publicBridge: typeof window.EntregasNative,
+                    blockedTop: blockedTop,
+                    result: result
+                  }, "*");
+                })();
+            """.trimIndent()
+            val childDocument = "<!doctype html><script>" + childScript + "</script>"
+            val hostile = """
+                (function () {
+                  window.__labFrameProof = null;
+                  window.addEventListener("message", function (m) {
+                    if (m.data && m.data.kind === "LAB_NATIVE_IFRAME_PROBE")
+                      window.__labFrameProof = m.data;
+                  });
+                  var iframe = document.createElement("iframe");
+                  iframe.setAttribute("sandbox", "allow-scripts");
+                  iframe.srcdoc = ${JSONObject.quote(childDocument)};
+                  document.body.appendChild(iframe);
+                  return true;
+                })();
+            """.trimIndent()
+            assertEquals("true", eval(scenario, hostile))
+            assertTrue("Sandbox iframe did not execute native-bridge attack",
+                until(scenario, """!!window.__labFrameProof"""))
+            assertEquals("true", eval(scenario,
+                """window.__labFrameProof.raw === true &&
+                   window.__labFrameProof.publicBridge === 'undefined' &&
+                   window.__labFrameProof.blockedTop === true &&
+                   window.__labFrameProof.result.indexOf('native_origin_denied') >= 0"""))
+            assertTrue("Sandbox frame inserted an unauthorized Room event", runBlocking {
+                db.outbox().recent(100).none { it.eventId == forgedEventId }
+            })
         }
     }
 }
