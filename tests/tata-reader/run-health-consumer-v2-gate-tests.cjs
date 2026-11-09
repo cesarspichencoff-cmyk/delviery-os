@@ -147,4 +147,77 @@ check("no baseline keeps legacy health semantics without historical claim",()=>{
   assert.equal(r.evidence.failure_delta_since_baseline,null);
 });
 
+// CLI bridge: only existing *synthetic* files in an isolated temporary folder.
+// Fail immediately if someone accidentally invokes these tests on the POS host.
+const fs=require("node:fs"),os=require("node:os"),path=require("node:path");
+const {spawnSync}=require("node:child_process");
+const healthCli=path.resolve(__dirname,"../../runtime/tata-reader/tata_reader_health_v1.cjs");
+function runCli(previousOverrides={},currentOverrides={}) {
+  if(os.hostname().toUpperCase()==="CAIXA_MOOCA")
+    throw Error("CASHIER_HOST_FORBIDDEN");
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-reader-health-fixture-"));
+  try {
+    const {h,before}=pair();
+    Object.assign(h,currentOverrides);
+    Object.assign(before,previousOverrides);
+    const currentFile=path.join(dir,"current.json");
+    const previousFile=path.join(dir,"previous.json");
+    const checkpointFile=path.join(dir,"checkpoint.json");
+    fs.writeFileSync(currentFile,JSON.stringify(h),"utf8");
+    fs.writeFileSync(previousFile,JSON.stringify(before),"utf8");
+    fs.writeFileSync(checkpointFile,"SYNTHETIC_CHECKPOINT_ONLY","utf8");
+    fs.utimesSync(checkpointFile,(now-1000)/1000,(now-1000)/1000);
+    const beforeNames=fs.readdirSync(dir);
+    const proc=spawnSync(process.execPath,[healthCli,
+      "--heartbeat",currentFile,"--previous-heartbeat",previousFile,
+      "--checkpoint",checkpointFile,"--now",new Date(now).toISOString()
+    ],{encoding:"utf8",timeout:5000,maxBuffer:100000});
+    assert.equal(proc.error,undefined,String(proc.error));
+    assert.equal(proc.stderr,"");
+    assert.deepEqual(fs.readdirSync(dir),beforeNames);
+    const result=JSON.parse(proc.stdout);
+    assert.equal(proc.status,result.exit_code);
+    assert.equal(result.schema,"deliveryos.tata-reader-health.v1");
+    return result;
+  }finally {
+    fs.rmSync(dir,{recursive:true,force:true});
+  }
+}
+check("CLI reads two synthetic heartbeats and degrades recovered failures",()=>{
+  const r=runCli();
+  assert.equal(r.verdict,"DEGRADED");
+  assert.equal(r.evidence.failure_delta_since_baseline,5);
+  assert(r.reasons.includes("NEW_WATCHER_FAILURES_SINCE_BASELINE"));
+});
+check("CLI returns healthy only when synthetic failure counter is unchanged",()=>{
+  const r=runCli({totals:{failed:625}});
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,0);
+});
+check("CLI invalidates comparison from another supervisor",()=>{
+  const r=runCli({supervisor:{run_id:"another-fictional-supervisor"}});
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("CLI invalidates stale previous heartbeat",()=>{
+  const r=runCli({written_at:stamp(5*60*60*1000)});
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("CLI flags regressed failure counter as partial",()=>{
+  const r=runCli({totals:{failed:626}});
+  assert.equal(r.verdict,"DEGRADED");
+  assert(r.reasons.includes("WATCHER_FAILURE_COUNTER_REGRESSED"));
+});
+check("CLI cannot use missing prior heartbeat as trend evidence",()=>{
+  const r=runCli({schema:"UNKNOWN_CHECKPOINT"});
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+check("CLI refuses to classify replayed sequence as historical trend",()=>{
+  const r=runCli({seq:210});
+  assert.equal(r.verdict,"HEALTHY");
+  assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+
 console.log("TATA_READER_CONSUMER_V2_HEALTH_GATE_PASS "+passed+"/"+passed+" SYNTHETIC_ONLY");
