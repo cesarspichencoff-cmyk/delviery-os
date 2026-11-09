@@ -5,6 +5,9 @@
 const {review}=require('./native_reader_n2n3_sanitized_receipt_v1.cjs');
 const SCHEMA='deliveryos.native-reader-existing-event-binding.v1';
 const SOURCE_CHECKPOINT='deliveryos.tata-reader-continuous-checkpoint.v1';
+const V2_HASH_CONTRACT='NODE_CANONICAL_JSON_SHA256_V1';
+const V2_CHECKPOINT_ORIGIN='FRESH_NODE_CANONICAL_V2';
+const v2Hash=x=>typeof x==='string'&&/^[0-9a-f]{64}$/.test(x);
 const safe=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
 // SQL native wall time has NO offset; check calendar validity without
 // converting it to a UTC instant or assuming the host time zone.
@@ -28,6 +31,15 @@ function selectOne(checkpoint){
      !Array.isArray(checkpoint.entries)||
      checkpoint.entries.length===0||checkpoint.entries.length>250)
    return hold('CHECKPOINT_ENVELOPE_INVALID');
+  // The active canonical V2 watcher records lowercase hashes and a fresh
+  // generation marker. A legacy uppercase checkpoint MUST NOT be accepted by
+  // changing digest casing or adding a marker without an explicit migration.
+  // These fields only prove checkpoint FORMAT, never SQL transaction origin.
+  if(checkpoint.hash_contract_version!==V2_HASH_CONTRACT||
+     checkpoint.checkpoint_origin!==V2_CHECKPOINT_ORIGIN||
+     typeof checkpoint.checkpoint_generation!=='string'||
+     !/^[0-9a-f]{32}$/.test(checkpoint.checkpoint_generation))
+   return hold('CHECKPOINT_V2_FORMAT_OR_ORIGIN_UNVERIFIED');
   // Validate EVERY entry before choosing, not just the first one.
   const seen=new Set();
   let previous=null;
@@ -43,9 +55,8 @@ function selectOne(checkpoint){
    if(previous!==null&&e.last_seen_order_time>previous)
     return hold('CHECKPOINT_ORDER_NOT_DESCENDING');
    previous=e.last_seen_order_time;
-   if(typeof e.snapshot_hash!=='string'||
-      !/^[0-9A-F]{64}$/.test(e.snapshot_hash)||
-      (e.emitted_hash!==null&&!/^[0-9A-F]{64}$/.test(e.emitted_hash))||
+   if(!v2Hash(e.snapshot_hash)||
+      (e.emitted_hash!==null&&!v2Hash(e.emitted_hash))||
       !Number.isSafeInteger(e.stable_count)||e.stable_count<1)
     return hold('CHECKPOINT_HASH_OR_STABILITY_INVALID');
   }
