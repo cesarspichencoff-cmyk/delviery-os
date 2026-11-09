@@ -3,6 +3,7 @@
 // Does not read private POS files or call SQL/print/network. Synthetic only.
 const assert=require('node:assert/strict');
 const path=require('node:path');
+const {spawnSync}=require('node:child_process');
 const remote=process.argv[2];
 if(!remote||!path.isAbsolute(remote))throw Error('PINNED_PR135_WORKTREE_REQUIRED');
 const {build}=require(path.join(remote,'tools/comandas_reader_native_note_rowset_v1_review_only.cjs'));
@@ -116,6 +117,18 @@ test('no PII, raw IDs or note values leave review surface',()=>{
  for(const x of ['FICTSALE1','FICTCMD1','PROD01','1234'])
   assert.equal(s.includes(x),false);
  assert.equal(review(original).actualNativeSourceAuthenticated,false);
+});
+test('current PR135 V7.16 disposable subprocess remains HOLD and cannot export customer notes',()=>{
+ const suite=path.join(remote,'tools/verificar_comandas_v716_isolated_sandbox_offline.cjs');
+ const child=spawnSync(process.execPath,[suite],{
+  cwd:remote,encoding:'utf8',timeout:120000,maxBuffer:1024*1024,
+  env:{...process.env,NODE_OPTIONS:'',NODE_PATH:''}
+ });
+ assert.equal(child.error,undefined,String(child.error));
+ assert.equal(child.status,0,child.stderr);
+ assert.equal(child.stderr,'');
+ assert.match(child.stdout,/COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS 14\/14 SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT/);
+ assert.doesNotMatch(child.stdout,/PRIVATE_FAKE_NOTE_MUST_NOT_REACH_PUBLIC_STDOUT|FAKESALE|PRIVATE_CHANGED_FAKE_NOTE/);
 });
 console.log('PR135_ACTUAL_PRODUCER_PR137_CHILD_NOTE_HOLD_PASS '+passed+'/'+passed+
  ' PINNED_SOURCE_SYNTHETIC_ROWS_NO_POS');
