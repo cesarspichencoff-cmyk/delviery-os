@@ -1,0 +1,34 @@
+name: Comandas V7.16 isolated offhost candidate
+
+on:
+  pull_request:
+    branches:
+      - fix/comandas-figma-box-count-guard-20261013
+    paths:
+      - "runtime/shadow/live_shadow_consumer_v2_candidate_v716_isolated_REVIEW_ONLY.cjs"
+      - "tools/verificar_comandas_v716_isolated_sandbox_offline.cjs"
+      - ".github/workflows/comandas-v716-isolated-offhost.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comandas-v716-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  v716-isolated-offhost:
+    name: V7.16 synthetic isolated subprocess (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute exact V7.16 in disposable offhost directory
+        run: node tools/verificar_comandas_v716_isolated_sandbox_offline.cjs
