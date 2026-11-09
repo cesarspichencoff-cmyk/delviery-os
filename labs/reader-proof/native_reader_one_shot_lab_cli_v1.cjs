@@ -67,7 +67,7 @@ function main(){
      fs.realpathSync(dir)!==path.resolve(dir))
    throw Error('EVENT_DIRECTORY_INVALID');
   const file=choice.privateDescriptor.event_filename;
-  if(!/^[A-Za-z0-9_-]{1,64}_[0-9A-F]{64}\.json$/.test(file))
+  if(!/^[A-Za-z0-9_-]{1,64}_[0-9a-f]{64}\.json$/.test(file))
    throw Error('EVENT_FILENAME_INVALID');
   result=reviewOne(checkpoint,boundedRead(path.join(dir,file)));
  }catch{
