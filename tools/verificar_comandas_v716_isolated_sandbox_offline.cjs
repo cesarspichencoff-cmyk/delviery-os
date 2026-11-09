@@ -28,6 +28,7 @@ check("new fork has no operational state access or full-result stdout",()=>{
  assert.doesNotMatch(s,/process\.stdout\.write\s*\(\s*JSON\.stringify\s*\(\s*result\s*\)/);
  assert.match(s,/OFFHOST_DISPOSABLE_LAB_ROOT_REQUIRED/);
  assert.match(s,/LAB_ITAIM_NATIVE_IFOOD_SCOPE_INVALID/);
+ assert.match(s,/LAB_NATIVE_SNAPSHOT_HASH_INVALID_NO_OUTPUT/);
  assert.match(s,/OFFHOST_LAB_ONLY_NO_PRODUCTION_SEQUENCE/);
  assert.match(s,/fs\.openSync\(target,"wx",0o600\)/);
  assert.match(s,/fs\.lstatSync\(root\)\.isSymbolicLink\(\)/);
@@ -59,6 +60,22 @@ const event={
   items:[{NRPRODCOMVEN:"000001",CDPRODUTO:"FPROD",
    CDARVPROD:"9100507200",QTPRODCOMVEN:"1.000",IDSTPRCOMVEN:"4"}]
  }};
+// Same canonical header/item/note basis as the Reader V2 verifier; this
+// deliberately does NOT claim independent authenticity or complete commit.
+function syntheticSnapshotHash(order){
+ const keys=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA",
+  "NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DTHRABERMESA"];
+ const itemKeys=["NRPRODCOMVEN","CDPRODUTO","CDARVPROD",
+  "QTPRODCOMVEN","IDSTPRCOMVEN"];
+ const basis={};
+ for(const key of keys)basis[key]=order[key];
+ basis.items=order.items.map(item=>{
+  const row={};for(const key of itemKeys)row[key]=item[key];return row;
+ });
+ if(order.observation_rows.length)basis.observation_rows=order.observation_rows;
+ return sha256(JSON.stringify(basis));
+}
+event.snapshot_hash=syntheticSnapshotHash(event.order);
 const run=(p=eventPath,out=null)=>spawnSync(process.execPath,
  [consumer,p,...(out?[out]:[])],{encoding:"utf8",timeout:15000,
   env:{...process.env,NODE_OPTIONS:"",NODE_PATH:""}});
@@ -113,6 +130,31 @@ try{
   assert.equal(privateResult.order_observations.length,0);
   assert.equal(privateResult.items.length,1);
   assert.equal(privateResult.items[0].observations[0].value,note);
+ });
+ check("mutated item quantity with stale source hash is rejected before output",()=>{
+  const fake=structuredClone(event);
+  fake.order.items[0].QTPRODCOMVEN="2.000";
+  const input=path.join(eventDir,"mutated-quantity.json");
+  const output=path.join(outDir,"mutated-quantity.json");
+  fs.writeFileSync(input,JSON.stringify(fake));
+  const result=run(input,output);
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/LAB_NATIVE_SNAPSHOT_HASH_INVALID_NO_OUTPUT/);
+  assert.equal(fs.existsSync(output),false);
+  assert.equal(result.stdout,"");
+ });
+ check("mutated note with stale source hash is rejected without leaking it",()=>{
+  const fake=structuredClone(event);
+  fake.order.observation_rows[0].value="PRIVATE_CHANGED_FAKE_NOTE";
+  const input=path.join(eventDir,"mutated-note.json");
+  const output=path.join(outDir,"mutated-note.json");
+  fs.writeFileSync(input,JSON.stringify(fake));
+  const result=run(input,output);
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/LAB_NATIVE_SNAPSHOT_HASH_INVALID_NO_OUTPUT/);
+  assert.ok(!result.stderr.includes("PRIVATE_CHANGED_FAKE_NOTE"));
+  assert.equal(fs.existsSync(output),false);
+  assert.equal(result.stdout,"");
  });
  check("existing output is never overwritten",()=>{
   const before=fs.readFileSync(decisionPath);
@@ -195,6 +237,6 @@ try{
  fs.rmSync(sandbox,{recursive:true,force:true});
 }
 check("disposable lab root removed",()=>assert.equal(fs.existsSync(sandbox),false));
-if(count!==12)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
+if(count!==14)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
 console.log("COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS "+count+"/"+count+
  " SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT");
