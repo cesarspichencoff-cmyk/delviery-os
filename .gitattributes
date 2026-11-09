@@ -11,3 +11,4 @@ runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs -text
 runtime/reporting/native_reader_verified_legacy_hash_v1.cjs -text
 runtime/reporting/native_reader_producer_contract_review_v1.cjs -text
 runtime/reporting/native_reader_shadow_replay_v1.cjs -text
+runtime/reporting/native_reader_legacy_one_shot_review_v1.cjs -text
