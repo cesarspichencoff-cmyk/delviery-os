@@ -282,6 +282,12 @@ test("unknown server status is escaped inside shared HTML chip", () => {
   const markup = client.chip('<svg onload="window.__attack=1">');
   assert.match(markup, /&lt;svg/);
   assert.doesNotMatch(markup, /<svg|onload="/i);
+  // Inherited object keys are not legitimate states and must not crash UI.
+  for (const inherited of ["__proto__", "constructor", "toString"]) {
+    const rendered = client.chip(inherited);
+    assert.ok(rendered.includes(inherited));
+    assert.match(rendered, /class="chip neutral"/);
+  }
 });
 test("rider CSP forbids inline scripts and nested frames", () => {
   assert.match(html, /http-equiv="Content-Security-Policy"/);
