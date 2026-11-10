@@ -21,6 +21,11 @@
  * do produto (saudavel | parcial | stale | indisponivel).
  */
 
+// Reuse the same strict, offset-aware clock validator as the native Reader
+// -> Copiloto projection. A host-local timestamp or normalized bad date
+// cannot prove recent progress.
+const {explicitInstant} = require("../reporting/tata_source_time_v1.cjs");
+
 const HEALTH_SCHEMA = "deliveryos.tata-reader-health.v1";
 const HEARTBEAT_SCHEMA = "deliveryos.tata-reader-heartbeat.v1";
 const HOST_SCHEMAS = new Set([
@@ -50,7 +55,7 @@ function isObj(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 function parseInstant(v) {
-  if (typeof v !== "string" || !v.trim()) return null;
+  if (!explicitInstant(v)) return null;
   const ms = Date.parse(v);
   return Number.isFinite(ms) ? ms : null;
 }
@@ -402,6 +407,12 @@ if (require.main === module) {
     opt[k.slice(2)] = v;
   }
   const readDoc = (p) => readSignalDoc(p, { fs });
+  // The caller can supply a review clock, but cannot silently choose the
+  // timezone of the host or an impossible calendar day.
+  if (opt.now && !explicitInstant(opt.now)) {
+    console.error("NOW_INVALID");
+    process.exit(64);
+  }
   const nowMs = opt.now ? Date.parse(opt.now) : Date.now();
   if (!Number.isFinite(nowMs)) {
     console.error("NOW_INVALID");
