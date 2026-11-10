@@ -195,6 +195,50 @@ test("unknown future blocker and malformed blocker both fail closed",()=>{
   assert.ok(j.reasons.includes("NATIVE_SOURCE_NON_SERVICE_BLOCKER"));
  }
 });
+test("unknown SERVICE_STATE-like text does not masquerade as an approved legacy warning",()=>{
+ const fake=structuredClone(real);
+ fake.blockers=["SERVICE_STATE_SOURCE_NOT_AUTHENTICATED"];
+ const j=N.joinNativeReaderSnapshotV1(fake,decision,{});
+ assert.equal(j.status,"HOLD");
+ assert.equal(j.join,null);
+ assert.ok(j.reasons.includes("NATIVE_SOURCE_NON_SERVICE_BLOCKER"));
+ const cls=N.classifyConsumerBlockersV1(
+  ["UPSTREAM_EVENT_NOT_READY","UPSTREAM_SERVICE_SERVICE_STATE_SOURCE_NOT_AUTHENTICATED"],
+  fake.blockers);
+ assert.ok(cls.content.includes("UPSTREAM_EVENT_NOT_READY"));
+ assert.ok(cls.content.includes("UPSTREAM_SERVICE_SERVICE_STATE_SOURCE_NOT_AUTHENTICATED"));
+ assert.deepEqual(cls.legacy_service_state,[]);
+});
+test("consumer cannot invent an upstream service notice without matching native event blocker",()=>{
+ const fake=structuredClone(real);fake.blockers=[];
+ for(const value of [
+  "UPSTREAM_SERVICE_SERVICE_STATE_EXPIRED_FOR_ORDER",
+  "UPSTREAM_SERVICE_STATE_DATE_MISMATCH_ORDER_DATE",
+  "UPSTREAM_SERVICE_SERVICE_STATE_UNATTESTED"]){
+  const cls=N.classifyConsumerBlockersV1(["UPSTREAM_EVENT_NOT_READY",value],fake.blockers);
+  assert.deepEqual(cls.legacy_service_state,[]);
+  assert.ok(cls.content.includes("UPSTREAM_EVENT_NOT_READY"));
+  assert.ok(cls.content.includes(value));
+ }
+});
+test("only known and matched service hour codes remain ignorable in offline previews",()=>{
+ for(const reason of [
+  "SERVICE_STATE_DATE_MISMATCH_ORDER_DATE",
+  "SERVICE_STATE_EXPIRED_FOR_ORDER",
+  "SERVICE_HOURS_OUTSIDE_WINDOW"]){
+  const fake=structuredClone(real);fake.blockers=[reason];
+  const j=N.joinNativeReaderSnapshotV1(fake,decision,{});
+  assert.ok(!j.reasons.includes("NATIVE_SOURCE_NON_SERVICE_BLOCKER"));
+  for(const prefix of ["UPSTREAM_","UPSTREAM_SERVICE_"]){
+   if(prefix==="UPSTREAM_SERVICE_" && reason==="SERVICE_HOURS_OUTSIDE_WINDOW")continue;
+   const label=prefix+reason;
+   const cls=N.classifyConsumerBlockersV1(["UPSTREAM_EVENT_NOT_READY",label],fake.blockers);
+   assert.deepEqual(cls.content,[],label);
+   assert.ok(cls.legacy_service_state.includes("UPSTREAM_EVENT_NOT_READY"));
+   assert.ok(cls.legacy_service_state.includes(label));
+  }
+ }
+});
 test("legacy service expiry alone is not a native item-source proof failure",()=>{
  const j=N.joinNativeReaderSnapshotV1(real,decision,{});
  assert.ok(!j.reasons.includes("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED"));
