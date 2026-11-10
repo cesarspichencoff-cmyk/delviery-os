@@ -281,6 +281,49 @@ class SyncWorkerWorkManager4xxTest {
         assertEquals(0, db.gpsPoints().rejectedCount())
     }
 
+    @Test fun gpsIndividual200RejectionCannotPersistRemoteFreeText() = runBlocking {
+        val accepted = point("gps-sent-clean-receipt", 1)
+        val refused = point("gps-rejected-remote-pii", 2)
+        db.gpsPoints().insert(accepted)
+        db.gpsPoints().insert(refused)
+        val hostileReason = "CLIENTE_NOME TOKEN_ABC_123 coordenadas: -23.1234,-46.1234"
+        gpsResult = ApiResult.Ok(JSONObject()
+            .put("accepted", 1)
+            .put("duplicate", 0)
+            .put("rejected", 1)
+            .put("rejections", org.json.JSONArray().put(JSONObject()
+                .put("idempotency_key", refused.idempotencyKey)
+                .put("motivo", hostileReason))))
+        assertTrue(invoke(2) is ListenableWorker.Result.Success)
+        verify(exactly = 1) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        db.close()
+        db = open()
+        val rows = mutableListOf<List<String?>>()
+        db.openHelper.readableDatabase.query(
+            "SELECT pointId, idempotencyKey, syncState, lastError FROM gps_point ORDER BY sequenceLocal ASC",
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                rows.add((0..3).map { i ->
+                    if (cursor.isNull(i)) null else cursor.getString(i)
+                })
+            }
+        }
+        assertEquals(2, rows.size)
+        assertEquals(listOf(accepted.pointId, accepted.idempotencyKey, "sent", null), rows[0])
+        assertEquals(
+            listOf(refused.pointId, refused.idempotencyKey,
+                "rejected", "gps_recusa_individual_recebida"),
+            rows[1],
+        )
+        assertTrue("Remote reason leaked to Room", rows.none { row ->
+            row.any { it?.contains(hostileReason) == true ||
+                it?.contains("TOKEN_ABC_123") == true }
+        })
+        assertEquals(0, db.gpsPoints().pendingCount())
+        assertEquals(1, db.gpsPoints().rejectedCount())
+        assertTrue(db.gpsPoints().nextBatch(10).isEmpty())
+    }
+
     @Test fun gpsRepeated422RequiresReviewAndNewPointsStillSynchronize() = runBlocking {
         val original = point("gps-review-422", 1)
         db.gpsPoints().insert(original)
