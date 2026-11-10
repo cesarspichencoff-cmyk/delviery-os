@@ -36,4 +36,23 @@ test('browser QA checks visible degraded text not merely a comment',()=>{
  assert.match(browser,/locator\("\.org-tecnico__texto"\)\.innerText\(\)/);
  assert.match(browser,/assert\.doesNotMatch\(aviso, \/o resto da operacao segue normal\/i\)/);
 });
+const vm=readFileSync(join(root,'src/product/viewmodels/home-vm.ts'),'utf8');
+const css=readFileSync(join(root,'src/product/ui/surfaces/home.css'),'utf8');
+test('real feed without any healthy source cannot invent a live pulse',()=>{
+ assert.match(vm,/const semLeituraOperacional = l\.procedencia === "real" && !existeFonteSaudavel;/);
+ assert.match(vm,/existeFonteSaudavel \|\| \(!semLeituraOperacional && l\.pedidos\.length > 0\)/);
+ assert.match(vm,/sem_leitura_operacional: semLeituraOperacional/);
+ assert.match(vm,/semLeituraOperacional \? "Sem leitura"/);
+});
+test('Home renders missing source as a distinct non-live operational state',()=>{
+ assert.match(home,/vm\.sem_leitura_operacional \? "sem-fonte" : "vivo"/);
+ assert.match(home,/sem leitura operacional confiavel/);
+ assert.match(home,/vm\.sem_leitura_operacional \? "nenhuma fonte operacional confiavel"/);
+ assert.match(css,/\.org-topo__vida\[data-estado="sem-fonte"\] \.org-topo__ponto\s*\{[^}]*animation: none/s);
+});
+test('demonstration remains explicitly simulated, never promoted to real source',()=>{
+ assert.match(vm,/l\.procedencia === "real" && !existeFonteSaudavel/);
+ assert.match(home,/vm\.demonstracao \? "simulado" :/);
+ assert.match(home,/cenario simulado/);
+});
 console.log('DELIVERYOS_HOME_SOURCE_TRUTH_STATIC_PASS '+ok+'/'+ok+' NO_BROWSER_NO_POS');
