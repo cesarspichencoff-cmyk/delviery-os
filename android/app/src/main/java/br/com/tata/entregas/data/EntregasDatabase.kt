@@ -110,8 +110,18 @@ interface GpsPointDao {
 
     // Compatibilidade: registros antigos em 'sending' não têm confirmação
     // persistida; voltam ao lote com a MESMA idempotencyKey.
-    @Query("SELECT * FROM gps_point WHERE syncState IN ('pending','failed','sending') ORDER BY sequenceLocal ASC LIMIT :limit")
+    // Recusas 409/422 sem recibo individual ficam retidas apos tres tentativas
+    // TOTAIS de envio (nao necessariamente tres recusas iguais). Outras amostras
+    // continuam fluindo; os pontos retidos nao sao descartados nem marcados sent.
+    // Nao e retry por tempo: a liberacao exige reconciliacao autorizada.
+    @Query("SELECT * FROM gps_point WHERE syncState IN ('pending','failed','sending') AND NOT (syncState = 'failed' AND attempts >= 3 AND lastError IN ('lote_gps_sem_recibo_http_409','lote_gps_sem_recibo_http_422')) ORDER BY sequenceLocal ASC LIMIT :limit")
     suspend fun nextBatch(limit: Int): List<GpsPointEntity>
+
+    @Query("SELECT * FROM gps_point WHERE syncState = 'failed' AND attempts >= 3 AND lastError IN ('lote_gps_sem_recibo_http_409','lote_gps_sem_recibo_http_422') ORDER BY sequenceLocal ASC LIMIT :limit")
+    suspend fun reviewRequiredPoints(limit: Int): List<GpsPointEntity>
+
+    @Query("SELECT COUNT(*) FROM gps_point WHERE syncState = 'failed' AND attempts >= 3 AND lastError IN ('lote_gps_sem_recibo_http_409','lote_gps_sem_recibo_http_422')")
+    suspend fun reviewRequiredCount(): Int
 
     // Respostas de dois workers podem chegar fora de ordem (NOW e PERIODIC).
     // Nunca reviver um estado final 'sent'/'rejected' por timeout atrasado.
@@ -119,7 +129,9 @@ interface GpsPointDao {
     @Query("UPDATE gps_point SET syncState = 'sent' WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending')")
     suspend fun markSent(ids: List<String>)
 
-    @Query("UPDATE gps_point SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending')")
+    // Uma resposta atrasada sem recibo nao pode desfazer um HOLD ja persistido.
+    // Um recibo individual validado ainda pode usar markSent/markRejected.
+    @Query("UPDATE gps_point SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending') AND NOT (syncState = 'failed' AND attempts >= 3 AND lastError IN ('lote_gps_sem_recibo_http_409','lote_gps_sem_recibo_http_422'))")
     suspend fun markFailed(ids: List<String>, error: String)
 
     @Query("UPDATE gps_point SET syncState = 'rejected', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending')")
