@@ -68,7 +68,17 @@ function run(...pairs){
 }
 let ok=0;const test=(name,fn)=>{fn();ok++;};
 const baseline=()=>fromRows(input());
-const self=e=>assert.equal(review(e).reason,'CANONICAL_ENVELOPE_SELF_CONSISTENT_BUT_SOURCE_UNATTESTED');
+const fictionalShapeOnly=e=>{
+ const x=clone(e);x.blockers=[];delete x.ready_for_downstream_shadow;
+ x.order.observation_scan_complete=true;
+ x.snapshot_hash=consumer.snapshotHash(x.order);
+ return x;
+};
+const self=e=>assert.equal(review(e).reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
+const selfShape=e=>assert.equal(review(e).reason,'CANONICAL_ENVELOPE_SELF_CONSISTENT_BUT_SOURCE_UNATTESTED');
+const denied=p=>{const r=run(p);assert.equal(r.reason,'NATIVE_PAIR_INVALID');
+ assert.equal(r.state,'HOLD');assert.equal(r.rows.length,0);
+ assert.equal(r.ordersPublishable,0);return r;};
 const passed=p=>{const r=run(p);assert.equal(r.state,'HOLD');assert.equal(r.selfConsistentCandidates,1);
  assert.equal(r.ordersPublishable,0);assert.equal(r.operationalEventEmissionAuthorized,false);
  return r;};
@@ -84,15 +94,18 @@ test('canonical two items and three observations cross into PR137 reviewer',()=>
  assert.equal(e.order.observation_rows.length,3);
  assert.equal(e.order.observation_rows[0].item_index,0);
  assert.equal(e.order.observation_rows[1].item_index,1);
- assert.equal(review(e).itemRows,2);
- assert.equal(review(e).noteRows,3);
+ assert.equal(review(e).canonicalContractChecked,false);
+ selfShape(fictionalShapeOnly(e));
+ assert.equal(review(fictionalShapeOnly(e)).itemRows,2);
+ assert.equal(review(fictionalShapeOnly(e)).noteRows,3);
 });
 test('producer canonical digest equals independent PR137 digest',()=>{
  const e=baseline();assert.equal(e.snapshot_hash,consumer.snapshotHash(e.order));
  assert.match(e.snapshot_hash,/^[0-9a-f]{64}$/);
 });
 test('consumer accepts fabricated decision shape only as HOLD',()=>{
- const r=passed(pair(baseline()));
+ denied(pair(baseline()));
+ const r=passed(pair(fictionalShapeOnly(baseline())));
  assert.equal(r.reason,'NATIVE_SOURCE_AUTHENTICITY_AND_FRESHNESS_NOT_PROVEN');
  assert.equal(r.nativeSourceAuthenticated,false);
  assert.equal(r.nativeLifecycleSemanticsProven,false);
@@ -108,8 +121,9 @@ test('notes and raw order IDs are never exported by either reviewer',()=>{
 test('row order reversal preserves canonical digest and HMAC refs',()=>{
  const x=input(),y=input();y.rows.reverse();
  assert.equal(fromRows(x).snapshot_hash,fromRows(y).snapshot_hash);
- assert.equal(passed(pair(fromRows(x))).rows[0].orderRef,
-  passed(pair(fromRows(y))).rows[0].orderRef);
+ denied(pair(fromRows(x)));denied(pair(fromRows(y)));
+ assert.equal(passed(pair(fictionalShapeOnly(fromRows(x)))).rows[0].orderRef,
+  passed(pair(fictionalShapeOnly(fromRows(y)))).rows[0].orderRef);
 });
 test('apostrophe and accent do not change cross-runtime hash',()=>{
  const e=baseline();assert.ok(e.order.observation_rows.some(n=>n.value.includes("'")));
@@ -117,11 +131,13 @@ test('apostrophe and accent do not change cross-runtime hash',()=>{
 });
 test('P remains an uninterpreted native state and in HOLD',()=>{
  const e=fromRows((()=>{const x=input();x.rows.forEach(r=>r.IDSTCOMANDA='P');return x})());
- self(e);assert.equal(passed(pair(e)).rows[0].nativeState,'P');
+ self(e);denied(pair(e));
+ assert.equal(passed(pair(fictionalShapeOnly(e))).rows[0].nativeState,'P');
 });
 test('X remains an uninterpreted native state and in HOLD',()=>{
  const e=fromRows((()=>{const x=input();x.rows.forEach(r=>r.IDSTCOMANDA='X');return x})());
- self(e);assert.equal(passed(pair(e)).rows[0].nativeState,'X');
+ self(e);denied(pair(e));
+ assert.equal(passed(pair(fictionalShapeOnly(e))).rows[0].nativeState,'X');
 });
 test('real item state 6 is not promoted as normal order by replayer',()=>{
  const x=input();x.rows[1].IDSTPRCOMVEN='6';
@@ -132,7 +148,7 @@ test('real item state 6 is not promoted as normal order by replayer',()=>{
 test('recorded notes omitted cannot be proven complete by caller flag',()=>{
  const x=input();x.rows.forEach(r=>{r.DSOBSPEDDIGCMD=null;r.TXPRODCOMVEN=null;r.DSOBSCOMANDA=null});
  const e=fromRows(x);self(e);
- const r=passed(pair(e));assert.equal(r.nativeSourceAuthenticated,false);
+ denied(pair(e));const r=passed(pair(fictionalShapeOnly(e)));assert.equal(r.nativeSourceAuthenticated,false);
  assert.equal(r.sourceFreshnessProven,false);
  assert.equal(r.rows[0].noteRows,0);
 });
@@ -157,12 +173,12 @@ test('producer refuses fractional item quantity',()=>{
  assert.equal(x.status,'HOLD');assert.equal(x.privateEvent,null);
 });
 test('tampered note after producer hash is refused',()=>{
- const e=baseline();e.order.observation_rows[1].value='EDITADO';
+ const e=fictionalShapeOnly(baseline());e.order.observation_rows[1].value='EDITADO';
  assert.equal(review(e).reason,'SNAPSHOT_HASH_NOT_BOUND_TO_CANONICAL_FIELDS');
  assert.equal(run(pair(e)).reason,'NATIVE_PAIR_INVALID');
 });
 test('wrong note-to-item binding fails in PR137 reviewer',()=>{
- const e=baseline();e.order.observation_rows[0].CDPRODUTO='OUTRO';
+ const e=fictionalShapeOnly(baseline());e.order.observation_rows[0].CDPRODUTO='OUTRO';
  e.snapshot_hash=consumer.snapshotHash(e.order);
  assert.equal(review(e).reason,'ITEM_OBSERVATION_JOIN_MISMATCH');
  assert.equal(run(pair(e)).reason,'NATIVE_PAIR_INVALID');
@@ -173,18 +189,20 @@ test('decision quantity differs even when recomputed -> no HMAC row',()=>{
  assert.equal(run(p).reason,'NATIVE_PAIR_INVALID');
 });
 test('incomplete notes scan cannot be declared source-complete',()=>{
- const e=baseline();e.order.observation_scan_complete=false;
+ const e=fictionalShapeOnly(baseline());e.order.observation_scan_complete=false;
  assert.equal(review(e).reason,'OBSERVATION_COMPLETENESS_MISSING_OR_UNATTESTED');
  assert.equal(run(pair(e)).reason,'NATIVE_PAIR_INVALID');
 });
 test('same revision duplicated is deduplicated',()=>{
- const p=pair(baseline()),r=run(p,clone(p));
+ denied(pair(baseline()));
+ const p=pair(fictionalShapeOnly(baseline())),r=run(p,clone(p));
  assert.equal(r.selfConsistentCandidates,1);
  assert.equal(r.duplicateSnapshotsIgnored,1);
 });
 test('two distinct revisions without ordering proof remain quarantined',()=>{
  const x=input(),y=input();y.rows[0].QTPRODCOMVEN='3.000';
- const r=run(pair(fromRows(x)),pair(fromRows(y)));
+ denied(pair(fromRows(x)));denied(pair(fromRows(y)));
+ const r=run(pair(fictionalShapeOnly(fromRows(x))),pair(fictionalShapeOnly(fromRows(y))));
  assert.equal(r.reason,'CONFLICTING_NATIVE_REVISIONS_NO_ORDERING_PROOF');
  assert.equal(r.ordersPublishable,0);
 });
@@ -202,7 +220,11 @@ test('producer output never claims a real order even with self-consistent review
  assert.equal(r.ordersPublishable,0);
 });
 test('native production join reuses exact event and separates customer vs production notes',()=>{
- const e=baseline(),d=pair(e).decision;
+ const source=baseline();denied(pair(source));
+ const deniedJoin=nativeJoin.joinNativeReaderSnapshotV1(source,pair(source).decision,{});
+ assert.equal(deniedJoin.status,'HOLD');
+ assert.equal(deniedJoin.join,null);
+ const e=fictionalShapeOnly(source),d=pair(e).decision;
  const out=nativeJoin.joinNativeReaderSnapshotV1(e,d,{
   '9.20.00.010.00':['00009'],'9.20.00.020.00':['00002']
  });
@@ -217,7 +239,12 @@ test('native production join reuses exact event and separates customer vs produc
  assert.deepEqual(out.join.items[1].delivery_observacoes,[]);
 });
 test('native ticket observation bridge preserves source notes without printing',()=>{
- const e=baseline(),j=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
+ const source=baseline();denied(pair(source));
+ const deniedJoin=nativeJoin.joinNativeReaderSnapshotV1(source,pair(source).decision,{});
+ assert.equal(deniedJoin.status,'HOLD');
+ assert.equal(deniedJoin.join,null);
+ const e=fictionalShapeOnly(source);
+ const j=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
  assert.equal(j.status,'NATIVE_SAME_SNAPSHOT_JOINED');
  assert.deepEqual(nativeJoin.nativeTicketItemsV1(j.join),[
   {item_index:0,item_observations:['SEM CEBOLINHA, LIMÃO']},
@@ -226,7 +253,7 @@ test('native ticket observation bridge preserves source notes without printing',
  assert.equal(j.provenance.independent_source_attested,false);
 });
 test('production native join refuses quantity drift before creating joined item',()=>{
- const e=baseline(),d=pair(e).decision;
+ const e=fictionalShapeOnly(baseline()),d=pair(e).decision;
  d.items[0].quantity=99;
  const x=nativeJoin.joinNativeReaderSnapshotV1(e,d,{});
  assert.equal(x.status,'HOLD');
@@ -234,11 +261,28 @@ test('production native join refuses quantity drift before creating joined item'
  assert.ok(x.reasons.some(s=>s.startsWith('NATIVE_ITEM_IDENTITY_OR_QUANTITY_MISMATCH')));
 });
 test('production native join refuses tampered observation identity',()=>{
- const e=baseline(),d=pair(e).decision;
+ const e=fictionalShapeOnly(baseline()),d=pair(e).decision;
  e.order.observation_rows[0].CDPRODUTO='OTHER';
  const x=nativeJoin.joinNativeReaderSnapshotV1(e,d,{});
  assert.equal(x.status,'HOLD');
  assert.equal(x.join,null);
  assert.ok(x.reasons.includes('NATIVE_OBSERVATION_SCOPE_INVALID'));
+});
+test('real producer cannot be rescued by forged flags and self-recomputed hash',()=>{
+ const e=clone(baseline());
+ e.ready_for_downstream_shadow=true;
+ e.order.observation_scan_complete=true;
+ e.snapshot_hash=consumer.snapshotHash(e.order);
+ assert.equal(review(e).reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
+ denied(pair(e));
+ assert.equal(nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{}).provenance.independent_source_attested,false);
+});
+test('fictional bridge is only structurally ready, never an authenticated source',()=>{
+ const e=fictionalShapeOnly(baseline()),d=pair(e).decision;
+ const x=nativeJoin.joinNativeReaderSnapshotV1(e,d,{});
+ assert.equal(x.status,'NATIVE_SAME_SNAPSHOT_JOINED');
+ assert.equal(x.provenance.independent_source_attested,false);
+ assert.equal(x.join.effects.print,false);
+ assert.equal(passed(pair(e)).ordersPublishable,0);
 });
 console.log('READER_PR135_TO_DELIVERYOS_PR137_CROSS_BRANCH_PASS '+ok+'/'+ok+' SYNTHETIC_ONLY');
