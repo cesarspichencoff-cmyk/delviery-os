@@ -27,7 +27,7 @@ bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
 
 if [[ "$expected" == "modern" ]]; then
   mkdir -p ../tests/android/visual-proof
-  adb pull /sdcard/Android/data/br.com.tata.entregas.debug/files/gps-review-hold-lab.png \
+  adb pull /sdcard/Pictures/DeliveryOSLab/gps-review-hold-lab.png \
     ../tests/android/visual-proof/gps-review-hold-lab.png
   test -s ../tests/android/visual-proof/gps-review-hold-lab.png
   echo "GPS_REVIEW_REAL_WEBVIEW_SCREENSHOT_CAPTURED"
