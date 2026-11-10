@@ -24,6 +24,8 @@ internal fun shouldRetryFast(runAttemptCount: Int): Boolean =
 internal data class GpsBatchOutcome(
     val retryable: Boolean = false,
     val credentialRefused: Boolean = false,
+    // Um HTTP 4xx de lote nao identifica a recusa individual de cada ponto.
+    val unreceiptedBatchBlocked: Boolean = false,
 )
 
 /** Limita cada execução sem abandonar o saldo de uma fila offline. */
@@ -31,6 +33,7 @@ internal data class GpsDrainOutcome(
     val retryable: Boolean = false,
     val credentialRefused: Boolean = false,
     val remaining: Boolean = false,
+    val unreceiptedBatchBlocked: Boolean = false,
 )
 
 internal suspend fun drainGpsQueue(
@@ -41,8 +44,12 @@ internal suspend fun drainGpsQueue(
         val batch = db.gpsPoints().nextBatch(100)
         if (batch.isEmpty()) return GpsDrainOutcome()
         val outcome = applyGpsBatchResponse(db, batch, send(batch))
-        if (outcome.retryable || outcome.credentialRefused) {
-            return GpsDrainOutcome(outcome.retryable, outcome.credentialRefused)
+        if (outcome.retryable || outcome.credentialRefused || outcome.unreceiptedBatchBlocked) {
+            return GpsDrainOutcome(
+                retryable = outcome.retryable,
+                credentialRefused = outcome.credentialRefused,
+                unreceiptedBatchBlocked = outcome.unreceiptedBatchBlocked,
+            )
         }
     }
     return GpsDrainOutcome(remaining = db.gpsPoints().nextBatch(1).isNotEmpty())
@@ -115,9 +122,13 @@ internal suspend fun applyGpsBatchResponse(
             db.gpsPoints().markFailed(ids, r.reason)
             GpsBatchOutcome(credentialRefused = true)
         }
-        // O `.let` mantém a recusa terminal numa linha só, a forma que a guarda
-        // estrutural de `src/entregas/android` confere.
-        is ApiResult.Rejected -> db.gpsPoints().markRejected(ids, "servidor_rejeitou: ${r.reason}").let { GpsBatchOutcome() }
+        is ApiResult.Rejected -> {
+            // O 4xx pertence ao lote, nao a um point_id individual. Nunca
+            // marcar todos como rejeitados sem recibo completo por ponto.
+            // Nao gravar texto remoto livre no Room: pode conter segredo/PII.
+            db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_${r.status}")
+            GpsBatchOutcome(unreceiptedBatchBlocked = true)
+        }
     }
 }
 
@@ -389,6 +400,8 @@ class SyncWorker(
         }
         if (gpsDrain.retryable) retryable = true
         if (gpsDrain.credentialRefused) credencialRecusada = true
+        // Sem recibo individual, nenhum ponto recebe estado terminal.
+        val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked
 
         // 4. B5 — somente contagens agregadas; sem coordenada, payload ou PII.
         // Um 403 de autorização aqui também é aviso de credencial: revogação
@@ -444,7 +457,7 @@ class SyncWorker(
         }
         // Sem recibo por evento, dar Result.success() seria falso positivo.
         // O evento segue elegivel na fila Room com eventId/idempotencyKey intactos.
-        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || unconfirmedTermAck) return Result.failure()
+        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()
         return Result.success()
     }
 
