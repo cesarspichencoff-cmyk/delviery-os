@@ -1,7 +1,10 @@
 package br.com.tata.entregas
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -25,8 +28,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -174,12 +175,35 @@ class RiderGpsReviewInstrumentedTest {
             ?: throw AssertionError("LAB_GPS_REVIEW_SCREENSHOT_UNAVAILABLE")
         try {
             assertTrue("LAB_GPS_REVIEW_SCREENSHOT_EMPTY", shot.width > 100 && shot.height > 100)
-            val dest = File(context.getExternalFilesDir(null), "gps-review-hold-lab.png")
-            FileOutputStream(dest).use { output ->
-                assertTrue("LAB_GPS_REVIEW_SCREENSHOT_WRITE_FAILED",
-                    shot.compress(Bitmap.CompressFormat.PNG, 100, output))
+            // Shared Pictures in the DISPOSABLE emulator, not app-specific
+            // external files: Android test uninstall removes the latter before
+            // the CI runner has a chance to retrieve the evidence.
+            val resolver = context.contentResolver
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "gps-review-hold-lab.png")
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                put(MediaStore.MediaColumns.RELATIVE_PATH,
+                    Environment.DIRECTORY_PICTURES + "/DeliveryOSLab")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
-            assertTrue("LAB_GPS_REVIEW_SCREENSHOT_MISSING", dest.length() > 1_024)
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: throw AssertionError("LAB_GPS_REVIEW_MEDIASTORE_INSERT_FAILED")
+            try {
+                val output = resolver.openOutputStream(uri)
+                    ?: throw AssertionError("LAB_GPS_REVIEW_MEDIASTORE_STREAM_UNAVAILABLE")
+                output.use {
+                    assertTrue("LAB_GPS_REVIEW_SCREENSHOT_WRITE_FAILED",
+                        shot.compress(Bitmap.CompressFormat.PNG, 100, it))
+                }
+                val ready = ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                }
+                assertTrue("LAB_GPS_REVIEW_MEDIASTORE_COMMIT_FAILED",
+                    resolver.update(uri, ready, null, null) == 1)
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
+            }
         } finally {
             shot.recycle()
         }
