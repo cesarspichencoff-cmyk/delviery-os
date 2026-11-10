@@ -290,6 +290,19 @@ test('unrecognized source blocker cannot become a native joined production view'
  assert.equal(x.provenance.independent_source_attested,false);
  assert.equal(x.provenance.print_text_used,false);
 });
+test('a made-up service-state prefix cannot disguise missing native authority',()=>{
+ const e=fictionalShapeOnly(baseline());
+ e.blockers=['SERVICE_STATE_SOURCE_NOT_AUTHENTICATED'];
+ const j=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
+ assert.equal(j.status,'HOLD');
+ assert.equal(j.join,null);
+ assert.ok(j.reasons.includes('NATIVE_SOURCE_NON_SERVICE_BLOCKER'));
+ const classified=nativeJoin.classifyConsumerBlockersV1(
+  ['UPSTREAM_EVENT_NOT_READY','UPSTREAM_SERVICE_SERVICE_STATE_SOURCE_NOT_AUTHENTICATED'],
+  e.blockers);
+ assert.deepEqual(classified.legacy_service_state,[]);
+ assert.ok(classified.content.includes('UPSTREAM_EVENT_NOT_READY'));
+});
 test('legacy hours alone are not a source coverage failure in offline structural join',()=>{
  const e=fictionalShapeOnly(baseline());
  e.blockers=['SERVICE_STATE_EXPIRED_FOR_ORDER'];
