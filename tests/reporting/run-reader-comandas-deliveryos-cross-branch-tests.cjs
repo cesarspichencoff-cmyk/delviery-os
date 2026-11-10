@@ -281,6 +281,24 @@ test('real producer cannot be rescued by forged flags and self-recomputed hash',
  assert.ok(native.reasons.includes('NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED'));
  assert.equal(native.provenance.independent_source_attested,false);
 });
+test('unrecognized source blocker cannot become a native joined production view',()=>{
+ const e=fictionalShapeOnly(baseline());
+ e.blockers=['SOURCE_ROWSET_CALLER_NOT_AUTHENTICATED'];
+ const x=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
+ assert.equal(x.status,'HOLD');assert.equal(x.join,null);
+ assert.ok(x.reasons.includes('NATIVE_SOURCE_NON_SERVICE_BLOCKER'));
+ assert.equal(x.provenance.independent_source_attested,false);
+ assert.equal(x.provenance.print_text_used,false);
+});
+test('legacy hours alone are not a source coverage failure in offline structural join',()=>{
+ const e=fictionalShapeOnly(baseline());
+ e.blockers=['SERVICE_STATE_EXPIRED_FOR_ORDER'];
+ const x=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
+ assert.equal(x.status,'NATIVE_SAME_SNAPSHOT_JOINED');
+ assert.equal(x.provenance.independent_source_attested,false);
+ assert.equal(x.join.effects.print,false);
+ assert.equal(x.join.effects.persistence_write,false);
+});
 test('fictional bridge is only structurally ready, never an authenticated source',()=>{
  const e=fictionalShapeOnly(baseline()),d=pair(e).decision;
  const x=nativeJoin.joinNativeReaderSnapshotV1(e,d,{});
