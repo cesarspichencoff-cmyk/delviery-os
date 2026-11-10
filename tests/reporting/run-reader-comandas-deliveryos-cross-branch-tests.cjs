@@ -275,7 +275,11 @@ test('real producer cannot be rescued by forged flags and self-recomputed hash',
  e.snapshot_hash=consumer.snapshotHash(e.order);
  assert.equal(review(e).reason,'NATIVE_PRODUCER_DECLARED_CHILD_OR_SOURCE_BLOCKER');
  denied(pair(e));
- assert.equal(nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{}).provenance.independent_source_attested,false);
+ const native=nativeJoin.joinNativeReaderSnapshotV1(e,pair(e).decision,{});
+ assert.equal(native.status,'HOLD');
+ assert.equal(native.join,null);
+ assert.ok(native.reasons.includes('NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED'));
+ assert.equal(native.provenance.independent_source_attested,false);
 });
 test('fictional bridge is only structurally ready, never an authenticated source',()=>{
  const e=fictionalShapeOnly(baseline()),d=pair(e).decision;
