@@ -191,6 +191,9 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             put("approximate_only", gate.approximateOnly)
             put("term_ok", gate.termOk)
             put("pending_points", db.gpsPoints().pendingCount())
+            // Incluso em pending_points: nenhuma localizacao desaparece da fila
+            // so por ter sido retida para revisao. Contagem sem coordenadas.
+            put("gps_review_required_points", db.gpsPoints().reviewRequiredCount())
             put("rejected_points", db.gpsPoints().rejectedCount())
             put("pending_events", db.outbox().pendingCount())
             put("rejected_events", db.outbox().rejectedCount())
