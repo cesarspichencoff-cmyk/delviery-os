@@ -22,7 +22,8 @@ function inspect(w,p,h,t){
    check(final.includes('if (gpsDrain.remaining) return Result.retry()'),'GPS_BACKLOG_PRIORITY_REQUIRED');
    check(final.includes('if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))'),'RETRIES_MUST_BE_BOUNDED');
    check(!final.includes('return retryOrYield()'),'EARLY_SUCCESS_AFTER_RETRY_CAP');
-   const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || unconfirmedTermAck) return Result.failure()';
+   check(final.includes('val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked'),'GPS_HOLD_NOT_PROPAGATED');
+   const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()';
    check(final.includes(hold)&&final.indexOf(hold)<final.lastIndexOf('return Result.success()'),'FALSE_WORKER_SUCCESS');
  }
  const event=w.split('// 2. Eventos operacionais.')[1]?.split('// 3. Pontos de GPS.')[0];
@@ -49,6 +50,21 @@ function inspect(w,p,h,t){
  check(h.includes('eventIds.size == eventIds.toSet().size'),'DUPLICATE_IDS_NOT_REFUSED');
  check(h.includes('eventIds.all { it.isNotBlank() }'),'BLANK_IDS_NOT_REFUSED');
  check(!h.includes('db.outbox().markSent(')&&!h.includes('db.outbox().markRejected('),'ROOM_HELPER_TERMINAL_EFFECT');
+ const gps=w.split('// 3. Pontos de GPS.')[1]?.split('// 4. B5')[0];
+ check(typeof gps==='string','GPS_SECTION_MISSING');
+ if(gps){
+   check(gps.includes('val gpsDrain = drainGpsQueue('),'GPS_DRAIN_MISSING');
+   check(gps.includes('val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked'),'GPS_HOLD_UNBOUND');
+ }
+ const gpsApply=w.split('internal suspend fun applyGpsBatchResponse(')[1]?.split('class SyncWorker(')[0];
+ check(typeof gpsApply==='string','GPS_APPLY_MISSING');
+ if(gpsApply){
+   const reject=gpsApply.split('is ApiResult.Rejected ->')[1] || '';
+   check(reject.includes('db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_'),'GPS_BATCH_RECEIPT_UNATTESTED_LOSS');
+   check(reject.includes('GpsBatchOutcome(unreceiptedBatchBlocked = true)'),'GPS_BATCH_HOLD_MISSING');
+   check(!reject.includes('db.gpsPoints().markRejected(ids'),'GPS_WHOLE_BATCH_REJECTED');
+ }
+
  check(t.includes('Room.databaseBuilder(context, EntregasDatabase::class.java, dbName)'),'ROOM_TEST_NOT_FILE_BASED');
  check(t.includes('db.close()\n        db = open()\n        val saved = db.outbox().nextBatch(20).single()'),'ROOM_TEST_MISSING_REOPEN');
  check(t.includes('original.idempotencyKey'),'ROOM_TEST_NOT_CHECKING_IDEMPOTENCY');
@@ -72,8 +88,8 @@ function mutant(label,which,original,replacement,expected){
 }
 mutant('403 remains authorization',1,'httpStatus == 403 || delegationDenied','false','AUTH_CLASSIFICATION_MISSING');
 mutant('hold precedes worker success',0,
- 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || unconfirmedTermAck) return Result.failure()',
- 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked) return Result.success()',
+ 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()',
+ 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted) return Result.success()',
  'FALSE_WORKER_SUCCESS');
 mutant('worker actually calls Room helper',0,
  'when (retainUnreceiptedEventBatch(','when (unusedRejectionHelper(','ROOM_HELPER_NOT_CALLED');
@@ -118,5 +134,13 @@ mutant('GPS backlog keeps independent priority',0,
 mutant('per-event receipt path stays independent',0,
  'decideEventReceipt(','unsafeDecideEventReceipt(',
  'PER_EVENT_RECEIPT_REQUIRED');
+mutant('GPS HTTP 4xx cannot terminally reject an unreceipted batch',0,
+ 'db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_${r.status}")',
+ 'db.gpsPoints().markRejected(ids, "lote_gps_sem_recibo_http_${r.status}")',
+ 'GPS_BATCH_RECEIPT_UNATTESTED_LOSS');
+mutant('GPS unreceipted batch cannot make worker successful',0,
+ 'val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked',
+ 'val gpsBatchUnreceipted = false',
+ 'GPS_HOLD_NOT_PROPAGATED');
 console.log('ANDROID_EVENT_BATCH_HTTP_4XX_SOURCE_PASS '+total+'/'+total+
  ' NO_ANDROID_NO_ROOM_NO_NETWORK');
