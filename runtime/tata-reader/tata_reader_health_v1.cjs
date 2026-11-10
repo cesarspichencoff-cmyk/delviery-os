@@ -242,16 +242,6 @@ function evaluateTataReaderHealthV1(input) {
   ages.heartbeat_s = age(nowMs, heartbeatWrittenMs);
   ages.last_success_s = age(nowMs, lastSuccessMs);
 
-  // Same Reader supervisor: a completed batch cannot occur after the
-  // heartbeat that reports it. A future "last success" otherwise makes the
-  // stale check pass (negative age) and can yield a false HEALTHY. Do not
-  // turn contradictory clocks into progress evidence.
-  if (lastSuccessMs !== null &&
-      (lastSuccessMs > nowMs + 120000 ||
-       (heartbeatWrittenMs !== null && lastSuccessMs > heartbeatWrittenMs))) {
-    reasons.push("LAST_SUCCESS_CLOCK_INCONSISTENT");
-    return verdict("UNKNOWN", reasons, { ...extra(), thresholds: t });
-  }
   if (ages.heartbeat_s !== null && ages.heartbeat_s < -120) {
     // Heartbeat "do futuro" alem de dois minutos: relogio trocado. Nao se
     // decide saude sobre relogio que nao se pode confiar.
@@ -270,6 +260,15 @@ function evaluateTataReaderHealthV1(input) {
   if (ages.heartbeat_s === null || ages.heartbeat_s > t.heartbeat_silent_after_s) {
     reasons.push("SUPERVISOR_SILENT");
     return verdict("STALLED", reasons, { ...extra(), thresholds: t });
+  }
+  // Preserve the stronger STALLED/DOWN/FATAL evidence before examining an
+  // inconsistent last-success clock. A running, fresh heartbeat with an
+  // impossible success timestamp cannot become HEALTHY.
+  if (lastSuccessMs !== null &&
+      (lastSuccessMs > nowMs + 120000 ||
+       (heartbeatWrittenMs !== null && lastSuccessMs > heartbeatWrittenMs))) {
+    reasons.push("LAST_SUCCESS_CLOCK_INCONSISTENT");
+    return verdict("UNKNOWN", reasons, { ...extra(), thresholds: t });
   }
   if (!evidence.watcher_sha256_verified) reasons.push("WATCHER_SHA256_NOT_VERIFIED");
 
