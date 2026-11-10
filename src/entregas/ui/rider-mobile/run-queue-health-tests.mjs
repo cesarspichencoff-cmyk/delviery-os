@@ -196,6 +196,59 @@ test("live rider page uses same fail-closed identity selector",()=>{
   assert.match(ui,/return selectActiveRiderTrip\(snap, cap\.me\)/);
 });
 const html=readFileSync(new URL("index.html",dir),"utf8");
+const gpsReviewSource=readFileSync(new URL("gps-review-status.js",dir),"utf8");
+const {gpsReviewNotice}=await import("data:text/javascript;base64,"+
+  Buffer.from(gpsReviewSource).toString("base64"));
+test("GPS held count is displayed without claiming a server receipt",()=>{
+  for(const count of [1,3]){
+    const r=gpsReviewNotice({pending_points:count+2,gps_review_required_points:count});
+    assert.equal(r.kind,"held");
+    assert.equal(r.message.startsWith(String(count)+" registro"),true);
+    assert.match(r.message,/envio automático.*suspenso/);
+    assert.doesNotMatch(r.message,/entregue|confirmad|sincronizado|longitude|latitude/i);
+  }
+});
+test("GPS zero count clears notice, not a new server ACK",()=>{
+  assert.deepEqual(gpsReviewNotice({pending_points:2,gps_review_required_points:0}),
+    {kind:"clear",message:""});
+});
+test("older native Android bridge does not fabricate zero",()=>{
+  assert.deepEqual(gpsReviewNotice({pending_points:5}),
+    {kind:"unsupported",message:""});
+});
+test("malformed native GPS review count never appears as healthy",()=>{
+  const invalid=[null,"{}",false,[],{pending_points:1,gps_review_required_points:2},
+    {pending_points:1,gps_review_required_points:-1},
+    {pending_points:1,gps_review_required_points:1.2},
+    {pending_points:1,gps_review_required_points:"1"},
+    {pending_points:NaN,gps_review_required_points:1},
+    {pending_points:1,gps_review_required_points:Infinity},
+    {pending_points:0,gps_review_required_points:1},
+    {pending_points:1,gps_review_required_points:true}];
+  for(const value of invalid){
+    const r=gpsReviewNotice(value);
+    assert.equal(r.kind,"unavailable");
+    assert.match(r.message,/Não foi possível conferir/);
+  }
+});
+test("GPS aggregate notice omits coordinates, raw errors, and identities",()=>{
+  const raw={pending_points:10,gps_review_required_points:2,
+    latitude:12.3456,longitude:65.4321,last_error:"TOKEN_DE_TESTE",
+    payload:"<script>alert('x')</script>",point_id:"PRIVATE-001"};
+  const notice=gpsReviewNotice(raw);
+  assert.equal(notice.kind,"held");
+  for(const secret of ["12.3456","65.4321","TOKEN_DE_TESTE","<script>","PRIVATE-001"])
+    assert.equal(notice.message.includes(secret),false);
+});
+test("real rider page wires native GPS review, not network or manual release",()=>{
+  assert.match(html,/id="gpsReviewLine"[^>]*role="alert"[^>]*hidden/);
+  assert.match(ui,/import \{ gpsReviewNotice \} from "\.\/gps-review-status\.js"/);
+  assert.match(ui,/notice = gpsReviewNotice\(native\.status\(\)\)/);
+  assert.match(ui,/if \(line\.textContent !== notice\.message\) line\.textContent = notice\.message/);
+  assert.match(ui,/line\.hidden = !notice\.message/);
+  assert.match(ui,/function renderCapture\(t, d\) \{\s*renderGpsReview\(\)/);
+  assert.doesNotMatch(gpsReviewSource,/fetch\(|XMLHttpRequest|navigator\.geolocation|innerHTML/);
+});
 test("real rider page imports HOLD classifier and keeps native queue gate", () => {
   assert.match(ui,/from "\.\/queue-health\.js"/);
   assert.match(ui,/cap\.policies\.flags\.offline_queue_enabled === true/);
