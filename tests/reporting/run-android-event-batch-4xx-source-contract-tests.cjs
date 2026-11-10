@@ -23,7 +23,8 @@ function inspect(w,p,h,t){
    check(final.includes('if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))'),'RETRIES_MUST_BE_BOUNDED');
    check(!final.includes('return retryOrYield()'),'EARLY_SUCCESS_AFTER_RETRY_CAP');
    check(w.includes('val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked'),'GPS_HOLD_NOT_PROPAGATED');
-   const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()';
+   check(final.includes('val gpsReviewRequired = db.gpsPoints().reviewRequiredCount() > 0'),'GPS_REVIEW_COUNT_NOT_BOUND');
+   const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted ||\n            gpsReviewRequired || unconfirmedTermAck) return Result.failure()';
    check(final.includes(hold)&&final.indexOf(hold)<final.lastIndexOf('return Result.success()'),'FALSE_WORKER_SUCCESS');
  }
  const event=w.split('// 2. Eventos operacionais.')[1]?.split('// 3. Pontos de GPS.')[0];
@@ -91,9 +92,13 @@ function mutant(label,which,original,replacement,expected){
 }
 mutant('403 remains authorization',1,'httpStatus == 403 || delegationDenied','false','AUTH_CLASSIFICATION_MISSING');
 mutant('hold precedes worker success',0,
- 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()',
- 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted) return Result.success()',
+ 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted ||\n            gpsReviewRequired || unconfirmedTermAck) return Result.failure()',
+ 'if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted ||\\n            gpsReviewRequired || unconfirmedTermAck) return Result.success()',
  'FALSE_WORKER_SUCCESS');
+mutant('GPS review count cannot be disabled',0,
+ 'val gpsReviewRequired = db.gpsPoints().reviewRequiredCount() > 0',
+ 'val gpsReviewRequired = false',
+ 'GPS_REVIEW_COUNT_NOT_BOUND');
 mutant('worker actually calls Room helper',0,
  'when (retainUnreceiptedEventBatch(','when (unusedRejectionHelper(','ROOM_HELPER_NOT_CALLED');
 mutant('Room retains failed rather than terminal rejected',2,
