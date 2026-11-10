@@ -174,4 +174,59 @@ test('control-mode fixture still works but never becomes a live source',()=>{
  assert.equal(r.orders[0].source_mode,'control');
 });
 
+test('operational read clock must carry explicit zone and represent a real date',()=>{
+ const a=adapt(nativeRealFixture(),realScope);
+ assert.equal(a.state,'adapted');
+ const baseline={unitId:'ITAIM',sourceUnitId:'0001',
+   revisions:[a.revision],maxAgeMs:120000};
+ for(const bad of [
+  '2026-11-03T18:22:00', '2026-02-30T18:22:00Z',
+  '2026-11-03T18:22:00-00:00', '2026-11-03T18:22:00-03:60',
+  '2026-11-03T18:22:00+14:01', 'not a date',null
+ ]){
+  assert.throws(()=>project({...baseline,now:bad}),
+   /EXPLICIT_FRESHNESS_POLICY_REQUIRED/);
+ }
+ const ok=project({...baseline,now:'2026-11-03T21:22:00Z'});
+ assert.equal(ok.orders.length,1);
+ assert.equal(ok.orders[0].state,'observed');
+ assert.equal(ok.live_source_verified,false);
+});
+test('in-scope native revision cannot use ambiguous or impossible event clock',()=>{
+ const a=adapt(nativeRealFixture(),realScope);
+ assert.equal(a.state,'adapted');
+ const baseline={unitId:'ITAIM',sourceUnitId:'0001',
+   now:'2026-11-03T21:22:00Z',maxAgeMs:120000};
+ for(const bad of ['2026-11-03T18:21:00',
+  '2026-02-30T18:21:00Z', '2026-11-03T18:21:00-00:00',
+  '2026-11-03T18:21:00+14:01']){
+  const rev=copy(a.revision);rev.revision.source_observed_at=bad;
+  assert.throws(()=>project({...baseline,revisions:[rev]}),
+   /EXPLICIT_SOURCE_OBSERVATION_REQUIRED/);
+ }
+ for(const bad of ['2026-11-03T18:20:00','2026-02-30T18:20:00Z']){
+  const rev=copy(a.revision);rev.identity.opened_at=bad;
+  assert.throws(()=>project({...baseline,revisions:[rev]}),
+   /EXPLICIT_SOURCE_OPEN_TIME_REQUIRED/);
+ }
+});
+test('a bad current revision blocks whole Copiloto read instead of showing old record',()=>{
+ const a=adapt(nativeRealFixture(),realScope);
+ assert.equal(a.state,'adapted');
+ const good=copy(a.revision),bad=copy(a.revision);
+ bad.revision.source_observed_at='2026-11-03T18:22:00';
+ assert.throws(()=>project({unitId:'ITAIM',sourceUnitId:'0001',
+   revisions:[good,bad],now:'2026-11-03T21:22:00Z',maxAgeMs:120000}),
+   /EXPLICIT_SOURCE_OBSERVATION_REQUIRED/);
+ // Other unit is filtered before content decoding and never authenticates
+ // an Itaim revision.
+ const foreign=copy(a.revision);foreign.identity.unit_id='OTHER';
+ foreign.revision.source_observed_at='UNTRUSTED_TIME';
+ const ok=project({unitId:'ITAIM',sourceUnitId:'0001',
+   revisions:[good,foreign],now:'2026-11-03T21:22:00Z',maxAgeMs:120000});
+ assert.equal(ok.orders.length,1);
+ assert.equal(ok.live_source_verified,false);
+ assert.equal(ok.orders[0].ready_for_dispatch,null);
+});
+
 console.log(`COPILOT_READER_ADAPTER_PASS ${passed}`);
