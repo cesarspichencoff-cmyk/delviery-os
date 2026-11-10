@@ -73,10 +73,28 @@ for port in (5193, 8080):
 print("LAB_HTTPS_LOCAL_SERVERS_REACHABLE")
 PY
 
-bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
+if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=br.com.tata.entregas.RiderHttpsWorkerEndToEndInstrumentedTest \
   -Pentregas.baseUrl=https://10.0.2.2:5193 \
-  -Pentregas.platformUrl=https://10.0.2.2:8080
+  -Pentregas.platformUrl=https://10.0.2.2:8080; then
+  # Em falha, recolher somente CLASSE de excecao e frames Kotlin locais.
+  # Nunca imprimir logcat bruto, mensagens, tokens, GPS, HTTP ou payloads.
+  echo "LAB_HTTPS_INSTRUMENTATION_CRASH_CLASS_DIAGNOSTIC"
+  adb logcat -d -v brief -s AndroidRuntime:E 2>/dev/null | python3 -c '
+import re, sys
+seen=set()
+for line in sys.stdin:
+    kind=re.search(r"\b((?:java|kotlin|android|androidx)\.[A-Za-z0-9_.$]+(?:Exception|Error))\b",line)
+    frame=re.search(r"\bbr\.com\.tata\.entregas\.[A-Za-z0-9_.$]+\(([A-Za-z0-9_.$]+\.kt):(\d{1,5})\)",line)
+    label="EXCEPTION_CLASS "+kind.group(1) if kind else (
+        "LOCAL_FRAME "+frame.group(1)+":"+frame.group(2) if frame else None)
+    if label and label not in seen and len(seen)<20:
+        seen.add(label);print(label)
+print("DIAGNOSTIC_CLASSES_AND_SOURCE_LINES_ONLY "+str(len(seen)))
+' || true
+  # Preservar vermelho: diagnostico nao e reparo, e jamais vira sucesso.
+  exit 1
+fi
 
 grep -qx 'LAB_HTTPS_EVENT_BATCH_ATTEMPT=1' "$work/fixture.log"
 grep -qx 'LAB_HTTPS_EVENT_BATCH_ATTEMPT=2' "$work/fixture.log"
