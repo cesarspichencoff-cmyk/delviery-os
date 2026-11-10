@@ -538,10 +538,23 @@ jobs:
             }
             if(-not $found) { throw 'REMOTE_SHELL_GUI_CHILD_NOT_FOUND' }
             $guiPid=[uint32]$guiProcs[0].ProcessId
-            $nodeProcs=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$guiPid" |
-              Where-Object { $_.Name -eq 'node.exe' })
-            if($nodeProcs.Count -ne 1) { throw 'REMOTE_SHELL_NODE_CHILD_NOT_UNIQUE' }
-            $readerNodePid=[uint32]$nodeProcs[0].ProcessId
+            # The GUI can be visible to WMI a fraction before its Node child
+            # starts. A single immediate read would confuse NOT_YET_SPAWNED
+            # with a missing/duplicate child. Bound this readiness probe; never
+            # accept >1 child, never skip any of the ten visibility samples.
+            $readerNodePid=[uint32]0
+            for($i=0;$i -lt 12;$i++) {
+              $nodeProcs=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$guiPid" |
+                Where-Object { $_.Name -eq 'node.exe' })
+              if($nodeProcs.Count -gt 1) { throw 'REMOTE_SHELL_MULTIPLE_NODE_CHILDREN' }
+              if($nodeProcs.Count -eq 1) {
+                $readerNodePid=[uint32]$nodeProcs[0].ProcessId
+                break
+              }
+              if($controller.HasExited) { throw 'REMOTE_SHELL_CONTROLLER_EXITED_BEFORE_NODE' }
+              Start-Sleep -Milliseconds 40
+            }
+            if($readerNodePid -eq 0) { throw 'REMOTE_SHELL_NODE_CHILD_NOT_OBSERVED' }
             $sampled=0
             for($i=0;$i -lt 10;$i++) {
               if($controller.HasExited) { throw 'REMOTE_SHELL_ENDED_BEFORE_VISIBILITY_SAMPLES' }
