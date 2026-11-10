@@ -8,6 +8,7 @@ on:
       - .github/workflows/deliveryos-android-webview-emulator-lab.yml
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderWebViewBridgeInstrumentedTest.kt
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderRealScreenInstrumentedTest.kt
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderGpsReviewInstrumentedTest.kt
       - src/entregas/ui/rider-mobile/**
       - src/entregas/ui/shared/**
       - tools/entregas_pilot_server.ts
@@ -65,11 +66,24 @@ jobs:
           working-directory: android
           emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
           script: |
-            bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest,br.com.tata.entregas.RiderRealScreenInstrumentedTest -Pandroid.testInstrumentationRunnerArguments.webviewExpected=${{ matrix.expected }}
+            classes="br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest,br.com.tata.entregas.RiderRealScreenInstrumentedTest"
+            if [[ "${{ matrix.expected }}" == "modern" ]]; then
+              classes="$classes,br.com.tata.entregas.RiderGpsReviewInstrumentedTest"
+            fi
+            bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class="$classes" -Pandroid.testInstrumentationRunnerArguments.webviewExpected=${{ matrix.expected }}
+            if [[ "${{ matrix.expected }}" == "modern" ]]; then
+              mkdir -p ../tests/android/visual-proof
+              adb pull /sdcard/Android/data/br.com.tata.entregas.debug/files/gps-review-hold-lab.png ../tests/android/visual-proof/gps-review-hold-lab.png
+              test -s ../tests/android/visual-proof/gps-review-hold-lab.png
+              echo "GPS_REVIEW_REAL_WEBVIEW_SCREENSHOT_CAPTURED"
+            fi
       - name: Require executed instrumentation, not just Gradle success
         if: always()
+        env:
+          WEBVIEW_EXPECTED: ${{ matrix.expected }}
         run: |
           python3 - <<'PY'
+          import os
           from pathlib import Path
           import xml.etree.ElementTree as ET
           root = Path("android/app/build/outputs/androidTest-results/connected")
@@ -78,6 +92,8 @@ jobs:
               "RiderWebViewBridgeInstrumentedTest": 1,
               "RiderRealScreenInstrumentedTest": 1,
           }
+          if os.environ.get("WEBVIEW_EXPECTED") == "modern":
+              targets["RiderGpsReviewInstrumentedTest"] = 1
           counts = {name: 0 for name in targets}
           fail = err = 0
           for path in files:
@@ -101,6 +117,14 @@ jobs:
               raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
           print("ANDROID_WEBVIEW_MODERN_OR_LEGACY_GATE_PASS_NO_REMOTE_RECEIPT")
           PY
+      - name: Preserve fictional GPS HOLD screenshot (one day only)
+        if: ${{ matrix.expected == 'modern' && always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: deliveryos-rider-gps-hold-api34
+          path: tests/android/visual-proof/gps-review-hold-lab.png
+          retention-days: 1
+          if-no-files-found: error
 
   rider-pilot-csp-browser:
     runs-on: ubuntu-latest
