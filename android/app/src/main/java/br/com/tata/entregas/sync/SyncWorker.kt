@@ -465,9 +465,15 @@ class SyncWorker(
         if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount)) {
             return Result.retry()
         }
+        // Lotes GPS 409/422 retidos apos tres tentativas totais nao voltam
+        // automaticamente ao proximo envio. O WorkManager nao pode anunciar
+        // sucesso enquanto houver ponto aguardando revisao, mesmo quando
+        // a fila de GPS elegivel estiver vazia.
+        val gpsReviewRequired = db.gpsPoints().reviewRequiredCount() > 0
         // Sem recibo por evento, dar Result.success() seria falso positivo.
         // O evento segue elegivel na fila Room com eventId/idempotencyKey intactos.
-        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()
+        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted ||
+            gpsReviewRequired || unconfirmedTermAck) return Result.failure()
         return Result.success()
     }
 
