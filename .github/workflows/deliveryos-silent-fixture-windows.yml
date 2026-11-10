@@ -40,6 +40,8 @@ on:
       - tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
       - labs/reporting/host-shadow-loop-lab-recovery-v1.cjs
       - tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
+      - labs/reporting/projector_source_preflight_lab_v1.cjs
+      - tests/reporting/run-projector-source-preflight-lab-tests.cjs
       - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
       - tests/tata-reader/run-real-feed-boundary-tests.cjs
       - tests/tata-reader/run-file-feed-tests.cjs
@@ -128,6 +130,9 @@ jobs:
           # Existing Reader health must recognize actual shadow consumer V2.
           node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
           node tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
+          # Reproduce only the installed source metadata signature on disposable files.
+          # This test NEVER authorizes skipping the field projector.
+          node tests/reporting/run-projector-source-preflight-lab-tests.cjs
           node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
           node tests/tata-reader/run-real-feed-boundary-tests.cjs
           node tests/tata-reader/run-file-feed-tests.cjs
