@@ -182,6 +182,27 @@ check("a prior heartbeat with no timezone cannot fabricate a failure delta",()=>
  assert.equal(r.evidence.failure_delta_since_baseline,null);
  assert.equal(r.verdict,"HEALTHY");
 });
+check("future success cannot impersonate recent Reader progress",()=>{
+ const h=heartbeat();h.last_success_at=stamp(-5*60*1000);
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"UNKNOWN");
+ assert(r.reasons.includes("LAST_SUCCESS_CLOCK_INCONSISTENT"));
+ assert(r.ages_seconds.last_success_s<0);
+});
+check("a success newer than its own heartbeat is contradictory",()=>{
+ const h=heartbeat();h.last_success_at=stamp(500);
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"UNKNOWN");
+ assert(r.reasons.includes("LAST_SUCCESS_CLOCK_INCONSISTENT"));
+ assert.equal(r.ages_seconds.heartbeat_s,1);
+});
+check("a success at heartbeat time is allowed, without claiming source truth",()=>{
+ const h=heartbeat();h.last_success_at=h.written_at;
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"HEALTHY");
+ assert.equal(r.ages_seconds.heartbeat_s,r.ages_seconds.last_success_s);
+ assert.equal(Object.hasOwn(r,"ordersPublishable"),false);
+});
 check("valid explicit offset has the same progress semantics as UTC",()=>{
  const h=heartbeat();h.written_at="2026-11-05T00:39:59.000-03:00";
  h.last_success_at="2026-11-05T00:39:45.000-03:00";
