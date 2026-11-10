@@ -326,8 +326,13 @@ function scheduleQueuePoll() {
       .join("|");
     const changed = sig !== queueSeen;
     queueSeen = sig;
-    if (changed) refresh().catch(() => render());
-    else render();
+    if (changed) {
+      // O evento ja mudou no Room. A confirmacao LOCAL nao pode esperar
+      // o snapshot HTTP, que pode demorar ou falhar mesmo com a fila legivel.
+      // Este aviso so vem da transicao exacta validada pela ponte nativa.
+      renderDeviceQueue(activeTrip());
+      refresh().catch(() => render());
+    } else render();
   }, 1500);
 }
 
