@@ -1,8 +1,10 @@
 package br.com.tata.entregas
 
+import android.Manifest
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.view.ViewGroup
@@ -171,6 +173,12 @@ class RiderGpsReviewInstrumentedTest {
         assertTrue("LAB_GPS_NOTICE_NOT_VISIBLE_AFTER_SCROLL",
             until(scenario, visibleNoticeScript()))
         // Screenshot is confined to this throwaway emulator. Lab identities only.
+        // UI-level audit: DOM visibility alone does not prove that a system
+        // permission dialog is not obscuring the entire screenshot.
+        val foreground = instrumentation.uiAutomation.rootInActiveWindow
+            ?.packageName?.toString()
+        assertEquals("LAB_GPS_REVIEW_APP_WINDOW_NOT_FOREGROUND",
+            context.packageName, foreground)
         val shot = instrumentation.uiAutomation.takeScreenshot()
             ?: throw AssertionError("LAB_GPS_REVIEW_SCREENSHOT_UNAVAILABLE")
         try {
@@ -211,6 +219,13 @@ class RiderGpsReviewInstrumentedTest {
 
     @Test fun heldGpsIsVisibleAfterThreeUnreceiptedResponsesAndActivityRelaunch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        // Lab-only grant prevents the Android 13+ notification permission
+        // modal from hiding the real WebView alert in the screenshot. This
+        // never changes production permission handling or user consent.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            instrumentation.uiAutomation.grantRuntimePermission(
+                context.packageName, Manifest.permission.POST_NOTIFICATIONS)
+        }
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
         val db = EntregasDatabase.get(context)
         val original = point(heldId, 1001L)
