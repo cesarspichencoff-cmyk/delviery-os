@@ -239,6 +239,91 @@ jobs:
           if ($observed -ne 10) { throw 'INVENTORY_VISIBILITY_SAMPLES_MISSING' }
           Write-Host 'GESTOR_DEDICATED_NATIVE_WINDOW_INVENTORY_PASS 27/27 PLUS_HOLD_RECEIPT LAB_ONLY NO_CONSOLE_SUBSYSTEM'
           Write-Host 'GESTOR_DEDICATED_NATIVE_NO_WINDOW_RUNTIME_PASS 10/10 NO_VISIBLE_HWND NO_FOCUS_CHANGE LAB_ONLY'
+      - name: Verify Windows kernel mutex ownership and abandoned HOLD (LAB ONLY)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA' -or
+              $env:GITHUB_ACTIONS -ne 'true' -or
+              $env:GITHUB_REPOSITORY -ne 'cesarspichencoff-cmyk/delviery-os')
+            { throw 'KERNEL_MUTEX_LAB_HOST_FORBIDDEN' }
+          $src=(Resolve-Path -LiteralPath 'labs/reporting/projector_kernel_mutex_windows_lab_v1.cs').Path
+          $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          if(!(Test-Path -LiteralPath $csc)) { throw 'KERNEL_MUTEX_CSC_UNAVAILABLE' }
+          $exe=Join-Path $env:RUNNER_TEMP 'ProjectorKernelMutexWindowsLab.exe'
+          & $csc /nologo /target:winexe /main:DeliveryOS.ReportingLab.ProjectorKernelMutexWindowsLab "/out:$exe" $src
+          if($LASTEXITCODE -ne 0){throw 'KERNEL_MUTEX_COMPILE_FAILED'}
+          $bytes=[IO.File]::ReadAllBytes($exe)
+          $pe=[BitConverter]::ToInt32($bytes,0x3c)
+          if([BitConverter]::ToUInt16($bytes,$pe+24+68) -ne 2) {
+            throw 'KERNEL_MUTEX_GUI_SUBSYSTEM_REQUIRED'
+          }
+          $lab=Join-Path $env:RUNNER_TEMP 'deliveryos-kernel-mutex-lab'
+          if(Test-Path -LiteralPath $lab){throw 'KERNEL_MUTEX_NOT_DISPOSABLE'}
+          [void][IO.Directory]::CreateDirectory($lab)
+          [IO.File]::WriteAllText((Join-Path $lab 'LAB_ONLY.txt'),
+            'DELIVERYOS_PROJECTOR_KERNEL_MUTEX_LAB_ONLY_V1')
+          $labArg='"--lab-dir='+$lab+'"'
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class ProjectorMutexWindowAudit {
+            public delegate bool Visitor(IntPtr hwnd, IntPtr ignored);
+            [DllImport("user32.dll")] static extern bool EnumWindows(Visitor cb, IntPtr arg);
+            [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+            [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            public static int Visible(uint target) {
+              int n=0; EnumWindows((h,arg) => {
+                uint owner; GetWindowThreadProcessId(h,out owner);
+                if(owner==target && IsWindowVisible(h)) n++;
+                return true; },IntPtr.Zero);
+              return n;
+            }
+          }
+          '@
+          $before=[ProjectorMutexWindowAudit]::GetForegroundWindow()
+          $holder=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=hold') -PassThru
+          try {
+            $ready=$false
+            for($i=0;$i -lt 80;$i++){
+              if(Test-Path -LiteralPath (Join-Path $lab 'hold-acquired.lab')){
+                $ready=$true;break
+              }
+              if($holder.HasExited){throw 'KERNEL_MUTEX_HOLDER_EARLY_EXIT'}
+              Start-Sleep -Milliseconds 45
+            }
+            if(-not $ready){throw 'KERNEL_MUTEX_HOLDER_NOT_ACQUIRED'}
+            $busy=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
+            if($busy.ExitCode -ne 32){throw ('KERNEL_MUTEX_SECOND_OWNER_NOT_BLOCKED_'+$busy.ExitCode)}
+            for($i=0;$i -lt 10;$i++){
+              if($holder.HasExited){throw 'KERNEL_MUTEX_HOLDER_ENDED_BEFORE_VISIBILITY'}
+              if([ProjectorMutexWindowAudit]::Visible([uint32]$holder.Id) -ne 0){
+                throw 'KERNEL_MUTEX_VISIBLE_WINDOW'
+              }
+              if([ProjectorMutexWindowAudit]::GetForegroundWindow() -ne $before){
+                throw 'KERNEL_MUTEX_FOCUS_CHANGED'
+              }
+              Start-Sleep -Milliseconds 55
+            }
+            if(-not $holder.WaitForExit(8500)){throw 'KERNEL_MUTEX_HOLDER_TIMEOUT'}
+            if($holder.ExitCode -ne 0){throw ('KERNEL_MUTEX_HOLDER_FAILED_'+$holder.ExitCode)}
+            $fresh=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
+            if($fresh.ExitCode -ne 0){throw 'KERNEL_MUTEX_NORMAL_RELEASE_NOT_RECOVERED'}
+            $abandoned=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=abandon') -Wait -PassThru
+            if($abandoned.ExitCode -ne 34){throw ('KERNEL_MUTEX_ABANDONED_NOT_HELD_'+$abandoned.ExitCode)}
+            $after=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
+            if($after.ExitCode -ne 0){throw 'KERNEL_MUTEX_ABANDONED_HANDLE_NOT_RELEASED'}
+            $invalid=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=production') -Wait -PassThru
+            if($invalid.ExitCode -ne 77){throw 'KERNEL_MUTEX_UNAUTHORIZED_MODE_ACCEPTED'}
+            if([ProjectorMutexWindowAudit]::GetForegroundWindow() -ne $before){
+              throw 'KERNEL_MUTEX_FOCUS_CHANGED_ON_EXIT'
+            }
+            Write-Host 'TATA_REPORTING_KERNEL_MUTEX_WINDOWS_PASS 6/6 HOLD_ON_ABANDON NO_CROSS_OWNER NO_VISIBLE_WINDOW LAB_ONLY'
+          } finally {
+            if(-not $holder.HasExited){try{$holder.Kill()}catch{}}
+            Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction SilentlyContinue
+          }
       - name: Verify one-shot N2/N3 receipt with no-console Windows GUI parent and Node child
         shell: pwsh
         run: |
