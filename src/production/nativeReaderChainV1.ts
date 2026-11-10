@@ -145,10 +145,17 @@ export function joinNativeReaderSnapshotV1(
   // the event without acquiring the missing item/component/note source data.
   if (!Array.isArray(event.blockers)) {
     reasons.add("NATIVE_SOURCE_BLOCKERS_INVALID");
-  } else if (event.blockers.some((b) =>
-      b === "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ" ||
-      b === "READ_COMPLETENESS_NOT_INDEPENDENTLY_ATTESTED")) {
-    reasons.add("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED");
+  } else {
+    // Only the previously understood legacy service-hours notices can be
+    // ignored by a structural, NON-OPERATIONAL preview. Any new, malformed
+    // or unauthenticated-source blocker must fail closed here too, not just
+    // in an outer consumer or a later paper/sequence gate.
+    if (event.blockers.some((b) =>
+        b === "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ" ||
+        b === "READ_COMPLETENESS_NOT_INDEPENDENTLY_ATTESTED"))
+      reasons.add("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED");
+    if (event.blockers.some((b) => typeof b !== "string" || !SERVICE_STATE.test(b)))
+      reasons.add("NATIVE_SOURCE_NON_SERVICE_BLOCKER");
   }
   const key = [o.CDFILIAL, o.CDLOJA, o.NRVENDAREST, o.NRCOMANDA].join("|");
   if (event.order_key !== key || decision.order_key !== key || !/^[a-f0-9]{64}$/i.test(clean(event.snapshot_hash)) ||
