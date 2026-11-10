@@ -31,7 +31,16 @@ export interface ClassifiedConsumerBlockersV1 {
 
 // The installed V1 watcher also reports this exact legacy-hours reason.
 // Neither this label nor a reported shift can authorize a destination or print.
-const SERVICE_STATE = /^(?:SERVICE_STATE_[A-Z_]+|SERVICE_HOURS_OUTSIDE_WINDOW)$/;
+// Only service-hour codes demonstrated in the installed legacy path may
+// influence offline previews. A prefix or a new SERVICE_STATE_* spelling
+// must NEVER turn an unknown source blocker into a service-hours notice.
+const LEGACY_SERVICE_REASONS = new Set([
+  "SERVICE_STATE_DATE_MISMATCH_ORDER_DATE",
+  "SERVICE_STATE_EXPIRED_FOR_ORDER",
+  "SERVICE_HOURS_OUTSIDE_WINDOW",
+]);
+const SERVICE_STATE = { test: (value: unknown): boolean =>
+  typeof value === "string" && LEGACY_SERVICE_REASONS.has(value) };
 
 /**
  * Split V2 consumer blockers by the layer they belong to. Anything not
@@ -53,10 +62,13 @@ export function classifyConsumerBlockersV1(
     let m: RegExpExecArray | null;
     if (b === "UPSTREAM_EVENT_NOT_READY") {
       (upstreamOnlyService ? out.legacy_service_state : out.content).push(b);
-    } else if ((b === "UPSTREAM_SERVICE_HOURS_OUTSIDE_WINDOW" &&
-      upstreamOnlyService && eventBlockers.includes("SERVICE_HOURS_OUTSIDE_WINDOW")) ||
-      /^UPSTREAM_SERVICE_SERVICE_STATE_[A-Z_]+$/.test(b) ||
-      (/^UPSTREAM_SERVICE_STATE_[A-Z_]+$/.test(b) && upstreamOnlyService)) {
+    } else if (upstreamOnlyService && eventBlockers.some((sourceReason) =>
+      b === "UPSTREAM_" + sourceReason ||
+      (sourceReason.startsWith("SERVICE_STATE_") &&
+       b === "UPSTREAM_SERVICE_" + sourceReason))) {
+      // The consumer's alleged service reason must match an explicit,
+      // pre-approved service blocker on the SAME event. Do not accept a
+      // free-standing "UPSTREAM_SERVICE_SERVICE_STATE_*" prefix.
       out.legacy_service_state.push(b);
     } else if ((m = /^(?:SUSHI([12])_DUAL_PRODUCTION_ROLE_UNPROVEN|SERVICE_REQUIRED_SUSHI([12]))_(\d\.\d{2}\.\d{2}\.\d{3}\.\d{2})$/.exec(b))) {
       out.paired_destination.push({ blocker: b, pair: (m[1] || m[2]) === "1" ? "SUSHI_1" : "SUSHI_2", canonical_code: m[3] });
