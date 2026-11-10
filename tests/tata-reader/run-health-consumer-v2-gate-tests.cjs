@@ -147,6 +147,50 @@ check("no baseline keeps legacy health semantics without historical claim",()=>{
   assert.equal(r.evidence.failure_delta_since_baseline,null);
 });
 
+// Reader health is a source-progress diagnostic, not a verified order feed.
+// Never let a host-local or normalized invalid date turn an old snapshot green.
+check("heartbeat without timezone cannot certify recent progress",()=>{
+ const h=heartbeat();h.written_at=stamp(1000).replace(/Z$/,"");
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"STALLED");
+ assert.equal(r.ages_seconds.heartbeat_s,null);
+ assert(r.reasons.includes("SUPERVISOR_SILENT"));
+});
+check("calendar-invalid heartbeat cannot certify recent progress",()=>{
+ const h=heartbeat();h.written_at="2026-02-30T03:39:59.000Z";
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"STALLED");
+ assert(r.reasons.includes("SUPERVISOR_SILENT"));
+});
+check("missing timezone on last success cannot grant healthy status",()=>{
+ const h=heartbeat();h.last_success_at=stamp(15000).replace(/Z$/,"");
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"DEGRADED");
+ assert.equal(r.ages_seconds.last_success_s,null);
+ assert(r.reasons.includes("STARTING_NO_BATCH_COMPLETED"));
+});
+check("invalid legacy consumer status date is not fresh",()=>{
+ const c=consumer();c.updated_at="2026-02-30T03:39:58Z";
+ const r=evaluate(c);
+ assert.equal(r.verdict,"DEGRADED");
+ assert(r.reasons.includes("CONSUMER_STATUS_TIMESTAMP_INVALID"));
+});
+check("a prior heartbeat with no timezone cannot fabricate a failure delta",()=>{
+ const {h,before}=pair();
+ before.written_at=stamp(300000).replace(/Z$/,"");
+ const r=compare(h,before);
+ assert.equal(r.evidence.failure_delta_since_baseline,null);
+ assert.equal(r.verdict,"HEALTHY");
+});
+check("valid explicit offset has the same progress semantics as UTC",()=>{
+ const h=heartbeat();h.written_at="2026-11-05T00:39:59.000-03:00";
+ h.last_success_at="2026-11-05T00:39:45.000-03:00";
+ const r=evaluate(consumer(),h);
+ assert.equal(r.verdict,"HEALTHY");
+ assert.equal(r.ages_seconds.heartbeat_s,1);
+ assert.equal(r.ages_seconds.last_success_s,15);
+});
+
 // CLI bridge: only existing *synthetic* files in an isolated temporary folder.
 // Fail immediately if someone accidentally invokes these tests on the POS host.
 const fs=require("node:fs"),os=require("node:os"),path=require("node:path");
@@ -218,6 +262,20 @@ check("CLI refuses to classify replayed sequence as historical trend",()=>{
   const r=runCli({seq:210});
   assert.equal(r.verdict,"HEALTHY");
   assert.equal(r.evidence.failure_delta_since_baseline,null);
+});
+
+check("CLI refuses non-offset and impossible review clock before reading any files",()=>{
+ if(os.hostname().toUpperCase()==="CAIXA_MOOCA")
+   throw Error("CASHIER_HOST_FORBIDDEN");
+ for(const bad of ["2026-11-05T03:40:00","2026-02-30T03:40:00Z",
+   "2026-11-05T03:40:00-00:00"]){
+  const proc=spawnSync(process.execPath,[healthCli,"--now",bad],
+   {encoding:"utf8",timeout:5000,maxBuffer:100000});
+  assert.equal(proc.error,undefined,String(proc.error));
+  assert.equal(proc.status,64);
+  assert.equal(proc.stdout,"");
+  assert.match(proc.stderr,/NOW_INVALID/);
+ }
 });
 
 // Grounded in the installed V2 consumer status shape: RUNNING and updated_at.
