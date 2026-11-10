@@ -188,7 +188,7 @@ function legenda(vm) {
           p.explicacao,
         )}</p>`;
   return `<div class="org-legenda">
-    <span class="org-legenda__kicker">${esc(vm.modo)}</span>
+    <span class="org-legenda__kicker">${esc(vm.sem_leitura_operacional ? "sem leitura" : vm.modo)}</span>
     <!--
       H1, e nao <p>. A pagina nao tinha nenhum h1 (medido em M1B-R2 §D): a
       estrutura comecava em h2, e leitor de tela e navegacao por cabecalho
