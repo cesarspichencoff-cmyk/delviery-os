@@ -60,9 +60,12 @@ function inspect(w,p,h,t){
  check(typeof gpsApply==='string','GPS_APPLY_MISSING');
  if(gpsApply){
    const reject=gpsApply.split('is ApiResult.Rejected ->')[1] || '';
-   check(reject.includes('db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_'),'GPS_BATCH_RECEIPT_UNATTESTED_LOSS');
-   check(reject.includes('GpsBatchOutcome(unreceiptedBatchBlocked = true)'),'GPS_BATCH_HOLD_MISSING');
-   check(!reject.includes('db.gpsPoints().markRejected(ids'),'GPS_WHOLE_BATCH_REJECTED');
+   const terminal=reject.split('if (r.status == 400 || r.status == 403) {')[1]?.split('} else {')[0];
+   const uncertain=reject.split('} else {')[1] || '';
+   check(terminal?.includes('db.gpsPoints().markRejected(ids'),'GPS_TERMINAL_400_403_POLICY_MISSING');
+   check(uncertain.includes('db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_'),'GPS_BATCH_RECEIPT_UNATTESTED_LOSS');
+   check(uncertain.includes('GpsBatchOutcome(unreceiptedBatchBlocked = true)'),'GPS_BATCH_HOLD_MISSING');
+   check(!uncertain.includes('db.gpsPoints().markRejected(ids'),'GPS_WHOLE_BATCH_REJECTED');
  }
 
  check(t.includes('Room.databaseBuilder(context, EntregasDatabase::class.java, dbName)'),'ROOM_TEST_NOT_FILE_BASED');
