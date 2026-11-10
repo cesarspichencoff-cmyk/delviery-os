@@ -864,6 +864,8 @@ async function initCapture() {
       : null;
     cap.appVersion = typeof caps.app_version === "string" ? caps.app_version : null;
     renderDeviceIdentity();
+    // O aviso vem do Room local e nao deve esperar sessao/termo via rede.
+    renderGpsReview();
 
     const sess = await api("/api/session");
     cap.me = sess.actor || null;
@@ -968,7 +970,11 @@ $("btnLocationSettings").addEventListener("click", () => {
 });
 document.addEventListener("visibilitychange", () => {
   // Volta do mapa ou das configurações: relê a viagem na hora.
-  if (native && document.visibilityState === "visible") refresh().catch(() => {});
+  if (native && document.visibilityState === "visible") {
+    // Volta do mapa/ajustes tambem relê pontos retidos sem aguardar API.
+    renderGpsReview();
+    refresh().catch(() => {});
+  }
 });
 
 if (native) {
