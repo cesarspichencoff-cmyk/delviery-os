@@ -47,6 +47,7 @@ test('real feed without any healthy source cannot invent a live pulse',()=>{
 test('Home renders missing source as a distinct non-live operational state',()=>{
  assert.match(home,/vm\.sem_leitura_operacional \? "sem-fonte" : "vivo"/);
  assert.match(home,/sem leitura operacional confiavel/);
+ assert.match(home,/vm\.sem_leitura_operacional \? "sem leitura" : vm\.modo/);
  assert.match(home,/vm\.sem_leitura_operacional \? "nenhuma fonte operacional confiavel"/);
  assert.match(css,/\.org-topo__vida\[data-estado="sem-fonte"\] \.org-topo__ponto\s*\{[^}]*animation: none/s);
 });
