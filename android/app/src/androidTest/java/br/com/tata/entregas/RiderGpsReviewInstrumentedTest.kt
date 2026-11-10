@@ -224,7 +224,7 @@ class RiderGpsReviewInstrumentedTest {
             assertTrue("LAB_REAL_WEBVIEW_GPS_HOLD_NOT_RENDERED", until(scenario, visibleNoticeScript()))
             assertEquals("true", eval(scenario, """
                 (function(){
-                  var s=window.EntregasNative?.status?.();
+                  var s=window.EntregasNative && JSON.parse(window.EntregasNative.status());
                   return !!s && s.gps_review_required_points===1 && s.pending_points===1 &&
                     document.getElementById('gpsReviewLine').textContent.indexOf('LAB_REMOTE_SECRET') < 0 &&
                     document.getElementById('gpsReviewLine').querySelector('button')===null;
@@ -260,7 +260,7 @@ class RiderGpsReviewInstrumentedTest {
                 until(reopened, visibleNoticeScript()))
             assertEquals("true", eval(reopened, """
                 (function(){
-                  var s=window.EntregasNative?.status?.();
+                  var s=window.EntregasNative && JSON.parse(window.EntregasNative.status());
                   return !!s && s.gps_review_required_points===1 && s.pending_points===1 &&
                     document.getElementById('gpsReviewLine').getAttribute('role')==='alert' &&
                     document.getElementById('gpsReviewLine').querySelector('button')===null;
