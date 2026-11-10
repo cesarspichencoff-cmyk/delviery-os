@@ -144,6 +144,34 @@ test("cause: the existing V6.8 path can never project a real revision (service f
  assert.ok(r.reasons.includes("EVENT_OR_DECISION_NOT_READY_FOR_SHADOW"));
  assert.ok(r.reasons.includes("EVENT_DECISION_SERVICE_PROOF_MISMATCH"));
 });
+test("native child table veto survives forged scan-complete and ready flags in structural join",()=>{
+ const fake=structuredClone(real);
+ fake.order.observation_scan_complete=true;
+ fake.blockers=["NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ"];
+ fake.ready_for_downstream_shadow=true;
+ fake.snapshot_hash=snapshotHash(fake.order);
+ const d=structuredClone(decision);
+ d.snapshot_hash=fake.snapshot_hash;
+ const j=N.joinNativeReaderSnapshotV1(fake,d,{});
+ assert.equal(j.status,"HOLD");
+ assert.equal(j.join,null);
+ assert.ok(j.reasons.includes("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED"));
+ assert.equal(j.provenance.independent_source_attested,false);
+});
+test("missing coverage veto vector cannot be interpreted as clean native source",()=>{
+ const fake=structuredClone(real);
+ fake.blockers=null;
+ const j=N.joinNativeReaderSnapshotV1(fake,decision,{});
+ assert.equal(j.status,"HOLD");
+ assert.equal(j.join,null);
+ assert.ok(j.reasons.includes("NATIVE_SOURCE_BLOCKERS_INVALID"));
+});
+test("legacy service expiry alone is not a native item-source proof failure",()=>{
+ const j=N.joinNativeReaderSnapshotV1(real,decision,{});
+ assert.ok(!j.reasons.includes("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED"));
+ assert.ok(!j.reasons.includes("NATIVE_SOURCE_BLOCKERS_INVALID"));
+ assert.equal(j.provenance.independent_source_attested,false);
+});
 const out=chain(real,decision);
 test("native chain: real revision -> three virtual views, dinner routes Sushi 1 to DELIVERY SUSHI 1",()=>{
  assert.equal(out.layers.L1.status,"NATIVE_REVISION_CONSISTENT");
