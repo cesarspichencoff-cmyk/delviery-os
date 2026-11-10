@@ -243,8 +243,34 @@ class RiderRealScreenInstrumentedTest {
                 """!document.getElementById('confirmedLine').hidden"""))
             assertEquals("true", eval(scenario,
                 """document.getElementById('btnSyncNow').click();true"""))
-            assertTrue("Request must be shown as pending, never server ACK",
-                until(scenario, """document.getElementById('syncRequestLine').textContent.includes('Aguardando confirmação do servidor')"""))
+            val requested = until(scenario,
+                """document.getElementById('syncRequestLine').textContent.includes('Aguardando confirmação do servidor')""")
+            if (!requested) {
+                // Lab-only booleans. Never export order, Room payload, tokens,
+                // arbitrary DOM text or the native bridge capability.
+                val probe = eval(scenario, """
+                    JSON.stringify({
+                      nativePresent:!!window.EntregasNative,
+                      nativeSync:typeof window.EntregasNative?.syncNow==='function',
+                      queueVisible:!!document.getElementById('pendingLine') &&
+                        !document.getElementById('pendingLine').hidden,
+                      requestVisible:!!document.getElementById('syncRequestLine') &&
+                        !document.getElementById('syncRequestLine').hidden,
+                      requestAwaiting:!!document.getElementById('syncRequestLine') &&
+                        document.getElementById('syncRequestLine').textContent.indexOf('Aguardando confirmação do servidor')>=0,
+                      requestUncertain:!!document.getElementById('syncRequestLine') &&
+                        document.getElementById('syncRequestLine').textContent.indexOf('Não foi possível comprovar')>=0,
+                      buttonVisible:!!document.getElementById('btnSyncNow') &&
+                        !document.getElementById('btnSyncNow').hidden,
+                      buttonDisabled:!!document.getElementById('btnSyncNow') &&
+                        document.getElementById('btnSyncNow').disabled,
+                      nativeRequestError:!!document.getElementById('errorBox') &&
+                        document.getElementById('errorBox').textContent.indexOf('Não foi possível solicitar')>=0
+                    })
+                """.trimIndent())
+                val errors = synchronized(consoleKinds) { consoleKinds.toList().sorted() }
+                throw AssertionError("RIDER_SYNC_REQUEST_NOT_SHOWN probe=$probe consoleKinds=$errors")
+            }
             val jobs = WorkManager.getInstance(context)
                 .getWorkInfosForUniqueWork(SyncWorker.UNIQUE_NOW)
                 .get(15, TimeUnit.SECONDS)
