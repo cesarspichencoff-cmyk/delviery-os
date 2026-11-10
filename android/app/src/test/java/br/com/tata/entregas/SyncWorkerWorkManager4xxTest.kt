@@ -281,6 +281,67 @@ class SyncWorkerWorkManager4xxTest {
         assertEquals(0, db.gpsPoints().rejectedCount())
     }
 
+    @Test fun gpsRepeated422RequiresReviewAndNewPointsStillSynchronize() = runBlocking {
+        val original = point("gps-review-422", 1)
+        db.gpsPoints().insert(original)
+        gpsResult = ApiResult.Rejected("texto_remoto_nao_gravar", 422)
+
+        // O terceiro envio total sem recibo fecha a porta automatica.
+        repeat(3) { assertTrue(invoke(2) is ListenableWorker.Result.Failure) }
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        assertEquals(1, db.gpsPoints().reviewRequiredCount())
+        assertTrue(db.gpsPoints().nextBatch(20).isEmpty())
+
+        db.close()
+        db = open()
+        val held = db.gpsPoints().reviewRequiredPoints(20).single()
+        assertEquals(original.pointId, held.pointId)
+        assertEquals(original.idempotencyKey, held.idempotencyKey)
+        assertEquals(original.sequenceLocal, held.sequenceLocal)
+        assertEquals("failed", held.syncState)
+        assertEquals(3, held.attempts)
+        assertEquals("lote_gps_sem_recibo_http_422", held.lastError)
+        assertEquals(1, db.gpsPoints().pendingCount())
+        assertEquals(0, db.gpsPoints().rejectedCount())
+
+        // Nem o agendamento futuro nem a resposta tardia sem recibo desfazem HOLD.
+        assertTrue(invoke(2) is ListenableWorker.Result.Failure)
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        db.gpsPoints().markFailed(listOf(original.pointId), "timeout_atrasado")
+        assertEquals("lote_gps_sem_recibo_http_422",
+            db.gpsPoints().reviewRequiredPoints(20).single().lastError)
+        assertEquals(3, db.gpsPoints().reviewRequiredPoints(20).single().attempts)
+
+        // Um ponto novo nao fica preso atras da amostra sob revisao.
+        db.gpsPoints().insert(point("gps-novo-apos-hold", 2))
+        gpsResult = ApiResult.Ok(JSONObject()
+            .put("accepted", 1).put("duplicate", 0).put("rejected", 0))
+        assertTrue(invoke(2) is ListenableWorker.Result.Failure)
+        verify(exactly = 4) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        assertEquals(1, db.gpsPoints().reviewRequiredCount())
+        assertEquals(1, db.gpsPoints().pendingCount())
+        assertTrue(db.gpsPoints().nextBatch(20).isEmpty())
+    }
+
+    @Test fun gpsRepeated409StopsAutomaticSendButKeepsIdentity() = runBlocking {
+        val original = point("gps-review-409", 1)
+        db.gpsPoints().insert(original)
+        gpsResult = ApiResult.Rejected("conflict-without-per-point-receipt", 409)
+        repeat(3) { assertTrue(invoke(2) is ListenableWorker.Result.Failure) }
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        db.close()
+        db = open()
+        val held = db.gpsPoints().reviewRequiredPoints(20).single()
+        assertEquals(original.pointId, held.pointId)
+        assertEquals(original.idempotencyKey, held.idempotencyKey)
+        assertEquals(3, held.attempts)
+        assertEquals("lote_gps_sem_recibo_http_409", held.lastError)
+        assertTrue(db.gpsPoints().nextBatch(20).isEmpty())
+        assertEquals(1, db.gpsPoints().pendingCount())
+        assertTrue(invoke(2) is ListenableWorker.Result.Failure)
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+    }
+
     @Test fun term422WithoutPerAckReceiptFailsAndSurvivesSqliteRestart() = runBlocking {
         val ack = termAck("term-422")
         db.termAcks().insert(ack)
