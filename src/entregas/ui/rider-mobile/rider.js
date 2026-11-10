@@ -180,9 +180,14 @@ function queueOnDevice(key, build) {
     blockQueueActionsImmediately();
     throw new Error(queueHoldMessage(queueHold));
   }
-  // Uma nova intencao reinicia a confirmacao observada da acao anterior.
+  // O recibo acima confirma a gravacao LOCAL desta identidade no Room.
+  // Releia a fila imediatamente: o motoboy precisa ver "guardada" no mesmo
+  // toque, sem aguardar timer/rede. A leitura continua fail-closed e jamais
+  // afirma que o servidor recebeu o evento.
   lastConfirmedNotice = "";
   manualSyncRequested = false;
+  renderDeviceQueue(activeTrip());
+  if (queueHold) blockQueueActionsImmediately();
   scheduleQueuePoll();
   return { result: { ok: true, queued: true } };
 }
