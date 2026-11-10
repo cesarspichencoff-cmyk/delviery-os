@@ -237,9 +237,21 @@ function evaluateTataReaderHealthV1(input) {
   evidence.last_batch_outcome = isObj(hb.last_batch) ? hb.last_batch.outcome ?? null : null;
   evidence.last_error_class = isObj(hb.last_batch) ? hb.last_batch.error_class ?? null : null;
   evidence.watcher_sha256_verified = hb.watcher?.sha256_verified === true;
-  ages.heartbeat_s = age(nowMs, parseInstant(hb.written_at));
-  ages.last_success_s = age(nowMs, parseInstant(hb.last_success_at));
+  const heartbeatWrittenMs = parseInstant(hb.written_at);
+  const lastSuccessMs = parseInstant(hb.last_success_at);
+  ages.heartbeat_s = age(nowMs, heartbeatWrittenMs);
+  ages.last_success_s = age(nowMs, lastSuccessMs);
 
+  // Same Reader supervisor: a completed batch cannot occur after the
+  // heartbeat that reports it. A future "last success" otherwise makes the
+  // stale check pass (negative age) and can yield a false HEALTHY. Do not
+  // turn contradictory clocks into progress evidence.
+  if (lastSuccessMs !== null &&
+      (lastSuccessMs > nowMs + 120000 ||
+       (heartbeatWrittenMs !== null && lastSuccessMs > heartbeatWrittenMs))) {
+    reasons.push("LAST_SUCCESS_CLOCK_INCONSISTENT");
+    return verdict("UNKNOWN", reasons, { ...extra(), thresholds: t });
+  }
   if (ages.heartbeat_s !== null && ages.heartbeat_s < -120) {
     // Heartbeat "do futuro" alem de dois minutos: relogio trocado. Nao se
     // decide saude sobre relogio que nao se pode confiar.
