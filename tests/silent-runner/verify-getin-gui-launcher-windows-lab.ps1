@@ -76,7 +76,12 @@ try {
    Check ([GetInWindowAudit]::Visible($childId) -eq 0) 'NODE_CHILD_NO_VISIBLE_HWND'
    Start-Sleep -Milliseconds 65
   }
-  if(-not $parent.WaitForExit(6000)){throw 'GUI_PARENT_TIMEOUT'}
+  # The GUI parent independently bounds its fictional Node child at 9000ms,
+  # then kills it and reports nonzero on timeout. This OUTER test deadline must
+  # be greater than that internal deadline; otherwise CI can kill a healthy
+  # parent before its own fail-closed check completes under pipe stress.
+  # Do NOT relax the parent's 9000ms deadline or the ExitCode == 0 assertion.
+  if(-not $parent.WaitForExit(12000)){throw 'GUI_PARENT_TIMEOUT'}
   Check ($parent.ExitCode -eq 0) 'GUI_PARENT_SUCCESS'
   Check ([GetInWindowAudit]::GetForegroundWindow() -eq $focus) 'FOCUS_STABLE'
   $receipt=Get-Content -LiteralPath (Join-Path $lab 'launcher.receipt.json') -Raw
