@@ -239,6 +239,48 @@ class SyncWorkerWorkManager4xxTest {
         assertEquals("failed", remaining.syncState)
         assertEquals(0, db.outbox().rejectedCount())
     }
+    @Test fun gpsBatch422WithoutPointReceiptsPreservesRoomAfterRestart() = runBlocking {
+        val first = point("gps-unreceipted-a", 1)
+        val second = point("gps-unreceipted-b", 2)
+        db.gpsPoints().insert(first)
+        db.gpsPoints().insert(second)
+        // O texto remoto nao pode ser gravado: pode carregar dados particulares.
+        gpsResult = ApiResult.Rejected("segredo_remoto_nao_persistir", 422)
+        assertTrue(invoke(2) is ListenableWorker.Result.Failure)
+        verify(exactly = 1) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        db.close()
+        db = open()
+        val rows = db.gpsPoints().nextBatch(20)
+        assertEquals(listOf(first.pointId, second.pointId), rows.map { it.pointId })
+        assertEquals(
+            listOf(first.idempotencyKey, second.idempotencyKey),
+            rows.map { it.idempotencyKey },
+        )
+        assertTrue(rows.all { it.syncState == "failed" && it.attempts == 1 })
+        assertTrue(rows.all { it.lastError == "lote_gps_sem_recibo_http_422" })
+        assertEquals(2, db.gpsPoints().pendingCount())
+        assertEquals(0, db.gpsPoints().rejectedCount())
+    }
+
+    @Test fun gpsBatch409RepeatedNeverCreatesTerminalPointWithoutReceipt() = runBlocking {
+        val original = point("gps-409-repeated", 1)
+        db.gpsPoints().insert(original)
+        gpsResult = ApiResult.Rejected("lote_sem_recibo", 409)
+        repeat(2) { assertTrue(invoke(2) is ListenableWorker.Result.Failure) }
+        db.close()
+        db = open()
+        val rows = db.gpsPoints().nextBatch(20)
+        assertEquals(1, rows.size)
+        val saved = rows.single()
+        assertEquals(original.pointId, saved.pointId)
+        assertEquals(original.idempotencyKey, saved.idempotencyKey)
+        assertEquals(original.latitude, saved.latitude, 0.0)
+        assertEquals(original.longitude, saved.longitude, 0.0)
+        assertEquals("failed", saved.syncState)
+        assertEquals(2, saved.attempts)
+        assertEquals(0, db.gpsPoints().rejectedCount())
+    }
+
     @Test fun term422WithoutPerAckReceiptFailsAndSurvivesSqliteRestart() = runBlocking {
         val ack = termAck("term-422")
         db.termAcks().insert(ack)
