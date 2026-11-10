@@ -17,6 +17,7 @@ namespace DeliveryOS.ReportingLab
         const string LabDir = "deliveryos-kernel-mutex-lab";
         const int Busy = 32;
         const int AbandonedHold = 34;
+        const int IntegrityReviewRequired = 35;
         const int Forbidden = 77;
         const int InternalError = 78;
 
@@ -75,6 +76,42 @@ namespace DeliveryOS.ReportingLab
                 BitConverter.ToString(digest, 0, 12).Replace("-", "");
         }
 
+        // Persisted fail-closed barrier: the Windows kernel only reports
+        // abandonment to the FIRST waiter. Later clean acquisitions must
+        // still refuse work until integrity has been reviewed explicitly.
+        // There is intentionally NO automatic clearance API here.
+        static string ReviewMarker(string root)
+        {
+            return Path.Combine(root, "integrity-review-required.hold");
+        }
+
+        static bool RequiresReview(string root)
+        {
+            try
+            {
+                File.GetAttributes(ReviewMarker(root));
+                return true;
+            }
+            catch (FileNotFoundException) { return false; }
+            catch (DirectoryNotFoundException) { return true; }
+            // Permission errors and unexpected failures propagate to HOLD.
+        }
+
+        static void PersistReviewRequired(string root)
+        {
+            if (RequiresReview(root)) return;
+            byte[] data = Encoding.ASCII.GetBytes("INTEGRITY_REVIEW_REQUIRED\n");
+            // CreateNew prevents overwriting a prior hold. A partial marker
+            // must also block subsequent attempts; do not accept empty markers.
+            using (FileStream stream = new FileStream(ReviewMarker(root),
+                FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096,
+                FileOptions.WriteThrough))
+            {
+                stream.Write(data, 0, data.Length);
+                stream.Flush(true);
+            }
+        }
+
         static int Run(string[] args)
         {
             string mode;
@@ -84,6 +121,7 @@ namespace DeliveryOS.ReportingLab
             {
                 if (mode == "abandon")
                 {
+                    if (RequiresReview(root)) return IntegrityReviewRequired;
                     // A live handle stays in this process while a worker
                     // thread abandons ownership: the next WaitOne MUST HOLD.
                     bool workerOwned = false;
@@ -103,9 +141,10 @@ namespace DeliveryOS.ReportingLab
                     }
                     catch (AbandonedMutexException)
                     {
-                        // WaitOne already assigned ownership of the abandoned
-                        // mutex. Release it, but NEVER perform any protected work.
-                        mutex.ReleaseMutex();
+                        // WaitOne transferred ownership to the observing
+                        // thread; record an enduring HOLD BEFORE release.
+                        try { PersistReviewRequired(root); }
+                        finally { mutex.ReleaseMutex(); }
                         return AbandonedHold;
                     }
                 }
@@ -117,9 +156,11 @@ namespace DeliveryOS.ReportingLab
                     catch (AbandonedMutexException)
                     {
                         owned = true;
+                        PersistReviewRequired(root);
                         return AbandonedHold;
                     }
                     if (!owned) return Busy;
+                    if (RequiresReview(root)) return IntegrityReviewRequired;
                     if (mode == "hold")
                     {
                         File.WriteAllText(Path.Combine(root, "hold-acquired.lab"), "HELD\n");

@@ -312,14 +312,23 @@ jobs:
             if($fresh.ExitCode -ne 0){throw 'KERNEL_MUTEX_NORMAL_RELEASE_NOT_RECOVERED'}
             $abandoned=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=abandon') -Wait -PassThru
             if($abandoned.ExitCode -ne 34){throw ('KERNEL_MUTEX_ABANDONED_NOT_HELD_'+$abandoned.ExitCode)}
+            $marker=(Join-Path $lab 'integrity-review-required.hold')
+            if(!(Test-Path -LiteralPath $marker)){throw 'KERNEL_MUTEX_RECOVERY_HOLD_NOT_DURABLE'}
+            $markerText=[IO.File]::ReadAllText($marker)
+            if($markerText.Trim() -ne 'INTEGRITY_REVIEW_REQUIRED'){
+              throw 'KERNEL_MUTEX_RECOVERY_HOLD_INVALID'
+            }
             $after=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
-            if($after.ExitCode -ne 0){throw 'KERNEL_MUTEX_ABANDONED_HANDLE_NOT_RELEASED'}
+            if($after.ExitCode -ne 35){throw 'KERNEL_MUTEX_ABANDONED_RELEASE_WAS_NOT_LATCHED'}
+            $another=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=hold') -Wait -PassThru
+            if($another.ExitCode -ne 35){throw 'KERNEL_MUTEX_SECOND_ATTEMPT_BYPASSED_REVIEW'}
+            if(!(Test-Path -LiteralPath $marker)){throw 'KERNEL_MUTEX_REVIEW_HOLD_REMOVED'}
             $invalid=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=production') -Wait -PassThru
             if($invalid.ExitCode -ne 77){throw 'KERNEL_MUTEX_UNAUTHORIZED_MODE_ACCEPTED'}
             if([ProjectorMutexWindowAudit]::GetForegroundWindow() -ne $before){
               throw 'KERNEL_MUTEX_FOCUS_CHANGED_ON_EXIT'
             }
-            Write-Host 'TATA_REPORTING_KERNEL_MUTEX_WINDOWS_PASS 6/6 HOLD_ON_ABANDON NO_CROSS_OWNER NO_VISIBLE_WINDOW LAB_ONLY'
+            Write-Host 'TATA_REPORTING_KERNEL_MUTEX_WINDOWS_PASS 8/8 ABANDON_PERSISTENT_HOLD NO_CROSS_OWNER NO_VISIBLE_WINDOW LAB_ONLY'
           } finally {
             if(-not $holder.HasExited){try{$holder.Kill()}catch{}}
             Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction SilentlyContinue
