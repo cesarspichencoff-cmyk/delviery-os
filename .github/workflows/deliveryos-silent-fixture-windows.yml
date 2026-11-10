@@ -17,6 +17,7 @@ on:
       - runtime/reporting/native_reader_shadow_replay_v1.cjs
       - tests/reporting/run-native-reader-shadow-replay-tests.cjs
       - tests/reporting/run-pr135-native-child-observation-l1-contract.cjs
+      - tests/reporting/run-reader-comandas-deliveryos-cross-branch-tests.cjs
       - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
       - runtime/reporting/native_reader_existing_event_binding_v1.cjs
       - tests/reporting/run-native-reader-existing-event-binding-tests.cjs
@@ -120,6 +121,7 @@ jobs:
           node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
           node tests/reporting/run-native-reader-shadow-replay-tests.cjs
           node tests/reporting/run-pr135-native-child-observation-l1-contract.cjs "$GITHUB_WORKSPACE/pr135-source"
+          node tests/reporting/run-reader-comandas-deliveryos-cross-branch-tests.cjs "$GITHUB_WORKSPACE/pr135-source"
           node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
           node tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
           node tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
