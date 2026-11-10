@@ -100,10 +100,14 @@ internal suspend fun applyGpsBatchResponse(
                     if (decision.sentIds.isNotEmpty()) {
                         db.gpsPoints().markSent(decision.sentIds)
                     }
-                    decision.rejected.groupBy { it.reason }.forEach { (reason, rejectedPoints) ->
+                    // O recibo identifica o ponto recusado, mas o "motivo"
+                    // remoto e texto nao confiavel e pode conter PII/segredo.
+                    // Persistir APENAS um codigo local estavel no Room; a
+                    // auditoria remota exige consulta autenticada separada.
+                    if (decision.rejected.isNotEmpty()) {
                         db.gpsPoints().markRejected(
-                            rejectedPoints.map { it.pointId },
-                            "servidor_rejeitou: $reason",
+                            decision.rejected.map { it.pointId },
+                            "gps_recusa_individual_recebida",
                         )
                     }
                     GpsBatchOutcome()
