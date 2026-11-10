@@ -123,11 +123,21 @@ internal suspend fun applyGpsBatchResponse(
             GpsBatchOutcome(credentialRefused = true)
         }
         is ApiResult.Rejected -> {
-            // O 4xx pertence ao lote, nao a um point_id individual. Nunca
-            // marcar todos como rejeitados sem recibo completo por ponto.
-            // Nao gravar texto remoto livre no Room: pode conter segredo/PII.
-            db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_${r.status}")
-            GpsBatchOutcome(unreceiptedBatchBlocked = true)
+            // Compatibilidade com contrato existente: HTTP 400 invalida o
+            // lote e HTTP 403 NAO classificado como recusa da credencial e
+            // definitivo. A autenticacao 403 ja foi separada acima por
+            // asPlatformDataResult e preserva os pontos para renovacao.
+            // Nao copiar motivo remoto livre para o banco local.
+            if (r.status == 400 || r.status == 403) {
+                db.gpsPoints().markRejected(ids, "lote_gps_rejeitado_http_${r.status}")
+                GpsBatchOutcome()
+            } else {
+                // 409/422 e demais 4xx sem recibo por point_id nao provam
+                // quais pontos foram aceitos ou recusados individualmente.
+                // Preservar IDs e chaves, sinalizar HOLD, sem sucesso falso.
+                db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_${r.status}")
+                GpsBatchOutcome(unreceiptedBatchBlocked = true)
+            }
         }
     }
 }
