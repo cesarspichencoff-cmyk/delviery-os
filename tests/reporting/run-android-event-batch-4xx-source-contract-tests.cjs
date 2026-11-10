@@ -60,6 +60,9 @@ function inspect(w,p,h,t){
  const gpsApply=w.split('internal suspend fun applyGpsBatchResponse(')[1]?.split('class SyncWorker(')[0];
  check(typeof gpsApply==='string','GPS_APPLY_MISSING');
  if(gpsApply){
+   const receipt200=gpsApply.split('is ApiResult.Ok ->')[1]?.split('is ApiResult.Retryable ->')[0] || '';
+   check(receipt200.includes('"gps_recusa_individual_recebida"'),'GPS_REMOTE_REASON_NOT_SANITIZED');
+   check(!receipt200.includes('servidor_rejeitou: $reason')&&!receipt200.includes('groupBy { it.reason }'),'GPS_REMOTE_FREE_TEXT_LEAK');
    const reject=gpsApply.split('is ApiResult.Rejected ->')[1] || '';
    const terminal=reject.split('if (r.status == 400 || r.status == 403) {')[1]?.split('} else {')[0];
    const uncertain=reject.split('} else {')[1] || '';
@@ -150,5 +153,9 @@ mutant('GPS unreceipted batch cannot make worker successful',0,
  'val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked',
  'val gpsBatchUnreceipted = false',
  'GPS_HOLD_NOT_PROPAGATED');
+mutant('GPS rejection text from remote cannot persist into Room',0,
+ '"gps_recusa_individual_recebida"',
+ '"servidor_rejeitou: ${decision.rejected.first().reason}"',
+ 'GPS_REMOTE_REASON_NOT_SANITIZED');
 console.log('ANDROID_EVENT_BATCH_HTTP_4XX_SOURCE_PASS '+total+'/'+total+
  ' NO_ANDROID_NO_ROOM_NO_NETWORK');
