@@ -190,6 +190,8 @@ export interface HomeVM {
    * verdadeira, a home diz QUAL fonte falta em vez de mostrar tudo verde.
    */
   readonly degradado: boolean;
+  /** Leitura real sem qualquer fonte saudavel: nao equivale a "ao vivo". */
+  readonly sem_leitura_operacional: boolean;
   readonly selos: readonly Selo[];
   readonly pulso: Campo<number>;
   readonly ambientes: readonly AmbienteVM[];
@@ -677,8 +679,12 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
           : "calmo";
 
   const emAndamento = l.pedidos.length;
+  const existeFonteSaudavel = l.fontes.some((f) => f.estado === "saudavel");
+  // Pedidos residuais em uma leitura "real" sem fonte saudavel nao
+  // autenticam um pulso atual. Fixtures seguem declaradas como demonstracao.
+  const semLeituraOperacional = l.procedencia === "real" && !existeFonteSaudavel;
   const pulso: Campo<number> =
-    l.pedidos.length > 0 || l.fontes.some((f) => f.estado === "saudavel")
+    existeFonteSaudavel || (!semLeituraOperacional && l.pedidos.length > 0)
       ? observado(emAndamento, l.procedencia, l.observado_em)
       : ausente(
           "indisponivel",
@@ -694,7 +700,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   );
 
   const titulo =
-    modo === "foco"
+    semLeituraOperacional ? "Sem leitura" : modo === "foco"
       ? "Foco"
       : modo === "ambiente"
         ? "Ambiente"
@@ -702,6 +708,8 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
 
   const apoio = degradado
     ? "Parte das fontes parou de responder. O que segue vale so para o que ainda e observado."
+    : semLeituraOperacional
+      ? "Nao ha fonte operacional saudavel. Nao e possivel afirmar que os pedidos ou a operacao estejam em dia."
     : modo === "foco"
       ? "Uma situacao pede decisao agora. As demais continuam visiveis abaixo."
       : modo === "ambiente"
@@ -744,6 +752,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     observado_em: l.observado_em,
     demonstracao: l.procedencia !== "real",
     degradado,
+    sem_leitura_operacional: semLeituraOperacional,
     selos:
       l.procedencia === "real"
         ? [selo("real")]
