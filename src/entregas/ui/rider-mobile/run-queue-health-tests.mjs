@@ -191,6 +191,21 @@ test("completed, foreign and malformed trips are never selected",()=>{
     trips:[trip("done","rider-2","entregue"),foreign,null]}),null);
 });
 const ui=readFileSync(new URL("rider.js",dir),"utf8");
+test("native Room receipt repaints pending action immediately without server ACK", () => {
+  const a=ui.indexOf("function queueOnDevice(key, build) {");
+  const b=ui.indexOf("function perform(key, build)",a);
+  assert(a>=0&&b>a);
+  const code=ui.slice(a,b);
+  const receipt=code.indexOf("if (!verifiedNativeQueueReceipt(r, event_id))");
+  const paint=code.lastIndexOf("renderDeviceQueue(activeTrip());");
+  const timer=code.indexOf("scheduleQueuePoll();",paint);
+  assert(receipt>=0&&paint>receipt&&timer>paint,
+    "immediate Room repaint must follow the verified local receipt, before timer");
+  assert.match(code.slice(paint,timer),/if \(queueHold\) blockQueueActionsImmediately\(\);/);
+  assert.match(code,/lastConfirmedNotice = "";/);
+  assert.doesNotMatch(code.slice(paint,timer),/confirmedLine\.textContent\s*=/);
+});
+
 test("live rider page uses same fail-closed identity selector",()=>{
   assert.match(ui,/import \{ selectActiveRiderTrip \} from "\.\/rider-trip-scope\.js"/);
   assert.match(ui,/return selectActiveRiderTrip\(snap, cap\.me\)/);
