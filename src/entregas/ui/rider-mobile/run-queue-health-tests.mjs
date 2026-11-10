@@ -247,6 +247,9 @@ test("real rider page wires native GPS review, not network or manual release",()
   assert.match(ui,/if \(line\.textContent !== notice\.message\) line\.textContent = notice\.message/);
   assert.match(ui,/line\.hidden = !notice\.message/);
   assert.match(ui,/function renderCapture\(t, d\) \{\s*renderGpsReview\(\)/);
+  // O estado nativo deve ser lido ANTES de /api/session, inclusive offline.
+  assert.match(ui,/renderDeviceIdentity\(\);\s*\/\/[^\n]*\n\s*renderGpsReview\(\);\s*const sess = await api\("\/api\/session"\)/);
+  assert.match(ui,/document\.visibilityState === "visible"[\s\S]*?renderGpsReview\(\);\s*refresh\(\)/);
   assert.doesNotMatch(gpsReviewSource,/fetch\(|XMLHttpRequest|navigator\.geolocation|innerHTML/);
 });
 test("real rider page imports HOLD classifier and keeps native queue gate", () => {
