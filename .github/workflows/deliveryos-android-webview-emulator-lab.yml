@@ -9,6 +9,7 @@ on:
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderWebViewBridgeInstrumentedTest.kt
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderRealScreenInstrumentedTest.kt
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderGpsReviewInstrumentedTest.kt
+      - tests/android/run_webview_lab.sh
       - src/entregas/ui/rider-mobile/**
       - src/entregas/ui/shared/**
       - tools/entregas_pilot_server.ts
@@ -65,18 +66,7 @@ jobs:
           arch: x86_64
           working-directory: android
           emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
-          script: |
-            classes="br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest,br.com.tata.entregas.RiderRealScreenInstrumentedTest"
-            if [[ "${{ matrix.expected }}" == "modern" ]]; then
-              classes="$classes,br.com.tata.entregas.RiderGpsReviewInstrumentedTest"
-            fi
-            bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class="$classes" -Pandroid.testInstrumentationRunnerArguments.webviewExpected=${{ matrix.expected }}
-            if [[ "${{ matrix.expected }}" == "modern" ]]; then
-              mkdir -p ../tests/android/visual-proof
-              adb pull /sdcard/Android/data/br.com.tata.entregas.debug/files/gps-review-hold-lab.png ../tests/android/visual-proof/gps-review-hold-lab.png
-              test -s ../tests/android/visual-proof/gps-review-hold-lab.png
-              echo "GPS_REVIEW_REAL_WEBVIEW_SCREENSHOT_CAPTURED"
-            fi
+          script: bash ../tests/android/run_webview_lab.sh ${{ matrix.expected }}
       - name: Require executed instrumentation, not just Gradle success
         if: always()
         env:
