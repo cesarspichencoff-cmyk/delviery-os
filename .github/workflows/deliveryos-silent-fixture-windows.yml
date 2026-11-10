@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: cesarspichencoff-cmyk/delviery-os
-          ref: 9a384652b3b61c4fa3b6240869dcc7fd5e9db975
+          ref: 098ed99a8e47d6a392c538faefd96702e7647aad
           path: pr135-source
           persist-credentials: false
       - name: Compile pinned PR135 producer dependencies on disposable runner
