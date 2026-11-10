@@ -22,7 +22,7 @@ function inspect(w,p,h,t){
    check(final.includes('if (gpsDrain.remaining) return Result.retry()'),'GPS_BACKLOG_PRIORITY_REQUIRED');
    check(final.includes('if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount))'),'RETRIES_MUST_BE_BOUNDED');
    check(!final.includes('return retryOrYield()'),'EARLY_SUCCESS_AFTER_RETRY_CAP');
-   check(final.includes('val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked'),'GPS_HOLD_NOT_PROPAGATED');
+   check(w.includes('val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked'),'GPS_HOLD_NOT_PROPAGATED');
    const hold='if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted || unconfirmedTermAck) return Result.failure()';
    check(final.includes(hold)&&final.indexOf(hold)<final.lastIndexOf('return Result.success()'),'FALSE_WORKER_SUCCESS');
  }
