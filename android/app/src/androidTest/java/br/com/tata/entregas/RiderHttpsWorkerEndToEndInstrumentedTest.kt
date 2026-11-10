@@ -204,9 +204,27 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             assertEquals("rider-lab", command.getJSONObject("actor").getString("actor_id"))
             assertEquals("motoboy_interno",
                 command.getJSONObject("actor").getString("role"))
-            assertTrue("Actual rider UI did not display locally queued action",
-                until(scenario, """!document.getElementById('pendingLine').hidden &&
-                    document.getElementById('pendingLine').textContent.includes('guardada')"""))
+            if (!until(scenario, """!document.getElementById('pendingLine').hidden &&
+                    document.getElementById('pendingLine').textContent.includes('guardada')""")) {
+                // Sanitized DOM flags only: no command payload, event IDs,
+                // coordinates, raw error text or server response. Preserve
+                // the failing assertion instead of making the lab green.
+                val flags = eval(scenario, """
+                    (function(){
+                      var p=document.getElementById('pendingLine');
+                      var h=document.getElementById('queueHoldLine');
+                      var e=document.getElementById('errorBox');
+                      return JSON.stringify({
+                        pending_visible:!!p&&!p.hidden,
+                        local_notice:!!p&&p.textContent.includes('guardada'),
+                        queue_hold:!!h&&!h.hidden,
+                        ui_error:!!e&&!!e.textContent.trim(),
+                        page_visible:document.visibilityState==='visible'
+                      });
+                    })()
+                """.trimIndent())
+                throw AssertionError("LAB_REAL_RIDER_LOCAL_QUEUE_DISPLAY_NOT_PROVEN " + flags)
+            }
             assertEquals("false", eval(scenario,
                 """!document.getElementById('confirmedLine').hidden"""))
             val originalEntity = staged
