@@ -773,7 +773,8 @@ function resto(vm) {
           criticos > 0 ? `, ${criticos} em pressao` : ""
         }`,
     `${semFonte} do catalogo sem fonte`,
-    degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
+    vm.sem_leitura_operacional ? "nenhuma fonte operacional confiavel" :
+      degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 
   return `<section class="org-resto">
