@@ -15,6 +15,7 @@ import {
   DECLINE_CONSEQUENCE,
 } from "./consent-screen.js";
 import { createGpsStatus, renderGpsStatus } from "./gps-status.js";
+import { gpsReviewNotice } from "./gps-review-status.js";
 import {
   detectNativeBridge,
   listenNative,
@@ -753,7 +754,25 @@ function syncCapture(t) {
   schedulePoll();
 }
 
+/** Aviso de fila GPS retida, separado da captura e das acoes de entrega.
+ * Nem HTTP 200, nem painel demo, nem erro remoto viram prova aqui: so Room
+ * agregado via status() nativo. Uma ponte antiga nao inventa zero. */
+function renderGpsReview() {
+  const line = $("gpsReviewLine");
+  if (!line) return;
+  let notice;
+  try {
+    notice = gpsReviewNotice(native.status());
+  } catch {
+    notice = gpsReviewNotice(null);
+  }
+  // Evita anunciar o mesmo alerta repetidamente a leitores de tela.
+  if (line.textContent !== notice.message) line.textContent = notice.message;
+  line.hidden = !notice.message;
+}
+
 function renderCapture(t, d) {
+  renderGpsReview();
   if (cap.runningTrip && d.capture && cap.runningTrip === d.trip_id) {
     gps.start(d.trip_id); // idempotente para a mesma viagem
     gps.setOffReason(null);
