@@ -139,6 +139,14 @@ export function joinNativeReaderSnapshotV1(
   if (!event || !decision || !o || !Array.isArray(o.items) || !Array.isArray(decision.items)) {
     reasons.add("NATIVE_PAIR_STRUCTURE_INVALID"); return hold();
   }
+  // Structural same-snapshot joining may disregard an expired legacy shift,
+  // but it must NEVER turn an explicit missing native child-table scan into
+  // ready production content. A caller can set scan_complete=true and rehash
+  // the event without acquiring the missing item/component/note source data.
+  if (event.blockers.some((b) => b === "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ" ||
+      b === "READ_COMPLETENESS_NOT_INDEPENDENTLY_ATTESTED")) {
+    reasons.add("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED");
+  }
   const key = [o.CDFILIAL, o.CDLOJA, o.NRVENDAREST, o.NRCOMANDA].join("|");
   if (event.order_key !== key || decision.order_key !== key || !/^[a-f0-9]{64}$/i.test(clean(event.snapshot_hash)) ||
       event.snapshot_hash !== decision.snapshot_hash)
