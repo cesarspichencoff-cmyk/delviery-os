@@ -259,6 +259,16 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   animation: none;
 }
 
+/* Fonte real inteiramente indisponivel: nunca representar como verde/ao vivo. */
+.org-topo__vida[data-estado="sem-fonte"] .org-topo__ponto {
+  background: var(--org-falha-clara);
+  animation: none;
+}
+
+.org-topo__vida[data-estado="sem-fonte"] .org-topo__nota {
+  color: var(--org-falha-clara);
+}
+
 /* Demonstracao nao recebe pulso de fonte viva nem tinta de disponibilidade. */
 .org-topo__vida[data-estado="simulado"] .org-topo__ponto {
   background: transparent;
