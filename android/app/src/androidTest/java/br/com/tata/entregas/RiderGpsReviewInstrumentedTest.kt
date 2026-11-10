@@ -162,7 +162,25 @@ class RiderGpsReviewInstrumentedTest {
         return scenario
     }
 
+    private fun riderScreenSettledScript() = """
+        (function(){
+          var title = document.getElementById('stopTitle');
+          var connection = document.getElementById('connLine');
+          var compat = document.getElementById('compatibilityHold');
+          var main = document.getElementById('main');
+          return !!title && !!connection && !!compat && !!main &&
+            compat.hidden && !main.hidden &&
+            title.textContent.indexOf('Nenhuma viagem ativa') >= 0 &&
+            connection.textContent === 'Online';
+        })()
+    """.trimIndent()
+
     private fun screenshotOfHeldNotice(scenario: ActivityScenario<MainActivity>, context: Context) {
+        // A imagem anterior foi tirada durante "Carregando...". O aviso
+        // aparecia, mas a tela inteira ainda nao estava pronta: isso nao
+        // satisfaz uma evidencia visual do produto em uso.
+        assertTrue("LAB_GPS_REVIEW_SCREEN_NOT_SETTLED",
+            until(scenario, riderScreenSettledScript()))
         assertEquals("true", eval(scenario, """
             (function(){
               var e=document.getElementById('gpsReviewLine');
@@ -297,6 +315,8 @@ class RiderGpsReviewInstrumentedTest {
         loadRealRider().use { reopened ->
             assertTrue("LAB_RELAUNCHED_WEBVIEW_LOST_GPS_HOLD",
                 until(reopened, visibleNoticeScript()))
+            assertTrue("LAB_RELAUNCHED_RIDER_SCREEN_NOT_SETTLED",
+                until(reopened, riderScreenSettledScript()))
             assertEquals("true", eval(reopened, """
                 (function(){
                   var s=window.EntregasNative && JSON.parse(window.EntregasNative.status());
