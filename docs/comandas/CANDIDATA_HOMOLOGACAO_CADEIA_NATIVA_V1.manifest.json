@@ -38,8 +38,8 @@
     },
     {
       "path": "src/production/nativeReaderChainV1.ts",
-      "git_blob": "76c1aea2b9f8d5c3f25d060195628c70aa0bf60c",
-      "bytes": 30341
+      "git_blob": "d9b4438c631ef587223eb096053038e28b8d61f6",
+      "bytes": 30978
     },
     {
       "path": "src/production/operationalTicketEscposFigmaV48.ts",
