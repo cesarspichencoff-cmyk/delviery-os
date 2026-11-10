@@ -166,6 +166,35 @@ test("missing coverage veto vector cannot be interpreted as clean native source"
  assert.equal(j.join,null);
  assert.ok(j.reasons.includes("NATIVE_SOURCE_BLOCKERS_INVALID"));
 });
+test("unrecognized upstream source blocker cannot create a structurally ready native join",()=>{
+ const fake=structuredClone(real);
+ fake.blockers=["SOURCE_ROWSET_CALLER_NOT_AUTHENTICATED"];
+ fake.ready_for_downstream_shadow=true;
+ fake.order.observation_scan_complete=true;
+ const j=N.joinNativeReaderSnapshotV1(fake,decision,{});
+ assert.equal(j.status,"HOLD");
+ assert.equal(j.join,null);
+ assert.ok(j.reasons.includes("NATIVE_SOURCE_NON_SERVICE_BLOCKER"));
+ assert.equal(j.provenance.independent_source_attested,false);
+});
+test("mixed legacy hours and new source failure still refuse the joined content",()=>{
+ const fake=structuredClone(real);
+ fake.blockers=["SERVICE_HOURS_OUTSIDE_WINDOW","NATIVE_SOURCE_NOT_PROVEN"];
+ const j=N.joinNativeReaderSnapshotV1(fake,decision,{});
+ assert.equal(j.status,"HOLD");
+ assert.equal(j.join,null);
+ assert.ok(j.reasons.includes("NATIVE_SOURCE_NON_SERVICE_BLOCKER"));
+});
+test("unknown future blocker and malformed blocker both fail closed",()=>{
+ for(const cause of ["FUTURE_NATIVE_COMMIT_NOT_PROVEN",null,{},72]){
+  const fake=structuredClone(real);
+  fake.blockers=[cause];
+  const j=N.joinNativeReaderSnapshotV1(fake,decision,{});
+  assert.equal(j.status,"HOLD");
+  assert.equal(j.join,null);
+  assert.ok(j.reasons.includes("NATIVE_SOURCE_NON_SERVICE_BLOCKER"));
+ }
+});
 test("legacy service expiry alone is not a native item-source proof failure",()=>{
  const j=N.joinNativeReaderSnapshotV1(real,decision,{});
  assert.ok(!j.reasons.includes("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED"));
