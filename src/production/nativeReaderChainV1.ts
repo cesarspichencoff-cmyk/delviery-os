@@ -143,7 +143,10 @@ export function joinNativeReaderSnapshotV1(
   // but it must NEVER turn an explicit missing native child-table scan into
   // ready production content. A caller can set scan_complete=true and rehash
   // the event without acquiring the missing item/component/note source data.
-  if (event.blockers.some((b) => b === "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ" ||
+  if (!Array.isArray(event.blockers)) {
+    reasons.add("NATIVE_SOURCE_BLOCKERS_INVALID");
+  } else if (event.blockers.some((b) =>
+      b === "NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ" ||
       b === "READ_COMPLETENESS_NOT_INDEPENDENTLY_ATTESTED")) {
     reasons.add("NATIVE_CHILD_SOURCE_COVERAGE_NOT_ATTESTED");
   }
