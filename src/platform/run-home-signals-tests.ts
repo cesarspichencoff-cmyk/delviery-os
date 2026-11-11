@@ -514,6 +514,43 @@ teste("H14 pulso ausente quando nao ha fonte alguma", () => {
   assert.ok(!("valor" in vm.pulso));
 });
 
+teste("H14b uma fonte de carga/cardapio saudavel nao autentica pulso real", () => {
+  const demo = cenaCalmo();
+  const leitura: LeituraOperacional = {
+    ...demo,
+    procedencia: "real",
+    fontes: demo.fontes.filter((f) => f.id !== "ifood_tempos"),
+  };
+  const origem = { tipo: "real" as const, temporal: {
+    modo: "calmo" as const, orientacao_permitida: false,
+    identidade: null, causa: null,
+  }};
+  const vm = homeVM(leitura, origem);
+  assert.ok(leitura.fontes.some((f) => f.estado === "saudavel"),
+    "controle precisa ter fontes saudaveis de outro dominio");
+  assert.equal(vm.sem_leitura_operacional, true);
+  assert.equal(vm.pulso.observado, false,
+    "pulso real foi inventado apenas com cardapio/carga");
+  assert.ok(!("valor" in vm.pulso));
+  assert.match(vm.apoio, /fonte confiavel de pedidos/i);
+  const stale = homeVM({ ...leitura, fontes: demo.fontes.map((f) =>
+    f.id === "ifood_tempos" ? { ...f, estado: "stale" as const } : f) }, origem);
+  assert.equal(stale.pulso.observado, false,
+    "fonte de pedidos obsoleta autenticou pulso real");
+  assert.equal(stale.sem_leitura_operacional, true);
+});
+
+teste("H14c controle positivo: fonte de pedidos saudavel sustenta apenas pulso observado", () => {
+  const demo = cenaCalmo();
+  const leitura: LeituraOperacional = { ...demo, procedencia: "real" };
+  const vm = homeVM(leitura, { tipo: "real", temporal: {
+    modo: "calmo", orientacao_permitida: false, identidade: null, causa: null,
+  }});
+  assert.equal(vm.sem_leitura_operacional, false);
+  assert.equal(vm.pulso.observado, true);
+  if (vm.pulso.observado) assert.equal(vm.pulso.valor, leitura.pedidos.length);
+});
+
 /* ================================================================== *
  * 5. Os sinais de R4
  * ================================================================== */

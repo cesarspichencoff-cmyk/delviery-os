@@ -726,15 +726,23 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
 
   const emAndamento = l.pedidos.length;
   const existeFonteSaudavel = l.fontes.some((f) => f.estado === "saudavel");
-  // Pedidos residuais em uma leitura "real" sem fonte saudavel nao
-  // autenticam um pulso atual. Fixtures seguem declaradas como demonstracao.
-  const semLeituraOperacional = l.procedencia === "real" && !existeFonteSaudavel;
+  // Uma fonte de cardapio ou carga saudavel nao autentica a contagem de
+  // pedidos. Neste contrato, "ifood_tempos" e a unica fonte declarada
+  // de pedidos. O Reader futuro precisa de um vinculo de origem proprio
+  // antes de poder sustentar este pulso; NAO promove-lo por apelido.
+  const fonteDePedidosSaudavel = l.fontes.some(
+    (f) => f.id === "ifood_tempos" && f.estado === "saudavel",
+  );
+  const semLeituraOperacional = l.procedencia === "real" && !fonteDePedidosSaudavel;
+  const pulsoSustentado = l.procedencia === "real"
+    ? fonteDePedidosSaudavel
+    : existeFonteSaudavel || l.pedidos.length > 0;
   const pulso: Campo<number> =
-    existeFonteSaudavel || (!semLeituraOperacional && l.pedidos.length > 0)
+    pulsoSustentado
       ? observado(emAndamento, l.procedencia, l.observado_em)
       : ausente(
           "indisponivel",
-          "Nenhuma fonte de pedido respondeu. O pulso nao pode ser afirmado, e ausencia nao e zero.",
+          "A fonte de pedidos nao esta saudavel. Outras fontes nao validam esta contagem; ausencia nao e zero.",
         );
 
   const fontes = l.fontes.map(fonteVM);
@@ -757,7 +765,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     : degradado
     ? "Parte das fontes parou de responder. O que segue vale so para o que ainda e observado."
     : semLeituraOperacional
-      ? "Nao ha fonte operacional saudavel. Nao e possivel afirmar que os pedidos ou a operacao estejam em dia."
+      ? "Nao ha fonte confiavel de pedidos. Nao e possivel afirmar volume nem normalidade da operacao."
     : modo === "foco"
       ? "Uma situacao pede decisao agora. As demais continuam visiveis abaixo."
       : modo === "ambiente"

@@ -39,20 +39,22 @@ test('browser QA checks visible degraded text not merely a comment',()=>{
 const vm=readFileSync(join(root,'src/product/viewmodels/home-vm.ts'),'utf8');
 const css=readFileSync(join(root,'src/product/ui/surfaces/home.css'),'utf8');
 test('real feed without any healthy source cannot invent a live pulse',()=>{
- assert.match(vm,/const semLeituraOperacional = l\.procedencia === "real" && !existeFonteSaudavel;/);
- assert.match(vm,/existeFonteSaudavel \|\| \(!semLeituraOperacional && l\.pedidos\.length > 0\)/);
+ assert.match(vm,/const semLeituraOperacional = l\.procedencia === "real" && !fonteDePedidosSaudavel;/);
+ assert.match(vm,/const pulsoSustentado = l\.procedencia === "real"/);
+ assert.match(vm,/\? fonteDePedidosSaudavel\s+: existeFonteSaudavel \|\| l\.pedidos\.length > 0;/);
+ assert.match(vm,/const pulso: Campo<number> =\s*pulsoSustentado/);
  assert.match(vm,/sem_leitura_operacional: semLeituraOperacional/);
  assert.match(vm,/semLeituraOperacional \? "Sem leitura"/);
 });
 test('Home renders missing source as a distinct non-live operational state',()=>{
  assert.match(home,/vm\.sem_leitura_operacional \? "sem-fonte" : "vivo"/);
- assert.match(home,/sem leitura operacional confiavel/);
+ assert.match(home,/sem leitura confiavel de pedidos/);
  assert.match(home,/vm\.sem_leitura_operacional \? "sem leitura" : vm\.modo/);
  assert.match(home,/vm\.sem_leitura_operacional \? "nenhuma fonte operacional confiavel"/);
  assert.match(css,/\.org-topo__vida\[data-estado="sem-fonte"\] \.org-topo__ponto\s*\{[^}]*animation: none/s);
 });
 test('demonstration remains explicitly simulated, never promoted to real source',()=>{
- assert.match(vm,/l\.procedencia === "real" && !existeFonteSaudavel/);
+ assert.match(vm,/l\.procedencia === "real" && !fonteDePedidosSaudavel/);
  assert.match(home,/vm\.demonstracao \? "simulado" :/);
  assert.match(home,/cenario simulado/);
 });

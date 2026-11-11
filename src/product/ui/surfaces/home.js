@@ -126,7 +126,7 @@ function topo(vm) {
           : vm.demonstracao
             ? `cenario simulado${h ? ` · horario da cena ${esc(h)}` : ""}`
             : vm.sem_leitura_operacional
-              ? "sem leitura operacional confiavel"
+              ? "sem leitura confiavel de pedidos"
               : `ao vivo${h ? ` · leitura ${esc(h)}` : ""}`
       }</span>
     </span>
@@ -773,7 +773,7 @@ function resto(vm) {
           criticos > 0 ? `, ${criticos} em pressao` : ""
         }`,
     `${semFonte} do catalogo sem fonte`,
-    vm.sem_leitura_operacional ? "nenhuma fonte operacional confiavel" :
+    vm.sem_leitura_operacional ? "pedidos sem fonte confiavel" :
       degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 
