@@ -326,19 +326,55 @@ teste("H4d identity mismatch, missing source or ambiguous signal fails closed",(
   const duplicate:LeituraOperacional={...ficticia,
     carga_por_praca:{...ficticia.carga_por_praca},
     pedidos:[...ficticia.pedidos]};
-  // Duplicate an S1 by repeating an order identity: same signal key is
-  // ambiguous even when source policy has a coherent identity.
-  const one=sinaisDe(ficticia).find(s=>s.codigo==="S1"&&s.severidade===3);
-  if(one){
-    const sourceOrder=ficticia.pedidos.find(p=>p.id===one.pedido_id);
-    assert.ok(sourceOrder);
-    const twice={...duplicate,pedidos:[...duplicate.pedidos,sourceOrder]};
-    const s1Cause:CausaCandidata={codigo:one.codigo,severidade:3,
-      ambiente:one.ambiente,subarea:one.subarea,pedido_id:one.pedido_id,
-      fonte_id:"ifood_tempos",evidencias:one.evidencias.length};
-    const ambiguity=homeVM(twice,origemFoco(s1Cause));
-    assert.equal(ambiguity.foco,null,"duplicate source identity must not be elected by presentation");
+  // Duplicate an actual severe S4 by repeating its order identity.
+  // The case MUST execute; no conditional skip that silently goes green.
+  const one=sinaisDe(ficticia).find(s=>s.codigo==="S4"&&s.severidade===3);
+  assert.ok(one,"duplicate test requires a real synthetic severe order signal");
+  const sourceOrder=ficticia.pedidos.find(p=>p.id===one.pedido_id);
+  assert.ok(sourceOrder);
+  const twice={...duplicate,pedidos:[...duplicate.pedidos,sourceOrder]};
+  const s4Cause:CausaCandidata={codigo:one.codigo,severidade:3,
+    ambiente:one.ambiente,subarea:one.subarea,pedido_id:one.pedido_id,
+    fonte_id:"ifood_tempos",evidencias:one.evidencias.length};
+  const ambiguity=homeVM(twice,origemFoco(s4Cause));
+  assert.equal(ambiguity.foco,null,"duplicate source identity must not be elected by presentation");
+});
+
+teste("H4e temporal Foco survives a softer still-present signal until policy withdraws it",()=>{
+  const initial:LeituraOperacional={...cenaFoco(),procedencia:"real"};
+  const s5=sinaisDe(initial).find(s=>s.codigo==="S5"&&s.subarea==="cozinha_quentes"&&s.severidade===3);
+  assert.ok(s5,"Cozinha S5 must be severe before temporal election");
+  const causa=causaS5(s5);
+  let state=ESTADO_INICIAL;
+  for(let minute=0;minute<=3;minute++){
+    const election=elegerModo({
+      estado:state,agora_min:minute,candidatas:[causa],
+      fontes:[{id:"carga_pracas",estado:"saudavel"}],idade_da_leitura_min:0,
+    });
+    state=election.estado;
   }
+  assert.ok(state.foco,"positive control must elect a Foco");
+  const softened:LeituraOperacional={...initial,
+    carga_por_praca:{...initial.carga_por_praca,cozinha_quentes:7},
+  };
+  const updated=sinaisDe(softened).find(s=>s.codigo==="S5"&&s.subarea==="cozinha_quentes");
+  assert.ok(updated);
+  assert.equal(updated.severidade,2,"source test must actually lower current severity");
+  const stillActive=elegerModo({
+    estado:state,agora_min:4,
+    candidatas:[{...causa,severidade:updated.severidade}],
+    fontes:[{id:"carga_pracas",estado:"saudavel"}],idade_da_leitura_min:0,
+  });
+  assert.equal(stillActive.modo,"foco","only Operacao Viva can withdraw active Foco");
+  assert.equal(stillActive.identidade,identidadeDaCausa(causa));
+  const vm=homeVM(softened,{tipo:"real",temporal:{
+    modo:stillActive.modo,orientacao_permitida:stillActive.orientacao_permitida,
+    identidade:stillActive.identidade,causa:stillActive.causa,
+  }});
+  assert.equal(vm.foco?.sinal.codigo,"S5");
+  assert.equal(vm.foco?.sinal.subarea,"cozinha_quentes");
+  assert.equal(vm.foco?.sinal.severidade,2);
+  assert.equal(vm.foco?.orientacao?.executa,false);
 });
 
 /* ================================================================== *
