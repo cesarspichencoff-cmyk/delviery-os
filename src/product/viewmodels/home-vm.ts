@@ -52,6 +52,7 @@ import {
   type Procedencia,
   type Selo,
 } from "./estados";
+import { identidadeDaCausa, type ResultadoDaEleicao } from "../atencao/politica-temporal";
 import {
   SINAIS_INDISPONIVEIS,
   sinaisDe,
@@ -402,15 +403,15 @@ function ambienteVM(
  * Criterio: severidade 3. Severidade 2 e Ambiente; severidade 1 e clima.
  */
 /**
- * O que esta view model aceita da politica temporal. Deliberadamente MINIMO: so
- * o modo eleito e se a orientacao esta liberada. Tudo o mais — pendente, foco
- * ativo, cooldown, marcacoes — pertence ao estado da politica, e trazer para ca
- * seria recriar aqui o dono da atencao que C3 ja definiu.
+ * Minimal authoritative selection from the existing Operacao Viva policy.
+ * Preserve the elected cause/identity rather than re-electing the first
+ * severe signal (which would silently preempt a persistent temporal Foco).
+ * Counters, cooldown and clocks remain owned by the temporal policy.
  */
-export interface EleicaoTemporal {
-  readonly modo: ModoOperacional;
-  readonly orientacao_permitida: boolean;
-}
+export type EleicaoTemporal = Pick<
+  ResultadoDaEleicao,
+  "modo" | "orientacao_permitida" | "identidade" | "causa"
+>;
 
 /**
  * De onde vem a leitura — e este tipo existe para fechar um bypass, nao para
@@ -436,6 +437,37 @@ export type OrigemDaLeitura =
 function elegerFoco(sinais: readonly Sinal[]): Sinal | null {
   const candidatos = sinais.filter((s) => s.severidade >= 3);
   return candidatos[0] ?? null;
+}
+
+/**
+ * Real Foco is a presentation of ONE cause elected by Operacao Viva, not a
+ * second election. Validate the policy's canonical identity, an actually
+ * healthy declared source, and a UNIQUE matching signal from this reading.
+ * Source attribution of each signal remains a separate integration gate;
+ * the identity/cause supplied here MUST come from the same policy result.
+ * Unmatched, ambiguous or malformed causes fail closed without an action.
+ */
+function focoDaEleicao(
+  sinais: readonly Sinal[],
+  fontes: LeituraOperacional["fontes"],
+  temporal: EleicaoTemporal,
+): Sinal | null {
+  if (temporal.modo !== "foco" || temporal.causa === null ||
+      temporal.identidade === null || typeof temporal.identidade !== "string") return null;
+  const causa = temporal.causa;
+  if (typeof causa.codigo !== "string" || !causa.codigo ||
+      typeof causa.fonte_id !== "string" || !causa.fonte_id ||
+      typeof causa.severidade !== "number" || causa.severidade < 3 ||
+      temporal.identidade !== identidadeDaCausa(causa) ||
+      !fontes.some((f) => f.id === causa.fonte_id && f.estado === "saudavel")) return null;
+  const encontrados = sinais.filter((s) =>
+    s.severidade >= 3 &&
+    s.codigo.toUpperCase() === causa.codigo.toUpperCase() &&
+    s.ambiente === causa.ambiente &&
+    s.subarea === causa.subarea &&
+    s.pedido_id === causa.pedido_id
+  );
+  return encontrados.length === 1 ? encontrados[0]! : null;
 }
 
 /**
@@ -684,7 +716,9 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   // the real Foco slot. During debounce/cooldown the same severe signal stays
   // visible in the second plane, never silently disappears or prescribes.
   // Demonstration scenes have no temporal election and retain their baseline.
-  const foco = modo === "foco" ? candidatoFoco : null;
+  const foco = modo !== "foco" ? null :
+    temporal === undefined ? candidatoFoco : focoDaEleicao(sinais, l.fontes, temporal);
+  const causaNaoVinculada = temporal !== undefined && modo === "foco" && foco === null;
   const orientacaoPermitida = temporal === undefined
     ? modo === "foco" : (modo === "foco" && temporal.orientacao_permitida === true);
 
@@ -716,7 +750,9 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
         ? "Ambiente"
         : "Em fluxo";
 
-  const apoio = degradado
+  const apoio = causaNaoVinculada
+    ? "A Operacao Viva manteve Foco, mas a causa nao corresponde a um sinal unico desta leitura. Orientacao retida; os alertas continuam visiveis."
+    : degradado
     ? "Parte das fontes parou de responder. O que segue vale so para o que ainda e observado."
     : semLeituraOperacional
       ? "Nao ha fonte operacional saudavel. Nao e possivel afirmar que os pedidos ou a operacao estejam em dia."
