@@ -45,6 +45,21 @@ test("invalid sequence is not trusted", () => {
   assert.equal(inspectOperationalEvents([{...ev,sequence_local:-1}]).ok,false);
   assert.equal(inspectOperationalEvents([{...ev,sequence_local:1.3}]).ok,false);
 });
+test("duplicate native event identity and local sequence fail closed across all queue consumers", () => {
+  const duplicateId = [ev,{...ev,sequence_local:2,state:"failed"}];
+  const duplicateSequence = [ev,{...ev,event_id:"evt-other",state:"sent"}];
+  for (const rows of [duplicateId,duplicateSequence]) {
+    assert.equal(inspectOperationalEvents(rows).code,QUEUE_READ_BLOCK);
+    assert.equal(inspectOperationalEvents(rows).ok,false);
+    assert.equal(queuedOperationalActionsMessage(rows),"");
+    assert.equal(canRequestNativeQueueSync(rows,true),false);
+    assert.equal(confirmedNativeQueueTransition([ev],rows),"");
+  }
+  const separate = [ev,{...ev,event_id:"evt-other",sequence_local:2,state:"failed"}];
+  assert.equal(inspectOperationalEvents(separate).ok,true);
+  assert.match(queuedOperationalActionsMessage(separate),/2 ações guardadas/);
+  assert.equal(canRequestNativeQueueSync(separate,true),true);
+});
 test("oversized response is rejected to prevent misleading partial trust", () => {
   const all=Array.from({length:1001},(_,i)=>({...ev,event_id:"e"+i}));
   assert.equal(inspectOperationalEvents(all).ok,false);
