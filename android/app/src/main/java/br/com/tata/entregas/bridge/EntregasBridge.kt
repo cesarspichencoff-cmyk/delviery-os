@@ -2,6 +2,7 @@ package br.com.tata.entregas.bridge
 
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import br.com.tata.entregas.BuildConfig
 import br.com.tata.entregas.location.GateDecision
 import br.com.tata.entregas.location.CanonicalGpsPoint
 import org.json.JSONObject
@@ -46,11 +47,18 @@ object Bridge {
         return "window.__entregasNativeMessage && window.__entregasNativeMessage($literal)"
     }
 
-    /** Entrega a mensagem ao JS na thread da interface. */
+    /**
+     * Dispatch only to the active, exact rider HTML document. The WebView may
+     * navigate after this message is queued; checking on the UI thread avoids
+     * leaking GPS/service updates to /console, about:blank or a foreign page.
+     */
     private fun post(message: JSONObject) {
         val web = webViewRef?.get() ?: return
         val script = messageDispatchScript(message)
         web.post {
+            if (!OriginBoundNativeBridge.isAuthorizedRiderDocument(
+                    web.url, BuildConfig.ENTREGAS_BASE_URL,
+                )) return@post
             web.evaluateJavascript(script, null)
         }
     }

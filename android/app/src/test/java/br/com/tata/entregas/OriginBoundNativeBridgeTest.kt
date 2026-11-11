@@ -55,6 +55,31 @@ class OriginBoundNativeBridgeTest {
         assertEquals(null, OriginBoundNativeBridge.expectedOrigin("https://alice@pilot.example"))
     }
 
+    @Test fun nativePushRefusesOtherDocumentsEvenOnTheSameTrustedHost() {
+        val base = "https://pilot.example:8443"
+        val valid = listOf(
+            "https://pilot.example:8443/rider-mobile/",
+            "https://PILOT.EXAMPLE:8443/rider-mobile/index.html?lab=1#stage",
+        )
+        val denied = listOf(
+            "https://pilot.example:8443/",
+            "https://pilot.example:8443/console/",
+            "https://pilot.example:8443/rider-mobile-evil/",
+            "https://pilot.example:8443/rider-mobile/../console/",
+            "https://pilot.example:8443/rider-mobile/%2e%2e/console/",
+            "https://pilot.example:8443/rider-mobile/%2Fconsole",
+            "https://pilot.example:8443/rider-mobile/fake.html",
+            "https://pilot.example/rider-mobile/",
+            "https://evil.pilot.example:8443/rider-mobile/",
+            "http://pilot.example:8443/rider-mobile/",
+            "https://alice@pilot.example:8443/rider-mobile/",
+            "about:blank", "file:///rider-mobile/index.html", "data:text/html,x",
+        )
+        valid.forEach { assertTrue(it, OriginBoundNativeBridge.isAuthorizedRiderDocument(it, base)) }
+        denied.forEach { assertFalse(it, OriginBoundNativeBridge.isAuthorizedRiderDocument(it, base)) }
+        assertFalse(OriginBoundNativeBridge.isAuthorizedRiderDocument(null, base))
+    }
+
     @Test fun randomCapabilityIsPerInstanceAndDoesNotUseFieldIdentity() {
         val a = OriginBoundNativeBridge.newCapability()
         val b = OriginBoundNativeBridge.newCapability()

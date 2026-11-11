@@ -39,6 +39,23 @@ internal object OriginBoundNativeBridge {
     }
 
     /**
+     * Native -> JavaScript messages may include location or session state.
+     * A same-origin /console page is NOT the rider UI. Check the top-level
+     * WebView URL at dispatch time (not when message was queued) so navigation
+     * cannot carry rider updates into another document.
+     *
+     * Only the two exact rider HTML entry paths are eligible; encoded and
+     * traversal paths fail closed, even when they share the allowed origin.
+     */
+    internal fun isAuthorizedRiderDocument(url: String?, baseUrl: String): Boolean {
+        if (url.isNullOrBlank()) return false
+        val origin = expectedOrigin(baseUrl) ?: return false
+        if (expectedOrigin(url) != origin) return false
+        val path = runCatching { Uri.parse(url).encodedPath }.getOrNull() ?: return false
+        return path == "/rider-mobile/" || path == "/rider-mobile/index.html"
+    }
+
+    /**
      * Injected before the document's own JavaScript.
      * Only /rider-mobile/ TOP-LEVEL HTML is authorized; foreign frames,
      * about:blank, data: and other paths get no privileged facade.
