@@ -63,6 +63,7 @@ on:
       - src/product/ui/surfaces/home.js
       - src/product/viewmodels/home-vm.ts
       - src/platform/run-home-signals-tests.ts
+      - src/platform/run-r5b-invariant-tests.ts
       - tests/product/run-m1b-home-visual-truth-tests.ts
       - tests/reporting/run-deliveryos-home-source-truth-tests.cjs
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
@@ -610,6 +611,8 @@ jobs:
         run: npm run build:platform
       - name: Prove Home follows temporal attention and keeps every pending signal
         run: npx tsx src/platform/run-home-signals-tests.ts
+      - name: Prove R5B source and attention invariants on the same Home revision
+        run: npx tsx src/platform/run-r5b-invariant-tests.ts
       - name: Install isolated Chromium for visible Home regression
         run: npx playwright install --with-deps chromium
       - name: Exercise all Home states in six viewport sizes
