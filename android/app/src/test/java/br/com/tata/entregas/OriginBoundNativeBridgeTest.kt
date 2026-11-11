@@ -100,19 +100,17 @@ class OriginBoundNativeBridgeTest {
     }
 
     @Test fun nativeMessageUsesOneCompleteQuotedLiteralEvenWithRepeatedHostileCharacters() {
-        // Synthetic only. These characters must remain DATA in a JSON string,
-        // never terminate the WebView evaluateJavascript() call.
-        val detail = "primeira ' segunda ' \\\\ e \\\\ duplo \\" \nlinha"
+        // Synthetic only. Data must never terminate the JS argument.
+        val detail = "primeira ' segunda ' barras \\ e \\ e \" aspas\nlinha"
         val message = JSONObject().put("type", "error").put("detail", detail)
         val script = Bridge.messageDispatchScript(message)
         val prefix = "window.__entregasNativeMessage && window.__entregasNativeMessage("
         assertTrue(script.startsWith(prefix))
         assertTrue(script.endsWith(")"))
         val literal = script.removePrefix(prefix).dropLast(1)
-        assertTrue(literal.startsWith("\\""))
-        assertTrue(literal.endsWith("\\""))
+        assertTrue(literal.startsWith("\""))
+        assertTrue(literal.endsWith("\""))
         assertEquals(message.toString(), JSONTokener(literal).nextValue())
-        // Control: two apostrophes and repeated backslashes survive decoding.
         val restored = JSONObject(JSONTokener(literal).nextValue() as String)
         assertEquals(detail, restored.getString("detail"))
     }
