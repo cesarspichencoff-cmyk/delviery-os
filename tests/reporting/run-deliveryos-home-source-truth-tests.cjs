@@ -50,7 +50,7 @@ test('Home renders missing source as a distinct non-live operational state',()=>
  assert.match(home,/vm\.sem_leitura_operacional \? "sem-fonte" : "vivo"/);
  assert.match(home,/sem leitura confiavel de pedidos/);
  assert.match(home,/vm\.sem_leitura_operacional \? "sem leitura" : vm\.modo/);
- assert.match(home,/vm\.sem_leitura_operacional \? "nenhuma fonte operacional confiavel"/);
+ assert.match(home,/vm\.sem_leitura_operacional \? "pedidos sem fonte confiavel"/);
  assert.match(css,/\.org-topo__vida\[data-estado="sem-fonte"\] \.org-topo__ponto\s*\{[^}]*animation: none/s);
 });
 test('demonstration remains explicitly simulated, never promoted to real source',()=>{
