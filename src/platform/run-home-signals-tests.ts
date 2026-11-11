@@ -17,7 +17,10 @@ import { join } from "node:path";
 import http from "node:http";
 
 import { homeVM, type HomeVM } from "../product/viewmodels/home-vm";
-import { ESTADO_INICIAL, elegerModo } from "../product/atencao/politica-temporal";
+import {
+  ESTADO_INICIAL, elegerModo, identidadeDaCausa,
+  type CausaCandidata,
+} from "../product/atencao/politica-temporal";
 import {
   CODIGOS_IMPLEMENTADOS,
   SINAIS_INDISPONIVEIS,
@@ -185,7 +188,7 @@ teste("H6 problemas simultaneos apontam subareas diferentes", () => {
 
 teste("H4a real caller cannot create Foco during the policy's three-minute debounce", () => {
   const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
-  const severe = sinaisDe(ficticia).find((s) => s.severidade === 3);
+  const severe = sinaisDe(ficticia).find((s) => s.codigo === "S5" && s.severidade === 3);
   assert.ok(severe, "positive control must include an urgent candidate");
   const causa = {
     codigo: severe.codigo,
@@ -208,6 +211,8 @@ teste("H4a real caller cannot create Foco during the policy's three-minute debou
       temporal: {
         modo: election.modo,
         orientacao_permitida: election.orientacao_permitida,
+        identidade: election.identidade,
+        causa: election.causa,
       },
     });
     if (minute < 3) {
@@ -229,21 +234,111 @@ teste("H4a real caller cannot create Foco during the policy's three-minute debou
   }
 });
 
+function causaS5(s: ReturnType<typeof sinaisDe>[number]): CausaCandidata {
+  assert.equal(s.codigo, "S5", "only directly measured S5 is used in the synthetic source-link test");
+  return {
+    codigo: s.codigo, severidade: s.severidade, ambiente: s.ambiente,
+    subarea: s.subarea, pedido_id: s.pedido_id,
+    fonte_id: "carga_pracas", evidencias: s.evidencias.length,
+  };
+}
+function origemFoco(c: CausaCandidata, permitted = true) {
+  return { tipo: "real" as const, temporal: {
+    modo: "foco" as const, orientacao_permitida: permitted,
+    identidade: identidadeDaCausa(c), causa: c,
+  } };
+}
+
 teste("H4b even inconsistent temporal flags cannot authorize a recommendation", () => {
   const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
-  const guarded = homeVM(ficticia, {
-    tipo: "real", temporal: { modo: "foco", orientacao_permitida: false },
-  });
+  const s5 = sinaisDe(ficticia).find(s=>s.codigo==="S5" && s.severidade===3);
+  assert.ok(s5);
+  const causa = causaS5(s5);
+  const guarded = homeVM(ficticia, origemFoco(causa, false));
   assert.equal(guarded.modo, "foco");
-  assert.ok(guarded.foco, "keep situation visible even if permission is invalid");
+  assert.ok(guarded.foco, "keep elected situation visible even if permission is denied");
+  assert.equal(guarded.foco.sinal.subarea, causa.subarea);
   assert.equal(guarded.foco.orientacao, null,
     "orientation must never ignore a denied temporal permission");
   const calm = homeVM(ficticia, {
-    tipo: "real", temporal: { modo: "calmo", orientacao_permitida: true },
+    tipo: "real", temporal: { modo: "calmo", orientacao_permitida: true,
+      identidade: identidadeDaCausa(causa), causa },
   });
   assert.equal(calm.foco, null,
     "a contradictory allow flag cannot manufacture a Foco in Calmo");
   assert.equal(calm.sinais_em_segundo_plano.length, calm.total_de_sinais);
+});
+
+teste("H4c active temporal cause survives a different severe signal moving to the top",()=>{
+  const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
+  const s5s = sinaisDe(ficticia).filter(s=>s.codigo==="S5" && s.severidade===3);
+  assert.ok(s5s.length>=2,"control requires two distinct severe S5 areas");
+  const [first,second] = s5s.slice(0,2).map(causaS5);
+  assert.notEqual(identidadeDaCausa(first),identidadeDaCausa(second));
+  let state=ESTADO_INICIAL;
+  for(let minute=0;minute<=4;minute++){
+    const election=elegerModo({
+      estado:state, agora_min:minute,
+      // After second is elected, a different severe candidate comes FIRST.
+      // Operacao Viva still owns the non-preemptive slot.
+      candidatas:minute<=3?[second]:[first,second],
+      fontes:[{id:"carga_pracas",estado:"saudavel"}],
+      idade_da_leitura_min:0,
+    });
+    const vm=homeVM(ficticia,{tipo:"real",temporal:{
+      modo:election.modo,orientacao_permitida:election.orientacao_permitida,
+      identidade:election.identidade,causa:election.causa,
+    }});
+    if(minute>=3){
+      assert.equal(election.identidade,identidadeDaCausa(second));
+      assert.equal(vm.modo,"foco");
+      assert.ok(vm.foco);
+      assert.equal(vm.foco.sinal.subarea,second.subarea,
+        "Home replaced the persistent policy cause with the first severe signal");
+      assert.ok(vm.sinais_em_segundo_plano.some(s=>s.codigo==="S5"&&s.subarea===first.subarea),
+        "the other severe candidate disappeared from secondary signals");
+    }
+    state=election.estado;
+  }
+});
+
+teste("H4d identity mismatch, missing source or ambiguous signal fails closed",()=>{
+  const ficticia: LeituraOperacional={...cenaFoco(),procedencia:"real"};
+  const match=sinaisDe(ficticia).find(s=>s.codigo==="S5"&&s.severidade===3);
+  assert.ok(match);
+  const causa=causaS5(match);
+  const legit=origemFoco(causa);
+  const wrongId=homeVM(ficticia,{tipo:"real",temporal:{
+    ...legit.temporal,identidade:identidadeDaCausa({...causa,fonte_id:"fonte_falsa"}),
+  }});
+  assert.equal(wrongId.foco,null);
+  assert.equal(wrongId.sinais_em_segundo_plano.length,wrongId.total_de_sinais);
+  assert.match(wrongId.apoio,/causa nao corresponde/i);
+  const wrongSource=homeVM(ficticia,{tipo:"real",temporal:{
+    ...legit.temporal,causa:{...causa,fonte_id:"fonte_falsa"},
+    identidade:identidadeDaCausa({...causa,fonte_id:"fonte_falsa"}),
+  }});
+  assert.equal(wrongSource.foco,null,"unknown source must never be trusted");
+  const noIdentity=homeVM(ficticia,{tipo:"real",temporal:{
+    ...legit.temporal,identidade:null,causa:null,
+  }});
+  assert.equal(noIdentity.foco,null);
+  const duplicate:LeituraOperacional={...ficticia,
+    carga_por_praca:{...ficticia.carga_por_praca},
+    pedidos:[...ficticia.pedidos]};
+  // Duplicate an S1 by repeating an order identity: same signal key is
+  // ambiguous even when source policy has a coherent identity.
+  const one=sinaisDe(ficticia).find(s=>s.codigo==="S1"&&s.severidade===3);
+  if(one){
+    const sourceOrder=ficticia.pedidos.find(p=>p.id===one.pedido_id);
+    assert.ok(sourceOrder);
+    const twice={...duplicate,pedidos:[...duplicate.pedidos,sourceOrder]};
+    const s1Cause:CausaCandidata={codigo:one.codigo,severidade:3,
+      ambiente:one.ambiente,subarea:one.subarea,pedido_id:one.pedido_id,
+      fonte_id:"ifood_tempos",evidencias:one.evidencias.length};
+    const ambiguity=homeVM(twice,origemFoco(s1Cause));
+    assert.equal(ambiguity.foco,null,"duplicate source identity must not be elected by presentation");
+  }
 });
 
 /* ================================================================== *
