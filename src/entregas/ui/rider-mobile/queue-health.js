@@ -9,14 +9,22 @@ export function inspectOperationalEvents(raw) {
   if (!Array.isArray(raw) || raw.length > 1000) {
     return { ok: false, events: [], code: QUEUE_READ_BLOCK };
   }
+  const ids = new Set();
+  const sequences = new Set();
   for (const item of raw) {
     if (!item || typeof item !== "object" || Array.isArray(item) ||
         typeof item.event_id !== "string" || !item.event_id ||
         typeof item.kind !== "string" || !item.kind ||
         !KNOWN_STATES.has(item.state) ||
-        !Number.isSafeInteger(item.sequence_local) || item.sequence_local < 1) {
+        !Number.isSafeInteger(item.sequence_local) || item.sequence_local < 1 ||
+        ids.has(item.event_id) || sequences.has(item.sequence_local)) {
+      // The native Room journal must identify one action per event_id and
+      // monotonically assigned local sequence. Never count or replay an
+      // ambiguous snapshot as if it were a healthy queue.
       return { ok: false, events: [], code: QUEUE_READ_BLOCK };
     }
+    ids.add(item.event_id);
+    sequences.add(item.sequence_local);
   }
   return { ok: true, events: raw, code: null };
 }
