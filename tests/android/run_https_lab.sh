@@ -92,6 +92,26 @@ for line in sys.stdin:
         seen.add(label);print(label)
 print("DIAGNOSTIC_CLASSES_AND_SOURCE_LINES_ONLY "+str(len(seen)))
 ' || true
+  # O filtro AndroidRuntime acima nao captura crash nativo do processo
+  # WebView/emulador. Reusar a via do runner WebView existente, emitindo
+  # somente CLASSES/sinais conhecidos da bancada, nunca logcat bruto.
+  if command -v adb >/dev/null 2>&1; then
+    adb logcat -b crash -d -v brief 2>/dev/null | python3 -c '
+import re, sys
+seen=set()
+for line in sys.stdin:
+    label=None
+    m=re.search(r"Fatal signal\s+(\d+)",line)
+    if m: label="LAB_HTTPS_NATIVE_FATAL_SIGNAL_"+m.group(1)
+    elif "SIGSEGV" in line: label="LAB_HTTPS_NATIVE_SIGSEGV"
+    elif "SIGABRT" in line: label="LAB_HTTPS_NATIVE_SIGABRT"
+    elif "FATAL EXCEPTION" in line: label="LAB_HTTPS_JAVA_FATAL"
+    elif "Process: br.com.tata.entregas" in line: label="LAB_HTTPS_APP_PROCESS_CRASH"
+    if label and label not in seen and len(seen)<12:
+        seen.add(label); print(label)
+print("LAB_HTTPS_CRASH_CLASSES_ONLY",len(seen))
+' || true
+  fi
   # Preservar vermelho: diagnostico nao e reparo, e jamais vira sucesso.
   exit 1
 fi
