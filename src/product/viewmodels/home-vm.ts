@@ -471,7 +471,7 @@ function orientacaoVM(
   };
 }
 
-function focoVM(sinal: Sinal, l: LeituraOperacional): FocoVM {
+function focoVM(sinal: Sinal, l: LeituraOperacional, orientacaoPermitida: boolean): FocoVM {
   // CONFIANCA NAO ESTIMADA — e a correcao de um defeito real.
   //
   // Ate 2026-08-03 esta linha fazia `sinal.severidade >= 3 ? 0.8 : 0.6`. Era
@@ -503,7 +503,9 @@ function focoVM(sinal: Sinal, l: LeituraOperacional): FocoVM {
     impacto: sinal.limitacao,
     tempo: `Leitura de ${l.observado_em}`,
     confianca,
-    orientacao: orientacaoVM(sinal, confianca),
+    // The Operacao Viva owns permission to orient. A severe signal alone
+    // cannot issue an imperative during temporal debounce or cooldown.
+    orientacao: orientacaoPermitida ? orientacaoVM(sinal, confianca) : null,
     sinal,
   };
 }
@@ -654,7 +656,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   const temporal: EleicaoTemporal | undefined =
     origem !== undefined && origem.tipo === "real" ? origem.temporal : undefined;
   const sinais = sinaisDe(l);
-  const foco = elegerFoco(sinais);
+  const candidatoFoco = elegerFoco(sinais);
 
   // O modo. Calmo NAO significa ausencia de informacao: significa que nada
   // esta acima do piso de interrupcao.
@@ -672,11 +674,19 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   const modo: ModoOperacional =
     temporal !== undefined
       ? temporal.modo
-      : foco !== null
+      : candidatoFoco !== null
         ? "foco"
         : sinais.some((s) => s.severidade >= 2)
           ? "ambiente"
           : "calmo";
+
+  // Severity proposes a candidate; only the temporal owner can place it in
+  // the real Foco slot. During debounce/cooldown the same severe signal stays
+  // visible in the second plane, never silently disappears or prescribes.
+  // Demonstration scenes have no temporal election and retain their baseline.
+  const foco = modo === "foco" ? candidatoFoco : null;
+  const orientacaoPermitida = temporal === undefined
+    ? modo === "foco" : (modo === "foco" && temporal.orientacao_permitida === true);
 
   const emAndamento = l.pedidos.length;
   const existeFonteSaudavel = l.fontes.some((f) => f.estado === "saudavel");
@@ -760,7 +770,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     pulso,
     ambientes,
     ligacoes: ligacoesVM(ambientes),
-    foco: foco !== null ? focoVM(foco, l) : null,
+    foco: foco !== null ? focoVM(foco, l, orientacaoPermitida) : null,
     sinais_em_segundo_plano: sinais.filter((s) => s !== foco),
     total_de_sinais: sinais.length,
     fontes,
