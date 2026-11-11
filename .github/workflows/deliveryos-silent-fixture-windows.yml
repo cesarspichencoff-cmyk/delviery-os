@@ -61,6 +61,8 @@ on:
       - tests/product/run-rider-native-sync-browser-tests.mjs
       - src/entregas/ui/rider-mobile/queue-health.js
       - src/product/ui/surfaces/home.js
+      - src/product/viewmodels/home-vm.ts
+      - src/platform/run-home-signals-tests.ts
       - tests/product/run-m1b-home-visual-truth-tests.ts
       - tests/reporting/run-deliveryos-home-source-truth-tests.cjs
       - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
@@ -606,6 +608,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Compile existing product model and read-only preview
         run: npm run build:platform
+      - name: Prove Home follows temporal attention and keeps every pending signal
+        run: npx tsx src/platform/run-home-signals-tests.ts
       - name: Install isolated Chromium for visible Home regression
         run: npx playwright install --with-deps chromium
       - name: Exercise all Home states in six viewport sizes
