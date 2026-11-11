@@ -760,10 +760,9 @@ teste("H28b controle positivo: leitura REAL nao e marcada como demonstracao", ()
   // R5-B: uma leitura REAL passou a exigir a eleicao temporal da Operacao Viva
   // (C3). O que este controle prova continua o mesmo — real nao vira
   // demonstracao —, mas ele nao pode mais chamar a home pela porta de fixture.
-  const vm = homeVM(real, {
-    tipo: "real",
-    temporal: { modo: "foco", orientacao_permitida: true },
-  });
+  const signal = sinaisDe(real).find(s=>s.codigo==="S5"&&s.severidade===3);
+  assert.ok(signal,"positive control requires an elected S5 signal");
+  const vm = homeVM(real, origemFoco(causaS5(signal)));
   assert.equal(vm.demonstracao, false);
   assert.ok(vm.selos.some((s) => s.estado === "real"));
   assert.ok(!vm.limitacoes.some((l) => /Leitura de demonstracao/i.test(l.titulo)));
