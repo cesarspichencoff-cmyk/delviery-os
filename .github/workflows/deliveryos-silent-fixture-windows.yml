@@ -601,6 +601,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          # R5B verifies two fixed historical trees, not just HEAD.
+          # Filter blobs for the historical commits to limit transfer.
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
