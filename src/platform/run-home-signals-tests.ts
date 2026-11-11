@@ -17,6 +17,7 @@ import { join } from "node:path";
 import http from "node:http";
 
 import { homeVM, type HomeVM } from "../product/viewmodels/home-vm";
+import { ESTADO_INICIAL, elegerModo } from "../product/atencao/politica-temporal";
 import {
   CODIGOS_IMPLEMENTADOS,
   SINAIS_INDISPONIVEIS,
@@ -173,6 +174,76 @@ teste("H6 problemas simultaneos apontam subareas diferentes", () => {
     new Set(comSubarea).size >= 2,
     "os problemas simultaneos apontam uma subarea so",
   );
+});
+
+/* ================================================================== *
+ * 2b. Temporal permission: Operacao Viva owns Foco in a REAL call
+ * ================================================================== *
+ * This is a synthetic fixture re-tagged ONLY inside this test to exercise
+ * the real-call code path. It is not a real order/source or field validation.
+ */
+
+teste("H4a real caller cannot create Foco during the policy's three-minute debounce", () => {
+  const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
+  const severe = sinaisDe(ficticia).find((s) => s.severidade === 3);
+  assert.ok(severe, "positive control must include an urgent candidate");
+  const causa = {
+    codigo: severe.codigo,
+    severidade: severe.severidade,
+    ambiente: severe.ambiente,
+    subarea: severe.subarea,
+    pedido_id: severe.pedido_id,
+    fonte_id: "carga_pracas",
+    evidencias: severe.evidencias.length,
+  };
+  let state = ESTADO_INICIAL;
+  for (let minute = 0; minute <= 3; minute += 1) {
+    const election = elegerModo({
+      estado: state, agora_min: minute, candidatas: [causa],
+      fontes: [{ id: "carga_pracas", estado: "saudavel" }],
+      idade_da_leitura_min: 0,
+    });
+    const vm = homeVM(ficticia, {
+      tipo: "real",
+      temporal: {
+        modo: election.modo,
+        orientacao_permitida: election.orientacao_permitida,
+      },
+    });
+    if (minute < 3) {
+      assert.notEqual(vm.modo, "foco", "policy promoted focus before debounce");
+      assert.equal(vm.foco, null, "home bypassed the temporal owner");
+      assert.equal(vm.sinais_em_segundo_plano.length, vm.total_de_sinais,
+        "pending severe signal disappeared from second plane");
+      assert.ok(vm.sinais_em_segundo_plano.some((s) => s.severidade === 3),
+        "urgent candidate must remain visible without an orientation");
+    } else {
+      assert.equal(election.modo, "foco", "positive policy control failed");
+      assert.equal(vm.modo, "foco");
+      assert.ok(vm.foco, "valid temporal Foco not presented");
+      assert.ok(vm.foco.orientacao, "legitimate Foco lost its one recommendation");
+      assert.equal(vm.foco.orientacao.executa, false);
+      assert.equal(vm.sinais_em_segundo_plano.length + 1, vm.total_de_sinais);
+    }
+    state = election.estado;
+  }
+});
+
+teste("H4b even inconsistent temporal flags cannot authorize a recommendation", () => {
+  const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
+  const guarded = homeVM(ficticia, {
+    tipo: "real", temporal: { modo: "foco", orientacao_permitida: false },
+  });
+  assert.equal(guarded.modo, "foco");
+  assert.ok(guarded.foco, "keep situation visible even if permission is invalid");
+  assert.equal(guarded.foco.orientacao, null,
+    "orientation must never ignore a denied temporal permission");
+  const calm = homeVM(ficticia, {
+    tipo: "real", temporal: { modo: "calmo", orientacao_permitida: true },
+  });
+  assert.equal(calm.foco, null,
+    "a contradictory allow flag cannot manufacture a Foco in Calmo");
+  assert.equal(calm.sinais_em_segundo_plano.length, calm.total_de_sinais);
 });
 
 /* ================================================================== *
