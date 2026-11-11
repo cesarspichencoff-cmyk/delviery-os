@@ -457,11 +457,13 @@ function focoDaEleicao(
   const causa = temporal.causa;
   if (typeof causa.codigo !== "string" || !causa.codigo ||
       typeof causa.fonte_id !== "string" || !causa.fonte_id ||
-      typeof causa.severidade !== "number" || causa.severidade < 3 ||
+      typeof causa.severidade !== "number" || causa.severidade < 1 || causa.severidade > 3 ||
       temporal.identidade !== identidadeDaCausa(causa) ||
       !fontes.some((f) => f.id === causa.fonte_id && f.estado === "saudavel")) return null;
   const encontrados = sinais.filter((s) =>
-    s.severidade >= 3 &&
+    // An elected Foco may legitimately soften before the temporal owner
+    // withdraws it. Match the PRESENT signal severity, not a new 3+ election.
+    s.severidade === causa.severidade &&
     s.codigo.toUpperCase() === causa.codigo.toUpperCase() &&
     s.ambiente === causa.ambiente &&
     s.subarea === causa.subarea &&
