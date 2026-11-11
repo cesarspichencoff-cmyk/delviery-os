@@ -1,8 +1,11 @@
 package br.com.tata.entregas
 
 import android.webkit.JavascriptInterface
+import br.com.tata.entregas.bridge.Bridge
 import br.com.tata.entregas.bridge.EntregasJsBridge
 import br.com.tata.entregas.bridge.OriginBoundNativeBridge
+import org.json.JSONObject
+import org.json.JSONTokener
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -94,6 +97,24 @@ class OriginBoundNativeBridgeTest {
         assertEquals("android-bridge@1.0.0", raw.version(secret))
         assertEquals("""{"ok":true}""", raw.recordOperationalEvent(secret, "{}"))
         assertEquals(1, recorder.effects)
+    }
+
+    @Test fun nativeMessageUsesOneCompleteQuotedLiteralEvenWithRepeatedHostileCharacters() {
+        // Synthetic only. These characters must remain DATA in a JSON string,
+        // never terminate the WebView evaluateJavascript() call.
+        val detail = "primeira ' segunda ' \\\\ e \\\\ duplo \\" \nlinha"
+        val message = JSONObject().put("type", "error").put("detail", detail)
+        val script = Bridge.messageDispatchScript(message)
+        val prefix = "window.__entregasNativeMessage && window.__entregasNativeMessage("
+        assertTrue(script.startsWith(prefix))
+        assertTrue(script.endsWith(")"))
+        val literal = script.removePrefix(prefix).dropLast(1)
+        assertTrue(literal.startsWith("\\""))
+        assertTrue(literal.endsWith("\\""))
+        assertEquals(message.toString(), JSONTokener(literal).nextValue())
+        // Control: two apostrophes and repeated backslashes survive decoding.
+        val restored = JSONObject(JSONTokener(literal).nextValue() as String)
+        assertEquals(detail, restored.getString("detail"))
     }
 
     @Test fun bootstrapCannotExposeCapabilityAsAWindowGlobalOrToChildFrames() {

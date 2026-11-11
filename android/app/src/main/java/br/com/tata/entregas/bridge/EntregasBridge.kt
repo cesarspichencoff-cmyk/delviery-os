@@ -35,15 +35,23 @@ object Bridge {
         webViewRef = null
     }
 
+    /**
+     * Build one JavaScript string literal from the ENTIRE JSON message.
+     * Replacing only the first quote/backslash can terminate the argument
+     * and turn data into executable JavaScript. Android's JSON quoting
+     * escapes every occurrence, including control characters, consistently.
+     */
+    internal fun messageDispatchScript(message: JSONObject): String {
+        val literal = JSONObject.quote(message.toString())
+        return "window.__entregasNativeMessage && window.__entregasNativeMessage($literal)"
+    }
+
     /** Entrega a mensagem ao JS na thread da interface. */
     private fun post(message: JSONObject) {
         val web = webViewRef?.get() ?: return
-        val payload = message.toString().replace("\\", "\\\\").replace("'", "\\'")
+        val script = messageDispatchScript(message)
         web.post {
-            web.evaluateJavascript(
-                "window.__entregasNativeMessage && window.__entregasNativeMessage('$payload')",
-                null,
-            )
+            web.evaluateJavascript(script, null)
         }
     }
 
