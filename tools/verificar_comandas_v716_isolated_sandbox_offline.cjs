@@ -81,6 +81,7 @@ function syntheticSnapshotHash(order){
 event.snapshot_hash=syntheticSnapshotHash(event.order);
 const run=(p=eventPath,out=null)=>spawnSync(process.execPath,
  [consumer,p,...(out?[out]:[])],{encoding:"utf8",timeout:15000,
+   windowsHide:true,
   env:{...process.env,NODE_OPTIONS:"",NODE_PATH:""}});
 try{
  fs.mkdirSync(eventDir);fs.mkdirSync(outDir);
