@@ -37,6 +37,15 @@ check("source stale refused",run(i=>i.ifood.capturedAt="2026-11-02T01:57:00.000Z
 check("future clock skew refused",run(i=>i.native.capturedAt="2026-11-02T02:00:15.000Z").status==="HOLD");
 check("source simulation/live not mixed",run(i=>i.ifood.mode="LIVE_SHADOW").reasons.includes("LIVE_SIMULATION_MIXED"));
 check("stated live is still shadow and not operational",run(i=>{i.native.mode="LIVE_SHADOW";i.ifood.mode="LIVE_SHADOW";i.ifood.sourceAttested=true;i.native.sourceAttested=true;i.scope.mappingIndependentlyVerified=true}).status==="CANDIDATES_SHADOW_ONLY");
+const allClaims=run(i=>{
+ i.ifood.mode="LIVE_SHADOW";i.native.mode="LIVE_SHADOW";
+ i.ifood.sourceAttested=true;i.native.sourceAttested=true;
+ i.scope.mappingIndependentlyVerified=true;
+});
+check("self-claimed source and store flags never constitute merchant proof",
+ allClaims.status==="CANDIDATES_SHADOW_ONLY"&&allClaims.merchantVerified===false&&
+ allClaims.reasons.includes("ATTESTATION_FLAGS_ARE_UNBOUND_INPUT_CLAIMS")&&
+ allClaims.readyForCopilot===false);
 check("partial source attestation cannot promote",!run(i=>{i.ifood.sourceAttested=true}).merchantVerified);
 check("short code collision quarantined",run(i=>i.ifood.orders.push(order("4821"))).counts.collision===1);
 check("two different native keys with same short quarantined",run(i=>i.native.orders.push(native("4821",457))).counts.collision===1);

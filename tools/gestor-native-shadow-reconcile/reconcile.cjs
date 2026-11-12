@@ -139,6 +139,7 @@ function reconcile(input){
   schema:SCHEMA,status:live?"CANDIDATES_SHADOW_ONLY":"SIMULATION_ONLY",
   reasons:[
    "SHORT_ID_STORE_DAY_NOT_UUID",
+   "ATTESTATION_FLAGS_ARE_UNBOUND_INPUT_CLAIMS",
    ...(scope.mappingIndependentlyVerified?[]:["STORE_MAPPING_NOT_INDEPENDENTLY_ATTESTED"]),
    ...(ifood.sourceAttested?[]:["IFOOD_SOURCE_NOT_INDEPENDENTLY_ATTESTED"]),
    ...(native.sourceAttested?[]:["NATIVE_SOURCE_NOT_INDEPENDENTLY_ATTESTED"]),
@@ -147,7 +148,9 @@ function reconcile(input){
    ...(counts.onlyIfood||counts.onlyNative?["PRESENCE_MISMATCH_HOLD"]:[])
   ],
   counts,matches,
-  merchantVerified:scope.mappingIndependentlyVerified&&ifood.sourceAttested&&native.sourceAttested,
+  // These booleans are self-reported input claims, not an authenticated
+  // producer or independently bound merchant. Never elevate them to proof.
+  merchantVerified:false,
   uuidJoinProven:false,physicalItemProgressProven:false,readyForCopilot:false,
   deliveryEventsEnabled:false,printAuthorized:false,effects:EFFECTS
  });

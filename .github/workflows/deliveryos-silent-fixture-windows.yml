@@ -79,6 +79,7 @@ on:
       - tests/gestor-shadow/run-visible-detail-probe-tests.cjs
       - tests/gestor-shadow/run-window-selector-tests.cjs
       - tests/gestor-shadow/run-status-bridge-tests.cjs
+      - tools/gestor-native-shadow-reconcile/**
       - runtime/reporting/gestor_v3_visible_sensor.js
       - tests/gestor-shadow/run-v3-visible-sensor-browser-tests.cjs
   workflow_dispatch:
@@ -150,6 +151,7 @@ jobs:
           node tests/gestor-shadow/run-window-selector-tests.cjs
           node tests/gestor-shadow/run-dedicated-window-gate-tests.cjs
           node tests/gestor-shadow/run-status-bridge-tests.cjs
+          node tools/gestor-native-shadow-reconcile/reconcile.test.cjs
 
   native-windows:
     name: Windows no-console native fixture
