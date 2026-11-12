@@ -8,6 +8,7 @@
  * short code, local minute, names and quantities is CORRELATION, never a
  * native UUID foreign key, full child-table coverage or release permission.
  */
+const {snapshotHash}=require('./native_reader_shadow_replay_v1.cjs');
 const SCHEMA='deliveryos.reader-ifood-processing-correlation.v1';
 const INPUT='deliveryos.reader-ifood-processing-input.v1';
 const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
@@ -35,7 +36,8 @@ function localMinute(x){
 }
 const result=(reason,extra={})=>Object.freeze({
   schema:SCHEMA,state:'HOLD',reason,matchedProducts:0,matchedQuantities:0,
-  readerEventHashAuthenticated:false,processingOriginAuthenticated:false,
+  readerEventHashAuthenticated:false,readerSnapshotRecomputed:false,
+  processingOriginAuthenticated:false,
   ifoodDetailAuthenticated:false,merchantIdentityIndependentlyProven:false,
   nativeUuidLinkProven:false,childTableCoverageProven:false,
   observationCoverageProven:false,sqlWriterSafetyProven:false,
@@ -57,6 +59,10 @@ function compare(input){
        !sha(e.snapshot_hash)||!Array.isArray(o.items)||
        o.items.length===0||o.items.length>200)
       return result('READER_SCOPE_OR_SHAPE_INVALID');
+    // A producer's explicit HOLD cannot be waived by matching names or hashes.
+    if(e.ready_for_downstream_shadow===false||
+       (Array.isArray(e.blockers)&&e.blockers.length>0))
+      return result('READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
     if(p.order_key!==e.order_key||p.snapshot_hash!==e.snapshot_hash||
        !Array.isArray(p.lines)||p.lines.length!==o.items.length)
       return result('PROCESSING_RECORD_NOT_BOUND_TO_READER_REVISION');
@@ -104,7 +110,12 @@ function compare(input){
       else multiset.set(key,count-1);
     }
     if(multiset.size!==0)return result('IFOOD_PRODUCT_MULTISET_INCOMPLETE');
+    // A copied digest does not prove that the event content produced those bytes.
+    // This preflight proves only self-consistency, never independent custody.
+    if(snapshotHash(o)!==e.snapshot_hash)
+      return result('READER_SNAPSHOT_NOT_SELF_CONSISTENT');
     return result('PRODUCT_NAMES_AND_QUANTITIES_CORRELATED_NOT_IDENTITY_PROVEN',{
+      readerSnapshotRecomputed:true,
       matchedProducts:p.lines.length,matchedQuantities:p.lines.length,
       processingRevisionBoundByCaller:true,
       ifoodStoreShortCodeLocalMinuteMatched:true
