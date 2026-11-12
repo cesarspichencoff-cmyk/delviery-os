@@ -53,11 +53,21 @@ function seed(e){
 let passed=0;
 function test(name,fn){fn();passed++;console.log('PASS '+name);}
 try{
- test('checkpoint -> canonical native Reader -> Copiloto without false ready or allergy absence',()=>{
+ test('canonical synthetic Reader can no longer masquerade as REAL complete feed',()=>{
   const e=canonical();seed(e);const r=read(args);
+  assert.equal(r.state,'unavailable');
+  assert.equal(r.reason,'SOURCE_CURRENT_REVISION_BLOCKED');
+  assert.equal(r.view,null);
+  assert.equal(r.live_source_verified,false);
+  assert.equal(r.operational_order_total,null);
+  assert(!JSON.stringify(r).includes('ALERGIA FICTICIA'));
+ });
+ test('control-mode synthetic checkpoint still previews products without claiming reality',()=>{
+  const e=canonical();seed(e);
+  const r=read({...args,scope:{...scope,sourceMode:'control'}});
   assert.equal(r.state,'observed_records',r.reason);
   assert.equal(r.filesRead,1);
-  assert.equal(r.view.orders[0].source_mode,'real');
+  assert.equal(r.view.orders[0].source_mode,'control');
   assert.equal(r.view.orders[0].source_status,'3');
   assert.equal(r.view.orders[0].items[0].quantity,2);
   assert.equal(r.view.orders[0].kds_cycle.state,'UNKNOWN');
@@ -65,9 +75,8 @@ try{
   assert.equal(r.view.orders[0].trip_id,null);
   assert.equal(r.live_source_verified,false);
   assert.equal(r.operational_order_total,null);
-  const text=JSON.stringify(r);
-  assert(!text.includes('ALERGIA FICTICIA'));
-  assert(!text.includes('SEM CEBOLINHA FICTICIA'));
+  assert(!JSON.stringify(r).includes('ALERGIA FICTICIA'));
+  assert(!JSON.stringify(r).includes('SEM CEBOLINHA FICTICIA'));
  });
  test('legacy watcher with missing note scan is HOLD, not partial current record',()=>{
   const e=canonical();
@@ -106,21 +115,22 @@ try{
   const before=fs.readFileSync(eventPath,'utf8');
   const ckBefore=fs.readFileSync(ckPath,'utf8');
   const r=read({...args,scope:{...scope,allowVerifiedLegacyUppercase:true}});
-  assert.equal(r.state,'observed_records',r.reason);
-  assert.equal(r.legacyDigestReconciled,1);
-  assert.equal(r.view.orders[0].snapshot_ref,snapshotHash(e.order));
+  assert.equal(r.state,'unavailable');
+  assert.equal(r.reason,'SOURCE_CURRENT_REVISION_BLOCKED');
+  assert.equal(r.view,null);
   assert.equal(r.live_source_verified,false);
   assert.equal(r.operational_order_total,null);
-  assert.equal(r.view.orders[0].ready_for_dispatch,null);
   assert.equal(fs.readFileSync(eventPath,'utf8'),before);
   assert.equal(fs.readFileSync(ckPath,'utf8'),ckBefore);
   assert(!JSON.stringify(r).includes('ALERGIA FICTICIA'));
  });
- test('canonical lowercase event also passes explicit bridge without double normalization',()=>{
+ test('even a canonical lowercase event with bridge stays REAL blocked',()=>{
   const e=canonical();seed(e);
   const r=read({...args,scope:{...scope,allowVerifiedLegacyUppercase:true}});
-  assert.equal(r.state,'observed_records',r.reason);
-  assert.equal(r.legacyDigestReconciled,0);
+  assert.equal(r.state,'unavailable');
+  assert.equal(r.reason,'SOURCE_CURRENT_REVISION_BLOCKED');
+  assert.equal(r.view,null);
+  assert.equal(r.live_source_verified,false);
  });
  test('stale or inconsistent uppercase digest cannot pass even when checkpoint agrees',()=>{
   const e=canonical();e.order.observation_rows[0].value='NOTA ALTERADA';
