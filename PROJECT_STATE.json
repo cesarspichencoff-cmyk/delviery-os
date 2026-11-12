@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "feat/gestor-shadow-observer-20261103",
-  "checkpoint_type": "V1_L1_NATIVE_READER_16_EVENT_FIELD_SAMPLE_REAL_CI_PASS_SOURCE_INDEPENDENCE_HOLD",
-  "state_basis_head": "5a85a0b2ab2ac4cd64c4a25d5646e0743a07c196",
+  "checkpoint_type": "V1_L1_REAL_IFOOD_BROWSER_NATIVE_READER_ONE_ORDER_CANDIDATE_SOURCE_TRUTH_HOLD",
+  "state_basis_head": "8fe73ea9904b18793143eb6203562865a4f12e09",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -104,7 +104,7 @@
     "2026-10-31 Cesar approved ownership rule and console rider choice for release ('Sim, pode fazer o que for necessario...').",
     "2026-11-01 Cesar decisions applied: short per-terminal codes kept off-repo with attempt throttle (machine credentials exempt); field APK signing from GitHub secrets via tag workflow; term approved pending legal fields; five former out-of-scope items moved into V1. CI 737258f1 product and Android success."
   ],
-  "next_action": "FOCO L1/N2-B+N4: 16 eventos DLV_IFO/0001/01 de 11/11 foram lidos passivamente em 12/11 com 16/16 itens+observações autodeclarados; isso NÃO comprova completude nas tabelas filhas nem identidade UUID iFood. Obter por canal permitido um detalhe independente e completo de um pedido iFood Itaim com loja e UUID ou vínculo forte verificável e confrontar com 1 revisão nativa e suas tabelas filhas, protegendo escritores (N2-A desconhecido). Corrigir projetor SKIPPED_LOCKED somente com protocolo de dono, rollback e prova segura; não apagar lock. CAIXA_MOOCA ONLINE no Desktop Commander, mas SOMENTE leitura passiva, sem processo/terminal/SQL/UI/impressão. Foxxy OFFLINE. Continuar V1 L1→L8; PRs #137 e #135 OPEN/DRAFT/HOLD; CI do codigo 5a85a0b 4/4 aprovada; 0/8 aceites de campo.",
+  "next_action": "FOCO L1: fonte iFood autenticada no Opera, 1 detalhe de pedido real da noite de 11/11/2026 observado com UUID integral em orderId da URL e displayId, item rows, quantidades e horário. Reader em CAIXA_MOOCA: 1 revisão DLV_IFO/0001/01 candidata correspondente por displayId+mesmo minuto+2 linhas e quantidades [1,1]. NÃO é UUID→comanda atestado; Portal não expõe loja id/Itaim explicitamente; Reader não possui UUID no evento. Priorizar (1) atestar merchant IFOOD→ITAIM, (2) autenticar ligação UUID→quatro-partes Teknisa por evidência do integrador/recibo independente, (3) N2-A writer-safety e N2-B cobertura/commit de ITCOMANDAEST, OBSITCOMANDAVEN, OBSITCOMANDAEST e OCORRENCIA, (4) resolver projetor SKIPPED_LOCKED com ownership/rollback, sem apagar lock. Não criar mock extra nem promover Home, Entregas, impressão ou status P/X. CAIXA_MOOCA somente leitura passiva, sem SQL, comando, UI, processo ou impressão. PRs #137 e #135 DRAFT/HOLD; code basis 8fe73ea tem 4/4 workflows PASS; 0/8 field gates.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -214,12 +214,12 @@
   },
   "latest_operational_checkpoint": {
     "recorded_date_brt": "2026-11-12",
-    "state_kind": "CURRENT_REPO_CI_AND_REMOTE_PASSIVE_16_EVENT_SAMPLE_VERIFIED",
+    "state_kind": "INDEPENDENT_IFOOD_AUTHENTICATED_PORTAL_ONE_ORDER_NATIVE_READER_CANDIDATE_CROSSCHECK",
     "checked_review_branch": "feat/gestor-shadow-observer-20261103",
-    "code_basis_sha": "5a85a0b2ab2ac4cd64c4a25d5646e0743a07c196",
-    "review_pr": "#137 OPEN/DRAFT/HOLD, source code commit 5a85a0b, unmerged; metadata-only checkpoint may have later HEAD",
+    "code_basis_sha": "8fe73ea9904b18793143eb6203562865a4f12e09",
+    "review_pr": "#137 OPEN/DRAFT/HOLD, code basis 8fe73ea tested 4/4 PASS; this checkpoint only metadata",
     "comandas_pr": "#135 OPEN/DRAFT/HOLD; HEAD 66243a10c63348654bea58b48dffef303faf6b4a",
-    "l1": "PARTIAL / N2-A writer impact UNKNOWN / N2-B native child coverage and atomic commit UNKNOWN / N3 checkpoint and 16 source snapshots internally coherent but independent source auth UNKNOWN / N4 iFood UUID join HOLD / N5 Home real HOLD",
+    "l1": "PARTIAL — authenticated iFood Portal order UUID visible in URL; one order candidate matches native Reader by same-day short code, time within same minute, 2 direct lines and [1,1] quantities; not independently proven UUID-to-native-key or merchant mapping; N2-A/N2-B UNKNOWN; Home HOLD",
     "l2": "CODIFIED_TAXONOMY_FIELD_ROUTE_HOLD",
     "l3": "PHYSICAL_READY_UNKNOWN; 15 native state P and 1 X in passive sample, not homologated; ready_for_downstream_shadow is NOT physical ready",
     "l4": "HOME_TEMPORAL_FOCUS_AND_SOURCE_TRUTH_CI_PASS_REAL_ORDERS_HOLD",
@@ -230,7 +230,7 @@
     "accepted_field_stages": 0,
     "required_field_stages": 8,
     "verification": {
-      "code_commit": "5a85a0b2ab2ac4cd64c4a25d5646e0743a07c196",
+      "code_commit": "8fe73ea9904b18793143eb6203562865a4f12e09",
       "actions_four_of_four_success": true,
       "android_room_junit": "PASS in workflow 43149417912; device Xiaomi NOT tested in this acceptance",
       "android_https": "PASS in workflow 43149418003; field endpoint NOT proven",
@@ -243,10 +243,15 @@
         "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149418003",
         "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417908"
       ],
-      "world_operational_acceptance": false
+      "world_operational_acceptance": false,
+      "current_code_unit_tests_passed": true,
+      "code_revision_field_deployed": false,
+      "portal_browser_order_read_real": true,
+      "single_reader_candidate_source_match": true,
+      "operational_order_join_proven": false
     },
     "last_remote_device_check": "CAIXA_MOOCA ONLINE via Desktop Commander 0.3.2, Foxxy OFFLINE, both observed in this turn; no workstation changes",
-    "next_material_gate": "Independently attested one-order source/commit, child table completeness and safe writer impact; source event self-consistency is NOT equivalent to these gates",
+    "next_material_gate": "Close UUID-to-native four-part key with authenticated integration linkage and store attestation, then child-table full semantic coverage with writer-safety proof. Do not promote this correlated single order to a field acceptance.",
     "prohibitions": [
       "No cashier start_process or UI interference",
       "No PRINT/SEFAZ/merge/deploy/cutover",
@@ -254,8 +259,8 @@
       "No paid infrastructure",
       "Do not promote laboratory proof to field acceptance"
     ],
-    "checkpoint_scope": "GITHUB_METADATA_ONLY; no permission implied for operational SQL, vendor contact, print, production changes or live Home publishing",
-    "prior_state_interpretation": "Historical verified_state/unknowns/old CI and device entries predate this 2026-11-12 checkpoint; latest_operational_checkpoint is authoritative for current status.",
+    "checkpoint_scope": "GITHUB_METADATA_ONLY; no operational SQL, iFood settings, print, production changes, purchases or deployment authorized",
+    "prior_state_interpretation": "Earlier prior artifacts predate authenticated iFood read. Live browser candidate is current evidence, yet source identity and native child completeness are NOT attested.",
     "l1_field_sample": {
       "observation_kind": "PASSIVE_READ_OF_PREEXISTING_FILES_NO_DEVICE_EXECUTION",
       "observed_on_brt": "2026-11-12",
@@ -293,6 +298,49 @@
         "OCORRENCIA"
       ],
       "raw_order_ids_customer_details_and_note_values_persisted_in_repository": false
+    },
+    "source_kind": "AUTHENTICATED_PORTAL_UI_PLUS_PASSIVE_INSTALLED_NATIVE_READER_EVENT",
+    "l1_live_portal_candidate": {
+      "observed_date_brt": "2026-11-12",
+      "source_order_day_brt": "2026-11-11",
+      "portal_authenticated": true,
+      "portal_store_title": "Tatá Sushi (generic, no unit/merchant ID attested)",
+      "portal_order_uuid_present_in_orderId_query": true,
+      "portal_order_uuid_value_exported": false,
+      "portal_display_id_present": true,
+      "portal_order_time_present": true,
+      "portal_order_status_displayed": "CONCLUDED (UI, not native status proof)",
+      "portal_product_lines": 2,
+      "portal_line_quantities": [
+        1,
+        1
+      ],
+      "portal_modifiers_or_observations_visible": false,
+      "reader_event_found": true,
+      "candidate_count_at_same_short_code_and_minute": 1,
+      "native_origin": "DLV_IFO",
+      "native_scope": "0001/01",
+      "native_line_count": 2,
+      "native_line_quantities": [
+        1,
+        1
+      ],
+      "quantities_coincide": true,
+      "native_order_note_rows": 1,
+      "native_note_scope": "order",
+      "native_status_ambiguous": "P",
+      "uuid_present_in_native_reader_event": false,
+      "independent_store_link_proven": false,
+      "ifood_uuid_to_native_key_binding_proven": false,
+      "native_child_tables_exhaustively_read_proven": false,
+      "source_sql_transaction_atomicity_proven": false,
+      "production_or_physical_ready_proven": false,
+      "strong_commercial_order_identity_status": "CANDIDATE_NOT_ATTESTED",
+      "customer_pii_exported_to_repository": false,
+      "order_uuid_short_code_native_order_key_or_item_names_exported_to_repository": false,
+      "cashier_effects_performed": false,
+      "portal_effects_performed": false,
+      "constraints": "Browser connector read only; no manual detail action by assistant, no iFood API, no SQL, no print"
     }
   }
 }
