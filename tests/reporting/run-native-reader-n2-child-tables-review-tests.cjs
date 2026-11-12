@@ -34,7 +34,8 @@ function fixture(){
     {...scope,NRPRODCOMVEN:'LINE_B',CDPRODUTO:'222',
      CDPRODPROMOCAO:null,NRSEQPRODCOM:null}]),
    ITCOMANDAEST:wrap([{...scope,NRPRODCOMVEN:'LINE_A',CDPRODUTO:'333',QTPROCOMEST:'1.000'}]),
-   OBSITCOMANDAVEN:wrap([{...scope,NRPRODCOMVEN:'LINE_B',CDGRPOCOR:'G1',CDOCORR:'O1'}]),
+   OBSITCOMANDAVEN:wrap([{...scope,NRPRODCOMVEN:'LINE_B',CDGRPOCOR:'G1',CDOCORR:'O1',
+    NRPRODCOMVENOBS:null,QTPRODCOMVENOBS:null}]),
    OBSITCOMANDAEST:wrap([{...scope,NRPRODCOMVEN:'LINE_A',CDPRODUTO:'333',CDGRPOCOR:'G1',CDOCORR:'O2'}]),
    OCORRENCIA:wrap([{CDGRPOCOR:'G1',CDOCORR:'O1',DSOCORR:'FICT_NO_CILANTRO'},
      {CDGRPOCOR:'G1',CDOCORR:'O2',DSOCORR:'FICT_EXTRA_SAUCE'}]),
@@ -171,6 +172,32 @@ run('combo sequence without native parent is refused',
 run('truncation sentinel at fixed limit refused',
  x=>{const a=x.childRows.ITCOMANDAEST;a.rows=Array.from({length:200},()=>copy(a.rows[0]));a.totalRows=200},
  'CHILD_ROWSET_MISSING_EXHAUSTION_OR_TRUNCATED');
+run('extra native product master row is not a one-order projection',x=>{
+ const set=x.childRows.PRODUTO;
+ set.rows.push({CDPRODUTO:'999',NMPRODUTO:'FICT_EXTRANEOUS_PRODUCT'});
+ set.totalRows=set.rows.length;
+},'PRODUCT_MASTER_ROWS_OUTSIDE_THIS_ORDER');
+run('extra occurrence catalog code is not a one-order projection',x=>{
+ const set=x.childRows.OCORRENCIA;
+ set.rows.push({CDGRPOCOR:'G2',CDOCORR:'O2',DSOCORR:'FICT_EXTRANEOUS_OCC'});
+ set.totalRows=set.rows.length;
+},'OCCURRENCE_DICTIONARY_ROWS_OUTSIDE_THIS_ORDER');
+run('priced observation projection needs explicit quantity field',x=>{
+ delete x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS;
+},'DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
+run('priced observation projection needs explicit reference field',x=>{
+ delete x.childRows.OBSITCOMANDAVEN.rows[0].NRPRODCOMVENOBS;
+},'DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
+run('invalid observation quantity never counts as structurally matched',x=>{
+ x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='invalid';
+},'DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
+run('negative observation quantity never counts as structurally matched',x=>{
+ x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='-1';
+},'DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
+run('valid numeric observation quantity remains HOLD without source proof',x=>{
+ x.childRows.OBSITCOMANDAVEN.rows[0].NRPRODCOMVENOBS='3';
+ x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='2.000';
+},OK);
 run('no options is a caller claim, never source completeness',
  x=>{x.childRows.ITCOMANDAEST=wrap([]);
       x.childRows.OBSITCOMANDAEST=wrap([]);
