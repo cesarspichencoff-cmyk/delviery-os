@@ -71,6 +71,24 @@ check('processing hash mismatch blocks',x=>{x.processing.snapshot_hash='b'.repea
 check('processing line code mismatch blocks',x=>{x.processing.lines[0].CDPRODUTO='222'},'PROCESSING_NATIVE_PRODUCT_OR_QUANTITY_MISMATCH');
 check('processing quantity mismatch blocks',x=>{x.processing.lines[0].quantity=3},'PROCESSING_NATIVE_PRODUCT_OR_QUANTITY_MISMATCH');
 check('processing line reference mismatch blocks',x=>{x.processing.lines[0].NRPRODCOMVEN='UNKNOWN'},'PROCESSING_LINE_OR_NAME_INVALID');
+// The supplier's installed GET_LAST_SALE lookup uses NRCOMANDAEXT alone
+// and picks the newest sale. Even a minute/product match cannot prove that
+// a native four-part key is the independently authenticated iFood UUID.
+check('same short minute and product basket with different native key remains only correlation',x=>{
+ const o=x.event.order;
+ o.NRVENDAREST='FICT_SECOND_SALE';
+ o.NRCOMANDA='FICT_SECOND_COMMAND';
+ x.event.order_key=[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join('|');
+ x.event.snapshot_hash=snapshotHash(o);
+ x.processing.order_key=x.event.order_key;
+ x.processing.snapshot_hash=x.event.snapshot_hash;
+},ok,2);
+check('supplier-style short code reuse from a different date never correlates',x=>{
+ x.ifood.placed_at_local='2026-11-10T12:04:53';
+},'IFOOD_STORE_SHORT_CODE_OR_LOCAL_MINUTE_MISMATCH');
+check('supplier-style short code reuse from another store never correlates',x=>{
+ x.ifood.store_id='53070';
+},'IFOOD_STORE_SHORT_CODE_OR_LOCAL_MINUTE_MISMATCH');
 check('same short code different minute is not a match',x=>{x.ifood.placed_at_local='2026-11-11T12:05:00'},'IFOOD_STORE_SHORT_CODE_OR_LOCAL_MINUTE_MISMATCH');
 check('different iFood store blocks',x=>{x.ifood.store_id='99999'},'IFOOD_STORE_SHORT_CODE_OR_LOCAL_MINUTE_MISMATCH');
 check('different native origin blocks',x=>{x.event.order.IDORGCMDVENDA='DLV_X'},'READER_SCOPE_OR_SHAPE_INVALID');
