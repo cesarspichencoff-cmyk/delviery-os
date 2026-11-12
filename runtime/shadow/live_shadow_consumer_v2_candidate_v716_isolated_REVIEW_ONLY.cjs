@@ -86,6 +86,13 @@ if (!P) throw new Error("PACKAGING_ENGINE_MISSING");
 
 function readJson(p) {
   const buf = fs.readFileSync(labExistingFile(p));
+  // Current human decisions are copied byte-for-byte from our pinned Git file.
+  if(path.basename(p)==="human-clarifications.json"){
+    const actual=crypto.createHash("sha1").update("blob "+buf.length+"\0")
+      .update(buf).digest("hex");
+    if(actual!=="1b87373bdd6412adc33cf2723448625de5100e8e")
+      throw new Error("LAB_HUMAN_RULE_SOURCE_DRIFT");
+  }
   sourceDigestV714.set(path.resolve(p),
     crypto.createHash("sha256").update(buf).digest("hex"));
   let text;
@@ -253,6 +260,7 @@ const cache = readJson(path.join(here, "product-identity-cache-v1.json"));
 const academy = readJson(path.join(here, "app-data.json"));
 const aliases = readJson(path.join(here, "product-aliases-v1.json"));
 const orderOverrides = readJson(path.join(here, "human-order-overrides-v1.json"));
+const humanClarifications=readJson(path.join(here,"human-clarifications.json"));
 const routing = readJson(path.join(here, "routing.json"));
 const printerMap = readJson(path.join(here, "printer-map.json"));
 const nonProduction = readJson(path.join(here, "non-production.json"));
@@ -268,7 +276,8 @@ const ruleLineage = Object.freeze({
     "deliveryos:installed/non-production.json#sha256=" + sha256File(path.join(here, "non-production.json")),
     "deliveryos:installed/product-identity-cache-v1.json#sha256=" + sha256File(path.join(here, "product-identity-cache-v1.json")),
     "deliveryos:installed/product-aliases-v1.json#sha256=" + sha256File(path.join(here, "product-aliases-v1.json")),
-    "deliveryos:installed/human-order-overrides-v1.json#sha256=" + sha256File(path.join(here, "human-order-overrides-v1.json"))
+    "deliveryos:installed/human-order-overrides-v1.json#sha256=" + sha256File(path.join(here, "human-order-overrides-v1.json")),
+    "deliveryos:review-only/human-clarifications.json#sha256=" + sha256File(path.join(here,"human-clarifications.json"))
   ])
 });
 // END V710 LINEAGE 2
@@ -277,6 +286,14 @@ const ruleLineage = Object.freeze({
 if (cache.schema !== "deliveryos.product-identity-cache.v1") throw new Error("IDENTITY_CACHE_SCHEMA_MISMATCH");
 if (aliases.schema !== "deliveryos.academia-live-product-aliases.v1") throw new Error("PRODUCT_ALIASES_SCHEMA_MISMATCH");
 if (orderOverrides.schema !== "deliveryos.human-exact-order-overrides.v1") throw new Error("ORDER_OVERRIDES_SCHEMA_MISMATCH");
+if(humanClarifications.schema!==
+  "tata.comandas.cesar-operational-clarifications-20261101.v1.review-only"||
+   humanClarifications.store_scope!=="ITAIM_0001_01"||
+   humanClarifications.origin!=="CESAR_DIRECT_CHAT_THIS_TURN"||
+   humanClarifications.print_authorized!==false||
+   !Array.isArray(humanClarifications.product_rules)||
+   humanClarifications.product_rules.length!==6)
+  throw new Error("LAB_HUMAN_REVIEW_RULES_SCHEMA_INVALID");
 if (routing.schema !== "deliveryos.odhen.product-routing.compact.v1") throw new Error("ROUTING_SCHEMA_MISMATCH");
 if (printerMap.schema !== "deliveryos.runtime-printer-map.v1") throw new Error("PRINTER_MAP_SCHEMA_MISMATCH");
 
@@ -298,6 +315,31 @@ function indexUniqueV716(rows,keyOf,label){
     index.set(key,row);
   }
   return index;
+}
+// Exact human rule, already decided by Cesar. Review evidence only; this
+// cannot identify the first native print, attest SQL, or authorize a ticket.
+const HUMAN_LOGICAL_STATION=Object.freeze({
+ SUSHI_QUENTES:"enrolados_quentes",COZINHA:"cozinha_quentes",
+ BAR:"bar_bebidas",COMBINADOS:"combinados"
+});
+const HUMAN_LOGICAL_PRINTER_CODES=Object.freeze({
+ SUSHI_QUENTES:["00004","00006"],COZINHA:["00002"],
+ BAR:["00007"],COMBINADOS:["00003","00009"]
+});
+function humanReviewClassificationV1(code,name,routes){
+ const rules=humanClarifications.product_rules.filter(r=>r.code===code);
+ if(rules.length!==1)return null;
+ const r=rules[0];
+ if(norm(r.label)!==norm(name)||
+    !Object.hasOwn(HUMAN_LOGICAL_STATION,r.stated_area)||
+    !Array.isArray(routes)||routes.length!==1||
+    !HUMAN_LOGICAL_PRINTER_CODES[r.stated_area]?.includes(routes[0])||
+    r.conference_ticket_policy!=="UNCHANGED"||
+    typeof r.new_production_ticket_policy!=="string"||
+    !r.new_production_ticket_policy.startsWith("BY_PROVEN_"))
+  return null;
+ return {family:r.stated_family,station:HUMAN_LOGICAL_STATION[r.stated_area],
+   review_required:false};
 }
 const cacheByProduct=indexUniqueV716(cache.rows,
   r=>r.CDPRODUTO===null||r.CDPRODUTO===undefined?"":String(r.CDPRODUTO),
@@ -468,6 +510,14 @@ for (const [index, raw] of (event.order.items || []).entries()) {
   let classification = null;
   let classificationSource = null;
   const alias = aliasByName.get(n);
+  const humanReview=humanReviewClassificationV1(code,name,routes);
+  const exactAcademy=academyByName.get(n);
+  if(humanReview && exactAcademy?.classification?.review_required===false &&
+     norm(exactAcademy.classification.station)!==norm(humanReview.station))
+    blockers.push("HUMAN_ACADEMY_STATION_CONFLICT_"+code);
+  if(humanReview && alias && alias.classification?.review_required===false &&
+     norm(alias.classification.station)!==norm(humanReview.station))
+    blockers.push("HUMAN_ALIAS_STATION_CONFLICT_"+code);
 
   // Compute a strict documented fallback but never outrank human aliases or
   // exact Academy classification. Only use it for classifications not mapped.
@@ -478,6 +528,9 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     if(alias.classification?.review_required === false) {
       classification = alias.classification;
       classificationSource = "HUMAN_CONFIRMED_NAME_ALIAS_2026_10_05";
+    } else if(humanReview){
+      classification=humanReview;
+      classificationSource="CESAR_EXACT_HUMAN_RULE_REVIEW_ONLY";
     } else blockers.push("ALIAS_CLASSIFICATION_UNREVIEWED_" + code);
   } else if (alias) {
     blockers.push("ALIAS_CANONICAL_IDENTITY_MISMATCH_" + code);
@@ -498,10 +551,13 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     };
     classificationSource = "ACADEMIA_OPERATIONAL_COMBO_BRIDGE_2026_10_07";
   } else {
-    const exact = academyByName.get(n);
+    const exact = exactAcademy;
     if (exact?.classification?.review_required === false) {
       classification = exact.classification;
       classificationSource = "ACADEMIA_EXACT_NAME";
+    } else if (humanReview){
+      classification=humanReview;
+      classificationSource="CESAR_EXACT_HUMAN_RULE_REVIEW_ONLY";
     } else if (
       n === "sashimi tataki de salmao" &&
       code === "9.10.05.072.00" &&
