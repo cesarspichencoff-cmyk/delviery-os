@@ -125,6 +125,8 @@ function reconcile(input){
   const occurrences=new Map();
   for(const row of rs.OCORRENCIA.rows){
    if(!obj(row)||!val(row.CDGRPOCOR)||!val(row.CDOCORR)||
+      !Object.hasOwn(row,'CDPRODUTO')||
+      (row.CDPRODUTO!==null&&!val(row.CDPRODUTO))||
       (!val(row.DSOCORR)&&!val(row.DSAPELIDOOBS)))
     return denial('OCCURRENCE_DICTIONARY_ROW_INVALID');
    const key=pair(row);
@@ -132,7 +134,7 @@ function reconcile(input){
    occurrences.set(key,row);
   }
   const seenDirectObs=new Set(),seenChildObs=new Set();
-  const referencedOccurrences=new Set();
+  const referencedOccurrences=new Set(),pricedChildLines=new Set();
   for(const row of rs.OBSITCOMANDAVEN.rows){
    if(!obj(row)||!scoped(row)||
       !direct.has(row.NRPRODCOMVEN)||
@@ -143,6 +145,24 @@ function reconcile(input){
       (row.NRPRODCOMVENOBS!==null&&!val(String(row.NRPRODCOMVENOBS)))||
       !observedQty(row.QTPRODCOMVENOBS))
     return denial('DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
+   // Installed vendor writer uses an extra ITCOMANDAVEN product row for each
+   // priced observation. OBSITCOMANDAVEN.NRPRODCOMVENOBS must point to
+   // that native child line; the occurrence's CDPRODUTO binds its code.
+   // A plain observation has NULL reference and NULL occurrence product.
+   // This is only a caller-supplied structural check, never source authority.
+   const occ=occurrences.get(pair(row));
+   if(row.NRPRODCOMVENOBS!==null){
+    const priced=direct.get(row.NRPRODCOMVENOBS);
+    if(!val(row.NRPRODCOMVENOBS)||!priced||
+       row.NRPRODCOMVENOBS===row.NRPRODCOMVEN||
+       !val(occ.CDPRODUTO)||priced.CDPRODUTO!==occ.CDPRODUTO||
+       !qty(row.QTPRODCOMVENOBS)||
+       Number(priced.QTPRODCOMVEN)!==Number(row.QTPRODCOMVENOBS)||
+       pricedChildLines.has(row.NRPRODCOMVENOBS))
+      return denial('PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+    pricedChildLines.add(row.NRPRODCOMVENOBS);
+   }else if(occ.CDPRODUTO!==null)
+    return denial('ORDINARY_OBSERVATION_PRODUCT_REFERENCE_AMBIGUOUS');
    const key=JSON.stringify([row.NRPRODCOMVEN,row.CDGRPOCOR,row.CDOCORR,row.NRPRODCOMVENOBS??null]);
    if(seenDirectObs.has(key))return denial('DIRECT_OBSERVATION_DUPLICATE');
    seenDirectObs.add(key);
@@ -195,6 +215,7 @@ function reconcile(input){
    directItems:direct.size,comboMappedLines:comboLines.size,
    comboProductLines:comboGroups,extensionRows:rs.ITCOMANDAEST.rows.length,
    directObservationRows:seenDirectObs.size,
+   pricedObservationNativeLinksMatched:pricedChildLines.size,
    extensionObservationRows:seenChildObs.size,
    occurrenceDictionaryRows:occurrences.size,
    referencedProductNames:requiredProducts.size,
