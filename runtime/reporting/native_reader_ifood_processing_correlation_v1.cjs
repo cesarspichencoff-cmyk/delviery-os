@@ -111,8 +111,10 @@ function compare(input){
       return result('IFOOD_STORE_SHORT_CODE_OR_LOCAL_MINUTE_MISMATCH');
     if(!Array.isArray(f.items)||f.items.length!==processed.size||
        f.items.length>200)return result('IFOOD_PRODUCT_LINE_COUNT_MISMATCH');
+    const codeMode=f.items.some(row=>Object.prototype.hasOwnProperty.call(row,'externalCode'));
     if(ambiguousFold(p.lines,'product_name')||ambiguousFold(f.items,'name'))
       return result('FOLDED_PRODUCT_NAME_COLLISION_AMBIGUOUS');
+    let nameMultisetMatch=true, matchedProductNames=0;
     const multiset=new Map();
     for(const row of p.lines){
       const key=JSON.stringify([norm(row.product_name),quantity(row.quantity)]);
@@ -123,15 +125,23 @@ function compare(input){
         return result('IFOOD_PRODUCT_NAME_OR_QUANTITY_INVALID');
       const key=JSON.stringify([norm(row.name),quantity(row.quantity)]);
       const count=multiset.get(key)||0;
-      if(count===0)return result('IFOOD_PRODUCT_NAME_OR_QUANTITY_MISMATCH');
+      if(count===0){
+        nameMultisetMatch=false;
+        if(!codeMode)return result('IFOOD_PRODUCT_NAME_OR_QUANTITY_MISMATCH');
+        continue;
+      }
+      matchedProductNames++;
       if(count===1)multiset.delete(key);
       else multiset.set(key,count-1);
     }
-    if(multiset.size!==0)return result('IFOOD_PRODUCT_MULTISET_INCOMPLETE');
+    if(multiset.size!==0){
+      nameMultisetMatch=false;
+      if(!codeMode)return result('IFOOD_PRODUCT_MULTISET_INCOMPLETE');
+    }
     // Optional independently visible Gestor externalCode <-> native CDARVPROD.
     // The whole basket must carry codes; partial or invalid codes HOLD.
     // Matching codes remains content correlation, NOT source custody or UUID identity.
-    const anyCode=f.items.some(row=>Object.prototype.hasOwnProperty.call(row,'externalCode'));
+    const anyCode=codeMode;
     let matchedProductCodes=0;
     if(anyCode){
       if(!f.items.every(row=>code(row.externalCode)!==null))
@@ -156,9 +166,15 @@ function compare(input){
     // This preflight proves only self-consistency, never independent custody.
     if(snapshotHash(o)!==e.snapshot_hash)
       return result('READER_SNAPSHOT_NOT_SELF_CONSISTENT');
-    return result('PRODUCT_NAMES_AND_QUANTITIES_CORRELATED_NOT_IDENTITY_PROVEN',{
+    // Names may be commercial aliases; codes+quantities are a stronger REVIEW
+    // candidate, never source custody, authenticated UUID binding, or print.
+    const reason=codeMode&&!nameMultisetMatch
+      ? 'PRODUCT_CODES_AND_QUANTITIES_CORRELATED_NAMES_DIFFER_REVIEW_ONLY'
+      : 'PRODUCT_NAMES_AND_QUANTITIES_CORRELATED_NOT_IDENTITY_PROVEN';
+    return result(reason,{
       readerSnapshotRecomputed:true,
       matchedProducts:p.lines.length,matchedQuantities:p.lines.length,matchedProductCodes,
+      matchedProductNames,nameMultisetMatched:nameMultisetMatch,
       processingRevisionBoundByCaller:true,
       ifoodStoreShortCodeLocalMinuteMatched:true
     });

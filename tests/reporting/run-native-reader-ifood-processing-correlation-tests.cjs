@@ -168,4 +168,30 @@ check('invalid native code with Gestor codes HOLD',x=>{
  assert.equal(r.printAuthorized,false);
  count++;console.log('PASS three lines: identical product code with differing quantities kept separate');
 }
+
+{
+ const x=fixture();
+ x.ifood.items[0].name='Nome Comercial Combo';
+ x.ifood.items[1].name='Nome de Exibicao Diferente';
+ x.ifood.items[0].externalCode='9200002000';
+ x.ifood.items[1].externalCode='9.20.00.010.00';
+ const before=JSON.stringify(x),r=compare(x);
+ assert.equal(JSON.stringify(x),before,'mutated coded alias input');
+ assert.equal(r.state,'HOLD');
+ assert.equal(r.reason,'PRODUCT_CODES_AND_QUANTITIES_CORRELATED_NAMES_DIFFER_REVIEW_ONLY');
+ assert.equal(r.matchedProductCodes,2);
+ assert.equal(r.matchedProductNames,0);
+ assert.equal(r.nameMultisetMatched,false);
+ assert.equal(r.readerSnapshotRecomputed,true);
+ assert.equal(r.nativeUuidLinkProven,false);
+ assert.equal(r.homePublishAuthorized,false);
+ assert.equal(r.printAuthorized,false);
+ assert.equal(r.ordersPublishable,0);
+ count++;console.log('PASS coded commercial aliases stay review-only with explicit mismatch');
+}
+check('coded alias with wrong code blocks even if names differ',x=>{
+ x.ifood.items[0].name='Nome Comercial Combo';
+ x.ifood.items[0].externalCode='9200001000';
+ x.ifood.items[1].externalCode='9200002000';
+},'IFOOD_NATIVE_CODE_AND_QTY_MISMATCH');
 console.log('READER_IFOOD_EXISTING_PROCESSING_CORRELATION_PASS '+count+'/'+count+' OFFLINE_ONLY_HOLD');
