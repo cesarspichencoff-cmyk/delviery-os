@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {INPUT,compare}=require('../../runtime/reporting/native_reader_ifood_processing_correlation_v1.cjs');
+const {INPUT,compare,NOTE_INPUT,reviewInlineItemNotes}=require('../../runtime/reporting/native_reader_ifood_processing_correlation_v1.cjs');
 const {snapshotHash}=require('../../runtime/reporting/native_reader_shadow_replay_v1.cjs');
 function fixture(){
  const event={schema:'deliveryos.tata-reader-stable-order-event.v1',
@@ -194,4 +194,68 @@ check('coded alias with wrong code blocks even if names differ',x=>{
  x.ifood.items[0].externalCode='9200001000';
  x.ifood.items[1].externalCode='9200002000';
 },'IFOOD_NATIVE_CODE_AND_QTY_MISMATCH');
+
+function noteReview(gestorItems,readerItems){
+ const input={schema:NOTE_INPUT,gestorItems,readerItems},before=JSON.stringify(input);
+ const r=reviewInlineItemNotes(input);
+ assert.equal(JSON.stringify(input),before,'notes mutated');
+ assert.equal(r.state,'HOLD');
+ for(const k of ['independentItemLineBindingProven','nativeChildTableCoverageProven','observationScanIndependentlyProven','merchantIdentityProven','homePublishAuthorized','printAuthorized'])assert.equal(r[k],false,k);
+ assert.equal(r.ordersPublishable,0);
+ assert.equal(r.rawNotesExported,0);
+ for(const secret of ['Sem Pimenta','Sem Cebola','Molho Separado','Instrucao Exclusiva','Wasabi'])assert.equal(JSON.stringify(r).includes(secret),false,'LEAK');
+ return r;
+}
+{
+ const g=[{quantity:2,observations:'Sem Pimenta',options:[{name:'Wasabi'}]},
+  {quantity:1,observations:'Sem Cebola',options:[]},{quantity:2}];
+ const r=[{quantity:2,observations:[{value:'Sem Pimenta',source_field:'DSOBSPEDDIGCMD'},
+  {value:'SEM PIMENTA',source_field:'TXPRODCOMVEN'},
+  {value:'Wasabi'},{value:'Instrucao Exclusiva'}]},
+  {quantity:1,observations:[{value:'Sem Cebola'}]},{quantity:2,observations:[]}];
+ const z=noteReview(g,r);
+ assert.equal(z.reason,'UNEXPLAINED_OR_MISSING_INLINE_NOTES_REVIEW_ONLY');
+ assert.equal(z.matchedDirectNotes,2);
+ assert.equal(z.optionNameCorrelations,1);
+ assert.equal(z.unexplainedNativeNotes,1);
+ assert.equal(z.duplicateNativeNoteFieldEntries,1);
+ assert.equal(z.itemLinesReviewed,3);
+ count++;console.log('PASS note diff: direct + option + unknown, missing options omitted');
+}
+{
+ const z=noteReview(
+  [{quantity:1,observations:'Sem Pimenta'},{quantity:1,observations:'Molho Separado'}],
+  [{quantity:1,observations:['Sem Pimenta','SEM PIMENTA']},
+   {quantity:1,observations:['Molho Separado','MOLHO SEPARADO']}]);
+ assert.equal(z.matchedDirectNotes,2);
+ assert.equal(z.duplicateNativeNoteFieldEntries,2);
+ assert.equal(z.unexplainedNativeNotes,0);
+ assert.equal(z.reason,'DIRECT_AND_OPTION_NOTE_TEXT_CORRELATED_NOT_COMPLETE');
+ count++;console.log('PASS repeated product remains two independent note lines');
+}
+{
+ const z=noteReview([{quantity:1,observations:'Sem Cebola'}],
+  [{quantity:1,observations:[]}]);
+ assert.equal(z.missingGestorDirectNotes,1);
+ count++;console.log('PASS missing Gestor note detected');
+}
+{
+ const z=noteReview([{quantity:1,observations:'Sem Cebola'}],
+  [{quantity:2,observations:['Sem Cebola']}]);
+ assert.equal(z.reason,'ITEM_INDEX_QUANTITY_OR_NOTE_PROJECTION_INVALID');
+ count++;console.log('PASS wrong item quantity blocks note attribution');
+}
+{
+ const z=noteReview([{quantity:1}],[{quantity:1}]);
+ assert.equal(z.reason,'ITEM_INDEX_QUANTITY_OR_NOTE_PROJECTION_INVALID');
+ count++;console.log('PASS Reader missing notes array cannot be treated as empty');
+}
+{
+ const z=noteReview([{quantity:1,observations:'Sem Cebola'}],
+  [{quantity:1,observations:[{value:'Instrucao Exclusiva'}]}]);
+ assert.equal(z.missingGestorDirectNotes,1);
+ assert.equal(z.unexplainedNativeNotes,1);
+ count++;console.log('PASS missing and extra notes both reported');
+}
+
 console.log('READER_IFOOD_EXISTING_PROCESSING_CORRELATION_PASS '+count+'/'+count+' OFFLINE_ONLY_HOLD');

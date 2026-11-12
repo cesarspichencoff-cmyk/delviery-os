@@ -180,4 +180,73 @@ function compare(input){
     });
   }catch{return result('CORRELATION_EXCEPTION_HOLD');}
 }
-module.exports=Object.freeze({SCHEMA,INPUT,compare});
+
+const NOTE_INPUT='deliveryos.reader-ifood-inline-note-review-input.v1';
+// Counts-only diagnostic; item position is only a review hypothesis.
+const noteText=x=>typeof x==='string'&&x.length>0&&x.length<=2000&&
+ x===x.trim()&&!/[\x00-\x1f\x7f]/.test(x);
+const noteNorm=x=>norm(x).replace(/[.!?;,\s]+$/gu,'').trim();
+function reviewInlineItemNotes(input){
+ const out=(reason,extra={})=>Object.freeze({
+  schema:'deliveryos.reader-ifood-inline-note-review.v1',state:'HOLD',reason,
+  sameIndexQuantityMatched:false,independentItemLineBindingProven:false,
+  nativeChildTableCoverageProven:false,observationScanIndependentlyProven:false,
+  merchantIdentityProven:false,homePublishAuthorized:false,printAuthorized:false,
+  ordersPublishable:0,actionsExecuted:0,customerDataExported:false,
+  rawNotesExported:0,matchedDirectNotes:0,optionNameCorrelations:0,
+  unexplainedNativeNotes:0,missingGestorDirectNotes:0,
+  duplicateNativeNoteFieldEntries:0,...extra
+ });
+ try{
+  if(!object(input)||input.schema!==NOTE_INPUT||
+      !Array.isArray(input.gestorItems)||!Array.isArray(input.readerItems)||
+      input.gestorItems.length<1||input.gestorItems.length>200||
+      input.gestorItems.length!==input.readerItems.length)
+   return out('ITEM_LINE_COUNT_OR_INPUT_INVALID');
+  const counts={matchedDirectNotes:0,optionNameCorrelations:0,
+   unexplainedNativeNotes:0,missingGestorDirectNotes:0,
+   duplicateNativeNoteFieldEntries:0};
+  for(let i=0;i<input.gestorItems.length;i++){
+   const g=input.gestorItems[i],r=input.readerItems[i];
+   const options=g?.options??[];
+   if(!object(g)||!object(r)||quantity(g.quantity)===null||
+      quantity(g.quantity)!==quantity(r.quantity)||!Array.isArray(r.observations)||
+      r.observations.length>100||!Array.isArray(options)||options.length>100)
+    return out('ITEM_INDEX_QUANTITY_OR_NOTE_PROJECTION_INVALID');
+   const raw=g.observations??'';
+   if(typeof raw!=='string'||(raw!==''&&!noteText(raw)))
+    return out('GESTOR_INLINE_NOTE_INVALID');
+   const gNote=raw?noteNorm(raw):'';
+   const opts=[];
+   for(const opt of options){
+    const label=typeof opt==='string'?opt:object(opt)?opt.name:null;
+    if(!noteText(label))return out('GESTOR_OPTION_NAME_INVALID');
+    opts.push(noteNorm(label));
+   }
+   const readerNotes=[],seen=new Set();
+   for(const note of r.observations){
+    const label=typeof note==='string'?note:object(note)?note.value:null;
+    if(!noteText(label))return out('READER_INLINE_NOTE_INVALID');
+    const v=noteNorm(label);
+    if(!v)return out('READER_INLINE_NOTE_INVALID');
+    if(seen.has(v))counts.duplicateNativeNoteFieldEntries++;
+    else{seen.add(v);readerNotes.push(v)}
+   }
+   if(gNote){
+    const index=readerNotes.indexOf(gNote);
+    if(index<0)counts.missingGestorDirectNotes++;
+    else{counts.matchedDirectNotes++;readerNotes.splice(index,1)}
+   }
+   for(const n of readerNotes){
+    if(opts.includes(n))counts.optionNameCorrelations++;
+    else counts.unexplainedNativeNotes++;
+   }
+  }
+  const reason=counts.missingGestorDirectNotes||counts.unexplainedNativeNotes
+   ?'UNEXPLAINED_OR_MISSING_INLINE_NOTES_REVIEW_ONLY'
+   :'DIRECT_AND_OPTION_NOTE_TEXT_CORRELATED_NOT_COMPLETE';
+  return out(reason,{sameIndexQuantityMatched:true,itemLinesReviewed:input.gestorItems.length,...counts});
+ }catch{return out('INLINE_NOTE_REVIEW_EXCEPTION_HOLD')}
+}
+
+module.exports=Object.freeze({SCHEMA,INPUT,compare,NOTE_INPUT,reviewInlineItemNotes});
