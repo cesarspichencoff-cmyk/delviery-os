@@ -27,6 +27,17 @@
 
 **Correção preventiva na PR #137:** o adaptador real `runtime/reporting/copiloto_tata_reader_adapter_v1.cjs` não deve mais aceitar `canonicalContractChecked=true` como se fosse `observationScanIndependentlyProven=true`. O verificador de origem devolve explicitamente `false` para essa segunda propriedade. Em `sourceMode=real`, a admissão deve retornar `READER_REAL_NATIVE_CHILD_TABLE_COVERAGE_UNPROVEN` até existir comprovante independente e devidamente revisto. O laboratório continua admitindo somente revisões sintéticas de controle, sem publicar nem imprimir.
 
+## Nova checagem estática: `GET_LAST_SALE` do fornecedor não identifica a origem
+
+Em 12/11/2026 foi feita outra leitura **somente de arquivo de código instalado**, sem API nem consulta SQL:
+- `C:\\TEKNISA\\odhenPOS\\backend_74000\\vendor\\odhen\\api\\src\\Util\\MSDEQuery.php`, ~1240–1264, constante `GET_LAST_SALE`: a cláusula `WHERE CV.NRCOMANDAEXT = :NRCOMANDAEXT` é ordenada por `VR.DTHRABERMESA DESC`. **Não existem nessa seleção predicados de `CDFILIAL`, `CDLOJA`, `IDORGCMDVENDA` ou UUID iFood.**
+- `vendor/odhen/api/src/Service/Comanda.php`, ~1610–1630: `getLastSale($NRCOMANDAEXT)` recebe **somente** o número curto e chama `fetchAssoc("GET_LAST_SALE", ...)`. Sem unicidade demonstrada, escolher o registro cronologicamente mais recente **não** comprova qual venda corresponde a uma referência iFood.
+- As consultas auxiliares `getLastSaleProducts/getLastSaleProductObservations/getLastSaleCombos/getLastSaleComboProducts` recebem `CDFILIAL, NRVENDAREST, NRCOMANDA`, e, para combos, o par de agrupamento nativo. Isso ajuda a estudar as relações **depois** de obter a chave exata, mas não atesta por si a seleção inicial nem a integridade temporal/SQL.
+
+**Efeito prático:** a rota aparentemente simples "pegar UUID iFood → número curto → `GET_LAST_SALE` → comanda" está **DESCARTADA como prova forte N4**. Códigos curtos podem se repetir em datas/lojas diferentes; ainda que nome, quantidade e minuto coincidam, isso sustenta somente correlação. Não afirmar que efetivamente ocorreu colisão neste pedido: o risco é deduzido da ausência de restrições no SQL instalado, e não de uma colisão real observada.
+
+**Proteção testada por fixtures:** o comparador `native_reader_ifood_processing_correlation_v1.cjs` conserva `state=HOLD` e `nativeUuidLinkProven=false` até com uma segunda identidade nativa fictícia e os mesmos produtos/minuto/código curto; variantes de outra data/loja não correlacionam. O teste não consulta o fornecedor nem autentica a fonte.
+
 ## O que este marco altera
 
 Esta observação supera uma **ausência total de confrontação contemporânea**: agora existe **um** pedido do Portal e **um** evento Reader com múltiplos campos coincidentes e a mesma data. **Não** generaliza para outros pedidos, não prova 100% do movimento, não comprova completude semântica, não autoriza novo SQL e não muda a política de proteção absoluta de tela do CAIXA_MOOCA.
