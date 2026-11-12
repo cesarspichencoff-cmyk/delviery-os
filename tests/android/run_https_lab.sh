@@ -79,6 +79,9 @@ if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
   -Pentregas.platformUrl=https://10.0.2.2:8080; then
   # Em falha, recolher somente CLASSE de excecao e frames Kotlin locais.
   # Nunca imprimir logcat bruto, mensagens, tokens, GPS, HTTP ou payloads.
+  # Collect fixed JUnit assertion categories only; never print raw XML.
+  python3 ../tests/android/https_failure_category_v1.py \
+    app/build/outputs/androidTest-results/connected || true
   echo "LAB_HTTPS_INSTRUMENTATION_CRASH_CLASS_DIAGNOSTIC"
   adb logcat -d -v brief -s AndroidRuntime:E 2>/dev/null | python3 -c '
 import re, sys
