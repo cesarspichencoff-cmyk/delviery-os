@@ -64,10 +64,12 @@ test('name must come from already joined native product master',()=>assert.equal
 test('wrong native product join is rejected',()=>assert.equal(
  check(sql.replace('ON p.CDPRODUTO=i.CDPRODUTO','ON p.CDPRODUTO=i.NRPRODCOMVEN')),
  'REQUIRED_NATIVE_JOIN_MISSING'));
-test('duplicate product join would add load and is rejected',()=>assert.equal(
- check(sql.replace('ORDER BY\n  r.DTHRABERMESA',
- 'LEFT JOIN TEKNISA.PRODUTO AS p2 ON p2.CDPRODUTO=i.CDPRODUTO\nORDER BY\n  r.DTHRABERMESA')),
- 'UNEXPECTED_JOIN_OR_SECOND_PRODUCT_LOOKUP'));
+test('duplicate product join would add load and is rejected on LF or CRLF',()=>{
+ const duplicated=sql.replace('ON p.CDPRODUTO=i.CDPRODUTO',
+   'ON p.CDPRODUTO=i.CDPRODUTO\\nLEFT JOIN TEKNISA.PRODUTO p2 ON p2.CDPRODUTO=i.CDPRODUTO'.replace('\\n','\n'));
+ assert.notEqual(duplicated,sql,'DUPLICATE_JOIN_MUTATION_MUST_APPLY');
+ assert.equal(check(duplicated),'UNEXPECTED_JOIN_OR_SECOND_PRODUCT_LOOKUP');
+});
 test('note field DSOBSPEDDIGCMD cannot disappear',()=>assert.equal(
  check(sql.replace('i.DSOBSPEDDIGCMD,','')),'EXACT_NATIVE_SELECTED_COLUMNS_MISMATCH'));
 test('order note cannot disappear',()=>assert.equal(
