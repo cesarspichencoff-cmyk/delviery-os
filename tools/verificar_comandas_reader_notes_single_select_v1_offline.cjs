@@ -28,7 +28,7 @@ function check(q){
  const expected=[
  'r.CDFILIAL','r.CDLOJA','r.NRVENDAREST','r.NRCOMANDA',
  'r.NRCOMANDAEXT','r.IDORGCMDVENDA','r.IDSTCOMANDA','r.DTHRABERMESA',
- 'i.NRPRODCOMVEN','i.CDPRODUTO','p.CDARVPROD','i.QTPRODCOMVEN',
+ 'i.NRPRODCOMVEN','i.CDPRODUTO','p.CDARVPROD','p.NMPRODUTO','i.QTPRODCOMVEN',
  'i.IDSTPRCOMVEN','c.DSOBSCOMANDA',
  'i.DSOBSDESCIT','i.DSOBSPEDDIGCMD','i.TXPRODCOMVEN'
  ];
@@ -44,14 +44,30 @@ function check(q){
   'ON p.CDPRODUTO=i.CDPRODUTO'
  ];
  if(joins.some(k=>!s.includes(k)))return 'REQUIRED_NATIVE_JOIN_MISSING';
+ // The name is projected by the existing PRODUTO join, not an additional
+ // query or join (which could amplify SQL load and row cardinality).
+ if((s.match(/\bJOIN\s+TEKNISA\.PRODUTO\s+p\b/gi)||[]).length!==1||
+    (s.match(/\bJOIN\b/gi)||[]).length!==4)
+  return 'UNEXPECTED_JOIN_OR_SECOND_PRODUCT_LOOKUP';
  if(!/ORDER BY[\s\S]*i\.NRPRODCOMVEN\s+ASC/i.test(s))
   return 'NATIVE_LINE_ORDER_NOT_EXPLICIT';
  return 'STATIC_SELECT_REVIEW_PASS_NOT_EXECUTED';
 }
 let n=0;
 const test=(name,fn)=>{fn();n++;};
-test('unchanged 17-column source template passes static review',()=>assert.equal(
+test('existing join returns 18 columns including native product name',()=>assert.equal(
  check(sql),'STATIC_SELECT_REVIEW_PASS_NOT_EXECUTED'));
+test('native product name cannot disappear',()=>assert.equal(
+ check(sql.replace('p.NMPRODUTO,','')),'EXACT_NATIVE_SELECTED_COLUMNS_MISMATCH'));
+test('name must come from already joined native product master',()=>assert.equal(
+ check(sql.replace('p.NMPRODUTO,','i.NMPRODUTO,')),'EXACT_NATIVE_SELECTED_COLUMNS_MISMATCH'));
+test('wrong native product join is rejected',()=>assert.equal(
+ check(sql.replace('ON p.CDPRODUTO=i.CDPRODUTO','ON p.CDPRODUTO=i.NRPRODCOMVEN')),
+ 'REQUIRED_NATIVE_JOIN_MISSING'));
+test('duplicate product join would add load and is rejected',()=>assert.equal(
+ check(sql.replace('ORDER BY\n  r.DTHRABERMESA',
+ 'LEFT JOIN TEKNISA.PRODUTO AS p2 ON p2.CDPRODUTO=i.CDPRODUTO\nORDER BY\n  r.DTHRABERMESA')),
+ 'UNEXPECTED_JOIN_OR_SECOND_PRODUCT_LOOKUP'));
 test('note field DSOBSPEDDIGCMD cannot disappear',()=>assert.equal(
  check(sql.replace('i.DSOBSPEDDIGCMD,','')),'EXACT_NATIVE_SELECTED_COLUMNS_MISMATCH'));
 test('order note cannot disappear',()=>assert.equal(
