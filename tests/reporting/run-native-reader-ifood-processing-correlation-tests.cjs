@@ -45,6 +45,22 @@ function check(label,mutate,reason,matched=0){
 }
 const ok='PRODUCT_NAMES_AND_QUANTITIES_CORRELATED_NOT_IDENTITY_PROVEN';
 check('two existing Reader processing names match iFood, never authorize',null,ok,2);
+check('real observed Latin accent and case variation remains correlation-only',x=>{
+ x.processing.lines[1].product_name='TARTAR DE SALMAO';
+ x.processing.lines[0].product_name='HOT ROLL';
+},ok,2);
+check('accent-fold collision in processing is rejected',x=>{
+ x.processing.lines[0].product_name='Pão';
+ x.processing.lines[1].product_name='Pao';
+ x.ifood.items[0].name='Pão';
+ x.ifood.items[1].name='Pao';
+},'FOLDED_PRODUCT_NAME_COLLISION_AMBIGUOUS');
+check('accent-fold collision on iFood detail is rejected',x=>{
+ x.processing.lines[0].product_name='Pao';
+ x.processing.lines[1].product_name='Pao';
+ x.ifood.items[0].name='Pão';
+ x.ifood.items[1].name='Pao';
+},'FOLDED_PRODUCT_NAME_COLLISION_AMBIGUOUS');
 check('name mismatch blocks',x=>{x.ifood.items[1].name='Outro'},'IFOOD_PRODUCT_NAME_OR_QUANTITY_MISMATCH');
 check('quantity mismatch blocks',x=>{x.ifood.items[1].quantity=3},'IFOOD_PRODUCT_NAME_OR_QUANTITY_MISMATCH');
 check('duplicate identical names are counted with multiplicity',x=>{
