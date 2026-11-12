@@ -104,7 +104,7 @@
     "2026-10-31 Cesar approved ownership rule and console rider choice for release ('Sim, pode fazer o que for necessario...').",
     "2026-11-01 Cesar decisions applied: short per-terminal codes kept off-repo with attempt throttle (machine credentials exempt); field APK signing from GitHub secrets via tag workflow; term approved pending legal fields; five former out-of-scope items moved into V1. CI 737258f1 product and Android success."
   ],
-  "next_action": "FOCO L1: fonte iFood autenticada no Opera, 1 detalhe de pedido real da noite de 11/11/2026 observado com UUID integral em orderId da URL e displayId, item rows, quantidades e horário. Reader em CAIXA_MOOCA: 1 revisão DLV_IFO/0001/01 candidata correspondente por displayId+mesmo minuto+2 linhas e quantidades [1,1]. NÃO é UUID→comanda atestado; Portal não expõe loja id/Itaim explicitamente; Reader não possui UUID no evento. Priorizar (1) atestar merchant IFOOD→ITAIM, (2) autenticar ligação UUID→quatro-partes Teknisa por evidência do integrador/recibo independente, (3) N2-A writer-safety e N2-B cobertura/commit de ITCOMANDAEST, OBSITCOMANDAVEN, OBSITCOMANDAEST e OCORRENCIA, (4) resolver projetor SKIPPED_LOCKED com ownership/rollback, sem apagar lock. Não criar mock extra nem promover Home, Entregas, impressão ou status P/X. CAIXA_MOOCA somente leitura passiva, sem SQL, comando, UI, processo ou impressão. PRs #137 e #135 DRAFT/HOLD; code basis 8fe73ea tem 4/4 workflows PASS; 0/8 field gates.",
+  "next_action": "Real 11/11/2026 Itaim order: iFood 53069 merchant identity proven via authenticated store selector. Same short code/minute, exact 2/2 product names and 2/2 quantities matched against persisted native shadow_decision, with event key+hash bound, origin DLV_IFO and unit 0001/01. Do not repeat identity/content confirmation tests. Remaining L1 is actual one-order CHILD TABLE completeness & writer-safe query gate (RCSI OFF, no CAIXA_MOOCA SQL/process allowed), plus original integrator UUID↔native key attestation. Existing 2-product order and source are strong observational evidence only. PR137/PR135 DRAFT/HOLD, 0/8 field acceptances, no print or deploy.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -214,12 +214,12 @@
   },
   "latest_operational_checkpoint": {
     "recorded_date_brt": "2026-11-12",
-    "state_kind": "INDEPENDENT_IFOOD_AUTHENTICATED_PORTAL_ONE_ORDER_NATIVE_READER_CANDIDATE_CROSSCHECK",
+    "state_kind": "REAL_IFOOD_MERCHANT_53069_VERIFIED_PORTAL_AND_NATIVE_TWO_ITEM_CONTENT_CORRELATED_HOLD",
     "checked_review_branch": "feat/gestor-shadow-observer-20261103",
     "code_basis_sha": "8fe73ea9904b18793143eb6203562865a4f12e09",
     "review_pr": "#137 OPEN/DRAFT/HOLD, code basis 8fe73ea tested 4/4 PASS; this checkpoint only metadata",
     "comandas_pr": "#135 OPEN/DRAFT/HOLD; HEAD 66243a10c63348654bea58b48dffef303faf6b4a",
-    "l1": "PARTIAL — authenticated iFood Portal order UUID visible in URL; one order candidate matches native Reader by same-day short code, time within same minute, 2 direct lines and [1,1] quantities; not independently proven UUID-to-native-key or merchant mapping; N2-A/N2-B UNKNOWN; Home HOLD",
+    "l1": "PARTIAL with real evidence: authenticated iFood merchant 53069 verified by store chooser (Tatá Sushi Rua Joao Cachoeira), and single 11/11 22:59 order correlates to native DLV_IFO 0001/01 by display ID, minute, two product names+quantities; native shadow_decision matches same order key + event snapshot hash and each CDPRODUTO. Still no independent native DB product-name master proof, UUID-to-native attestation, child-table completeness/atomic commit, or physical readiness. HOME_REAL/PRINT=HOLD.",
     "l2": "CODIFIED_TAXONOMY_FIELD_ROUTE_HOLD",
     "l3": "PHYSICAL_READY_UNKNOWN; 15 native state P and 1 X in passive sample, not homologated; ready_for_downstream_shadow is NOT physical ready",
     "l4": "HOME_TEMPORAL_FOCUS_AND_SOURCE_TRUTH_CI_PASS_REAL_ORDERS_HOLD",
@@ -251,7 +251,7 @@
       "operational_order_join_proven": false
     },
     "last_remote_device_check": "CAIXA_MOOCA ONLINE via Desktop Commander 0.3.2, Foxxy OFFLINE, both observed in this turn; no workstation changes",
-    "next_material_gate": "Close UUID-to-native four-part key with authenticated integration linkage and store attestation, then child-table full semantic coverage with writer-safety proof. Do not promote this correlated single order to a field acceptance.",
+    "next_material_gate": "N2-B: approve and safely inspect exact one-order rows in ITCOMANDAEST, OBSITCOMANDAVEN, OBSITCOMANDAEST and OCORRENCIA and prove writer-impact safety under RCSI OFF; N4: find actual integrator receipt linking iFood UUID to native 4-part key; existing portal+native 2-item content is already correlated, do not repeat it as the main task.",
     "prohibitions": [
       "No cashier start_process or UI interference",
       "No PRINT/SEFAZ/merge/deploy/cutover",
@@ -330,7 +330,7 @@
       "native_note_scope": "order",
       "native_status_ambiguous": "P",
       "uuid_present_in_native_reader_event": false,
-      "independent_store_link_proven": false,
+      "independent_store_link_proven": true,
       "ifood_uuid_to_native_key_binding_proven": false,
       "native_child_tables_exhaustively_read_proven": false,
       "source_sql_transaction_atomicity_proven": false,
@@ -340,7 +340,30 @@
       "order_uuid_short_code_native_order_key_or_item_names_exported_to_repository": false,
       "cashier_effects_performed": false,
       "portal_effects_performed": false,
-      "constraints": "Browser connector read only; no manual detail action by assistant, no iFood API, no SQL, no print"
+      "constraints": "Browser connector read only; no manual detail action by assistant, no iFood API, no SQL, no print",
+      "merchant_ifood_id_verified": true,
+      "merchant_ifood_id": "53069",
+      "merchant_store_name": "Tatá Sushi",
+      "merchant_address_evidence": "Rua Joao Cachoeira, Vila Nova Conceicao, Sao Paulo, SP (authenticated store chooser)",
+      "merchant_store_chooser_count": 1,
+      "native_business_unit_scope": "0001/01",
+      "independent_merchant_to_native_administrative_context_correlated": true,
+      "native_administrator_ifood_enabled_in_itaim": true,
+      "native_stored_shadow_decision_present": true,
+      "native_shadow_decision_product_name_origin": "INTERNAL_CATALOG_MAPPED_DECISION_NOT_VENDOR_MASTER",
+      "product_names_confirmed_by_ifood_and_native_shadow_decision": 2,
+      "portal_order_product_lines": 2,
+      "matching_product_quantities": 2,
+      "native_source_event_line_codes_match_shadow_decision": true,
+      "native_shadow_order_key_hash_match_persisted_source_event": true,
+      "same_minute_native_candidate_count": 1,
+      "native_extended_order_note_rows": 1,
+      "independent_vendor_product_master_lookup_performed": false,
+      "vendor_item_child_table_rowset_exhausted": false,
+      "formal_ifood_uuid_to_native_key_attestation": false,
+      "contextual_real_order_source_correlation": "MULTIFACTOR_HISTORICAL_CANDIDATE",
+      "exact_child_table_coverage_status": "UNKNOWN",
+      "no_pricing_or_customer_identifiers_published": true
     }
   }
 }
