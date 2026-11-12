@@ -86,6 +86,9 @@ try{
  fs.mkdirSync(eventDir);fs.mkdirSync(outDir);
  fs.copyFileSync(path.join(root,
   "runtime/shadow/live_shadow_consumer_v2_candidate_v716_isolated_REVIEW_ONLY.cjs"),consumer);
+ fs.copyFileSync(path.join(root,
+  "data/comandas_cesar_clarificacoes_20261101_review_only.json"),
+  path.join(sandbox,"human-clarifications.json"));
  const motor=fs.readFileSync(path.join(root,
   "tools/fixtures/canonical-packaging-v63-pinned.js"));
  check("canonical motor copied byte-for-byte before child execution",()=>{
@@ -275,6 +278,80 @@ try{
   assert.notEqual(v.status,0);
   assert.equal(fs.existsSync(dest),false);
  });
+ check("Cesar's tartar enters isolated shadow without printer authority",()=>{
+  const files=["product-identity-cache-v1.json","product-aliases-v1.json",
+   "routing.json","printer-map.json"];
+  const original=files.map(f=>[f,fs.readFileSync(path.join(sandbox,f))]);
+  try{
+   write("product-identity-cache-v1.json",{
+    schema:"deliveryos.product-identity-cache.v1",
+    rows:[{CDPRODUTO:"FPROD",canonical:"9.10.05.050.00",
+     NMPRODUTO:"TARTAR DE SALMAO"}]});
+   write("product-aliases-v1.json",{
+    schema:"deliveryos.academia-live-product-aliases.v1",aliases:[]});
+   write("routing.json",{
+    schema:"deliveryos.odhen.product-routing.compact.v1",
+    products:{"9.10.05.050.00":["00006"]}});
+   write("printer-map.json",{
+    schema:"deliveryos.runtime-printer-map.v1",
+    mappings:[{printer_code:"00006",printer_name:"FAKE_SUSHI_2",printer_ip:null}]});
+   const fictional=structuredClone(event);
+   fictional.order.items[0].CDARVPROD="9100505000";
+   fictional.snapshot_hash=syntheticSnapshotHash(fictional.order);
+   const source=path.join(eventDir,"tartar-human.json");
+   const target=path.join(outDir,"tartar-human.json");
+   fs.writeFileSync(source,JSON.stringify(fictional));
+   const runResult=run(source,target);
+   assert.equal(runResult.status,5,runResult.stderr);
+   assert.equal(runResult.stderr,"");
+   const result=JSON.parse(fs.readFileSync(target,"utf8"));
+   assert.equal(result.ready,false);
+   assert.equal(result.items[0].classification_source,
+    "CESAR_EXACT_HUMAN_RULE_REVIEW_ONLY");
+   assert.equal(result.items[0].classification.station,"enrolados_quentes");
+   assert.equal(result.items[0].classification.family,"ITEM_FRIO");
+   assert.equal(result.effects.print,false);
+   assert.ok(result.blocking_reasons.includes(
+    "LAB_REVISION_NOT_INDEPENDENTLY_AUTHENTICATED"));
+   assert.ok(!runResult.stdout.includes("TARTAR DE SALMAO"));
+  }finally{for(const [file,bytes] of original)
+   fs.writeFileSync(path.join(sandbox,file),bytes);}
+ });
+ check("same human rule rejects conflicting printer area",()=>{
+  const files=["product-identity-cache-v1.json","product-aliases-v1.json",
+   "routing.json","printer-map.json"];
+  const original=files.map(f=>[f,fs.readFileSync(path.join(sandbox,f))]);
+  try{
+   write("product-identity-cache-v1.json",{
+    schema:"deliveryos.product-identity-cache.v1",
+    rows:[{CDPRODUTO:"FPROD",canonical:"9.10.05.050.00",
+     NMPRODUTO:"TARTAR DE SALMAO"}]});
+   write("product-aliases-v1.json",{
+    schema:"deliveryos.academia-live-product-aliases.v1",aliases:[]});
+   write("routing.json",{
+    schema:"deliveryos.odhen.product-routing.compact.v1",
+    products:{"9.10.05.050.00":["00002"]}});
+   write("printer-map.json",{
+    schema:"deliveryos.runtime-printer-map.v1",
+    mappings:[{printer_code:"00002",printer_name:"FAKE_KITCHEN",printer_ip:null}]});
+   const fictional=structuredClone(event);
+   fictional.order.items[0].CDARVPROD="9100505000";
+   fictional.snapshot_hash=syntheticSnapshotHash(fictional.order);
+   const source=path.join(eventDir,"tartar-invalid-route.json");
+   const target=path.join(outDir,"tartar-invalid-route.json");
+   fs.writeFileSync(source,JSON.stringify(fictional));
+   const runResult=run(source,target);
+   assert.equal(runResult.status,5,runResult.stderr);
+   assert.equal(runResult.stderr,"");
+   const result=JSON.parse(fs.readFileSync(target,"utf8"));
+   assert.equal(result.ready,false);
+   assert.equal(result.items[0].classification_source,null);
+   assert.ok(result.blocking_reasons.includes(
+    "CLASSIFICATION_UNKNOWN_9.10.05.050.00"));
+   assert.equal(result.effects.print,false);
+  }finally{for(const [file,bytes] of original)
+   fs.writeFileSync(path.join(sandbox,file),bytes);}
+ });
  check("real pinned Itaim routing remains dual-role HOLD on fictional order",()=>{
   const sources=[
    ["routing.json","data/odhen_product_routing_compact_v1.json",
@@ -316,6 +393,6 @@ try{
  fs.rmSync(sandbox,{recursive:true,force:true});
 }
 check("disposable lab root removed",()=>assert.equal(fs.existsSync(sandbox),false));
-if(count!==19)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
+if(count!==21)throw Error("V716_ISOLATED_OFFHOST_TEST_COUNT_"+count);
 console.log("COMANDAS_V716_ISOLATED_SANDBOX_TEST_PASS "+count+"/"+count+
  " SYNTHETIC_ONLY NO_CAIXA_NO_SQL_NO_PRINT");
