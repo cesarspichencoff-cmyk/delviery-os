@@ -107,6 +107,16 @@ run('processing quantity mismatch prevents a name-only association',x=>{
 run('processing row-count undercoverage cannot claim matched products',x=>{
  addProcessing(x);x.processing.lines.pop();
 },'PROCESSING_REVISION_OR_LINE_COVERAGE_MISMATCH');
+run('producer declared missing child tables blocks structural reconciliation',x=>{
+ x.baseInput.event.blockers=['NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'];
+},'READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
+run('producer downstream veto cannot be bypassed by matching child rows',x=>{
+ x.baseInput.event.ready_for_downstream_shadow=false;
+},'READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
+run('producer declared source authenticity blocker cannot be ignored',x=>{
+ x.baseInput.event.blockers=['NATIVE_SOURCE_AUTHENTICITY_NOT_PROVEN'];
+ x.baseInput.event.ready_for_downstream_shadow=true;
+},'READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
 run('missing required child rowset is HOLD',
  x=>{delete x.childRows.OBSITCOMANDAEST},'REQUIRED_NATIVE_CHILD_TABLE_CAPTURE_MISSING');
 run('empty child table needs explicit exhausted true',
