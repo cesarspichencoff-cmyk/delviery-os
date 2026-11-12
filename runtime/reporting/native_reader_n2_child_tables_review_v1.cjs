@@ -5,8 +5,8 @@
 const {review:reviewBase,INPUT:BASE_INPUT}=require('./native_reader_n2_base_tables_review_v1.cjs');
 const SCHEMA='deliveryos.native-reader-n2-child-tables-review.v1';
 const INPUT='deliveryos.native-reader-n2-child-tables-input.v1';
-const TABLES=['ITCOMANDAEST','OBSITCOMANDAVEN','OBSITCOMANDAEST','OCORRENCIA','PRODUTO'];
-const LIMIT={ITCOMANDAEST:200,OBSITCOMANDAVEN:400,OBSITCOMANDAEST:400,OCORRENCIA:800,PRODUTO:400};
+const TABLES=['ITCOMANDAVEN_COMBO','ITCOMANDAEST','OBSITCOMANDAVEN','OBSITCOMANDAEST','OCORRENCIA','PRODUTO'];
+const LIMIT={ITCOMANDAVEN_COMBO:200,ITCOMANDAEST:200,OBSITCOMANDAVEN:400,OBSITCOMANDAEST:400,OCORRENCIA:800,PRODUTO:400};
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const val=x=>typeof x==='string'&&x.length>0&&x.length<=180&&x===x.trim();
 const qty=x=>/^\d+(?:\.\d{1,4})?$/.test(String(x))&&Number(x)>0&&Number.isFinite(Number(x));
@@ -47,6 +47,10 @@ function reconcile(input){
   }
   const o=input.baseInput.event.order;
   const scope=['CDFILIAL','NRVENDAREST','NRCOMANDA'];
+  // The vendor's child INSERT omits CDLOJA; its catalog PK on COMANDAVEN
+  // is the exact 3-field order scope. Reject a contradictory shop if present.
+  const scoped=x=>scope.every(k=>x[k]===o[k])&&
+   (!Object.hasOwn(x,'CDLOJA')||x.CDLOJA===o.CDLOJA);
   const direct=new Map();
   for(const it of o.items){
    if(!obj(it)||!val(it.NRPRODCOMVEN)||!val(it.CDPRODUTO)||
@@ -60,9 +64,33 @@ function reconcile(input){
    productById.set(row.CDPRODUTO,row);
   }
   const requiredProducts=new Set(o.items.map(x=>x.CDPRODUTO));
+  // The vendor uses CDPRODPROMOCAO + NRSEQPRODCOM for combo grouping.
+  // This projection comes from the SAME ITCOMANDAVEN identities already
+  // reviewed in the base rowset; it is not a new or authenticated source.
+  const comboLines=new Set();
+  let comboGroups=0;
+  for(const row of rs.ITCOMANDAVEN_COMBO.rows){
+   if(!obj(row)||!scoped(row)||!val(row.NRPRODCOMVEN)||
+      !direct.has(row.NRPRODCOMVEN)||
+      row.CDPRODUTO!==direct.get(row.NRPRODCOMVEN).CDPRODUTO||
+      comboLines.has(row.NRPRODCOMVEN)||
+      !Object.hasOwn(row,'CDPRODPROMOCAO')||
+      !Object.hasOwn(row,'NRSEQPRODCOM'))
+    return denial('COMBO_NATIVE_LINE_OR_GROUP_SCOPE_INVALID');
+   if(row.CDPRODPROMOCAO!==null&&!val(row.CDPRODPROMOCAO))
+    return denial('COMBO_PRODUCT_ID_INVALID');
+   if(row.NRSEQPRODCOM!==null&&!val(row.NRSEQPRODCOM))
+    return denial('COMBO_SEQUENCE_GROUP_INVALID');
+   comboLines.add(row.NRPRODCOMVEN);
+   if(row.CDPRODPROMOCAO!==null){
+    comboGroups++;
+    requiredProducts.add(row.CDPRODPROMOCAO);
+   }
+  }
+  if(comboLines.size!==direct.size)return denial('COMBO_LINE_PROJECTION_NOT_EXHAUSTIVE');
   const children=new Set();
   for(const row of rs.ITCOMANDAEST.rows){
-   if(!obj(row)||scope.some(k=>row[k]!==o[k])||
+   if(!obj(row)||!scoped(row)||
        !val(row.NRPRODCOMVEN)||!val(row.CDPRODUTO)||
        !qty(row.QTPROCOMEST)||!direct.has(row.NRPRODCOMVEN))
     return denial('CHILD_ITEM_PARENT_SCOPE_OR_QUANTITY_INVALID');
@@ -84,7 +112,7 @@ function reconcile(input){
   }
   const seenDirectObs=new Set(),seenChildObs=new Set();
   for(const row of rs.OBSITCOMANDAVEN.rows){
-   if(!obj(row)||scope.some(k=>row[k]!==o[k])||
+   if(!obj(row)||!scoped(row)||
       !direct.has(row.NRPRODCOMVEN)||
       !occurrences.has(pair(row)))
     return denial('DIRECT_OBSERVATION_PARENT_OR_DICTIONARY_MISSING');
@@ -93,7 +121,7 @@ function reconcile(input){
    seenDirectObs.add(key);
   }
   for(const row of rs.OBSITCOMANDAEST.rows){
-   if(!obj(row)||scope.some(k=>row[k]!==o[k])||
+   if(!obj(row)||!scoped(row)||
        !children.has(child(row))||!occurrences.has(pair(row)))
     return denial('CHILD_OBSERVATION_PARENT_OR_DICTIONARY_MISSING');
    const key=JSON.stringify([row.NRPRODCOMVEN,row.CDPRODUTO,row.CDGRPOCOR,row.CDOCORR]);
@@ -106,7 +134,8 @@ function reconcile(input){
   return denial('NATIVE_CHILD_RELATIONSHIPS_CONSISTENT_SOURCE_UNATTESTED',{
    baseSourceStructureMatched:true,childJoinShapeMatched:true,
    callerReportedTableExhaustion:true,
-   directItems:direct.size,extensionRows:rs.ITCOMANDAEST.rows.length,
+   directItems:direct.size,comboMappedLines:comboLines.size,
+   comboProductLines:comboGroups,extensionRows:rs.ITCOMANDAEST.rows.length,
    directObservationRows:seenDirectObs.size,
    extensionObservationRows:seenChildObs.size,
    occurrenceDictionaryRows:occurrences.size,
