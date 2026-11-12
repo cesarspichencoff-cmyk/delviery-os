@@ -110,6 +110,7 @@ test('time policy cannot override producer block or unknown provenance',()=>{
 // Every fact below is invented. Passing the shape does NOT attest source,
 // login, SQL isolation, KDS state or operational readiness.
 const {snapshotHash}=require('../../runtime/reporting/native_reader_shadow_replay_v1.cjs');
+const {review:reviewProducer}=require('../../runtime/reporting/native_reader_producer_contract_review_v1.cjs');
 const copy=x=>JSON.parse(JSON.stringify(x));
 const realScope={...timed,sourceMode:'real',sourceUnitId:'0001',sourceStoreId:'01',
   sourceTimePolicy:{...timed.sourceTimePolicy,sourceUnitId:'0001',sourceStoreId:'01'}};
@@ -127,17 +128,35 @@ function nativeRealFixture(){
   return {...event(),order:o,order_key:'0001|01|LABSALE01|LABCMD01',
     snapshot_hash:snapshotHash(o),observed_at:'2026-11-03T18:21:00-03:00'};
 }
-test('real-mode reader notes/digest reviewer accepts only canonical synthetic shape',()=>{
- const e=nativeRealFixture(),result=adapt(e,realScope);
- assert.equal(result.state,'adapted',result.reason);
- const r=project({unitId:'ITAIM',sourceUnitId:'0001',revisions:[result.revision],
+test('real-mode canonical event stays blocked without independent child-table proof',()=>{
+ const e=nativeRealFixture(),shape=reviewProducer(e),result=adapt(e,realScope);
+ assert.equal(shape.canonicalContractChecked,true);
+ assert.equal(shape.observationScanIndependentlyProven,false);
+ assert.equal(result.state,'blocked');
+ assert.equal(result.reason,'READER_REAL_NATIVE_CHILD_TABLE_COVERAGE_UNPROVEN');
+ assert.equal(result.revision,null);
+});
+test('same invented event is available ONLY as a non-live control fixture',()=>{
+ const e=nativeRealFixture(),r0=adapt(e,{...realScope,sourceMode:'control'});
+ assert.equal(r0.state,'adapted',r0.reason);
+ const r=project({unitId:'ITAIM',sourceUnitId:'0001',revisions:[r0.revision],
    now:'2026-11-03T18:22:00-03:00',maxAgeMs:120000});
  assert.equal(r.orders.length,1);
+ assert.equal(r.orders[0].source_mode,'control');
  assert.equal(r.orders[0].ready_for_dispatch,null);
  assert.equal(r.orders[0].kds_cycle.state,'UNKNOWN');
  assert.equal(r.live_source_verified,false);
  assert.equal(r.operational_order_total,null);
  assert.equal(JSON.stringify(r).includes('CEBOLINHA'),false);
+});
+test('forged producer field-complete claim cannot bypass native child gate',()=>{
+ const e=nativeRealFixture();e.order.observation_scan_complete=true;
+ e.ready_for_downstream_shadow=true;e.blockers=[];
+ e.independentChildTablesProven=true;e.observationScanIndependentlyProven=true;
+ e.effects.database_read=true;
+ const a=adapt(e,realScope);
+ assert.equal(a.reason,'READER_REAL_NATIVE_CHILD_TABLE_COVERAGE_UNPROVEN');
+ assert.equal(a.revision,null);
 });
 test('real-mode rejects legacy watcher without full observation scan',()=>{
  const e=nativeRealFixture();delete e.order.observation_scan_complete;
@@ -174,8 +193,8 @@ test('control-mode fixture still works but never becomes a live source',()=>{
  assert.equal(r.orders[0].source_mode,'control');
 });
 
-test('operational read clock must carry explicit zone and represent a real date',()=>{
- const a=adapt(nativeRealFixture(),realScope);
+test('control projection read clock must carry explicit zone and represent a real date',()=>{
+ const a=adapt(nativeRealFixture(),{...realScope,sourceMode:'control'});
  assert.equal(a.state,'adapted');
  const baseline={unitId:'ITAIM',sourceUnitId:'0001',
    revisions:[a.revision],maxAgeMs:120000};
@@ -192,8 +211,8 @@ test('operational read clock must carry explicit zone and represent a real date'
  assert.equal(ok.orders[0].state,'observed');
  assert.equal(ok.live_source_verified,false);
 });
-test('in-scope native revision cannot use ambiguous or impossible event clock',()=>{
- const a=adapt(nativeRealFixture(),realScope);
+test('synthetic in-scope native revision cannot use ambiguous or impossible event clock',()=>{
+ const a=adapt(nativeRealFixture(),{...realScope,sourceMode:'control'});
  assert.equal(a.state,'adapted');
  const baseline={unitId:'ITAIM',sourceUnitId:'0001',
    now:'2026-11-03T21:22:00Z',maxAgeMs:120000};
@@ -210,8 +229,8 @@ test('in-scope native revision cannot use ambiguous or impossible event clock',(
    /EXPLICIT_SOURCE_OPEN_TIME_REQUIRED/);
  }
 });
-test('a bad current revision blocks whole Copiloto read instead of showing old record',()=>{
- const a=adapt(nativeRealFixture(),realScope);
+test('a malformed synthetic current revision blocks whole Copiloto read instead of showing old record',()=>{
+ const a=adapt(nativeRealFixture(),{...realScope,sourceMode:'control'});
  assert.equal(a.state,'adapted');
  const good=copy(a.revision),bad=copy(a.revision);
  bad.revision.source_observed_at='2026-11-03T18:22:00';
