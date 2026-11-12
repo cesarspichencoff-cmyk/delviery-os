@@ -1,14 +1,20 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {INPUT,compare}=require('../../runtime/reporting/native_reader_ifood_processing_correlation_v1.cjs');
+const {snapshotHash}=require('../../runtime/reporting/native_reader_shadow_replay_v1.cjs');
 function fixture(){
  const event={schema:'deliveryos.tata-reader-stable-order-event.v1',
-  order_key:'0001|01|FICT_SALE|FICT_COMMAND',snapshot_hash:'a'.repeat(64),
+  order_key:'0001|01|FICT_SALE|FICT_COMMAND',snapshot_hash:null,
   order:{CDFILIAL:'0001',CDLOJA:'01',NRVENDAREST:'FICT_SALE',
    NRCOMANDA:'FICT_COMMAND',NRCOMANDAEXT:'1234',IDORGCMDVENDA:'DLV_IFO',
+   IDSTCOMANDA:'3',
    DTHRABERMESA:'2026-11-11T12:04:09.0000000',items:[
-    {NRPRODCOMVEN:'LINE_A',CDPRODUTO:'111',QTPRODCOMVEN:'1.000'},
-    {NRPRODCOMVEN:'LINE_B',CDPRODUTO:'222',QTPRODCOMVEN:'2.000'}]}};
+    {NRPRODCOMVEN:'LINE_A',CDPRODUTO:'111',CDARVPROD:'9200001000',
+     IDSTPRCOMVEN:'4',QTPRODCOMVEN:'1.000'},
+    {NRPRODCOMVEN:'LINE_B',CDPRODUTO:'222',CDARVPROD:'9200002000',
+     IDSTPRCOMVEN:'4',QTPRODCOMVEN:'2.000'}],
+   observation_scan_complete:false,observation_rows:[]}};
+ event.snapshot_hash=snapshotHash(event.order);
  return {schema:INPUT,event,
   processing:{order_key:event.order_key,snapshot_hash:event.snapshot_hash,lines:[
     {NRPRODCOMVEN:'LINE_A',CDPRODUTO:'111',product_name:'Hot Roll',quantity:'1.000'},
@@ -26,12 +32,14 @@ function check(label,mutate,reason,matched=0){
  assert.equal(r.matchedQuantities,matched);
  assert.equal(JSON.stringify(data),before,'mutated input');
  for(const secret of ['FICT_SALE','FICT_COMMAND','FICT_UUID_PRIVATE','Hot Roll',
-  'Tartar de Salmão','1234','111','222','a'.repeat(64)])
+  'Tartar de Salmão','1234','111','222',data.event.snapshot_hash])
   assert.equal(JSON.stringify(r).includes(secret),false,'LEAK:'+secret);
  for(const k of ['nativeUuidLinkProven','observationCoverageProven',
   'childTableCoverageProven','readerEventHashAuthenticated',
   'ifoodDetailAuthenticated','homePublishAuthorized','printAuthorized'])
   assert.equal(r[k],false,k);
+ assert.equal(r.readerSnapshotRecomputed,reason===
+  'PRODUCT_NAMES_AND_QUANTITIES_CORRELATED_NOT_IDENTITY_PROVEN');
  assert.equal(r.ordersPublishable,0);assert.equal(r.actionsExecuted,0);
  count++;console.log('PASS '+label);
 }
@@ -59,5 +67,22 @@ check('no timezone guessing is allowed',x=>{x.ifood.placed_at_local='2026-11-11T
 check('self-declared origin not used to certify source',x=>{
  x.processing.source_authenticated=true;x.ifood.authenticated=true;
 },ok,2);
+check('native header change without digest update cannot count as matched',x=>{
+ x.event.order.IDSTCOMANDA='P';
+},'READER_SNAPSHOT_NOT_SELF_CONSISTENT');
+check('forged copied hash in processing does not prove content',x=>{
+ x.event.snapshot_hash='b'.repeat(64);x.processing.snapshot_hash='b'.repeat(64);
+},'READER_SNAPSHOT_NOT_SELF_CONSISTENT');
+check('source, processing and iFood quantities may agree with stale digest',x=>{
+ x.event.order.items[0].QTPRODCOMVEN='3.000';
+ x.processing.lines[0].quantity='3.000';
+ x.ifood.items[1].quantity=3;
+},'READER_SNAPSHOT_NOT_SELF_CONSISTENT');
+check('producer explicitly reports missing native child tables',x=>{
+ x.event.blockers=['NATIVE_CHILD_ITEM_AND_OBSERVATION_TABLES_NOT_READ'];
+},'READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
+check('producer downstream HOLD overrides matching names',x=>{
+ x.event.ready_for_downstream_shadow=false;
+},'READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
 check('invalid envelope is fail-closed',x=>{delete x.processing},'ENVELOPE_INVALID');
 console.log('READER_IFOOD_EXISTING_PROCESSING_CORRELATION_PASS '+count+'/'+count+' OFFLINE_ONLY_HOLD');
