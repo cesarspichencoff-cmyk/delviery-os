@@ -16,8 +16,8 @@ const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const text=x=>typeof x==='string'&&x.length>0&&x.length<=160&&x===x.trim()&&
   !/[\x00-\x1f\x7f]/.test(x);
 const baseNorm=x=>x.normalize('NFC').toLocaleLowerCase('pt-BR')
-  .replace(/\\s+/g,' ').trim();
-const norm=x=>baseNorm(x).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
+  .replace(/\s+/g,' ').trim();
+const norm=x=>baseNorm(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   .normalize('NFC');
 // Diacritic folding is for review-only correlation, never an identity join.
 // Distinct names on the SAME source may collapse to one folded label: reject.
