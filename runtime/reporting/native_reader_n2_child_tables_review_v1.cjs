@@ -13,6 +13,9 @@ const qty=x=>/^\d+(?:\.\d{1,4})?$/.test(String(x))&&Number(x)>0&&Number.isFinite
 const pair=x=>JSON.stringify([x.CDGRPOCOR,x.CDOCORR]);
 const child=x=>JSON.stringify([x.NRPRODCOMVEN,x.CDPRODUTO]);
 const name=x=>x.normalize('NFC').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim();
+const observedQty=x=>x===null||(typeof x==='string'||typeof x==='number')&&
+ /^\d+(?:\.\d{1,4})?$/.test(String(x))&&
+ Number.isFinite(Number(x));
 const denial=(reason,extra={})=>Object.freeze({
  schema:SCHEMA,state:'HOLD',reason,
  baseSourceStructureMatched:false,childJoinShapeMatched:false,
@@ -109,6 +112,10 @@ function reconcile(input){
   }
   if([...requiredProducts].some(id=>!productById.has(id)))
    return denial('PRODUCT_NAME_FROM_NATIVE_MASTER_NOT_COVERED');
+  // The one-order SQL recipe selects only referenced product codes.
+  // Extra master rows contradict a minimal, scope-limited result set.
+  if(productById.size!==requiredProducts.size)
+   return denial('PRODUCT_MASTER_ROWS_OUTSIDE_THIS_ORDER');
   const occurrences=new Map();
   for(const row of rs.OCORRENCIA.rows){
    if(!obj(row)||!val(row.CDGRPOCOR)||!val(row.CDOCORR)||
@@ -119,14 +126,21 @@ function reconcile(input){
    occurrences.set(key,row);
   }
   const seenDirectObs=new Set(),seenChildObs=new Set();
+  const referencedOccurrences=new Set();
   for(const row of rs.OBSITCOMANDAVEN.rows){
    if(!obj(row)||!scoped(row)||
       !direct.has(row.NRPRODCOMVEN)||
       !occurrences.has(pair(row)))
     return denial('DIRECT_OBSERVATION_PARENT_OR_DICTIONARY_MISSING');
+   if(!Object.hasOwn(row,'NRPRODCOMVENOBS')||
+      !Object.hasOwn(row,'QTPRODCOMVENOBS')||
+      (row.NRPRODCOMVENOBS!==null&&!val(String(row.NRPRODCOMVENOBS)))||
+      !observedQty(row.QTPRODCOMVENOBS))
+    return denial('DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
    const key=JSON.stringify([row.NRPRODCOMVEN,row.CDGRPOCOR,row.CDOCORR,row.NRPRODCOMVENOBS??null]);
    if(seenDirectObs.has(key))return denial('DIRECT_OBSERVATION_DUPLICATE');
    seenDirectObs.add(key);
+   referencedOccurrences.add(pair(row));
   }
   for(const row of rs.OBSITCOMANDAEST.rows){
    if(!obj(row)||!scoped(row)||
@@ -135,7 +149,10 @@ function reconcile(input){
    const key=JSON.stringify([row.NRPRODCOMVEN,row.CDPRODUTO,row.CDGRPOCOR,row.CDOCORR]);
    if(seenChildObs.has(key))return denial('CHILD_OBSERVATION_DUPLICATE');
    seenChildObs.add(key);
+   referencedOccurrences.add(pair(row));
   }
+  if(occurrences.size!==referencedOccurrences.size)
+   return denial('OCCURRENCE_DICTIONARY_ROWS_OUTSIDE_THIS_ORDER');
   // Optional check against the processing names the existing Reader already
   // stored. Use exact native line + product ID + quantity, not name proximity.
   // This comparison still reuses caller-supplied sources (never independent).
