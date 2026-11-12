@@ -37,8 +37,8 @@ function fixture(){
    OBSITCOMANDAVEN:wrap([{...scope,NRPRODCOMVEN:'LINE_B',CDGRPOCOR:'G1',CDOCORR:'O1',
     NRPRODCOMVENOBS:null,QTPRODCOMVENOBS:null}]),
    OBSITCOMANDAEST:wrap([{...scope,NRPRODCOMVEN:'LINE_A',CDPRODUTO:'333',CDGRPOCOR:'G1',CDOCORR:'O2'}]),
-   OCORRENCIA:wrap([{CDGRPOCOR:'G1',CDOCORR:'O1',DSOCORR:'FICT_NO_CILANTRO'},
-     {CDGRPOCOR:'G1',CDOCORR:'O2',DSOCORR:'FICT_EXTRA_SAUCE'}]),
+   OCORRENCIA:wrap([{CDGRPOCOR:'G1',CDOCORR:'O1',CDPRODUTO:null,DSOCORR:'FICT_NO_CILANTRO'},
+     {CDGRPOCOR:'G1',CDOCORR:'O2',CDPRODUTO:null,DSOCORR:'FICT_EXTRA_SAUCE'}]),
    PRODUTO:wrap([{CDPRODUTO:'111',NMPRODUTO:'FICT_HOT_ROLL'},
      {CDPRODUTO:'222',NMPRODUTO:'FICT_SALMON'},
      {CDPRODUTO:'333',NMPRODUTO:'FICT_CHILD_COMBO'},
@@ -63,6 +63,29 @@ function run(label,change,expected){
   assert.ok(!serialized.includes(secret),'LEAK '+secret);
  checked++;console.log('PASS '+label);
  return r;
+}
+// Vendor INSERT_PRODUCT + INSERT_PRICED_OBSERVATION: a priced observation
+// creates a separate direct ITCOMANDAVEN child row referenced by
+// OBSITCOMANDAVEN.NRPRODCOMVENOBS, distinct from its parent line.
+// Invented only: no real source, merchant or transaction proof.
+function addPricedObservation(f){
+ const o=f.baseInput.event.order;
+ const priced=item('LINE_C','555');
+ o.items.push(priced);
+ f.baseInput.base.itemRows.push({...scope,CDLOJA:'01',...priced,
+  DSOBSDESCIT:null,DSOBSPEDDIGCMD:null,TXPRODCOMVEN:null});
+ const combo=f.childRows.ITCOMANDAVEN_COMBO;
+ combo.rows.push({...scope,NRPRODCOMVEN:'LINE_C',CDPRODUTO:'555',
+  CDPRODPROMOCAO:null,NRSEQPRODCOM:null});
+ combo.totalRows=combo.rows.length;
+ const master=f.childRows.PRODUTO;
+ master.rows.push({CDPRODUTO:'555',NMPRODUTO:'FICT_PRICED_OBSERVATION'});
+ master.totalRows=master.rows.length;
+ const obs=f.childRows.OBSITCOMANDAVEN.rows[0];
+ obs.NRPRODCOMVENOBS='LINE_C';
+ obs.QTPRODCOMVENOBS='1.000';
+ f.childRows.OCORRENCIA.rows[0].CDPRODUTO='555';
+ f.baseInput.event.snapshot_hash=snapshotHash(o);
 }
 const OK='NATIVE_CHILD_RELATIONSHIPS_CONSISTENT_SOURCE_UNATTESTED';
 const success=run('synthetic complete relations remain HOLD without world attestation',null,OK);
@@ -189,7 +212,7 @@ run('extra native product master row is not a one-order projection',x=>{
 },'PRODUCT_MASTER_ROWS_OUTSIDE_THIS_ORDER');
 run('extra occurrence catalog code is not a one-order projection',x=>{
  const set=x.childRows.OCORRENCIA;
- set.rows.push({CDGRPOCOR:'G2',CDOCORR:'O2',DSOCORR:'FICT_EXTRANEOUS_OCC'});
+ set.rows.push({CDGRPOCOR:'G2',CDOCORR:'O2',CDPRODUTO:null,DSOCORR:'FICT_EXTRANEOUS_OCC'});
  set.totalRows=set.rows.length;
 },'OCCURRENCE_DICTIONARY_ROWS_OUTSIDE_THIS_ORDER');
 run('priced observation projection needs explicit quantity field',x=>{
@@ -204,8 +227,44 @@ run('invalid observation quantity never counts as structurally matched',x=>{
 run('negative observation quantity never counts as structurally matched',x=>{
  x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='-1';
 },'DIRECT_OBSERVATION_PROJECTION_OR_QUANTITY_INVALID');
-run('valid numeric observation quantity remains HOLD without source proof',x=>{
- x.childRows.OBSITCOMANDAVEN.rows[0].NRPRODCOMVENOBS='3';
+run('valid native priced observation with own line still stays HOLD',x=>{
+ addPricedObservation(x);
+},OK);
+run('priced observation references an absent native line',x=>{
+ addPricedObservation(x);
+ x.childRows.OBSITCOMANDAVEN.rows[0].NRPRODCOMVENOBS='LINE_MISSING';
+},'PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+run('priced observation may not be its own parent',x=>{
+ addPricedObservation(x);
+ x.childRows.OBSITCOMANDAVEN.rows[0].NRPRODCOMVENOBS='LINE_B';
+},'PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+run('priced observation must match occurrence product, not display name',x=>{
+ addPricedObservation(x);
+ x.childRows.OCORRENCIA.rows[0].CDPRODUTO='111';
+},'PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+run('priced observation must match its native child quantity',x=>{
+ addPricedObservation(x);
+ x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='2.000';
+},'PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+run('priced observation quantity cannot be zero',x=>{
+ addPricedObservation(x);
+ x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='0';
+},'PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+run('priced native child line cannot be claimed twice',x=>{
+ addPricedObservation(x);
+ const r=x.childRows.OBSITCOMANDAVEN;
+ r.rows.push({...r.rows[0],CDOCORR:'O3'});r.totalRows=r.rows.length;
+ const c=x.childRows.OCORRENCIA;
+ c.rows.push({CDGRPOCOR:'G1',CDOCORR:'O3',CDPRODUTO:'555',DSOCORR:'FICT_SECOND_PRICE'});
+ c.totalRows=c.rows.length;
+},'PRICED_OBSERVATION_NATIVE_CHILD_LINK_INVALID');
+run('ordinary occurrence cannot masquerade as priced without child link',x=>{
+ x.childRows.OCORRENCIA.rows[0].CDPRODUTO='555';
+},'ORDINARY_OBSERVATION_PRODUCT_REFERENCE_AMBIGUOUS');
+run('occurrence product must be projected even if NULL',x=>{
+ delete x.childRows.OCORRENCIA.rows[0].CDPRODUTO;
+},'OCCURRENCE_DICTIONARY_ROW_INVALID');
+run('ordinary occurrence quantity can be numeric without priced line',x=>{
  x.childRows.OBSITCOMANDAVEN.rows[0].QTPRODCOMVENOBS='2.000';
 },OK);
 run('no options is a caller claim, never source completeness',
@@ -264,6 +323,7 @@ const verifyOneOrderBlueprint=function verifyOneOrderBlueprint(src){
    if(count<scopedCounts[i])return false;
   }
   if(tables[i].some(term=>!flat.includes(term)))return false;
+  if(i===4&&!/\bc\.CDPRODUTO\b/i.test(body))return false;
   if(/\b(?:INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|TRUNCATE|EXEC|EXECUTE|OPENROWSET|NOLOCK|READPAST|HOLDLOCK|UPDLOCK|SERIALIZABLE)\b/i.test(body))return false;
   if(/\bSELECT\s+\*/i.test(body))return false;
   if(i===0&&(!/\bEXISTS\s*\(\s*SELECT\s+1\s+FROM\s+TEKNISA\.COMANDAVEN/i.test(body)||
@@ -283,6 +343,7 @@ const blueprintMutations=[
  ['weakened isolation',s=>s.replace("FROM TEKNISA.ITCOMANDAEST AS e","FROM TEKNISA.ITCOMANDAEST AS e WITH (NOLOCK)")],
  ['injected SQL write',s=>s+"\nUPDATE TEKNISA.ITCOMANDAEST SET NRPRODCOMVEN='LAB';"],
  ['removed product dictionary join',s=>s.replace("LEFT JOIN TEKNISA.PRODUTO AS p","LEFT JOIN TEKNISA.OCORRENCIA AS p")],
+ ['missing occurrence product binding',s=>s.replace('c.CDOCORR,c.CDPRODUTO,c.DSOCORR','c.CDOCORR,c.DSOCORR')],
  ['missing last rowset',s=>s.replace(/-- ROWSET 6[\s\S]*$/,"")],
  ['add SELECT all columns',s=>s+"\nSELECT * FROM TEKNISA.ITCOMANDAEST;"]
 ];
