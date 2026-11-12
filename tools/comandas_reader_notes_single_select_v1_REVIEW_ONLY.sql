@@ -3,6 +3,10 @@ TATÁ / Itaim — REVIEW-ONLY candidate for the EXISTING Reader.
 This file is a static SELECT template; it has NOT been executed against SQL.
 Do NOT install/execute on the cashier or change the live watcher with this file.
 No customer names, phone, address or fiscal columns are selected.
+Native product name NMPRODUTO is projected from the ALREADY JOINED product
+master p by exact CDPRODUTO. It is catalog evidence for review, NOT a
+completeness receipt, UUID binding, source authentication or print authority.
+No extra SQL query or join is introduced.
 Read one native rowset for the same order revision and notes; this SELECT alone
 does NOT prove snapshot isolation, freshness, caller identity or completeness.
 @top must be a bounded Int parameter (1..50) if eventually authorized.
@@ -22,7 +26,7 @@ does NOT prove snapshot isolation, freshness, caller identity or completeness.
 SELECT
   r.CDFILIAL,r.CDLOJA,r.NRVENDAREST,r.NRCOMANDA,r.NRCOMANDAEXT,
   r.IDORGCMDVENDA,r.IDSTCOMANDA,r.DTHRABERMESA,
-  i.NRPRODCOMVEN,i.CDPRODUTO,p.CDARVPROD,i.QTPRODCOMVEN,
+  i.NRPRODCOMVEN,i.CDPRODUTO,p.CDARVPROD,p.NMPRODUTO,i.QTPRODCOMVEN,
   i.IDSTPRCOMVEN,
   c.DSOBSCOMANDA,
   i.DSOBSDESCIT,i.DSOBSPEDDIGCMD,i.TXPRODCOMVEN
