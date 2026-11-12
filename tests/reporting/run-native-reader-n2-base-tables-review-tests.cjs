@@ -83,6 +83,28 @@ denied('base item count mismatch is not silently accepted',
 denied('quantity drift in base row is detected',
  x=>{x.base.itemRows[0].QTPRODCOMVEN='3.000'},
  'BASE_ITEM_FIELD_OR_LINE_MISMATCH');
+denied('order note source column cannot be omitted when null',x=>{
+ delete x.base.headerRows[0].DSOBSCOMANDA;
+},'BASE_NOTE_PROJECTION_INCOMPLETE');
+denied('missing empty item note column cannot masquerade as empty read',x=>{
+ delete x.base.itemRows[0].DSOBSDESCIT;
+},'BASE_NOTE_PROJECTION_INCOMPLETE');
+denied('missing populated item note column cannot masquerade as present',x=>{
+ delete x.base.itemRows[0].DSOBSPEDDIGCMD;
+},'BASE_NOTE_PROJECTION_INCOMPLETE');
+denied('missing text note column cannot masquerade as no observation',x=>{
+ delete x.base.itemRows[0].TXPRODCOMVEN;
+},'BASE_NOTE_PROJECTION_INCOMPLETE');
+test('explicit null in all native note columns is still only structural match',()=>{
+ const x=fixture();
+ x.event.order.observation_rows=[];
+ x.base.itemRows[0].DSOBSPEDDIGCMD=null;
+ reh(x);
+ const r=safety(review(x));
+ assert.equal(r.reason,'ONE_ORDER_BASE_TABLE_FIELDS_MATCH_NOT_ATOMIC');
+ assert.equal(r.notesMatching,true);
+ assert.equal(r.observationRows,0);
+});
 denied('note changed at source is detected without leaking note',
  x=>{x.base.itemRows[0].DSOBSPEDDIGCMD='FICT_CHANGED_SECRET'},
  'BASE_NOTE_FIELDS_OR_ITEM_LINK_MISMATCH');
