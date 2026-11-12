@@ -21,8 +21,8 @@ t('exact four-part native key is bound; no shortcut via displayId',()=>{
  assert.doesNotMatch(sql,/NRCOMANDAEXT|UUID|displayId/gi);
 });
 t('non-writing, no dirty-read shortcut and no data exfiltration',()=>{
- const src=sql.replace(/\\/[\\*][\\s\\S]*?[\\*]\\//g,'');
- assert.doesNotMatch(src,/\\b(?:UPDATE|DELETE|INSERT|MERGE|EXEC|EXECUTE|DROP|ALTER|CREATE|TRUNCATE|NOLOCK|OPENROWSET|WAITFOR)\\b/i);
+ const src=sql.replace(/\/\*[\s\S]*?\*\//g,'');
+ assert.doesNotMatch(src,/\b(?:UPDATE|DELETE|INSERT|MERGE|EXEC|EXECUTE|DROP|ALTER|CREATE|TRUNCATE|NOLOCK|OPENROWSET|WAITFOR)\b/i);
  assert.doesNotMatch(src,/NMPRODUTO|DSOBSCOMANDA|DSOCORR|CPF|CLIENTE|VRPRECCOMVEN/i);
 });
 t('zero child counts remain unproven, not accepted',()=>{
