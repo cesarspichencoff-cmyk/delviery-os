@@ -4,3 +4,53 @@ tools/fixtures/canonical-packaging-v63-pinned.js -text
 runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs -text
 runtime/shadow/human-validations-cesar-20261014.review.json -text
 data/runtime_printer_map_v1.json -text
+
+# Shadow homologation candidate V1 (measured closure, pinned by git blob in
+# docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json):
+# byte-exact on Windows too, or the pinned identity is not the installed bytes.
+data/unified_core_kits_pin_v66.json -text
+src/production/annotationLinePlanV67.ts -text
+src/production/currentPackagingBridgeV63.ts -text
+src/production/deliveryProductionJoin.ts -text
+src/production/kitchenDependencies.ts -text
+src/production/nativeReaderChainV1.ts -text
+src/production/tataSequence.ts -text
+src/production/operationalTicketEscposV46.ts -text
+src/production/operationalTicketEscposFigmaV48.ts -text
+src/production/operationalTicketsV45.ts -text
+src/production/packagingCoherenceV64.ts -text
+src/production/pinnedUnifiedKitsV66.ts -text
+src/production/productionPrintPlan.ts -text
+src/production/readerIngressV66.ts -text
+src/production/resourceConsumption.ts -text
+src/shadow/expectedRouting.ts -text
+tools/comandas_cadeia_nativa_v1_offline.cjs -text
+tools/comandas_reader_v2_view_evidence_v1_offline.cjs -text
+tools/comandas_view_source_scope_v1_offline.cjs -text
+tools/comandas_window_station_select_v1_offline.cjs -text
+tools/tata_comanda_motor_summary_v861_offline.cjs -text
+tools/tata_comanda_pinned_motor_loader_v862_offline.cjs -text
+tools/tata_comanda_reader_native_essentials_v857_offline.cjs -text
+data/odhen_product_routing_compact_v1.json -text
+data/production_printer_calibration_registry_v1.json -text
+data/non_production_delivery_items_v1.json -text
+data/comandas_catalog_equivalence_v1.json -text
+data/comandas_kit_rules_human_v1.json -text
+src/production/tataSequenceAttestationV1.ts -text
+tools/comandas_strong_key_sequence_v2_review_only.cjs -text
+data/tata_sequence_attesters_v1.json -text
+# The manifest digest also identifies the closed 52-file replay bundle on every OS.
+docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json -text
+tools/comandas_shadow_bundle_v1.cjs -text
+tools/comandas_shadow_offline_run_v1.cjs -text
+# Conference-only offline replay is sealed and byte-checked on Windows as well.
+tools/conference_only_from_sanitized_v1.cjs -text
+tools/comandas_conference_only_shadow_runner_v1.cjs -text
+# V2 Conference integration: immutable Git blob identity across Linux/Windows.
+tools/comandas_conference_sequence_v2_integration_v1.cjs -text
+tools/comandas_sequence_v2_authorized_ledger_core_v1.cjs -text
+tools/comandas_sequence_v2_writer_receipt_review_v1.cjs -text
+tools/comandas_sequence_v2_independent_attester_core_v1.cjs -text
+tools/comandas_sequence_v2_native_pair_eligibility_v1.cjs -text
+docs/comandas/CANDIDATA_INTEGRACAO_CONFERENCIA_V2.manifest.json -text
+tools/verificar_comandas_conference_v2_manifest_v1.cjs -text

@@ -125,6 +125,86 @@ assert.equal(replayed.assignment.tata_sequence, "037");
 assert.equal(replayed.reused_existing, true);
 assert.equal(replayed.next_state.next_value, 38);
 
+// Persisted assignment is proof of a UNIQUE durable mapping, not a
+// best-effort lookup. A duplicate row must not be mistaken for reprint.
+const duplicatedPersistedState = {
+  schema: "deliveryos.tata-sequence-state.v1",
+  policy: { width: 3, min_value: 1, max_value: 999 },
+  next_value: 38,
+  bindings: [
+    { scope_id: "SCOPE-EXPLICITO", teknisa_order_id: "18452", tata_sequence: "037" },
+    { scope_id: "SCOPE-EXPLICITO", teknisa_order_id: "18452", tata_sequence: "037" },
+  ],
+};
+const duplicateSameSequence = Tata.planTataSequence(
+  duplicatedPersistedState, "SCOPE-EXPLICITO", "18452",
+);
+assert.equal(duplicateSameSequence.ready, false);
+assert.equal(duplicateSameSequence.assignment, null);
+assert.equal(duplicateSameSequence.next_state, null);
+assert.equal(duplicateSameSequence.effects.persistence_write, false);
+assert.ok(duplicateSameSequence.blocking_reasons.includes(
+  "DUPLICATE_ORDER_SEQUENCE_BINDING:18452",
+));
+const duplicateDailyStore = Tata.planDailyStoreTataSequence({
+  ...duplicatedPersistedState,
+  bindings: duplicatedPersistedState.bindings.map(x=>({
+    ...x,scope_id:"STORE:ITAIM|DATE:2026-10-01"
+  })),
+}, {store_id:"ITAIM",operational_date:"2026-10-01"}, "18452");
+assert.equal(duplicateDailyStore.ready, false);
+assert.ok(duplicateDailyStore.blocking_reasons.includes(
+  "DUPLICATE_ORDER_SEQUENCE_BINDING:18452",
+));
+// Wrong persisted sequence forms cannot be reused or silently skipped.
+for (const malformed of ["37", "AB7", "1000", "000", " 037", "037 "]) {
+  const badState = {
+    schema: "deliveryos.tata-sequence-state.v1",
+    policy: { width: 3, min_value: 1, max_value: 999 },
+    next_value: 40,
+    bindings: [
+      {scope_id:"SCOPE-EXPLICITO",teknisa_order_id:"18452",tata_sequence:malformed}
+    ],
+  };
+  for(const requested of ["18452","18453"]){
+    const invalid = Tata.planTataSequence(badState,"SCOPE-EXPLICITO",requested);
+    assert.equal(invalid.ready,false,malformed+":"+requested);
+    assert.equal(invalid.reused_existing,false);
+    assert.equal(invalid.assignment,null);
+    assert.ok(invalid.blocking_reasons.includes(
+      "INVALID_EXISTING_TATA_SEQUENCE_FORMAT_OR_RANGE",
+    ),malformed+":"+requested);
+  }
+}
+const validPersistedReprint = Tata.planTataSequence({
+  ...duplicatedPersistedState,
+  bindings: [duplicatedPersistedState.bindings[0]],
+},"SCOPE-EXPLICITO","18452");
+assert.equal(validPersistedReprint.ready,true);
+assert.equal(validPersistedReprint.reused_existing,true);
+assert.equal(validPersistedReprint.assignment.tata_sequence,"037");
+assert.equal(validPersistedReprint.effects.print,false);
+
+// Whitespace in a persisted scope/order key is NOT a harmless alias:
+// otherwise duplicate bindings can evade the exact-match duplicate gate.
+for (const mutation of [
+  b=>({...b,teknisa_order_id:"18452 "}),
+  b=>({...b,scope_id:" SCOPE-EXPLICITO"}),
+  b=>({...b,scope_id:"SCOPE-EXPLICITO "}),
+]) {
+  const damaged = {
+    ...duplicatedPersistedState,
+    bindings:[mutation(duplicatedPersistedState.bindings[0])]
+  };
+  for(const order of ["18452","18453"]){
+    const attempted=Tata.planTataSequence(damaged,"SCOPE-EXPLICITO",order);
+    assert.equal(attempted.ready,false,"noncanonical persisted identity");
+    assert.equal(attempted.assignment,null);
+    assert.ok(attempted.blocking_reasons.includes(
+      "NON_CANONICAL_EXISTING_SEQUENCE_IDENTITY"
+    ));
+  }
+}
 const existingCollision = Tata.planTataSequence(
   {
     schema: "deliveryos.tata-sequence-state.v1",

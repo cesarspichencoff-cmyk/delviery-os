@@ -1,0 +1,71 @@
+{
+  "schema": "tata.comandas.classification-gap-snapshot.v1",
+  "source": "docs/comandas/AUDITORIA_SHADOW_ACADEMIA_20261026_REVIEW_ONLY.md",
+  "observed_on": "2026-10-26",
+  "sample": {
+    "decision_revisions": 200,
+    "selection": "MOST_RECENT_200_NOT_RANDOM_NOT_UNIQUE",
+    "decisions_with_classification_unknown": 68,
+    "unit": "ITAIM"
+  },
+  "meaning": "BLOCK_REASON_OCCURRENCES_NOT_UNIQUE_ORDERS",
+  "evidence_status": "HISTORIC_AGGREGATE_NOT_CURRENT_CATALOG_PROOF",
+  "entries": [
+    {
+      "canonical_code": "9.10.05.000.00",
+      "reason_occurrences": 20
+    },
+    {
+      "canonical_code": "9.75.00.020.00",
+      "reason_occurrences": 12
+    },
+    {
+      "canonical_code": "9.10.05.060.00",
+      "reason_occurrences": 9
+    },
+    {
+      "canonical_code": "9.15.00.060.00",
+      "reason_occurrences": 7
+    },
+    {
+      "canonical_code": "9.10.00.050.00",
+      "reason_occurrences": 7
+    },
+    {
+      "canonical_code": "8.00.05.000.00",
+      "reason_occurrences": 4
+    },
+    {
+      "canonical_code": "8.20.00.061.00",
+      "reason_occurrences": 4
+    },
+    {
+      "canonical_code": "9.10.05.040.00",
+      "reason_occurrences": 4
+    },
+    {
+      "canonical_code": "9.10.05.070.00",
+      "reason_occurrences": 4
+    },
+    {
+      "canonical_code": "8.00.00.010.00",
+      "reason_occurrences": 3
+    },
+    {
+      "canonical_code": "9.10.05.050.00",
+      "reason_occurrences": 2
+    },
+    {
+      "canonical_code": "9.15.00.070.00",
+      "reason_occurrences": 2
+    },
+    {
+      "canonical_code": "9.99.00.007.00",
+      "reason_occurrences": 2
+    },
+    {
+      "canonical_code": "8.20.11.002.00",
+      "reason_occurrences": 2
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "schema": "tata.comandas.homologation-candidate.v1",
+  "scope": "SHADOW_NATIVE_CHAIN_NO_PRINT",
+  "entries": [
+    "tools/comandas_cadeia_nativa_v1_offline.cjs",
+    "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs"
+  ],
+  "code": [
+    {
+      "path": "data/unified_core_kits_pin_v66.json",
+      "git_blob": "29d917030070abfe37d294e93db0addc8f7e24da",
+      "bytes": 4623
+    },
+    {
+      "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
+      "git_blob": "8e75fea85437d063c2f6ee2df09ee33962d42ce6",
+      "bytes": 25495
+    },
+    {
+      "path": "src/production/annotationLinePlanV67.ts",
+      "git_blob": "3a9533b6d1a5bd5dedda55e66d85402d1ad1975d",
+      "bytes": 2670
+    },
+    {
+      "path": "src/production/currentPackagingBridgeV63.ts",
+      "git_blob": "ce7f70ffee074a0391f79052cdaa8d84d3019773",
+      "bytes": 11848
+    },
+    {
+      "path": "src/production/deliveryProductionJoin.ts",
+      "git_blob": "3db4b965cb936dbf0ecee4dd5bbc511e43bf2c09",
+      "bytes": 6311
+    },
+    {
+      "path": "src/production/kitchenDependencies.ts",
+      "git_blob": "f6c24fe8af7977a4d02f6ee6b78f86cc92b3c3c4",
+      "bytes": 6466
+    },
+    {
+      "path": "src/production/nativeReaderChainV1.ts",
+      "git_blob": "3102d2301d21f269d38b895d81e77c72222e0d91",
+      "bytes": 31984
+    },
+    {
+      "path": "src/production/operationalTicketEscposFigmaV48.ts",
+      "git_blob": "3f544d370cfdef40e6ff1ba09a6fd10c6e6532b4",
+      "bytes": 11470
+    },
+    {
+      "path": "src/production/operationalTicketEscposV46.ts",
+      "git_blob": "2dd18d2d0a150cf0088787e5b1cb1da358589d99",
+      "bytes": 18154
+    },
+    {
+      "path": "src/production/operationalTicketsV45.ts",
+      "git_blob": "5cfd668515f0ea0f589ebca77ec4a5e5b4f5a6df",
+      "bytes": 28148
+    },
+    {
+      "path": "src/production/packagingCoherenceV64.ts",
+      "git_blob": "2c86399261c4b0292083b11afe7d6fa82b6a6ff1",
+      "bytes": 5719
+    },
+    {
+      "path": "src/production/pinnedUnifiedKitsV66.ts",
+      "git_blob": "ba262081198d1ccabd1e015bb146e21c68c994d8",
+      "bytes": 2424
+    },
+    {
+      "path": "src/production/productionPrintPlan.ts",
+      "git_blob": "2c161b43696b6a8a9e6f083e83982c4286b3592c",
+      "bytes": 18666
+    },
+    {
+      "path": "src/production/readerIngressV66.ts",
+      "git_blob": "d94bc127d4d484f2f808e2c861f55967ec57b3c5",
+      "bytes": 8681
+    },
+    {
+      "path": "src/production/resourceConsumption.ts",
+      "git_blob": "3c14a256608f9b3631e9a8b0b1556e12d0679a5e",
+      "bytes": 18197
+    },
+    {
+      "path": "src/production/tataSequence.ts",
+      "git_blob": "49d8b7e843a6a0072052055fc246bb0f8ffbcb90",
+      "bytes": 11913
+    },
+    {
+      "path": "src/production/tataSequenceAttestationV1.ts",
+      "git_blob": "c5c698e68ea8e4c9e6440dee52b0e07536b4dad5",
+      "bytes": 8567
+    },
+    {
+      "path": "src/shadow/expectedRouting.ts",
+      "git_blob": "e17d55a053098f532aae74fef45e4f04c0d2fb9a",
+      "bytes": 7578
+    },
+    {
+      "path": "tools/comandas_cadeia_nativa_v1_offline.cjs",
+      "git_blob": "52d6e66715287f8db027685996d5f79a1ecd9a02",
+      "bytes": 21273
+    },
+    {
+      "path": "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",
+      "git_blob": "2ca180d58d883a5a9ef893874d1c0b5900f130de",
+      "bytes": 8433
+    },
+    {
+      "path": "tools/comandas_strong_key_sequence_v2_review_only.cjs",
+      "git_blob": "f767d5dc7b3253b3e0c23b6c66828f3d9924b026",
+      "bytes": 5336
+    },
+    {
+      "path": "tools/comandas_view_source_scope_v1_offline.cjs",
+      "git_blob": "9f81182176f6218c8950a595050df6d88a887e5c",
+      "bytes": 5474
+    },
+    {
+      "path": "tools/comandas_window_station_select_v1_offline.cjs",
+      "git_blob": "8fd61d5c2a642a9e8aab6a77d83226508957af84",
+      "bytes": 7413
+    },
+    {
+      "path": "tools/tata_comanda_motor_summary_v861_offline.cjs",
+      "git_blob": "df25356d7650e531cc6ae5cf39166ae834045ab7",
+      "bytes": 3183
+    },
+    {
+      "path": "tools/tata_comanda_pinned_motor_loader_v862_offline.cjs",
+      "git_blob": "b38841ef82cc6095db9ea44b268414ea233660e8",
+      "bytes": 1594
+    },
+    {
+      "path": "tools/tata_comanda_reader_native_essentials_v857_offline.cjs",
+      "git_blob": "2ff5530334fdabb0c1a1b64da2f68d7135c3999e",
+      "bytes": 10606
+    }
+  ],
+  "runtime_data": [
+    {
+      "path": "tools/fixtures/canonical-packaging-v63-pinned.js",
+      "git_blob": "3167c309f02a0ad5a84fb43043b8866e3bee873c",
+      "bytes": 82858
+    },
+    {
+      "path": "data/odhen_product_routing_compact_v1.json",
+      "git_blob": "d7d4d25bcb882370a37cf748d2d79139b07159a0",
+      "bytes": 23074
+    },
+    {
+      "path": "data/runtime_printer_map_v1.json",
+      "git_blob": "24a3b068598798209f7d9f8492c9cbb3aa973dab",
+      "bytes": 3932
+    },
+    {
+      "path": "data/production_printer_calibration_registry_v1.json",
+      "git_blob": "160c6de0ae3a8bcf6a678b848899aa5e2634319c",
+      "bytes": 10368
+    },
+    {
+      "path": "data/non_production_delivery_items_v1.json",
+      "git_blob": "e14326430770551e132bf6e0f8b54376dee56e6a",
+      "bytes": 1552
+    },
+    {
+      "path": "data/comandas_catalog_equivalence_v1.json",
+      "git_blob": "01c24a54874658555343144dab37f90674388089",
+      "bytes": 1585
+    },
+    {
+      "path": "data/comandas_kit_rules_human_v1.json",
+      "git_blob": "8099d8bfae12c4b4c8bc8538388fd7db4b774fb6",
+      "bytes": 2219
+    },
+    {
+      "path": "data/tata_sequence_attesters_v1.json",
+      "git_blob": "732aa4673be9be5eba84562e45456d46c812d76e",
+      "bytes": 466
+    }
+  ],
+  "node_builtins": [
+    "crypto",
+    "fs",
+    "path",
+    "util",
+    "vm"
+  ],
+  "unresolved_relative_requires": [],
+  "capability_flags": {
+    "child_process": [],
+    "network": [],
+    "file_write": [
+      "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs"
+    ]
+  },
+  "eol_policy": "BYTE_EXACT_GIT_BLOB; every file above is '-text' in .gitattributes",
+  "build": {
+    "command": "npm run build",
+    "typescript": "5.5.3 (package-lock)",
+    "dist_from": "src/*.ts listed above"
+  },
+  "not_included": [
+    "print/spooler emitter",
+    "service or supervisor change",
+    "sequence writer",
+    "SQL client"
+  ],
+  "effects": {
+    "install": false,
+    "service": false,
+    "queue": false,
+    "print": false,
+    "sequence_write": false
+  }
+}

@@ -63,13 +63,15 @@ function check(name,alter,expect){
  const strongOk=strong.status==="SOURCE_NATIVE_ESSENTIAL_PREVIEW_HOLD"&&cryptoOk;
  const weakOk=weak.basic_essential_content_candidates===1&&
   weak.note_parity_verified_candidates===1&&
-  weak.paired_with_persisted_tata_sequence===1;
+  weak.legacy_v1_short_key_matches_unattested===1&&
+  weak.paired_with_persisted_tata_sequence===0;
  const converged=strongOk&&weakOk;
  assert.equal(converged,expect.converged,
   JSON.stringify({case:name,strong:strong.status,reason:strong.reason,
    cryptoOk,basic:weak.basic_essential_content_candidates,
    noteParity:weak.note_parity_verified_candidates,
-   seq:weak.paired_with_persisted_tata_sequence}));
+   strongSequence:weak.paired_with_persisted_tata_sequence,
+   legacyShortKeyOnly:weak.legacy_v1_short_key_matches_unattested}));
  if(expect.weakCandidate!==undefined)
   assert.equal(weak.basic_essential_content_candidates,expect.weakCandidate);
  if(expect.strongHold!==undefined)
@@ -77,7 +79,11 @@ function check(name,alter,expect){
  if(expect.notesBlocked)
   assert.equal(weak.note_parity_conflicts,1);
  if(expect.sequenceBlocked)
-  assert.equal(weak.paired_with_persisted_tata_sequence,0);
+  assert.equal(weak.legacy_v1_short_key_matches_unattested,0);
+ assert.equal(weak.paired_with_persisted_tata_sequence,0);
+ assert.equal(weak.sequence_state_status,"LEGACY_V1_STRUCTURALLY_VALID_NOT_STRONG_KEY");
+ assert.equal(weak.paired_with_persisted_tata_sequence,0,
+  "weak legacy sequence can never prove full-key persisted binding");
  assert.equal(strong.ready_for_operational_print,false);
  assert.equal(strong.print_authorized,false);
  count++;

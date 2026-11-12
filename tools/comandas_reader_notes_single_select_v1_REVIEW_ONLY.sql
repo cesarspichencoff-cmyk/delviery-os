@@ -1,0 +1,47 @@
+/*
+TATÁ / Itaim — REVIEW-ONLY candidate for the EXISTING Reader.
+This file is a static SELECT template; it has NOT been executed against SQL.
+Do NOT install/execute on the cashier or change the live watcher with this file.
+No customer names, phone, address or fiscal columns are selected.
+Native product name NMPRODUTO is projected from the ALREADY JOINED product
+master p by exact CDPRODUTO. It is catalog evidence for review, NOT a
+completeness receipt, UUID binding, source authentication or print authority.
+No extra SQL query or join is introduced.
+Read one native rowset for the same order revision and notes; this SELECT alone
+does NOT prove snapshot isolation, freshness, caller identity or completeness.
+@top must be a bounded Int parameter (1..50) if eventually authorized.
+*/
+;WITH recent AS (
+  SELECT TOP (@top)
+    c.CDFILIAL,c.CDLOJA,c.NRVENDAREST,c.NRCOMANDA,
+    c.NRCOMANDAEXT,c.IDORGCMDVENDA,c.IDSTCOMANDA,v.DTHRABERMESA
+  FROM TEKNISA.COMANDAVEN c
+  INNER JOIN TEKNISA.VENDAREST v
+    ON v.CDFILIAL=c.CDFILIAL AND v.NRVENDAREST=c.NRVENDAREST
+  WHERE c.CDFILIAL='0001'
+    AND c.CDLOJA='01'
+    AND c.IDORGCMDVENDA='DLV_IFO'
+  ORDER BY v.DTHRABERMESA DESC,c.NRVENDAREST DESC,c.NRCOMANDA DESC
+)
+SELECT
+  r.CDFILIAL,r.CDLOJA,r.NRVENDAREST,r.NRCOMANDA,r.NRCOMANDAEXT,
+  r.IDORGCMDVENDA,r.IDSTCOMANDA,r.DTHRABERMESA,
+  i.NRPRODCOMVEN,i.CDPRODUTO,p.CDARVPROD,p.NMPRODUTO,i.QTPRODCOMVEN,
+  i.IDSTPRCOMVEN,
+  c.DSOBSCOMANDA,
+  i.DSOBSDESCIT,i.DSOBSPEDDIGCMD,i.TXPRODCOMVEN
+FROM recent r
+INNER JOIN TEKNISA.COMANDAVEN c
+  ON c.CDFILIAL=r.CDFILIAL
+ AND c.CDLOJA=r.CDLOJA
+ AND c.NRVENDAREST=r.NRVENDAREST
+ AND c.NRCOMANDA=r.NRCOMANDA
+LEFT JOIN TEKNISA.ITCOMANDAVEN i
+  ON i.CDFILIAL=r.CDFILIAL
+ AND i.NRVENDAREST=r.NRVENDAREST
+ AND i.NRCOMANDA=r.NRCOMANDA
+LEFT JOIN TEKNISA.PRODUTO p
+  ON p.CDPRODUTO=i.CDPRODUTO
+ORDER BY
+  r.DTHRABERMESA DESC,r.NRVENDAREST DESC,r.NRCOMANDA DESC,
+  i.NRPRODCOMVEN ASC;

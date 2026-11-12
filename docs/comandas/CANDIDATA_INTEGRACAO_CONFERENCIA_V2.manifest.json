@@ -1,0 +1,66 @@
+{
+  "schema": "tata.comandas.conference-v2-code-integration-manifest.v1",
+  "status": "CODE_REVIEW_AND_OFFLINE_TEST_ONLY",
+  "scope": "SINGLE_CONFERENCE_CONTENT_FROM_SAME_NATIVE_REVISION",
+  "base_shadow_candidate": {
+    "path": "docs/comandas/CANDIDATA_HOMOLOGACAO_CADEIA_NATIVA_V1.manifest.json",
+    "git_blob": "c27902dcbf34541cfa5e3d1fd74660a4c65e120b"
+  },
+  "additional_runtime_modules": [
+    {
+      "path": "tools/comandas_conference_sequence_v2_integration_v1.cjs",
+      "git_blob": "fea2605fd7eaf9458d6af3b059bfd88e479b8d46"
+    },
+    {
+      "path": "tools/comandas_sequence_v2_authorized_ledger_core_v1.cjs",
+      "git_blob": "510d195b881fa431a9b9e0281561f2c88830276f"
+    },
+    {
+      "path": "tools/comandas_sequence_v2_writer_receipt_review_v1.cjs",
+      "git_blob": "daace131e2e1ac05df44f9be458576fe006e542c"
+    },
+    {
+      "path": "tools/comandas_sequence_v2_independent_attester_core_v1.cjs",
+      "git_blob": "02847308e9bfb666f4277235a8985a2747564e44"
+    },
+    {
+      "path": "tools/comandas_sequence_v2_native_pair_eligibility_v1.cjs",
+      "git_blob": "1444beee8db162f1b3586541145fd925a1469d1d"
+    }
+  ],
+  "existing_runtime_dependencies": [
+    "tools/comandas_cadeia_nativa_v1_offline.cjs",
+    "tools/comandas_strong_key_sequence_v2_review_only.cjs",
+    "tools/comandas_reader_v2_view_evidence_v1_offline.cjs",
+    "dist/src/production/nativeReaderChainV1.js",
+    "dist/src/production/tataSequenceAttestationV1.js",
+    "dist/src/production/tataSequence.js"
+  ],
+  "split_roles": [
+    "L1-L4 REVIEWER: validates exact source/contents and gives immutable preflight receipt",
+    "WRITER: separately signed request, injected authorized SQLite write handle, readback, no print number",
+    "ATTESTER: separate key and read-only SQLite handle; verify every historic signed writer receipt",
+    "L1-L5 REVIEWER: same source, ledger readback and signature; only watermarked Conference contents"
+  ],
+  "blocked_by_design": [
+    "no printer/spooler/queue emitter",
+    "no production trust keys",
+    "no host, service, SQL Server or SQLite path opener",
+    "no install/ACL change",
+    "no reuse of shadow-only financial note disposition in an operational bind",
+    "no production-station ticket bytes exposed by integration gate",
+    "watermarked preview cannot be operational paper proof",
+    "no merge, cutover, deploy, or silent fallback to old printer"
+  ],
+  "tests": [
+    "tools/verificar_comandas_cadeia_nativa_v1_offline.cjs",
+    "tools/verificar_comandas_sequence_v2_authorized_ledger_core_v1.cjs",
+    "tools/verificar_comandas_conference_v2_manifest_v1.cjs"
+  ],
+  "effect_authorization": {
+    "sqlite_disposable_CI_tests": true,
+    "sqlite_production_write": false,
+    "production_print": false,
+    "merge": false
+  }
+}
