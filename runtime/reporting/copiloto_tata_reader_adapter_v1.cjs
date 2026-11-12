@@ -26,8 +26,16 @@ function adaptStableTataOrderV1(event, scope) {
   if (scope.sourceMode === 'real') {
     if (scope.unitId !== 'ITAIM' || scope.sourceUnitId !== '0001' || scope.sourceStoreId !== '01')
       return blocked('READER_REAL_ITAIM_SCOPE_NOT_QUALIFIED');
-    if (reviewNativeProducer(event).canonicalContractChecked !== true)
+    const evidence=reviewNativeProducer(event);
+    if (evidence.canonicalContractChecked !== true)
       return blocked('READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+    // A self-declared observation_scan_complete on an installed Reader event
+    // cannot attest missing ITCOMANDAEST/OBSITCOMANDA* child tables.
+    // The existing producer reviewer explicitly reports this as unproven.
+    // Keep lab/control projections; block REAL admission until a separate
+    // independently verified native child-coverage witness exists.
+    if (evidence.observationScanIndependentlyProven !== true)
+      return blocked('READER_REAL_NATIVE_CHILD_TABLE_COVERAGE_UNPROVEN');
   }
   const service = event.service_resolution;
   if (event.ready_for_downstream_shadow !== true || !Array.isArray(event.blockers) || event.blockers.length ||
