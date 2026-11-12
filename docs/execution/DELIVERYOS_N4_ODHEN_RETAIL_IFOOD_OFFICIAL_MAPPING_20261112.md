@@ -2,6 +2,30 @@
 
 **Natureza:** pesquisa documental pública + auditoria passiva de arquivos já existentes. **Não é implementação ativa, autenticação de loja, captura autorizada da API iFood, prova de UUID↔chave nativa, leitura SQL ou aceite operacional.** PR #137 permanece DRAFT/HOLD; PR #135 igualmente.
 
+## Nova contra-rota N2-B/L3: Sale API e Order API do próprio fornecedor
+
+**Fonte adicional da própria Teknisa:** [APIs e integrações do Retail — catálogo público](https://www.teknisa.com/api), [PDF oficial de 2 páginas, documento TEK195-1P, 04/11/2025](https://www.teknisa.com/documentos/apis-integracoes-retail.pdf). A tabela registra os seguintes recursos (todos `POST`, embora alguns tenham nome de leitura):
+
+| API / rota documentada | Informação anunciada | Limite de prova |
+| --- | --- | --- |
+| Sale API — `/getSaleProducts` | Produtos vendidos **com complementos** | **Não** informa quais relações `ITCOMANDAEST` / `OBSIT*`, nível de detalhes, abrangência, relógio, chave, autorizações, preço de uso ou se atende pedidos ainda não efetivados |
+| Sale API — `/getSales` | Vendas realizadas no PDV, com itens, impostos, recebimentos e NFC-e | Pode servir como segunda testemunha de **venda efetivada**, mas não como comprovação de recebimento do pré-pedido no iFood |
+| Order API — `/orderStatus` | Retorno de estado: em produção, cupom impresso, expedido, finalizado ou cancelado | É vocabulário do fornecedor, não prova automática de prontidão **física por item**, nem de equivalência com `IDSTCOMANDA=P/X` |
+| Order API — `/order`, `/orderCancel` | Recebe ou cancela pedidos | **Proibido chamar**: ações operacionais, não são rota de auditoria |
+
+**Diferença essencial, documentada no mesmo PDF:** os pedidos recebidos de marketplace são considerados **pré-pedidos** e só viram venda efetiva após emissão no PDV. Assim, uma resposta sobre "venda" pode não cobrir o estágio de pedido em andamento. Não afirmar que a Sale API implementa exatamente o fluxo da instalação do Itaim sem evidência de contrato e produção.
+
+**Opção de menor risco e menor custo:** investigar **somente a documentação e direitos já incluídos** na relação existente com o fornecedor, antes de propor consulta SQL de seis rowsets em produção. O próprio catálogo público ressalva que APIs e integrações padrão estão sujeitas a condições comerciais; **não presumir gratuito** nem criar contratação. A disponibilidade técnica e comercial na unidade 0001 permanece `UNKNOWN`.
+
+**Gate antes de qualquer uso, mesmo para um pedido concluído:**
+1. Obter contrato técnico de request/response, identificação **forte** da venda e correspondência ao pedido iFood, incluindo unidade/loja/caixa e limites de escopo. Não basta `NRCOMANDAEXT`/número curto.
+2. Confirmar por evidência do fornecedor que `/getSaleProducts` cobre explicitamente complemento cobrado, retirada, observação gratuita, observação de item e composição de combo, com revisão e exaustividade verificáveis. A descrição resumida "com complementos" **não prova cada campo**.
+3. Confirmar que os `POST` de consulta são **estritamente somente leitura**, sem reserva/ACK/impressão/transição, e têm impacto controlado em escritores/PDV. Um verbo HTTP ou nome `get` não é prova de ausência de efeitos.
+4. Confirmar disponibilidade **já licenciada ou gratuita suficiente**; nenhuma compra, uso de token nem alteração de integração foi autorizada.
+5. Só então considerar **uma** chamada de prova isolada, parametrizada e consentida, com saída **somente de contagens, versões, vínculos e divergências sanitizadas**, jamais payload ou PII, sem tocar no CAIXA_MOOCA.
+
+**Estado:** `VENDOR_SALE_API_DOCUMENTED=YES`; `VENDOR_SALE_API_ENTITLED=UNKNOWN`; `READ_ONLY_EFFECTS_PROVEN=NO`; `N2_B_COMPLETENESS=UNKNOWN`; `N4_STRONG_JOIN=HOLD`; `L3_PHYSICAL_STATE=UNKNOWN`. Essa rota é uma alternativa de **investigação**, não prova de funcionamento e não muda a arquitetura Gestor → Operação Viva nem os gates de Home/impressão.
+
 ## Fontes externas, com suas limitações
 
 1. **Teknisa, Manual _Integração Teknisa x iFood_, v4.2.0**, URL oficial: https://ead.teknisa.com/wp-content/uploads/2025/11/Manual-Integracao-Teknisa-iFood.pdf . Conteúdo lido em 12/11/2026. Páginas do manual: 3–4 (fluxo automático e restrições), 14–15 (cardápio/opções), 18–19 (responsável técnico, cadastro IFO e loja/caixa padrão), 22–24 (associação por unidade, loja e caixa). Esse manual apresenta **exemplos fictícios para a unidade 0005**; não prova qualquer configuração efetiva na unidade Itaim 0001.
