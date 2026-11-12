@@ -157,3 +157,6 @@ for(const illegal of ['UPDATE','DELETE','INSERT','MERGE','ALTER','DROP',
 assert.match(sql,/DO NOT EXECUTE ON CAIXA_MOOCA/);
 
 console.log('NATIVE_CHILD_ONE_ORDER_RECONCILE_PASS '+checked+'/'+checked+' OFFLINE_ONLY_FIELD_HOLD');
+
+// Existing processing record first: no additional SQL query or customer export.
+require('./run-native-reader-ifood-processing-correlation-tests.cjs');
