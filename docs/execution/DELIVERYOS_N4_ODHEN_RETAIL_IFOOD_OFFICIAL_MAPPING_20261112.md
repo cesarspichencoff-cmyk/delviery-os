@@ -8,6 +8,12 @@
 2. **iFood Developer, Food Order Details**, https://developer.ifood.com.br/en-US/docs/food/guides/modules/order/details . Documenta `GET /order/v1.0/orders/{id}` para detalhes, incluindo `id` UUID, `displayId`, `merchant`, `items` e `options`. É uma **capacidade documentada** que exige autenticação legítima; nenhum token foi obtido, nenhuma requisição foi executada.
 3. **iFood Developer, Food Order Workflow**, https://developer.ifood.com.br/en-US/docs/food/guides/modules/order/workflow . A documentação separa `GET` de detalhes de ações de ciclo de vida como polling de eventos, acknowledgment, confirmação e despacho, e relata retenção típica de detalhes por **7 dias**. Não assumir que consultar pedidos antigos será possível; preservar apenas evidência já autorizada e sem PII.
 
+## Confronto com a decisão arquitetural já tomada em 04/11
+
+Esta fonte **não substitui** o plano canônico de `docs/execution/DELIVERYOS_GESTOR_COPILOTO_MASTER_PLAN_20261104.md` nem `docs/execution/DELIVERYOS_IFOOD_FONTE_CONTINUA_DECISAO_20261104.md`. A direção aprovada em laboratório continua sendo **Gestor passivo como sensor de pedidos quando visibilidade e cobertura forem comprovadas → journal/contratos existentes → Operação Viva como motor único → Home/Copiloto**, com **TATÁ Comandas como segunda testemunha/enriquecimento**, sem uma segunda arquitetura.
+
+A decisão anterior já registrou que um aplicativo próprio iFood de leitura isolada **não é atalho de homologação**: permissões do módulo Order e exigências de aplicação operacional não foram cumpridas ou autorizadas. O manual externo e os endpoints documentados apenas ajudam a formular a **prova N4** e a distinguir observações; **não** revogam esse HOLD. Não iniciar OAuth, scraping de sessão, polling, webhook, ACK ou leitura direta da API com credenciais existentes fora do escopo do integrador. A leitura passiva do navegador iFood já aberto é uma testemunha pontual, não alimentação contínua aprovada.
+
 ## Fatos novos do manual da Teknisa
 
 **Autonomia da integração:** o manual afirma que a integração recebe pedidos e gera comandas para o ForSale automaticamente. Adverte que ferramentas de terceiros que também recebam/processam pedidos **não devem interferir** no receptor existente. Portanto, **não estabelecer receptor paralelo**, não fazer `orders:polling`, `events:polling`, `acknowledgment`, `confirm`, `readyToPickup`, `dispatch`, cancelamento ou alterar configuração da loja para obter evidência. Isso é diferente de um futuro `GET` de detalhe do pedido estritamente autorizado, sem efeito no estado.
