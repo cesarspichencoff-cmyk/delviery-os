@@ -126,3 +126,6 @@ test('201-row sentinel is rejected by the existing 200-row private assembler',()
 });
 
 console.log('READER_SERIALIZABLE_ONE_ORDER_STATIC_REVIEW_PASS '+n+'/'+n+' NO_SQL');
+// Same existing Reader SQL template: run its strict column/one-JOIN checks
+// as part of the already-gated offline CI, without changing workflow permissions.
+require('./verificar_comandas_reader_notes_single_select_v1_offline.cjs');
