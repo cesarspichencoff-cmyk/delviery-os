@@ -81,6 +81,11 @@ function reconcile(input){
     return denial('COMBO_PRODUCT_ID_INVALID');
    if(row.NRSEQPRODCOM!==null&&!val(row.NRSEQPRODCOM))
     return denial('COMBO_SEQUENCE_GROUP_INVALID');
+   // The installed supplier retrieval pairs CDPRODPROMOCAO with NRSEQPRODCOM.
+   // A parent without its sequence, or a sequence without its parent, cannot
+   // be retrieved as the same combo group: fail closed instead of counting it.
+   if((row.CDPRODPROMOCAO===null)!==(row.NRSEQPRODCOM===null))
+    return denial('COMBO_PARENT_SEQUENCE_GROUP_INCOMPLETE');
    comboLines.add(row.NRPRODCOMVEN);
    if(row.CDPRODPROMOCAO!==null){
     comboGroups++;
