@@ -108,6 +108,45 @@ test("Cesar's exact salmon tartar decision becomes review-only, never print",()=
  }
 });
 
+test("four other registered human rules are bounded review candidates",()=>{
+ const approved=[
+  ["9.10.05.070.00","CEVICHE","ITEM_FRIO","enrolados_quentes"],
+  ["9.10.00.050.00","SHIMEJI E SHITAKE","ENTRADA_QUENTE","cozinha_quentes"],
+  ["8.00.00.010.00","AGUA MINERAL C/GAS - UN","BEBIDA",null],
+  ["9.15.00.070.00","SALMAO/ATUM 2 PESSOAS","COMBINADO_2_PESSOAS","combinados"]
+ ];
+ for(const [code,name,family,station] of approved){
+  const s=sources(),c=claims();
+  s[0].product_code=code;s[0].product_name=name;
+  c[0].product_code=code;c[0].product_name=name;
+  c[0].family=family;c[0].station=station;
+  c[0].review_source_ref="CESAR_CHAT_NOV01";
+  const out=run(s,c);
+  assert.equal(out.status,"REVIEW_CANDIDATE_ONLY",code);
+  assert.equal(out.entries[0].station_proof,"UNKNOWN");
+  assert.equal(out.entries[0].product.classification.station,station);
+  assert.equal(out.ready_for_automatic_operational_print,false);
+  for(const alter of [
+   x=>{x.c[0].station="duplas"},
+   x=>{x.s[0].product_name="NEAR MATCH";x.c[0].product_name="NEAR MATCH"},
+   x=>{x.c[0].family="OTHER"},
+  ]){
+   const v={s:JSON.parse(JSON.stringify(s)),c:JSON.parse(JSON.stringify(c))};
+   alter(v);
+   const denied=run(v.s,v.c);
+   assert.equal(denied.status,"HOLD",code);
+  }
+ }
+});
+test("conference-only cookie cannot acquire a production station",()=>{
+ const s=sources(),c=claims();
+ s[0].product_code="8.20.11.002.00";s[0].product_name="COOKIE PISTACHE";
+ c[0].product_code=s[0].product_code;c[0].product_name=s[0].product_name;
+ c[0].family="NAO_PRODUCAO";c[0].station=null;
+ assert.equal(run(s,c).status,"HOLD");
+ c[0].station="enrolados_quentes";c[0].family="CONFERENCIA_APENAS";
+ assert.equal(run(s,c).status,"HOLD");
+});
 denied("code swap cannot borrow similar product name",
  d=>{d.c[0].product_code="9.50.00.001.00"},
  "REVIEW_CLAIM_NOT_EXACT_SOURCE_IDENTITY");
