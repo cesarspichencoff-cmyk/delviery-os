@@ -5,8 +5,8 @@ import type {SourceOrderItemV45} from "./operationalTicketsV45";
 /**
  * First-stage, source-first classification join. This is NOT a trusted
  * approval registry: self-declared reviews never grant station_proof.
- * The 14 Oct-26 classification gaps remain HOLD pending a new verified
- * human/catalog crosswalk. The existing V6.3 motor is never repinned.
+ * Historical gaps remain HOLD unless an exact registered human decision
+ * matches a review-only claim. The V6.3 motor is never repinned.
  */
 export const CLASSIFICATION_REVIEW_SCHEMA_V1 =
  "tata.comandas.source-bound-classification-review.v1.offline" as const;
@@ -29,29 +29,35 @@ const keys=(obj:unknown,expected:string[]):obj is Record<string,unknown>=>
 const normalized=(s:string)=>s.normalize("NFD")
  .replace(/[\u0300-\u036f]/g,"").trim().toUpperCase().replace(/\s+/g," ");
 /**
- * César already resolved this precise item (01/11, reconfirmed 12/11):
- * Tartar de Salmão -> Sushi Quentes / Enrolados Quentes, cold item.
- * This unlocks a SOURCE-BOUND REVIEW candidate only. It is never evidence
- * of a native product ID, live printer, complete notes, packaging or print.
- * All other historical classification gaps remain HOLD.
+ * Exact human operating rules already captured on 01/11; reconfirmed by César
+ * for salmon tartar on 12/11. No duplicate catalog and no fuzzy join.
+ * This resolves ONLY the classification review candidate, not a native ID,
+ * proven destination, kit/bag, first dispatch, print or live source.
+ * Conference-only items are excluded from the production-station bridge.
  */
+const HUMAN_REVIEW_STATIONS:Record<string,string|null>={
+ SUSHI_QUENTES:"enrolados_quentes",
+ COZINHA:"cozinha_quentes",
+ BAR:null,
+ COMBINADOS:"combinados"
+};
 const humanStationReviewOnly=(code:string,name:string,family:string,
  station:string|null):boolean=>{
- if(code!=="9.10.05.050.00"||
-    humanClarifications.store_scope!=="ITAIM_0001_01"||
+ if(humanClarifications.store_scope!=="ITAIM_0001_01"||
     humanClarifications.origin!=="CESAR_DIRECT_CHAT_THIS_TURN"||
-    humanClarifications.human_rule_capture!=="CAPTURED"||
-    station!=="enrolados_quentes")return false;
+    humanClarifications.human_rule_capture!=="CAPTURED")return false;
  const decisions=humanClarifications.product_rules.filter(r=>r.code===code);
  if(decisions.length!==1)return false;
  const rule=decisions[0];
+ if(!Object.prototype.hasOwnProperty.call(HUMAN_REVIEW_STATIONS,
+    rule.stated_area)||station!==HUMAN_REVIEW_STATIONS[rule.stated_area])
+  return false;
  return normalized(rule.label)===normalized(name)&&
   normalized(rule.stated_family)===normalized(family)&&
-  rule.stated_area==="SUSHI_QUENTES"&&
-  rule.stated_family==="ITEM_FRIO"&&
-  rule.stated_item_temperature==="FRIO"&&
-  rule.new_production_ticket_policy==="BY_PROVEN_SUSHI_QUENTES_ROUTE";
+  rule.new_production_ticket_policy.startsWith("BY_PROVEN_")&&
+  rule.conference_ticket_policy==="UNCHANGED";
 };
+
 export interface ClassificationReviewClaimV1 {
  source_item_index:number;
  product_code:string;
