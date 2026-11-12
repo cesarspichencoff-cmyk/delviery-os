@@ -229,5 +229,137 @@
       stop() { stopped = true; observer.disconnect(); },
     });
   }
-  return Object.freeze({ SCHEMA, scan, watch });
+
+  // React's mounted order prop is a PRIVATE, fragile observation surface.
+  // This is deliberately review-only: NO DOM action, navigation, fetch,
+  // persistent storage, home feed, customer payload or provider API call.
+  function scanMountedOrderProps(doc, cfg) {
+    const out=(reason,n=0)=>Object.freeze({
+      schema:"deliveryos.gestor-mounted-order-review.v1",state:"HOLD",reason,
+      visibleCards:n,candidateOrders:0,candidateLines:0,candidateUnits:0,
+      candidateDirectNotes:0,candidateOptions:0,candidateCodes:0,
+      coverage:"UNKNOWN",readOnly:true,actionsExecuted:0,
+      merchantVerified:false,identityIndependentlyVerified:false,
+      statusSemanticsProven:false,sourceFreshnessVerified:false,
+      detailCompletenessProven:false,homePublishAuthorized:false,
+      ordersPublishable:0,printAuthorized:false,
+      rawOrderIdsExported:0,rawProductNamesExported:0,
+      rawNoteTextExported:0,customerDataExported:false
+    });
+    try {
+      if (!doc?.querySelectorAll || !cfg ||
+          !["FIXTURE","FIELD_REVIEW"].includes(cfg.mode))
+        return out("REVIEW_CONTEXT_INVALID");
+      const hostname=String(doc.location?.hostname??"");
+      if (cfg.mode==="FIELD_REVIEW"
+          ? hostname!=="gestordepedidos.ifood.com.br"
+          : !["","localhost","127.0.0.1"].includes(hostname))
+        return out("GESTOR_ORIGIN_NOT_QUALIFIED");
+      // This selector was directly observed on the dedicated Gestor session.
+      const cards=[...doc.querySelectorAll('[data-testid="card"]')];
+      if (!cards.length || cards.length>200)
+        return out("MOUNTED_CARD_COVERAGE_UNKNOWN",cards.length);
+      const ids=new Set(),shorts=new Set(),merchants=new Set();
+      const candidates=[];let lines=0,units=0,notes=0,options=0,codes=0;
+      for (const card of cards) {
+        if (!visible(card))return out("CARD_NOT_VISIBLE",cards.length);
+        const props=Object.keys(card).filter(k=>/^__reactFiber\$/.test(k));
+        if (props.length!==1)
+          return out("REACT_VERSION_OR_CARD_BINDING_UNKNOWN",cards.length);
+        let node=card[props[0]],order=null;
+        for(let depth=0;node&&depth<16;depth++,node=node.return) {
+          if (node.memoizedProps?.order) {
+            if (order)return out("MULTIPLE_ORDER_BINDINGS",cards.length);
+            order=node.memoizedProps.order;
+          }
+        }
+        if (!order || typeof order.id!=="string" ||
+            order.id.length<8 || order.id.length>128 ||
+            typeof order.displayId!=="string" ||
+            !/^\d{4}$/.test(order.displayId) ||
+            !String(card.innerText??"").includes(order.displayId))
+          return out("CARD_ORDER_IDENTITY_UNPROVEN",cards.length);
+        if (ids.has(order.id)||shorts.has(order.displayId))
+          return out("DUPLICATE_MOUNTED_ORDER",cards.length);
+        if (order.isTest===true)return out("TEST_ORDER_NOT_OPERATIONAL",cards.length);
+        ids.add(order.id);shorts.add(order.displayId);
+        if (typeof order.merchant?.id!=="string" ||
+            !order.merchant.id.trim() || order.merchant.id.length>128)
+          return out("MERCHANT_PROP_UNREADABLE",cards.length);
+        merchants.add(order.merchant.id);
+        if (!Array.isArray(order.items)||!order.items.length||
+            order.items.length>100)return out("ITEM_LIST_UNREADABLE",cards.length);
+        const items=[];
+        for (const item of order.items) {
+          if (!item || typeof item.name!=="string" ||
+              !NAME_RE.test(item.name)||SECRET.test(item.name)||
+              !Number.isSafeInteger(item.quantity) ||
+              item.quantity<1||item.quantity>200)
+            return out("ITEM_CONTENT_UNSAFE",cards.length);
+          const note=item.observations??"";
+          if (typeof note!=="string" || note.length>1200 ||
+              /[\x00-\x1f\x7f]/.test(note)||SECRET.test(note))
+            return out("NOTE_CONTENT_UNSAFE",cards.length);
+          const opts=item.options??[];
+          if (!Array.isArray(opts)||opts.length>30||item.changedFor ||
+              opts.some(o=>o?.changedFor ||
+                (Array.isArray(o?.customizations)&&o.customizations.length)))
+            return out("MODIFIER_STRUCTURE_UNVERIFIED",cards.length);
+          const selected=[];
+          for (const opt of opts) {
+            if (!opt || typeof opt.name!=="string" ||
+                !NAME_RE.test(opt.name)||SECRET.test(opt.name)||
+                !Number.isSafeInteger(opt.quantity)||
+                opt.quantity<1||opt.quantity>200||
+                (opt.observations&&opt.observations!==""))
+              return out("OPTION_STRUCTURE_UNVERIFIED",cards.length);
+            selected.push(Object.freeze({name:opt.name,quantity:opt.quantity}));
+            options++;
+          }
+          const productCode=item.externalCode??null;
+          if (productCode!==null && (typeof productCode!=="string"||
+              !/^(?:\d{10}|\d\.\d{2}\.\d{2}\.\d{3}\.\d{2})$/.test(productCode)))
+            return out("EXTERNAL_PRODUCT_CODE_INVALID",cards.length);
+          if(productCode)codes++;
+          if(note.trim())notes++;
+          lines++;units+=item.quantity;
+          items.push(Object.freeze({name:item.name,quantity:item.quantity,
+            observations:note,options:Object.freeze(selected),
+            externalCode:productCode}));
+        }
+        // Status is only a provider HEADER claim; do not translate it
+        // into station-ready or physical expedition here.
+        candidates.push(Object.freeze({
+          id:order.id,shortCode:order.displayId,
+          merchantId:order.merchant.id,
+          placedAt:typeof order.createdAt==="string"&&
+            Number.isFinite(Date.parse(order.createdAt))?order.createdAt:null,
+          items:Object.freeze(items)
+        }));
+      }
+      if(merchants.size!==1)return out("MULTIPLE_MERCHANTS_IN_VIEW",cards.length);
+      const result={
+        schema:"deliveryos.gestor-mounted-order-review.v1",
+        state:"PRIVATE_REVIEW_ONLY",source:"MOUNTED_GESTOR_CARD_PROPS",
+        visibleCards:cards.length,candidateOrders:candidates.length,
+        candidateLines:lines,candidateUnits:units,
+        candidateDirectNotes:notes,candidateOptions:options,
+        candidateCodes:codes,coverage:"MOUNTED_CARDS_ONLY",
+        readOnly:true,actionsExecuted:0,merchantVerified:false,
+        identityIndependentlyVerified:false,statusSemanticsProven:false,
+        sourceFreshnessVerified:false,detailCompletenessProven:false,
+        homePublishAuthorized:false,ordersPublishable:0,printAuthorized:false,
+        rawOrderIdsExported:0,rawProductNamesExported:0,
+        rawNoteTextExported:0,customerDataExported:false
+      };
+      // The review result cannot leak IDs/notes through ordinary JSON/logs.
+      // Explicitly accessing this field is permitted only in LOCAL PRIVATE
+      // analysis and is not permission to persist, publish or transmit it.
+      Object.defineProperty(result,"privateCandidates",{value:Object.freeze(candidates),
+        enumerable:false,configurable:false,writable:false});
+      return Object.freeze(result);
+    }catch{return out("MOUNTED_ORDER_INSPECTION_FAILED");}
+  }
+
+  return Object.freeze({ SCHEMA, scan, watch, scanMountedOrderProps });
 });
