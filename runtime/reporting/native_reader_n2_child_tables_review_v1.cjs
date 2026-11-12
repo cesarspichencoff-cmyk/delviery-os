@@ -12,6 +12,7 @@ const val=x=>typeof x==='string'&&x.length>0&&x.length<=180&&x===x.trim();
 const qty=x=>/^\d+(?:\.\d{1,4})?$/.test(String(x))&&Number(x)>0&&Number.isFinite(Number(x));
 const pair=x=>JSON.stringify([x.CDGRPOCOR,x.CDOCORR]);
 const child=x=>JSON.stringify([x.NRPRODCOMVEN,x.CDPRODUTO]);
+const name=x=>x.normalize('NFC').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim();
 const denial=(reason,extra={})=>Object.freeze({
  schema:SCHEMA,state:'HOLD',reason,
  baseSourceStructureMatched:false,childJoinShapeMatched:false,
@@ -19,6 +20,8 @@ const denial=(reason,extra={})=>Object.freeze({
  sqlSnapshotAtomicityProven:false,sqlWriterSafetyProven:false,
  independentIfoodUuidBindingProven:false,merchantMappingIndependentlyProven:false,
  nativeProductMasterAuthenticated:false,operationalReadyProven:false,
+ processingNameBindingCallerOnly:false,processingNameRowsMatched:0,
+ processingNativeMasterIndependentlyAttested:false,
  ordersPublishable:0,homePublishAuthorized:false,printAuthorized:false,
  actionsExecuted:0,rawOrderIdsExported:0,rawProductCodesExported:0,
  rawProductNamesExported:0,customerDataExported:false,
@@ -133,6 +136,33 @@ function reconcile(input){
    if(seenChildObs.has(key))return denial('CHILD_OBSERVATION_DUPLICATE');
    seenChildObs.add(key);
   }
+  // Optional check against the processing names the existing Reader already
+  // stored. Use exact native line + product ID + quantity, not name proximity.
+  // This comparison still reuses caller-supplied sources (never independent).
+  let processingNameRowsMatched=0;
+  if(input.processing!==undefined){
+   const p=input.processing,e=input.baseInput.event;
+   if(!obj(p)||p.order_key!==e.order_key||p.snapshot_hash!==e.snapshot_hash||
+      !Array.isArray(p.lines)||p.lines.length!==direct.size)
+    return denial('PROCESSING_REVISION_OR_LINE_COVERAGE_MISMATCH');
+   const matched=new Set();
+   for(const row of p.lines){
+    if(!obj(row)||!val(row.NRPRODCOMVEN)||!val(row.CDPRODUTO)||
+       !val(row.product_name)||!qty(row.quantity)||
+       matched.has(row.NRPRODCOMVEN))
+     return denial('PROCESSING_LINE_OR_NAME_INVALID');
+    const native=direct.get(row.NRPRODCOMVEN);
+    const master=productById.get(row.CDPRODUTO);
+    if(!native||!master||native.CDPRODUTO!==row.CDPRODUTO||
+       Number(native.QTPRODCOMVEN)!==Number(row.quantity)||
+       name(master.NMPRODUTO)!==name(row.product_name))
+     return denial('PROCESSING_NAME_NATIVE_MASTER_OR_LINE_MISMATCH');
+    matched.add(row.NRPRODCOMVEN);
+   }
+   if(matched.size!==direct.size)
+    return denial('PROCESSING_LINE_COVERAGE_INCOMPLETE');
+   processingNameRowsMatched=matched.size;
+  }
   // These booleans are ALWAYS false even when caller claims all tables read.
   // A complete-looking caller-supplied set cannot attest SQL commit/clock,
   // RCSI-off writer impact, iFood UUID association or physical readiness.
@@ -144,7 +174,9 @@ function reconcile(input){
    directObservationRows:seenDirectObs.size,
    extensionObservationRows:seenChildObs.size,
    occurrenceDictionaryRows:occurrences.size,
-   referencedProductNames:requiredProducts.size
+   referencedProductNames:requiredProducts.size,
+   processingNameBindingCallerOnly:processingNameRowsMatched>0,
+   processingNameRowsMatched
   });
  }catch{return denial('CHILD_RECONCILIATION_EXCEPTION_HOLD');}
 }
