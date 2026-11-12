@@ -327,11 +327,18 @@
             observations:note,options:Object.freeze(selected),
             externalCode:productCode}));
         }
-        // Status is only a provider HEADER claim; do not translate it
-        // into station-ready or physical expedition here.
+        // Keep only the opaque provider HEADER status token, never interpret
+        // it as physical cooking, station ready, conference or dispatch.
+        const statusRaw=order.currentStatus??null;
+        const statusClaim=typeof statusRaw==="string"?statusRaw:
+          (statusRaw&&typeof statusRaw==="object"&&
+          typeof statusRaw.code==="string"?statusRaw.code:null);
+        if(statusRaw!==null&&(statusClaim===null||
+          !/^[A-Za-z0-9_-]{1,64}$/.test(statusClaim)))
+          return out("HEADER_STATUS_STRUCTURE_UNVERIFIED",cards.length);
         candidates.push(Object.freeze({
           id:order.id,shortCode:order.displayId,
-          merchantId:order.merchant.id,
+          statusClaim,merchantId:order.merchant.id,
           placedAt:typeof order.createdAt==="string"&&
             Number.isFinite(Date.parse(order.createdAt))?order.createdAt:null,
           items:Object.freeze(items)

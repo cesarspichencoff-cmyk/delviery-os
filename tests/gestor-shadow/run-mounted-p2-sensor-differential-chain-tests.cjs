@@ -99,6 +99,25 @@ test('staleness is not zero, normal, nor upstream freshness',()=>{
  const r=diff.current(3301);assert.equal(r.state,'HOLD');
  assert.equal(r.reason,'LOCAL_OBSERVATION_STALE_OR_ABSENT');assertSafe(r);
 });
+test('supplier header status change produces review-only differential',()=>{
+ orders.forEach(o=>{o.merchant={id:'FICTITIOUS_MERCHANT'}});
+ const before=run(2400);assert.equal(before.unchanged,2);
+ orders[0].currentStatus={code:'IN_PREPARATION'};
+ const changed=run(2500);
+ assert.equal(changed.contentRevised,1);
+ assert.equal(changed.physicalWorkProven,false);assertSafe(changed);
+ orders[0].currentStatus={code:'READY'};
+ const changedAgain=run(2600);
+ assert.equal(changedAgain.contentRevised,1);
+ assert.equal(changedAgain.ordersPublishable,0);assertSafe(changedAgain);
+});
+test('unknown supplier status object cannot enter revision chain',()=>{
+ orders[0].currentStatus={complex:{status:'UNQUALIFIED'}};
+ const source=sensor.scanMountedOrderProps(doc,{mode:'FIELD_REVIEW'});
+ assert.equal(source.reason,'HEADER_STATUS_STRUCTURE_UNVERIFIED');
+ const denied=diff.review(source,2700);
+ assert.equal(denied.state,'HOLD');assertSafe(denied);
+});
 test('no new event type, storage, network or UI actions in either API',()=>{
  const src=sensor.scanMountedOrderProps(doc,{mode:'FIELD_REVIEW'});
  assert.equal(src.ordersPublishable,0);

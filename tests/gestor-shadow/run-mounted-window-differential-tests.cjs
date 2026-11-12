@@ -126,4 +126,21 @@ check('invalid option fails closed without exporting option name',()=>{
  const x=d.review(wrap([r]),1000);
  assert.equal(x.reason,'PRIVATE_OPTION_SHAPE_UNVERIFIED');noLeak(x);
 });
+check('header-only status change forces revision, never claims physical work',()=>{
+ const x=createMountedWindowDifferential();
+ const before=record();before.statusClaim="IN_SEPARATION";
+ const after=record();after.statusClaim="READY";
+ x.review(wrap([before]),1000);
+ const r=x.review(wrap([after]),2000);
+ assert.equal(r.contentRevised,1);
+ assert.equal(r.physicalWorkProven,false);noLeak(r);
+});
+check('malformed header status field refused and does not clear last snapshot',()=>{
+ const x=createMountedWindowDifferential();
+ x.review(wrap([record()]),1000);
+ const bad=record();bad.statusClaim="INVALID STATUS!";
+ const r=x.review(wrap([bad]),2000);
+ assert.equal(r.reason,'PRIVATE_STATUS_SHAPE_UNVERIFIED');noLeak(r);
+ assert.equal(x.review(wrap([record()]),3000).unchanged,1);
+});
 console.log('GESTOR_MOUNTED_WINDOW_DIFF_PASS '+total+'/'+total+' SYNTHETIC_ONLY');

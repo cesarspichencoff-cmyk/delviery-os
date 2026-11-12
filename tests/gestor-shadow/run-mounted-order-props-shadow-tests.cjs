@@ -107,6 +107,17 @@ test("test order cannot be considered operational",()=>{
  const r=sensor.scanMountedOrderProps(make([{isTest:true}]),{mode:"FIELD_REVIEW"});
  assert.equal(r.reason,"TEST_ORDER_NOT_OPERATIONAL");check(r);
 });
+test("opaque provider header status remains PRIVATE and untrusted",()=>{
+ const r=sensor.scanMountedOrderProps(make([{currentStatus:{code:"IN_PREPARATION"}}]),{mode:"FIELD_REVIEW"});
+ assert.equal(r.state,"PRIVATE_REVIEW_ONLY");
+ assert.equal(r.privateCandidates[0].statusClaim,"IN_PREPARATION");
+ assert.equal(JSON.stringify(r).includes("IN_PREPARATION"),false);
+ assert.equal(r.statusSemanticsProven,false);check(r);
+});
+test("unsupported provider status object fails closed",()=>{
+ const r=sensor.scanMountedOrderProps(make([{currentStatus:{nested:["UNKNOWN"]}}]),{mode:"FIELD_REVIEW"});
+ assert.equal(r.reason,"HEADER_STATUS_STRUCTURE_UNVERIFIED");check(r);
+});
 test("existing DOM scan/watch contracts retained",()=>{
  assert.equal(typeof sensor.scan,"function");
  assert.equal(typeof sensor.watch,"function");

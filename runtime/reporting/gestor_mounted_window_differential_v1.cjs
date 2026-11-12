@@ -70,7 +70,12 @@ function createMountedWindowDifferential({maxLocalAgeMs=60000}={}){
      items.push([i.name,i.quantity,i.observations,i.externalCode,opts]);
      lineCount++;units+=i.quantity;
     }
-    now.set(c.id,digest([c.shortCode,c.merchantId,c.placedAt??null,items]));
+    const headerStatus=c.statusClaim??null;
+    if(headerStatus!==null&&(typeof headerStatus!=="string"||
+      !/^[A-Za-z0-9_-]{1,64}$/.test(headerStatus)))
+      return deny('PRIVATE_STATUS_SHAPE_UNVERIFIED');
+    now.set(c.id,digest([c.shortCode,c.merchantId,
+      c.placedAt??null,headerStatus,items]));
    }
   }catch{return deny('PRIVATE_REVIEW_READ_EXCEPTION')}
   if(merchants.size!==1)return deny('MIXED_MERCHANT_SCOPE');
