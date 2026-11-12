@@ -37,3 +37,24 @@ Portanto `IDSTCOMANDA=X` é **ambíguo em relação à causa/transição**. `P` 
 4. **Publicação e L3 sob HOLD**: não deduzir `cancelado` apenas de `X`, não deduzir `pronto` apenas de `P`, não promover `ready_for_downstream_shadow` a `physicalReady`, não alimentar Home operacional ainda.
 
 **Gates finais:** `L1_PARTIAL`, `N2_A_WRITER_IMPACT=UNKNOWN`, `N2_B_CHILD_COVERAGE=UNKNOWN`, `N4_IFOOD_STRONG_JOIN=HOLD`, `L3_STATUS_SEMANTICS_NOT_UNIQUE`, `HOME_REAL=HOLD`, `FIELD_ACCEPTED=0/8`. PR #137 DRAFT/HOLD; PR #135 Stage 3/HOLD. Documento de investigação, sem alterações em código de produção ou caixa.
+
+## Nova fonte independente encontrada no host: exportações históricas iFood (12/11/2026)
+
+Na pasta `Downloads` do perfil já identificado no CAIXA_MOOCA, foi localizado **sem pesquisa SQL nem intervenção no Gestor** um XLSX de pedidos e quatro CSVs originados de `relatorios.ifood.com`. Somente o XLSX de pedidos e o CSV principal foram examinados por cabeçalhos e agregações **em memória**, sem registrar/exportar UUIDs, IDs curtos, consumidores, dados financeiros ou textos individuais:
+
+| Evidência passiva | iFood XLSX | iFood CSV principal |
+| --- | ---: | ---: |
+| Período coberto | **20–26/04/2026** | **30/03–05/04/2026** |
+| Pedidos/linhas válidas | **2.070** | **1.814** |
+| `ID DA LOJA` | **53069 em 2.070/2.070** | **53069 em 1.814/1.814** |
+| `ID COMPLETO DO PEDIDO` UUID completo | 2.070/2.070 | 1.814/1.814 |
+| `ID CURTO DO PEDIDO` com 4 dígitos | 2.070/2.070 | 1.814/1.814 |
+| Duplicidade interna do UUID | **0** | **0** |
+| Estado final iFood | 2.039 `CONCLUIDO`, 22 `CANCELADO`, 9 `CANCELAMENTO PARCIAL` | 1.795 `CONCLUÍDO`, 19 `CANCELADO` |
+| `ID DO PEDIDO NA INTEGRADORA` | Não há essa coluna no arquivo | **0/1.814 preenchidos** |
+
+**Significado sustentado:** o próprio iFood fornece material histórico independente vinculando `UUID ↔ ID curto ↔ ID da loja 53069 ↔ horário ↔ status final`. Isso **não estabelece que `53069` corresponde globalmente à filial interna `0001/01`**; vincular o estabelecimento deve permanecer atestado por evidência operacional autorizada. A coluna que poderia dar um atalho direto para ID da integradora está **integralmente vazia** no CSV. Não imaginar que ela contém `NRVENDAREST` ou `NRCOMANDA`.
+
+**Fronteira temporal comprovada:** o checkpoint atualmente instalado do Reader possui 250 revisões com data nativa **10/11 (25) e 11/11 (225)**. Portanto as duas exportações iFood encontradas **não se sobrepõem em data ao checkpoint ativo**; não houve nem há prova `UUID iFood ↔ quatro partes da chave do Reader` a partir delas. Também não demonstram itens, modificadores, observações ou uma sessão viva atualizada.
+
+**Contra-rota escolhida:** não construir uma conciliação aparente baseada apenas em UUID e short-code de épocas diferentes; não presumir integradora por coluna vazia. Para tentar N4 de novo, é necessária uma **fonte legítima da mesma data/loja do evento Reader**, com detalhe autorizado e vínculo forte, além de checagem nativa das tabelas filhas por caminho seguro. Esses exports históricos são evidência de capacidade de auditoria e identidade de fonte iFood, **não** gatilho de Home operacional. `L1=PARTIAL`, `N2_B=UNKNOWN`, `N4=HOLD`, `L3=AMBIGUOUS_X`, `FIELD_ACCEPTED=0/8`.
