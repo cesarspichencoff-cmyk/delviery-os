@@ -128,6 +128,12 @@ run('duplicate direct observation refused',
  x=>{const a=x.childRows.OBSITCOMANDAVEN;a.rows.push(copy(a.rows[0]));a.totalRows=2},'DIRECT_OBSERVATION_DUPLICATE');
 run('duplicate child observation refused',
  x=>{const a=x.childRows.OBSITCOMANDAEST;a.rows.push(copy(a.rows[0]));a.totalRows=2},'CHILD_OBSERVATION_DUPLICATE');
+run('combo parent without native sequence is refused',
+ x=>{x.childRows.ITCOMANDAVEN_COMBO.rows[0].NRSEQPRODCOM=null},
+ 'COMBO_PARENT_SEQUENCE_GROUP_INCOMPLETE');
+run('combo sequence without native parent is refused',
+ x=>{x.childRows.ITCOMANDAVEN_COMBO.rows[0].CDPRODPROMOCAO=null},
+ 'COMBO_PARENT_SEQUENCE_GROUP_INCOMPLETE');
 run('truncation sentinel at fixed limit refused',
  x=>{const a=x.childRows.ITCOMANDAEST;a.rows=Array.from({length:200},()=>copy(a.rows[0]));a.totalRows=200},
  'CHILD_ROWSET_MISSING_EXHAUSTION_OR_TRUNCATED');
