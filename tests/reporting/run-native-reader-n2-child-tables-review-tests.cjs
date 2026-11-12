@@ -233,6 +233,67 @@ for(const illegal of ['UPDATE','DELETE','INSERT','MERGE','ALTER','DROP',
  assert.doesNotMatch(sqlBody,new RegExp('\\b'+illegal+'\\b','i'));
 assert.match(sql,/DO NOT EXECUTE ON CAIXA_MOOCA/);
 
+
+// Static blueprint safety check, not a SQL execution or a proof of writer safety.
+// Enforce EACH rowset's native scope; a global check for bind presence is not enough.
+const verifyOneOrderBlueprint=function verifyOneOrderBlueprint(src){
+ if(typeof src!=='string')return false;
+ const normalized=src.replace(/\r\n/g,'\n');
+ const markers=[...normalized.matchAll(/^-- ROWSET (\d+) \/ ([A-Z_]+) \//gm)];
+ const names=['ITCOMANDAVEN_COMBO','ITCOMANDAEST','OBSITCOMANDAVEN','OBSITCOMANDAEST','OCORRENCIA','PRODUTO'];
+ const limits=[200,200,400,400,800,400],scopedCounts=[1,1,1,1,2,3];
+ const tables=[
+  ['FROM TEKNISA.ITCOMANDAVEN','FROM TEKNISA.COMANDAVEN'],
+  ['FROM TEKNISA.ITCOMANDAEST'],
+  ['FROM TEKNISA.OBSITCOMANDAVEN'],
+  ['FROM TEKNISA.OBSITCOMANDAEST'],
+  ['FROM TEKNISA.OBSITCOMANDAVEN','FROM TEKNISA.OBSITCOMANDAEST','JOIN TEKNISA.OCORRENCIA'],
+  ['FROM TEKNISA.ITCOMANDAVEN','FROM TEKNISA.ITCOMANDAEST','JOIN TEKNISA.PRODUTO']
+ ];
+ if(markers.length!==6)return false;
+ for(let i=0;i<markers.length;i++){
+  const m=markers[i];
+  if(Number(m[1])!==i+1||m[2]!==names[i])return false;
+  const raw=normalized.slice(m.index,i===5?normalized.length:markers[i+1].index);
+  const body=raw.replace(/\/\*[\s\S]*?\*\//g,'').replace(/--[^\n]*/g,'');
+  const flat=body.replace(/\s+/g,' ').toUpperCase();
+  if(!new RegExp('\\bSELECT\\s+TOP\\s*\\(\\s*'+limits[i]+'\\s*\\)','i').test(body))return false;
+  if((body.match(/\bSELECT\s+TOP\s*\(/gi)||[]).length!==1)return false;
+  for(const key of ['CDFILIAL','NRVENDAREST','NRCOMANDA']){
+   const count=(body.match(new RegExp('\\b'+key+'\\s*=\\s*:'+key+'\\b','gi'))||[]).length;
+   if(count<scopedCounts[i])return false;
+  }
+  if(tables[i].some(term=>!flat.includes(term)))return false;
+  if(/\b(?:INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|TRUNCATE|EXEC|EXECUTE|OPENROWSET|NOLOCK|READPAST|HOLDLOCK|UPDLOCK|SERIALIZABLE)\b/i.test(body))return false;
+  if(/\bSELECT\s+\*/i.test(body))return false;
+  if(i===0&&(!/\bEXISTS\s*\(\s*SELECT\s+1\s+FROM\s+TEKNISA\.COMANDAVEN/i.test(body)||
+      !/\bh\.CDLOJA\s*=\s*:CDLOJA\b/i.test(body)||
+      !/\bh\.IDORGCMDVENDA\s*=\s*'DLV_IFO'/i.test(body)))return false;
+ }
+ return true;
+};
+const blueprintMutations=[
+ ['missing shop scope',s=>s.replace("h.CDLOJA=:CDLOJA","h.CDLOJA=h.CDLOJA")],
+ ['missing iFood origin',s=>s.replace("h.IDORGCMDVENDA='DLV_IFO'","h.IDORGCMDVENDA='DLV_XXX'")],
+ ['wrong native combo table',s=>s.replace("FROM TEKNISA.ITCOMANDAVEN AS i","FROM TEKNISA.PRODUTO AS i")],
+ ['missing item rowset',s=>s.replace("FROM TEKNISA.ITCOMANDAEST AS e","FROM TEKNISA.ITCOMANDAVEN AS e")],
+ ['missing observation child table',s=>s.replace("FROM TEKNISA.OBSITCOMANDAEST AS o","FROM TEKNISA.OBSITCOMANDAVEN AS o")],
+ ['lost one CTE branch filter',s=>s.replace("o.NRCOMANDA=:NRCOMANDA\n UNION","o.NRCOMANDA=o.NRCOMANDA\n UNION")],
+ ['changed rowset cap',s=>s.replace("SELECT TOP (400)","SELECT TOP (500)")],
+ ['weakened isolation',s=>s.replace("FROM TEKNISA.ITCOMANDAEST AS e","FROM TEKNISA.ITCOMANDAEST AS e WITH (NOLOCK)")],
+ ['injected SQL write',s=>s+"\nUPDATE TEKNISA.ITCOMANDAEST SET NRPRODCOMVEN='LAB';"],
+ ['removed product dictionary join',s=>s.replace("LEFT JOIN TEKNISA.PRODUTO AS p","LEFT JOIN TEKNISA.OCORRENCIA AS p")],
+ ['missing last rowset',s=>s.replace(/-- ROWSET 6[\s\S]*$/,"")],
+ ['add SELECT all columns',s=>s+"\nSELECT * FROM TEKNISA.ITCOMANDAEST;"]
+];
+assert.equal(verifyOneOrderBlueprint(sql),true,'ONE_ORDER_BLUEPRINT_SCOPE_OR_SAFETY_INVALID');
+for(const [label,mutate] of blueprintMutations){
+ const modified=mutate(sql);
+ assert.notEqual(modified,sql,'MUTATION_DID_NOT_APPLY '+label);
+ assert.equal(verifyOneOrderBlueprint(modified),false,'UNSAFE_BLUEPRINT_ACCEPTED '+label);
+}
+console.log('NATIVE_CHILD_SQL_BLUEPRINT_STATIC_PASS '+(1+blueprintMutations.length)+'/'+(1+blueprintMutations.length)+' OFFLINE_NO_SQL');
+
 console.log('NATIVE_CHILD_ONE_ORDER_RECONCILE_PASS '+checked+'/'+checked+' OFFLINE_ONLY_FIELD_HOLD');
 
 // Existing processing record first: no additional SQL query or customer export.
