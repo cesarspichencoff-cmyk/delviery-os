@@ -1,4 +1,5 @@
 import {PACKAGING_SOURCE_BLOB_V63, type MotorEntryV63} from "./currentPackagingBridgeV63";
+import humanClarifications from "../../data/comandas_cesar_clarificacoes_20261101_review_only.json";
 import type {SourceOrderItemV45} from "./operationalTicketsV45";
 
 /**
@@ -27,6 +28,30 @@ const keys=(obj:unknown,expected:string[]):obj is Record<string,unknown>=>
  expected.every(k=>Object.prototype.hasOwnProperty.call(obj,k));
 const normalized=(s:string)=>s.normalize("NFD")
  .replace(/[\u0300-\u036f]/g,"").trim().toUpperCase().replace(/\s+/g," ");
+/**
+ * César already resolved this precise item (01/11, reconfirmed 12/11):
+ * Tartar de Salmão -> Sushi Quentes / Enrolados Quentes, cold item.
+ * This unlocks a SOURCE-BOUND REVIEW candidate only. It is never evidence
+ * of a native product ID, live printer, complete notes, packaging or print.
+ * All other historical classification gaps remain HOLD.
+ */
+const humanStationReviewOnly=(code:string,name:string,family:string,
+ station:string|null):boolean=>{
+ if(code!=="9.10.05.050.00"||
+    humanClarifications.store_scope!=="ITAIM_0001_01"||
+    humanClarifications.origin!=="CESAR_DIRECT_CHAT_THIS_TURN"||
+    humanClarifications.human_rule_capture!=="CAPTURED"||
+    station!=="enrolados_quentes")return false;
+ const decisions=humanClarifications.product_rules.filter(r=>r.code===code);
+ if(decisions.length!==1)return false;
+ const rule=decisions[0];
+ return normalized(rule.label)===normalized(name)&&
+  normalized(rule.stated_family)===normalized(family)&&
+  rule.stated_area==="SUSHI_QUENTES"&&
+  rule.stated_family==="ITEM_FRIO"&&
+  rule.stated_item_temperature==="FRIO"&&
+  rule.new_production_ticket_policy==="BY_PROVEN_SUSHI_QUENTES_ROUTE";
+};
 export interface ClassificationReviewClaimV1 {
  source_item_index:number;
  product_code:string;
@@ -94,7 +119,8 @@ export function reviewSourceBoundClassificationV1(
   if(!s||s.product_code!==c.product_code||
      s.product_name!==c.product_name||s.quantity!==c.quantity)
    return hold("REVIEW_CLAIM_NOT_EXACT_SOURCE_IDENTITY");
-  if(pending.has(c.product_code))
+  if(pending.has(c.product_code)&&
+     !humanStationReviewOnly(c.product_code,c.product_name,c.family,c.station))
    return hold("HISTORICAL_CLASSIFICATION_GAP_REQUIRES_NEW_APPROVAL");
   const noStation=nonproduction.has(normalized(c.family));
   if((noStation&&c.station!==null)||(!noStation&&!text(c.station)))
