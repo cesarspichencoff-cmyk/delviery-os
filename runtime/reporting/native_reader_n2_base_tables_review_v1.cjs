@@ -49,6 +49,10 @@ function review(input){
        .every(k=>eq(sale[k],o[k]))||
      e.order_key!==[o.CDFILIAL,o.CDLOJA,o.NRVENDAREST,o.NRCOMANDA].join('|'))
    return hold('BASE_HEADER_SCOPE_OR_SALE_MISMATCH');
+  // The source query must project a note field even when its value is NULL.
+  // Missing column cannot be treated as an independently observed empty note.
+  if(!Object.hasOwn(hdr,'DSOBSCOMANDA'))
+   return hold('BASE_NOTE_PROJECTION_INCOMPLETE');
   const hash=snapshotHash(o);
   if(typeof hash!=='string'||typeof e.snapshot_hash!=='string'||
      !/^[0-9A-Fa-f]{64}$/.test(e.snapshot_hash)||
@@ -62,6 +66,8 @@ function review(input){
       !['CDFILIAL','CDLOJA','NRVENDAREST','NRCOMANDA']
         .every(k=>row[k]===o[k]))
     return hold('ITEM_NATIVE_SHOP_OR_ORDER_SCOPE_MISMATCH');
+   if(!NOTE.every(k=>Object.hasOwn(row,k)))
+    return hold('BASE_NOTE_PROJECTION_INCOMPLETE');
    if(!populated(row.NRPRODCOMVEN)||byLine.has(row.NRPRODCOMVEN))
     return hold('BASE_ITEM_LINE_DUPLICATE_OR_INVALID');
    byLine.set(row.NRPRODCOMVEN,row);
