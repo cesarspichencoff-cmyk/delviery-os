@@ -136,7 +136,9 @@ export interface ErroReal {
   data: string | null;
 }
 export function classificaErro(l: Linha): ErroReal | null {
-  const id = txtCol(l, COL.idCurto) || txtCol(l, COL.idCompleto);
+  // Same UUID-first identity as linhaParaPedido. The 4-digit display ID
+  // repeats across real iFood orders and cannot join complaints/cancellations.
+  const id = idCanonico(l);
   if (!id) return null;
   const turno = txtCol(l, COL.turno);
   if (/sim/i.test(txtCol(l, COL.problemaPos))) {

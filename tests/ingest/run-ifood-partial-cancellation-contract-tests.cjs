@@ -42,4 +42,22 @@ check('CANCELAMENTO PARCIAL',false);
 check('CANCELAMENTO TOTAL',true);
 check(' Cancelamento Parcial ',false);
 assert.equal(backtest.ehCancelado('CANCELADO PARCIALMENTE'),false);
-console.log('IFOOD_REAL_EXPORT_STATUS_CONTRACT_PASS '+ok+'/5; FULL_CANCEL_NOT_PARTIAL; FICTIONAL_ROWS_ONLY');
+// Real March-April CSV had repeated four-digit IDs across unique UUIDs.
+// Here two FICTIONAL records deliberately share the short code.
+const makeError=(uuid) => ({...row('CANCELADO'),
+ 'ID COMPLETO DO PEDIDO':uuid,
+ 'MOTIVO DO CANCELAMENTO':'FICT_TEST_REASON'});
+const error1=ingest.classificaErro(makeError('11111111-2222-4333-8444-555555555555'));
+const error2=ingest.classificaErro(makeError('66666666-7777-4888-8999-aaaaaaaaaaaa'));
+assert.ok(error1 && error2 && error1.tipo==='cancelamento' && error2.tipo==='cancelamento');
+assert.notEqual(error1.pedido_id,error2.pedido_id,'Repeated short code MUST NOT collapse order errors');
+assert.equal(error1.pedido_id,'11111111-2222-4333-8444-555555555555');
+assert.equal(error2.pedido_id,'66666666-7777-4888-8999-aaaaaaaaaaaa');
+ok++;
+const complaint={...row('CONCLUIDO'),
+ 'CLIENTE INFORMOU PROBLEMA EM PEDIDO APÓS A ENTREGA':'SIM'};
+const classified=ingest.classificaErro(complaint);
+assert.equal(classified?.tipo,'problema_pos_entrega');
+assert.equal(classified?.pedido_id,ingest.linhaParaPedido(complaint)?.pedido_id);
+ok++;
+console.log('IFOOD_REAL_EXPORT_STATUS_CONTRACT_PASS '+ok+'/7; FULL_CANCEL_NOT_PARTIAL; UUID_FIRST_ERROR_JOIN; FICTIONAL_ROWS_ONLY');
