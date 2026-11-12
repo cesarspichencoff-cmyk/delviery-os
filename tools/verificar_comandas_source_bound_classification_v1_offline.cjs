@@ -61,13 +61,53 @@ test("review-only entries cannot invoke pinned V6.3 motor or produce boxes",()=>
  assert.equal(r.ready_for_automatic_operational_print,false);
  assert.equal(called,0);
 });
-test("all 14 26-Oct pending codes remain HOLD even with claimed review",()=>{
+test("all 14 historical codes HOLD if human identity is not matched",()=>{
  for(const code of pending){const s=sources(),c=claims();
   s[0].product_code=code;c[0].product_code=code;
   const out=run(s,c);assert.equal(out.status,"HOLD",code);
   assert.ok(out.reasons.includes("HISTORICAL_CLASSIFICATION_GAP_REQUIRES_NEW_APPROVAL"));
  }
 });
+test("Cesar's exact salmon tartar decision becomes review-only, never print",()=>{
+ const s=sources(),c=claims();
+ s[0].product_code="9.10.05.050.00";
+ s[0].product_name="TARTAR DE SALMAO";
+ c[0].product_code=s[0].product_code;
+ c[0].product_name=s[0].product_name;
+ c[0].family="ITEM_FRIO";
+ c[0].station="enrolados_quentes";
+ c[0].review_source_ref="CESAR_CONFIRMED_2026-11-12";
+ const candidate=run(s,c);
+ assert.equal(candidate.status,"REVIEW_CANDIDATE_ONLY");
+ assert.equal(candidate.exact_code_name_quantity_index_checked,true);
+ assert.equal(candidate.entries.length,2);
+ assert.equal(candidate.entries[0].product.classification.station,"enrolados_quentes");
+ assert.equal(candidate.entries[0].product.classification.family,"ITEM_FRIO");
+ assert.equal(candidate.entries[0].station_proof,"UNKNOWN");
+ // Human station decision is not a printer, native identity or bag proof.
+ let motorCalls=0;
+ const motor={packComanda(){motorCalls++;throw Error("NOT_AUTHORIZED")}, 
+  kitVerdict(){motorCalls++;throw Error("NOT_AUTHORIZED")}};
+ const downstream=bridge(s,candidate.entries,motor,BLOB);
+ assert.equal(downstream.status,"BLOCKED");
+ assert.ok(downstream.reasons.includes("STATION_NOT_CURRENTLY_PROVEN"));
+ assert.equal(downstream.packaging,null);
+ assert.equal(motorCalls,0);
+ for(const mutate of [
+  data=>{data.s[0].product_name="TARTAR DE ATUM";data.c[0].product_name="TARTAR DE ATUM"},
+  data=>{data.c[0].station="duplas"},
+  data=>{data.c[0].family="ENTRADA_QUENTE"},
+  data=>{data.s[0].product_code="9.10.05.040.00";data.c[0].product_code="9.10.05.040.00"},
+  data=>{data.c[0].product_name="TARTAR DE ATUM"}
+ ]){
+  const next={s:JSON.parse(JSON.stringify(s)),c:JSON.parse(JSON.stringify(c))};
+  mutate(next);
+  const denied=run(next.s,next.c);
+  assert.equal(denied.status,"HOLD");
+  assert.equal(denied.ready_for_automatic_operational_print,false);
+ }
+});
+
 denied("code swap cannot borrow similar product name",
  d=>{d.c[0].product_code="9.50.00.001.00"},
  "REVIEW_CLAIM_NOT_EXACT_SOURCE_IDENTITY");
