@@ -15,7 +15,22 @@ const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const text=x=>typeof x==='string'&&x.length>0&&x.length<=160&&x===x.trim()&&
   !/[\x00-\x1f\x7f]/.test(x);
-const norm=x=>x.normalize('NFC').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim();
+const baseNorm=x=>x.normalize('NFC').toLocaleLowerCase('pt-BR')
+  .replace(/\\s+/g,' ').trim();
+const norm=x=>baseNorm(x).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
+  .normalize('NFC');
+// Diacritic folding is for review-only correlation, never an identity join.
+// Distinct names on the SAME source may collapse to one folded label: reject.
+function ambiguousFold(rows,key){
+ const byFold=new Map();
+ for(const row of rows){
+  if(!object(row)||!text(row[key]))continue; // existing input validator follows
+  const source=baseNorm(row[key]),folded=norm(row[key]);
+  if(byFold.has(folded)&&byFold.get(folded)!==source)return true;
+  byFold.set(folded,source);
+ }
+ return false;
+}
 function quantity(x){
   const s=typeof x==='number'&&Number.isSafeInteger(x)?String(x):x;
   if(typeof s!=='string'||!/^\d{1,5}(?:\.\d{1,4})?$/.test(s))return null;
@@ -95,6 +110,8 @@ function compare(input){
       return result('IFOOD_STORE_SHORT_CODE_OR_LOCAL_MINUTE_MISMATCH');
     if(!Array.isArray(f.items)||f.items.length!==processed.size||
        f.items.length>200)return result('IFOOD_PRODUCT_LINE_COUNT_MISMATCH');
+    if(ambiguousFold(p.lines,'product_name')||ambiguousFold(f.items,'name'))
+      return result('FOLDED_PRODUCT_NAME_COLLISION_AMBIGUOUS');
     const multiset=new Map();
     for(const row of p.lines){
       const key=JSON.stringify([norm(row.product_name),quantity(row.quantity)]);
