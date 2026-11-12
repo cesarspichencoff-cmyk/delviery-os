@@ -72,6 +72,40 @@ assert.equal(success.comboMappedLines,2);
 assert.equal(success.comboProductLines,1);
 assert.equal(success.directObservationRows,1);
 assert.equal(success.extensionObservationRows,1);
+const addProcessing=f=>{
+ const e=f.baseInput.event;
+ f.processing={order_key:e.order_key,snapshot_hash:e.snapshot_hash,lines:[
+  {NRPRODCOMVEN:'LINE_A',CDPRODUTO:'111',product_name:'FICT_HOT_ROLL',quantity:'1.000'},
+  {NRPRODCOMVEN:'LINE_B',CDPRODUTO:'222',product_name:'FICT_SALMON',quantity:1}
+ ]};
+};
+const bound=run('existing processing names tied to same native line and master',x=>{
+ addProcessing(x);
+},OK);
+assert.equal(bound.processingNameRowsMatched,2);
+assert.equal(bound.processingNameBindingCallerOnly,true);
+assert.equal(bound.processingNativeMasterIndependentlyAttested,false);
+run('processing name may have case differences without breaking native link',x=>{
+ addProcessing(x);x.processing.lines[0].product_name='fict_hot_roll';
+},OK);
+run('processing name must match native PRODUTO for the same ID',x=>{
+ addProcessing(x);x.processing.lines[0].product_name='FICT_SALMON';
+},'PROCESSING_NAME_NATIVE_MASTER_OR_LINE_MISMATCH');
+run('processing wrong CDPRODUTO is refused even when name happens to match',x=>{
+ addProcessing(x);x.processing.lines[0].CDPRODUTO='222';
+},'PROCESSING_NAME_NATIVE_MASTER_OR_LINE_MISMATCH');
+run('processing stale revision hash cannot borrow current product names',x=>{
+ addProcessing(x);x.processing.snapshot_hash='f'.repeat(64);
+},'PROCESSING_REVISION_OR_LINE_COVERAGE_MISMATCH');
+run('processing duplicate native line cannot hide another line',x=>{
+ addProcessing(x);x.processing.lines[1].NRPRODCOMVEN='LINE_A';
+},'PROCESSING_LINE_OR_NAME_INVALID');
+run('processing quantity mismatch prevents a name-only association',x=>{
+ addProcessing(x);x.processing.lines[1].quantity=5;
+},'PROCESSING_NAME_NATIVE_MASTER_OR_LINE_MISMATCH');
+run('processing row-count undercoverage cannot claim matched products',x=>{
+ addProcessing(x);x.processing.lines.pop();
+},'PROCESSING_REVISION_OR_LINE_COVERAGE_MISMATCH');
 run('missing required child rowset is HOLD',
  x=>{delete x.childRows.OBSITCOMANDAEST},'REQUIRED_NATIVE_CHILD_TABLE_CAPTURE_MISSING');
 run('empty child table needs explicit exhausted true',
