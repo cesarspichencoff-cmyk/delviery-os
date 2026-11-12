@@ -35,6 +35,12 @@ function reconcile(input){
   if(!obj(input)||input.schema!==INPUT||!obj(input.baseInput)||
       input.baseInput.schema!==BASE_INPUT||!obj(input.childRows))
    return denial('INPUT_ENVELOPE_INVALID');
+  // A structure-only match must not contradict the producer's own negative
+  // source/child-coverage declaration, even if all supplied rows reconcile.
+  const event=input.baseInput.event;
+  if(obj(event)&&(event.ready_for_downstream_shadow===false||
+      (Array.isArray(event.blockers)&&event.blockers.length>0)))
+   return denial('READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
   const base=reviewBase(input.baseInput);
   if(base.reason!=='ONE_ORDER_BASE_TABLE_FIELDS_MATCH_NOT_ATOMIC'||
       base.headMatching!==true||base.itemsMatching!==true||
