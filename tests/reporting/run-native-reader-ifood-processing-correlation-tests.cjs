@@ -119,4 +119,53 @@ check('producer downstream HOLD overrides matching names',x=>{
  x.event.ready_for_downstream_shadow=false;
 },'READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
 check('invalid envelope is fail-closed',x=>{delete x.processing},'ENVELOPE_INVALID');
+
+const coded=fixture();
+coded.ifood.items[0].externalCode='9.20.00.020.00';
+coded.ifood.items[1].externalCode='9200001000';
+const codedResult=compare(coded);
+assert.equal(codedResult.matchedProductCodes,2);
+assert.equal(codedResult.matchedProducts,2);
+assert.equal(codedResult.nativeUuidLinkProven,false);
+assert.equal(codedResult.printAuthorized,false);
+check('exact external codes from Gestor strengthen review but not authorize',x=>{
+  x.ifood.items[0].externalCode='9200002000';
+  x.ifood.items[1].externalCode='9.20.00.010.00';
+},ok,2);
+check('changed external code despite exact names and quantities HOLD',x=>{
+  x.ifood.items[0].externalCode='9200001000';
+  x.ifood.items[1].externalCode='9200002000';
+},'IFOOD_NATIVE_CODE_AND_QTY_MISMATCH');
+check('partly populated external codes HOLD',x=>{
+  x.ifood.items[0].externalCode='9200002000';
+},'IFOOD_EXTERNAL_CODES_PARTIAL_OR_INVALID');
+check('invalid external code HOLD',x=>{
+  x.ifood.items[0].externalCode='INVALID';
+  x.ifood.items[1].externalCode='9200001000';
+},'IFOOD_EXTERNAL_CODES_PARTIAL_OR_INVALID');
+check('invalid native code with Gestor codes HOLD',x=>{
+  x.event.order.items[0].CDARVPROD='UNKNOWN';
+  x.event.snapshot_hash=snapshotHash(x.event.order);
+  x.processing.snapshot_hash=x.event.snapshot_hash;
+  x.ifood.items[0].externalCode='9200002000';
+  x.ifood.items[1].externalCode='9200001000';
+},'NATIVE_PRODUCT_CODE_MISSING_OR_INVALID');
+{
+ const x=fixture();
+ x.event.order.items.push({...x.event.order.items[1],NRPRODCOMVEN:'LINE_C',QTPRODCOMVEN:'1.000'});
+ x.event.snapshot_hash=snapshotHash(x.event.order);
+ x.processing.snapshot_hash=x.event.snapshot_hash;
+ x.processing.lines.push({...x.processing.lines[1],NRPRODCOMVEN:'LINE_C',quantity:'1.000'});
+ x.ifood.items.push({name:'Tartar de Salmão',quantity:1,externalCode:'9200002000'});
+ x.ifood.items[0].externalCode='9200002000';
+ x.ifood.items[1].externalCode='9200001000';
+ const r=compare(x);
+ assert.equal(r.state,'HOLD');
+ assert.equal(r.reason,ok);
+ assert.equal(r.matchedProducts,3);
+ assert.equal(r.matchedProductCodes,3);
+ assert.equal(r.ordersPublishable,0);
+ assert.equal(r.printAuthorized,false);
+ count++;console.log('PASS three lines: identical product code with differing quantities kept separate');
+}
 console.log('READER_IFOOD_EXISTING_PROCESSING_CORRELATION_PASS '+count+'/'+count+' OFFLINE_ONLY_HOLD');

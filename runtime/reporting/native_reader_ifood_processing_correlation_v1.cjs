@@ -38,6 +38,7 @@ function quantity(x){
   const value=Number(whole)*10000+Number(fraction.padEnd(4,'0'));
   return value>0&&value<=100000000?value:null;
 }
+const code=x=>typeof x!=='string'?null:/^[0-9]{10}$/.test(x)?x:/^[0-9]\.[0-9]{2}\.[0-9]{2}\.[0-9]{3}\.[0-9]{2}$/.test(x)?x.replace(/\./g,''):null;
 function localMinute(x){
   if(typeof x!=='string')return null;
   const m=/^(20\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):([0-5]\d)(?:\.\d{1,7})?$/.exec(x);
@@ -50,7 +51,7 @@ function localMinute(x){
   return x.slice(0,16);
 }
 const result=(reason,extra={})=>Object.freeze({
-  schema:SCHEMA,state:'HOLD',reason,matchedProducts:0,matchedQuantities:0,
+  schema:SCHEMA,state:'HOLD',reason,matchedProducts:0,matchedQuantities:0,matchedProductCodes:0,
   readerEventHashAuthenticated:false,readerSnapshotRecomputed:false,
   processingOriginAuthenticated:false,
   ifoodDetailAuthenticated:false,merchantIdentityIndependentlyProven:false,
@@ -127,13 +128,37 @@ function compare(input){
       else multiset.set(key,count-1);
     }
     if(multiset.size!==0)return result('IFOOD_PRODUCT_MULTISET_INCOMPLETE');
+    // Optional independently visible Gestor externalCode <-> native CDARVPROD.
+    // The whole basket must carry codes; partial or invalid codes HOLD.
+    // Matching codes remains content correlation, NOT source custody or UUID identity.
+    const anyCode=f.items.some(row=>Object.prototype.hasOwnProperty.call(row,'externalCode'));
+    let matchedProductCodes=0;
+    if(anyCode){
+      if(!f.items.every(row=>code(row.externalCode)!==null))
+        return result('IFOOD_EXTERNAL_CODES_PARTIAL_OR_INVALID');
+      const byCode=new Map();
+      for(const row of o.items){
+        const c=code(row.CDARVPROD);
+        if(c===null)return result('NATIVE_PRODUCT_CODE_MISSING_OR_INVALID');
+        const k=JSON.stringify([c,quantity(row.QTPRODCOMVEN)]);
+        byCode.set(k,(byCode.get(k)||0)+1);
+      }
+      for(const row of f.items){
+        const k=JSON.stringify([code(row.externalCode),quantity(row.quantity)]);
+        const count=byCode.get(k)||0;
+        if(!count)return result('IFOOD_NATIVE_CODE_AND_QTY_MISMATCH');
+        if(count===1)byCode.delete(k);else byCode.set(k,count-1);
+      }
+      if(byCode.size)return result('IFOOD_NATIVE_CODE_MULTISET_INCOMPLETE');
+      matchedProductCodes=f.items.length;
+    }
     // A copied digest does not prove that the event content produced those bytes.
     // This preflight proves only self-consistency, never independent custody.
     if(snapshotHash(o)!==e.snapshot_hash)
       return result('READER_SNAPSHOT_NOT_SELF_CONSISTENT');
     return result('PRODUCT_NAMES_AND_QUANTITIES_CORRELATED_NOT_IDENTITY_PROVEN',{
       readerSnapshotRecomputed:true,
-      matchedProducts:p.lines.length,matchedQuantities:p.lines.length,
+      matchedProducts:p.lines.length,matchedQuantities:p.lines.length,matchedProductCodes,
       processingRevisionBoundByCaller:true,
       ifoodStoreShortCodeLocalMinuteMatched:true
     });
