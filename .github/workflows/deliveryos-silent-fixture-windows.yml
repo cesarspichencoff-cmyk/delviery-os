@@ -80,6 +80,9 @@ on:
       - tests/gestor-shadow/run-window-selector-tests.cjs
       - tests/gestor-shadow/run-status-bridge-tests.cjs
       - tools/gestor-native-shadow-reconcile/**
+      - src/ingest/ifoodRelatorio.ts
+      - src/ingest/parserRelatorioIfood.js
+      - tests/ingest/run-ifood-partial-cancellation-contract-tests.cjs
       - runtime/reporting/gestor_v3_visible_sensor.js
       - tests/gestor-shadow/run-v3-visible-sensor-browser-tests.cjs
   workflow_dispatch:
@@ -680,6 +683,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Compile existing TypeScript contracts
         run: npm run build
+      - name: iFood partial cancellation is not total cancellation (synthetic labels, no POS)
+        run: node tests/ingest/run-ifood-partial-cancellation-contract-tests.cjs
       - name: Reader line to work events, no live/readiness authority
         run: node dist/src/platform/run-reader-station-link-review-tests.js
       - name: Reader classification to exact station consistency (review only)
