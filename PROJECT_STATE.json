@@ -4,8 +4,8 @@
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "feat/gestor-shadow-observer-20261103",
-  "checkpoint_type": "V1_L1_NATIVE_SOURCE_FIELD_HOLD_CODE_CI_VERIFIED",
-  "state_basis_head": "29ac800c7721a2d3f6cb31ba87eef87b9f8e8e30",
+  "checkpoint_type": "V1_L1_NATIVE_READER_16_EVENT_FIELD_SAMPLE_REAL_CI_PASS_SOURCE_INDEPENDENCE_HOLD",
+  "state_basis_head": "5a85a0b2ab2ac4cd64c4a25d5646e0743a07c196",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -104,7 +104,7 @@
     "2026-10-31 Cesar approved ownership rule and console rider choice for release ('Sim, pode fazer o que for necessario...').",
     "2026-11-01 Cesar decisions applied: short per-terminal codes kept off-repo with attempt throttle (machine credentials exempt); field APK signing from GitHub secrets via tag workflow; term approved pending legal fields; five former out-of-scope items moved into V1. CI 737258f1 product and Android success."
   ],
-  "next_action": "FOCO CRITICO L1: retomar pela prova real independente do receptor iFood/Teknisa Itaim, fronteira de commit, cardinalidade e completude semantica das tabelas filhas (ITCOMANDAEST, OBSITCOMANDAVEN, OBSITCOMANDAEST, OCORRENCIA). Avaliar separadamente risco N2-A de bloqueio aos escritores antes de qualquer SQL SERlALIZABLE autorizado. Foxxy e CAIXA_MOOCA offline na ultima verificacao remota; NAO executar no caixa por rota alternativa sem autorizacao de efeito. Preservar PRs #137 e #135 draft/HOLD e 4/4 CI aprovada; nao criar outra suite sintetica equivalente ou continuar iterando periferia Android para substituir prova L1. Depois de L1 atestada, conectar Home/Operacao Viva -> Entregas -> jornada L7, com piloto consentido L8.",
+  "next_action": "FOCO L1/N2-B+N4: 16 eventos DLV_IFO/0001/01 de 11/11 foram lidos passivamente em 12/11 com 16/16 itens+observações autodeclarados; isso NÃO comprova completude nas tabelas filhas nem identidade UUID iFood. Obter por canal permitido um detalhe independente e completo de um pedido iFood Itaim com loja e UUID ou vínculo forte verificável e confrontar com 1 revisão nativa e suas tabelas filhas, protegendo escritores (N2-A desconhecido). Corrigir projetor SKIPPED_LOCKED somente com protocolo de dono, rollback e prova segura; não apagar lock. CAIXA_MOOCA ONLINE no Desktop Commander, mas SOMENTE leitura passiva, sem processo/terminal/SQL/UI/impressão. Foxxy OFFLINE. Continuar V1 L1→L8; PRs #137 e #135 OPEN/DRAFT/HOLD; CI do codigo 5a85a0b 4/4 aprovada; 0/8 aceites de campo.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -213,15 +213,15 @@
     }
   },
   "latest_operational_checkpoint": {
-    "recorded_date_brt": "2026-11-11",
-    "state_kind": "LAST_KNOWN_REPO_AND_DEVICE_STATE_VERIFIED",
+    "recorded_date_brt": "2026-11-12",
+    "state_kind": "CURRENT_REPO_CI_AND_REMOTE_PASSIVE_16_EVENT_SAMPLE_VERIFIED",
     "checked_review_branch": "feat/gestor-shadow-observer-20261103",
-    "code_basis_sha": "29ac800c7721a2d3f6cb31ba87eef87b9f8e8e30",
-    "review_pr": "#137 OPEN/DRAFT/HOLD (unmerged)",
+    "code_basis_sha": "5a85a0b2ab2ac4cd64c4a25d5646e0743a07c196",
+    "review_pr": "#137 OPEN/DRAFT/HOLD, source code commit 5a85a0b, unmerged; metadata-only checkpoint may have later HEAD",
     "comandas_pr": "#135 OPEN/DRAFT/HOLD; HEAD 66243a10c63348654bea58b48dffef303faf6b4a",
-    "l1": "PARTIAL / N2-A UNKNOWN / N2-B UNKNOWN / N3 single historical recomputation only / N4 HOLD / N5 HOLD",
+    "l1": "PARTIAL / N2-A writer impact UNKNOWN / N2-B native child coverage and atomic commit UNKNOWN / N3 checkpoint and 16 source snapshots internally coherent but independent source auth UNKNOWN / N4 iFood UUID join HOLD / N5 Home real HOLD",
     "l2": "CODIFIED_TAXONOMY_FIELD_ROUTE_HOLD",
-    "l3": "PHYSICAL_READY_UNKNOWN; states 3/P/X not operationally homologated",
+    "l3": "PHYSICAL_READY_UNKNOWN; 15 native state P and 1 X in passive sample, not homologated; ready_for_downstream_shadow is NOT physical ready",
     "l4": "HOME_TEMPORAL_FOCUS_AND_SOURCE_TRUTH_CI_PASS_REAL_ORDERS_HOLD",
     "l5": "COMANDAS_VIRTUAL_CHAIN_TESTED_PAPER_AND_CUSTODY_FIELD_HOLD",
     "l6": "ANDROID_EMULATOR_CI_PASS_XIAOMI_FIELD_HOLD",
@@ -230,22 +230,23 @@
     "accepted_field_stages": 0,
     "required_field_stages": 8,
     "verification": {
-      "code_commit": "29ac800c7721a2d3f6cb31ba87eef87b9f8e8e30",
+      "code_commit": "5a85a0b2ab2ac4cd64c4a25d5646e0743a07c196",
       "actions_four_of_four_success": true,
-      "actions_total_jobs": 10,
-      "android_room_junit": "305/305 PASS 0 failed 0 errors",
-      "android_https": "1/1 emulator lab PASS, not field",
-      "android_webview": "API29 2/2; API34 3/3, not field",
-      "home_chromium": "24/24 synthetic PASS, no human visual acceptance",
+      "android_room_junit": "PASS in workflow 43149417912; device Xiaomi NOT tested in this acceptance",
+      "android_https": "PASS in workflow 43149418003; field endpoint NOT proven",
+      "android_webview": "API29 PASS, API34 3/3 PASS on rerun after an initial crash/failure, not physical field proof",
+      "home_chromium": "Synthetic Home tests PASS in silent fixture; no human acceptance",
+      "gestor_native_shadow_correlation": "40/40 PASS on code SHA, new test prevents 3 source self-claims being promoted to merchantVerified",
       "ci_run_urls": [
-        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42950598536",
-        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42950598555",
-        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42950598567",
-        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/42950598604"
-      ]
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417965",
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417912",
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149418003",
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417908"
+      ],
+      "world_operational_acceptance": false
     },
-    "last_remote_device_check": "Foxxy OFFLINE; CAIXA_MOOCA OFFLINE through Desktop Commander; neither implies powered off",
-    "next_material_gate": "Independent, authorized one-order native completeness plus source/commit and safe writer-impact proof, sanitized and effect-limited; no actual production SQL until specific authorization",
+    "last_remote_device_check": "CAIXA_MOOCA ONLINE via Desktop Commander 0.3.2, Foxxy OFFLINE, both observed in this turn; no workstation changes",
+    "next_material_gate": "Independently attested one-order source/commit, child table completeness and safe writer impact; source event self-consistency is NOT equivalent to these gates",
     "prohibitions": [
       "No cashier start_process or UI interference",
       "No PRINT/SEFAZ/merge/deploy/cutover",
@@ -253,7 +254,45 @@
       "No paid infrastructure",
       "Do not promote laboratory proof to field acceptance"
     ],
-    "checkpoint_scope": "METADATA_ONLY; this record is not approval for production, SQL, GPS or print",
-    "prior_state_interpretation": "Older verified_state/unknowns and transport entries are historical and should not override this explicit current 2026-11-11 checkpoint."
+    "checkpoint_scope": "GITHUB_METADATA_ONLY; no permission implied for operational SQL, vendor contact, print, production changes or live Home publishing",
+    "prior_state_interpretation": "Historical verified_state/unknowns/old CI and device entries predate this 2026-11-12 checkpoint; latest_operational_checkpoint is authoritative for current status.",
+    "l1_field_sample": {
+      "observation_kind": "PASSIVE_READ_OF_PREEXISTING_FILES_NO_DEVICE_EXECUTION",
+      "observed_on_brt": "2026-11-12",
+      "native_order_date_brt": "2026-11-11",
+      "sample_count": 16,
+      "scoped_native_origin": "DLV_IFO 16/16",
+      "scoped_native_store": "CDFILIAL=0001 CDLOJA=01 16/16",
+      "event_json_legible": 16,
+      "events_with_direct_items": 16,
+      "events_with_nonempty_note_fields": 16,
+      "notes_total_nonempty": 32,
+      "notes_order_scoped": 16,
+      "notes_item_scoped": 16,
+      "note_field_counts": {
+        "DSOBSCOMANDA": 16,
+        "DSOBSPEDDIGCMD": 8,
+        "TXPRODCOMVEN": 8
+      },
+      "declared_downstream_shadow_ready": 16,
+      "declared_scan_complete": 16,
+      "declared_note_join_proven": 32,
+      "contradictions_in_declared_flags": 0,
+      "native_status_counts": {
+        "P": 15,
+        "X": 1
+      },
+      "ifood_uuid_field_present_in_event_contract": 0,
+      "independently_proven_child_table_coverage": false,
+      "independently_proven_ifood_order_uuid_binding": false,
+      "native_physical_ready_proven": false,
+      "source_tables_not_attested": [
+        "ITCOMANDAEST",
+        "OBSITCOMANDAVEN",
+        "OBSITCOMANDAEST",
+        "OCORRENCIA"
+      ],
+      "raw_order_ids_customer_details_and_note_values_persisted_in_repository": false
+    }
   }
 }
