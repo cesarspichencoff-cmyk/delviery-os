@@ -913,10 +913,20 @@ teste("H35 o servidor entrega as quatro cenas e recusa escrita", async () => {
       assert.equal(vm.demonstracao, true);
       assert.equal(vm.ambientes.length, 5);
     }
-    // Cena desconhecida NAO inventa dado: cai na cena padrao, declarada.
-    const invalida = await pegar("/api/home?cena=inexistente");
-    assert.equal(invalida.code, 200);
-    assert.equal((JSON.parse(invalida.body) as { cena: string }).cena, "ambiente");
+    // Cena desconhecida NAO inventa dado e NAO cai em cena padrao: e recusada.
+    // Ate `0f1a153` ela devolvia a cena "ambiente" com 200; desde entao o
+    // caminho sem `cena` e a leitura REAL, e servir demonstracao por engano de
+    // digitacao seria apresentar fixture a quem pediu outra coisa. Esta
+    // expectativa ficou para tras naquela mudanca (medido: 400 !== 200).
+    for (const nome of ["inexistente", "constructor", "__proto__"]) {
+      const invalida = await pegar(`/api/home?cena=${nome}`);
+      assert.equal(invalida.code, 400, `cena ${nome} nao foi recusada`);
+      assert.deepEqual(JSON.parse(invalida.body), { erro: "cena_desconhecida" });
+    }
+    // Sem `cena`, a resposta e a leitura real — nunca uma demonstracao.
+    const real = await pegar("/api/home");
+    assert.equal(real.code, 200);
+    assert.equal((JSON.parse(real.body) as { demonstracao: boolean }).demonstracao, false);
 
     const escrita = await pegar("/api/home", "POST");
     assert.equal(escrita.code, 405, "o servidor aceitou metodo de escrita");
