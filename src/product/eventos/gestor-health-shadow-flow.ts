@@ -45,6 +45,7 @@ export function executarSaudeGestorEmShadow(
      events.some(e=>e.source!=="fixture:observador-interno" ||
        e.event_type!=="source_health_changed" ||
        e.tenant_id!==input.tenant_id || e.unit_id!=="ITAIM" ||
+       !("source_id" in e.payload) ||
        e.payload.source_id!=="gestor_ifood_mounted_view"))
     return hold("LEDGER_CONTENT_NOT_ISOLATED",registration);
   const projection=projetarLeitura(events,{
