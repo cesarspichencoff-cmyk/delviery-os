@@ -135,7 +135,32 @@ escuta em loopback: onde a equipe vai olhar a Home é decisão em aberto.
   deixaram processos órfãos. A bancada passou a fechar o navegador pelo próprio DevTools e ganhou um
   vigia para o modo `--serve`.
 
-## 8. Decisões que são do César
+## 8. Trilha Entregas — o que foi medido nesta sessão (pouco, e declarado)
+
+Fatos, por leitura e por comando, no Foxxy em 13/11:
+
+- `adb devices -l` **vazio**: o Xiaomi não estava conectado. SDK Android, `adb` 1.0.41, Java 17.0.19 e os
+  AVDs `deliveryos_api34` e `deliveryos_connected_20261102` presentes. Nenhum teste Android foi rodado.
+- **Não existe `onRenderProcessGone` em `android/`** — nem no `OriginLockedClient` de produção
+  (`android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt:326`) nem nos `WebViewClient`
+  dos testes instrumentados (`RiderHttpsWorkerEndToEndInstrumentedTest.kt:43`).
+- A CI sobe o emulador com `-gpu swiftshader_indirect`, sem `ram-size` nem `heap-size`
+  (`.github/workflows/deliveryos-android-https-end-to-end-lab.yml:45-49`).
+
+**Hipótese, não prova.** No Android, quando o processo renderizador do WebView morre e nenhum cliente
+trata `onRenderProcessGone`, o sistema encerra o processo do aplicativo — sem exceção Java. É o mesmo
+sintoma do run 43221183916 (`Process crashed`, zero frame Java). Um runner de CI com GPU por software e
+memória padrão é o lugar típico para o renderizador cair; a bancada passou porque ele não caiu.
+
+Se for isso, **não é só defeito de CI**: no aparelho de rua, com o sistema matando o renderizador sob
+pressão de memória, o aplicativo inteiro cairia — e com ele o serviço de captura da viagem, que vive no
+mesmo processo.
+
+**Teste que decide, ainda não executado:** no emulador, carregar `chrome://crash` no WebView da
+`MainActivity` real. Esperado hoje: o processo cai e a instrumentação reporta `Process crashed`. Com
+`onRenderProcessGone` tratado (recriar o WebView e recarregar a origem), o processo sobrevive.
+
+## 9. Decisões que são do César
 
 1. Autorizar o ensaio supervisionado no caixa, e por qual canal.
 2. Onde a Home roda e em qual tela a equipe a vê.
