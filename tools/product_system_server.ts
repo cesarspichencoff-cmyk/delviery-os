@@ -33,6 +33,8 @@ import {
   AGORA_DEMO,
 } from "../src/product/demo/seed-demonstracao";
 import { homeVM } from "../src/product/viewmodels/home-vm";
+import { elegerModo, ESTADO_INICIAL } from "../src/product/atencao/politica-temporal";
+import type { FonteLeitura, LeituraOperacional } from "../src/product/viewmodels/sinais";
 import {
   eventosHistoricosDeEnvelopes,
   historicoVM,
@@ -47,7 +49,7 @@ import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-ent
 import { lerRealidadeDeEntregasIncremental } from "../src/platform/leitura/realidade-de-entregas-incremental";
 import { leitorRrCancelavel, type ProtecaoRr } from "../src/platform/leitura/leitor-rr-cancelavel";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
-import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
+import { lerSaudeDaFonteTata, type AvaliadorDeSaude, type SaudeDaFonteTata } from "../src/platform/leitura/saude-fonte-tata";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { configurarEscopoShadow, checarAcessoEscopado } from "../src/product/security/escopo-api-shadow";
@@ -152,6 +154,77 @@ const FAIXA_DE_AMBIENTE = LEITURA_DO_SERVIDOR
  * ausência. Só faz sentido na mesma máquina do leitor (relógio).
  */
 const DIR_LEITOR_TATA = (process.env.TATA_READER_INSTALL_ROOT || "").trim();
+
+/**
+ * Front door of the EXISTING V3.3 Home: honest source-health observation.
+ * Reader heartbeat is NOT a Gestor order, physical preparation, or proof of
+ * order completeness. The production order/event feed remains gated.
+ */
+function homeSemPedidosQualificados(reader: SaudeDaFonteTata, agoraMs: number) {
+  const fontes: FonteLeitura[] = [
+    {
+      id: "ifood_tempos", rotulo: "Gestor iFood · pedidos",
+      estado: "indisponivel",
+      detalhe: "Identidade da loja, cobertura e frescor dos pedidos sem atestacao independente. Ausencia nao e zero pedido.",
+      ambientes: ["motoboy", "conferencia"],
+    },
+    {
+      id: "comanda_odhen", rotulo: "Reader TATA · saude tecnica",
+      estado: reader.estado,
+      detalhe: reader.configurada
+        ? "Saude tecnica observada. Ainda nao atesta identidade iFood, todas as linhas nem preparo fisico."
+        : "Reader nao configurado nesta instancia; nao significa Reader desligado na loja.",
+      ambientes: ["conferencia"],
+    },
+    {
+      id: "carga_pracas", rotulo: "Carga por praca",
+      estado: "indisponivel",
+      detalhe: "Sem trabalhos por praca atestados. Carga desconhecida nao e zero.",
+      ambientes: ["sushi", "cozinha"],
+    },
+    {
+      id: "fila_caixa", rotulo: "Fila do caixa",
+      estado: "indisponivel",
+      detalhe: "Sem medicao operacional qualificada.",
+      ambientes: ["caixa"],
+    },
+    {
+      id: "carga_conferencia", rotulo: "Conferencia",
+      estado: "indisponivel",
+      detalhe: "Sem fonte comprovada de carga ou conclusao fisica.",
+      ambientes: ["conferencia"],
+    },
+  ];
+  const leitura: LeituraOperacional = {
+    procedencia: "real",
+    observado_em: new Date(agoraMs).toISOString(),
+    pedidos: [],
+    carga_por_praca: {},
+    baseline_por_praca: {},
+    chegadas_na_hora: null,
+    chegadas_normais: null,
+    fontes,
+  };
+  const temporal = elegerModo({
+    estado: ESTADO_INICIAL,
+    agora_min: Math.floor(agoraMs / 60000),
+    candidatas: [],
+    fontes: fontes.map(({ id, estado }) => ({ id, estado })),
+    idade_da_leitura_min: null,
+  });
+  const vm = homeVM(leitura, { tipo: "real", temporal });
+  if (!vm.sem_leitura_operacional || vm.foco !== null ||
+      vm.pulso.observado !== false) throw Error("HOME_SOURCE_GUARD_VIOLATED");
+  return {
+    ...vm,
+    origem_desta_resposta: "SAUDE_DAS_FONTES_SEM_PEDIDOS",
+    leitor_tecnico_configurado: reader.configurada,
+    pedidos_publicaveis: false,
+    estado_do_join: "NAO_QUALIFICADO",
+    impressao_autorizada: false,
+  };
+}
+
 const reqLocal = createRequire(join(process.cwd(), "package.json"));
 interface StoreHistorico {
   history: (entity: string, opts?: { limit?: number }) => LeituraHistoricaDoStore;
@@ -498,16 +571,23 @@ export async function criarServidor(): Promise<http.Server> {
         });
       }
       if (p === "/api/home") {
-        // `cena` so existe porque esta build e de DEMONSTRACAO. Numa build com
-        // fonte real haveria uma leitura, nao um seletor de cena.
-        const pedida = url.searchParams.get("cena") as CenaHome | null;
-        const escolhida: CenaHome =
-          pedida !== null && pedida in CENAS ? pedida : "ambiente";
-        return json(res, 200, {
-          ...(pronto.home[escolhida] as object),
-          cena: escolhida,
-          cenas_disponiveis: Object.keys(CENAS),
-        });
+        // O caminho principal NAO afirma que a demonstracao e a loja.
+        // Fixtures ficam disponiveis apenas por ?cena=..., explicitamente.
+        const cenaPedida = url.searchParams.get("cena");
+        if (cenaPedida !== null) {
+          if (!Object.prototype.hasOwnProperty.call(CENAS, cenaPedida)) return json(res, 400, { erro: "cena_desconhecida" });
+          const escolhida = cenaPedida as CenaHome;
+          return json(res, 200, {
+            ...(pronto.home[escolhida] as object),
+            cena: escolhida,
+            cenas_disponiveis: Object.keys(CENAS),
+          });
+        }
+        const agoraMs = Date.now();
+        void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata)
+          .then((reader) => json(res, 200, homeSemPedidosQualificados(reader, agoraMs)))
+          .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
+        return;
       }
       if (p === "/api/entregas") {
         const limitar = LIMITE_ENTREGAS > 0 && clientePlataforma !== null;
