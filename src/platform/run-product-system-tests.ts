@@ -903,6 +903,37 @@ function pedir(
   });
 }
 
+teste("Home principal: fonte nao atestada nao se mascara com pedidos demo", async () => {
+  const s = await criarServidor();
+  await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
+  try {
+    const real = await pedir(s, "/api/home");
+    assert.equal(real.status, 200);
+    const home = JSON.parse(real.corpo) as {
+      titulo?: string; demonstracao?: boolean; sem_leitura_operacional?: boolean;
+      pulso?: { observado?: boolean }; foco?: unknown;
+      pedidos_publicaveis?: boolean; estado_do_join?: string;
+    };
+    assert.equal(home.titulo, "Sem leitura");
+    assert.equal(home.demonstracao, false);
+    assert.equal(home.sem_leitura_operacional, true);
+    assert.equal(home.pulso?.observado, false);
+    assert.equal(home.foco, null);
+    assert.equal(home.pedidos_publicaveis, false);
+    assert.equal(home.estado_do_join, "NAO_QUALIFICADO");
+    assert.equal(real.corpo.includes('"B-201"'), false);
+    const demo = await pedir(s, "/api/home?cena=ambiente");
+    assert.equal(demo.status, 200);
+    assert.equal((JSON.parse(demo.corpo) as { demonstracao?: boolean }).demonstracao, true);
+    for (const bad of ["constructor", "desconhecida"]) {
+      assert.equal((await pedir(s, "/api/home?cena=" + bad)).status, 400);
+    }
+    assert.equal((await pedir(s, "/api/home", "POST")).status, 405);
+  } finally {
+    await new Promise<void>((r) => s.close(() => r()));
+  }
+});
+
 teste("servidor: as rotas prioritarias respondem e nenhuma escrita e aceita", async () => {
   const s = await criarServidor();
   await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
