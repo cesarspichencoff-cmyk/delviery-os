@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Guard the EXISTING iFood Gestor V2 structural receiver only. No Edge restart, PowerShell, GUI, orders or printing.</Description>
+    <URI>\DeliveryOS-Itaim-GestorV2-Receiver-Silent-Guard</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <BootTrigger><Enabled>true</Enabled></BootTrigger>
+    <CalendarTrigger>
+      <Enabled>true</Enabled>
+      <StartBoundary>2026-11-12T00:00:00</StartBoundary>
+      <Repetition><Interval>PT2M</Interval><Duration>P3650D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition>
+      <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals><Principal id="Author">
+    <UserId>S-1-5-18</UserId><LogonType>ServiceAccount</LogonType><RunLevel>HighestAvailable</RunLevel>
+  </Principal></Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings><StopOnIdleEnd>false</StopOnIdleEnd><RestartOnIdle>false</RestartOnIdle></IdleSettings>
+    <AllowStartOnDemand>false</AllowStartOnDemand>
+    <Enabled>false</Enabled>
+    <Hidden>true</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+    <RestartOnFailure><Interval>PT1M</Interval><Count>10</Count></RestartOnFailure>
+  </Settings>
+  <Actions Context="Author"><Exec>
+    <Command>C:\Program Files\nodejs\node.exe</Command>
+    <Arguments>"C:\ProgramData\DeliveryOS-Itaim-Observer\gestor_receiver_silent_supervisor_v1.cjs"</Arguments>
+  </Exec></Actions>
+</Task>
