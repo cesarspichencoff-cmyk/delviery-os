@@ -165,14 +165,14 @@ function homeSemPedidosQualificados(reader: SaudeDaFonteTata, agoraMs: number) {
     {
       id: "ifood_tempos", rotulo: "Gestor iFood · pedidos",
       estado: "indisponivel",
-      detalhe: "Identidade da loja, cobertura e frescor dos pedidos sem atestacao independente. Ausencia nao e zero pedido.",
+      detalhe: "Unidade Itaim confirmada pela gestao. Falta observacao continua e reconciliacao segura por pedido; ausencia nao significa zero.",
       ambientes: ["motoboy", "conferencia"],
     },
     {
       id: "comanda_odhen", rotulo: "Reader TATA · saude tecnica",
       estado: reader.estado,
       detalhe: reader.configurada
-        ? "Saude tecnica observada. Ainda nao atesta identidade iFood, todas as linhas nem preparo fisico."
+        ? "Saude tecnica observada no Reader do Itaim. Nao comprova totalidade das linhas nem preparo fisico."
         : "Reader nao configurado nesta instancia; nao significa Reader desligado na loja.",
       ambientes: ["conferencia"],
     },
@@ -219,6 +219,9 @@ function homeSemPedidosQualificados(reader: SaudeDaFonteTata, agoraMs: number) {
     ...vm,
     origem_desta_resposta: "SAUDE_DAS_FONTES_SEM_PEDIDOS",
     leitor_tecnico_configurado: reader.configurada,
+    escopo_do_produto: "ITAIM",
+    escopo_confirmado_pela_gestao: true,
+    identidade_de_cada_pedido_verificada: false,
     pedidos_publicaveis: false,
     estado_do_join: "NAO_QUALIFICADO",
     impressao_autorizada: false,

@@ -913,6 +913,9 @@ teste("Home principal: fonte nao atestada nao se mascara com pedidos demo", asyn
       titulo?: string; demonstracao?: boolean; sem_leitura_operacional?: boolean;
       pulso?: { observado?: boolean }; foco?: unknown;
       pedidos_publicaveis?: boolean; estado_do_join?: string;
+      escopo_do_produto?: string; escopo_confirmado_pela_gestao?: boolean;
+      identidade_de_cada_pedido_verificada?: boolean;
+      fontes?: readonly { id: string; detalhe: string }[];
     };
     assert.equal(home.titulo, "Sem leitura");
     assert.equal(home.demonstracao, false);
@@ -921,6 +924,10 @@ teste("Home principal: fonte nao atestada nao se mascara com pedidos demo", asyn
     assert.equal(home.foco, null);
     assert.equal(home.pedidos_publicaveis, false);
     assert.equal(home.estado_do_join, "NAO_QUALIFICADO");
+    assert.equal(home.escopo_do_produto, "ITAIM");
+    assert.equal(home.escopo_confirmado_pela_gestao, true);
+    assert.equal(home.identidade_de_cada_pedido_verificada, false);
+    assert.ok(home.fontes?.find((f) => f.id === "ifood_tempos")?.detalhe.includes("Itaim confirmada pela gestao"));
     assert.equal(real.corpo.includes('"B-201"'), false);
     const demo = await pedir(s, "/api/home?cena=ambiente");
     assert.equal(demo.status, 200);
