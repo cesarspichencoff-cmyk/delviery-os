@@ -70,6 +70,13 @@ import {
 export type ModoOperacional = "calmo" | "ambiente" | "foco";
 
 /**
+ * O carimbo de linhagem do produtor de demanda observada
+ * (`src/product/eventos/demanda-gestor.ts`). Literal aqui de proposito: a view
+ * model le a linhagem que a leitura carrega, e nao importa o produtor.
+ */
+export const TRANSFORMACAO_DEMANDA_OBSERVADA = "demanda-gestor@1";
+
+/**
  * `sem_medicao` e uma cor propria, e nao um tom de verde. Ela existe justamente
  * para que a ausencia de fonte nunca seja lida como saude.
  */
@@ -193,6 +200,12 @@ export interface HomeVM {
   readonly degradado: boolean;
   /** Leitura real sem qualquer fonte saudavel: nao equivale a "ao vivo". */
   readonly sem_leitura_operacional: boolean;
+  /**
+   * Ha pedidos OBSERVADOS numa fonte que nao prova cobertura total. Nao e um
+   * quarto modo nem uma contagem da casa: e a condicao em que a home mostra o
+   * que foi visto e diz, na mesma frase, que nao e tudo.
+   */
+  readonly leitura_parcial_de_pedidos: boolean;
   readonly selos: readonly Selo[];
   readonly pulso: Campo<number>;
   readonly ambientes: readonly AmbienteVM[];
@@ -734,15 +747,29 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     (f) => f.id === "ifood_tempos" && f.estado === "saudavel",
   );
   const semLeituraOperacional = l.procedencia === "real" && !fonteDePedidosSaudavel;
-  const pulsoSustentado = l.procedencia === "real"
-    ? fonteDePedidosSaudavel
-    : existeFonteSaudavel || l.pedidos.length > 0;
+  // LEITURA PARCIAL — apresentacao de um dado que ja existe, nao regra nova.
+  // A condicao e a propria leitura que a declara: pedidos presentes, fonte de
+  // pedidos `parcial`, e a linhagem carimbada pelo produtor de demanda
+  // observada. Sem o carimbo, uma fonte parcial continua sendo so degradacao.
+  const leituraParcialDePedidos =
+    l.pedidos.length > 0 &&
+    l.fontes.some((f) => f.id === "ifood_tempos" && f.estado === "parcial") &&
+    (l.linhagem?.transformacoes ?? []).includes(TRANSFORMACAO_DEMANDA_OBSERVADA);
+  // Pedido observado sem cobertura provada NUNCA sustenta a contagem da casa,
+  // nem em demonstracao: "N pedidos em andamento" afirmaria o total.
+  const pulsoSustentado = leituraParcialDePedidos
+    ? false
+    : l.procedencia === "real"
+      ? fonteDePedidosSaudavel
+      : existeFonteSaudavel || l.pedidos.length > 0;
   const pulso: Campo<number> =
     pulsoSustentado
       ? observado(emAndamento, l.procedencia, l.observado_em)
       : ausente(
           "indisponivel",
-          "A fonte de pedidos nao esta saudavel. Outras fontes nao validam esta contagem; ausencia nao e zero.",
+          leituraParcialDePedidos
+            ? "Os pedidos observados nao sao o total da casa. Leitura parcial nao sustenta contagem geral; ausencia nao e zero."
+            : "A fonte de pedidos nao esta saudavel. Outras fontes nao validam esta contagem; ausencia nao e zero.",
         );
 
   const fontes = l.fontes.map(fonteVM);
@@ -754,7 +781,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   );
 
   const titulo =
-    semLeituraOperacional ? "Sem leitura" : modo === "foco"
+    leituraParcialDePedidos ? "Leitura parcial" : semLeituraOperacional ? "Sem leitura" : modo === "foco"
       ? "Foco"
       : modo === "ambiente"
         ? "Ambiente"
@@ -762,6 +789,8 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
 
   const apoio = causaNaoVinculada
     ? "A Operacao Viva manteve Foco, mas a causa nao corresponde a um sinal unico desta leitura. Orientacao retida; os alertas continuam visiveis."
+    : leituraParcialDePedidos
+    ? "Pedidos observados no Gestor do iFood. O total da casa, o preparo e a saida nao estao confirmados."
     : degradado
     ? "Parte das fontes parou de responder. O que segue vale so para o que ainda e observado."
     : semLeituraOperacional
@@ -809,6 +838,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     demonstracao: l.procedencia !== "real",
     degradado,
     sem_leitura_operacional: semLeituraOperacional,
+    leitura_parcial_de_pedidos: leituraParcialDePedidos,
     selos:
       l.procedencia === "real"
         ? [selo("real")]

@@ -2105,3 +2105,40 @@ não for possível (pararia a operação para proteger um consumo que já é fai
 
 **Custo aceito:** revogar uma chave quarentena o que ela assinou e ainda não foi consumido — rotação
 exige drenar antes de revogar. A tabela de admissão cresce com todo evento consumido.
+
+### D97 — Demanda observada no Gestor entra na Home como LEITURA PARCIAL: feed em arquivo, fatos derivados, nada promovido
+
+**Decisão.** Por ordem do César (13/11/2026: ligar o sensor do Edge, o reconciliador e a Home pelo
+motor existente, distinguindo *demanda observada*, *pedido conciliado* e *estado físico confirmado*),
+o sensor que já existia ganha o executor que faltava (`runtime/reporting/gestor_mounted_demand_feed_v1.cjs`):
+um processo Node que avalia o sensor na página de expedição **já aberta**, pelo DevTools em loopback,
+e escreve um feed local e um diário. O servidor da Home lê o feed como lê a saúde do leitor TATÁ
+(arquivo, mesma máquina, mesmo relógio), e `src/product/eventos/demanda-gestor.ts` transforma cada
+pedido montado em `pedido_ciclo_observado@1` do catálogo existente, passa por `projetarLeitura`, pela
+eleição temporal e por `homeVM`. A Home ganha um estado de **apresentação** — "Leitura parcial" — e um
+índice do que cada pedido leva. Esta entrega é só o nível 1. Nenhum pedido é declarado conciliado,
+pronto, despachado ou cancelado, e a contagem da casa continua ausente.
+
+**Por que.** Medido em `c5e85542`: nada no repositório executava o sensor (só o supervisor tocava o
+DevTools, para um booleano), o resultado dele nunca saía da página, e `/api/home` montava sempre zero
+pedido. O receptor V2 é só estrutura. Faltava o elo, não outro leitor.
+
+**Alternativas recusadas:** (a) o servidor gravar eventos num ledger a cada requisição — ele é
+somente leitura por construção, e dois armazenamentos mutáveis para o mesmo fato são dual-write; os
+fatos são função determinística do feed, e a chave `pedido:revisão` os torna idempotentes; (b) estado
+novo `observado` no catálogo — `catalogo-operacional.ts` é caminho protegido e isso é decisão de
+domínio; `aceito` é a entrada do ciclo e a afirmação mais fraca que o catálogo tem; (c) declarar a
+fonte `saudavel` para reaproveitar "N pedidos em andamento" — cartões montados não provam o total;
+(d) traduzir o status de cabeçalho do iFood em `em_producao`/`pronto`/`despachado` — a semântica não
+foi qualificada na página real; ele segue opaco, e a única leitura feita é na direção segura
+(alegação de cancelamento retira o pedido da demanda, e a retirada é contada); (e) classificar item
+em praça pelo nome — `praca` e `categoria` ficam ausentes, e nenhuma carga por praça nasce daqui.
+
+**Custo aceito:** a tela do Gestor é fotografia e o motor é de eventos — a regra de ponte é "é atual
+o que a última janela fresca ainda afirma", e sair da tela não emite nada. O `PF3` do `r5d1`, que já
+estava vermelho na base por três chamadores, ganha um quarto: o projetor passa a ter chamador de
+runtime, de propósito, e o gate precisa ser reescrito por decisão própria. A eleição temporal segue
+sem estado entre requisições, porque nenhuma causa candidata existe no nível 1. Uma observação com
+padrão de dado pessoal retém a janela inteira (fecha fechado). O estado próprio do executor volta do
+feed anterior depois de um reinício; pedidos que entraram e saíram com o executor parado só existem
+no Reader.

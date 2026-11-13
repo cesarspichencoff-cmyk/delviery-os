@@ -2143,3 +2143,220 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   font-size: 0.84rem;
   color: var(--org-verde-texto-5);
 }
+
+/* ------------------------------------------------------------------ *
+ * Demanda observada — leitura PARCIAL, e o que cada pedido leva
+ * ------------------------------------------------------------------ */
+
+/*
+  Parcial nao e falha e nao e "ao vivo". O contrato dos estados tecnicos da ao
+  incompleto uma linguagem propria — neutro tracejado — e proibe que ele se
+  confunda com a ardosia da falha ou com o verde do que esta vivo. O ponto nao
+  pulsa: nada aqui afirma frescor de fonte.
+*/
+.org-topo__vida[data-estado="parcial"] .org-topo__ponto {
+  background: transparent;
+  border: 1px dashed var(--org-neutro-traco);
+  animation: none;
+}
+
+.org-topo__vida[data-estado="parcial"] .org-topo__nota {
+  color: var(--org-verde-texto-2);
+}
+
+.org-parcial {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin: 1.2rem auto 0;
+  padding: 0.5rem 1rem;
+  border-radius: var(--org-raio);
+  border: 1px dashed var(--org-neutro-traco);
+  color: var(--org-verde-texto-2);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.org-parcial__ponto {
+  flex: none;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px dashed var(--org-neutro-traco);
+}
+
+/*
+  O indice dos pedidos. Nao e grade de cartoes: nao ha caixa, sombra nem fundo
+  por pedido. O que separa um pedido do outro e uma linha fina e o numero em
+  mono — o mesmo numero que a equipe ja fala em voz alta. Corre em colunas no
+  desktop e em uma so no celular, sem rolagem horizontal.
+*/
+.org-pedidos {
+  margin-top: clamp(1.4rem, 4vw, 2.6rem);
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--org-linha-fraca);
+}
+
+.org-pedidos__kicker {
+  font-family: var(--org-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
+}
+
+.org-pedidos__titulo {
+  margin: 0.4rem 0 0;
+  font-family: var(--org-serifa);
+  font-weight: 300;
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--org-creme);
+}
+
+.org-pedidos__origem {
+  margin: 0.55rem 0 0;
+  font-family: var(--org-mono);
+  font-size: 0.86rem;
+  color: var(--org-verde-texto-2);
+}
+
+.org-pedidos__limite {
+  margin: 0.5rem 0 0;
+  max-width: 72ch;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--org-verde-texto-3);
+}
+
+.org-pedidos__lista {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  columns: 1;
+  column-gap: clamp(1.8rem, 4vw, 3.4rem);
+}
+
+@media (min-width: 900px) {
+  .org-pedidos__lista {
+    columns: 2;
+  }
+}
+
+@media (min-width: 1500px) {
+  .org-pedidos__lista {
+    columns: 3;
+  }
+}
+
+.org-pedido {
+  break-inside: avoid;
+  padding: 1rem 0 1.15rem;
+  border-top: 1px solid var(--org-linha-fraca);
+}
+
+.org-pedido__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.9rem;
+}
+
+.org-pedido__codigo {
+  font-family: var(--org-mono);
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  color: var(--org-creme);
+}
+
+.org-pedido__hora,
+.org-pedido__rev {
+  font-family: var(--org-mono);
+  font-size: 0.86rem;
+  color: var(--org-verde-texto-3);
+}
+
+/* O nivel de evidencia fica ESCRITO em cada pedido, na forma do incompleto. */
+.org-pedido__nivel {
+  margin-left: auto;
+  padding: 0.14rem 0.65rem;
+  border: 1px dashed var(--org-neutro-traco);
+  border-radius: var(--org-raio-pilula);
+  font-family: var(--org-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
+}
+
+.org-pedido__itens {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.org-pedido__item {
+  display: grid;
+  grid-template-columns: 3.4ch minmax(0, 1fr);
+  column-gap: 0.7rem;
+  align-items: baseline;
+}
+
+.org-pedido__qtd {
+  font-family: var(--org-mono);
+  font-size: 1.08rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--org-creme);
+}
+
+.org-pedido__nome {
+  font-size: 1.08rem;
+  line-height: 1.3;
+  color: var(--org-creme-2);
+  overflow-wrap: anywhere;
+}
+
+.org-pedido__opcoes {
+  grid-column: 2;
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  font-size: 0.96rem;
+  line-height: 1.4;
+  color: var(--org-verde-texto-2);
+}
+
+/*
+  A observacao e a voz de quem pediu: fica sob o item a que pertence, em
+  serifa, e nunca em ambar — ambar e tensao operacional, e uma observacao nao
+  e alerta.
+*/
+.org-pedido__obs {
+  grid-column: 2;
+  margin: 0.35rem 0 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--org-creme-5);
+  font-family: var(--org-serifa);
+  font-style: italic;
+  font-size: 1.04rem;
+  line-height: 1.35;
+  color: var(--org-creme-3);
+  overflow-wrap: anywhere;
+}
+
+.org-pedido__obs-rotulo {
+  margin-right: 0.4rem;
+  font-family: var(--org-mono);
+  font-style: normal;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-3);
+}

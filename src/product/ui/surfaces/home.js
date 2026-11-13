@@ -113,15 +113,19 @@ function hora(iso) {
 function topo(vm) {
   const h = hora(vm.observado_em);
   // A etiqueta da demonstracao nao pode afirmar telemetria operacional viva.
-  const vivo = vm.degradado ? "falha" : vm.demonstracao ? "simulado" :
-    vm.sem_leitura_operacional ? "sem-fonte" : "vivo";
+  // Leitura parcial nao e falha tecnica nem "ao vivo": e incompleta, e fala a
+  // linguagem do incompleto (neutro tracejado), com a hora do que foi lido.
+  const vivo = vm.leitura_parcial_de_pedidos ? "parcial" : vm.degradado ? "falha" :
+    vm.demonstracao ? "simulado" : vm.sem_leitura_operacional ? "sem-fonte" : "vivo";
   return `<header class="org-topo">
     <span class="org-topo__marca">DeliveryOS</span>
     <span class="org-topo__casa">Tata</span>
     <span class="org-topo__vida" data-estado="${vivo}">
       <span class="org-topo__ponto" aria-hidden="true"></span>
       <span class="org-topo__nota">${
-        vm.degradado
+        vm.leitura_parcial_de_pedidos
+          ? `${vm.demonstracao ? "cenario simulado · " : ""}leitura parcial${h ? ` · Gestor lido as ${esc(h)}` : ""}`
+          : vm.degradado
           ? `leitura degradada${h ? ` · ultima leitura ${esc(h)}` : ""}`
           : vm.demonstracao
             ? `cenario simulado${h ? ` · horario da cena ${esc(h)}` : ""}`
@@ -161,7 +165,25 @@ function faixaDemonstracao(vm) {
  * Faixa de falha tecnica. Cinza-ardosia, no topo do palco, com a hora. Ela NAO
  * cresce, NAO fica ambar e NAO entra na contagem de pressao.
  */
+/**
+ * Faixa do incompleto. Fonte lida em parte NAO e falha tecnica: a ardosia fica
+ * para o que parou, e aqui entra o neutro tracejado, ANTES do territorio —
+ * porque esta frase qualifica tudo o que vem abaixo dela. O texto chega pronto.
+ */
+function faixaParcial(vm) {
+  if (!vm.leitura_parcial_de_pedidos || !vm.demanda_observada) return "";
+  const d = vm.demanda_observada;
+  return `<div class="org-parcial" role="status">
+    <span class="org-parcial__ponto" aria-hidden="true"></span>
+    <span class="org-parcial__texto">${esc(d.cobertura)} ${esc(d.estado_fisico)}${
+      d.retencao ? ` ${esc(d.retencao)}` : ""
+    }</span>
+  </div>`;
+}
+
 function faixaTecnica(vm) {
+  // Em leitura parcial quem fala e `faixaParcial`: as duas linguagens nao se cruzam.
+  if (vm.leitura_parcial_de_pedidos && vm.demanda_observada) return "";
   if (!vm.degradado) return "";
   const nomes = vm.fontes_degradadas.map((f) => f.rotulo).join(", ");
   const h = hora(vm.observado_em);
@@ -179,8 +201,14 @@ function faixaTecnica(vm) {
 
 function legenda(vm) {
   const p = vm.pulso;
-  const pulso =
-    p.observado === true
+  const d = vm.leitura_parcial_de_pedidos ? vm.demanda_observada : null;
+  // "Observados no Gestor" e o que se pode afirmar. "Em andamento" afirmaria o
+  // total da casa, e isso a leitura parcial nao sustenta.
+  const pulso = d
+    ? `<p class="org-legenda__pulso"><span class="org-legenda__num">${esc(
+        d.total,
+      )}</span> ${d.total === 1 ? "pedido observado no Gestor" : "pedidos observados no Gestor"}</p>`
+    : p.observado === true
       ? `<p class="org-legenda__pulso"><span class="org-legenda__num">${esc(
           p.valor,
         )}</span> ${p.valor === 1 ? "pedido em andamento" : "pedidos em andamento"}</p>`
@@ -188,7 +216,9 @@ function legenda(vm) {
           p.explicacao,
         )}</p>`;
   return `<div class="org-legenda">
-    <span class="org-legenda__kicker">${esc(vm.sem_leitura_operacional ? "sem leitura" : vm.modo)}</span>
+    <span class="org-legenda__kicker">${esc(
+      vm.leitura_parcial_de_pedidos ? "leitura parcial" : vm.sem_leitura_operacional ? "sem leitura" : vm.modo,
+    )}</span>
     <!--
       H1, e nao <p>. A pagina nao tinha nenhum h1 (medido em M1B-R2 §D): a
       estrutura comecava em h2, e leitor de tela e navegacao por cabecalho
@@ -705,6 +735,80 @@ function aprofundamento(vm) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Demanda observada — o que cada pedido leva
+ * ------------------------------------------------------------------ */
+
+/**
+ * O conteudo dos pedidos observados: quantidade, produto, opcoes e observacao,
+ * cada observacao sob o item a que pertence. Nivel 1 de evidencia, e a propria
+ * secao diz isso: de onde veio, a que horas foi lido e o que NAO esta afirmado.
+ *
+ * Nao e uma grade de cartoes nem uma tabela: e um indice editorial que corre em
+ * colunas, com a mesma tipografia do organismo. Nao ha controle — o pedido nao
+ * e clicavel, porque nao existe acao a executar sobre ele aqui.
+ *
+ * Tudo chega pronto em `vm.demanda_observada`. Esta funcao nao conta, nao
+ * ordena, nao classifica e nao decide o que e atual.
+ */
+function pedidosObservados(vm) {
+  const d = vm.demanda_observada;
+  if (!d) return "";
+  const lido = hora(d.lido_em);
+  const item = (i) => `<li class="org-pedido__item">
+      <span class="org-pedido__qtd">${esc(i.quantidade)}×</span>
+      <span class="org-pedido__nome">${esc(i.nome)}</span>
+      ${
+        i.opcoes.length
+          ? `<ul class="org-pedido__opcoes">${i.opcoes
+              .map((o) => `<li>${esc(o.quantidade)}× ${esc(o.nome)}</li>`)
+              .join("")}</ul>`
+          : ""
+      }
+      ${
+        i.observacao
+          ? `<p class="org-pedido__obs"><span class="org-pedido__obs-rotulo">Obs.</span>${esc(
+              i.observacao,
+            )}</p>`
+          : ""
+      }
+    </li>`;
+  const pedido = (p) => {
+    const quando = p.colocado_em ? hora(p.colocado_em) : null;
+    const visto = hora(p.visto_desde);
+    const alterado = p.revisoes > 1 ? hora(p.revisado_em) : null;
+    return `<li class="org-pedido">
+      <div class="org-pedido__topo">
+        <span class="org-pedido__codigo">${esc(p.codigo)}</span>
+        <span class="org-pedido__hora">${
+          quando ? `pedido das ${esc(quando)}` : visto ? `visto desde ${esc(visto)}` : ""
+        }</span>
+        ${alterado ? `<span class="org-pedido__rev">alterado as ${esc(alterado)}</span>` : ""}
+        <span class="org-pedido__nivel">demanda observada</span>
+      </div>
+      <ul class="org-pedido__itens">${p.itens.map(item).join("")}</ul>
+    </li>`;
+  };
+  return `<section class="org-pedidos" aria-labelledby="pedidosTitulo">
+    <span class="org-pedidos__kicker">${esc(d.procedencia === "real" ? "leitura parcial" : "leitura simulada")}</span>
+    <h2 class="org-pedidos__titulo" id="pedidosTitulo">${esc(d.titulo)}</h2>
+    <p class="org-pedidos__origem">${esc(d.origem)}${lido ? ` · lido as ${esc(lido)}` : ""} · ${esc(
+      d.total,
+    )} ${d.total === 1 ? "pedido" : "pedidos"} · ${esc(d.unidades)} ${
+      d.unidades === 1 ? "unidade" : "unidades"
+    }</p>
+    <p class="org-pedidos__limite">${esc(d.conciliacao)}</p>
+    ${
+      d.ocultos_por_cancelamento_alegado > 0
+        ? `<p class="org-pedidos__limite">${esc(d.ocultos_por_cancelamento_alegado)} ${
+            d.ocultos_por_cancelamento_alegado === 1 ? "pedido montado nao aparece" : "pedidos montados nao aparecem"
+          } aqui: o iFood declara cancelamento.</p>`
+        : ""
+    }
+    <ol class="org-pedidos__lista">${d.pedidos.map(pedido).join("")}</ol>
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ *
  * O RESTO — condensado, nunca escondido (M1B)
  * ------------------------------------------------------------------ */
 
@@ -873,6 +977,7 @@ export function telaHome(vm) {
   }">
     ${faixaDemonstracao(vm)}
     ${topo(vm)}
+    ${faixaParcial(vm)}
     <div class="org-palco">
       ${faixaTecnica(vm)}
       ${
@@ -902,6 +1007,7 @@ export function telaHome(vm) {
             }</div>`
       }
     </div>
+    ${pedidosObservados(vm)}
     ${resto(vm)}
   </div>`;
 }
