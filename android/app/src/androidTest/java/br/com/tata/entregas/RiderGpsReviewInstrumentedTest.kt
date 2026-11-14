@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -23,6 +22,7 @@ import br.com.tata.entregas.sync.ApiResult
 import br.com.tata.entregas.sync.applyGpsBatchResponse
 import br.com.tata.entregas.sync.drainGpsQueue
 import br.com.tata.entregas.ui.MainActivity
+import br.com.tata.entregas.ui.OriginLockedClient
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -48,7 +48,8 @@ class RiderGpsReviewInstrumentedTest {
     private val heldId = "LAB_REVIEW_POINT_422_001"
     private val freshId = "LAB_FRESH_POINT_001"
 
-    private class LabSite(private val context: Context) : WebViewClient() {
+    // Herda do cliente de produção: a morte do renderizador é tratada igual.
+    private class LabSite(private val context: Context) : OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL) {
         private fun response(data: String, mime: String = "application/json") =
             WebResourceResponse(mime, "UTF-8",
                 ByteArrayInputStream(data.toByteArray(Charsets.UTF_8)))

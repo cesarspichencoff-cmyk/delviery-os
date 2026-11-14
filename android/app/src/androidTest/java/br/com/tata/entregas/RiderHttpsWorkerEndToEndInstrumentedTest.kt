@@ -1,24 +1,29 @@
 package br.com.tata.entregas
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.ParcelFileDescriptor
 import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.sync.SyncWorker
 import br.com.tata.entregas.ui.MainActivity
+import br.com.tata.entregas.ui.OriginLockedClient
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
@@ -40,7 +45,8 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
     private val tripId = "LAB_HTTPS_UI_TRIP_001"
     private val deliveryId = "LAB_HTTPS_UI_DELIVERY_001"
 
-    private class LabSite(private val context: Context) : WebViewClient() {
+    // Herda do cliente de produção: a morte do renderizador é tratada igual.
+    private class LabSite(private val context: Context) : OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL) {
         val policiesServed = AtomicBoolean(false)
         private fun text(data: String, mime: String = "application/json") =
             WebResourceResponse(mime, "UTF-8",
@@ -123,27 +129,108 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             .getWorkInfosForUniqueWork(SyncWorker.UNIQUE_NOW)
             .get(15, TimeUnit.SECONDS)
 
-    private fun awaitNewWork(context: Context, before: Set<UUID>): WorkInfo {
+    /**
+     * Com o WorkManager de teste o trabalho novo fica ENQUEUED até o driver
+     * liberar. Com o WorkManager REAL e rede, ele pode já estar rodando ou
+     * terminado quando é visto — `anyState` aceita isso.
+     */
+    private fun awaitNewWork(context: Context, before: Set<UUID>, anyState: Boolean = false): WorkInfo {
         repeat(65) {
-            val found = allWork(context).firstOrNull { it.id !in before && it.state == WorkInfo.State.ENQUEUED }
+            val found = allWork(context).firstOrNull {
+                it.id !in before && (anyState || it.state == WorkInfo.State.ENQUEUED)
+            }
             if (found != null) return found
             Thread.sleep(150)
         }
         throw AssertionError("LAB_WORK_NOT_ENQUEUED")
     }
 
-    private fun awaitWork(context: Context, id: UUID, state: WorkInfo.State): Boolean {
-        repeat(95) {
+    private fun awaitWork(context: Context, id: UUID, state: WorkInfo.State, tries: Int = 95): Boolean {
+        repeat(tries) {
             if (allWork(context).any { it.id == id && it.state == state }) return true
             Thread.sleep(200)
         }
         return false
     }
 
+    /** Qual cenário de laboratório esta execução pediu; ausente = o ponta a ponta de sempre. */
+    private val labScenario: String? =
+        InstrumentationRegistry.getArguments().getString("deliveryosLabScenario")
+
+    private fun shell(command: String): String =
+        ParcelFileDescriptor.AutoCloseInputStream(
+            InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command),
+        ).use { it.readBytes().toString(Charsets.UTF_8) }
+
+    /** Rede de verdade, validada pelo sistema — o que a restrição CONNECTED do WorkManager exige. */
+    private fun online(context: Context): Boolean {
+        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    private fun setAirplaneMode(context: Context, on: Boolean) {
+        shell("cmd connectivity airplane-mode " + if (on) "enable" else "disable")
+        repeat(150) {
+            if (online(context) != on) return
+            Thread.sleep(200)
+        }
+        throw AssertionError(if (on) "LAB_DEVICE_DID_NOT_GO_OFFLINE" else "LAB_NETWORK_DID_NOT_COME_BACK")
+    }
+
+    private fun currentWeb(activity: ActivityScenario<MainActivity>): WebView {
+        val found = AtomicReference<WebView>()
+        activity.onActivity { a ->
+            found.set(a.findViewById<ViewGroup>(android.R.id.content).getChildAt(0) as WebView)
+        }
+        return found.get()
+    }
+
     @Test fun realHttps422ThenReceiptPersistsSameEventAndIsShownOnActualRiderScreen() {
+        assumeTrue("LAB_OTHER_SCENARIO_REQUESTED", labScenario == null)
+        endToEnd()
+    }
+
+    /**
+     * O renderizador do WebView morre com a ação já guardada no aparelho e
+     * ainda não enviada. A fila Room e o WorkManager não dependem do WebView:
+     * a tela é trocada, mostra de novo a ação guardada, e o mesmo evento segue
+     * até o recibo — sem segunda ação, sem terceiro lote.
+     */
+    @Test fun rendererKilledWithActionQueuedStillSyncsTheSameEventAndShowsReceipt() {
+        assumeTrue("LAB_SCENARIO_NOT_REQUESTED", labScenario == "renderer-death")
+        endToEnd(killRendererAfterQueued = true)
+    }
+
+    /**
+     * Ação tomada SEM rede (modo avião de verdade) e com o WorkManager REAL,
+     * sem driver de teste: a ação fica guardada, nada é tentado enquanto não há
+     * rede, e a volta da rede dispara o envio sozinha. A fixture confere, por
+     * fora, exatamente dois lotes idênticos e um único recibo.
+     */
+    @Test fun actionTakenOfflineWaitsForTheNetworkAndIsNeverSentTwice() {
+        assumeTrue("LAB_SCENARIO_NOT_REQUESTED", labScenario == "offline-reconnect")
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        try {
+            endToEnd(realNetworkConstraint = true)
+        } finally {
+            // Nunca deixar o emulador sem rede, nem quando o teste reprova.
+            shell("cmd connectivity airplane-mode disable")
+            var waited = 0
+            while (!online(context) && waited++ < 100) Thread.sleep(200)
+        }
+    }
+
+    private fun endToEnd(
+        killRendererAfterQueued: Boolean = false,
+        realNetworkConstraint: Boolean = false,
+    ) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = EntregasDatabase.get(context)
-        WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        // Sem driver de teste no cenário offline: quem segura e quem solta o
+        // envio é a restrição de rede do WorkManager de produção.
+        if (!realNetworkConstraint) WorkManagerTestInitHelper.initializeTestWorkManager(context)
 
         // A real action must originate in the rider UI; no pre-seeded Room
         // row, synthetic bridge invocation or direct DAO transition.
@@ -175,6 +262,9 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             Thread.sleep(500)
             assertEquals("false", eval(scenario,
                 """!document.getElementById('confirmedLine').hidden"""))
+            // A página já carregou (servida em memória); a partir daqui o
+            // aparelho fica sem rede nenhuma.
+            if (realNetworkConstraint) setAirplaneMode(context, on = true)
             // Trigger the ACTUAL button and rider.js actArrive() handler.
             // In contrast to direct native calls, this exercises trip scope,
             // unit, session actor, event identity and Room producer.
@@ -228,17 +318,55 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             assertEquals("false", eval(scenario,
                 """!document.getElementById('confirmedLine').hidden"""))
             val originalEntity = staged
+            if (killRendererAfterQueued) {
+                val dead = currentWeb(scenario)
+                scenario.onActivity {
+                    assertTrue("LAB_RENDERER_TERMINATE_REFUSED",
+                        dead.webViewRenderProcess?.terminate() == true)
+                }
+                // Esperar a TROCA antes de qualquer JavaScript: um eval no
+                // WebView morto nunca responde.
+                assertTrue("LAB_DEAD_WEBVIEW_NOT_REPLACED", (0 until 100).any {
+                    if (currentWeb(scenario) !== dead) true else { Thread.sleep(100); false }
+                })
+                assertTrue("LAB_RELOADED_RIDER_DID_NOT_SHOW_THE_QUEUED_ACTION",
+                    until(scenario, """document.getElementById('compatibilityHold').hidden &&
+                        !document.getElementById('pendingLine').hidden &&
+                        document.getElementById('pendingLine').textContent.includes('guardada')"""))
+                val survivor = runBlocking { db.outbox().recent(50).single() }
+                assertEquals(eventId, survivor.eventId)
+                assertEquals("pending", survivor.syncState)
+                assertEquals(staged.sequenceLocal, survivor.sequenceLocal)
+            }
             // A REAL native producer already calls SyncScheduler.requestNow()
             // as soon as it records an event. ExistingWorkPolicy.KEEP must
             // prevent an extra job; no human retry button is required yet.
             val first = awaitNewWork(context, emptySet())
             assertEquals("An automatic initial sync must be queued",
                 WorkInfo.State.ENQUEUED, first.state)
-            val driver = WorkManagerTestInitHelper.getTestDriver(context)
-                ?: throw AssertionError("LAB_TEST_DRIVER_MISSING")
-            driver.setAllConstraintsMet(first.id)
+            val driver = if (realNetworkConstraint) null
+                else WorkManagerTestInitHelper.getTestDriver(context)
+                    ?: throw AssertionError("LAB_TEST_DRIVER_MISSING")
+            if (realNetworkConstraint) {
+                // Sem rede, NADA é tentado: o trabalho espera, a ação continua
+                // pendente e sem tentativa contada — por 6 s seguidos.
+                repeat(12) {
+                    assertFalse("LAB_DEVICE_ONLINE_DURING_OFFLINE_WINDOW", online(context))
+                    val held = runBlocking { db.outbox().recent(50).single() }
+                    assertEquals("LAB_OFFLINE_ACTION_LEFT_PENDING", "pending", held.syncState)
+                    assertEquals("LAB_SYNC_ATTEMPTED_WITHOUT_NETWORK", 0, held.attempts)
+                    assertEquals("LAB_WORK_RAN_WITHOUT_NETWORK", listOf(WorkInfo.State.ENQUEUED),
+                        allWork(context).map { it.state })
+                    Thread.sleep(500)
+                }
+                // A volta da rede é o único gatilho: ninguém toca em botão.
+                setAirplaneMode(context, on = false)
+            } else {
+                driver!!.setAllConstraintsMet(first.id)
+            }
             assertTrue("HTTP 422 without event receipt must fail worker",
-                awaitWork(context, first.id, WorkInfo.State.FAILED))
+                awaitWork(context, first.id, WorkInfo.State.FAILED,
+                    tries = if (realNetworkConstraint) 300 else 95))
             val notAccepted = runBlocking { db.outbox().recent(50).single { it.eventId == eventId } }
             assertEquals("failed", notAccepted.syncState)
             assertEquals(originalEntity.sequenceLocal, notAccepted.sequenceLocal)
@@ -249,11 +377,12 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
 
             val seen = allWork(context).map { it.id }.toSet()
             eval(scenario, """document.getElementById('btnSyncNow').click();true""")
-            val second = awaitNewWork(context, seen)
+            val second = awaitNewWork(context, seen, anyState = realNetworkConstraint)
             assertFalse("LAB_RETRY_NOT_FRESH_WORK", first.id == second.id)
-            driver.setAllConstraintsMet(second.id)
+            driver?.setAllConstraintsMet(second.id)
             assertTrue("Worker did not accept HTTPS event receipt",
-                awaitWork(context, second.id, WorkInfo.State.SUCCEEDED))
+                awaitWork(context, second.id, WorkInfo.State.SUCCEEDED,
+                    tries = if (realNetworkConstraint) 300 else 95))
             val accepted = runBlocking { db.outbox().recent(50).single { it.eventId == eventId } }
             assertEquals("sent", accepted.syncState)
             assertEquals(originalEntity.idempotencyKey, accepted.idempotencyKey)

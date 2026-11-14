@@ -8,6 +8,7 @@ on:
       - .github/workflows/deliveryos-android-https-end-to-end-lab.yml
       - tests/android/**
       - android/app/src/androidTest/java/br/com/tata/entregas/RiderHttpsWorkerEndToEndInstrumentedTest.kt
+      - android/app/src/androidTest/java/br/com/tata/entregas/RendererGoneRecoveryInstrumentedTest.kt
       - android/app/src/main/java/br/com/tata/entregas/sync/**
       - android/app/src/main/java/br/com/tata/entregas/data/**
       - android/app/src/main/java/br/com/tata/entregas/bridge/**
@@ -55,19 +56,26 @@ jobs:
           from pathlib import Path
           import xml.etree.ElementTree as ET
           root = Path("android/app/build/outputs/androidTest-results/connected")
-          target = "RiderHttpsWorkerEndToEndInstrumentedTest"
-          count = failed = errors = 0
+          # Classe -> casos que TEM de ter executado. Ignorado nao conta como prova.
+          expected = {
+              "RiderHttpsWorkerEndToEndInstrumentedTest": 1,
+              "RendererGoneRecoveryInstrumentedTest": 2,
+          }
+          ran = {name: 0 for name in expected}
+          failed = errors = 0
           for path in root.rglob("*.xml") if root.exists() else []:
               try: tree = ET.parse(path).getroot()
               except ET.ParseError: continue
               for case in tree.findall(".//testcase"):
-                  name = case.attrib.get("classname", "")
-                  if name == target or name.endswith("." + target):
-                      count += 1
-                      failed += case.find("failure") is not None
-                      errors += case.find("error") is not None
+                  name = case.attrib.get("classname", "").rsplit(".", 1)[-1]
+                  if name not in expected: continue
+                  failed += case.find("failure") is not None
+                  errors += case.find("error") is not None
+                  ran[name] += case.find("skipped") is None
+          count = ran["RiderHttpsWorkerEndToEndInstrumentedTest"]
           print(f"ANDROID_REAL_HTTPS_WORKER_UI: cases={count} failed={failed} errors={errors}")
-          if count != 1 or failed or errors:
+          print("ANDROID_WEBVIEW_RENDERER_DEATH: cases=" + str(ran["RendererGoneRecoveryInstrumentedTest"]))
+          if ran != expected or failed or errors:
               raise SystemExit("ANDROID_REAL_HTTPS_WORKER_UI_NOT_PROVEN")
           print("ANDROID_REAL_HTTPS_WORKER_UI_LAB_PASS_NOT_FIELD_PROVEN")
           PY

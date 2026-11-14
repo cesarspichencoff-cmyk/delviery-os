@@ -2,6 +2,7 @@
 """3 synthetic privacy regressions; never operates on actual lab results."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from https_failure_category_v1 import diagnose
 def check():
     with TemporaryDirectory() as t:
         p=Path(t)/"sample.xml"
