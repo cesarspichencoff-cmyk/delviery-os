@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-11-13"
+  atualizado_em: "2026-11-14"
   state_basis: 953a3fb
 ---
 
@@ -2166,3 +2166,27 @@ processamento com nomes e o minuto local, que este leitor não lê — fica para
 **Custo aceito:** "conciliado" significa número, dia e quantidades por linha — não UUID ↔ chave
 nativa (N4 aberto), não nomes de produto, não observações. O cruzamento exige a janela do Gestor com
 menos de 30 s, que é o limite do reconciliador; janela em retenção não é cruzada, e a Home diz por quê.
+
+### D99 — A Home chega a outros aparelhos pela origem do piloto, com a credencial do piloto
+
+**Data:** 2026-11-14. **Contexto:** o César exigiu a V1 em vários aparelhos. A apresentação só escuta em loopback e não sabe
+quem pede; o piloto já é o único processo exposto, atrás do proxy HTTPS, com códigos, papéis e limite de tentativas.
+
+**Decisão.** O piloto serve a Home num hostname próprio, na mesma porta. Sem sessão não sai nada; código de gerente ou líder
+abre sessão em cookie `__Host-`, reconferida no piloto a cada requisição; só GET/HEAD segue para o loopback, sem cookie nem
+credencial do visitante. Desligado por padrão; configuração parcial ou insegura derruba o boot
+(`src/platform/auth/home-operator-gateway.ts`).
+
+**Por que.** É a menor mudança que não cria outro sistema: nenhuma credencial nova, nenhum cadastro novo, nenhuma porta nova,
+nenhuma regra nova de firewall, e a interface aprovada não é tocada. A fonte de verdade continua onde está — a leitura é feita
+na máquina do Gestor e do Reader, e todos os aparelhos leem a mesma resposta.
+
+**Alternativas recusadas:** Cloudflare Tunnel/Access e Tailscale (outro agente e outra conta no caixa, com o NetBird já instalado
+e protegido por guard); ligar a apresentação na interface de rede (ela não autentica ninguém); montar a Home num prefixo do
+piloto (a interface usa caminhos absolutos); hospedar em nuvem agora (custo e credencial são decisão do César e não são
+pré-requisito para a V1); o acesso individual por e-mail já construído (melhor identidade, mas depende de provisionar o
+provedor — fica como evolução, sem bloquear).
+
+**Custo aceito:** identidade é a do código do terminal, não a da pessoa; sessão vive na memória do piloto; com o caixa fora do
+ar os aparelhos veem erro do proxy, não "sem leitura"; a escolha da Home pelo `Host` depende de o proxy real preservar o
+cabeçalho, o que só o proxy real prova.

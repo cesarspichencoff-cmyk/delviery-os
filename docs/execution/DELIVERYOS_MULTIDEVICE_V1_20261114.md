@@ -1,0 +1,170 @@
+# Delivery OS Itaim — V1 em vários aparelhos: o menor caminho a partir do que já existe (14/11/2026)
+
+**Escopo:** código, testes e bancada no Foxxy, sobre `5afe3597` (PR #137, rascunho). No CAIXA_MOOCA só
+houve **leitura** pela API de arquivo do conector remoto: nenhum processo iniciado, nenhum arquivo
+gravado, nenhuma tarefa registrada. Nenhum pedido real, nenhum aparelho físico, nenhuma mudança em
+proxy, firewall, banco ou conta de provedor.
+
+## 1. O que sabemos (medido nesta data)
+
+**O canal remoto existe.** O conector Desktop Commander lista `Foxxy` e `CAIXA_MOOCA` online, ambos na
+versão 0.3.2. A cota mensal de chamadas remotas estava em **7 % restantes**: cada leitura no caixa foi
+contada.
+
+**Não existe Delivery OS hospedado em nuvem.** Leitura dos provedores da conta: o único banco Supabase
+ativo é de outro produto (estoque/preços, tabelas `public.*`, zero linhas de operação); os projetos
+Railway são provas antigas de outro sistema. Criar banco ou serviço hospedado continua decisão do César
+(`docs/cloud/FUNDACAO_NUVEM.md` §6) e **não foi feito**.
+
+**O sistema central já existe — no próprio caixa.** Registrado em `MOOCA_ACESSO_REMOTO_2026-10-26.md` e
+`INVENTARIO_CAIXA_MOOCA_2026-11-01.md`, e reconfirmado hoje no que deu para ler sem processo:
+
+| Peça | Estado lido em 14/11 |
+|---|---|
+| Pasta `C:\Users\Tata\DeliveryOS-Ensaio` | presente, com `app\`, `pgdata\`, `postgres16\`, guard do NetBird e recibo `netbird-guard-committed.json` |
+| `runtime-pids.json` | `critical`, `async`, `pilot`, `pilotMode: remote-lab` — **arquivo**, não prova de processo vivo hoje |
+| Origem pública do piloto | `https://deliveryos-piloto.eu1.netbird.services` responde **401** sem login do proxy, TLS válido (medido de fora) |
+| Perfil dedicado do Edge | `DevToolsActivePort` presente (porta registrada) — não prova que o Edge está vivo agora |
+| Pasta do observador | `C:\ProgramData\DeliveryOS-Itaim-Observer\` presente, **sem** os três arquivos do executor novo |
+| Servidor de apresentação (Home) no caixa | **não instalado** (inventário de 01/11; nada lido hoje o contradiz) |
+
+Não observado hoje: se piloto, crítico, assíncrono e PostgreSQL estão **vivos** (a listagem de
+processos do conector voltou sem conteúdo e não foi repetida, para não gastar cota), o build instalado,
+o estado do firewall.
+
+**A autenticação de operador já existe, em duas camadas.** O piloto do Entregas é o único processo
+exposto, atrás do proxy HTTPS do NetBird (login do proxy) e com códigos por terminal, papéis e limite de
+tentativas. Há ainda o acesso individual por e-mail (`src/platform/auth/operator-*.ts`), construído em
+27/10 e **nunca provisionado** no provedor.
+
+**Vários motoboys já são suportados pelo desenho.** Cada motoboy é um usuário `motoboy_interno`; cada
+aparelho é pré-vinculado pelo humano (`device_id + device_proof_sha256`); a regressão de três
+identidades em paralelo existe. O que nunca rodou é aparelho físico.
+
+## 2. A direção — uma só
+
+**Uma origem, vários aparelhos, o caixa como fonte.** Nada de sistema novo:
+
+```
+Edge do Gestor ─ executor ─ feed ─┐                              ┌─ navegador do caixa (loopback)
+Reader Teknisa ───────────────────┼─ apresentação (Home) ─ loopback ─ PILOTO ─ proxy HTTPS ─┬─ iPhone (Safari)
+                                  │      só GET/HEAD, sem rede      (única porta exposta)   ├─ Android (Chrome)
+celulares dos motoboys ─ HTTPS ───┴──────────────► piloto + crítico ─ PostgreSQL            └─ tablet
+```
+
+- **Fonte única de verdade:** a que já é — `platform.event_log` no PostgreSQL para Entregas, e a
+  leitura do Gestor/Reader feita **na máquina onde eles vivem** (mesmo relógio). Nenhum aparelho calcula
+  nada: todos leem a mesma resposta do mesmo processo.
+- **Home em outros aparelhos:** o piloto serve a Home num **hostname próprio**, na mesma porta que já
+  está atrás do proxy. Sem sessão, nada sai. Com código de **gerente ou líder**, abre sessão em cookie
+  `__Host-`; a cada requisição o piloto confere de novo se aquele código ainda é daquela pessoa naquele
+  papel. Só GET/HEAD segue para o loopback, sem cookie nem credencial do visitante. A apresentação não
+  ganha porta de rede, nem código de autenticação.
+- **Recusado:** Cloudflare Tunnel/Access e Tailscale (outro agente no caixa, outra conta, e o NetBird já
+  está lá, protegido por guard); abrir a 5290 na rede (a apresentação não sabe quem pede); montar a Home
+  num prefixo do piloto (a interface usa caminhos absolutos — exigiria reescrever o que está aprovado);
+  hospedar em nuvem agora (decisão de custo e de credencial que é do César, e que não é pré-requisito
+  para ver a V1 funcionar).
+
+Decisão registrada como **D99** em `DECISIONS.md`.
+
+## 3. O que foi construído e provado hoje (sintético)
+
+| Peça | Arquivo | Prova |
+|---|---|---|
+| Porta de operador da Home | `src/platform/auth/home-operator-gateway.ts` | `npm run test:home:gateway` → **14/14**, HTTP e sockets reais |
+| Ligação no piloto (21 linhas) | `tools/entregas_pilot_server.ts` | desligada sem `ENTREGAS_HOME_PUBLIC_URL` + `ENTREGAS_HOME_UPSTREAM`; parcial ou insegura derruba o boot |
+| Cadeia com processos reais | `src/platform/run-home-multidevice-chain-tests.ts` | `npm run test:home:multidevice` → **11/11**: executor real → apresentação real → piloto real → "caixa", "celular" e "tablet" |
+| Mutações | `tests/home-gateway/run-home-gateway-mutation-tests.cjs` | **25/25 mortas, 0 cegas** (22 na porta, 3 na ligação) |
+| Navegador real | `labs/home-multidevice/browser-proof.cjs` | **NOT_RUN no Foxxy** (ver §4); roda na CI |
+| Preparação do caixa | `tools/windows-local-lab/preparar-feed-do-gestor.ps1` | ensaiada no Foxxy em pasta de laboratório: download no commit fixado, 3/3 blobs conferidos, idempotente, recusa arquivo adulterado; **registro da tarefa NOT_RUN** |
+
+O que a cadeia mede: sem código ninguém vê a operação; motoboy e caixa de expedição não entram na Home;
+os três aparelhos veem **os mesmos pedidos, itens, opções e observações**, marcados como demonstração;
+pedido novo e quantidade alterada chegam a todos; **fonte parada → todos passam a "Sem leitura"**, sem
+pedido antigo na tela; a leitura volta sem novo login; apresentação morta → `apresentacao_indisponivel`,
+nunca tela velha; o limite de tentativas do piloto vale na entrada da Home e não derruba quem já entrou.
+
+Guardas vizinhas depois da mudança: observador da fila, M1 (40), R5A, R5B, R5D1, operador-piloto (9),
+produto (53) e governança verdes. `npm run test:platform` segue com **1 falha anterior** (`pilot-delegation-issuer.ts`,
+arquivo de 13/10, não tocado aqui).
+
+## 4. O que é hipótese e o que NÃO foi provado
+
+- **Hipótese central, não testada:** o proxy do NetBird entrega ao piloto o `Host` do segundo serviço.
+  A porta escolhe a Home pelo `Host`. Se o proxy reescrever o cabeçalho, a Home não abre (falha fechada:
+  quem pede cai no piloto, que não entrega pedido). Só o proxy real responde.
+- **Navegador real:** no Foxxy o antivírus intercepta HTTPS e bloqueia o certificado de bancada; não foi
+  contornado. A prova foi escrita para a CI (Edge em runner Windows) — resultado na §8 quando houver.
+- **Safari no iPhone, Chrome no Android, Wi-Fi e rede móvel:** nada medido. Não há WebKit na bancada.
+- **Caixa:** nenhum código novo instalado; nenhuma tarefa registrada; nenhum processo iniciado.
+- **Pedidos reais:** nenhum passou por este caminho. O executor do Gestor continua sem rodar no caixa.
+- **Quando o caixa ou a internet dele cai:** os aparelhos de fora recebem erro do proxy, não a tela de
+  "sem leitura". Fora do alcance desta arquitetura enquanto o caixa for o hospedeiro.
+- **Tela de entrada:** funcional, com as cores do organismo, **sem passar por desenho**. Não é V3.3.
+- **Sessão:** vive na memória do piloto; reinício exige entrar de novo. Sem aviso na Home quando a
+  sessão vence no meio do uso (a interface aprovada não foi alterada): a tela mostra falha de leitura
+  até recarregar.
+- **Entregas multiaparelho:** ver o relatório da frente Android (§7).
+
+## 5. Riscos
+
+| Risco | Tamanho | Contenção |
+|---|---|---|
+| Home exposta a quem tem o login do proxy mas não é operador | alto se a porta falhar | sessão exigida antes de qualquer byte; 25 mutações; falha fechada |
+| Código curto por terminal (4 dígitos, decisão de 31/10) adivinhado | médio | limite de 5 erros / 15 min por origem — **mas atrás do proxy toda a rede sai de 2 origens**: um ataque trava a entrada de todos (quem já entrou segue). Recomendo código longo para gerente/líder antes de abrir a Home |
+| Carga da Home no computador do caixa | baixo, não medido | só leitura; medir CPU/memória no ensaio |
+| Janela visível no caixa ao instalar | **não aceito** | `start_process` remoto segue bloqueado (decisão de 09/11); ver §6 |
+
+## 6. O que depende do César — pedido objetivo
+
+**(a) Um comando no caixa, com você presente** (ou a sua autorização expressa para eu dispará-lo pelo
+conector, aceitando o risco conhecido de uma janela do PowerShell aparecer por instantes):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File preparar-feed-do-gestor.ps1 -Mode Stage
+```
+
+- **Efeito:** grava três arquivos conferidos em `C:\ProgramData\DeliveryOS-Itaim-Observer\` e registra a
+  tarefa `DeliveryOS-Itaim-Gestor-Demand-Feed` **desativada**. Zero processo iniciado; nada toca Edge,
+  Gestor, Reader, pedidos ou impressão.
+- **Reversão:** o mesmo script com `-Mode Rollback` (remove a tarefa desativada e os três arquivos).
+- **Por que não fiz sozinho:** a API de arquivo do conector não transfere 49 KB de código com garantia
+  byte a byte (o conteúdo passaria por mim, sem conferência de hash do outro lado), e registrar tarefa
+  exige um processo. O script baixa do repositório público no commit fixado e confere cada arquivo.
+
+**(b) Instalar o candidato (piloto com a porta da Home + apresentação) em pasta própria no caixa** —
+é a autorização nº 1 do `ENSAIO_SUPERVISIONADO_V1_2026-11-01.md`, agora com a Home incluída. Efeito e
+reversão estão naquele documento; nada muda nele além de duas variáveis de ambiente do piloto.
+
+**(c) No painel do NetBird:** um segundo serviço HTTPS (hostname novo) apontando para o **mesmo** destino
+do atual (`100.107.78.202:5193`). Sem regra nova de firewall: mesma porta, mesmos dois proxies.
+Reversão: apagar o serviço.
+
+**(d) Códigos de gerente e de líder** para quem vai abrir a Home no celular — recomendo longos.
+
+**(e) Rede dos motoboys** — decisão que é sua, e a única que ainda separa o Entregas de "qualquer
+celular na rua": hoje o plano de 01/11 põe cada celular como *peer* do NetBird (app e inscrição por
+aparelho). A alternativa é um serviço do proxy **sem** login do proxy só para as rotas de aparelho, que
+têm autenticação própria (token de aparelho + pré-vínculo + delegação assinada). A primeira exige
+configuração em cada celular; a segunda expõe rotas autenticadas à internet. Não decidi por você.
+
+## 7. Roteiro da homologação conjunta — tudo `NOT_RUN`
+
+| # | Passo | PASS quando |
+|---|---|---|
+| H1 | Inventário somente leitura do caixa, antes | retrato gravado; guard `Verify` verde |
+| H2 | Executor do Gestor habilitado | em 10 s existe o feed com `source_mode: "real"`; nº de pedidos = cartões na tela; nenhuma janela |
+| H3 | Home no navegador do caixa | pedidos reais do Itaim com itens, opções e observações; "Leitura parcial" |
+| H4 | Home no iPhone (Safari), rede móvel | login do proxy → código → mesma lista do caixa, sem rolagem lateral |
+| H5 | Home em Android (Chrome), Wi-Fi e depois rede móvel | idem; os três aparelhos com a mesma lista no mesmo minuto |
+| H6 | Pedido novo no Gestor | aparece nos três em até 15 s |
+| H7 | Edge do Gestor fechado / minimizado por 10 min | os três mostram retenção e depois "Sem leitura"; nenhum pedido antigo como atual |
+| H8 | Código revogado (reinício revisado do piloto) | o aparelho cai para a entrada na requisição seguinte |
+| H9 | Dois Android, dois motoboys, duas viagens simultâneas | cada um só vê e só envia a própria viagem; console e Home mostram as duas |
+| H10 | GPS real, estados e recibos | pontos de A só na viagem de A; recibo na tela de cada aparelho |
+| H11 | Um aparelho em modo avião por 10 min e de volta | fila local envia sozinha; zero duplicata no `event_log` |
+| H12 | Silêncio do caixa durante tudo | nenhuma janela de CMD, PowerShell ou Edge; operador do caixa confirma |
+| H13 | Reversão e inventário depois | igual ao de antes; guard `Verify` verde |
+
+Aceite é do César, com a operação usando. CI verde, emulador e bancada não contam como aceite.

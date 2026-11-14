@@ -177,7 +177,7 @@ async function main(): Promise<void> {
     await esperar("piloto", portaPiloto);
     if (SERVIR) {
       // Bancada no ar para um navegador de verdade: reescreve o feed a cada 5 s e sai sozinha em 4 min.
-      console.log("SERVINDO " + JSON.stringify({ piloto: portaPiloto, apresentacao: portaHome, home: HOME, codigo_sintetico: COD.gerente }));
+      console.log("SERVINDO " + JSON.stringify({ piloto: portaPiloto, apresentacao: portaHome, home: HOME, codigo_sintetico: COD.gerente, pasta: dir }));
       const fim = Date.now() + 240_000;
       while (Date.now() < fim && !existsSync(join(dir, "parar"))) { await escreverFeed(); await sleep(5000); }
       return;
