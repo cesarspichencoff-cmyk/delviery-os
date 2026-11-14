@@ -49,6 +49,9 @@ function semSessaoApi(port) {
 }
 const results = [];
 let stage = 'inicio';
+let currentPage = null;
+let onde = null;
+const trail = [];
 
 (async () => {
   const tlsDir = bancadaTls();
@@ -79,6 +82,9 @@ let stage = 'inicio';
       const ctx = await browser.newContext({viewport: {width, height}, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 3 : 1, ignoreHTTPSErrors: true});
       stage = name + ': entrada';
       const page = await ctx.newPage();
+      currentPage = page;
+      // Rastro das respostas da Home, so caminho e status, para o diagnostico.
+      page.on('response', r => { try { trail.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); } catch { /* sem url */ } if (trail.length > 30) trail.shift(); });
       const errors = [];
       // Recurso que respondeu 401/404 (a propria entrada recusada, o favicon) e registrado, nao reprova.
       // Reprova: erro de script e recusa de CSP — e o que deixaria a Home em branco no aparelho.
@@ -99,7 +105,8 @@ let stage = 'inicio';
       const aviso = await page.textContent('.aviso').catch(() => null);
       stage = name + ': home';
       await page.fill('#codigo', info.codigo_sintetico);
-      await Promise.all([page.waitForURL(HOME + '/'), page.click('button[type=submit]')]);
+      // A URL final pode ganhar rota em hash; o que importa e ter saido da entrada para a raiz.
+      await Promise.all([page.waitForURL(u => u.pathname === '/', {waitUntil: 'commit', timeout: 30000}), page.click('button[type=submit]')]);
       await page.waitForSelector('.org-pedido', {timeout: 20000});
       const cookies = await ctx.cookies();
       const sessao = cookies.find(c => c.name === '__Host-deliveryos_home');
@@ -117,6 +124,11 @@ let stage = 'inicio';
       await ctx.close();
     }
   } finally {
+    // Retrato da pagina ANTES de fechar o navegador: depois nao ha mais o que ler.
+    try {
+      if (currentPage && !currentPage.isClosed()) onde = {url: currentPage.url().replace(/:\d+\//, ':PORTA/'),
+        texto: ((await currentPage.textContent('body', {timeout: 2000})) || '').replace(/\s+/g, ' ').trim().slice(0, 240)};
+    } catch { /* pagina sem corpo */ }
     await browser.close();
     front.close();
     // A bancada encerra os proprios processos quando ve este arquivo.
@@ -131,8 +143,8 @@ let stage = 'inicio';
   if (bad.length) throw Error('medidas fora do esperado');
   console.log('HOME_GATEWAY_BROWSER_PROOF_PASS ' + results.length + '/' + results.length + ' REAL_EDGE_SYNTHETIC_ORDERS');
   process.exit(0);
-})().catch(e => {
-  const d = JSON.stringify({falha: String(e && e.message || e).split(/\r?\n/)[0].slice(0, 400), etapa: stage, medidas: results});
+})().catch(async e => {
+  const d = JSON.stringify({falha: String(e && e.message || e).split(/\r?\n/)[0].slice(0, 400), etapa: stage, onde, rastro: trail.slice(-12), medidas: results});
   console.error('FAIL ' + String(e && e.stack || e));
   console.error('DIAGNOSTICO ' + d);
   if (process.env.GITHUB_ACTIONS === 'true') console.log('::error title=prova de navegador da Home::' + d.replace(/%/g, '%25'));
