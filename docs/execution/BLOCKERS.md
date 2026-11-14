@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-31"
+  atualizado_em: "2026-11-14"
   state_basis: cd8ed14
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -1597,3 +1597,13 @@ Detalhe: `docs/security/DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md`
 - **Suspeita a reproduzir no PG do CI (lida em arquivo, não executada):** `deliveryos_critical` não tem
   `SELECT` em `identity.actor`/`identity.unit`, que `PgPilotDelegationRegistry` consulta — sob o papel
   mínimo, as rotas de delegação responderiam 503.
+- **Aberto, medido em 14/11 (X1 — posse da viagem na ingestão de GPS).** A ingestão confere que o ponto é do
+  aparelho autenticado, mas não que a viagem é do motoboy daquele aparelho: o aparelho de A, com o token de A,
+  mandando a `trip_id` de B tem o lote aceito, e a última posição da viagem de B passa a ser a de A
+  (`src/platform/run-cadeia-multiaparelho-tests.ts`, 13/13 + X1; reproduzido no Foxxy com PostgreSQL 18).
+  Exige app adulterado ou chamada direta de um motoboy já autenticado — não acontece no uso normal —, mas
+  é exatamente a mistura que a V1 multiaparelho não pode permitir. **Não corrigido de propósito:** a
+  plataforma não tem hoje a atribuição viagem→motoboy no caminho síncrono da ingestão; conferir pela
+  projeção assíncrona recusaria pontos legítimos de viagem recém-criada. Direção proposta, a decidir:
+  o piloto, que é dono da atribuição, assina a concessão (viagem, motoboy, aparelho, validade) na saída
+  confirmada; o app a anexa ao lote; a ingestão confere a assinatura. Mexe em app, piloto e plataforma.

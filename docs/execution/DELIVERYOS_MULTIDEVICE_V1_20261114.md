@@ -168,3 +168,32 @@ configuração em cada celular; a segunda expõe rotas autenticadas à internet.
 | H13 | Reversão e inventário depois | igual ao de antes; guard `Verify` verde |
 
 Aceite é do César, com a operação usando. CI verde, emulador e bancada não contam como aceite.
+
+## 8. Continuação de 14/11 — CI e a frente Entregas multiaparelho
+
+**CI em `ed47d6b9`** (primeira com a porta de operador): Gestor→Home, fixture silenciosa e Room Recovery verdes;
+quatro jobs vermelhos.
+
+| Job | Causa | Situação |
+|---|---|---|
+| Home multiaparelho / porta-e-cadeia | guarda M1 em clone raso — reproduzido aqui com `git clone --depth 1` (5 falhas C2/C3) | `fetch-depth: 0`; aguardando CI |
+| Home multiaparelho / navegador-real | **defeito da própria prova**: `fetch()` disparado da página de entrada, cuja CSP é `default-src 'none'` | sonda pela pilha HTTP do navegador; aguardando CI |
+| Android HTTPS ponta a ponta | **não lido** (log exige credencial); nenhum arquivo Android mudou entre `adbdf0a1` (verde) e `ed47d6b9` | tratado como intermitente **sem prova**; próxima CI é a segunda amostra |
+| Android WebView, API 34 | idem; a API 29 do mesmo run passou | idem |
+
+**Frente Entregas (integrada no merge `7608a207`).** Dois aparelhos lógicos pré-vinculados a dois motoboys, um
+terceiro nunca autorizado, duas viagens ao mesmo tempo, contra os binários de `dist/` e PostgreSQL real:
+`src/platform/run-cadeia-multiaparelho-tests.ts` → **13/13** (refeito aqui contra PostgreSQL 18 local); mutações
+`run-cadeia-multiaparelho-mutation-tests.ts` → 8, nenhuma cega (medido pela frente). Provado: sessões e claims
+próprias; envios simultâneos sem mistura de aparelho, motoboy, viagem e sequência; aparelho sem rede não atrasa o
+outro e volta com os pontos marcados offline; reenvio simultâneo não duplica; token e segredo de um não valem pelo
+outro; não autorizado fica de fora; revogar um não toca o outro. Dois emuladores Android 14 ao mesmo tempo contra
+um laboratório HTTPS (`LAB_HTTPS_SCENARIO=two-riders`): 4 rodadas verdes no Foxxy, **fora de workflow**.
+
+**Lacuna aberta X1 — posse da viagem.** O aparelho de A, autenticado, consegue gravar posição na viagem de B.
+Registrada em `BLOCKERS.md` com a direção proposta (concessão assinada pelo piloto na saída). É a próxima
+correção de código antes de dois motoboys reais na rua.
+
+**Não provado:** aparelho físico, fabricantes, economia de bateria, rede móvel, imagem de outra API no emulador
+(só há a 34 no Foxxy). A frente parou no limite do modelo dela antes do roteiro de N aparelhos e do levantamento
+de instalação em outros Android; esses dois itens seguem **abertos**.
