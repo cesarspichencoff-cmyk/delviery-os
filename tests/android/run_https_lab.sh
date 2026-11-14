@@ -106,6 +106,12 @@ if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
   # Collect fixed JUnit assertion categories only; never print raw XML.
   python3 ../tests/android/https_failure_category_v1.py \
     app/build/outputs/androidTest-results/connected || true
+  if [[ -z "$scenario" ]]; then
+    # O teste do renderizador quebra UM renderizador de proposito
+    # (chrome://crash). Um SIGSEGV de renderizador nos rotulos abaixo e esse,
+    # esperado; so ele nao explica a falha.
+    echo "LAB_HTTPS_ONE_RENDERER_SIGSEGV_IS_DELIBERATE"
+  fi
   echo "LAB_HTTPS_INSTRUMENTATION_CRASH_CLASS_DIAGNOSTIC"
   adb logcat -d -v brief -s AndroidRuntime:E 2>/dev/null | python3 -c '
 import re, sys
