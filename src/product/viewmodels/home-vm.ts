@@ -757,13 +757,11 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     (l.linhagem?.transformacoes ?? []).includes(TRANSFORMACAO_DEMANDA_OBSERVADA);
   // Pedido observado sem cobertura provada NUNCA sustenta a contagem da casa,
   // nem em demonstracao: "N pedidos em andamento" afirmaria o total.
-  const pulsoSustentado = leituraParcialDePedidos
-    ? false
-    : l.procedencia === "real"
-      ? fonteDePedidosSaudavel
-      : existeFonteSaudavel || l.pedidos.length > 0;
+  const pulsoSustentado = l.procedencia === "real"
+    ? fonteDePedidosSaudavel
+    : existeFonteSaudavel || l.pedidos.length > 0;
   const pulso: Campo<number> =
-    pulsoSustentado
+    pulsoSustentado && !leituraParcialDePedidos
       ? observado(emAndamento, l.procedencia, l.observado_em)
       : ausente(
           "indisponivel",

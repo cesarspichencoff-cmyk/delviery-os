@@ -74,6 +74,9 @@ jobs:
           npx tsx src/platform/run-home-signals-tests.ts
           npx tsx src/platform/run-product-system-tests.ts
           npx tsx src/platform/run-organismo-visual-tests.ts
+          # Contrato estatico da verdade da Home: roda em outro workflow, e la
+          # ficou vermelho por uma linha reescrita aqui. Quem mexe na Home roda os dois.
+          node tests/reporting/run-deliveryos-home-source-truth-tests.cjs
       - name: Guardas de congelamento e de linhagem
         run: |
           npx tsx src/platform/run-m1-bridge-tests.ts

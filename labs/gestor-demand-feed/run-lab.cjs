@@ -32,7 +32,8 @@ const RUNNER = path.join(ROOT, 'runtime', 'reporting', 'gestor_mounted_demand_fe
 const SERVER = path.join(ROOT, 'dist', 'tools', 'product_system_server.js');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const children = [];
-let work = null, fixture = null;
+const results = [];
+let work = null, fixture = null, outDir = null, profileDir = null;
 
 const item = (name, quantity, observations = '', options = [], externalCode = null) =>
   ({name, quantity, observations, options, externalCode});
@@ -45,6 +46,34 @@ const state = {orders: [
   order(4108, 9, [item('Temaki Salmao Completo', 2, '', [{name: 'Cream cheese', quantity: 1}, {name: 'Cebolinha', quantity: 1}])]),
   order(4109, 4, [item('Yakisoba de Frango', 1, 'Pouco shoyu'), item('Guioza Suina', 6), item('Refrigerante Lata', 2)]),
 ]};
+
+// Raiz SINTETICA do Reader, no formato que o Reader grava (checkpoint + um
+// evento estavel por pedido). O dia de abertura sai do proprio pedido, no
+// relogio de Sao Paulo, para o cruzamento nao depender da hora em que a bancada roda.
+function wallTime(iso) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Sao_Paulo', year: 'numeric',
+    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false})
+    .formatToParts(new Date(iso)).map(x => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour === '24' ? '00' : p.hour}:${p.minute}:${p.second}.0000000`;
+}
+function writeReaderRoot(root, natives) {
+  const dir = path.join(root, 'state', 'reader-events-v1');
+  fs.mkdirSync(dir, {recursive: true});
+  const entries = natives.map((n, k) => {
+    const order = {CDFILIAL: '0001', CDLOJA: '01', NRVENDAREST: String(700 + k), NRCOMANDA: String(9100 + k),
+      NRCOMANDAEXT: n.short, IDORGCMDVENDA: 'DLV_IFO', IDSTCOMANDA: '3', DTHRABERMESA: wallTime(n.createdAt),
+      items: n.quantities.map((q, i) => ({NRPRODCOMVEN: 'L' + (i + 1), CDPRODUTO: String(1000 + i),
+        CDARVPROD: '9200001000', IDSTPRCOMVEN: '4', QTPRODCOMVEN: q + '.000'}))};
+    const hash = require('node:crypto').createHash('sha256').update(JSON.stringify(order)).digest('hex');
+    const order_key = ['0001', '01', order.NRVENDAREST, order.NRCOMANDA].join('|');
+    fs.writeFileSync(path.join(dir, order.NRCOMANDA + '_' + hash + '.json'), JSON.stringify({
+      schema: 'deliveryos.tata-reader-stable-order-event.v1', order_key, snapshot_hash: hash,
+      observed_at: new Date().toISOString(), ready_for_downstream_shadow: true, blockers: [], order}));
+    return {order_key, snapshot_hash: hash, emitted_hash: hash, stable_count: 2};
+  });
+  fs.writeFileSync(path.join(root, 'state', 'reader-watch-checkpoint-v1.json'), JSON.stringify({
+    schema: 'deliveryos.tata-reader-continuous-checkpoint.v1', bootstrap_complete: true, entries}));
+}
 
 function startFixtureServer() {
   return new Promise(resolve => {
@@ -63,8 +92,9 @@ function startFixtureServer() {
     server.listen(0, '127.0.0.1', () => resolve(server));
   });
 }
-function launch(command, args, env = {}) {
+function launch(command, args, env = {}, label = 'processo') {
   const child = spawn(command, args, {cwd: ROOT, env: {...process.env, ...env}, stdio: 'ignore', windowsHide: true});
+  child.label = label;
   children.push(child);
   return child;
 }
@@ -131,22 +161,28 @@ async function main() {
   assert.ok(fs.existsSync(EDGE), 'Edge nao encontrado: ' + EDGE);
   assert.ok(fs.existsSync(SERVER), 'dist/ ausente: rode `npx tsc` antes');
   work = fs.mkdtempSync(path.join(os.tmpdir(), 'gestor-demand-lab-'));
-  const profile = path.join(work, 'edge-profile'), out = path.join(work, 'feed');
+  const profile = path.join(work, 'edge-profile'), out = path.join(work, 'feed'), reader = path.join(work, 'reader');
   fs.mkdirSync(profile); fs.mkdirSync(out);
+  outDir = out; profileDir = profile;
+  // O Reader sintetico conhece 4107 (igual a tela) e 4108 (uma unidade a mais); 4109 ele ainda nao viu.
+  writeReaderRoot(reader, [
+    {short: '4107', createdAt: state.orders[0].createdAt, quantities: [1, 2]},
+    {short: '4108', createdAt: state.orders[1].createdAt, quantities: [3]},
+  ]);
   fixture = await startFixtureServer();
   const pageUrl = 'http://127.0.0.1:' + fixture.address().port + '/gestor-fixture.html';
 
   const edge = launch(EDGE, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile,
-    '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-gpu', pageUrl]);
+    '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-gpu', pageUrl], {}, 'edge');
   const cdpPort = await until('DevToolsActivePort', () => {
     const first = fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split(/\r?\n/, 1)[0];
     return /^\d+$/.test(first) ? Number(first) : null;
   });
   labCdpPort = cdpPort;
   const runnerArgs = [RUNNER, '--fixture', '--profile', profile, '--out', out, '--page-url', pageUrl, '--interval-ms', String(INTERVAL_MS)];
-  let runner = launch(process.execPath, runnerArgs);
+  let runner = launch(process.execPath, runnerArgs, {}, 'executor');
   launch(process.execPath, [SERVER], {PRODUCT_UI_PORT: String(HOME_PORT), DELIVERYOS_GESTOR_DEMAND_DIR: out,
-    DELIVERYOS_DATABASE_URL: '', TATA_READER_INSTALL_ROOT: ''});
+    DELIVERYOS_DATABASE_URL: '', TATA_READER_INSTALL_ROOT: reader}, 'servidor');
   await until('servidor da Home', () => getJson(HOME_PORT, '/api/health').then(h => h.ok === true), 60000);
 
   if (SERVE) {
@@ -158,14 +194,17 @@ async function main() {
       'fetch("http://127.0.0.1:"+port+"/json/version").then(r=>r.json()).then(v=>{const w=new WebSocket(v.webSocketDebuggerUrl);' +
       'w.addEventListener("open",()=>{w.send(JSON.stringify({id:1,method:"Browser.close"}));setTimeout(()=>process.exit(0),1500)});' +
       'w.addEventListener("error",()=>process.exit(0))}).catch(()=>process.exit(0))}},1000)';
-    spawn(process.execPath, ['-e', watch, String(process.pid), String(cdpPort), ...children.slice(1).map(c => String(c.pid))],
+    // O vigia nasce de um intermediario que sai na hora: fica fora da arvore deste
+    // processo, e um encerramento em arvore (medido: deixava o Edge vivo) nao o leva junto.
+    const relay = 'require("node:child_process").spawn(process.execPath,["-e",process.argv[1],...process.argv.slice(2)],' +
+      '{detached:true,stdio:"ignore",windowsHide:true}).unref()';
+    spawn(process.execPath, ['-e', relay, watch, String(process.pid), String(cdpPort), ...children.slice(1).map(c => String(c.pid))],
       {detached: true, stdio: 'ignore', windowsHide: true}).unref();
     console.log('BANCADA NO AR  Home: http://127.0.0.1:' + HOME_PORT + '/   (pedidos sinteticos, modo simulado)');
     console.log('feed: ' + out);
     return;
   }
 
-  const results = [];
   const step = async (label, fn) => { await fn(); results.push(label); console.log('PASS ' + label); };
   const home = () => getJson(HOME_PORT, '/api/home');
   const codes = h => h.demanda_observada.pedidos.map(p => p.codigo);
@@ -197,6 +236,19 @@ async function main() {
     assert.ok(!JSON.stringify(readFeed(out)).includes('LAB-ORDER-UUID'));
   });
 
+  await step('cruzamento com o Reader, com processos reais: conciliado, divergente e nao encontrado na mesma tela', async () => {
+    const h = await until('home cruzada', async () => { const x = await home(); return x.estado_do_join === 'CONCILIADO_1_DE_3' ? x : null; });
+    const by = Object.fromEntries(h.demanda_observada.pedidos.map(p => [p.codigo, p]));
+    assert.deepEqual([by['4107'].nivel, by['4108'].nivel, by['4109'].nivel], ['conciliado', 'demanda_observada', 'demanda_observada']);
+    assert.deepEqual([by['4107'].conciliacao, by['4108'].conciliacao, by['4109'].conciliacao], ['conciliado', 'divergente', 'nao_encontrado']);
+    assert.match(by['4108'].conciliacao_detalhe, /Reader mostra 1 linha\(s\) e 3 unidade\(s\)/);
+    assert.equal(h.demanda_observada.conciliados, 1);
+    // Conciliar nao muda o que a Home afirma: continua parcial, sem contagem da casa.
+    assert.equal(h.titulo, 'Leitura parcial');
+    assert.equal(h.pulso.observado, false);
+    assert.ok(!JSON.stringify(h).includes('0001|01'), 'chave nativa do Reader vazou para a Home');
+  });
+
   await step('pedido novo, quantidade alterada e cartao que some: a Home acompanha, sem cancelamento inventado', async () => {
     state.orders[0].items[1].quantity = 3;
     state.orders.splice(1, 1);
@@ -215,7 +267,7 @@ async function main() {
     await sleep(INTERVAL_MS + 500);
     assert.equal(readFeed(out).sequence, before.sequence <= readFeed(out).sequence ? readFeed(out).sequence : -1);
     const frozen = readFeed(out).sequence;
-    runner = launch(process.execPath, runnerArgs);
+    runner = launch(process.execPath, runnerArgs, {}, 'executor-religado');
     const after = await until('feed apos religar', () => { const f = readFeed(out); return f.sequence > frozen && f.scan.state === 'OBSERVED' ? f : null; });
     const journal = readJournal(out);
     assert.equal(count(journal, 'seen'), seenBefore, 'religar repetiu "seen"');
@@ -260,7 +312,21 @@ async function main() {
     assert.ok(!JSON.stringify(h).includes('Sashimi'), 'pedido antigo continuou na Home');
   });
 
-  console.log('DELIVERYOS_GESTOR_DEMAND_LAB_PASS ' + results.length + '/7 REAL_EDGE_REAL_CDP_SYNTHETIC_PAGE');
+  console.log('DELIVERYOS_GESTOR_DEMAND_LAB_PASS ' + results.length + '/8 REAL_EDGE_REAL_CDP_SYNTHETIC_PAGE');
+}
+
+// Retrato do que a bancada via quando falhou. So dado sintetico. Na CI vira uma
+// anotacao do job, que e o unico lugar legivel sem credencial.
+function diagnose(message) {
+  const d = {node: process.version, passos: results.length, falha: String(message).split(/\r?\n/).slice(0, 3).join(' | ').slice(0, 500),
+    processos: children.map(c => c.label + ':' + (c.exitCode === null ? (c.signalCode || 'vivo') : 'saiu=' + c.exitCode)).join(' ')};
+  try { d.porta_devtools = fs.existsSync(path.join(profileDir, 'DevToolsActivePort')); } catch { d.porta_devtools = null; }
+  try { const f = readFeed(outDir); d.feed = {seq: f.sequence, scan: f.scan, pedidos: f.window.orders.length, edge: f.edge}; } catch (e) { d.feed = 'ilegivel: ' + e.code; }
+  try { const j = readJournal(outDir); d.diario = Object.fromEntries([...new Set(j.map(l => l.k))].map(k => [k, count(j, k)])); } catch { d.diario = null; }
+  const line = JSON.stringify(d);
+  console.error('DIAGNOSTICO ' + line);
+  if (process.env.GITHUB_ACTIONS === 'true')
+    console.log('::error title=bancada gestor-demand::' + line.replace(/%/g, '%25'));
 }
 
 async function cleanup() {
@@ -270,5 +336,5 @@ async function cleanup() {
   if (work) { await sleep(500); try { fs.rmSync(work, {recursive: true, force: true}); } catch { /* perfil ainda em uso */ } }
 }
 main().then(async () => { if (!SERVE) { await cleanup(); process.exit(0); } })
-  .catch(async e => { console.error('FAIL ' + (e && e.stack || e)); await cleanup(); process.exit(1); });
+  .catch(async e => { const m = 'FAIL ' + (e && e.stack || e); console.error(m); diagnose(m); await cleanup(); process.exit(1); });
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { void cleanup().then(() => process.exit(0)); });

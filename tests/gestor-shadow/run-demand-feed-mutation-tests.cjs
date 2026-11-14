@@ -47,7 +47,7 @@ const MUTATIONS = [
   ['P4 praca inventada para o item', PRODUCER, 'nome: i.nome, praca: null, qtd: i.quantidade', 'nome: i.nome, praca: "combinados", qtd: i.quantidade', CHAIN],
   ['P5 estado fisico afirmado a partir da tela', PRODUCER, 'estado: "aceito", source_revision: p.revisao_no', 'estado: "pronto", source_revision: p.revisao_no', CHAIN],
   ['P6 revisao sai da chave idempotente', PRODUCER, 'source_event_id: `${p.ref}:${p.revisao}`,', 'source_event_id: `${p.ref}`,', CHAIN],
-  ['V1 leitura parcial sustenta a contagem da casa', HOME_VM, 'const pulsoSustentado = leituraParcialDePedidos\n    ? false', 'const pulsoSustentado = leituraParcialDePedidos\n    ? true', CHAIN],
+  ['V1 leitura parcial sustenta a contagem da casa', HOME_VM, 'pulsoSustentado && !leituraParcialDePedidos', 'pulsoSustentado', CHAIN],
   ['V2 fonte parcial sem carimbo vira leitura parcial', HOME_VM, '(l.linhagem?.transformacoes ?? []).includes(TRANSFORMACAO_DEMANDA_OBSERVADA);', 'true;', CHAIN],
   ['C1 quantidades diferentes viram conciliado', RECON, 'const iguais = casado.itemLines === linhas && casado.itemUnits === unidades &&', 'const iguais = true ||', CROSS],
   ['C2 revisao retida pelo Reader sustenta conciliacao', RECON, 'return !n.retido_pelo_produtor && CHAVE.test(n.chave)', 'return CHAVE.test(n.chave)', CROSS],
