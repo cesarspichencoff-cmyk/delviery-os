@@ -243,6 +243,8 @@ export class PilotApplicationFacade {
     unit_id: string;
     courier_actor_id: string;
     state: string;
+    started_at: string | null;
+    closed_at: string | null;
   } | null> {
     const rec = await this.uow.trips.get(trip_id);
     if (!rec) return null;
@@ -251,6 +253,8 @@ export class PilotApplicationFacade {
       unit_id: rec.trip.unit_id,
       courier_actor_id: String(rec.trip.courier_actor_id),
       state: rec.trip.state,
+      started_at: rec.trip.started_at ?? null,
+      closed_at: rec.trip.closed_at ?? null,
     };
   }
 

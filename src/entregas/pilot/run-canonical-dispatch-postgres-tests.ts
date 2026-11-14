@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { ambienteDeConcessaoDeTeste, concessaoDaBancada, registrarVinculoDeTeste, registrarViagemDeTeste } from "../../platform/concessao-de-teste";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
@@ -61,6 +62,7 @@ async function startCritical(b: BancoIsolado): Promise<Proc> {
     DELIVERYOS_MIGRATE_ON_BOOT: "false",
     DELIVERYOS_DEVICE_TOKEN_SECRET: TOKEN_SECRET,
     DELIVERYOS_PILOT_READ_SECRETS: JSON.stringify({ [UNIT]: READ_SECRET }),
+    DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ambienteDeConcessaoDeTeste(UNIT),
     DELIVERYOS_SOURCE_MODE: "simulated",
     DELIVERYOS_PORT: String(port),
     DELIVERYOS_TICK_MS: "200",
@@ -136,6 +138,8 @@ async function authorizeDevice(b: BancoIsolado, ap: AparelhoLogico): Promise<voi
      VALUES ($1, $2, $3, 'Device Canonical PG', $4, now())`,
     [ap.deviceId, UNIT, ACTOR, proof],
   );
+  registrarVinculoDeTeste(ap.deviceId, UNIT, ACTOR);
+  registrarViagemDeTeste(TRIP, UNIT, ACTOR);
 }
 
 async function main(): Promise<void> {
@@ -158,7 +162,7 @@ async function main(): Promise<void> {
 
   try {
     critical = await startCritical(b);
-    const ap = new AparelhoLogico({ diretorio: deviceDir, plataformaUrl: critical.base });
+    const ap = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: deviceDir, plataformaUrl: critical.base });
     await authorizeDevice(b, ap);
 
     const t1 = new Date(Date.now() - 20_000).toISOString();

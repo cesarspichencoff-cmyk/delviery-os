@@ -43,6 +43,7 @@
  */
 
 import assert from "node:assert/strict";
+import { ambienteDeConcessaoDeTeste, concessaoDeTeste } from "./concessao-de-teste";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -129,8 +130,13 @@ function subirBinario(bin: string, url: string, modo: Modo, extra: NodeJS.Proces
   };
 }
 
+// As unidades dos cadastros desta suíte saem de um conjunto conhecido no boot do
+// crítico: o segredo da concessão de viagem (X1) é por unidade.
+const UNIDADES_Q017 = Array.from({ length: 24 }, (_, i) => `Q17${Math.random().toString(36).slice(2, 6).toUpperCase()}${i}`);
+let proximaUnidadeQ017 = 0;
 const subirCritico = (b: BancoIsolado | string, modo: Modo, extra: NodeJS.ProcessEnv = {}) =>
-  subirBinario(BIN_CRITICO, typeof b === "string" ? b : b.url, modo, extra);
+  subirBinario(BIN_CRITICO, typeof b === "string" ? b : b.url, modo,
+    { DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ambienteDeConcessaoDeTeste(...UNIDADES_Q017), ...extra });
 
 /** O assíncrono. `modo` só existe para VAZAR a variável de propósito (G, H). */
 const subirAssincrono = (b: BancoIsolado, modo: Modo = undefined) => subirBinario(BIN_ASSINCRONO, b.url, modo);
@@ -201,7 +207,7 @@ interface Aparelho {
 
 async function cadastrarAparelho(b: BancoIsolado, unidade?: string): Promise<Aparelho> {
   const sufixo = Math.random().toString(36).slice(2, 8);
-  const u = unidade ?? `Q17${sufixo}`.toUpperCase();
+  const u = unidade ?? UNIDADES_Q017[proximaUnidadeQ017++ % UNIDADES_Q017.length];
   const aparelho = `dev-${sufixo}`;
   await b.cliente.query(`INSERT INTO identity.unit(unit_id, display_name) VALUES ($1, 'Q017') ON CONFLICT DO NOTHING`, [u]);
   await b.cliente.query(
@@ -243,7 +249,8 @@ async function enviarGps(c: Processo, a: Aparelho, n = 1): Promise<Envio> {
   const r = await fetch(`http://127.0.0.1:${c.porta}/api/gps/batch`, {
     method: "POST",
     headers: { Authorization: `Bearer ${a.token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ device_id: a.aparelho, correlation_id: correlacao, points: [ponto] }),
+    body: JSON.stringify({ device_id: a.aparelho, correlation_id: correlacao, points: [ponto],
+      trip_grants: [concessaoDeTeste({ unit_id: a.unidade, actor_id: `a-${a.sufixo}`, device_id: a.aparelho, trip_id: a.viagem, agora: new Date() })] }),
   });
   const corpo = (await r.json().catch(() => ({}))) as { classe?: string };
   return { status: r.status, classe: String(corpo.classe), correlacao, chave };
@@ -605,7 +612,8 @@ void (async () => {
   await teste("H1 linhas anteriores à 0003 ficam NULL e fora do replay, mesmo com um crítico real gravando na MESMA unidade", async () => {
     const h = await bancoIsolado("0002_event_log_contexto_dispositivo");
     try {
-      const unidade = `Q17H${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+      // Do conjunto que o crítico conhece no boot (segredo da concessão é por unidade).
+      const unidade = UNIDADES_Q017[proximaUnidadeQ017++ % UNIDADES_Q017.length];
       await h.cliente.query(
         `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type,
             payload, occurred_at, origin, idempotency_key, contract_version)

@@ -17,6 +17,9 @@
 
 import { createHash } from "node:crypto";
 import {
+  pointFitsGrant, verifyTripCaptureGrant, type TripCaptureGrantClaims,
+} from "../../entregas/foundation/trip-capture-grant";
+import {
   checkEvent,
   type EventEnvelope,
   type SourceMode,
@@ -56,6 +59,8 @@ export interface LoteGpsAndroid {
   schema_version?: string;
   correlation_id?: string;
   points?: unknown;
+  /** Concessões de captura emitidas pelo piloto, uma por viagem (X1). */
+  trip_grants?: unknown;
 }
 
 /* ------------------------------------------------------------------ *
@@ -136,6 +141,11 @@ export async function traduzirLoteGps(args: {
   registro: RegistroDeDispositivos;
   recebido_em: Date;
   source_mode: SourceMode;
+  /**
+   * Segredos da concessão de captura, por unidade (X1). Obrigatório: quem chama
+   * recusa o lote antes de chegar aqui quando não há segredo configurado.
+   */
+  segredos_de_concessao: ReadonlyMap<string, string>;
 }): Promise<ResultadoIngest> {
   const vazio = { fatos: [], rejeitados: [] };
 
@@ -171,6 +181,20 @@ export async function traduzirLoteGps(args: {
       detalhe: `${pontos.length} pontos excede ${MAX_PONTOS_POR_LOTE}`,
       ...vazio,
     };
+  }
+
+  // X1 — a viagem precisa ser DESTE motoboy NESTE aparelho. A concessão vem do
+  // piloto (dono da atribuição); vale só se unidade, motoboy e aparelho forem os
+  // do cadastro AGORA. Concessão inválida não derruba o lote: só não concede nada.
+  const concessoes = new Map<string, TripCaptureGrantClaims[]>();
+  const brutas = Array.isArray(args.corpo.trip_grants) ? args.corpo.trip_grants.slice(0, 32) : [];
+  for (const token of brutas) {
+    const v = verifyTripCaptureGrant(token, args.segredos_de_concessao, args.recebido_em);
+    if (!v.ok) continue;
+    const c = v.claims;
+    if (c.unit_id !== dispositivo.unit_id || c.device_id !== dispositivo.device_id ||
+        !dispositivo.actor_id || c.actor_id !== dispositivo.actor_id) continue;
+    concessoes.set(c.trip_id, [...(concessoes.get(c.trip_id) ?? []), c]);
   }
 
   const rejeitados: { idempotency_key: string; motivo: string }[] = [];
@@ -216,6 +240,16 @@ export async function traduzirLoteGps(args: {
       continue;
     }
 
+    // X1 — autorização por viagem, depois da forma do ponto e antes de virar fato.
+    const daViagem = concessoes.get(bruto.trip_id);
+    if (!daViagem) {
+      recusar("viagem_sem_concessao: a viagem nao e deste motoboy neste aparelho, ou a concessao nao veio");
+      continue;
+    }
+    if (!daViagem.some((c) => pointFitsGrant(Date.parse(bruto.occurred_at), args.recebido_em.getTime(), c))) {
+      recusar("fora_da_janela_da_viagem");
+      continue;
+    }
     const fato: EventEnvelope = {
       event_id: `ev-${createHash("sha256").update(chave).digest("hex").slice(0, 24)}`,
       event_type: "gps_batch_received",

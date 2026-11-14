@@ -72,6 +72,7 @@ import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status"
 import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
 import { createAccessThrottle, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
 import { createHomeOperatorGateway, loadHomeGatewayConfig } from "../src/platform/auth/home-operator-gateway";
+import { emitTripCaptureGrant, isUsableTripGrantSecret } from "../src/entregas/foundation/trip-capture-grant";
 
 // Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
 const accessThrottle = createAccessThrottle();
@@ -174,6 +175,32 @@ const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
  */
 const PLATFORM_URL = (process.env.ENTREGAS_PLATFORM_URL || "").trim().replace(/\/$/, "");
 const PLATFORM_READ_SECRET = (process.env.ENTREGAS_PLATFORM_READ_SECRET || "").trim();
+/*
+ * X1 — concessao de captura por viagem. O piloto e o dono da atribuicao
+ * viagem -> motoboy; a plataforma so grava GPS de viagem com concessao. Sem o
+ * segredo, a resposta de captura sai sem concessao e a plataforma nao grava
+ * ponto nenhum: falha fechada, nunca aberta.
+ */
+const TRIP_GRANT_SECRET = (process.env.ENTREGAS_TRIP_GRANT_SECRET || "").trim();
+if (TRIP_GRANT_SECRET && !isUsableTripGrantSecret(TRIP_GRANT_SECRET)) {
+  console.error("ENTREGAS_TRIP_GRANT_SECRET curto ou placeholder: o piloto nao sobe.");
+  process.exit(78);
+}
+const concessaoDeCaptura = (
+  identity: { unit_id: string; actor_id: string | null; device_id: string },
+  trip: { trip_id: string; unit_id: string; courier_actor_id: string; started_at?: string | null; closed_at?: string | null } | null,
+): string | null => {
+  // So para a viagem DESTE motoboy, decidida pelo dominio; nunca a partir do pedido.
+  if (!TRIP_GRANT_SECRET || !trip || !identity.actor_id || trip.courier_actor_id !== identity.actor_id ||
+      trip.unit_id !== identity.unit_id) return null;
+  const inicio = trip.started_at ? new Date(trip.started_at) : null;
+  const fim = trip.closed_at ? new Date(trip.closed_at) : null;
+  if ((inicio && !Number.isFinite(inicio.getTime())) || (fim && !Number.isFinite(fim.getTime()))) return null;
+  try {
+    return emitTripCaptureGrant({ unit_id: identity.unit_id, actor_id: identity.actor_id, device_id: identity.device_id,
+      trip_id: trip.trip_id, started_at: inicio, closed_at: fim, now: new Date(), secret: TRIP_GRANT_SECRET });
+  } catch { return null; }
+};
 // An explicitly scoped public verification key, never the platform device secret.
 const pilotDelegationKeyB64 = process.env.ENTREGAS_PILOT_DELEGATION_PUBLIC_KEY_B64 ?? "";
 const pilotDelegationKid = process.env.ENTREGAS_PILOT_DELEGATION_KEY_ID ?? "";
@@ -808,12 +835,15 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         return reply(503, { ok: false, unknown: true, reason: decisaoTrip.reason });
       }
       if (decisaoTrip.decision === "stop") {
+        // Viagem encerrada continua sendo DELE: a concessao fecha a janela no
+        // encerramento, e os pontos captados offline durante a viagem ainda sobem.
         return reply(200, {
           ok: true,
           capture: false,
           trip_id: tripId,
           reason: decisaoTrip.reason,
           checked_at: new Date().toISOString(),
+          trip_grant: decisaoTrip.reason === "trip_not_active" ? concessaoDeCaptura(identidade.identity, trip) : null,
         });
       }
 
@@ -836,12 +866,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         term_publishable: termoPublicavelAgora,
         term_accepted_for_device: termAccepted,
       });
+      const capturaLiberada = decisaoPrivacidade.decision === "continue";
       return reply(200, {
         ok: true,
-        capture: decisaoPrivacidade.decision === "continue",
+        capture: capturaLiberada,
         trip_id: tripId,
         reason: decisaoPrivacidade.reason,
         checked_at: new Date().toISOString(),
+        // Sem captura liberada (flag, termo, aceite), nenhuma concessao: a plataforma
+        // nao pode aceitar ponto que o piloto nao permitiria captar.
+        trip_grant: capturaLiberada ? concessaoDeCaptura(identidade.identity, trip) : null,
       });
     }
 
@@ -955,6 +989,41 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         rejected: r.rejected,
         reasons: r.reasons,
       });
+    }
+
+    /*
+     * X1 — concessões de viagem para a fila de GPS do aparelho, pela credencial
+     * DELEGADA ao piloto (pt1), nunca pelo token da plataforma. O SyncWorker usa
+     * esta rota quando a concessão guardada não cobre os pontos da fila (ex.:
+     * viagem encerrada enquanto o aparelho estava offline). Só concede a viagem
+     * que o domínio atribui ao motoboy da delegação, e só depois da saída.
+     */
+    if (url.pathname === "/api/device/trip-grants" && req.method === "POST") {
+      const delegated = typeof req.headers.authorization === "string"
+        ? /^Bearer\s+(pt1\.[^\s]+)$/i.exec(req.headers.authorization)?.[1]
+        : undefined;
+      if (!delegated) return reply(401, { ok: false, code: "pilot_delegation_required" });
+      const auth = await authorizeDelegatedPilotHttp({
+        bearer: delegated, unit_id: cfg.unit_id,
+        public_key: pilotDelegationPublicKey, key_id: pilotDelegationKid,
+        platform_base_url: PLATFORM_URL, now_s: Math.floor(Date.now() / 1000),
+      });
+      if (!auth.ok) return reply(auth.status, { ok: false, code: auth.reason, retryable: auth.status === 503 });
+      if (!TRIP_GRANT_SECRET) return reply(503, { ok: false, code: "trip_grant_not_configured", retryable: true });
+      let corpo: { trip_ids?: unknown };
+      try { corpo = JSON.parse(await readBody(req)) as { trip_ids?: unknown }; }
+      catch { return reply(400, { ok: false, code: "INVALID_BODY" }); }
+      const ids = Array.isArray(corpo.trip_ids) ? corpo.trip_ids : [];
+      if (!ids.length || ids.length > 20 || !ids.every((x) => typeof x === "string" && x.length > 0 && x.length <= 128))
+        return reply(400, { ok: false, code: "INVALID_TRIP_IDS" });
+      const identidade = { unit_id: auth.claims.unit_id, actor_id: auth.claims.actor_id, device_id: auth.claims.device_id };
+      const grants: Record<string, string | null> = {};
+      for (const tripId of new Set(ids as string[])) {
+        const trip = await facade.readTripCaptureState(tripId);
+        // Sem saída registrada não houve captura autorizada: nada a conceder.
+        grants[tripId] = trip && trip.started_at ? concessaoDeCaptura(identidade, trip) : null;
+      }
+      return reply(200, { ok: true, grants });
     }
 
     if (url.pathname === "/api/events/batch" && req.method === "POST") {

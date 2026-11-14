@@ -692,6 +692,18 @@ async function fronteiras(): Promise<void> {
         "../../entregas/foundation/platform-read-assertion",
         "../../entregas/foundation/route-access",
       ])],
+      // X1 (14/11/2026): concessão de captura por viagem, emitida pelo piloto e
+      // conferida na ingestão. Só a fundação PURA da concessão (HMAC, claims,
+      // janela) — nenhum domínio, persistência ou servidor do piloto.
+      ["/src/platform/ingest/device-ingest.ts", new Set([
+        "../../entregas/foundation/trip-capture-grant",
+      ])],
+      ["/src/platform/bin/critical.ts", new Set([
+        "../../entregas/foundation/trip-capture-grant",
+      ])],
+      ["/src/platform/concessao-de-teste.ts", new Set([
+        "../entregas/foundation/trip-capture-grant",
+      ])],
     ]);
     const autorizado = (rel: string, imp: string) => permitidos.get(rel)?.has(imp) === true;
 

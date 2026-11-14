@@ -10,6 +10,7 @@
  */
 
 import assert from "node:assert/strict";
+import { concessaoDeTeste, segredosDeConcessaoDeTeste } from "./concessao-de-teste";
 import { checkEvent, EVENT_TYPES, type EventEnvelope } from "./contracts/event-catalog";
 import {
   carregarCatalogo,
@@ -260,7 +261,7 @@ test("PII é recusada pelo envelope, em qualquer profundidade", () => {
  * ------------------------------------------------------------------ */
 
 const REGISTRO: RegistroDeDispositivos = {
-  buscar: async (id) => (id === "dev-1" ? { device_id: "dev-1", unit_id: "ITAIM" } : null),
+  buscar: async (id) => (id === "dev-1" ? { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1" } : null),
 };
 
 testeAsync("o que device-ingest produz passa no schema do próprio tipo", async () => {
@@ -275,11 +276,13 @@ testeAsync("o que device-ingest produz passa no schema do próprio tipo", async 
           occurred_at: "2026-07-27T11:59:00.000Z", sequence_local: 1, provider: "fused", is_mock: false,
         },
       ],
+      trip_grants: [concessaoDeTeste({ actor_id: "rid-1", device_id: "dev-1", trip_id: "t-1", agora: AGORA })],
     },
     device_id_autenticado: "dev-1",
     registro: REGISTRO,
     recebido_em: AGORA,
     source_mode: "real",
+    segredos_de_concessao: segredosDeConcessaoDeTeste(),
   });
   assert.equal(r.fatos.length, 1);
   const fato = r.fatos[0];

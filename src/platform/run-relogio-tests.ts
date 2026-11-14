@@ -32,6 +32,7 @@
  */
 
 import assert from "node:assert/strict";
+import { ambienteDeConcessaoDeTeste, concessaoDeTeste } from "./concessao-de-teste";
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -206,7 +207,8 @@ async function main(): Promise<void> {
   interface Escopo { unit_id: string; source_mode: string; fatos: number; frescor: Record<string, number> }
 
   const b = await bancoIsolado(URL_PG, undefined, "relogio");
-  const critico = subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: MODO });
+  const critico = subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: MODO,
+    DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ambienteDeConcessaoDeTeste(UNIDADE, UNIDADE_HISTORICO) });
   let assincrono = null as Processo | null;
 
   try {
@@ -238,7 +240,8 @@ async function main(): Promise<void> {
       const r = await fetch(`http://127.0.0.1:${critico.porta}/api/gps/batch`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ device_id: device, correlation_id: `rel-${device}-${seq}`, points: [ponto] }),
+        body: JSON.stringify({ device_id: device, correlation_id: `rel-${device}-${seq}`, points: [ponto],
+          trip_grants: [concessaoDeTeste({ unit_id: UNIDADE, actor_id: "a-rel", device_id: device, trip_id: trip, agora: new Date() })] }),
       });
       return { status: r.status, corpo: (await r.json().catch(() => ({}))) as { classe?: string; gravados?: number; recusados?: unknown[] } };
     };

@@ -6,6 +6,7 @@ import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stopTestProcess } from "./test-process-shutdown";
+import { verifyTripCaptureGrant, pointFitsGrant } from "../foundation/trip-capture-grant";
 
 const ROOT = process.cwd();
 const RIDER = "CHANGE_ME_RIDER_TOKEN";
@@ -16,6 +17,14 @@ const DEVICE_TERMINAL_BEARER = "device-token-q019-terminal";
 const DEVICE_GENERIC_403_BEARER = "device-token-q019-generic-403";
 const DEVICE_OTHER_UNIT_BEARER = "device-token-other-synthetic-unit";
 const PILOT_UNIT = "ITAIM";
+// X1: outro motoboy, da MESMA unidade, num aparelho próprio e válido.
+const DEVICE_OTHER_RIDER_BEARER = "device-token-q019-outro-motoboy";
+const TRIP_GRANT_SECRET = "segredo-sintetico-da-concessao-de-viagem-0123456789";
+const GRANT_SECRETS = new Map([[PILOT_UNIT, TRIP_GRANT_SECRET]]);
+const grantOf = (body: Record<string, unknown>) => {
+  const v = verifyTripCaptureGrant(body.trip_grant, GRANT_SECRETS, new Date());
+  return v.ok ? v.claims : null;
+};
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -37,6 +46,11 @@ async function startIdentity(): Promise<{ base: string; server: Server }> {
         res.end(JSON.stringify({
           ok: true, device_id: "dev-other-synthetic", unit_id: "UNIT_FICTICIA_NEGADA", actor_id: "rid-1",
         }));
+        return;
+      }
+      if (req.headers.authorization === `Bearer ${DEVICE_OTHER_RIDER_BEARER}`) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: true, device_id: "dev-q019-rid2", unit_id: PILOT_UNIT, actor_id: "rid-2" }));
         return;
       }
       if (req.headers.authorization === `Bearer ${DEVICE_TERMINAL_BEARER}`) {
@@ -110,6 +124,7 @@ async function startPilot(platformBase: string): Promise<Pilot> {
     ENTREGAS_TERM_CONFIG: termPath,
     ENTREGAS_GPS_FLAGS_CONFIG: flagsPath,
     ENTREGAS_LABORATORIO: "1",
+    ENTREGAS_TRIP_GRANT_SECRET: TRIP_GRANT_SECRET,
   };
   delete (env as Record<string, string | undefined>).ENTREGAS_BIND;
   delete (env as Record<string, string | undefined>).ENTREGAS_HTTPS;
@@ -179,6 +194,7 @@ async function main() {
     assert.equal(semAceite.status, 200);
     assert.equal(semAceite.body.capture, false);
     assert.equal(semAceite.body.reason, "term_not_acknowledged");
+    assert.equal(semAceite.body.trip_grant, null, "concessão emitida sem aceite do termo");
 
     const ackOutroAparelho = await post(pilot.base, RIDER, "/api/term/acknowledge", {
       status: "accepted",
@@ -198,6 +214,20 @@ async function main() {
     const on = await capture(pilot.base, trip);
     assert.equal(on.status, 200);
     assert.equal(on.body.capture, true);
+    // X1, lado do piloto: a concessão prende unidade, motoboy, aparelho e viagem.
+    const aberta = grantOf(on.body);
+    assert.ok(aberta, "viagem do próprio motoboy, captura liberada, e nenhuma concessão válida");
+    assert.deepEqual([aberta.unit_id, aberta.actor_id, aberta.device_id, aberta.trip_id], [PILOT_UNIT, "rid-1", "dev-q019", trip]);
+    assert.ok(aberta.window_end * 1000 > Date.now(), "viagem aberta com janela já fechada");
+
+    // Outro motoboy, aparelho válido, mesma unidade, pedindo a viagem de rid-1.
+    const intruso = await capture(pilot.base, trip, DEVICE_OTHER_RIDER_BEARER);
+    assert.equal(intruso.status, 200);
+    assert.equal(intruso.body.capture, false);
+    assert.equal(intruso.body.reason, "trip_not_bound_to_device");
+    assert.equal(intruso.body.trip_grant ?? null, null, "o piloto concedeu a viagem de rid-1 ao aparelho de rid-2");
+    const inexistente = await capture(pilot.base, "TRIP-FICTICIA-AUSENTE");
+    assert.equal(inexistente.body.trip_grant ?? null, null, "concessão para viagem que não existe");
 
     // A identidade atestada ainda deve pertencer ao alvo fixo do aplicativo.
     // Mesmo uma viagem inexistente nao pode ser consultada antes dessa guarda.
@@ -229,8 +259,17 @@ async function main() {
     assert.equal(off.status, 200);
     assert.equal(off.body.capture, false);
     assert.equal(off.body.reason, "trip_not_active");
+    // Encerrada continua DELE: a janela fecha no encerramento — a fila offline da
+    // viagem sobe, ponto novo depois do fim não.
+    const fechada = grantOf(off.body);
+    assert.ok(fechada, "viagem encerrada sem concessão: a fila offline dela ficaria presa");
+    assert.ok(fechada.window_end * 1000 <= Date.now() + 1000, "janela da viagem encerrada continua aberta");
+    assert.equal(pointFitsGrant(Date.now() + 10 * 60_000, Date.now() + 10 * 60_000, fechada), false, "ponto depois do fim cabe na janela");
+    assert.equal(pointFitsGrant(fechada.window_end * 1000 - 60_000, Date.now() + 3600_000, fechada), true, "ponto da viagem não cabe na janela");
+    const intrusoFechada = await capture(pilot.base, trip, DEVICE_OTHER_RIDER_BEARER);
+    assert.equal(intrusoFechada.body.trip_grant ?? null, null, "viagem encerrada de rid-1 concedida a rid-2");
 
-    console.log("CAPTURE_CONTROL_HTTP: 8/8 PASS");
+    console.log("CAPTURE_CONTROL_HTTP: 8/8 PASS + X1 PILOTO 6/6");
   } finally {
     await stopTestProcess(pilot.proc);
     rmSync(pilot.dir, { recursive: true, force: true });

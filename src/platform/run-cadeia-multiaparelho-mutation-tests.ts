@@ -16,8 +16,8 @@
  *   MA5  o reenvio duplica (o cliente troca a chave a cada envio)
  *   MA6  a leitura da viagem devolve pontos de outra viagem
  *   MA7  a projeção funde as duas viagens numa só
- *   MA8  CONTROLE DA LACUNA: com a posse da viagem conferida na ingestão, X1
- *        fecha e o gate tem de reprovar pedindo a promoção
+ *   MA8  X1 reaberta: a ingestão aceita viagem sem concessão
+ *   MA9  X1 reaberta: a concessão de outro aparelho e motoboy passa a valer
  */
 
 import assert from "node:assert/strict";
@@ -143,11 +143,12 @@ function mutacao(o: { id: string; propriedade: string; edicoes: Edicao[]; assina
 
 /* ---- controle positivo ---- */
 console.log("0. CONTROLE POSITIVO");
-teste("dist/ é desta árvore e o gate multiaparelho está verde, com a lacuna X1 aberta, ANTES de qualquer mutação", () => {
+teste("dist/ é desta árvore e o gate multiaparelho está verde, sem lacuna aberta (X1 fechada), ANTES de qualquer mutação", () => {
   construir();
   const r = rodar();
   assert.ok(r.ok, `gate já vermelho antes de mutar:\n${r.saida.slice(-900)}`);
-  assert.match(r.saida, /CADEIA_MULTIAPARELHO_GREEN_COM_LACUNA_ABERTA/);
+  assert.match(r.saida, /CADEIA_MULTIAPARELHO_GREEN\s*$/m);
+  assert.doesNotMatch(r.saida, /LACUNA ABERTA/);
 });
 if (falhas.length) {
   console.error("\nO gate precisa estar verde ANTES das mutacoes. Abortado.");
@@ -235,26 +236,39 @@ mutacao({
   assinatura: /XX {2}S3 [\s\S]*XX {2}A1 /,
 });
 
-console.log("\n4. A LACUNA TAMBÉM É VIGIADA");
+console.log("\n4. X1 — A POSSE DA VIAGEM NA INGESTÃO");
 
-// Não é a correção: é um controle. Ele usa a convenção de nomes da própria
-// suíte (viagem `t-a-…` é do motoboy `m-a-…`) só para provar que, no dia em que
-// a posse da viagem for conferida na ingestão, X1 deixa de passar calada.
+// Antes um controle da lacuna; agora a correção existe e estas mutações a desfazem.
 mutacao({
   id: "MA8",
-  propriedade: "CONTROLE: com a posse da viagem conferida, X1 fecha e o gate reprova pedindo a promoção",
+  propriedade: "a ingestão aceita a viagem de outro motoboy sem concessão (X1 reaberta)",
   edicoes: [{
     arquivo: INGEST,
-    de: `    if (typeof bruto.trip_id !== "string" || !bruto.trip_id.trim()) {\n`,
-    para:
-      `    if (typeof bruto.trip_id === "string" && dispositivo.actor_id &&\n` +
-      `        bruto.trip_id.split("-")[1] !== dispositivo.actor_id.split("-")[1]) {\n` +
-      `      recusar("viagem de outro motoboy");\n` +
-      `      continue;\n` +
-      `    }\n` +
-      `    if (typeof bruto.trip_id !== "string" || !bruto.trip_id.trim()) {\n`,
+    de: `    const daViagem = concessoes.get(bruto.trip_id);
+`,
+    para: `    const daViagem = concessoes.get(bruto.trip_id) ?? [{ window_start: 0, window_end: 9e9 } as never];
+`,
   }],
-  assinatura: /XX {2}X1 [^\n]*a lacuna fechou/,
+  assinatura: /XX {2}X1 /,
+});
+
+mutacao({
+  id: "MA9",
+  propriedade: "a concessão vale para outro aparelho e outro motoboy (X1 reaberta pela concessão vazada)",
+  edicoes: [{
+    arquivo: INGEST,
+    de: `        !dispositivo.actor_id || c.actor_id !== dispositivo.actor_id) continue;
+`,
+    para: `        !dispositivo.actor_id) continue;
+`,
+  }, {
+    arquivo: INGEST,
+    de: `    if (c.unit_id !== dispositivo.unit_id || c.device_id !== dispositivo.device_id ||
+`,
+    para: `    if (c.unit_id !== dispositivo.unit_id ||
+`,
+  }],
+  assinatura: /XX {2}X1 /,
 });
 
 console.log(`\n${passaram}/${passaram + falhas.length} verificações · ${cegas} mutação(ões) cega(s)`);

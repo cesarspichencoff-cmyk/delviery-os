@@ -27,6 +27,7 @@
  */
 
 import { strict as assert } from "node:assert";
+import { ambienteDeConcessaoDeTeste, concessaoDaBancada, registrarVinculoDeTeste, registrarViagemDeTeste } from "./concessao-de-teste";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -162,6 +163,7 @@ async function autorizar(b: BancoIsolado, ap: AparelhoLogico, unit_id: string, a
      VALUES ($1, $2, $3, 'aparelho multi', $4, now())`,
     [ap.deviceId, unit_id, actor_id, hashDoSegredo(ap.db.get(KEY_DEVICE_SECRET)!)],
   );
+  registrarVinculoDeTeste(ap.deviceId, unit_id, actor_id);
 }
 
 interface Fato {
@@ -231,17 +233,20 @@ async function main(): Promise<void> {
   const VIAGEM_A = `t-a-${sufixo}`;
   const VIAGEM_B = `t-b-${sufixo}`;
   const VIAGEM_C = `t-c-${sufixo}`;
+  // A atribuição que o piloto faria. C nunca é autorizado, então nunca recebe concessão.
+  registrarViagemDeTeste(VIAGEM_A, UNIDADE, MOTOBOY_A);
+  registrarViagemDeTeste(VIAGEM_B, UNIDADE, MOTOBOY_B);
 
   try {
-    critico = subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: MODO });
+    critico = subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: MODO, DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ambienteDeConcessaoDeTeste(UNIDADE) });
     const c = critico;
     assert.ok(await ate(() => /\[critico\] ouvindo/.test(c.saida())), `o crítico não subiu:\n${c.saida()}`);
     const url = `http://127.0.0.1:${c.porta}`;
 
-    const apA = new AparelhoLogico({ diretorio: dirs[0], plataformaUrl: url });
-    const apB = new AparelhoLogico({ diretorio: dirs[1], plataformaUrl: url });
+    const apA = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirs[0], plataformaUrl: url });
+    const apB = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirs[1], plataformaUrl: url });
     /** O terceiro aparelho existe, captura e tenta — e ninguém o autorizou. */
-    const apC = new AparelhoLogico({ diretorio: dirs[2], plataformaUrl: url });
+    const apC = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirs[2], plataformaUrl: url });
     const segredo = (ap: AparelhoLogico) => ap.db.get(KEY_DEVICE_SECRET)!;
     const token = (ap: AparelhoLogico) => DeviceSession.sessaoAtual(ap.db)!.token;
 
@@ -407,7 +412,7 @@ async function main(): Promise<void> {
       assert.equal(apC.db.pendingCount(), 4);
     });
 
-    console.log("\nX. LACUNA MEDIDA");
+    console.log("\nX. A LACUNA X1, FECHADA");
 
     /*
      * A ingestão amarra o ponto ao APARELHO autenticado. Ela não sabe de quem é
@@ -417,8 +422,10 @@ async function main(): Promise<void> {
      * isso (a viagem vem do snapshot do próprio motoboy), mas a plataforma não
      * recusa. Fechar exige a plataforma conhecer o dono da viagem.
      */
-    await lacuna("X1 token e aparelho de A com a `trip_id` de B devem ser recusados, e a viagem de B deve seguir só com pontos de B", async () => {
-      const r = await enviar(url, token(apA), apA.deviceId, VIAGEM_B, em(30), 50);
+    await teste("X1 token e aparelho de A com a `trip_id` de B são recusados — inclusive com a concessão verdadeira de B anexada —, e a viagem de B segue só com pontos de B", async () => {
+      const vazada = concessaoDaBancada(VIAGEM_B, apB.deviceId)!;
+      assert.ok(vazada, "a bancada não emitiu a concessão de B para B");
+      const r = await enviar(url, token(apA), apA.deviceId, VIAGEM_B, em(30), 50, [vazada]);
       const naViagemDeB = await fatosDaViagem(b, VIAGEM_B);
       const intrusos = naViagemDeB.filter((f) => f.device_id !== apB.deviceId).length;
       const loc = await lerLocalizacaoCanonicaDaViagem(b.cliente, { unit_id: UNIDADE, trip_id: VIAGEM_B, source_mode: MODO });
@@ -490,12 +497,16 @@ interface Recibo { accepted?: number; rejected?: number; duplicate?: number; rej
 /** Um ponto cru em `/api/gps/batch`, do jeito que um cliente adulterado mandaria. */
 async function enviar(
   url: string, token: string, device_id: string, trip_id: string, occurred_at: string, sequence_local: number,
+  vazadas: string[] = [],
 ): Promise<{ status: number; corpo: Recibo }> {
   const r = await fetch(`${url}/api/gps/batch`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       correlation_id: `multi-${sequence_local}`,
+      // O cliente adulterado anexa tudo o que conseguiu: a concessão que o piloto
+      // lhe daria para esta viagem (nenhuma, se não for dele) e as vazadas.
+      trip_grants: [concessaoDaBancada(trip_id, device_id), ...vazadas].filter(Boolean),
       points: [{
         point_id: `p-cru-${device_id}-${sequence_local}`,
         idempotency_key: `gps:${device_id}:${trip_id}:${occurred_at}`,
