@@ -208,3 +208,7 @@ do site continua sem mandar nada); a suíte da porta agora exige o cabeçalho e 
 
 **Android HTTPS ponta a ponta:** vermelho de novo em `a5310d5f`, verde em `f3673938` e `fb1e7c53`, sem mudança
 Android entre eles — intermitente, com causa não lida (log exige credencial). Registrado, não atribuído.
+
+**CI em `564bdac0`: os seis workflows verdes**, inclusive a Home em Edge real pela porta de operador (celular e
+desktop) e os dois labs Android. A linha "Navegador real — NOT_RUN no Foxxy; roda na CI" da §3 fica provada na CI;
+Safari, aparelho físico, rede móvel e proxy real seguem sem prova.
