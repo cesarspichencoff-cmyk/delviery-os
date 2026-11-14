@@ -16,6 +16,8 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import br.com.tata.entregas.data.EntregasDatabase
+import br.com.tata.entregas.location.DeviceId
+import br.com.tata.entregas.sync.DeviceSession
 import br.com.tata.entregas.sync.SyncWorker
 import br.com.tata.entregas.ui.MainActivity
 import br.com.tata.entregas.ui.OriginLockedClient
@@ -42,11 +44,26 @@ import java.util.concurrent.atomic.AtomicReference
  */
 @RunWith(AndroidJUnit4::class)
 class RiderHttpsWorkerEndToEndInstrumentedTest {
-    private val tripId = "LAB_HTTPS_UI_TRIP_001"
-    private val deliveryId = "LAB_HTTPS_UI_DELIVERY_001"
+    /**
+     * Bancada de DOIS aparelhos: `a` ou `b` — cada motoboy com o seu ator, a
+     * sua viagem e a sua entrega. Ausente = o laboratório de um aparelho só.
+     */
+    private val labRider: String? =
+        InstrumentationRegistry.getArguments().getString("deliveryosLabRider")
+    private val idSuffix = labRider?.uppercase() ?: "001"
+    private val actorId = if (labRider == null) "rider-lab" else "rider-lab-$labRider"
+    private val tripId = "LAB_HTTPS_UI_TRIP_$idSuffix"
+    private val deliveryId = "LAB_HTTPS_UI_DELIVERY_$idSuffix"
+    private val orderRef = "LAB_HTTPS_UI_ORDER_$idSuffix"
 
     // Herda do cliente de produção: a morte do renderizador é tratada igual.
-    private class LabSite(private val context: Context) : OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL) {
+    private class LabSite(
+        private val context: Context,
+        private val actorId: String,
+        private val tripId: String,
+        private val deliveryId: String,
+        private val orderRef: String,
+    ) : OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL) {
         val policiesServed = AtomicBoolean(false)
         private fun text(data: String, mime: String = "application/json") =
             WebResourceResponse(mime, "UTF-8",
@@ -66,20 +83,20 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
                 return text("LAB_CROSS_ORIGIN_DENIED", "text/plain")
             val path = url.path ?: "/"
             when (path) {
-                "/api/session" -> return text("""{"actor":{"actor_id":"rider-lab","role":"motoboy_interno"}}""")
+                "/api/session" -> return text("""{"actor":{"actor_id":"$actorId","role":"motoboy_interno"}}""")
                 "/api/policies" -> {
                     policiesServed.set(true)
                     return text("""{"flags":{"offline_queue_enabled":true,"gps_capture_enabled":false},"term":{"publishable":false}}""")
                 }
                 "/api/snapshot" -> return text("""{
                     "unit_id":"ITAIM",
-                    "actor":{"actor_id":"rider-lab","role":"motoboy_interno"},
+                    "actor":{"actor_id":"$actorId","role":"motoboy_interno"},
                     "connection":"online","pending_sync":0,"ready_orders":[],
                     "trips":[{
-                      "trip_id":"LAB_HTTPS_UI_TRIP_001","state":"em_rota",
-                      "courier_actor_id":"rider-lab",
-                      "deliveries":[{"delivery_id":"LAB_HTTPS_UI_DELIVERY_001",
-                      "order_ref":"LAB_HTTPS_UI_ORDER_001","state":"em_rota",
+                      "trip_id":"$tripId","state":"em_rota",
+                      "courier_actor_id":"$actorId",
+                      "deliveries":[{"delivery_id":"$deliveryId",
+                      "order_ref":"$orderRef","state":"em_rota",
                       "active":true,"planned_stop_order":1}]
                     }]
                 }""")
@@ -222,6 +239,29 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
         }
     }
 
+    /** O que o gerente faz fora do aparelho: liga ID e código de vínculo a UM motoboy. */
+    private fun prebindThisDevice(db: EntregasDatabase, rider: String) {
+        val body = JSONObject()
+            .put("device_id", runBlocking { DeviceId.ensure(db) })
+            .put("device_proof_sha256",
+                runBlocking { DeviceSession.provaDeVinculo(db, System.currentTimeMillis()) })
+            .put("rider", rider)
+            .toString().toByteArray(Charsets.UTF_8)
+        val http = java.net.URL(BuildConfig.ENTREGAS_PLATFORM_URL + "/lab/enroll")
+            .openConnection() as javax.net.ssl.HttpsURLConnection
+        try {
+            http.requestMethod = "POST"
+            http.connectTimeout = 10_000
+            http.readTimeout = 10_000
+            http.doOutput = true
+            http.setRequestProperty("Content-Type", "application/json")
+            http.outputStream.use { it.write(body) }
+            assertEquals("LAB_DEVICE_PREBINDING_REFUSED", 200, http.responseCode)
+        } finally {
+            http.disconnect()
+        }
+    }
+
     private fun endToEnd(
         killRendererAfterQueued: Boolean = false,
         realNetworkConstraint: Boolean = false,
@@ -237,9 +277,13 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
         assertTrue("LAB_QUEUE_NOT_EMPTY_BEFORE_HUMAN_ACTION", runBlocking {
             db.outbox().recent(50).isEmpty()
         })
+        // Bancada de dois aparelhos: o ato HUMANO vem antes de qualquer sessão —
+        // este aparelho, esta prova, este motoboy. Sem ele a fixture recusa.
+        labRider?.let { prebindThisDevice(db, it) }
         val testSite = LabSite(
             androidx.test.platform.app.InstrumentationRegistry
                 .getInstrumentation().context,
+            actorId, tripId, deliveryId, orderRef,
         )
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { a ->
@@ -291,7 +335,7 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             assertEquals("ITAIM", command.getString("unit_id"))
             assertEquals(tripId, command.getString("trip_id"))
             assertEquals(deliveryId, command.getString("delivery_id"))
-            assertEquals("rider-lab", command.getJSONObject("actor").getString("actor_id"))
+            assertEquals(actorId, command.getJSONObject("actor").getString("actor_id"))
             assertEquals("motoboy_interno",
                 command.getJSONObject("actor").getString("role"))
             if (!until(scenario, """!document.getElementById('pendingLine').hidden &&
@@ -393,7 +437,7 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
             assertEquals("false", eval(scenario,
                 """document.body.innerText.includes('LAB_PLATFORM_SESSION_NONPROD')"""))
             assertEquals("false", eval(scenario,
-                """document.body.innerText.includes('pt1.labwrite.signedfixture')"""))
+                """document.body.innerText.includes('pt1.labwrite')"""))
         }
     }
 }
