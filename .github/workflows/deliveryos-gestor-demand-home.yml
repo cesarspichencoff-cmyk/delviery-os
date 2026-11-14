@@ -105,6 +105,10 @@ jobs:
         run: npx tsc
       - name: Edge real + DevTools real + executor + servidor da Home (pagina sintetica)
         run: node labs/gestor-demand-feed/run-lab.cjs
+      - name: A mesma bancada com o executor acordando antes do Edge (retem e retoma)
+        run: node labs/gestor-demand-feed/run-lab.cjs
+        env:
+          LAB_EXECUTOR_FIRST: "1"
       - name: Nenhum processo da bancada ficou vivo
         shell: pwsh
         run: |

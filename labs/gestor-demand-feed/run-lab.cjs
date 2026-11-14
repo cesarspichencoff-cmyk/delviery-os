@@ -25,6 +25,7 @@ const {spawn} = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SERVE = process.argv.includes('--serve');
+const EXECUTOR_FIRST = process.env.LAB_EXECUTOR_FIRST === '1';
 const EDGE = process.env.EDGE_EXE || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const HOME_PORT = Number(process.env.LAB_HOME_PORT || 5296);
 const INTERVAL_MS = 2000;
@@ -172,6 +173,11 @@ async function main() {
   fixture = await startFixtureServer();
   const pageUrl = 'http://127.0.0.1:' + fixture.address().port + '/gestor-fixture.html';
 
+  const runnerArgs = [RUNNER, '--fixture', '--profile', profile, '--out', out, '--page-url', pageUrl, '--interval-ms', String(INTERVAL_MS)];
+  // LAB_EXECUTOR_FIRST=1: o executor acorda ANTES de existir Edge (o que o runner da
+  // CI produziu por lentidao). Tem de reter com motivo e retomar sozinho.
+  let runner = EXECUTOR_FIRST ? launch(process.execPath, runnerArgs, {}, 'executor') : null;
+  if (EXECUTOR_FIRST) await until('retencao sem Edge', () => readFeed(out).scan.state === 'HOLD');
   const edge = launch(EDGE, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-gpu', pageUrl], {}, 'edge');
   const cdpPort = await until('DevToolsActivePort', () => {
@@ -179,8 +185,7 @@ async function main() {
     return /^\d+$/.test(first) ? Number(first) : null;
   });
   labCdpPort = cdpPort;
-  const runnerArgs = [RUNNER, '--fixture', '--profile', profile, '--out', out, '--page-url', pageUrl, '--interval-ms', String(INTERVAL_MS)];
-  let runner = launch(process.execPath, runnerArgs, {}, 'executor');
+  if (runner === null) runner = launch(process.execPath, runnerArgs, {}, 'executor');
   launch(process.execPath, [SERVER], {PRODUCT_UI_PORT: String(HOME_PORT), DELIVERYOS_GESTOR_DEMAND_DIR: out,
     DELIVERYOS_DATABASE_URL: '', TATA_READER_INSTALL_ROOT: reader}, 'servidor');
   await until('servidor da Home', () => getJson(HOME_PORT, '/api/health').then(h => h.ok === true), 60000);
@@ -198,7 +203,7 @@ async function main() {
     // processo, e um encerramento em arvore (medido: deixava o Edge vivo) nao o leva junto.
     const relay = 'require("node:child_process").spawn(process.execPath,["-e",process.argv[1],...process.argv.slice(2)],' +
       '{detached:true,stdio:"ignore",windowsHide:true}).unref()';
-    spawn(process.execPath, ['-e', relay, watch, String(process.pid), String(cdpPort), ...children.slice(1).map(c => String(c.pid))],
+    spawn(process.execPath, ['-e', relay, watch, String(process.pid), String(cdpPort), ...children.filter(c => c.label !== 'edge').map(c => String(c.pid))],
       {detached: true, stdio: 'ignore', windowsHide: true}).unref();
     console.log('BANCADA NO AR  Home: http://127.0.0.1:' + HOME_PORT + '/   (pedidos sinteticos, modo simulado)');
     console.log('feed: ' + out);
@@ -292,6 +297,12 @@ async function main() {
   });
 
   await step('Edge fechado: o executor segue vivo, retem com motivo, e a Home avisa na ultima janela valida', async () => {
+    // Retencao ANTES de fechar o Edge e legitima (medido no runner da CI: o executor
+    // pode acordar antes de a pagina existir, reter com motivo e retomar). O que se
+    // exige e que toda retencao anterior tenha sido retomada, e que o fechamento
+    // produza retencao nova, com motivo de DevTools, sem retomada depois.
+    const antes = readJournal(out), retencoesAntes = count(antes, 'hold');
+    assert.equal(retencoesAntes, count(antes, 'resume'), 'havia retencao aberta antes de fechar o Edge');
     await closeLabEdge();
     await stop(edge);
     const feed = await until('feed retido', () => { const f = readFeed(out); return f.scan.state === 'HOLD' ? f : null; });
@@ -299,7 +310,12 @@ async function main() {
     assert.equal(feed.window.orders.length, 3, 'a ultima janela valida sumiu do feed');
     const h = await home();
     assert.ok(h.demanda_observada === null || /retida/.test(h.demanda_observada.retencao));
-    assert.equal(count(readJournal(out), 'hold'), 1);
+    const depois = readJournal(out), novas = depois.filter(l => l.k === 'hold').slice(retencoesAntes);
+    assert.ok(novas.length >= 1, 'fechar o Edge nao gerou retencao no diario');
+    for (const l of novas) assert.match(l.reason, /^EDGE_DEVTOOLS_(NOT_REACHABLE|PORT_UNREADABLE)$/);
+    assert.equal(count(depois, 'resume'), retencoesAntes, 'o executor retomou com o Edge fechado');
+    if (EXECUTOR_FIRST) assert.ok(retencoesAntes >= 1, 'o executor acordou sem Edge e nao reteve');
+    console.log('     retencoes antes do fechamento: ' + retencoesAntes + ' [' + antes.filter(l => l.k === 'hold').map(l => l.reason).join(',') + ']');
   });
 
   await step('executor parado: em menos de um minuto a Home deixa de exibir pedidos e diz que a leitura parou', async () => {
@@ -322,7 +338,8 @@ function diagnose(message) {
     processos: children.map(c => c.label + ':' + (c.exitCode === null ? (c.signalCode || 'vivo') : 'saiu=' + c.exitCode)).join(' ')};
   try { d.porta_devtools = fs.existsSync(path.join(profileDir, 'DevToolsActivePort')); } catch { d.porta_devtools = null; }
   try { const f = readFeed(outDir); d.feed = {seq: f.sequence, scan: f.scan, pedidos: f.window.orders.length, edge: f.edge}; } catch (e) { d.feed = 'ilegivel: ' + e.code; }
-  try { const j = readJournal(outDir); d.diario = Object.fromEntries([...new Set(j.map(l => l.k))].map(k => [k, count(j, k)])); } catch { d.diario = null; }
+  try { const j = readJournal(outDir); d.diario = Object.fromEntries([...new Set(j.map(l => l.k))].map(k => [k, count(j, k)]));
+    d.retencoes = j.filter(l => l.k === 'hold').map(l => l.reason); } catch { d.diario = null; }
   const line = JSON.stringify(d);
   console.error('DIAGNOSTICO ' + line);
   if (process.env.GITHUB_ACTIONS === 'true')
