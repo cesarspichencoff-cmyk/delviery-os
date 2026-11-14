@@ -300,9 +300,13 @@ async function main() {
     // Retencao ANTES de fechar o Edge e legitima (medido no runner da CI: o executor
     // pode acordar antes de a pagina existir, reter com motivo e retomar). O que se
     // exige e que toda retencao anterior tenha sido retomada, e que o fechamento
-    // produza retencao nova, com motivo de DevTools, sem retomada depois.
+    // produza retencao nova, com motivo de DevTools, sem retomada depois. O diario
+    // grava uma linha `hold` a cada MOTIVO novo (medido na CI: porta ilegivel, depois
+    // pagina ainda fora do endereco esperado, e so entao a retomada), por isso o que
+    // decide e a ULTIMA linha de retencao ou retomada, nao a contagem.
+    const marcas = j => j.filter(l => l.k === 'hold' || l.k === 'resume');
     const antes = readJournal(out), retencoesAntes = count(antes, 'hold');
-    assert.equal(retencoesAntes, count(antes, 'resume'), 'havia retencao aberta antes de fechar o Edge');
+    assert.ok(marcas(antes).length === 0 || marcas(antes).at(-1).k === 'resume', 'havia retencao aberta antes de fechar o Edge');
     await closeLabEdge();
     await stop(edge);
     const feed = await until('feed retido', () => { const f = readFeed(out); return f.scan.state === 'HOLD' ? f : null; });
@@ -310,10 +314,12 @@ async function main() {
     assert.equal(feed.window.orders.length, 3, 'a ultima janela valida sumiu do feed');
     const h = await home();
     assert.ok(h.demanda_observada === null || /retida/.test(h.demanda_observada.retencao));
-    const depois = readJournal(out), novas = depois.filter(l => l.k === 'hold').slice(retencoesAntes);
+    const novas = marcas(readJournal(out)).slice(marcas(antes).length);
     assert.ok(novas.length >= 1, 'fechar o Edge nao gerou retencao no diario');
-    for (const l of novas) assert.match(l.reason, /^EDGE_DEVTOOLS_(NOT_REACHABLE|PORT_UNREADABLE)$/);
-    assert.equal(count(depois, 'resume'), retencoesAntes, 'o executor retomou com o Edge fechado');
+    for (const l of novas) {
+      assert.equal(l.k, 'hold', 'o executor retomou com o Edge fechado');
+      assert.match(l.reason, /^EDGE_DEVTOOLS_(NOT_REACHABLE|PORT_UNREADABLE)$/);
+    }
     if (EXECUTOR_FIRST) assert.ok(retencoesAntes >= 1, 'o executor acordou sem Edge e nao reteve');
     console.log('     retencoes antes do fechamento: ' + retencoesAntes + ' [' + antes.filter(l => l.k === 'hold').map(l => l.reason).join(',') + ']');
   });
