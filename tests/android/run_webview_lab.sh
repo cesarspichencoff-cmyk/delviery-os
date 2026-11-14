@@ -75,6 +75,22 @@ PY
       grep -E 'FATAL EXCEPTION|Process: br\.com\.tata\.entregas|AndroidRuntime.*(Fatal|Exception|Error)|^.*(SIGSEGV|SIGABRT|Fatal signal)' |
       cut -c 1-220 | tail -n 18 || true
   fi
+  # Uma anotacao PUBLICA (::error title=...::) com diagnostico SANITIZADO, para
+  # a proxima falha ficar legivel pela API de check-runs SEM credencial. Isto
+  # NAO altera o que o teste prova: so le artefatos ja produzidos. Tudo scrubado.
+  ci_tmp="$(mktemp -d)"
+  if command -v adb >/dev/null 2>&1; then
+    { echo "emulator_uptime_s=$(adb shell cat /proc/uptime 2>/dev/null | awk '{print int($1)}')"
+      echo "mem_available_kb=$(adb shell cat /proc/meminfo 2>/dev/null | awk '/MemAvailable/{print $2}')"; } \
+      > "$ci_tmp/ci-facts.txt" 2>/dev/null || true
+    adb logcat -d -v brief AndroidRuntime:* chromium:* ActivityManager:* lowmemorykiller:* cr_AwContents:* WebView:* '*:S' \
+      > "$ci_tmp/ci-logcat.txt" 2>/dev/null || true
+  fi
+  python3 ../tests/android/ci_lab_failure_annotation_v1.py \
+    --title "DeliveryOS WebView lab failed (sanitized)" \
+    --results app/build/outputs/androidTest-results/connected \
+    --logcat "$ci_tmp/ci-logcat.txt" --facts "$ci_tmp/ci-facts.txt" || true
+  rm -rf "$ci_tmp"
   echo "ANDROID_WEBVIEW_INSTRUMENTATION_FAILED_NO_GATE_BYPASS"
   exit 1
 fi
