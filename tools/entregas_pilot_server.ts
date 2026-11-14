@@ -71,6 +71,7 @@ import { classifyQuality } from "../src/entregas/gps/validate";
 import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
 import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
 import { createAccessThrottle, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
+import { createHomeOperatorGateway, loadHomeGatewayConfig } from "../src/platform/auth/home-operator-gateway";
 
 // Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
 const accessThrottle = createAccessThrottle();
@@ -546,9 +547,28 @@ window.entregasPilotLogin = async (token) => {
   return out;
 }
 
+/*
+ * Home (Copiloto) para outros aparelhos, por hostname proprio nesta mesma porta.
+ * Desligada sem ENTREGAS_HOME_PUBLIC_URL + ENTREGAS_HOME_UPSTREAM; configuracao
+ * parcial ou insegura derruba o boot. A credencial e a do piloto: o mesmo codigo,
+ * o mesmo limite de tentativas, conferido de novo a cada requisicao.
+ */
+const homeGateway = createHomeOperatorGateway(loadHomeGatewayConfig(process.env, cloud.publicUrl), {
+  login(code, remote) {
+    if (accessThrottle.blocked(remote, code)) return { status: "throttled" };
+    const found = requestActor(code);
+    if (found) accessThrottle.success(remote, code);
+    else accessThrottle.failure(remote);
+    return found ? { status: "ok", actor: found } : { status: "denied" };
+  },
+  actorOf: (code) => requestActor(code),
+});
+
 let autoBackupTimer: ReturnType<typeof setInterval> | null = null;
 
 const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  // Antes de tudo: uma requisicao para o hostname da Home nunca chega as rotas do piloto.
+  if (await homeGateway.handle(req, res)) return;
   if (await operatorRuntime.handle(req, res)) return;
   if (req.method === "OPTIONS") {
     const preflight = corsHeaders(req.headers.origin);
@@ -1376,6 +1396,7 @@ async function startServer(): Promise<void> {
     if (persistenceBackend?.database_role) {
       console.log(`  papel do banco: ${persistenceBackend.database_role}`);
     }
+    console.log(`  Home por operador (outros aparelhos): ${homeGateway.enabled ? "SIM, so leitura, por codigo de gerente/lider" : "NAO"}`);
 
     if (facade.supportsFileBackup) {
       const mins = cfg.backup.auto_interval_minutes || 30;
