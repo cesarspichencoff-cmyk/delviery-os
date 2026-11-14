@@ -76,8 +76,15 @@ class SyncWorkerWorkManager4xxTest {
             anyConstructed<EntregasApi>().requestPilotWriteToken(any(), any())
         } returns ApiResult.Ok("FAKE-PILOT-WRITE-BEARER")
         every { anyConstructed<EntregasApi>().sendEvents(any(), any()) } answers { pilotResult }
-        every { anyConstructed<EntregasApi>().sendPoints(any(), any()) } answers { gpsResult }
+        every { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) } answers { gpsResult }
         every { anyConstructed<EntregasApi>().sendQueueDepth(any(), any()) } answers { queueResult }
+        // X1: o piloto concede as viagens da fila (credencial delegada). A janela cobre 2026 inteiro.
+        every { anyConstructed<EntregasApi>().tripGrants(any()) } answers {
+            val trips = firstArg<List<String>>()
+            ApiResult.Ok(JSONObject().put("ok", true).put("grants", JSONObject().apply {
+                trips.forEach { put(it, "tg1." + java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("""{"window_start":1767225600,"window_end":1798761599}""".toByteArray()) + ".assinatura-ficticia") }
+            }))
+        }
         every { anyConstructed<EntregasApi>().sendTermAcknowledgement(any()) } answers { termResult }
         // Policies are not part of the 4xx receipt proof; no remote call.
         every { anyConstructed<EntregasApi>().policies() } returns
@@ -247,7 +254,7 @@ class SyncWorkerWorkManager4xxTest {
         // O texto remoto nao pode ser gravado: pode carregar dados particulares.
         gpsResult = ApiResult.Rejected("segredo_remoto_nao_persistir", 422)
         assertTrue(invoke(2) is ListenableWorker.Result.Failure)
-        verify(exactly = 1) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 1) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
         db.close()
         db = open()
         val rows = db.gpsPoints().nextBatch(20)
@@ -295,7 +302,7 @@ class SyncWorkerWorkManager4xxTest {
                 .put("idempotency_key", refused.idempotencyKey)
                 .put("motivo", hostileReason))))
         assertTrue(invoke(2) is ListenableWorker.Result.Success)
-        verify(exactly = 1) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 1) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
         db.close()
         db = open()
         val rows = mutableListOf<List<String?>>()
@@ -331,7 +338,7 @@ class SyncWorkerWorkManager4xxTest {
 
         // O terceiro envio total sem recibo fecha a porta automatica.
         repeat(3) { assertTrue(invoke(2) is ListenableWorker.Result.Failure) }
-        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
         assertEquals(1, db.gpsPoints().reviewRequiredCount())
         assertTrue(db.gpsPoints().nextBatch(20).isEmpty())
 
@@ -349,7 +356,7 @@ class SyncWorkerWorkManager4xxTest {
 
         // Nem o agendamento futuro nem a resposta tardia sem recibo desfazem HOLD.
         assertTrue(invoke(2) is ListenableWorker.Result.Failure)
-        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
         db.gpsPoints().markFailed(listOf(original.pointId), "timeout_atrasado")
         assertEquals("lote_gps_sem_recibo_http_422",
             db.gpsPoints().reviewRequiredPoints(20).single().lastError)
@@ -360,7 +367,7 @@ class SyncWorkerWorkManager4xxTest {
         gpsResult = ApiResult.Ok(JSONObject()
             .put("accepted", 1).put("duplicate", 0).put("rejected", 0))
         assertTrue(invoke(2) is ListenableWorker.Result.Failure)
-        verify(exactly = 4) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 4) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
         assertEquals(1, db.gpsPoints().reviewRequiredCount())
         assertEquals(1, db.gpsPoints().pendingCount())
         assertTrue(db.gpsPoints().nextBatch(20).isEmpty())
@@ -371,7 +378,7 @@ class SyncWorkerWorkManager4xxTest {
         db.gpsPoints().insert(original)
         gpsResult = ApiResult.Rejected("conflict-without-per-point-receipt", 409)
         repeat(3) { assertTrue(invoke(2) is ListenableWorker.Result.Failure) }
-        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
         db.close()
         db = open()
         val held = db.gpsPoints().reviewRequiredPoints(20).single()
@@ -382,7 +389,7 @@ class SyncWorkerWorkManager4xxTest {
         assertTrue(db.gpsPoints().nextBatch(20).isEmpty())
         assertEquals(1, db.gpsPoints().pendingCount())
         assertTrue(invoke(2) is ListenableWorker.Result.Failure)
-        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any()) }
+        verify(exactly = 3) { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) }
     }
 
     @Test fun term422WithoutPerAckReceiptFailsAndSurvivesSqliteRestart() = runBlocking {

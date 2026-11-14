@@ -410,7 +410,24 @@ class SyncWorker(
                     put("source", "device")
                 }
             }
-            api.sendPoints(payloads, correlationId)
+            // X1: concessão de cada viagem do lote. A guardada (do serviço de
+            // localização) basta quando cobre os pontos; senão o piloto é
+            // perguntado pela credencial DELEGADA — o token da plataforma nunca
+            // vai ao piloto. Sem resposta, o lote espera e nada é descartado.
+            val plano = TripGrants.plan(db, points, System.currentTimeMillis()) { trips ->
+                val localActor = db.deviceState().get(EntregasDatabase.KEY_RIDER_ID)
+                val localDevice = db.deviceState().get(EntregasDatabase.KEY_DEVICE_ID)
+                sendWithPilotDelegation(
+                    exchangeAtPlatform = { api.requestPilotWriteToken(localActor, localDevice) },
+                    sendToPilot = { writeToken ->
+                        EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { writeToken }).tripGrants(trips)
+                    },
+                ).result
+            }
+            when (plano) {
+                is TripGrants.Plan.Hold -> ApiResult.Retryable(plano.reason)
+                is TripGrants.Plan.Send -> api.sendPoints(payloads, correlationId, plano.grants)
+            }
         }
         if (gpsDrain.retryable) retryable = true
         if (gpsDrain.credentialRefused) credencialRecusada = true

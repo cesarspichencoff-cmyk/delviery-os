@@ -46,6 +46,12 @@ import kotlin.concurrent.thread
  */
 @RunWith(RobolectricTestRunner::class)
 class SyncWorkerDualLoopbackHttpRoomTest {
+    // Concessão sintética: a assinatura é da plataforma conferir; aqui importa a
+    // janela (legível) e que ela vá, intacta, no lote. Janela: o ano inteiro de 2026.
+    private val FIXTURE_GRANT = "tg1." + java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
+        """{"window_start":1767225600,"window_end":1798761599,"trip_id":"trip-fixture"}""".toByteArray()) + ".assinatura-ficticia"
+    private var tripGrantReply = "ok"
+    private var tripGrantRequests = 0
     private data class Seen(val path: String, val body: String, val auth: String?)
 
     private class LocalHttp(
@@ -175,6 +181,10 @@ class SyncWorkerDualLoopbackHttpRoomTest {
             "/api/gps/batch" -> if (gpsReply == "retry") {
                 503 to JSONObject()
             } else {
+                // X1: o lote só vale com a concessão que o piloto deu a ESTA viagem.
+                val grants = body.optJSONArray("trip_grants")
+                assertEquals(1, grants?.length())
+                assertEquals(FIXTURE_GRANT, grants!!.getString(0))
                 200 to JSONObject().put("accepted", body.getJSONArray("points").length())
                     .put("duplicate", 0).put("rejected", 0)
             }
@@ -202,6 +212,14 @@ class SyncWorkerDualLoopbackHttpRoomTest {
                             .put("aparelho", body.getString("device_id"))
                             .put("situacao", "aceito"))
                 }
+            }
+            "/api/device/trip-grants" -> {
+                // X1: a concessão é pedida com a credencial DELEGADA, nunca com a da plataforma.
+                assertEquals("Bearer pt1.local.signature", auth)
+                tripGrantRequests += 1
+                if (tripGrantReply == "down") 503 to JSONObject()
+                else 200 to JSONObject().put("ok", true)
+                    .put("grants", JSONObject().put("trip-fixture", FIXTURE_GRANT))
             }
             "/api/events/batch" -> {
                 assertEquals("Bearer pt1.local.signature", auth)
@@ -261,8 +279,11 @@ class SyncWorkerDualLoopbackHttpRoomTest {
         every { anyConstructed<EntregasApi>().sendEvents(any(), any()) } answers {
             realDelegatedPilot.sendEvents(firstArg(), secondArg())
         }
-        every { anyConstructed<EntregasApi>().sendPoints(any(), any()) } answers {
-            realPlatform.sendPoints(firstArg(), secondArg())
+        every { anyConstructed<EntregasApi>().sendPoints(any(), any(), any()) } answers {
+            realPlatform.sendPoints(firstArg(), secondArg(), thirdArg())
+        }
+        every { anyConstructed<EntregasApi>().tripGrants(any()) } answers {
+            realDelegatedPilot.tripGrants(firstArg())
         }
         every { anyConstructed<EntregasApi>().sendQueueDepth(any(), any()) } answers {
             realPlatform.sendQueueDepth(firstArg(), secondArg())
@@ -317,6 +338,26 @@ class SyncWorkerDualLoopbackHttpRoomTest {
         assertEquals(0, db.gpsPoints().pendingCount())
     }
 
+    @Test fun gpsWaitsWithoutTripGrantAndKeepsThePointsWhenThePilotIsDown() = runBlocking {
+        tripGrantReply = "down"
+        db.gpsPoints().insert(point())
+        runWorker()
+        // Sem concessão o lote nem sai: nenhum ponto vira recusa definitiva por falta de rede.
+        assertFalse(platform.seen.any { it.path == "/api/gps/batch" })
+        assertEquals(1, db.gpsPoints().pendingCount())
+        assertEquals(0, db.gpsPoints().rejectedCount())
+        assertTrue(pilot.seen.none { it.auth == "Bearer PLATFORM-DEVICE-ONLY-FICTICIO" })
+        tripGrantReply = "ok"
+        assertTrue(runWorker() is ListenableWorker.Result.Success)
+        assertEquals(0, db.gpsPoints().pendingCount())
+        // A concessão ficou guardada: o próximo lote da mesma viagem não pergunta de novo.
+        val antes = tripGrantRequests
+        db.gpsPoints().insert(point("GPS-DUAL-002"))
+        assertTrue(runWorker() is ListenableWorker.Result.Success)
+        assertEquals(antes, tripGrantRequests)
+        assertEquals(0, db.gpsPoints().pendingCount())
+    }
+
     @Test fun term422CannotClaimWorkerSuccessWhileOtherLanesSucceed() = runBlocking {
         enqueueAll()
         termReply = "reject422"
@@ -359,6 +400,16 @@ class SyncWorkerDualLoopbackHttpRoomTest {
         assertEquals(0, db.outbox().rejectedCount())
         assertEquals("key-EVT-DUAL-001", db.outbox().nextBatch(10).single().idempotencyKey)
         assertEquals("sent", db.termAcks().byId(ack().acknowledgementId)?.syncState)
+        // X1: sem delegação o piloto não pode ser perguntado pela concessão, e sem
+        // concessão a plataforma não grava. O ponto ESPERA — nunca vira recusa.
+        assertEquals(1, db.gpsPoints().pendingCount())
+        assertEquals(0, db.gpsPoints().rejectedCount())
+        assertTrue(platform.seen.none { it.path == "/api/gps/batch" })
+        // Com a concessão que o serviço de localização já guardou, o GPS sobe
+        // mesmo com a delegação negada: os dois caminhos não dependem um do outro.
+        br.com.tata.entregas.sync.TripGrants.save(db, "trip-fixture", FIXTURE_GRANT)
+        runWorker(attempt = 2)
         assertEquals(0, db.gpsPoints().pendingCount())
+        assertTrue(platform.seen.any { it.path == "/api/gps/batch" })
     }
 }

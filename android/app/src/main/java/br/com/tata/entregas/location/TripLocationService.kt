@@ -347,6 +347,12 @@ class TripLocationService : Service() {
         )
         val result = withContext(Dispatchers.IO) { pilot.captureState(captureSession.tripId) }
         if (!sessions.isCurrent(captureSession)) return
+        // X1: guarda a concessão mais nova da viagem; é ela que a plataforma confere.
+        if (result is ApiResult.Ok) {
+            br.com.tata.entregas.sync.TripGrants.grantIn(result.value)?.let {
+                br.com.tata.entregas.sync.TripGrants.save(db, captureSession.tripId, it)
+            }
+        }
         val action = when (result) {
             is ApiResult.Ok -> RemoteCaptureControl.success(
                 hasCapture = result.value.has("capture"),
