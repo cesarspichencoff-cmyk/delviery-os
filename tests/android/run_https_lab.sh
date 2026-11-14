@@ -12,11 +12,23 @@ for name in DELIVERYOS_DATABASE_URL TATA_READER_ROOT ENTREGAS_DEVICE_SECRET; do
     exit 1
   fi
 done
+# Cenario opcional do MESMO ponta a ponta, sempre com fixture nova:
+#   renderer-death     o renderizador morre com a acao ja guardada no aparelho;
+#   offline-reconnect  acao tomada em modo aviao, WorkManager real, rede volta.
+scenario="${LAB_HTTPS_SCENARIO:-}"
+case "$scenario" in
+  ""|renderer-death|offline-reconnect) ;;
+  *) echo "LAB_UNKNOWN_SCENARIO"; exit 1 ;;
+esac
 work="$(mktemp -d)"
 chmod 700 "$work"
 server_pid=""
 cleanup() {
   if [[ -n "$server_pid" ]]; then kill "$server_pid" 2>/dev/null || true; fi
+  # O cenario offline liga o modo aviao; nunca deixar o emulador sem rede.
+  if [[ "$scenario" == "offline-reconnect" ]]; then
+    adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
+  fi
   rm -rf "$work"
   rm -f app/src/debug/res/raw/deliveryos_lab_ca.crt
   rm -f app/src/debug/res/xml/network_security_config_debug.xml
@@ -77,8 +89,16 @@ PY
 # MainActivity real (o app tem de sobreviver), depois o ponta a ponta HTTPS.
 classes="br.com.tata.entregas.RendererGoneRecoveryInstrumentedTest"
 classes="$classes,br.com.tata.entregas.RiderHttpsWorkerEndToEndInstrumentedTest"
+scenario_args=()
+if [[ -n "$scenario" ]]; then
+  # Um cenario roda so a classe do ponta a ponta; o teste escolhe o caso.
+  classes="br.com.tata.entregas.RiderHttpsWorkerEndToEndInstrumentedTest"
+  scenario_args=("-Pandroid.testInstrumentationRunnerArguments.deliveryosLabScenario=$scenario")
+  echo "LAB_HTTPS_SCENARIO=$scenario"
+fi
 if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
   "-Pandroid.testInstrumentationRunnerArguments.class=$classes" \
+  ${scenario_args[@]+"${scenario_args[@]}"} \
   -Pentregas.baseUrl=https://10.0.2.2:5193 \
   -Pentregas.platformUrl=https://10.0.2.2:8080; then
   # Em falha, recolher somente CLASSE de excecao e frames Kotlin locais.
