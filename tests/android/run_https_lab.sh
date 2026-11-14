@@ -15,11 +15,17 @@ done
 # Cenario opcional do MESMO ponta a ponta, sempre com fixture nova:
 #   renderer-death     o renderizador morre com a acao ja guardada no aparelho;
 #   offline-reconnect  acao tomada em modo aviao, WorkManager real, rede volta.
+#   two-riders         BANCADA, exige DOIS emuladores ligados: dois motoboys em
+#                      dois aparelhos ao mesmo tempo, cada um pre-vinculado, com
+#                      a sua viagem; o segundo age em modo aviao e volta.
 scenario="${LAB_HTTPS_SCENARIO:-}"
 case "$scenario" in
-  ""|renderer-death|offline-reconnect) ;;
+  ""|renderer-death|offline-reconnect|two-riders) ;;
   *) echo "LAB_UNKNOWN_SCENARIO"; exit 1 ;;
 esac
+two_rider_devices=()
+fixture_args=()
+if [[ "$scenario" == "two-riders" ]]; then fixture_args=(--riders 2); fi
 work="$(mktemp -d)"
 chmod 700 "$work"
 server_pid=""
@@ -29,6 +35,11 @@ cleanup() {
   if [[ "$scenario" == "offline-reconnect" ]]; then
     adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
   fi
+  for serial in ${two_rider_devices[@]+"${two_rider_devices[@]}"}; do
+    adb -s "$serial" shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
+    adb -s "$serial" uninstall br.com.tata.entregas.debug.test >/dev/null 2>&1 || true
+    adb -s "$serial" uninstall br.com.tata.entregas.debug >/dev/null 2>&1 || true
+  done
   rm -rf "$work"
   rm -f app/src/debug/res/raw/deliveryos_lab_ca.crt
   rm -f app/src/debug/res/xml/network_security_config_debug.xml
@@ -69,7 +80,8 @@ cat > app/src/debug/res/xml/network_security_config_debug.xml <<'XML'
 </network-security-config>
 XML
 python3 -u ../tests/android/https_two_server_fixture.py \
-  --cert "$work/leaf.crt" --key "$work/leaf.key" > "$work/fixture.log" 2>&1 &
+  --cert "$work/leaf.crt" --key "$work/leaf.key" \
+  ${fixture_args[@]+"${fixture_args[@]}"} > "$work/fixture.log" 2>&1 &
 server_pid="$!"
 python3 - <<'PY'
 import socket, time
@@ -84,6 +96,87 @@ for port in (5193, 8080):
         raise SystemExit("LAB_HTTPS_SERVER_NOT_READY")
 print("LAB_HTTPS_LOCAL_SERVERS_REACHABLE")
 PY
+
+if [[ "$scenario" == "two-riders" ]]; then
+  # Dois aparelhos nao cabem num connectedDebugAndroidTest: o Gradle daria os
+  # MESMOS argumentos aos dois. Aqui o APK e montado uma vez, instalado nos
+  # dois, e cada um recebe o seu motoboy.
+  while read -r serial status _; do
+    if [[ "$status" == "device" && "$serial" == emulator-* ]]; then two_rider_devices+=("$serial"); fi
+  done < <(adb devices | tr -d '\r')
+  if [[ "${#two_rider_devices[@]}" -ne 2 ]]; then
+    echo "LAB_TWO_RIDERS_NEEDS_EXACTLY_TWO_EMULATORS found=${#two_rider_devices[@]}"
+    exit 1
+  fi
+  echo "LAB_HTTPS_SCENARIO=two-riders"
+  bash ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest \
+    -Pentregas.baseUrl=https://10.0.2.2:5193 \
+    -Pentregas.platformUrl=https://10.0.2.2:8080
+  app_apk="app/build/outputs/apk/debug/app-debug.apk"
+  test_apk="app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+  for serial in "${two_rider_devices[@]}"; do
+    adb -s "$serial" install -r -t "$app_apk" >/dev/null
+    adb -s "$serial" install -r -t "$test_apk" >/dev/null
+  done
+  ride() { # <serial> <motoboy> [cenario]
+    adb -s "$1" shell am instrument -w \
+      -e class br.com.tata.entregas.RiderHttpsWorkerEndToEndInstrumentedTest \
+      -e deliveryosLabRider "$2" ${3:+-e deliveryosLabScenario "$3"} \
+      br.com.tata.entregas.debug.test/androidx.test.runner.AndroidJUnitRunner \
+      > "$work/rider-$2.txt" 2>&1 || true
+  }
+  # Ao mesmo tempo: A faz o ponta a ponta de sempre; B age SEM rede e volta.
+  ride "${two_rider_devices[0]}" a &
+  ride_a="$!"
+  ride "${two_rider_devices[1]}" b offline-reconnect &
+  ride_b="$!"
+  wait "$ride_a" "$ride_b" || true
+  failed=0
+  for rider in a b; do
+    label="LAB_HTTPS_RIDER_$(printf '%s' "$rider" | tr a-z A-Z)_INSTRUMENTATION"
+    if grep -q '^OK (' "$work/rider-$rider.txt" &&
+       ! grep -qE 'FAILURES!!!|Process crashed' "$work/rider-$rider.txt"; then
+      echo "$label=OK"
+    else
+      echo "$label=FAILED"
+      # So rotulos fixos do proprio teste; nunca a saida crua.
+      grep -oE '(LAB|REAL)_[A-Z0-9_]{6,80}|Process crashed' "$work/rider-$rider.txt" |
+        sort -u | head -n 8 || true
+      python3 - "$work/rider-$rider.txt" <<'PY' || true
+import sys
+sys.path.insert(0, "../tests/android")
+from https_failure_category_v1 import LABELS
+text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+seen = sorted({v for k, v in LABELS.items() if k in text})
+for category in seen: print("ANDROID_HTTPS_FAILURE_CATEGORY " + category)
+if not seen: print("ANDROID_HTTPS_FAILURE_CATEGORY UNCLASSIFIED")
+PY
+      failed=1
+    fi
+  done
+  for rider in A B; do
+    grep -qx "LAB_HTTPS_RIDER_${rider}_DEVICE_PREBOUND" "$work/fixture.log" || failed=1
+    grep -qx "LAB_HTTPS_RIDER_${rider}_EVENT_BATCH_ATTEMPT=1" "$work/fixture.log" || failed=1
+    grep -qx "LAB_HTTPS_RIDER_${rider}_EVENT_BATCH_ATTEMPT=2" "$work/fixture.log" || failed=1
+    if grep -qx "LAB_HTTPS_RIDER_${rider}_EVENT_BATCH_ATTEMPT=3" "$work/fixture.log"; then
+      echo "LAB_UNEXPECTED_THIRD_BATCH_RIDER_$rider"; failed=1
+    fi
+  done
+  grep -qx 'LAB_HTTPS_DEVICES_PREBOUND=2' "$work/fixture.log" || failed=1
+  # Qualquer mistura entre os dois e fatal, mesmo com os dois testes verdes.
+  for mark in LAB_HTTPS_CROSS_RIDER_VIOLATION LAB_HTTPS_EVENT_ID_SHARED_BY_TWO_DEVICES \
+      LAB_HTTPS_SECRET_MISMATCH_REFUSED LAB_HTTPS_UNBOUND_DEVICE_REFUSED \
+      LAB_HTTPS_RIDER_ALREADY_HAS_A_DEVICE; do
+    if grep -qx "$mark" "$work/fixture.log"; then echo "$mark"; failed=1; fi
+  done
+  grep -E '^LAB_HTTPS_(RIDER_[AB]_|DEVICES_PREBOUND)' "$work/fixture.log" | sort | uniq -c | sed -E 's/^ +//'
+  if [[ "$failed" -ne 0 ]]; then
+    echo "LAB_HTTPS_TWO_RIDERS_NOT_PROVEN"
+    exit 1
+  fi
+  echo "LAB_HTTPS_TWO_RIDERS_TWO_DEVICES_NO_MIX"
+  exit 0
+fi
 
 # Duas classes, um processo: primeiro a morte do renderizador do WebView na
 # MainActivity real (o app tem de sobreviver), depois o ponta a ponta HTTPS.
