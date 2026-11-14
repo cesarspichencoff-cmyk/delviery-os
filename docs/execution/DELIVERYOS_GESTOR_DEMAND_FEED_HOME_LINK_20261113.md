@@ -197,3 +197,23 @@ desta pasta e está em `Needs authentication`: só o César consegue entrar.
 3. Aprovar ou redirecionar a apresentação: o cânone V3.3 não tem prancha de pedido com itens; o índice
    proposto está em `labs/gestor-demand-feed/capturas/` (pedidos sintéticos, não versionadas).
 4. Reescrever o PF3 do `r5d1` para o projetor com chamador de runtime nomeado.
+
+## 11. Continuação de 14/11 — CI, bancada no runner e frente Android integrada
+
+**Publicado na PR #137 (rascunho), sempre fast-forward, sem força:** `458b3510..adbdf0a1`.
+
+| O que | Medição | Resultado |
+|---|---|---|
+| Contrato estático da verdade da Home | run 43538649011 vermelho em `458b3510`; causa: a linha `pulsoSustentado` reescrita pelo elo | expressão original devolvida, exceção da leitura parcial no ponto de uso; 8/8; verde desde `fa35e459` |
+| Bancada com Edge real no runner Windows | três runs vermelhos; causa lida na anotação do job que a própria bancada passou a emitir | o executor retém e retoma antes de a página existir (decidido); a asserção agora decide pela última marca; verde em `adbdf0a1` nas duas ordens |
+| Órfãos do Edge da bancada | `taskkill /T /F` sobre `--serve` | 16 processos antes, 0 depois; o vigia saiu da árvore |
+| Frente Android (5 commits) | emulador Android 14 no Foxxy + CI | morte do renderizador não derruba mais o app; os três labs Android verdes em `adbdf0a1` |
+| CI em `adbdf0a1` | runs 43570466366, 43570466369, 43570466376, 43570466464, 43570466367 | os 5 workflows `success` |
+
+**Segue sem prova, sem mudança desde a §5:** página real do Gestor, arquivos reais do Reader, qualquer execução no
+CAIXA_MOOCA, Xiaomi físico (roteiro de 23 itens, todos `NOT_RUN`, no documento L6 Android), uso real, aceite humano.
+O conector remoto do caixa continua em `Needs authentication`: nenhuma leitura do caixa foi feita por esta sessão.
+
+**Não lido:** os logs dos jobs da CI exigem credencial; só conclusão, passos e anotações foram lidos. A segunda forma
+da falha da bancada (dois motivos de retenção seguidos) não foi reproduzida no Foxxy — foi corrigida pela anotação e
+confirmada pela CI.

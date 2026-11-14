@@ -352,3 +352,11 @@ Ficou de pé o servidor `adb`, que já estava no ar.
 | `a93f126e` | classificador sanitizado, teste do renderizador no laboratório HTTPS, exigência no workflow |
 | `e9e7c120` | cenários `offline-reconnect` e `renderer-death` do E2E |
 | o seguinte | este documento e o aviso do SIGSEGV proposital no script |
+
+## 14. Depois da integração (14/11) — a CI rodou
+
+A frente foi integrada ao branch de trabalho da V1 (merge `ba90c3dc`, zero arquivo em comum com a frente do Gestor) e publicada
+na PR #137 em rascunho. Em `adbdf0a1` os três laboratórios Android ficaram `success` (runs 43570466464, 43570466367 e
+43570466369), com o workflow HTTPS exigindo 2 casos executados de `RendererGoneRecoveryInstrumentedTest`. Isto fecha o item
+"a correção, o classificador e a nova exigência do workflow na CI" da §9. Todo o resto da §9 continua não provado, e o
+roteiro do Xiaomi (§10) continua inteiro em `NOT_RUN`.
