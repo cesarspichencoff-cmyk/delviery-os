@@ -1,0 +1,110 @@
+name: DeliveryOS Gestor observed demand to Home
+
+# Elo sensor do Gestor -> feed -> motor existente -> Home V3.3, niveis 1 e 2.
+# Tudo sintetico: pagina falsa, pedidos fabricados, arquivos do Reader montados
+# em pasta temporaria. Nao usa segredo, nao publica nada, nao toca o Gestor real,
+# o caixa nem um pedido de cliente. Repositorio publico: runner padrao.
+#
+# O que NAO prova: a pagina real do Gestor, os arquivos reais do Reader, a
+# execucao no CAIXA_MOOCA, uso em operacao. Verde aqui e prova de codigo.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-gestor-demand-home.yml
+      - runtime/reporting/gestor_mounted_demand_feed_v1.cjs
+      - runtime/reporting/gestor_mounted_window_differential_v1.cjs
+      - runtime/reporting/gestor_v3_visible_sensor.js
+      - src/platform/leitura/demanda-do-gestor.ts
+      - src/platform/leitura/pedidos-do-reader.ts
+      - src/product/eventos/**
+      - src/product/viewmodels/home-vm.ts
+      - src/product/ui/surfaces/home.js
+      - src/product/ui/surfaces/home.css
+      - tools/product_system_server.ts
+      - tools/empacotar_home_do_caixa.cjs
+      - tools/gestor-native-shadow-reconcile/**
+      - tests/gestor-shadow/**
+      - labs/gestor-demand-feed/**
+      - src/platform/run-home-signals-tests.ts
+      - src/platform/run-r5d1-event-lineage-tests.ts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deliveryos-gestor-demand-home-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # as guardas de congelamento e de governanca leem a historia inteira
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Tipos e build
+        run: npx tsc
+      - name: Executor do sensor (sensor real, pagina falsa)
+        run: node tests/gestor-shadow/run-mounted-demand-feed-tests.cjs
+      - name: Feed -> contratos existentes -> projetor -> homeVM -> /api/home
+        run: npx tsx tests/gestor-shadow/run-demand-feed-home-chain-tests.ts
+      - name: Cruzamento com o Reader pelo reconciliador de janela existente
+        run: npx tsx tests/gestor-shadow/run-reader-reconciliation-tests.ts
+      - name: Mutacoes do elo (zero cegas)
+        run: node tests/gestor-shadow/run-demand-feed-mutation-tests.cjs
+      - name: Sensor, diferencial e reconciliadores existentes
+        run: |
+          node tests/gestor-shadow/run-mounted-order-props-shadow-tests.cjs
+          node tests/gestor-shadow/run-mounted-window-differential-tests.cjs
+          node tests/gestor-shadow/run-mounted-p2-sensor-differential-chain-tests.cjs
+          node tools/gestor-native-shadow-reconcile/reconcile.test.cjs
+      - name: Home, produto e organismo
+        run: |
+          npx tsx src/platform/run-home-signals-tests.ts
+          npx tsx src/platform/run-product-system-tests.ts
+          npx tsx src/platform/run-organismo-visual-tests.ts
+      - name: Guardas de congelamento e de linhagem
+        run: |
+          npx tsx src/platform/run-m1-bridge-tests.ts
+          npx tsx src/platform/run-r5a-temporal-tests.ts
+          npx tsx src/platform/run-r5b-invariant-tests.ts
+          npx tsx src/platform/run-r5d1-event-lineage-tests.ts
+          npx tsx src/platform/run-r5d2-producer-qualification-tests.ts
+          npx tsx src/platform/run-r5d3-shadow-path-tests.ts
+      - name: Governanca
+        run: npx tsx src/platform/run-governance-tests.ts
+      - name: Pacote da Home sobe de dentro da propria pasta
+        run: node tools/empacotar_home_do_caixa.cjs "$RUNNER_TEMP/pacote-home"
+
+  bancada-edge-real:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Build
+        run: npx tsc
+      - name: Edge real + DevTools real + executor + servidor da Home (pagina sintetica)
+        run: node labs/gestor-demand-feed/run-lab.cjs
+      - name: Nenhum processo da bancada ficou vivo
+        shell: pwsh
+        run: |
+          $vivos = @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*gestor-demand-lab-*' })
+          "processos Edge da bancada: $($vivos.Count)"
+          if ($vivos.Count -ne 0) { exit 1 }
