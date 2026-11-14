@@ -1607,3 +1607,10 @@ Detalhe: `docs/security/DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md`
   projeção assíncrona recusaria pontos legítimos de viagem recém-criada. Direção proposta, a decidir:
   o piloto, que é dono da atribuição, assina a concessão (viagem, motoboy, aparelho, validade) na saída
   confirmada; o app a anexa ao lote; a ingestão confere a assinatura. Mexe em app, piloto e plataforma.
+- **X1 fechada em 14/11** (ver D100 e `DELIVERYOS_MULTIDEVICE_V1_20261114.md` §9). Resta, ligado a ela: a composição oficial
+  (`deploy/compose.platform.yaml`) e as ferramentas de container que enviam GPS (`tools/pb19_ingestao_real.js`,
+  `tools/q017_gps_no_container.js`, `tools/papeis_compose_real.sh`, `tools/bancada_q018_*`) ainda não configuram a concessão: lá a
+  ingestão de GPS fica FECHADA (503 retentável) até receberem `DELIVERYOS_PILOT_TRIP_GRANT_SECRETS` no crítico e
+  `ENTREGAS_TRIP_GRANT_SECRET` no piloto. Falha fechada, não aberta. Não verificado aqui: o Foxxy não tem Docker.
+- **Caixa, 14/11:** rota invisível provada só no Foxxy (0 janela em 4667 amostras, mesma versão do conector e mesmo terminal padrão);
+  no caixa nada foi executado nem medido. A preparação (`preparar-feed-do-gestor.ps1 -Mode Stage`) aguarda decisão do César.

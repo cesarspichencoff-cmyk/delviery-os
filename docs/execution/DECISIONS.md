@@ -2190,3 +2190,39 @@ provedor — fica como evolução, sem bloquear).
 **Custo aceito:** identidade é a do código do terminal, não a da pessoa; sessão vive na memória do piloto; com o caixa fora do
 ar os aparelhos veem erro do proxy, não "sem leitura"; a escolha da Home pelo `Host` depende de o proxy real preservar o
 cabeçalho, o que só o proxy real prova.
+
+### D100 — A posse da viagem na ingestão de GPS vem de uma concessão emitida pelo piloto (X1)
+
+**Data:** 2026-11-14. **Contexto:** a ingestão aceitava qualquer `trip_id` de um aparelho autenticado (X1, medida em 13/11).
+Quem sabe de quem é a viagem é o piloto; quem sabe quem é o aparelho é a plataforma.
+
+**Decisão.** O piloto emite uma concessão de captura (HMAC-SHA256 por unidade, segredo próprio, propósito no MAC) que prende
+unidade, motoboy, aparelho, viagem e a janela da viagem, na consulta de captura que o app já faz e numa rota autenticada pela
+credencial delegada pt1. A plataforma confere a concessão por ponto (`src/entregas/foundation/trip-capture-grant.ts`). Sem segredo
+configurado, a ingestão de GPS fica fechada, retentável. Ponto captado na viagem sobe depois do fim; ponto novo depois do fim não;
+ponto recebido com a viagem aberta entra qualquer que seja o relógio do aparelho (política de relógio já decidida).
+
+**Alternativas recusadas:** ler a atribuição em `entregas.trip` no crítico (no caixa o piloto que aceita lote nativo grava em arquivo,
+não nessa tabela); conferir pela projeção assíncrona (recusaria ponto legítimo de viagem recém-criada); o crítico perguntar ao piloto a
+cada lote (acoplamento síncrono e perda da fila offline de viagem encerrada); reaproveitar a chave de produtor (registro que nunca
+admite `real` e mistura propósito); mandar o token da plataforma ao piloto pelo SyncWorker (quebra invariante testada).
+
+**Custo aceito:** segredo compartilhado a mais entre piloto e crítico; concessão válida por 72 h para subir fila offline; aparelho
+adulterado do PRÓPRIO motoboy ainda pode forjar horário dentro da própria viagem.
+
+### D101 — Celulares dos motoboys falam HTTPS pelo proxy existente, numa superfície mínima; sem NetBird no celular
+
+**Data:** 2026-11-14. **Decisão técnica, implantação depende do César.** Um serviço próprio no proxy NetBird, com `/` bloqueado e só os
+caminhos de campo liberados (rider-mobile e seus estáticos; sessão, termo, políticas, snapshot, capture-state, trip-grants e lote de
+eventos do piloto; sessão, delegação, fila e GPS do crítico por um encaminhador local), uma origem só no APK. A autenticação continua no
+servidor (token de aparelho, pré-vínculo, pt1, concessão de viagem, código do motoboy).
+
+**Por que venceu:** instala só o APK; funciona em Wi-Fi e rede móvel com certificado público; não ocupa a VPN única do Android nem
+consome usuário do plano gratuito; revogação e troca de celular continuam no servidor. **Recusadas:** NetBird em cada celular (segunda
+app, VPN única, bateria — issue 1354 aberta —, só o APK de depuração aceitaria o certificado de laboratório); senha global do proxy no
+APK; o piloto encaminhando para o crítico (o segredo do aparelho passaria pelo processo do piloto).
+
+**Pré-requisitos antes de expor:** X1 (feito); teto de corpo no piloto (feito); códigos longos para motoboys e limite de tentativas
+que funcione atrás do proxy (todos chegam de 2 origens); no hostname de campo o piloto só atende papel de motoboy; encaminhador da 8080
+sem TLS só para os dois proxies; confirmar na conta real Bypass/Block por caminho, Host preservado e dois alvos no mesmo peer.
+

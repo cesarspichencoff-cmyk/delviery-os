@@ -212,3 +212,30 @@ Android entre eles — intermitente, com causa não lida (log exige credencial).
 **CI em `564bdac0`: os seis workflows verdes**, inclusive a Home em Edge real pela porta de operador (celular e
 desktop) e os dois labs Android. A linha "Navegador real — NOT_RUN no Foxxy; roda na CI" da §3 fica provada na CI;
 Safari, aparelho físico, rede móvel e proxy real seguem sem prova.
+
+## 9. Missão final (14/11, noite) — X1 fechada, conectividade decidida, caixa ainda sem execução
+
+| Item | Estado | Prova |
+|---|---|---|
+| X1 — posse da viagem na ingestão | **TESTE_PASS** (bancada, PostgreSQL 18) | concessão 23/23; piloto 8/8 + 6; rota delegada 6/6; dois motoboys 14/14; mutações 18/18 + MA8/MA9 |
+| App guarda e anexa a concessão | **TESTE_PASS** (JVM) | 310/310 no `testDebugUnitTest`; labs instrumentados não rodados |
+| Teto de corpo do piloto (1 MiB) | **TESTE_PASS** | rota delegada 6/6 |
+| Conectividade dos motoboys | **CÓDIGO_PRONTO parcial** — decisão D101 | pré-requisitos de exposição listados na D101; três ainda abertos |
+| Preparação do caixa | **NÃO EXECUTADA** | rota invisível provada só no Foxxy; ver §10 |
+| Labs Android intermitentes | **causa não lida** | anotação pública sanitizada acrescentada; a próxima falha fica legível |
+
+Separação exigida: nada aqui é INSTALADO, CAMPO_COMPROVADO ou ACEITE_HUMANO. Três motoboys e cinco simultâneos foram exercitados só
+até dois aparelhos lógicos com processos reais; o limite de cinco não foi medido.
+
+## 10. O que depende do César
+
+1. **Preparação do caixa (já autorizada em tese, sem execução):** a única rota medida como invisível é a do conector, e foi medida no
+   Foxxy, não no caixa. Recomendo: você roda no caixa, com a operação parada, `powershell -NoProfile -ExecutionPolicy Bypass -File
+   preparar-feed-do-gestor.ps1 -Mode Stage` (grava três arquivos conferidos, registra a tarefa DESATIVADA, não inicia nada; reverte
+   com `-Mode Rollback`). Alternativa: autorizar UM disparo pelo conector num horário sem atendimento, com o medidor de janelas rodando
+   antes, aceitando que a prova invisível do Foxxy pode não valer no caixa.
+2. **Serviço de campo no NetBird (D101):** criar o serviço com `/` em Block e a lista fechada em Bypass — só depois dos três
+   pré-requisitos abertos da D101.
+3. **Códigos longos** para gerentes, líderes e motoboys (revê a decisão de 31/10 de quatro dígitos), por causa da exposição.
+4. **Dois Androids físicos de pessoas diferentes** ligados ao Foxxy para começar a homologação; nenhum aparelho estava conectado.
+
