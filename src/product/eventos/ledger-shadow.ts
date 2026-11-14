@@ -59,6 +59,46 @@ export function criarLedgerShadow(o: OpcoesLedgerShadow): LedgerShadow {
   // Chave idempotente -> impressao do fato. Em memoria: o replay reconstroi.
   const vistos = new Map<string, string>();
   const recusas: { linha: number; motivo: string }[] = [];
+  // O indice anterior era SOMENTE em memoria. Ao reabrir o mesmo arquivo,
+  // um reenvio identico virava uma SEGUNDA linha. Reconstituir ANTES do append.
+  // Corrompido/conflitante = nao escrever; jamais truncar ou auto-reparar.
+  let indiceRestaurado = false;
+  let falhaDoIndice: string | null = null;
+  function restaurarIndice(): string | null {
+    if (indiceRestaurado) return falhaDoIndice;
+    indiceRestaurado = true;
+    if (!existsSync(o.arquivo)) return null;
+    let texto: string;
+    try { texto = readFileSync(o.arquivo, "utf8"); }
+    catch { falhaDoIndice = "shadow_recovery_read_failed"; return falhaDoIndice; }
+    if (texto !== "" && !texto.endsWith(String.fromCharCode(10))) {
+      falhaDoIndice = "shadow_recovery_incomplete_tail";
+      return falhaDoIndice;
+    }
+    const entradas = texto.split(String.fromCharCode(10));
+    for (let i = 0; i < entradas.length; i += 1) {
+      const linha = entradas[i]!;
+      if (linha === "") continue;
+      let value: unknown;
+      try { value = JSON.parse(linha); }
+      catch { falhaDoIndice = "shadow_recovery_corrupt_line"; return falhaDoIndice; }
+      const valid = validarEvento(value);
+      if (!valid.ok) {
+        falhaDoIndice = "shadow_recovery_invalid_event";
+        return falhaDoIndice;
+      }
+      const evento = valid.evento;
+      const chave = `${evento.source}|${evento.source_event_id}`;
+      const marca = impressao(evento);
+      const anterior = vistos.get(chave);
+      if (anterior !== undefined && anterior !== marca) {
+        falhaDoIndice = "shadow_recovery_conflicting_event";
+        return falhaDoIndice;
+      }
+      vistos.set(chave, marca);
+    }
+    return null;
+  }
 
   function registrar(bruto: unknown): ResultadoRegistro {
     // A PRIMEIRA guarda, antes de validar qualquer coisa: desligado nao escreve.
@@ -66,6 +106,10 @@ export function criarLedgerShadow(o: OpcoesLedgerShadow): LedgerShadow {
     const v = validarEvento(bruto);
     if (!v.ok) return { tipo: "recusado", motivo: v.motivo, detalhe: v.detalhe };
     const e = v.evento;
+    const recuperacao = restaurarIndice();
+    if (recuperacao !== null)
+      return { tipo: "recusado", motivo: recuperacao,
+        detalhe: "shadow requer recuperacao supervisionada" };
     const chave = `${e.source}|${e.source_event_id}`;
     const marca = impressao(e);
     const anterior = vistos.get(chave);
@@ -77,10 +121,10 @@ export function criarLedgerShadow(o: OpcoesLedgerShadow): LedgerShadow {
         detalhe: "mesma chave idempotente com conteudo diferente",
       };
     }
-    vistos.set(chave, marca);
     const dir = dirname(o.arquivo);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     appendFileSync(o.arquivo, JSON.stringify(e) + "\n");
+    vistos.set(chave, marca);
     return { tipo: "gravado", event_id: e.event_id };
   }
 

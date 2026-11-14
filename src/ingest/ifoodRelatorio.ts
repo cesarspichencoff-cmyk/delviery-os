@@ -67,7 +67,9 @@ function addMin(iso: string, min: number | null): string | undefined {
   if (min == null) return undefined;
   return new Date(new Date(iso).getTime() + min * 60000).toISOString();
 }
-const ehCancelado = (status: string) => /cancel/i.test(status);
+// Status final do pedido: cancelamento de ITEM nao cancela o pedido inteiro.
+// Fonte real iFood abril/2026 tem CANCELADO e CANCELAMENTO PARCIAL distintos.
+const ehCancelado = (status: string) => /^(?:CANCELADO|CANCELAMENTO TOTAL)$/i.test(status.trim());
 
 /** Linha do relatório → PedidoIfoodCru (dimensão de FLUXO), com instantes reconstruídos. */
 export function linhaParaPedido(l: Linha): PedidoIfoodCru | null {
@@ -134,7 +136,9 @@ export interface ErroReal {
   data: string | null;
 }
 export function classificaErro(l: Linha): ErroReal | null {
-  const id = txtCol(l, COL.idCurto) || txtCol(l, COL.idCompleto);
+  // Same UUID-first identity as linhaParaPedido. The 4-digit display ID
+  // repeats across real iFood orders and cannot join complaints/cancellations.
+  const id = idCanonico(l);
   if (!id) return null;
   const turno = txtCol(l, COL.turno);
   if (/sim/i.test(txtCol(l, COL.problemaPos))) {

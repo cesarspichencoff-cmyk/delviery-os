@@ -3,6 +3,7 @@
 // Adapter for the installed reader's stable-order event. No IO or source mutation.
 // The authenticated caller owns mapping/provenance approval; a string is not proof.
 const {resolveNativeOpenedAt,explicitInstant}=require('./tata_source_time_v1.cjs');
+const {review:reviewNativeProducer}=require('./native_reader_producer_contract_review_v1.cjs');
 const MODES = new Set(['real', 'simulated', 'control']);
 function adaptStableTataOrderV1(event, scope) {
   const blocked = code => ({state: 'blocked', reason: code, revision: null});
@@ -16,6 +17,26 @@ function adaptStableTataOrderV1(event, scope) {
     return blocked('READER_SCOPE_MISSING');
   if (order.CDFILIAL !== scope.sourceUnitId || order.CDLOJA !== scope.sourceStoreId)
     return {state: 'out_of_scope', reason: 'READER_SCOPE_MISMATCH', revision: null};
+  // REVIEW-only bridge for real Itaim DLV_IFO native snapshots.
+  // This existing validator enforces a complete observations scan, canonical
+  // notes->item join, four-part identity and matching lowercase snapshot SHA.
+  // Shape consistency NEVER authenticates a Reader process, SQL transaction,
+  // actual physical ready state, or customer's order: those remain separate
+  // operational gates. Other sources cannot inherit this DLV_IFO contract.
+  if (scope.sourceMode === 'real') {
+    if (scope.unitId !== 'ITAIM' || scope.sourceUnitId !== '0001' || scope.sourceStoreId !== '01')
+      return blocked('READER_REAL_ITAIM_SCOPE_NOT_QUALIFIED');
+    const evidence=reviewNativeProducer(event);
+    if (evidence.canonicalContractChecked !== true)
+      return blocked('READER_REAL_NATIVE_NOTE_CONTRACT_NOT_QUALIFIED');
+    // A self-declared observation_scan_complete on an installed Reader event
+    // cannot attest missing ITCOMANDAEST/OBSITCOMANDA* child tables.
+    // The existing producer reviewer explicitly reports this as unproven.
+    // Keep lab/control projections; block REAL admission until a separate
+    // independently verified native child-coverage witness exists.
+    if (evidence.observationScanIndependentlyProven !== true)
+      return blocked('READER_REAL_NATIVE_CHILD_TABLE_COVERAGE_UNPROVEN');
+  }
   const service = event.service_resolution;
   if (event.ready_for_downstream_shadow !== true || !Array.isArray(event.blockers) || event.blockers.length ||
       !service || !Array.isArray(service.blockers) || service.blockers.length ||

@@ -6,6 +6,7 @@ import {
   api,
   newCommandId,
   createPendingCommands,
+  escapeHtml,
 } from "../shared/client.js";
 import {
   createConsentScreen,
@@ -14,6 +15,7 @@ import {
   DECLINE_CONSEQUENCE,
 } from "./consent-screen.js";
 import { createGpsStatus, renderGpsStatus } from "./gps-status.js";
+import { gpsReviewNotice } from "./gps-review-status.js";
 import {
   detectNativeBridge,
   listenNative,
@@ -22,7 +24,15 @@ import {
   permissionFromStatus,
 } from "./native-bridge.js";
 import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
+import {
+  inspectOperationalEvents, queueHoldMessage, verifiedNativeQueueReceipt,
+  queuedOperationalActionsMessage, rejectedOperationalActionMessage,
+  canRequestNativeQueueSync, confirmedNativeQueueTransition,
+  QUEUE_READ_BLOCK, QUEUE_WRITE_BLOCK,
+} from "./queue-health.js";
 import { ensureAccess } from "../shared/access-gate.js";
+import { selectActiveRiderTrip } from "./rider-trip-scope.js";
+import { riderCommandContext } from "./rider-command-context.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -65,16 +75,10 @@ const POLL_MS = 15000;
 let pollTimer = null;
 
 function activeTrip() {
-  // A viagem DESTE motoboy. O servidor já entrega só as dele; filtrar aqui
-  // também impede que uma resposta mais larga mostre a viagem de outro. O
-  // ator vem no próprio snapshot: `cap.me` chega depois da primeira pintura.
-  const quem = snap?.actor || cap.me;
-  const me = quem && quem.role === "motoboy_interno" ? quem.actor_id : null;
-  return (snap?.trips || []).find(
-    (t) =>
-      ["preparando_saida", "em_rota", "retornando"].includes(t.state) &&
-      (!me || t.courier_actor_id === me),
-  );
+  // Sem identidade de motoboy válida, ou em conflito com a sessão nativa,
+  // nenhuma viagem é selecionada. Nunca aceitar a primeira viagem de uma
+  // resposta ampla antes de confirmar o ator.
+  return selectActiveRiderTrip(snap, cap.me);
 }
 
 /* ---------------- Fila do aparelho (C5) ----------------
@@ -85,6 +89,13 @@ function activeTrip() {
 const OPEN_STATES = new Set(["pending", "failed", "sending"]);
 let queuePoll = null;
 let queueSeen = "";
+// A primeira leitura nao e transicao. Nunca anunciar uma confirmacao antiga
+// como se fosse resposta ao ultimo toque nesta pagina.
+let lastValidQueue = null;
+let lastConfirmedNotice = "";
+let manualSyncRequested = false;
+// Apenas estado de leitura/gravação LOCAL, sem inventar recibo do servidor.
+let queueHold = null;
 
 function deviceQueueOn() {
   return !!(
@@ -99,8 +110,20 @@ function deviceQueueOn() {
 
 function deviceEvents() {
   if (!native || !native.operationalEvents) return [];
-  const list = native.operationalEvents();
-  return Array.isArray(list) ? list : [];
+  try {
+    const checked = inspectOperationalEvents(native.operationalEvents());
+    if (!checked.ok) {
+      if (queueHold !== QUEUE_WRITE_BLOCK) queueHold = QUEUE_READ_BLOCK;
+      return [];
+    }
+    // Uma falha de leitura recuperou; falha de escrita exige intervenção
+    // explícita e NUNCA é curada apenas por conseguir ler o Room.
+    if (queueHold === QUEUE_READ_BLOCK) queueHold = null;
+    return checked.events;
+  } catch {
+    if (queueHold !== QUEUE_WRITE_BLOCK) queueHold = QUEUE_READ_BLOCK;
+    return [];
+  }
 }
 
 /** A mesma chave das ações: toque repetido numa intenção pendente não vira outra. */
@@ -122,14 +145,49 @@ function intentKey(e) {
   }
 }
 
+function blockQueueActionsImmediately() {
+  for (const id of ["btnSecondary", "btnNotFound", "btnProblem"]) {
+    const button = $(id);
+    if (button) button.disabled = true;
+  }
+  const primary = $("btnPrimary");
+  if (primary && primary.textContent !== "Abrir rota") primary.disabled = true;
+}
+
 function queueOnDevice(key, build) {
-  if (deviceEvents().some((e) => OPEN_STATES.has(e.state) && intentKey(e) === key)) {
+  const events = deviceEvents();
+  if (queueHold) {
+    renderDeviceQueue(activeTrip());
+    blockQueueActionsImmediately();
+    throw new Error(queueHoldMessage(queueHold));
+  }
+  if (events.some((e) => OPEN_STATES.has(e.state) && intentKey(e) === key)) {
     return { result: { ok: true, queued: true, already_queued: true } };
   }
   const command = build();
   const event_id = newCommandId("ev");
-  const r = native.recordOperationalEvent({ event_id, idempotency_key: event_id, command });
-  if (!r || r.ok !== true) throw new Error("Não foi possível guardar a ação neste aparelho. Tente de novo.");
+  let r = null;
+  try {
+    r = native.recordOperationalEvent({ event_id, idempotency_key: event_id, command });
+  } catch {
+    // Não houve comprovante Room: nunca afirmar que foi salvo.
+  }
+  // Um ACK nativo precisa confirmar ESTA identidade, não apenas trazer ok=true.
+  // Duplicate para um event_id recém-criado é colisão inesperada, não prova de escrita.
+  if (!verifiedNativeQueueReceipt(r, event_id)) {
+    queueHold = QUEUE_WRITE_BLOCK;
+    renderDeviceQueue(activeTrip());
+    blockQueueActionsImmediately();
+    throw new Error(queueHoldMessage(queueHold));
+  }
+  // O recibo acima confirma a gravacao LOCAL desta identidade no Room.
+  // Releia a fila imediatamente: o motoboy precisa ver "guardada" no mesmo
+  // toque, sem aguardar timer/rede. A leitura continua fail-closed e jamais
+  // afirma que o servidor recebeu o evento.
+  lastConfirmedNotice = "";
+  manualSyncRequested = false;
+  renderDeviceQueue(activeTrip());
+  if (queueHold) blockQueueActionsImmediately();
   scheduleQueuePoll();
   return { result: { ok: true, queued: true } };
 }
@@ -173,20 +231,59 @@ function withDeviceIntents(trip) {
 function renderDeviceQueue(serverTrip) {
   const line = $("pendingLine");
   const rejected = $("rejectedLine");
-  if (!line || !rejected) return;
+  const hold = $("queueHoldLine");
+  const requestLine = $("syncRequestLine");
+  const confirmedLine = $("confirmedLine");
+  const syncButton = $("btnSyncNow");
+  if (!line || !rejected || !hold || !requestLine || !confirmedLine || !syncButton) return;
   if (!deviceQueueOn()) {
+    hold.hidden = true;
+    hold.textContent = "";
     line.hidden = true;
     line.textContent = "";
     rejected.hidden = true;
     rejected.textContent = "";
+    requestLine.hidden = true;
+    requestLine.textContent = "";
+    confirmedLine.hidden = true;
+    confirmedLine.textContent = "";
+    lastValidQueue = null;
+    lastConfirmedNotice = "";
+    manualSyncRequested = false;
     return;
   }
   const events = deviceEvents();
+  // Perda de leitura ou falha de gravacao invalida a continuidade da
+  // observacao: nao ressuscitar um aviso antigo quando a ponte voltar.
+  if (queueHold) {
+    lastValidQueue = null;
+    lastConfirmedNotice = "";
+    manualSyncRequested = false;
+  }
+  // A ponte "sent" descreve confirmacao POR EVENTO no Room. Mostrar aviso
+  // apenas quando a MESMA identidade passou de aberta a sent nesta pagina.
+  if (!queueHold) {
+    const transition = confirmedNativeQueueTransition(lastValidQueue, events);
+    if (transition) {
+      lastConfirmedNotice = transition;
+      manualSyncRequested = false;
+    }
+    lastValidQueue = events.map((e) => ({
+      event_id: e.event_id, sequence_local: e.sequence_local,
+      kind: e.kind, state: e.state,
+    }));
+  }
+  hold.textContent = queueHoldMessage(queueHold);
+  hold.hidden = !queueHold;
+  syncButton.hidden = !!queueHold ||
+    !canRequestNativeQueueSync(events, typeof native?.syncNow === "function");
+  syncButton.textContent = "Tentar sincronizar ações";
+  confirmedLine.textContent = queueHold ? "" : lastConfirmedNotice;
+  confirmedLine.hidden = !confirmedLine.textContent;
   const open = events.filter((e) => OPEN_STATES.has(e.state));
   if (open.length) {
-    const failed = open.some((e) => e.state === "failed");
-    const n = open.length === 1 ? "1 ação guardada" : `${open.length} ações guardadas`;
-    line.textContent = `${n} neste aparelho, aguardando envio${failed ? " — a última tentativa não chegou ao servidor" : ""}.`;
+    // Um 4xx pode ter chegado ao servidor, mas ainda nao e ACK da acao.
+    line.textContent = queuedOperationalActionsMessage(events);
     line.hidden = false;
   } else {
     line.hidden = true;
@@ -203,13 +300,25 @@ function renderDeviceQueue(serverTrip) {
     (serverTrip && events.find((e) => e.state === "rejected" && e.trip_id === serverTrip.trip_id)) ||
     (maisRecente && maisRecente.state === "rejected" ? maisRecente : null);
   if (recusa) {
-    const motivo = String(recusa.last_error || "sem motivo informado").replace(/^dominio_recusou:\s*/, "");
-    rejected.textContent = `Ação recusada pelo servidor: ${motivo}`;
+    // last_error vem da fonte remota: nunca mostrar payload livre a um motoboy.
+    rejected.textContent = rejectedOperationalActionMessage(recusa);
     rejected.hidden = false;
   } else {
     rejected.hidden = true;
     rejected.textContent = "";
   }
+  // Um clique apenas solicita trabalho; NUNCA equivale a ACK do dominio.
+  // Se um evento sumir da janela de leitura sem transicao comprovada, nao
+  // transformar a ausencia em sucesso.
+  if (manualSyncRequested && !queueHold && !open.length && !lastConfirmedNotice) {
+    requestLine.textContent =
+      "Não foi possível comprovar a confirmação no aparelho. Consulte o responsável antes de repetir.";
+  } else {
+    requestLine.textContent = manualSyncRequested && !queueHold
+      ? "Tentativa solicitada ao aparelho. Aguardando confirmação do servidor."
+      : "";
+  }
+  requestLine.hidden = !requestLine.textContent;
   if (open.length) scheduleQueuePoll();
 }
 
@@ -223,8 +332,13 @@ function scheduleQueuePoll() {
       .join("|");
     const changed = sig !== queueSeen;
     queueSeen = sig;
-    if (changed) refresh().catch(() => render());
-    else render();
+    if (changed) {
+      // O evento ja mudou no Room. A confirmacao LOCAL nao pode esperar
+      // o snapshot HTTP, que pode demorar ou falhar mesmo com a fila legivel.
+      // Este aviso so vem da transicao exacta validada pela ponte nativa.
+      renderDeviceQueue(activeTrip());
+      refresh().catch(() => render());
+    } else render();
   }, 1500);
 }
 
@@ -301,7 +415,10 @@ function render() {
     $("syncDetail").textContent = "";
   }
   // Link secundário só em offline real — não em sync pendente online
-  $("btnSyncNow").hidden = !offline;
+  // No Android, a tela nao pode mudar a conexao da fachada DEMO.
+  // O botao nativo e controlado pelo estado legivel da outbox Room abaixo.
+  $("btnSyncNow").hidden = nativeFound.present || !offline;
+  $("btnSyncNow").textContent = "Enviar agora (se a rede voltou)";
 
   // GPS segue o DOMÍNIO (saída aceita no servidor), nunca a intenção guardada.
   const serverTrip = activeTrip();
@@ -348,7 +465,7 @@ function render() {
     $("stopCard").innerHTML = t.deliveries
       .map(
         (d) =>
-          `<div class="meta">${d.planned_stop_order}. ${d.order_ref} ${chip(d.state)}</div>`,
+          `<div class="meta">${escapeHtml(d.planned_stop_order)}. ${escapeHtml(d.order_ref)} ${chip(d.state)}</div>`,
       )
       .join("");
     $("nextLine").textContent = "";
@@ -366,7 +483,7 @@ function render() {
     $("stopSub").textContent = `Pedido ${s.order_ref}`;
     $("stopCard").hidden = false;
     $("stopCard").className = "card stop-card";
-    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
+    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${escapeHtml(s.order_ref)}</div>
       <div class="meta">${chip(s.state)}</div>`;
     const next = t.deliveries.find(
       (d) => d.active && d.planned_stop_order === order + 1,
@@ -397,7 +514,7 @@ function render() {
     $("stopSub").textContent = "Entregue o pedido e confirme quando o cliente receber.";
     $("stopCard").hidden = false;
     $("stopCard").className = "card stop-card edge-green";
-    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
+    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${escapeHtml(s.order_ref)}</div>
       <div class="meta">${chip(s.state)}</div>
       <div class="mark">${s._pending === "arrive" ? "CHEGADA GUARDADA · AGUARDANDO ENVIO" : "CHEGADA REGISTRADA"}</div>`;
     $("nextLine").textContent = "";
@@ -427,6 +544,13 @@ function render() {
   }
 
   $("tripFoot").textContent = `Viagem · ${t.deliveries.filter((d) => d.active).length} parada(s)`;
+  // HOLD de armazenamento: comandos de confirmação não podem alegar sucesso.
+  // Abrir rota não é escrita nem confirmação e permanece disponível.
+  const blocked = deviceQueueOn() && !!queueHold;
+  primary.disabled = blocked && primary.textContent !== "Abrir rota";
+  secondary.disabled = blocked;
+  notFound.disabled = blocked;
+  btnProblem.disabled = blocked;
 }
 
 function openRoute(s) {
@@ -451,6 +575,21 @@ async function act(fn) {
   }
 }
 
+/**
+ * Native commands must belong to the authenticated Itaim rider, never to
+ * the hard-coded demo actor. Validate BEFORE creating the Room event.
+ * Standalone browser demo retains its original synthetic identity.
+ */
+function commandContext(trip) {
+  return riderCommandContext({
+    nativePresent: nativeFound.present,
+    nativeAvailable: !!native,
+    snapshot: snap,
+    sessionActor: cap.me,
+    trip,
+  });
+}
+
 function actDepart(t) {
   return act(async () => {
     if (!confirm("Confirmar saída da loja?")) return;
@@ -458,9 +597,8 @@ function actDepart(t) {
       type: "ConfirmTripDeparture",
       command_id: cid("dep"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   });
 }
@@ -472,10 +610,9 @@ function actArrive(t, s) {
       type: "RecordArrivalReported",
       command_id: cid("arr"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   });
 }
@@ -487,10 +624,9 @@ function actConfirm(t, s) {
       type: "ConfirmDelivery",
       command_id: cid("cf"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   });
 }
@@ -511,10 +647,9 @@ $("btnNotFound").addEventListener("click", () =>
       type: "RecordCustomerNotFound",
       command_id: cid("nf"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   }),
 );
@@ -526,19 +661,38 @@ $("btnProblem").addEventListener("click", () =>
       type: "CreateOccurrence",
       command_id: cid("oc"),
       occurred_at: now(),
-      unit_id: "demo-unit",
+      ...commandContext(t),
       occurrence_id: newCommandId("OCC-M"),
       occurrence_type: "campo",
       report: "Problema registrado pelo motoboy (demo)",
       blocks_availability: false,
       related_trip_id: t?.trip_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     }));
   }),
 );
 
 $("btnSyncNow").addEventListener("click", async () => {
-  // Apenas tenta marcar online — sync é automática no facade
+  if (nativeFound.present) {
+    // O WorkManager decide quando ha rede. A ponte NAO retorna recibo remoto.
+    // Aplicativo antigo, politica ausente e outbox ilegivel nao fazem fallback
+    // silencioso para o endpoint de demonstracao.
+    if (!deviceQueueOn() || queueHold ||
+        typeof native?.syncNow !== "function" ||
+        !canRequestNativeQueueSync(deviceEvents(), true) || queueHold) {
+      renderError($("errorBox"), "Não foi possível solicitar a sincronização nativa. Confira a fila ou peça ajuda.");
+      return;
+    }
+    try {
+      native.syncNow();
+      manualSyncRequested = true;
+      renderDeviceQueue(activeTrip());
+      scheduleQueuePoll();
+    } catch {
+      renderError($("errorBox"), "Não foi possível solicitar a sincronização no aparelho.");
+    }
+    return;
+  }
+  // Somente a demonstracao no navegador altera a conexao da fachada demo.
   try {
     await api("/api/connection", {
       method: "POST",
@@ -605,7 +759,25 @@ function syncCapture(t) {
   schedulePoll();
 }
 
+/** Aviso de fila GPS retida, separado da captura e das acoes de entrega.
+ * Nem HTTP 200, nem painel demo, nem erro remoto viram prova aqui: so Room
+ * agregado via status() nativo. Uma ponte antiga nao inventa zero. */
+function renderGpsReview() {
+  const line = $("gpsReviewLine");
+  if (!line) return;
+  let notice;
+  try {
+    notice = gpsReviewNotice(native.status());
+  } catch {
+    notice = gpsReviewNotice(null);
+  }
+  // Evita anunciar o mesmo alerta repetidamente a leitores de tela.
+  if (line.textContent !== notice.message) line.textContent = notice.message;
+  line.hidden = !notice.message;
+}
+
 function renderCapture(t, d) {
+  renderGpsReview();
   if (cap.runningTrip && d.capture && cap.runningTrip === d.trip_id) {
     gps.start(d.trip_id); // idempotente para a mesma viagem
     gps.setOffReason(null);
@@ -697,6 +869,8 @@ async function initCapture() {
       : null;
     cap.appVersion = typeof caps.app_version === "string" ? caps.app_version : null;
     renderDeviceIdentity();
+    // O aviso vem do Room local e nao deve esperar sessao/termo via rede.
+    renderGpsReview();
 
     const sess = await api("/api/session");
     cap.me = sess.actor || null;
@@ -801,7 +975,11 @@ $("btnLocationSettings").addEventListener("click", () => {
 });
 document.addEventListener("visibilitychange", () => {
   // Volta do mapa ou das configurações: relê a viagem na hora.
-  if (native && document.visibilityState === "visible") refresh().catch(() => {});
+  if (native && document.visibilityState === "visible") {
+    // Volta do mapa/ajustes tambem relê pontos retidos sem aguardar API.
+    renderGpsReview();
+    refresh().catch(() => {});
+  }
 });
 
 if (native) {

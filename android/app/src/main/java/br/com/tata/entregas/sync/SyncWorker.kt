@@ -24,6 +24,8 @@ internal fun shouldRetryFast(runAttemptCount: Int): Boolean =
 internal data class GpsBatchOutcome(
     val retryable: Boolean = false,
     val credentialRefused: Boolean = false,
+    // Um HTTP 4xx de lote nao identifica a recusa individual de cada ponto.
+    val unreceiptedBatchBlocked: Boolean = false,
 )
 
 /** Limita cada execução sem abandonar o saldo de uma fila offline. */
@@ -31,6 +33,7 @@ internal data class GpsDrainOutcome(
     val retryable: Boolean = false,
     val credentialRefused: Boolean = false,
     val remaining: Boolean = false,
+    val unreceiptedBatchBlocked: Boolean = false,
 )
 
 internal suspend fun drainGpsQueue(
@@ -41,8 +44,12 @@ internal suspend fun drainGpsQueue(
         val batch = db.gpsPoints().nextBatch(100)
         if (batch.isEmpty()) return GpsDrainOutcome()
         val outcome = applyGpsBatchResponse(db, batch, send(batch))
-        if (outcome.retryable || outcome.credentialRefused) {
-            return GpsDrainOutcome(outcome.retryable, outcome.credentialRefused)
+        if (outcome.retryable || outcome.credentialRefused || outcome.unreceiptedBatchBlocked) {
+            return GpsDrainOutcome(
+                retryable = outcome.retryable,
+                credentialRefused = outcome.credentialRefused,
+                unreceiptedBatchBlocked = outcome.unreceiptedBatchBlocked,
+            )
         }
     }
     return GpsDrainOutcome(remaining = db.gpsPoints().nextBatch(1).isNotEmpty())
@@ -93,10 +100,14 @@ internal suspend fun applyGpsBatchResponse(
                     if (decision.sentIds.isNotEmpty()) {
                         db.gpsPoints().markSent(decision.sentIds)
                     }
-                    decision.rejected.groupBy { it.reason }.forEach { (reason, rejectedPoints) ->
+                    // O recibo identifica o ponto recusado, mas o "motivo"
+                    // remoto e texto nao confiavel e pode conter PII/segredo.
+                    // Persistir APENAS um codigo local estavel no Room; a
+                    // auditoria remota exige consulta autenticada separada.
+                    if (decision.rejected.isNotEmpty()) {
                         db.gpsPoints().markRejected(
-                            rejectedPoints.map { it.pointId },
-                            "servidor_rejeitou: $reason",
+                            decision.rejected.map { it.pointId },
+                            "gps_recusa_individual_recebida",
                         )
                     }
                     GpsBatchOutcome()
@@ -115,9 +126,23 @@ internal suspend fun applyGpsBatchResponse(
             db.gpsPoints().markFailed(ids, r.reason)
             GpsBatchOutcome(credentialRefused = true)
         }
-        // O `.let` mantém a recusa terminal numa linha só, a forma que a guarda
-        // estrutural de `src/entregas/android` confere.
-        is ApiResult.Rejected -> db.gpsPoints().markRejected(ids, "servidor_rejeitou: ${r.reason}").let { GpsBatchOutcome() }
+        is ApiResult.Rejected -> {
+            // Compatibilidade com contrato existente: HTTP 400 invalida o
+            // lote e HTTP 403 NAO classificado como recusa da credencial e
+            // definitivo. A autenticacao 403 ja foi separada acima por
+            // asPlatformDataResult e preserva os pontos para renovacao.
+            // Nao copiar motivo remoto livre para o banco local.
+            if (r.status == 400 || r.status == 403) {
+                db.gpsPoints().markRejected(ids, "lote_gps_rejeitado_http_${r.status}")
+                GpsBatchOutcome()
+            } else {
+                // 409/422 e demais 4xx sem recibo por point_id nao provam
+                // quais pontos foram aceitos ou recusados individualmente.
+                // Preservar IDs e chaves, sinalizar HOLD, sem sucesso falso.
+                db.gpsPoints().markFailed(ids, "lote_gps_sem_recibo_http_${r.status}")
+                GpsBatchOutcome(unreceiptedBatchBlocked = true)
+            }
+        }
     }
 }
 
@@ -213,6 +238,13 @@ class SyncWorker(
         // Pilot 401 is an authorization block, not a successful transfer.
         // Keep Room data; do not clear the separate platform session.
         var pilotAuthorizationBlocked = false
+        // Um HTTP 4xx sem recibo por event_id nao e aceite remoto, nem
+        // recusa individual definitiva. Exibir falha, preservando a fila Room.
+        var unreceiptedBatchBlocked = false
+        // Acknowledgements without a matching durable server receipt remain
+        // PENDING in Room. Even after fast retries, WorkManager must NOT
+        // report the entire job as successful.
+        var unconfirmedTermAck = false
         // Houve 401 da PLATAFORMA depois de ja termos autenticado? Entao o
         // token nao serve, e o lote precisa voltar para a fila — nunca ser
         // descartado.
@@ -221,11 +253,37 @@ class SyncWorker(
         // 1. Aceites do termo primeiro: são a autorização de tudo o mais.
         val acks = db.termAcks().pending()
         for (ack in acks) {
-            when (val r = piloto.sendTermAcknowledgement(ackJson(ack))) {
-                is ApiResult.Ok -> db.termAcks().markSent(listOf(ack.acknowledgementId))
-                is ApiResult.Retryable -> retryable = true
-                is ApiResult.Unauthorized -> Unit // integracao pendente no piloto; fica visivel
-                is ApiResult.Rejected -> Unit // fica visível; não insiste
+            val r = piloto.sendTermAcknowledgement(termAckWireJson(ack))
+            // The local HTTP fixture exercises this EXACT verification and
+            // Room transition; do not split the critical receipt logic again.
+            val verified = persistTermAckOnVerifiedReceipt(db, ack, r)
+            when (r) {
+                is ApiResult.Ok -> {
+                    // HTTP 200 alone cannot attest THIS actor, device, term or
+                    // choice. A partial response leaves the local record pending.
+                    if (!verified) {
+                        unconfirmedTermAck = true
+                        retryable = true
+                    }
+                }
+                is ApiResult.Retryable -> {
+                    unconfirmedTermAck = true
+                    retryable = true
+                }
+                is ApiResult.Unauthorized -> {
+                    // The legacy pilot route still lacks proven authenticated
+                    // actor/session plumbing. Never call this remote acceptance.
+                    unconfirmedTermAck = true
+                    pilotAuthorizationBlocked = true
+                }
+                is ApiResult.Rejected -> {
+                    // An HTTP 4xx without THIS acknowledgement's receipt
+                    // is not a terminal per-record refusal or success.
+                    // Preserve the append-only Room record pending, and
+                    // require human review of any enduring rejection.
+                    unconfirmedTermAck = true
+                    if (r.status == 403) pilotAuthorizationBlocked = true
+                }
             }
         }
 
@@ -310,7 +368,22 @@ class SyncWorker(
                         pilotAuthorizationBlocked = true
                     }
                 }
-                is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
+                is ApiResult.Rejected -> {
+                    // A rejeicao do LOTE nao identifica o resultado por evento.
+                    // Nao usar markRejected nem markSent aqui: ambos exigem
+                    // recibo por event_id validado pelo dominio.
+                    when (retainUnreceiptedEventBatch(
+                        db = db,
+                        eventIds = ids,
+                        rejection = r,
+                        delegationDenied = dispatch.delegationDenied,
+                    )) {
+                        EventBatchHttpRejectionHold.PILOT_AUTHORIZATION_BLOCKED ->
+                            pilotAuthorizationBlocked = true
+                        EventBatchHttpRejectionHold.UNATTESTED_BATCH_REJECTION ->
+                            unreceiptedBatchBlocked = true
+                    }
+                }
             }
         }
 
@@ -341,6 +414,8 @@ class SyncWorker(
         }
         if (gpsDrain.retryable) retryable = true
         if (gpsDrain.credentialRefused) credencialRecusada = true
+        // Sem recibo individual, nenhum ponto recebe estado terminal.
+        val gpsBatchUnreceipted = gpsDrain.unreceiptedBatchBlocked
 
         // 4. B5 — somente contagens agregadas; sem coordenada, payload ou PII.
         // Um 403 de autorização aqui também é aviso de credencial: revogação
@@ -382,35 +457,30 @@ class SyncWorker(
         // Credencial recusada e RETENTAVEL. Retornar sucesso aqui foi o coracao
         // do P0: o WorkManager dava a sincronizacao por concluida e os pontos
         // ficavam `failed` para sempre, sem nada sinalizar.
-        if (credencialRecusada) {
-            DeviceSession.limparCredencial(db)
-            return retryOrYield()
-        }
-        // Saldo após progresso não é falha esgotada: deve ter continuação,
-        // mesmo se o envio secundário de contagens falhou nesta execução.
+        // O token da PLATAFORMA pode ser renovado sem mexer nos dados Room.
+        // Nao retornar aqui: uma recusa simultanea do lote PILOTO precisa
+        // continuar visivel mesmo apos esgotar o backoff rapido.
+        if (credencialRecusada) DeviceSession.limparCredencial(db)
+        // Saldo de GPS ja coletado precisa continuar: nao atrasar o GPS
+        // porque uma rota operacional distinta devolveu 4xx.
         if (gpsDrain.remaining) return Result.retry()
-        // Other transient work (including GPS platform sync) retains bounded retry.
-        if (retryable) return retryOrYield()
-        if (pilotAuthorizationBlocked) return Result.failure()
+        // Falhas transitorias ainda recebem somente tentativas rapidas limitadas.
+        // Depois do limite, nao transformar em sucesso uma recusa nao atestada.
+        if ((credencialRecusada || retryable) && shouldRetryFast(runAttemptCount)) {
+            return Result.retry()
+        }
+        // Lotes GPS 409/422 retidos apos tres tentativas totais nao voltam
+        // automaticamente ao proximo envio. O WorkManager nao pode anunciar
+        // sucesso enquanto houver ponto aguardando revisao, mesmo quando
+        // a fila de GPS elegivel estiver vazia.
+        val gpsReviewRequired = db.gpsPoints().reviewRequiredCount() > 0
+        // Sem recibo por evento, dar Result.success() seria falso positivo.
+        // O evento segue elegivel na fila Room com eventId/idempotencyKey intactos.
+        if (pilotAuthorizationBlocked || unreceiptedBatchBlocked || gpsBatchUnreceipted ||
+            gpsReviewRequired || unconfirmedTermAck) return Result.failure()
         return Result.success()
     }
 
-    private fun ackJson(ack: br.com.tata.entregas.data.TermAckEntity) = JSONObject().apply {
-        put("acknowledgement_id", ack.acknowledgementId)
-        put("rider_id", ack.riderId)
-        put("unit_id", ack.unitId)
-        put("term_version", ack.termVersion)
-        put("term_material_version", ack.termMaterialVersion)
-        put("term_hash", ack.termHash)
-        put("status", ack.status)
-        put("accepted_at", ack.acceptedAt)
-        put("device_id", ack.deviceId)
-        put("app_version", ack.appVersion)
-        put("language", ack.language)
-        put("origin", ack.origin)
-        put("correlation_id", ack.correlationId)
-        put("schema_version", ack.schemaVersion)
-    }
 }
 
 object SyncScheduler {

@@ -197,6 +197,10 @@ android {
         }
     }
 
+    // Instrumentation-only: package the REAL rider UI as read-only assets in
+    // the test APK. Production APK assets and HTTP endpoints are unchanged.
+    sourceSets.getByName("androidTest").assets.srcDirs("../../src/entregas/ui")
+
     packaging {
         resources.excludes += setOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md")
     }
@@ -206,6 +210,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
+    implementation(libs.androidx.webkit)
     implementation(libs.androidx.lifecycle.service)
     implementation(libs.androidx.lifecycle.runtime)
 

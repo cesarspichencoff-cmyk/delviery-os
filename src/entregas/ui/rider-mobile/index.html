@@ -2,6 +2,11 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
+  <!-- Client-side defense-in-depth for the standalone rider page.
+       frame-ancestors cannot be enforced by a meta CSP and must be set by
+       the serving HTTPS endpoint before any field release. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; script-src-attr 'none'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; child-src 'none'; object-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>ENTREGAS · Motoboy</title>
   <link rel="stylesheet" href="/shared/tokens.css" />
@@ -14,9 +19,16 @@
     <div class="shell-brand">ENTREGAS</div>
     <p id="connLine" class="muted conn" role="status">Conexão…</p>
   </header>
-  <main id="main" class="m-main">
+  <section id="compatibilityHold" class="card" role="status">
+    <h2 id="compatibilityTitle">Preparando o Entregas</h2>
+    <p id="compatibilityDetail">Verificando compatibilidade do aplicativo neste aparelho.</p>
+  </section>
+  <main id="main" class="m-main" hidden style="display:none">
     <!-- Fila do aparelho (C5): o que está guardado e o que o servidor recusou. -->
+    <p id="queueHoldLine" class="queue-line queue-refused" role="alert" hidden></p>
     <p id="pendingLine" class="queue-line" role="status" hidden></p>
+    <p id="syncRequestLine" class="queue-line" role="status" hidden></p>
+    <p id="confirmedLine" class="queue-line" role="status" hidden></p>
     <p id="rejectedLine" class="queue-line queue-refused" role="alert" hidden></p>
     <div id="syncBar" class="sync-bar" hidden>
       <span class="dot dashed" aria-hidden="true"></span>
@@ -45,6 +57,8 @@
       <div id="stopCard" class="card stop-card" hidden></div>
       <p class="muted small" id="nextLine"></p>
       <p class="gps-status" id="gpsStatus" role="status" data-running="false" data-freshness="unknown">GPS DESLIGADO — SEM VIAGEM ATIVA</p>
+      <!-- Estado agregado do Room: nao mostra localizacao nem oferece reenvio. -->
+      <p id="gpsReviewLine" class="queue-line queue-refused" role="alert" hidden></p>
       <p class="muted small loc" id="locLine">O GPS depende deste aplicativo aberto durante a viagem.</p>
       <div class="device-enrollment" id="deviceEnrollment" hidden>
         <p class="device-id-line"><span>ID deste aparelho</span> <code id="deviceIdValue"></code></p>
@@ -67,10 +81,10 @@
     <div id="errorBox" class="error-box" hidden role="alert"></div>
     <p class="trip-foot muted" id="tripFoot"></p>
   </main>
-  <nav class="m-nav" aria-label="Navegação demo">
+  <nav class="m-nav" aria-label="Navegação demo" hidden style="display:none">
     <a href="/console/">Console</a>
     <a href="/ifood-handoff/">Expedição iFood</a>
   </nav>
-  <script type="module" src="/rider-mobile/rider.js"></script>
+  <script defer src="/rider-mobile/compat-classic.js"></script>
 </body>
 </html>

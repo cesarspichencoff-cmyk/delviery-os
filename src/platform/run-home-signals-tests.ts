@@ -18,6 +18,10 @@ import http from "node:http";
 
 import { homeVM, type HomeVM } from "../product/viewmodels/home-vm";
 import {
+  ESTADO_INICIAL, elegerModo, identidadeDaCausa,
+  type CausaCandidata,
+} from "../product/atencao/politica-temporal";
+import {
   CODIGOS_IMPLEMENTADOS,
   SINAIS_INDISPONIVEIS,
   sinaisDe,
@@ -176,6 +180,204 @@ teste("H6 problemas simultaneos apontam subareas diferentes", () => {
 });
 
 /* ================================================================== *
+ * 2b. Temporal permission: Operacao Viva owns Foco in a REAL call
+ * ================================================================== *
+ * This is a synthetic fixture re-tagged ONLY inside this test to exercise
+ * the real-call code path. It is not a real order/source or field validation.
+ */
+
+teste("H4a real caller cannot create Foco during the policy's three-minute debounce", () => {
+  const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
+  const severe = sinaisDe(ficticia).find((s) => s.codigo === "S5" && s.severidade === 3);
+  assert.ok(severe, "positive control must include an urgent candidate");
+  const causa = {
+    codigo: severe.codigo,
+    severidade: severe.severidade,
+    ambiente: severe.ambiente,
+    subarea: severe.subarea,
+    pedido_id: severe.pedido_id,
+    fonte_id: "carga_pracas",
+    evidencias: severe.evidencias.length,
+  };
+  let state = ESTADO_INICIAL;
+  for (let minute = 0; minute <= 3; minute += 1) {
+    const election = elegerModo({
+      estado: state, agora_min: minute, candidatas: [causa],
+      fontes: [{ id: "carga_pracas", estado: "saudavel" }],
+      idade_da_leitura_min: 0,
+    });
+    const vm = homeVM(ficticia, {
+      tipo: "real",
+      temporal: {
+        modo: election.modo,
+        orientacao_permitida: election.orientacao_permitida,
+        identidade: election.identidade,
+        causa: election.causa,
+      },
+    });
+    if (minute < 3) {
+      assert.notEqual(vm.modo, "foco", "policy promoted focus before debounce");
+      assert.equal(vm.foco, null, "home bypassed the temporal owner");
+      assert.equal(vm.sinais_em_segundo_plano.length, vm.total_de_sinais,
+        "pending severe signal disappeared from second plane");
+      assert.ok(vm.sinais_em_segundo_plano.some((s) => s.severidade === 3),
+        "urgent candidate must remain visible without an orientation");
+    } else {
+      assert.equal(election.modo, "foco", "positive policy control failed");
+      assert.equal(vm.modo, "foco");
+      assert.ok(vm.foco, "valid temporal Foco not presented");
+      assert.ok(vm.foco.orientacao, "legitimate Foco lost its one recommendation");
+      assert.equal(vm.foco.orientacao.executa, false);
+      assert.equal(vm.sinais_em_segundo_plano.length + 1, vm.total_de_sinais);
+    }
+    state = election.estado;
+  }
+});
+
+function causaS5(s: ReturnType<typeof sinaisDe>[number]): CausaCandidata {
+  assert.equal(s.codigo, "S5", "only directly measured S5 is used in the synthetic source-link test");
+  return {
+    codigo: s.codigo, severidade: s.severidade, ambiente: s.ambiente,
+    subarea: s.subarea, pedido_id: s.pedido_id,
+    fonte_id: "carga_pracas", evidencias: s.evidencias.length,
+  };
+}
+function origemFoco(c: CausaCandidata, permitted = true) {
+  return { tipo: "real" as const, temporal: {
+    modo: "foco" as const, orientacao_permitida: permitted,
+    identidade: identidadeDaCausa(c), causa: c,
+  } };
+}
+
+teste("H4b even inconsistent temporal flags cannot authorize a recommendation", () => {
+  const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
+  const s5 = sinaisDe(ficticia).find(s=>s.codigo==="S5" && s.severidade===3);
+  assert.ok(s5);
+  const causa = causaS5(s5);
+  const guarded = homeVM(ficticia, origemFoco(causa, false));
+  assert.equal(guarded.modo, "foco");
+  assert.ok(guarded.foco, "keep elected situation visible even if permission is denied");
+  assert.equal(guarded.foco.sinal.subarea, causa.subarea);
+  assert.equal(guarded.foco.orientacao, null,
+    "orientation must never ignore a denied temporal permission");
+  const calm = homeVM(ficticia, {
+    tipo: "real", temporal: { modo: "calmo", orientacao_permitida: true,
+      identidade: identidadeDaCausa(causa), causa },
+  });
+  assert.equal(calm.foco, null,
+    "a contradictory allow flag cannot manufacture a Foco in Calmo");
+  assert.equal(calm.sinais_em_segundo_plano.length, calm.total_de_sinais);
+});
+
+teste("H4c active temporal cause survives a different severe signal moving to the top",()=>{
+  const ficticia: LeituraOperacional = { ...cenaFoco(), procedencia: "real" };
+  const s5s = sinaisDe(ficticia).filter(s=>s.codigo==="S5" && s.severidade===3);
+  assert.ok(s5s.length>=2,"control requires two distinct severe S5 areas");
+  const [first,second] = s5s.slice(0,2).map(causaS5);
+  assert.notEqual(identidadeDaCausa(first),identidadeDaCausa(second));
+  let state=ESTADO_INICIAL;
+  for(let minute=0;minute<=4;minute++){
+    const election=elegerModo({
+      estado:state, agora_min:minute,
+      // After second is elected, a different severe candidate comes FIRST.
+      // Operacao Viva still owns the non-preemptive slot.
+      candidatas:minute<=3?[second]:[first,second],
+      fontes:[{id:"carga_pracas",estado:"saudavel"}],
+      idade_da_leitura_min:0,
+    });
+    const vm=homeVM(ficticia,{tipo:"real",temporal:{
+      modo:election.modo,orientacao_permitida:election.orientacao_permitida,
+      identidade:election.identidade,causa:election.causa,
+    }});
+    if(minute>=3){
+      assert.equal(election.identidade,identidadeDaCausa(second));
+      assert.equal(vm.modo,"foco");
+      assert.ok(vm.foco);
+      assert.equal(vm.foco.sinal.subarea,second.subarea,
+        "Home replaced the persistent policy cause with the first severe signal");
+      assert.ok(vm.sinais_em_segundo_plano.some(s=>s.codigo==="S5"&&s.subarea===first.subarea),
+        "the other severe candidate disappeared from secondary signals");
+    }
+    state=election.estado;
+  }
+});
+
+teste("H4d identity mismatch, missing source or ambiguous signal fails closed",()=>{
+  const ficticia: LeituraOperacional={...cenaFoco(),procedencia:"real"};
+  const match=sinaisDe(ficticia).find(s=>s.codigo==="S5"&&s.severidade===3);
+  assert.ok(match);
+  const causa=causaS5(match);
+  const legit=origemFoco(causa);
+  const wrongId=homeVM(ficticia,{tipo:"real",temporal:{
+    ...legit.temporal,identidade:identidadeDaCausa({...causa,fonte_id:"fonte_falsa"}),
+  }});
+  assert.equal(wrongId.foco,null);
+  assert.equal(wrongId.sinais_em_segundo_plano.length,wrongId.total_de_sinais);
+  assert.match(wrongId.apoio,/causa nao corresponde/i);
+  const wrongSource=homeVM(ficticia,{tipo:"real",temporal:{
+    ...legit.temporal,causa:{...causa,fonte_id:"fonte_falsa"},
+    identidade:identidadeDaCausa({...causa,fonte_id:"fonte_falsa"}),
+  }});
+  assert.equal(wrongSource.foco,null,"unknown source must never be trusted");
+  const noIdentity=homeVM(ficticia,{tipo:"real",temporal:{
+    ...legit.temporal,identidade:null,causa:null,
+  }});
+  assert.equal(noIdentity.foco,null);
+  const duplicate:LeituraOperacional={...ficticia,
+    carga_por_praca:{...ficticia.carga_por_praca},
+    pedidos:[...ficticia.pedidos]};
+  // Duplicate an actual severe S4 by repeating its order identity.
+  // The case MUST execute; no conditional skip that silently goes green.
+  const one=sinaisDe(ficticia).find(s=>s.codigo==="S4"&&s.severidade===3);
+  assert.ok(one,"duplicate test requires a real synthetic severe order signal");
+  const sourceOrder=ficticia.pedidos.find(p=>p.id===one.pedido_id);
+  assert.ok(sourceOrder);
+  const twice={...duplicate,pedidos:[...duplicate.pedidos,sourceOrder]};
+  const s4Cause:CausaCandidata={codigo:one.codigo,severidade:3,
+    ambiente:one.ambiente,subarea:one.subarea,pedido_id:one.pedido_id,
+    fonte_id:"ifood_tempos",evidencias:one.evidencias.length};
+  const ambiguity=homeVM(twice,origemFoco(s4Cause));
+  assert.equal(ambiguity.foco,null,"duplicate source identity must not be elected by presentation");
+});
+
+teste("H4e temporal Foco survives a softer still-present signal until policy withdraws it",()=>{
+  const initial:LeituraOperacional={...cenaFoco(),procedencia:"real"};
+  const s5=sinaisDe(initial).find(s=>s.codigo==="S5"&&s.subarea==="cozinha_quentes"&&s.severidade===3);
+  assert.ok(s5,"Cozinha S5 must be severe before temporal election");
+  const causa=causaS5(s5);
+  let state=ESTADO_INICIAL;
+  for(let minute=0;minute<=3;minute++){
+    const election=elegerModo({
+      estado:state,agora_min:minute,candidatas:[causa],
+      fontes:[{id:"carga_pracas",estado:"saudavel"}],idade_da_leitura_min:0,
+    });
+    state=election.estado;
+  }
+  assert.ok(state.foco,"positive control must elect a Foco");
+  const softened:LeituraOperacional={...initial,
+    carga_por_praca:{...initial.carga_por_praca,cozinha_quentes:7},
+  };
+  const updated=sinaisDe(softened).find(s=>s.codigo==="S5"&&s.subarea==="cozinha_quentes");
+  assert.ok(updated);
+  assert.equal(updated.severidade,2,"source test must actually lower current severity");
+  const stillActive=elegerModo({
+    estado:state,agora_min:4,
+    candidatas:[{...causa,severidade:updated.severidade}],
+    fontes:[{id:"carga_pracas",estado:"saudavel"}],idade_da_leitura_min:0,
+  });
+  assert.equal(stillActive.modo,"foco","only Operacao Viva can withdraw active Foco");
+  assert.equal(stillActive.identidade,identidadeDaCausa(causa));
+  const vm=homeVM(softened,{tipo:"real",temporal:{
+    modo:stillActive.modo,orientacao_permitida:stillActive.orientacao_permitida,
+    identidade:stillActive.identidade,causa:stillActive.causa,
+  }});
+  assert.equal(vm.foco?.sinal.codigo,"S5");
+  assert.equal(vm.foco?.sinal.subarea,"cozinha_quentes");
+  assert.equal(vm.foco?.sinal.severidade,2);
+  assert.equal(vm.foco?.orientacao?.executa,false);
+});
+
+/* ================================================================== *
  * 3. Sushi geral e subareas ao mesmo tempo (D46)
  * ================================================================== */
 
@@ -310,6 +512,43 @@ teste("H14 pulso ausente quando nao ha fonte alguma", () => {
   const vm = homeVM(semNada);
   assert.equal(vm.pulso.observado, false);
   assert.ok(!("valor" in vm.pulso));
+});
+
+teste("H14b uma fonte de carga/cardapio saudavel nao autentica pulso real", () => {
+  const demo = cenaCalmo();
+  const leitura: LeituraOperacional = {
+    ...demo,
+    procedencia: "real",
+    fontes: demo.fontes.filter((f) => f.id !== "ifood_tempos"),
+  };
+  const origem = { tipo: "real" as const, temporal: {
+    modo: "calmo" as const, orientacao_permitida: false,
+    identidade: null, causa: null,
+  }};
+  const vm = homeVM(leitura, origem);
+  assert.ok(leitura.fontes.some((f) => f.estado === "saudavel"),
+    "controle precisa ter fontes saudaveis de outro dominio");
+  assert.equal(vm.sem_leitura_operacional, true);
+  assert.equal(vm.pulso.observado, false,
+    "pulso real foi inventado apenas com cardapio/carga");
+  assert.ok(!("valor" in vm.pulso));
+  assert.match(vm.apoio, /fonte confiavel de pedidos/i);
+  const stale = homeVM({ ...leitura, fontes: demo.fontes.map((f) =>
+    f.id === "ifood_tempos" ? { ...f, estado: "stale" as const } : f) }, origem);
+  assert.equal(stale.pulso.observado, false,
+    "fonte de pedidos obsoleta autenticou pulso real");
+  assert.equal(stale.sem_leitura_operacional, true);
+});
+
+teste("H14c controle positivo: fonte de pedidos saudavel sustenta apenas pulso observado", () => {
+  const demo = cenaCalmo();
+  const leitura: LeituraOperacional = { ...demo, procedencia: "real" };
+  const vm = homeVM(leitura, { tipo: "real", temporal: {
+    modo: "calmo", orientacao_permitida: false, identidade: null, causa: null,
+  }});
+  assert.equal(vm.sem_leitura_operacional, false);
+  assert.equal(vm.pulso.observado, true);
+  if (vm.pulso.observado) assert.equal(vm.pulso.valor, leitura.pedidos.length);
 });
 
 /* ================================================================== *
@@ -558,10 +797,9 @@ teste("H28b controle positivo: leitura REAL nao e marcada como demonstracao", ()
   // R5-B: uma leitura REAL passou a exigir a eleicao temporal da Operacao Viva
   // (C3). O que este controle prova continua o mesmo — real nao vira
   // demonstracao —, mas ele nao pode mais chamar a home pela porta de fixture.
-  const vm = homeVM(real, {
-    tipo: "real",
-    temporal: { modo: "foco", orientacao_permitida: true },
-  });
+  const signal = sinaisDe(real).find(s=>s.codigo==="S5"&&s.severidade===3);
+  assert.ok(signal,"positive control requires an elected S5 signal");
+  const vm = homeVM(real, origemFoco(causaS5(signal)));
   assert.equal(vm.demonstracao, false);
   assert.ok(vm.selos.some((s) => s.estado === "real"));
   assert.ok(!vm.limitacoes.some((l) => /Leitura de demonstracao/i.test(l.titulo)));
@@ -675,10 +913,20 @@ teste("H35 o servidor entrega as quatro cenas e recusa escrita", async () => {
       assert.equal(vm.demonstracao, true);
       assert.equal(vm.ambientes.length, 5);
     }
-    // Cena desconhecida NAO inventa dado: cai na cena padrao, declarada.
-    const invalida = await pegar("/api/home?cena=inexistente");
-    assert.equal(invalida.code, 200);
-    assert.equal((JSON.parse(invalida.body) as { cena: string }).cena, "ambiente");
+    // Cena desconhecida NAO inventa dado e NAO cai em cena padrao: e recusada.
+    // Ate `0f1a153` ela devolvia a cena "ambiente" com 200; desde entao o
+    // caminho sem `cena` e a leitura REAL, e servir demonstracao por engano de
+    // digitacao seria apresentar fixture a quem pediu outra coisa. Esta
+    // expectativa ficou para tras naquela mudanca (medido: 400 !== 200).
+    for (const nome of ["inexistente", "constructor", "__proto__"]) {
+      const invalida = await pegar(`/api/home?cena=${nome}`);
+      assert.equal(invalida.code, 400, `cena ${nome} nao foi recusada`);
+      assert.deepEqual(JSON.parse(invalida.body), { erro: "cena_desconhecida" });
+    }
+    // Sem `cena`, a resposta e a leitura real — nunca uma demonstracao.
+    const real = await pegar("/api/home");
+    assert.equal(real.code, 200);
+    assert.equal((JSON.parse(real.body) as { demonstracao: boolean }).demonstracao, false);
 
     const escrita = await pegar("/api/home", "POST");
     assert.equal(escrita.code, 405, "o servidor aceitou metodo de escrita");

@@ -21,13 +21,21 @@
  * do produto (saudavel | parcial | stale | indisponivel).
  */
 
+// Reuse the same strict, offset-aware clock validator as the native Reader
+// -> Copiloto projection. A host-local timestamp or normalized bad date
+// cannot prove recent progress.
+const {explicitInstant} = require("../reporting/tata_source_time_v1.cjs");
+
 const HEALTH_SCHEMA = "deliveryos.tata-reader-health.v1";
 const HEARTBEAT_SCHEMA = "deliveryos.tata-reader-heartbeat.v1";
 const HOST_SCHEMAS = new Set([
   "deliveryos.tata-reader-continuous-host-status.v1",
   "deliveryos.tata-reader-continuous-host-status.v2",
 ]);
-const CONSUMER_SCHEMA = "deliveryos.live-shadow-consumer-status.v1";
+const CONSUMER_SCHEMAS = new Set([
+  "deliveryos.live-shadow-consumer-status.v1",
+  "deliveryos.live-shadow-consumer-status.v2",
+]);
 
 /** Sem cadencia declarada (watcher v1 sem supervisor): poll de ~3 s. */
 const LEGACY_CHECKPOINT_STALE_SECONDS = 90;
@@ -47,7 +55,7 @@ function isObj(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 function parseInstant(v) {
-  if (typeof v !== "string" || !v.trim()) return null;
+  if (!explicitInstant(v)) return null;
   const ms = Date.parse(v);
   return Number.isFinite(ms) ? ms : null;
 }
@@ -79,6 +87,10 @@ function thresholdsFrom(heartbeat, override = {}) {
     data_stale_after_s: 2 * batchSeconds + stall + backoff,
     // O checkpoint e gravado a cada poll bem-sucedido.
     checkpoint_stale_after_s: stall + backoff + 30,
+    // Optional paired-status history (same machine/run), not a claim of SQL cause.
+    failure_trend_window_s: 4 * 60 * 60,
+    // A downstream RUNNING flag without a recent update is NOT current proof.
+    consumer_status_stale_after_s: Math.max(90, 2 * batchSeconds + stall + backoff),
   };
   return { ...t, ...override };
 }
@@ -101,8 +113,32 @@ function verdict(v, reasons, extra) {
  * @param {object|null} [input.hostStatus]     continuous-host-status.json (ou null)
  * @param {object|null} [input.consumerStatus] shadow-consumer-status.json (ou null)
  * @param {number|null} [input.checkpointMtimeMs] mtime do checkpoint do watcher
+ * @param {object|null} [input.previousHeartbeat] heartbeat anterior ja obtido e da mesma execucao
  * @param {object} [input.thresholds]          sobrescrita explicita dos limiares
  */
+// Compares two already supplied supervisor snapshots. Never reads logs, SQL,
+// orders or host processes; an unverified baseline does not supply a trend.
+function failureCounterDelta(current, previous, nowMs, windowSeconds) {
+  if (!isObj(current) || !isObj(previous) ||
+      current.schema !== HEARTBEAT_SCHEMA || previous.schema !== HEARTBEAT_SCHEMA ||
+      !isObj(current.supervisor) || !isObj(previous.supervisor) ||
+      typeof current.supervisor.run_id !== "string" ||
+      current.supervisor.run_id.length < 8 ||
+      current.supervisor.run_id !== previous.supervisor.run_id) return null;
+  const curTime = parseInstant(current.written_at);
+  const prevTime = parseInstant(previous.written_at);
+  const windowS = posInt(windowSeconds, 4 * 60 * 60);
+  if (curTime === null || prevTime === null || curTime <= prevTime ||
+      curTime > nowMs + 5000 || prevTime > nowMs ||
+      nowMs - prevTime > windowS * 1000) return null;
+  if (!Number.isSafeInteger(current.seq) || !Number.isSafeInteger(previous.seq) ||
+      current.seq <= previous.seq) return null;
+  const a = current.totals?.failed, b = previous.totals?.failed;
+  if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b) || a < 0 || b < 0)
+    return null;
+  return a - b;
+}
+
 function evaluateTataReaderHealthV1(input) {
   if (!isObj(input) || !Number.isFinite(input.nowMs)) throw new Error("HEALTH_INPUT_NOW_REQUIRED");
   const { nowMs } = input;
@@ -117,12 +153,14 @@ function evaluateTataReaderHealthV1(input) {
     last_success_s: null,
     checkpoint_s: age(nowMs, ckMs),
     host_status_s: null,
+    consumer_status_s: null,
   };
   const evidence = {
     heartbeat_state: null,
     host_state: null,
     consumer_state: null,
     consecutive_failures: null,
+    failure_delta_since_baseline: null,
     last_batch_outcome: null,
     last_error_class: null,
     watcher_sha256_verified: null,
@@ -143,14 +181,26 @@ function evaluateTataReaderHealthV1(input) {
     }
   }
   let consumerFailed = false;
+  let consumerInvalid = false;
   if (consumer !== null) {
-    if (!isObj(consumer) || consumer.schema !== CONSUMER_SCHEMA) {
+    if (!isObj(consumer) || !CONSUMER_SCHEMAS.has(consumer.schema) ||
+        typeof consumer.state !== "string" || !consumer.state.trim()) {
+      consumerInvalid = true;
       reasons.push("CONSUMER_STATUS_SCHEMA_INVALID");
     } else {
-      evidence.consumer_state = String(consumer.state ?? "");
-      if (evidence.consumer_state === "FAILED") {
+      evidence.consumer_state = consumer.state;
+      ages.consumer_status_s = age(nowMs, parseInstant(consumer.updated_at));
+      if (ages.consumer_status_s === null) {
+        consumerInvalid = true;
+        reasons.push("CONSUMER_STATUS_TIMESTAMP_INVALID");
+      } else if (ages.consumer_status_s < -120) {
+        consumerInvalid = true;
+        reasons.push("CONSUMER_STATUS_FROM_FUTURE");
+      }
+      if (evidence.consumer_state !== "RUNNING") {
         consumerFailed = true;
-        reasons.push("CONSUMER_FAILED");
+        reasons.push(evidence.consumer_state === "FAILED" ?
+          "CONSUMER_FAILED" : "CONSUMER_NOT_RUNNING");
       }
     }
   }
@@ -179,13 +229,18 @@ function evaluateTataReaderHealthV1(input) {
   }
 
   const t = thresholdsFrom(hb, input.thresholds);
+  const failureDelta = failureCounterDelta(hb, input.previousHeartbeat ?? null,
+    nowMs, t.failure_trend_window_s);
+  evidence.failure_delta_since_baseline = failureDelta;
   evidence.heartbeat_state = String(hb.state ?? "");
   evidence.consecutive_failures = Number.isInteger(hb.consecutive_failures) ? hb.consecutive_failures : null;
   evidence.last_batch_outcome = isObj(hb.last_batch) ? hb.last_batch.outcome ?? null : null;
   evidence.last_error_class = isObj(hb.last_batch) ? hb.last_batch.error_class ?? null : null;
   evidence.watcher_sha256_verified = hb.watcher?.sha256_verified === true;
-  ages.heartbeat_s = age(nowMs, parseInstant(hb.written_at));
-  ages.last_success_s = age(nowMs, parseInstant(hb.last_success_at));
+  const heartbeatWrittenMs = parseInstant(hb.written_at);
+  const lastSuccessMs = parseInstant(hb.last_success_at);
+  ages.heartbeat_s = age(nowMs, heartbeatWrittenMs);
+  ages.last_success_s = age(nowMs, lastSuccessMs);
 
   if (ages.heartbeat_s !== null && ages.heartbeat_s < -120) {
     // Heartbeat "do futuro" alem de dois minutos: relogio trocado. Nao se
@@ -205,6 +260,15 @@ function evaluateTataReaderHealthV1(input) {
   if (ages.heartbeat_s === null || ages.heartbeat_s > t.heartbeat_silent_after_s) {
     reasons.push("SUPERVISOR_SILENT");
     return verdict("STALLED", reasons, { ...extra(), thresholds: t });
+  }
+  // Preserve the stronger STALLED/DOWN/FATAL evidence before examining an
+  // inconsistent last-success clock. A running, fresh heartbeat with an
+  // impossible success timestamp cannot become HEALTHY.
+  if (lastSuccessMs !== null &&
+      (lastSuccessMs > nowMs + 120000 ||
+       (heartbeatWrittenMs !== null && lastSuccessMs > heartbeatWrittenMs))) {
+    reasons.push("LAST_SUCCESS_CLOCK_INCONSISTENT");
+    return verdict("UNKNOWN", reasons, { ...extra(), thresholds: t });
   }
   if (!evidence.watcher_sha256_verified) reasons.push("WATCHER_SHA256_NOT_VERIFIED");
 
@@ -227,12 +291,24 @@ function evaluateTataReaderHealthV1(input) {
     return verdict("STALLED", reasons, { ...extra(), thresholds: t });
   }
   if (ages.checkpoint_s === null) reasons.push("CHECKPOINT_UNOBSERVED");
+  if (ages.consumer_status_s !== null &&
+      ages.consumer_status_s > t.consumer_status_stale_after_s) {
+    consumerInvalid = true;
+    reasons.push("CONSUMER_STATUS_STALE");
+  }
   if ((evidence.consecutive_failures ?? 0) > 0) {
     reasons.push("RECENT_FAILURES");
     if (evidence.last_error_class) reasons.push(`LAST_ERROR_${evidence.last_error_class}`);
     return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
   }
-  if (consumerFailed || !evidence.watcher_sha256_verified || ages.checkpoint_s === null) {
+  // A recovered last batch must not conceal new failures found between
+  // two recent, same-run heartbeat snapshots. No baseline => no trend claim.
+  if (failureDelta !== null && failureDelta !== 0) {
+    reasons.push(failureDelta > 0 ? "NEW_WATCHER_FAILURES_SINCE_BASELINE" :
+      "WATCHER_FAILURE_COUNTER_REGRESSED");
+    return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
+  }
+  if (consumerFailed || consumerInvalid || !evidence.watcher_sha256_verified || ages.checkpoint_s === null) {
     return verdict("DEGRADED", reasons, { ...extra(), thresholds: t });
   }
   return verdict("HEALTHY", reasons, { ...extra(), thresholds: t });
@@ -321,8 +397,10 @@ module.exports = {
 };
 
 // ------------------------------------------------------------------ CLI ----
-// node tata_reader_health_v1.cjs [--heartbeat p] [--host-status p]
-//   [--consumer-status p] [--checkpoint p] [--now ISO]
+// node tata_reader_health_v1.cjs [--heartbeat p] [--previous-heartbeat p]
+//   [--host-status p] [--consumer-status p] [--checkpoint p] [--now ISO]
+// The optional prior heartbeat must be an existing snapshot taken separately.
+// This CLI does not capture history, create state, install a task or schedule a run.
 // Saida: JSON do veredito; codigo 0 HEALTHY, 1 DEGRADED, 2 STALLED/DOWN/FATAL,
 // 3 UNKNOWN. Arquivo ausente = sinal ausente (nunca erro silencioso); arquivo
 // presente e ilegivel = sinal invalido.
@@ -334,12 +412,18 @@ if (require.main === module) {
     const k = args[i];
     const v = args[i + 1];
     if (!k || !k.startsWith("--") || v === undefined) {
-      console.error("USO: --heartbeat <p> --host-status <p> --consumer-status <p> --checkpoint <p> [--now ISO]");
+      console.error("USO: --heartbeat <p> [--previous-heartbeat <p>] --host-status <p> --consumer-status <p> --checkpoint <p> [--now ISO]");
       process.exit(64);
     }
     opt[k.slice(2)] = v;
   }
   const readDoc = (p) => readSignalDoc(p, { fs });
+  // The caller can supply a review clock, but cannot silently choose the
+  // timezone of the host or an impossible calendar day.
+  if (opt.now && !explicitInstant(opt.now)) {
+    console.error("NOW_INVALID");
+    process.exit(64);
+  }
   const nowMs = opt.now ? Date.parse(opt.now) : Date.now();
   if (!Number.isFinite(nowMs)) {
     console.error("NOW_INVALID");
@@ -349,6 +433,10 @@ if (require.main === module) {
   const r = evaluateTataReaderHealthV1({
     nowMs,
     heartbeat: readDoc(opt.heartbeat),
+    // Optional file, supplied explicitly by the caller: never writes baseline
+    // or infers a previous heartbeat from the same live overwritten path.
+    previousHeartbeat: opt["previous-heartbeat"] ?
+      readDoc(opt["previous-heartbeat"]) : null,
     hostStatus: opt["host-status"] ? readDoc(opt["host-status"]) : null,
     consumerStatus: opt["consumer-status"] ? readDoc(opt["consumer-status"]) : null,
     checkpointMtimeMs: ck,

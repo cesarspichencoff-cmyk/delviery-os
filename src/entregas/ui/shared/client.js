@@ -146,6 +146,18 @@ export function renderError(box, msg) {
   box.textContent = msg;
 }
 
+/**
+ * Any identifier or unknown status received from a server is text, not HTML.
+ * A rider order_ref can appear inside an innerHTML template; escaping at the
+ * interpolation boundary prevents markup/event-handler injection.
+ */
+export function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;",
+  })[ch]);
+}
+
 /** Rótulos humanos — sem jargão de domínio na UI */
 export function chip(state) {
   const map = {
@@ -169,8 +181,13 @@ export function chip(state) {
     excecao: ["Problema na expedição", "danger"],
     cancelado: ["Cancelada", "neutral"],
   };
-  const [label, cls] = map[state] || [state, "neutral"];
-  return `<span class="chip ${cls}" role="status">${label}</span>`;
+  // Ignore inherited keys such as "__proto__" and "constructor".
+  // Those are not status labels, and treating them as tuple data would crash
+  // the screen when an unknown state reaches the client.
+  const pair = Object.prototype.hasOwnProperty.call(map, state)
+    ? map[state] : [String(state ?? ""), "neutral"];
+  const [label, cls] = pair;
+  return `<span class="chip ${cls}" role="status">${escapeHtml(label)}</span>`;
 }
 
 /**

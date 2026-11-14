@@ -55,6 +55,10 @@ async function main(): Promise<void> {
           if (scene === "degradado") {
             assert.equal(await vida.getAttribute("data-estado"), "falha");
             assert.match(note, /leitura degradada/);
+            const aviso = await page.locator(".org-tecnico__texto").innerText();
+            assert.match(aviso, /sem leitura confiavel/i);
+            assert.match(aviso, /so podem ser avaliadas com leitura confiavel/i);
+            assert.doesNotMatch(aviso, /o resto da operacao segue normal/i);
           } else {
             assert.equal(await vida.getAttribute("data-estado"), "simulado");
             assert.match(note, /cenario simulado/);

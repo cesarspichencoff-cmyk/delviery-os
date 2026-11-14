@@ -51,7 +51,9 @@ function parseDataHoraMinutos(v) {
   return m ? { dia: `${m[1]}/${m[2]}/${m[3]}`, mod: (+m[4]) * 60 + (+m[5]) } : null;
 }
 
-const ehCancelado = (status) => /cancel/i.test(String(status || ""));
+// Partial item cancellation must never become a whole-order cancellation.
+// Match the same status contract as ifoodRelatorio.ts.
+const ehCancelado = (status) => /^(?:CANCELADO|CANCELAMENTO TOTAL)$/i.test(String(status ?? "").trim());
 
 /**
  * Linha do relatório → registro de backtest (minuto-do-dia). null se faltar

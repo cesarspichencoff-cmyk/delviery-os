@@ -74,6 +74,9 @@ export function detectNativeBridge(win = globalThis) {
       openAppSettings: () => (typeof n.openAppSettings === "function" ? n.openAppSettings() : undefined),
       startTripCapture: (tripId) => n.startTripCapture(String(tripId)),
       stopTripCapture: () => n.stopTripCapture(),
+      // Agendamento nativo: chamada sem recibo de servidor e sem retorno de
+      // sucesso. A UI relê a outbox Room antes de mostrar qualquer confirmação.
+      syncNow: typeof n.syncNow === "function" ? () => n.syncNow() : null,
       // Fila do aparelho (C5). Aplicativo anterior não tem: a página segue online.
       recordOperationalEvent:
         typeof n.recordOperationalEvent === "function"

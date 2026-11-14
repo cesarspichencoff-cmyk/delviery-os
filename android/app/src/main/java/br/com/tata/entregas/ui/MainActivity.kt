@@ -6,7 +6,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
+import android.view.ViewGroup
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -16,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import br.com.tata.entregas.BuildConfig
 import br.com.tata.entregas.bridge.Bridge
 import br.com.tata.entregas.bridge.EntregasJsBridge
+import br.com.tata.entregas.bridge.OriginBoundNativeBridge
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.TermAckEntity
 import br.com.tata.entregas.location.DeviceId
@@ -40,7 +44,7 @@ import org.json.JSONObject
  * JavaScript. Reescrevê-los em Kotlin criaria uma segunda verdade sobre as
  * mesmas regras — e é exatamente isso que o adendo proíbe.
  */
-class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
+class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions, RendererGoneHost {
 
     private companion object {
         const val APARELHO_DIVERGENTE = "aparelho_divergente"
@@ -48,6 +52,10 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
 
     private lateinit var webView: WebView
     private lateinit var db: EntregasDatabase
+    private val rendererReload = RendererReloadBackoff()
+
+    /** A única página que este aplicativo abre por conta própria. */
+    private val riderUrl get() = "${BuildConfig.ENTREGAS_BASE_URL}/rider-mobile/"
 
     private val locationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -69,13 +77,41 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
         ActivityResultContracts.RequestPermission(),
     ) { /* negar a notificação não impede a viagem; o serviço ainda exige a sua */ }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         db = EntregasDatabase.get(this)
         TripNotification.ensureChannel(this)
 
-        webView = WebView(this).apply {
+        webView = newRiderWebView(OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL))
+        // Inspeção remota SOMENTE no build de debug. Em release, um aparelho
+        // conectado por USB poderia ler a tela e chamar a ponte nativa.
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        setContentView(webView)
+        Bridge.attach(webView)
+
+        lifecycleScope.launch {
+            DeviceId.ensure(db)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            SyncScheduler.ensurePeriodic(this@MainActivity)
+            webView.loadUrl(riderUrl)
+        }
+    }
+
+    /**
+     * O WebView do motoboy, com TODAS as travas — a única definição.
+     *
+     * Serve à criação da tela e à troca depois que o renderizador morre: um
+     * WebView recriado por outro caminho nasceria sem alguma destas linhas, e
+     * a diferença só apareceria em campo.
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun newRiderWebView(client: OriginLockedClient): WebView {
+        // Fresh 256-bit capability per WebView instance. This is NOT a
+        // device credential or session token, and never goes to a server.
+        val bridgeCapability = OriginBoundNativeBridge.newCapability()
+        val web = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             // Trancado de propósito: a interface é servida pelo servidor do
@@ -91,7 +127,7 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             settings.javaScriptCanOpenWindowsAutomatically = false
             settings.setSupportMultipleWindows(false)
             settings.saveFormData = false
-            webViewClient = OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL)
+            webViewClient = client
             // A página confirma a saída e a entrega por confirm(). Sem um
             // WebChromeClient, o WebView cancela o diálogo em silêncio e a página
             // recebe false: a saída nunca chegaria ao domínio. É o cliente
@@ -101,24 +137,53 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             // aparelho do motoboy. Um PDF de pedido salvo na pasta pública
             // sobreviveria ao encerramento da viagem.
             setDownloadListener { _, _, _, _, _ -> }
-            addJavascriptInterface(EntregasJsBridge(this@MainActivity), Bridge.JS_INTERFACE_NAME)
+            // Raw Java bridge remains visible to every iframe by Android
+            // design, but NONE of its methods work without the capability.
+            addJavascriptInterface(
+                EntregasJsBridge(this@MainActivity, bridgeCapability),
+                Bridge.RAW_JS_INTERFACE_NAME,
+            )
+            // Before loading any page, inject a PUBLIC compatibility facade
+            // only in trusted /rider-mobile/ top documents. Unsupported
+            // WebViews get NO facade and remain blocked by compatibilityHold.
+            OriginBoundNativeBridge.install(
+                this, BuildConfig.ENTREGAS_BASE_URL, bridgeCapability,
+            )
         }
         // Cookies de terceiros não têm uso aqui — só falamos com o piloto.
-        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
-        // Inspeção remota SOMENTE no build de debug. Em release, um aparelho
-        // conectado por USB poderia ler a tela e chamar a ponte nativa.
-        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
-        setContentView(webView)
-        Bridge.attach(webView)
+        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(web, false)
+        return web
+    }
 
-        lifecycleScope.launch {
-            DeviceId.ensure(db)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-            SyncScheduler.ensurePeriodic(this@MainActivity)
-            webView.loadUrl("${BuildConfig.ENTREGAS_BASE_URL}/rider-mobile/")
-        }
+    /**
+     * O renderizador do WebView morreu: quebrou, ou o sistema o matou por
+     * falta de memória. Ele é outro processo; a viagem não é.
+     *
+     * Sem este tratamento o WebView derruba o processo do aplicativo — e com
+     * ele o serviço de captura, que vive aqui. Agora só a TELA é trocada: o
+     * WebView morto sai e é destruído, um novo nasce com as mesmas travas e
+     * com uma chave de ponte nova, e volta para a página do motoboy — nunca
+     * para onde o morto estava. Serviço de localização, fila Room e
+     * WorkManager não passam por aqui: não dependem de WebView vivo.
+     *
+     * A página recarregada reconcilia sozinha, como ao reabrir o aplicativo.
+     */
+    override fun onRendererGone(dead: WebView, client: OriginLockedClient) {
+        val wasTheScreen = ::webView.isInitialized && dead === webView
+        (dead.parent as? ViewGroup)?.removeView(dead)
+        dead.destroy()
+        if (!wasTheScreen || isFinishing || isDestroyed) return
+
+        val fresh = newRiderWebView(client)
+        webView = fresh
+        setContentView(fresh)
+        Bridge.attach(fresh)
+        // Uma página que mata o renderizador a cada carga não pode virar um
+        // laço: a primeira volta é imediata, as seguintes esperam.
+        fresh.postDelayed(
+            { if (webView === fresh && !isDestroyed) fresh.loadUrl(riderUrl) },
+            rendererReload.nextDelayMs(SystemClock.elapsedRealtime()),
+        )
     }
 
     override fun onResume() {
@@ -176,6 +241,9 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             put("approximate_only", gate.approximateOnly)
             put("term_ok", gate.termOk)
             put("pending_points", db.gpsPoints().pendingCount())
+            // Incluso em pending_points: nenhuma localizacao desaparece da fila
+            // so por ter sido retida para revisao. Contagem sem coordenadas.
+            put("gps_review_required_points", db.gpsPoints().reviewRequiredCount())
             put("rejected_points", db.gpsPoints().rejectedCount())
             put("pending_events", db.outbox().pendingCount())
             put("rejected_events", db.outbox().rejectedCount())
@@ -298,19 +366,41 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
 }
 
 /**
- * Só carrega a origem do piloto. Qualquer outro endereço sai para o navegador
- * do sistema — assim uma página injetada nunca roda com acesso à ponte nativa.
+ * A ponte JavaScript nativa pertence exclusivamente à origem do piloto.
+ * A navegação fora dessa origem é BLOQUEADA na WebView (não é aberta
+ * automaticamente no navegador do sistema).
+ *
+ * Host isolado é insuficiente: protocolo e porta diferentes são origens
+ * diferentes e não podem ganhar acesso à ponte do aparelho.
  */
-class OriginLockedClient(baseUrl: String) : WebViewClient() {
-    private val allowedHost = Uri.parse(baseUrl).host
+open class OriginLockedClient(baseUrl: String) : WebViewClient() {
+    private val allowedOrigin = Uri.parse(baseUrl)
+
+    private fun effectivePort(uri: Uri): Int = when {
+        uri.port >= 0 -> uri.port
+        uri.scheme.equals("https", ignoreCase = true) -> 443
+        uri.scheme.equals("http", ignoreCase = true) -> 80
+        else -> -1
+    }
+
+    internal fun isAllowedNavigation(target: Uri?): Boolean {
+        if (target == null) return false
+        val allowedScheme = allowedOrigin.scheme?.lowercase() ?: return false
+        val targetScheme = target.scheme?.lowercase() ?: return false
+        val allowedHost = allowedOrigin.host?.lowercase() ?: return false
+        val targetHost = target.host?.lowercase() ?: return false
+        if (allowedScheme != "https" && allowedScheme != "http") return false
+        return targetScheme == allowedScheme &&
+            targetHost == allowedHost &&
+            target.userInfo == null &&
+            allowedOrigin.userInfo == null &&
+            effectivePort(target) == effectivePort(allowedOrigin)
+    }
 
     override fun shouldOverrideUrlLoading(
         view: WebView?,
         request: android.webkit.WebResourceRequest?,
-    ): Boolean {
-        val host = request?.url?.host ?: return true
-        return host != allowedHost
-    }
+    ): Boolean = !isAllowedNavigation(request?.url)
 
     /**
      * Certificado inválido derruba o carregamento, sempre.
@@ -324,11 +414,70 @@ class OriginLockedClient(baseUrl: String) : WebViewClient() {
      * Se der erro de certificado, a saída é instalar a CA no aparelho — não
      * aceitar qualquer certificado.
      */
-    override fun onReceivedSslError(
+    final override fun onReceivedSslError(
         view: WebView?,
         handler: android.webkit.SslErrorHandler?,
         error: android.net.http.SslError?,
     ) {
         handler?.cancel()
+    }
+
+    /**
+     * A morte do renderizador nunca derruba o aplicativo.
+     *
+     * Devolver `false` (o default) faz o WebView encerrar o processo inteiro:
+     * aborta se o renderizador quebrou, e se mata por SIGKILL — sem exceção
+     * Java e sem tombstone — se o sistema o matou. `true` SEMPRE, inclusive
+     * sem hospedeiro: um WebView morto na tela é ruim, um serviço de captura
+     * morto no meio da viagem é pior.
+     *
+     * `final`, como a recusa de certificado: um cliente de laboratório herda
+     * este comportamento e não consegue trocá-lo.
+     */
+    final override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+        if (view != null) rendererGoneHostOf(view)?.onRendererGone(view, this)
+        return true
+    }
+
+    private fun rendererGoneHostOf(view: WebView): RendererGoneHost? {
+        var context: android.content.Context? = view.context
+        while (context != null) {
+            if (context is RendererGoneHost) return context
+            context = (context as? android.content.ContextWrapper)?.baseContext
+        }
+        return null
+    }
+}
+
+/**
+ * Quem hospeda o WebView e sabe trocá-lo. Recebe o cliente que estava
+ * instalado — sempre um [OriginLockedClient], então a trava de origem
+ * acompanha o WebView novo por construção.
+ */
+interface RendererGoneHost {
+    fun onRendererGone(dead: WebView, client: OriginLockedClient)
+}
+
+/**
+ * Espera antes de recarregar depois de mortes seguidas do renderizador.
+ *
+ * Uma morte isolada recarrega na hora. Mortes em sequência (a página que
+ * estoura a memória a cada carga) esperam cada vez mais, até um teto — o
+ * aparelho do motoboy não fica criando processo em laço. Um minuto sem
+ * morrer zera a contagem.
+ */
+internal class RendererReloadBackoff(private val quietMs: Long = 60_000L) {
+    private var lastDeathMs: Long? = null
+    private var streak = 0
+
+    fun nextDelayMs(nowMs: Long): Long {
+        val last = lastDeathMs
+        streak = if (last != null && nowMs - last < quietMs) streak + 1 else 0
+        lastDeathMs = nowMs
+        return DELAYS_MS[minOf(streak, DELAYS_MS.lastIndex)]
+    }
+
+    private companion object {
+        val DELAYS_MS = longArrayOf(0L, 2_000L, 5_000L, 15_000L)
     }
 }

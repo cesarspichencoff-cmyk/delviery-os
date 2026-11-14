@@ -1,0 +1,81 @@
+name: DeliveryOS Android strict HTTPS end-to-end lab
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-android-https-end-to-end-lab.yml
+      - tests/android/**
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderHttpsWorkerEndToEndInstrumentedTest.kt
+      - android/app/src/androidTest/java/br/com/tata/entregas/RendererGoneRecoveryInstrumentedTest.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/**
+      - android/app/src/main/java/br/com/tata/entregas/data/**
+      - android/app/src/main/java/br/com/tata/entregas/bridge/**
+      - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
+      - android/gradle/libs.versions.toml
+      - src/entregas/ui/rider-mobile/**
+      - android/app/build.gradle.kts
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deliveryos-android-https-lab-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  end-to-end-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: KVM for disposable Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Real Android Worker via 2 ephemeral strict TLS origins and real rider UI
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          working-directory: android
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          script: bash ../tests/android/run_https_lab.sh
+      - name: Require the actual Android end-to-end test result
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root = Path("android/app/build/outputs/androidTest-results/connected")
+          # Classe -> casos que TEM de ter executado. Ignorado nao conta como prova.
+          expected = {
+              "RiderHttpsWorkerEndToEndInstrumentedTest": 1,
+              "RendererGoneRecoveryInstrumentedTest": 2,
+          }
+          ran = {name: 0 for name in expected}
+          failed = errors = 0
+          for path in root.rglob("*.xml") if root.exists() else []:
+              try: tree = ET.parse(path).getroot()
+              except ET.ParseError: continue
+              for case in tree.findall(".//testcase"):
+                  name = case.attrib.get("classname", "").rsplit(".", 1)[-1]
+                  if name not in expected: continue
+                  failed += case.find("failure") is not None
+                  errors += case.find("error") is not None
+                  ran[name] += case.find("skipped") is None
+          count = ran["RiderHttpsWorkerEndToEndInstrumentedTest"]
+          print(f"ANDROID_REAL_HTTPS_WORKER_UI: cases={count} failed={failed} errors={errors}")
+          print("ANDROID_WEBVIEW_RENDERER_DEATH: cases=" + str(ran["RendererGoneRecoveryInstrumentedTest"]))
+          if ran != expected or failed or errors:
+              raise SystemExit("ANDROID_REAL_HTTPS_WORKER_UI_NOT_PROVEN")
+          print("ANDROID_REAL_HTTPS_WORKER_UI_LAB_PASS_NOT_FIELD_PROVEN")
+          PY

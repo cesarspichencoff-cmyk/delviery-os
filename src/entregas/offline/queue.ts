@@ -124,6 +124,10 @@ export interface SyncAck {
 
 export class OfflineQueue {
   private data: QueueData;
+  // O armazenamento é local por dispositivo. Nunca sobrescrever um original
+  // ilegível ou uma imagem que mudou fora desta instância.
+  private lastStoredRaw: string | null = null;
+  private writeHold: string | null = null;
 
   constructor(
     private readonly storage: OfflineStorage,
@@ -135,24 +139,66 @@ export class OfflineQueue {
 
   private load(): QueueData {
     const raw = this.storage.read();
+    this.lastStoredRaw = raw;
     if (!raw) return emptyData();
     try {
       const parsed = JSON.parse(raw) as QueueData;
-      if (!parsed || parsed.schema_version !== SCHEMA_VERSION) {
-        // Versão desconhecida: não adivinha formato e não apaga o arquivo.
-        // Começa vazio em memória; o original permanece no storage para perícia.
+      if (!parsed || parsed.schema_version !== SCHEMA_VERSION ||
+          !Array.isArray(parsed.items) ||
+          !Number.isSafeInteger(parsed.sequence_local) || parsed.sequence_local < 0 ||
+          parsed.items.some(i => !i || typeof i !== "object" ||
+            typeof i.event_id !== "string" || typeof i.idempotency_key !== "string" ||
+            !Number.isSafeInteger(i.sequence_local) || i.sequence_local < 1 ||
+            !OFFLINE_ITEM_STATES.includes(i.state))) {
+        // Expor HOLD, sem transformar histórico desconhecido em fila vazia gravável.
+        this.writeHold = "OFFLINE_STORAGE_RECOVERY_REQUIRED";
         return emptyData();
       }
-      if (!Array.isArray(parsed.items)) return emptyData();
+      if (parsed.items.some(i => i.device_id !== this.config.device_id)) {
+        this.writeHold = "OFFLINE_STORAGE_DEVICE_MISMATCH";
+        return emptyData();
+      }
       return parsed;
     } catch {
-      // Corrupção parcial nunca destrói o que ainda é legível nem trava o app.
+      // O original continua intacto, inclusive após tentativa de enqueue.
+      this.writeHold = "OFFLINE_STORAGE_RECOVERY_REQUIRED";
       return emptyData();
     }
   }
 
+  storageHealth(): { writable: boolean; reason: string | null } {
+    return { writable: this.writeHold === null, reason: this.writeHold };
+  }
+
+  private assertWritable(): void {
+    if (this.writeHold !== null) throw new Error(this.writeHold);
+    // Guarda otimista de instância obsoleta. Não é CAS multiaba atômico:
+    // o storage de produção precisa de exclusão/transação para múltiplos writers.
+    if (this.storage.read() !== this.lastStoredRaw) {
+      this.writeHold = "OFFLINE_STORAGE_EXTERNAL_CHANGE";
+      throw new Error(this.writeHold);
+    }
+  }
+
   private persist(): void {
-    this.storage.write(JSON.stringify(this.data));
+    try {
+      this.assertWritable();
+      const encoded = JSON.stringify(this.data);
+      this.storage.write(encoded);
+      if (this.storage.read() !== encoded) {
+        this.writeHold = "OFFLINE_STORAGE_WRITE_NOT_VERIFIED";
+        throw new Error(this.writeHold);
+      }
+      this.lastStoredRaw = encoded;
+    } catch (err) {
+      // Desfazer qualquer mutação em memória que não teve commit confirmado.
+      // Se o writer gravou bytes parciais, o armazenamento fica em HOLD e
+      // precisa de recuperação explícita; NUNCA alegar evento persistido.
+      this.writeHold ??= "OFFLINE_STORAGE_WRITE_FAILED";
+      this.data = this.lastStoredRaw === null
+        ? emptyData() : JSON.parse(this.lastStoredRaw) as QueueData;
+      throw err;
+    }
   }
 
   /**
@@ -160,12 +206,27 @@ export class OfflineQueue {
    * mesma idempotency_key não cria segundo item.
    */
   enqueue(input: EnqueueInput): { item: OfflineItem; duplicate: boolean } {
+    this.assertWritable();
     const existing = this.data.items.find(
       (i) =>
         i.event_id === input.event_id ||
         i.idempotency_key === input.idempotency_key,
     );
-    if (existing) return { item: existing, duplicate: true };
+    if (existing) {
+      // Repetição exige MESMO fato de negócio. A mesma chave com conteúdo
+      // diferente é um conflito, nunca confirmação silenciosa.
+      const stable = (value: Record<string, unknown>) => JSON.stringify(value,
+        (_key, part: unknown) => part && typeof part === "object" && !Array.isArray(part)
+          ? Object.fromEntries(Object.entries(part as Record<string, unknown>)
+            .sort(([a], [b]) => a.localeCompare(b))) : part);
+      if (existing.idempotency_key !== input.idempotency_key ||
+          existing.kind !== input.kind ||
+          existing.occurred_at !== input.occurred_at ||
+          existing.trip_id !== input.trip_id ||
+          stable(existing.payload) !== stable(input.payload))
+        throw new Error("OFFLINE_IDEMPOTENCY_COLLISION");
+      return { item: structuredClone(existing), duplicate: true };
+    }
 
     const nowIso = this.now().toISOString();
     const skew = Math.abs(
@@ -185,7 +246,7 @@ export class OfflineQueue {
       event_id: input.event_id,
       idempotency_key: input.idempotency_key,
       kind: input.kind,
-      payload: input.payload,
+      payload: structuredClone(input.payload),
       occurred_at: input.occurred_at,
       recorded_at: nowIso,
       sequence_local: this.data.sequence_local,
@@ -197,7 +258,7 @@ export class OfflineQueue {
     };
     this.data.items.push(item);
     this.persist();
-    return { item, duplicate: false };
+    return { item: structuredClone(item), duplicate: false };
   }
 
   /**
@@ -206,6 +267,7 @@ export class OfflineQueue {
    * devolve o item a `pending` via `recoverStuck()`.
    */
   nextBatch(limit = 50): SyncBatch {
+    this.assertWritable();
     const nowMs = this.now().getTime();
     const items = this.data.items
       .filter((i) => i.state === "pending")
@@ -216,7 +278,7 @@ export class OfflineQueue {
       .slice(0, limit);
     for (const i of items) i.state = "sending";
     if (items.length) this.persist();
-    return { items };
+    return { items: structuredClone(items) };
   }
 
   /**
@@ -224,9 +286,11 @@ export class OfflineQueue {
    * servidor já tinha o fato (reenvio seguro após timeout, COR §17.3).
    */
   applyAcks(acks: readonly SyncAck[]): void {
+    this.assertWritable();
     for (const ack of acks) {
       const item = this.data.items.find((i) => i.event_id === ack.event_id);
-      if (!item) continue;
+      if (!item || item.state === "synced" || item.state === "conflict" ||
+          item.state === "dead_letter") continue;
       if (ack.status === "accepted" || ack.status === "duplicate") {
         item.state = "synced";
         item.synced_at = ack.synced_at;
@@ -245,9 +309,10 @@ export class OfflineQueue {
 
   /** Falha de transporte (sem resposta): devolve para retry com backoff. */
   failBatch(items: readonly OfflineItem[], error: string): void {
+    this.assertWritable();
     for (const sent of items) {
       const item = this.data.items.find((i) => i.event_id === sent.event_id);
-      if (item) this.registerFailure(item, error);
+      if (item && item.state === "sending") this.registerFailure(item, error);
     }
     this.persist();
   }
@@ -274,6 +339,7 @@ export class OfflineQueue {
    * deduplica por event_id.
    */
   recoverStuck(): number {
+    this.assertWritable();
     let n = 0;
     for (const i of this.data.items) {
       if (i.state === "sending") {
@@ -287,6 +353,7 @@ export class OfflineQueue {
 
   /** Remove os já sincronizados — chamada explícita, nunca automática. */
   purgeSynced(): number {
+    this.assertWritable();
     const before = this.data.items.length;
     this.data.items = this.data.items.filter((i) => i.state !== "synced");
     if (this.data.items.length !== before) this.persist();
@@ -312,11 +379,11 @@ export class OfflineQueue {
   }
 
   all(): readonly OfflineItem[] {
-    return this.data.items.slice();
+    return structuredClone(this.data.items);
   }
 
   byTrip(trip_id: string): readonly OfflineItem[] {
-    return this.data.items.filter((i) => i.trip_id === trip_id);
+    return structuredClone(this.data.items.filter((i) => i.trip_id === trip_id));
   }
 }
 
