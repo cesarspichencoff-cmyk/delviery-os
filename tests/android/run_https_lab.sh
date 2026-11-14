@@ -73,8 +73,12 @@ for port in (5193, 8080):
 print("LAB_HTTPS_LOCAL_SERVERS_REACHABLE")
 PY
 
+# Duas classes, um processo: primeiro a morte do renderizador do WebView na
+# MainActivity real (o app tem de sobreviver), depois o ponta a ponta HTTPS.
+classes="br.com.tata.entregas.RendererGoneRecoveryInstrumentedTest"
+classes="$classes,br.com.tata.entregas.RiderHttpsWorkerEndToEndInstrumentedTest"
 if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=br.com.tata.entregas.RiderHttpsWorkerEndToEndInstrumentedTest \
+  "-Pandroid.testInstrumentationRunnerArguments.class=$classes" \
   -Pentregas.baseUrl=https://10.0.2.2:5193 \
   -Pentregas.platformUrl=https://10.0.2.2:8080; then
   # Em falha, recolher somente CLASSE de excecao e frames Kotlin locais.
@@ -114,6 +118,14 @@ for line in sys.stdin:
         seen.add(label); print(label)
 print("LAB_HTTPS_CRASH_CLASSES_ONLY",len(seen))
 ' || true
+  fi
+  # Processo morto por SIGKILL nao deixa NADA nos dois filtros acima: nem
+  # excecao Java, nem sinal no buffer de crash. E o caso do renderizador do
+  # WebView morto pelo sistema sem tratamento, e o do app morto pelo lmkd.
+  # A assinatura fica so em main/system; saem rotulos fixos e contagens.
+  if command -v adb >/dev/null 2>&1; then
+    adb logcat -b main,system -d -v brief 2>/dev/null |
+      python3 ../tests/android/https_process_death_signature_v1.py || true
   fi
   # Preservar vermelho: diagnostico nao e reparo, e jamais vira sucesso.
   exit 1
