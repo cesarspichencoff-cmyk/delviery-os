@@ -39,6 +39,14 @@ function bancadaTls() {
   }
   throw Error('openssl nao encontrado: sem certificado de bancada, a prova nao roda');
 }
+function semSessaoApi(port) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({host: '127.0.0.1', port, path: '/api/home', method: 'GET', rejectUnauthorized: false,
+      servername: 'copiloto.itaim.test', headers: {host: 'copiloto.itaim.test:' + port}}, res => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject);
+    req.end();
+  });
+}
 const results = [];
 let stage = 'inicio';
 
@@ -83,9 +91,9 @@ let stage = 'inicio';
       if (out) await page.screenshot({path: path.join(out, 'home-porta-de-operador-entrada-' + name + '-SIMULADO.png')});
       const corpoDaEntrada = (await page.textContent('body') || '').trim().slice(0, 160);
       if (!naEntrada || !(await page.$('#codigo'))) throw Error('a tela de entrada nao apareceu; o navegador mostrou: ' + corpoDaEntrada);
-      // Pela pilha HTTP do navegador, com os cookies dele. Nao por fetch() da pagina: a CSP
-      // da entrada (default-src 'none') recusa fetch, e era isso que a CI media (TypeError).
-      const semSessao = (await page.request.get(HOME + '/api/home', {maxRedirects: 0})).status();
+      // Sem sessao, direto no TLS de bancada com o Host da Home. Nao por fetch() da pagina (a CSP da
+      // entrada recusa) nem por page.request (sai pelo Node, que nao usa o mapeamento de DNS do navegador).
+      const semSessao = await semSessaoApi(tlsPort);
       await page.fill('#codigo', 'codigo-errado-do-navegador');
       await Promise.all([page.waitForLoadState('networkidle'), page.click('button[type=submit]')]);
       const aviso = await page.textContent('.aviso').catch(() => null);
