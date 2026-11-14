@@ -489,9 +489,29 @@ function json(
   res.end(JSON.stringify(body));
 }
 
+/*
+ * Teto de corpo. Atrás de um proxy público, um corpo sem limite é memória do
+ * caixa à disposição de quem quiser. O maior uso legítimo é um lote de 100
+ * eventos do aparelho; 1 MiB cobre com folga. Acima disso a conexão é
+ * recusada e o handler não recebe nada (o JSON.parse seguinte falha e vira 4xx/5xx).
+ */
+export const PILOT_MAX_BODY_BYTES = 1024 * 1024;
 async function readBody(req: http.IncomingMessage): Promise<string> {
+  const declared = Number(req.headers["content-length"] ?? "0");
+  if (Number.isFinite(declared) && declared > PILOT_MAX_BODY_BYTES) {
+    req.destroy();
+    throw new Error("PILOT_BODY_TOO_LARGE");
+  }
   const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(c as Buffer);
+  let size = 0;
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > PILOT_MAX_BODY_BYTES) {
+      req.destroy();
+      throw new Error("PILOT_BODY_TOO_LARGE");
+    }
+    chunks.push(c as Buffer);
+  }
   return Buffer.concat(chunks).toString("utf8");
 }
 
@@ -1392,6 +1412,10 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     res.end(body);
   } catch (e) {
     const technical = e instanceof Error ? e.message : String(e);
+    if (technical === "PILOT_BODY_TOO_LARGE") {
+      if (!res.headersSent && !res.destroyed) reply(413, { ok: false, code: "BODY_TOO_LARGE" });
+      return;
+    }
     log.error("command_failed", "Erro interno do servidor.", technical);
     reply(500, {
       error: "Algo deu errado. Avise o responsável pelo piloto.",

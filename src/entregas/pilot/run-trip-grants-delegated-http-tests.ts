@@ -156,6 +156,17 @@ async function main(): Promise<void> {
       assert.equal((await pedir("Bearer " + pt1("dev-r1", "rid-1"), Array.from({ length: 21 }, (_, i) => "T" + i))).status, 400);
       assert.equal((await pedir("Bearer " + pt1("dev-r1", "rid-1"), [123])).status, 400);
     });
+    await prova("corpo acima de 1 MiB é recusado antes de virar memória do caixa, e o piloto segue no ar", async () => {
+      const grande = JSON.stringify({ trip_ids: ["X1-SAIU"], lixo: "z".repeat(1100 * 1024) });
+      let status = 0;
+      try {
+        const r = await fetch(base + "/api/device/trip-grants", { method: "POST",
+          headers: { "content-type": "application/json", authorization: "Bearer " + pt1("dev-r1", "rid-1") }, body: grande });
+        status = r.status;
+      } catch { status = -1; /* conexão cortada: também é recusa */ }
+      assert.ok(status === 413 || status === -1, "corpo gigante aceito: " + status);
+      assert.equal((await fetch(base + "/api/health")).status, 200);
+    });
     console.log(`X1_TRIP_GRANTS_DELEGATED_HTTP_PASS ${ok}/${ok} REAL_PILOT_SYNTHETIC`);
   } finally {
     await stopTestProcess(proc);
