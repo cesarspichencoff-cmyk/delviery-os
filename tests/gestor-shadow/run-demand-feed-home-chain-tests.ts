@@ -354,7 +354,9 @@ teste("HTTP: /api/home segue o feed — observado, parado, ausente — sem reini
     assert.equal(home.origem_desta_resposta, "DEMANDA_OBSERVADA_NO_GESTOR");
     assert.equal(home.nivel_de_evidencia, "demanda_observada");
     assert.equal(home.pedidos_publicaveis, true);
-    assert.equal(home.estado_do_join, "NAO_QUALIFICADO");
+    // Ha janela, mas esta maquina de teste nao tem Reader: cruzamento tentado e nao feito.
+    assert.equal(home.estado_do_join, "NAO_CRUZADO");
+    assert.match(home.demanda_observada.conciliacao, /Sem cruzamento com o Reader/);
     assert.equal(home.identidade_de_cada_pedido_verificada, false);
     assert.equal(home.impressao_autorizada, false);
     assert.equal(home.demonstracao, false);

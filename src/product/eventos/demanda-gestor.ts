@@ -27,6 +27,12 @@
  * PURA: sem relogio, sem I/O, sem rede. O instante entra pela chamada.
  */
 import { validarEvento, type EnvelopeOperacional } from "./catalogo-operacional";
+import {
+  CONCILIACAO_READER_VERSAO,
+  type ConciliacaoComReader,
+  type ConciliacaoDoPedido,
+  type ResultadoDoPedido,
+} from "./conciliacao-reader";
 import { observarSaude } from "./observador-saude";
 import { projetarLeitura } from "./projetar-leitura";
 import {
@@ -110,6 +116,13 @@ export function eventosDaDemanda(
  * ------------------------------------------------------------------ */
 
 export interface PedidoObservadoVM {
+  /** O nivel de evidencia DESTE pedido. Nunca "fisico": isso nao existe aqui. */
+  readonly nivel: "demanda_observada" | "conciliado";
+  readonly nivel_texto: string;
+  /** Resultado do cruzamento com o Reader; `nao_cruzado` quando nao houve cruzamento. */
+  readonly conciliacao: ResultadoDoPedido | "nao_cruzado";
+  /** So quando ha algo a dizer a quem opera: divergencia ou ambiguidade. */
+  readonly conciliacao_detalhe: string | null;
   readonly codigo: string;
   readonly colocado_em: string | null;
   readonly visto_desde: string;
@@ -126,8 +139,12 @@ export interface PedidoObservadoVM {
 }
 
 export interface DemandaObservadaVM {
-  /** O nivel de evidencia. Nunca `conciliado`, nunca `fisico`, nesta entrega. */
+  /**
+   * O nivel de evidencia do CONJUNTO: sempre demanda observada. O nivel de cada
+   * pedido vem em `pedidos[].nivel`, e `conciliados` diz quantos subiram.
+   */
   readonly nivel: "demanda_observada";
+  readonly conciliados: number;
   readonly procedencia: Procedencia;
   readonly titulo: string;
   readonly origem: string;
@@ -155,6 +172,8 @@ export interface LeituraDaDemanda {
   readonly linhagem: LinhagemDeEventos | null;
   readonly demanda: DemandaObservadaVM | null;
   readonly eventos_aplicados: number;
+  /** `NAO_QUALIFICADO` · `NAO_CRUZADO` · `CONCILIADO_<n>_DE_<m>`. */
+  readonly estado_do_join: string;
 }
 
 function hora(iso: string): string {
@@ -183,11 +202,16 @@ const fonte = (estado: EstadoDeFonte, detalhe: string): FonteLeitura => ({
 });
 const semPedidos = (f: FonteLeitura): LeituraDaDemanda => ({
   origem: "SAUDE_DAS_FONTES_SEM_PEDIDOS", procedencia: "real", observado_em: null, fonte: f,
-  pedidos: [], linhagem: null, demanda: null, eventos_aplicados: 0,
+  pedidos: [], linhagem: null, demanda: null, eventos_aplicados: 0, estado_do_join: "NAO_QUALIFICADO",
 });
 
-function pedidoVM(p: PedidoObservado): PedidoObservadoVM {
+function pedidoVM(p: PedidoObservado, c: ConciliacaoDoPedido | undefined): PedidoObservadoVM {
+  const conciliado = c?.resultado === "conciliado";
   return {
+    nivel: conciliado ? "conciliado" : "demanda_observada",
+    nivel_texto: conciliado ? "conciliado com o Reader" : "demanda observada",
+    conciliacao: c?.resultado ?? "nao_cruzado",
+    conciliacao_detalhe: c !== undefined && (c.resultado === "divergente" || c.resultado === "ambiguo") ? c.detalhe : null,
     codigo: p.codigo, colocado_em: p.colocado_em, visto_desde: p.visto_desde,
     revisado_em: p.revisado_em, revisoes: p.revisao_no,
     linhas: p.itens.length, unidades: p.itens.reduce((n, i) => n + i.quantidade, 0),
@@ -202,6 +226,8 @@ function pedidoVM(p: PedidoObservado): PedidoObservadoVM {
 export function leituraDaDemanda(
   d: DemandaDoGestor,
   ctx: { readonly tenant: string; readonly agora_iso: string },
+  /** O cruzamento com o Reader, quando foi feito. Ausente = so o nivel 1. */
+  conciliacao: ConciliacaoComReader | null = null,
 ): LeituraDaDemanda {
   if (d.estado === "nao_configurada")
     return semPedidos(fonte("indisponivel",
@@ -239,7 +265,19 @@ export function leituraDaDemanda(
     (a.colocado_em ?? a.visto_desde).localeCompare(b.colocado_em ?? b.visto_desde) ||
     a.codigo.localeCompare(b.codigo));
   const lido = hora(d.janela.observado_em);
+  const feita = conciliacao !== null && conciliacao.estado === "feita" ? conciliacao : null;
+  // So conta como conciliado o pedido que esta sendo APRESENTADO.
+  const conciliados = feita === null ? 0
+    : ordenados.filter((p) => feita.por_pedido.get(p.ref)?.resultado === "conciliado").length;
+  const fraseDaConciliacao = feita !== null
+    ? `${String(conciliados)} de ${String(ordenados.length)} conciliado(s) com o Reader por numero, dia e quantidades por linha. Conciliado nao e pronto nem saiu.`
+    : conciliacao !== null && conciliacao.estado === "nao_cruzada"
+      ? `Sem cruzamento com o Reader: ${conciliacao.motivo}. Cada pedido aqui e demanda observada.`
+      : "Ainda nao conciliado com o Reader da Teknisa: cada pedido aqui e demanda observada.";
   return {
+    estado_do_join: feita !== null
+      ? `CONCILIADO_${String(conciliados)}_DE_${String(ordenados.length)}`
+      : conciliacao !== null ? "NAO_CRUZADO" : "NAO_QUALIFICADO",
     origem: "DEMANDA_OBSERVADA_NO_GESTOR",
     procedencia,
     observado_em: d.janela.observado_em,
@@ -259,10 +297,14 @@ export function leituraDaDemanda(
     })),
     linhagem: {
       ...projecao.linhagem,
-      transformacoes: [...projecao.linhagem.transformacoes, DEMANDA_GESTOR_VERSAO],
+      transformacoes: [
+        ...projecao.linhagem.transformacoes, DEMANDA_GESTOR_VERSAO,
+        ...(feita !== null ? [CONCILIACAO_READER_VERSAO] : []),
+      ],
     },
     demanda: {
       nivel: "demanda_observada",
+      conciliados,
       procedencia,
       titulo: "Pedidos observados no Gestor",
       origem: "Gestor iFood · tela de expedicao",
@@ -273,12 +315,12 @@ export function leituraDaDemanda(
       unidades: ordenados.reduce((n, p) => n + p.itens.reduce((m, i) => m + i.quantidade, 0), 0),
       cobertura: "So os cartoes montados na tela de expedicao. O total da casa nao esta comprovado.",
       estado_fisico: "Preparo, pronto, saida e cancelamento nao sao afirmados por esta leitura.",
-      conciliacao: "Ainda nao conciliado com o Reader da Teknisa: cada pedido aqui e demanda observada.",
+      conciliacao: fraseDaConciliacao,
       retencao: d.em_retencao === null
         ? null
         : `Leitura retida agora: ${motivoLegivel(d.em_retencao)}. Esta e a ultima janela valida, das ${lido}.`,
       ocultos_por_cancelamento_alegado: retidos.size,
-      pedidos: ordenados.map(pedidoVM),
+      pedidos: ordenados.map((p) => pedidoVM(p, feita?.por_pedido.get(p.ref))),
     },
     eventos_aplicados: projecao.eventos_aplicados,
   };

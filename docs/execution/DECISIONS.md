@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-10-20"
+  atualizado_em: "2026-11-13"
   state_basis: 953a3fb
 ---
 
@@ -2142,3 +2142,27 @@ sem estado entre requisições, porque nenhuma causa candidata existe no nível 
 padrão de dado pessoal retém a janela inteira (fecha fechado). O estado próprio do executor volta do
 feed anterior depois de um reinício; pedidos que entraram e saíram com o executor parado só existem
 no Reader.
+
+### D98 — "Conciliado" é o que o reconciliador existente casa E as quantidades confirmam; nada além
+
+**Decisão.** O nível 2 (`src/product/eventos/conciliacao-reader.ts`) não decide casamento: monta a
+entrada e entrega ao reconciliador de janela que já existia
+(`tools/gestor-native-shadow-reconcile/reconcile.cjs`), que valida escopo, frescor das duas capturas,
+colisão de número curto e revisão ambígua. Um pedido só sobe a `conciliado` quando esse reconciliador
+o devolve como candidato único **e** linhas, unidades e o multiconjunto de quantidades batem com a
+tela do Gestor. Diferença de conteúdo é `divergente` e aparece em texto sob o pedido; número repetido
+ou revisão que o próprio Reader reteve é `ambiguo`; ausência é `nao_encontrado`. O Reader é lido por
+uma porta estreita (`src/platform/leitura/pedidos-do-reader.ts`), só para o cruzamento.
+
+**Por que.** O feed existente do Reader descarta o número curto do iFood, que é a chave do
+cruzamento, e bloqueia o modo real pela lacuna N2-B — que é sobre completude de observações para
+imprimir comanda, não sobre identidade e linhas. Conciliar não precisa das tabelas filhas.
+
+**Alternativas recusadas:** casar por número curto neste módulo (segunda regra de casamento para o
+mesmo fato); promover o pedido conciliado a estado do ciclo (conciliado não é físico: continua
+`aceito`, e a fonte de pedidos continua `parcial`); usar `compare()` agora (exige o registro de
+processamento com nomes e o minuto local, que este leitor não lê — fica para o próximo passo).
+
+**Custo aceito:** "conciliado" significa número, dia e quantidades por linha — não UUID ↔ chave
+nativa (N4 aberto), não nomes de produto, não observações. O cruzamento exige a janela do Gestor com
+menos de 30 s, que é o limite do reconciliador; janela em retenção não é cruzada, e a Home diz por quê.

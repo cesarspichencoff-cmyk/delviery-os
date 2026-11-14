@@ -2293,6 +2293,26 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   color: var(--org-verde-texto-4);
 }
 
+/* Confianca e solidez: conciliado com a segunda fonte deixa de ser tracejado. */
+.org-pedido[data-nivel="conciliado"] .org-pedido__nivel {
+  border-style: solid;
+  border-color: var(--org-linha-clara);
+  color: var(--org-creme-3);
+}
+
+/*
+  As duas fontes discordam sobre este pedido. Isto e tensao operacional — o
+  unico uso de ambar nesta secao —, e fica dito em texto, nunca so em cor.
+*/
+.org-pedido__cruzamento {
+  margin: 0.5rem 0 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--org-ambar);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--org-creme-4);
+}
+
 .org-pedido__itens {
   list-style: none;
   margin: 0.7rem 0 0;

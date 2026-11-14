@@ -146,6 +146,7 @@
     "test:platform:gestor-dom-fixture": "npx tsc && node dist/src/platform/run-gestor-dom-fixture-tests.js",
     "test:gestor:demand-feed": "node tests/gestor-shadow/run-mounted-demand-feed-tests.cjs",
     "test:gestor:demand-home": "npx tsx tests/gestor-shadow/run-demand-feed-home-chain-tests.ts",
+    "test:gestor:reader-reconciliation": "npx tsx tests/gestor-shadow/run-reader-reconciliation-tests.ts",
     "test:gestor:demand:mutacoes": "node tests/gestor-shadow/run-demand-feed-mutation-tests.cjs",
     "lab:gestor:demand": "npx tsc && node labs/gestor-demand-feed/run-lab.cjs",
     "test:platform:saude-fontes": "npx tsx src/platform/run-saude-fontes-tests.ts",

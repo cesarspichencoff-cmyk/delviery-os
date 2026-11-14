@@ -160,7 +160,37 @@ mesmo processo.
 `MainActivity` real. Esperado hoje: o processo cai e a instrumentação reporta `Process crashed`. Com
 `onRenderProcessGone` tratado (recriar o WebView e recarregar a origem), o processo sobrevive.
 
-## 9. Decisões que são do César
+## 9. Continuação de 13/11 — nível 2, regressões e pacote do caixa
+
+**Nível 2 — cruzamento com o Reader (código pronto, provado em bancada sintética).**
+`src/platform/leitura/pedidos-do-reader.ts` lê checkpoint e eventos estáveis do Reader;
+`src/product/eventos/conciliacao-reader.ts` entrega as duas janelas ao reconciliador existente e
+classifica cada pedido: `conciliado`, `divergente`, `nao_encontrado`, `ambiguo`. A Home mostra o nível
+por pedido (sólido = duas fontes concordam; tracejado = só visto) e diz a divergência em texto.
+`npm run test:gestor:reader-reconciliation` → **6/6**. Mutações do elo inteiro: **35/35 mortas, 0 cegas**.
+Não provado: arquivos reais do Reader. O formato veio do código e dos testes do repositório, não de uma
+leitura do caixa.
+
+**As três falhas de regressão.**
+
+| Falha | Causa medida | Desfecho |
+|---|---|---|
+| `governanca` (99 linhas) | **o clone local era raso**: histórico cortado em `85d68758` (06/11). Com o corte, toda base declarada "não era ancestral" e todo arquivo parecia alterado em 06/11 | histórico completado do GitHub (`git fetch --unshallow`, 387 → 1.725 commits alcançáveis): 99 → 4, e as 4 eram do commit deste elo (datas de lifecycle e base do `STATE.json`), corrigidas |
+| `home` H35 | expectativa antiga: cena desconhecida caía na cena `ambiente` com 200; desde `0f1a153` o servidor recusa com 400 | teste alinhado ao comportamento decidido; **51 passam** |
+| `r5d1` PF3 | afirmava "nenhum chamador de runtime do projetor"; já acusava três arquivos de 04–12/11 e ganhou o quarto por decisão (D97) | lista fechada e por nome, nome morto reprova, e a família de revisão não pode ganhar chamador de produto — dois controles negativos medidos vermelhos; **31 passam** |
+
+Regressão depois: **20 suítes, 20 verdes** (era 17 + 3 falhas).
+
+**Pacote da Home para o caixa.** `node tools/empacotar_home_do_caixa.cjs <pasta>` sobe o servidor
+compilado com um rastreador de arquivos, pede 17 rotas, copia exatamente o que foi aberto mais os
+estáticos e o executor, e **sobe de novo de dentro do pacote**. Medido: 118 arquivos, 1,5 MB, 17/17
+rotas, nenhuma dependência externa. O pacote traz `iniciar-home.cjs` (define as variáveis e escuta só
+em `127.0.0.1:5290`) e `MANIFESTO.json` com o SHA-256 de cada arquivo.
+
+**Canal para o caixa.** O servidor remoto do Desktop Commander foi acrescentado à configuração local
+desta pasta e está em `Needs authentication`: só o César consegue entrar.
+
+## 10. Decisões que são do César
 
 1. Autorizar o ensaio supervisionado no caixa, e por qual canal.
 2. Onde a Home roda e em qual tela a equipe a vê.

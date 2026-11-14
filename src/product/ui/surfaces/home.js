@@ -776,15 +776,23 @@ function pedidosObservados(vm) {
     const quando = p.colocado_em ? hora(p.colocado_em) : null;
     const visto = hora(p.visto_desde);
     const alterado = p.revisoes > 1 ? hora(p.revisado_em) : null;
-    return `<li class="org-pedido">
+    // O nivel de evidencia vem pronto por pedido. Solido = duas fontes
+    // concordam; tracejado = so foi visto. A divergencia entre as fontes e
+    // dita em texto, sob o pedido a que pertence.
+    return `<li class="org-pedido" data-nivel="${esc(p.nivel)}">
       <div class="org-pedido__topo">
         <span class="org-pedido__codigo">${esc(p.codigo)}</span>
         <span class="org-pedido__hora">${
           quando ? `pedido das ${esc(quando)}` : visto ? `visto desde ${esc(visto)}` : ""
         }</span>
         ${alterado ? `<span class="org-pedido__rev">alterado as ${esc(alterado)}</span>` : ""}
-        <span class="org-pedido__nivel">demanda observada</span>
+        <span class="org-pedido__nivel">${esc(p.nivel_texto)}</span>
       </div>
+      ${
+        p.conciliacao_detalhe
+          ? `<p class="org-pedido__cruzamento">${esc(p.conciliacao_detalhe)}</p>`
+          : ""
+      }
       <ul class="org-pedido__itens">${p.itens.map(item).join("")}</ul>
     </li>`;
   };

@@ -17,6 +17,7 @@ import http from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, extname, normalize, isAbsolute } from "node:path";
 import { createRequire } from "node:module";
+import { randomBytes } from "node:crypto";
 
 import { entregasVM } from "../src/product/viewmodels/entregas-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
@@ -52,6 +53,12 @@ import { lerHistoricoOperacional } from "../src/platform/leitura/historico-opera
 import { lerSaudeDaFonteTata, type AvaliadorDeSaude, type SaudeDaFonteTata } from "../src/platform/leitura/saude-fonte-tata";
 import { lerDemandaDoGestor, type DemandaDoGestor } from "../src/platform/leitura/demanda-do-gestor";
 import { leituraDaDemanda } from "../src/product/eventos/demanda-gestor";
+import { lerPedidosDoReader } from "../src/platform/leitura/pedidos-do-reader";
+import {
+  conciliarComReader,
+  type ConciliacaoComReader,
+  type Reconciliador,
+} from "../src/product/eventos/conciliacao-reader";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { configurarEscopoShadow, checarAcessoEscopado } from "../src/product/security/escopo-api-shadow";
@@ -181,9 +188,14 @@ const INQUILINO_DA_LEITURA = "tata";
  * policy and homeVM. Never a house total, never physical state, never zero by
  * absence. Reader heartbeat is NOT a Gestor order nor proof of completeness.
  */
-function homeDaOperacao(reader: SaudeDaFonteTata, gestor: DemandaDoGestor, agoraMs: number) {
+function homeDaOperacao(
+  reader: SaudeDaFonteTata,
+  gestor: DemandaDoGestor,
+  agoraMs: number,
+  conciliacao: ConciliacaoComReader | null,
+) {
   const agoraIso = new Date(agoraMs).toISOString();
-  const d = leituraDaDemanda(gestor, { tenant: INQUILINO_DA_LEITURA, agora_iso: agoraIso });
+  const d = leituraDaDemanda(gestor, { tenant: INQUILINO_DA_LEITURA, agora_iso: agoraIso }, conciliacao);
   const fontes: FonteLeitura[] = [
     d.fonte,
     {
@@ -255,7 +267,7 @@ function homeDaOperacao(reader: SaudeDaFonteTata, gestor: DemandaDoGestor, agora
     identidade_de_cada_pedido_verificada: false,
     pedidos_publicaveis: d.demanda !== null,
     nivel_de_evidencia: d.demanda !== null ? d.demanda.nivel : null,
-    estado_do_join: "NAO_QUALIFICADO",
+    estado_do_join: d.estado_do_join,
     impressao_autorizada: false,
     demanda_observada: d.demanda,
   };
@@ -272,6 +284,10 @@ const { createStore: criarStoreConference } = reqLocal(
 const { evaluateTataReaderHealthV1: avaliarSaudeTata } = reqLocal(
   join(process.cwd(), "runtime", "tata-reader", "tata_reader_health_v1.cjs"),
 ) as { evaluateTataReaderHealthV1: AvaliadorDeSaude };
+/** O MESMO reconciliador de janela Gestor x Reader que ja existia. Nao ha copia. */
+const { reconcile: reconciliarJanela } = reqLocal(
+  join(process.cwd(), "tools", "gestor-native-shadow-reconcile", "reconcile.cjs"),
+) as { reconcile: Reconciliador };
 const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
 /** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
 const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
@@ -516,6 +532,11 @@ export async function criarServidor(): Promise<http.Server> {
   // Lido na criacao, e nao no carregamento do modulo: uma configuracao invalida
   // recusa ESTE servidor, e cada instancia sabe de onde le.
   const dirDemandaGestor = diretorioDaDemandaDoGestor(process.env.DELIVERYOS_GESTOR_DEMAND_DIR);
+  // A mesma raiz do leitor TATA que a saude ja usa; aqui ela serve ao
+  // cruzamento. A chave so existe neste processo: as referencias opacas do
+  // reconciliador nao saem dele nem sobrevivem a um reinicio.
+  const dirReaderDoCruzamento = (process.env.TATA_READER_INSTALL_ROOT || "").trim() || null;
+  const chaveDoCruzamento = randomBytes(32).toString("hex");
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
   // Q-026 candidate: a request must never wait 5s in pg.Pool.connect()
@@ -624,8 +645,20 @@ export async function criarServidor(): Promise<http.Server> {
         }
         const agoraMs = Date.now();
         void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata)
-          .then((reader) =>
-            json(res, 200, homeDaOperacao(reader, lerDemandaDoGestor(dirDemandaGestor, agoraMs), agoraMs)))
+          .then((reader) => {
+            const gestor = lerDemandaDoGestor(dirDemandaGestor, agoraMs);
+            // Nivel 2: so ha o que cruzar quando ha janela observada. O Reader
+            // e lido AGORA, do disco, e quem decide o casamento e o
+            // reconciliador de janela existente.
+            const conciliacao = gestor.estado === "observada"
+              ? conciliarComReader(gestor.janela, gestor.modo, lerPedidosDoReader(dirReaderDoCruzamento), {
+                  agora_iso: new Date(agoraMs).toISOString(),
+                  reconciliar: reconciliarJanela,
+                  chave_privada_hex: chaveDoCruzamento,
+                })
+              : null;
+            json(res, 200, homeDaOperacao(reader, gestor, agoraMs, conciliacao));
+          })
           .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
         return;
       }

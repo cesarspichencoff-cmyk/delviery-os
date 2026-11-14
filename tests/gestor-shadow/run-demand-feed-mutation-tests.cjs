@@ -16,8 +16,11 @@ const RUNNER = 'runtime/reporting/gestor_mounted_demand_feed_v1.cjs';
 const READER = 'src/platform/leitura/demanda-do-gestor.ts';
 const PRODUCER = 'src/product/eventos/demanda-gestor.ts';
 const HOME_VM = 'src/product/viewmodels/home-vm.ts';
+const RECON = 'src/product/eventos/conciliacao-reader.ts';
+const NATIVE = 'src/platform/leitura/pedidos-do-reader.ts';
 const UNIT = ['node', ['tests/gestor-shadow/run-mounted-demand-feed-tests.cjs']];
 const CHAIN = ['npx', ['tsx', 'tests/gestor-shadow/run-demand-feed-home-chain-tests.ts']];
+const CROSS = ['npx', ['tsx', 'tests/gestor-shadow/run-reader-reconciliation-tests.ts']];
 
 const MUTATIONS = [
   ['R1 laboratorio carimbado como real', RUNNER, "const sourceMode = mode === 'FIELD' ? 'real' : 'simulated';", "const sourceMode = 'real';", UNIT],
@@ -46,6 +49,15 @@ const MUTATIONS = [
   ['P6 revisao sai da chave idempotente', PRODUCER, 'source_event_id: `${p.ref}:${p.revisao}`,', 'source_event_id: `${p.ref}`,', CHAIN],
   ['V1 leitura parcial sustenta a contagem da casa', HOME_VM, 'const pulsoSustentado = leituraParcialDePedidos\n    ? false', 'const pulsoSustentado = leituraParcialDePedidos\n    ? true', CHAIN],
   ['V2 fonte parcial sem carimbo vira leitura parcial', HOME_VM, '(l.linhagem?.transformacoes ?? []).includes(TRANSFORMACAO_DEMANDA_OBSERVADA);', 'true;', CHAIN],
+  ['C1 quantidades diferentes viram conciliado', RECON, 'const iguais = casado.itemLines === linhas && casado.itemUnits === unidades &&', 'const iguais = true ||', CROSS],
+  ['C2 revisao retida pelo Reader sustenta conciliacao', RECON, 'return !n.retido_pelo_produtor && CHAVE.test(n.chave)', 'return CHAVE.test(n.chave)', CROSS],
+  ['C3 pedidos de outro dia entram no cruzamento', RECON, 'const doDia = reader.pedidos.filter((n) => n.dia === dia);', 'const doDia = reader.pedidos;', CROSS],
+  ['C4 recusa do reconciliador e ignorada', RECON, 'if (r.status !== "CANDIDATES_SHADOW_ONLY" && r.status !== "SIMULATION_ONLY")', 'if (false)', CROSS],
+  ['C5 laboratorio cruza como janela viva', RECON, 'source: "GESTOR_WEB", mode: modo === "real" ? "LIVE_SHADOW" : "SIMULATED"', 'source: "GESTOR_WEB", mode: "LIVE_SHADOW"', CROSS],
+  ['C6 divergencia nao e dita a quem opera', PRODUCER, '(c.resultado === "divergente" || c.resultado === "ambiguo") ? c.detalhe : null', '(c.resultado === "ambiguo") ? c.detalhe : null', CROSS],
+  ['N1 evento de outro pedido aceito pelo leitor do Reader', NATIVE, '[o["CDFILIAL"], o["CDLOJA"], o["NRVENDAREST"], o["NRCOMANDA"]].some((v, i) => v !== partes[i])', 'false', CROSS],
+  ['N2 checkpoint com chave repetida aceito', NATIVE, 'e["emitted_hash"] !== hash ||\n        vistas.has(e["order_key"]))', 'e["emitted_hash"] !== hash)', CROSS],
+  ['N3 quantidade fracionada vira inteira', NATIVE, 'quantidade: inteiro ? Number(q) : null', 'quantidade: Math.max(1, Math.round(Number(q)))', CROSS],
 ];
 
 function run([command, args]) {
@@ -55,7 +67,7 @@ function run([command, args]) {
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const write = (f, text) => fs.writeFileSync(path.join(ROOT, f), text);
 
-for (const [label, suite] of [['executor', UNIT], ['cadeia', CHAIN]]) {
+for (const [label, suite] of [['executor', UNIT], ['cadeia', CHAIN], ['cruzamento', CROSS]]) {
   if (!run(suite)) { console.error('CONTROLE POSITIVO FALHOU: a suite ' + label + ' nao esta verde sem mutacao'); process.exit(1); }
   console.log('CONTROLE ' + label + ' verde sem mutacao');
 }
