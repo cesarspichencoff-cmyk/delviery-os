@@ -95,7 +95,10 @@ interface Session { code: string; actor_id: string; role: string; expiresAt: num
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
-  "Referrer-Policy": "no-referrer",
+  // same-origin, NUNCA no-referrer: com no-referrer o navegador manda `Origin: null` no POST do
+  // formulario de entrada, e a conferencia de origem recusaria todo login (medido em Edge real na CI).
+  // Para fora do site, same-origin continua sem mandar nada.
+  "Referrer-Policy": "same-origin",
   "Strict-Transport-Security": "max-age=31536000",
 };
 const PAGE_HEADERS: Record<string, string> = {

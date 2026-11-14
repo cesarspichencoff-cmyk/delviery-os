@@ -133,6 +133,8 @@ test("sem sessao nada da apresentacao sai: navegacao vai para a entrada, API rec
     assert.equal(entrada.status, 200);
     assert.match(entrada.body, /name="codigo"/);
     assert.equal(entrada.headers["cache-control"], "no-store");
+    // no-referrer faria o navegador mandar Origin: null no POST, e nenhum login passaria.
+    assert.equal(entrada.headers["referrer-policy"], "same-origin");
     assert.equal(b.vistos.length, 0, "a apresentacao foi chamada sem sessao");
   } finally { await b.fechar(); }
 });
@@ -168,6 +170,8 @@ test("entrada vinda de outra origem e recusada antes de conferir o codigo; corpo
     assert.equal(fora.status, 403);
     const semOrigem = await pedir(b.port, { ...form("GER-CODIGO-SINTETICO"), headers: { "content-type": "application/x-www-form-urlencoded" } });
     assert.equal(semOrigem.status, 403);
+    const nula = await pedir(b.port, { ...form("GER-CODIGO-SINTETICO"), headers: { origin: "null", "content-type": "application/x-www-form-urlencoded" } });
+    assert.equal(nula.status, 403, "Origin: null nao e a origem do Copiloto");
     const grande = await pedir(b.port, { ...form("x"), body: "codigo=" + "9".repeat(5000) });
     assert.equal(grande.status, 413);
     assert.equal(b.estado.logins, antes, "o codigo foi conferido numa entrada que devia ser recusada antes");

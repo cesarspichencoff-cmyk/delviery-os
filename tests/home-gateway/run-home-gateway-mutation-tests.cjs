@@ -37,6 +37,7 @@ const MUTATIONS = [
     'if (outcome.status !== "ok") { page(res, 401, NEGADO); return true; }\n        if (!HOME_ROLES.includes(outcome.actor.role)) { page(res, 401, "Sem permissao."); return true; }', UNIT],
   ['G21 alvo com barra dupla segue para a apresentacao', GW, 'if (!raw.startsWith("/") || raw.startsWith("//")) {', 'if (!raw.startsWith("/")) {', UNIT],
   ['G22 configuracao parcial liga a porta pela metade', GW, 'if (!rawPublic || !rawUpstream) throw new Error("HOME_GATEWAY_CONFIG_PARTIAL");', 'if (!rawPublic || !rawUpstream) return null;', UNIT],
+  ['G23 entrada volta a no-referrer (o navegador manda Origin: null e todo login cai)', GW, '"Referrer-Policy": "same-origin",', '"Referrer-Policy": "no-referrer",', UNIT],
   ['W1 piloto: entrada da Home sem limite de tentativas', PILOT, '    if (accessThrottle.blocked(remote, code)) return { status: "throttled" };', '', CHAIN],
   ['W2 piloto: a porta da Home nao e consultada', PILOT, '  if (await homeGateway.handle(req, res)) return;', '', CHAIN],
   ['W3 piloto: erro de codigo na Home nao conta para o limite', PILOT, '    else accessThrottle.failure(remote);', '', CHAIN],

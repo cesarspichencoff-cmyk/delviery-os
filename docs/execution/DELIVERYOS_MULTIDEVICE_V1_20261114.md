@@ -197,3 +197,14 @@ correção de código antes de dois motoboys reais na rua.
 **Não provado:** aparelho físico, fabricantes, economia de bateria, rede móvel, imagem de outra API no emulador
 (só há a 34 no Foxxy). A frente parou no limite do modelo dela antes do roteiro de N aparelhos e do levantamento
 de instalação em outros Android; esses dois itens seguem **abertos**.
+
+**Achado do navegador real (CI, Edge em runner Windows), corrigido.** O login pela porta de operador era recusado
+com 403 em navegador de verdade: a página de entrada declarava `Referrer-Policy: no-referrer`, e com essa política o
+navegador manda `Origin: null` no POST do formulário — a conferência de origem recusava toda entrada. Nenhum teste
+HTTP pegava isso, porque o cliente de teste mandava o `Origin` à mão. Diagnóstico lido na anotação do job
+(`403 POST /entrar` duas vezes, página na entrada com o aviso de origem). Corrigido para `same-origin` (para fora
+do site continua sem mandar nada); a suíte da porta agora exige o cabeçalho e recusa `Origin: null`; mutação G23
+(volta a `no-referrer`) morta — **26/26, 0 cegas**. A conferência de origem não foi afrouxada.
+
+**Android HTTPS ponta a ponta:** vermelho de novo em `a5310d5f`, verde em `f3673938` e `fb1e7c53`, sem mudança
+Android entre eles — intermitente, com causa não lida (log exige credencial). Registrado, não atribuído.
