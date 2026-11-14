@@ -246,6 +246,20 @@ print("LAB_HTTPS_CRASH_CLASSES_ONLY",len(seen))
     adb logcat -b main,system -d -v brief 2>/dev/null |
       python3 ../tests/android/https_process_death_signature_v1.py || true
   fi
+  # Uma anotacao PUBLICA (::error title=...::) com diagnostico SANITIZADO, para
+  # a proxima falha ficar legivel pela API de check-runs SEM credencial. Isto
+  # NAO altera o que o teste prova: so le artefatos ja produzidos. Tudo scrubado.
+  if command -v adb >/dev/null 2>&1; then
+    { echo "emulator_uptime_s=$(adb shell cat /proc/uptime 2>/dev/null | awk '{print int($1)}')"
+      echo "mem_available_kb=$(adb shell cat /proc/meminfo 2>/dev/null | awk '/MemAvailable/{print $2}')"; } \
+      > "$work/ci-facts.txt" 2>/dev/null || true
+    adb logcat -d -v brief AndroidRuntime:* chromium:* ActivityManager:* lowmemorykiller:* cr_AwContents:* WebView:* '*:S' \
+      > "$work/ci-logcat.txt" 2>/dev/null || true
+  fi
+  python3 ../tests/android/ci_lab_failure_annotation_v1.py \
+    --title "DeliveryOS HTTPS lab failed (sanitized)" \
+    --results app/build/outputs/androidTest-results/connected \
+    --logcat "$work/ci-logcat.txt" --facts "$work/ci-facts.txt" || true
   # Preservar vermelho: diagnostico nao e reparo, e jamais vira sucesso.
   exit 1
 fi
