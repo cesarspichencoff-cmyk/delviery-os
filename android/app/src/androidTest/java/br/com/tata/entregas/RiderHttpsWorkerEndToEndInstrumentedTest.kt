@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -15,6 +14,7 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.sync.SyncWorker
 import br.com.tata.entregas.ui.MainActivity
+import br.com.tata.entregas.ui.OriginLockedClient
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,7 +40,8 @@ class RiderHttpsWorkerEndToEndInstrumentedTest {
     private val tripId = "LAB_HTTPS_UI_TRIP_001"
     private val deliveryId = "LAB_HTTPS_UI_DELIVERY_001"
 
-    private class LabSite(private val context: Context) : WebViewClient() {
+    // Herda do cliente de produção: a morte do renderizador é tratada igual.
+    private class LabSite(private val context: Context) : OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL) {
         val policiesServed = AtomicBoolean(false)
         private fun text(data: String, mime: String = "application/json") =
             WebResourceResponse(mime, "UTF-8",

@@ -8,7 +8,6 @@ import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -24,6 +23,7 @@ import br.com.tata.entregas.sync.decideEventReceipt
 import br.com.tata.entregas.sync.SyncWorker
 import org.json.JSONObject
 import br.com.tata.entregas.ui.MainActivity
+import br.com.tata.entregas.ui.OriginLockedClient
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -49,7 +49,8 @@ class RiderRealScreenInstrumentedTest {
     private val labOrigin = "https://10.0.2.2:5193"
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
-    private class InMemorySite(private val context: Context) : WebViewClient() {
+    // Herda do cliente de produção: a morte do renderizador é tratada igual.
+    private class InMemorySite(private val context: Context) : OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL) {
         var requestsOutsideLab = 0
             private set
         var blockedGoogleFontStylesheet = 0
