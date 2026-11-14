@@ -41,6 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0 # a guarda M1 le a historia inteira (vermelha em clone raso, medido)
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:

@@ -72,14 +72,20 @@ let stage = 'inicio';
       stage = name + ': entrada';
       const page = await ctx.newPage();
       const errors = [];
-      page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 200)); });
+      // Recurso que respondeu 401/404 (a propria entrada recusada, o favicon) e registrado, nao reprova.
+      // Reprova: erro de script e recusa de CSP — e o que deixaria a Home em branco no aparelho.
+      const recursos = [];
+      page.on('console', m => { if (m.type() !== 'error') return; const t = m.text().slice(0, 200);
+        (/^Failed to load resource/.test(t) ? recursos : errors).push(t); });
       page.on('pageerror', e => errors.push('pageerror ' + String(e).slice(0, 200)));
       const r1 = await page.goto(HOME + '/', {waitUntil: 'networkidle'});
       const naEntrada = new URL(page.url()).pathname === '/entrar';
       if (out) await page.screenshot({path: path.join(out, 'home-porta-de-operador-entrada-' + name + '-SIMULADO.png')});
       const corpoDaEntrada = (await page.textContent('body') || '').trim().slice(0, 160);
       if (!naEntrada || !(await page.$('#codigo'))) throw Error('a tela de entrada nao apareceu; o navegador mostrou: ' + corpoDaEntrada);
-      const semSessao = await page.evaluate(() => fetch('/api/home').then(r => r.status));
+      // Pela pilha HTTP do navegador, com os cookies dele. Nao por fetch() da pagina: a CSP
+      // da entrada (default-src 'none') recusa fetch, e era isso que a CI media (TypeError).
+      const semSessao = (await page.request.get(HOME + '/api/home', {maxRedirects: 0})).status();
       await page.fill('#codigo', 'codigo-errado-do-navegador');
       await Promise.all([page.waitForLoadState('networkidle'), page.click('button[type=submit]')]);
       const aviso = await page.textContent('.aviso').catch(() => null);
@@ -98,7 +104,7 @@ let stage = 'inicio';
           .map(e => parseFloat(getComputedStyle(e).fontSize))),
       }));
       if (out) await page.screenshot({path: path.join(out, 'home-porta-de-operador-' + name + '-SIMULADO.png'), fullPage: true});
-      results.push({name, statusInicial: r1.status(), redirecionouParaEntrada: naEntrada, apiSemSessao: semSessao, avisoCodigoErrado: aviso,
+      results.push({name, statusInicial: r1.status(), redirecionouParaEntrada: naEntrada, apiSemSessao: semSessao, avisoCodigoErrado: aviso, recursosRecusados: recursos,
         cookie: sessao ? {httpOnly: sessao.httpOnly, secure: sessao.secure, sameSite: sessao.sameSite, path: sessao.path} : null, ...metrics, errosDeConsole: errors});
       await ctx.close();
     }
