@@ -330,6 +330,12 @@ concorrente trocando o pedido pendente). Achado à parte: um `run-portao-de-camp
 3. Medidor de janelas `-PermitirCaixa` ligado; `node ativar-candidato-v1.cjs ativar --autorizacao "<texto do César>"`.
 4. `estado` até `ATIVO` (ou `REVERTIDO`, que já devolve o caixa como estava). Reverter depois: `reverter --autorizacao "..."`.
 
+Revisão adversarial da própria cadeia (depois da contagem): o teste de porta livre ESCUTAVA no endereço do NetBird por
+milissegundos — trocado por teste de conexão (nada escuta), reensaiado pelo conector: ATIVO (rota 401, /ready 200) e REVERTIDO
+(rota 404, saúde 200). E a identidade dos processos depende do contexto: processos subidos pelo conector (elevado) têm o
+caminho do executável ilegível para um shell comum, e o plano RECUSA (falha fechada). No caixa, plano e ativar rodam pelo
+conector, o mesmo contexto dos processos de lá.
+
 O que continua não provado: a troca no próprio caixa (tempos de lá), o piloto do candidato com o Reader real do caixa e o
 banco do ensaio do caixa (o que ele aplicou de migration não foi lido).
 

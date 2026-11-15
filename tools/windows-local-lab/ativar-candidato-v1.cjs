@@ -105,7 +105,14 @@ async function esperar(url, aceitos, seg) {
   while (Date.now() < fim) { s = await status(url); if (aceitos.includes(s)) return s; await dormir(500); }
   throw Error(`${url} respondeu ${s} (esperado ${aceitos.join('/')})`);
 }
-const portaLivre = (host, porta) => new Promise((ok) => { const s = net.createServer(); s.once('error', () => ok(false)); s.listen(porta, host, () => s.close(() => ok(true))); });
+// Livre = ninguem aceita conexao. Testa CONECTANDO, nunca escutando: escutar, mesmo por milissegundos,
+// abriria a porta no endereco do NetBird do caixa.
+const portaLivre = (host, porta) => new Promise((ok) => {
+  const s = net.connect({ host, port: porta });
+  s.setTimeout(1000, () => { s.destroy(); ok(false); });
+  s.once('connect', () => { s.destroy(); ok(false); });
+  s.once('error', (e) => ok(e.code === 'ECONNREFUSED'));
+});
 async function esperarPortaLivre(host, porta, seg) { const fim = Date.now() + seg * 1000; while (Date.now() < fim) { if (await portaLivre(host, porta)) return; await dormir(300); } throw Error(`porta ${host}:${porta} continua ocupada`); }
 async function parar(pid, seg = 10) { if (!vivo(pid)) return; process.kill(pid); const fim = Date.now() + seg * 1000; while (vivo(pid) && Date.now() < fim) await dormir(200); if (vivo(pid)) throw Error(`pid ${pid} nao terminou`); }
 function lancar(rotulo, app, script, env) {
