@@ -122,10 +122,6 @@ async function esperar(url, aceitos, seg) {
   while (Date.now() < fim) { s = await status(url); if (aceitos.includes(s)) return s; await dormir(500); }
   throw Error(`${url} respondeu ${s} (esperado ${aceitos.join('/')})`);
 }
-  s.setTimeout(1000, () => { s.destroy(); ok(false); });
-  s.once('connect', () => { s.destroy(); ok(false); });
-  s.once('error', (e) => ok(e.code === 'ECONNREFUSED'));
-});
 // Quem ESCUTA numa porta, pela tabela do sistema (so leitura, nenhum socket). Conectar nao serve: no
 // caixa a guarda do NetBird DESCARTA conexao ao endereco do wt0, a tentativa expira, e expirar nao e
 // "ocupado" (medido no caixa em 15/11: o ensaio reverteu por uma porta que ninguem escutava).
