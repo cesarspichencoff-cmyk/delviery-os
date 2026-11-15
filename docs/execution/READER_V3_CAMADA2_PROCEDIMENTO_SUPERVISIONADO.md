@@ -223,3 +223,20 @@ falhas recentes do V2 antes da troca. Durante a observação, guardar o código
 e o horário da falha do V2 no momento do corte, junto da amostra da sessão
 SQL. O ensaio dos dois turnos exige acompanhamento contínuo e possibilidade
 de restauração imediata.
+
+### Correção da prioridade de leitura após o ensaio
+
+O V3 busca primeiro pedidos dos últimos cinco minutos quando a leitura
+cronológica está atrasada. O cursor dessa busca é persistido separadamente.
+A leitura cronológica e a revisão de inserções retroativas continuam, com
+uma vaga reservada ao histórico no ciclo quando há registros antigos e
+recentes pendentes. A primeira busca recente com resultados pode dispensar
+a consulta histórica naquele ciclo. O limite é de duas consultas de descoberta
+e seis capturas de detalhe por ciclo. O limite anterior de detalhe era 16.
+
+Em bancada, a primeira captura foi de um pedido recente com 140 antigos
+pendentes em um checkpoint do formato anterior. O histórico foi processado
+até o fim e o reinício retomou o cursor recente. Outro teste processou 1.000
+pedidos com o mesmo horário e preservou 1.000 projeções distintas. A
+comparação de carga SQL e a latência dos pedidos do turno exigem nova amostra
+em campo. A ocorrência de espera por bloqueio no V2 continua no pré-voo.

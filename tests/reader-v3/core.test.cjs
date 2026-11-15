@@ -35,7 +35,37 @@ test('overlapping tick and second writer both rejected',async t=>{const x=setup(
 test('poison order rotates, holds previous revision and does not starve good order',async t=>{const f=fixture(),g=fixture(2),x=setup(t,[f,g]);const w=new Watcher(x.opts);const capture=x.source.capture;x.source.capture=async r=>{if(r.NRVENDAREST===f.headerRows[0].NRVENDAREST)throw Error('LOCK_TIMEOUT');return capture(r);};await a.rejects(w.tick(),/LOCK_TIMEOUT/);x.advance(70000);await a.rejects(w.tick());a.equal(w.state.seq,1);a.ok(w.state.holds[key(f)]);w.close();});
 test('missing event and modified event never advance consumer',async t=>{const x=setup(t);const w=new Watcher(x.opts);await w.tick();w.close();const file=path.join(x.root,'events',S.eventName(1)),raw=fs.readFileSync(file);fs.unlinkSync(file);const c=new Consumer({root:path.join(x.root,'projection'),sourceRoot:x.root,clock:()=>now,project});a.throws(()=>c.tick());a.equal(c.state.seq,0);fs.writeFileSync(file,raw);const v=JSON.parse(raw);v.data.event.order.items[0].QTPRODCOMVEN='9';S.atomic(file,v.data);a.throws(()=>c.tick(),/INTEGRITY/);a.equal(c.state.seq,0);c.close();});
 test('corrupt checkpoint cannot silently bootstrap',async t=>{const x=setup(t);fs.writeFileSync(path.join(x.root,'watcher.json'),'{');a.throws(()=>new Watcher(x.opts));a.ok(!fs.existsSync(path.join(x.root,'watcher.lock')));});
-test('1000 same-time orders paginate without loss or 250 cutoff',async t=>{const started=performance.now(),cpu=process.cpuUsage();const x=setup(t,Array.from({length:1000},(_,i)=>fixture(i+1)));const w=new Watcher(x.opts);for(let i=0;i<90&&w.state.seq<1000;i++){await w.tick();x.advance(6000);}a.equal(w.state.seq,1000);w.close();const c=new Consumer({root:path.join(x.root,'projection'),sourceRoot:x.root,clock:()=>now,project});while(c.tick(128).lag>0){}a.equal(Object.keys(c.state.latest).length,1000);c.close();console.log('V3_1000_ORDERS',JSON.stringify({wall_ms:Math.round(performance.now()-started),cpu_us:process.cpuUsage(cpu),queries:x.metrics()}));});
+test('1000 same-time orders paginate without loss or 250 cutoff',async t=>{const started=performance.now(),cpu=process.cpuUsage();const x=setup(t,Array.from({length:1000},(_,i)=>fixture(i+1)));const w=new Watcher(x.opts);for(let i=0;i<250&&w.state.seq<1000;i++){await w.tick();x.advance(6000);}a.equal(w.state.seq,1000);w.close();const c=new Consumer({root:path.join(x.root,'projection'),sourceRoot:x.root,clock:()=>now,project});while(c.tick(128).lag>0){}a.equal(Object.keys(c.state.latest).length,1000);c.close();console.log('V3_1000_ORDERS',JSON.stringify({wall_ms:Math.round(performance.now()-started),cpu_us:process.cpuUsage(cpu),queries:x.metrics()}));});
+test('a current order passes a saturated historical queue from the previous checkpoint format',async t=>{
+ const history=Array.from({length:140},(_,i)=>fixture(i+1));
+ for(const f of history)f.headerRows[0].DTHRABERMESA='2026-11-15T10:00:00.000';
+ const recent=fixture(141),x=setup(t,[...history,recent]);
+ let watcher=new Watcher(x.opts);
+ watcher.state.pending=history.map(f=>({key:key(f),row:f.headerRows[0]}));
+ watcher.save();watcher.close();
+
+ const attempted=[];
+ const capture=x.source.capture;
+ x.source.capture=async row=>{attempted.push(row.NRVENDAREST);return capture(row);};
+ watcher=new Watcher(x.opts);
+ const tick=await watcher.tick();
+ a.equal(attempted[0],recent.headerRows[0].NRVENDAREST);
+ a.equal(attempted[1],history[0].headerRows[0].NRVENDAREST);
+ a.equal(tick.captured,6);
+ a.ok(tick.queries<=8);
+ a.equal(watcher.state.pending.length,history.length-5);
+ const cursor=watcher.state.recentCursor;
+ watcher.close();
+
+ watcher=new Watcher(x.opts);
+ a.deepEqual(watcher.state.recentCursor,cursor);
+ x.advance(6000);await watcher.tick();
+ a.equal(attempted.filter(id=>id===recent.headerRows[0].NRVENDAREST).length,1);
+ for(let i=0;i<30&&watcher.state.seq<141;i++){x.advance(6000);await watcher.tick();}
+ a.equal(watcher.state.seq,141);
+ a.equal(watcher.state.pending.length,0);
+ watcher.close();
+});
 test('live owner lock cannot be recovered',t=>{const x=setup(t);const release=S.lock(x.root,'unit');a.throws(()=>S.recoverLock(x.root,'unit'),/OWNER_ALIVE/);release();});
 test('failed consumer atomic write leaves memory and disk at old checkpoint',async t=>{const x=setup(t),w=new Watcher(x.opts);await w.tick();w.close();const out=path.join(x.root,'projection'),c=new Consumer({root:out,sourceRoot:x.root,clock:()=>now,project});const rename=fs.renameSync;fs.renameSync=(a,b)=>{if(b===path.join(out,'consumer.json'))throw Object.assign(Error('DISK_FULL'),{code:'ENOSPC'});return rename(a,b);};try{a.throws(()=>c.tick(),/DISK_FULL/);a.equal(c.state.seq,0);a.equal(Object.keys(c.state.latest).length,0);}finally{fs.renameSync=rename;}a.equal(c.tick().count,1);a.equal(c.tick().count,0);c.close();});
 for(const point of ['after_checkpoint','after_event'])test('real process kill and explicit lock recovery '+point,async t=>{const x=setup(t),cp=require('node:child_process');const child=cp.spawn(process.execPath,[path.join(__dirname,'process-worker.cjs'),x.root,'watcher',point],{windowsHide:true,stdio:'ignore'});const exit=await new Promise(r=>child.once('exit',(code,signal)=>r({code,signal})));a.ok(exit.signal||exit.code!==0);a.throws(()=>new Watcher(x.opts),/OWNER_LOCKED/);S.recoverLock(x.root,'watcher');const w=new Watcher(x.opts);await w.tick();a.equal(w.state.seq,1);w.close();a.equal(fs.readdirSync(path.join(x.root,'events')).filter(n=>n.endsWith('.json')).length,1);});

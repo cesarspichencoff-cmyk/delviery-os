@@ -4,6 +4,11 @@ const keyOf=r=>[r.CDFILIAL,r.CDLOJA,r.NRVENDAREST,r.NRCOMANDA].join('|');
 function cursorOf(r){return {time:r.DTHRABERMESA,sale:r.NRVENDAREST,order:r.NRCOMANDA};}
 function cmp(a,b){for(const k of ['time','sale','order']){if(a[k]!==b[k])return a[k]<b[k]?-1:1;}return 0;}
 const initialCursor=from=>({time:from,sale:'',order:''});
+const RECENT_MS=5*60*1000;
+const CAPTURES_PER_TICK=6;
+const HISTORY_QUEUE_LIMIT=96;
+const RECENT_QUEUE_LIMIT=32;
+const DISCOVERY_QUEUE_LIMIT=HISTORY_QUEUE_LIMIT+2*RECENT_QUEUE_LIMIT;
 function validateDiscovery(rows,cursor,until){
  if(!Array.isArray(rows)||rows.length>32)throw Error('DISCOVERY_BOUNDS');let prev=cursor;
  for(const r of rows){if(r.CDFILIAL!=='0001'||r.CDLOJA!=='01'||!['DLV_IFO','DLV_NMO'].includes(r.IDORGCMDVENDA)||
@@ -29,35 +34,67 @@ class Watcher {
   try{
    this.flush();if(ms<this.state.nextAt)return {...stats,backoff:true};
    // Wall time is explicit, source native clock uses Sao Paulo UTC-03.
-   const until=new Date(ms-3*3600000).toISOString().slice(0,23);
+   const wallTime=ms-3*3600000;
+   const until=new Date(wallTime).toISOString().slice(0,23);
+   const recentFloor=new Date(wallTime-RECENT_MS).toISOString().slice(0,23);
+   const isRecent=p=>p.row.DTHRABERMESA>=recentFloor;
    const enqueue=r=>{const k=keyOf(r);if(!this.state.pending.some(p=>p.key===k))this.state.pending.push({key:k,row:r});};
-   if(this.state.pending.length<128){const rs=await this.source.discover(this.state.cursor,until);stats.queries++;
-    validateDiscovery(rs,this.state.cursor,until);rs.forEach(enqueue);if(rs.length)this.state.cursor=cursorOf(rs.at(-1));this.save();}
-   // Revisit by native opening, including backdated inserts: bounded page, no full-day join.
-   if(ms>=this.state.repairAt&&this.state.pending.length<128){
-    const floor=new Date(ms-3*3600000-48*3600000).toISOString().slice(0,19);
-    if(this.state.repair.time<floor)this.state.repair=initialCursor(floor);
-    const rs=await this.source.discover(this.state.repair,until);stats.queries++;validateDiscovery(rs,this.state.repair,until);
-    rs.forEach(r=>{const old=this.state.latest[keyOf(r)];if(!old||ms-old.checkedAt>=900000)enqueue(r);});
-    this.state.repair=rs.length===32?cursorOf(rs.at(-1)):initialCursor(floor);this.state.repairAt=ms+60000;this.save();
+   const discover=async (cursor)=>{
+    const rows=await this.source.discover(cursor,until);stats.queries++;
+    validateDiscovery(rows,cursor,until);
+    return rows;
+   };
+   const enqueueNew=row=>{if(!this.state.latest[keyOf(row)])enqueue(row);};
+   // The recent cursor can skip ahead. The chronological cursor still discovers
+   // orders outside that window, including those already pending at restart.
+   let recentStartup=false;
+   if(this.state.cursor.time<recentFloor&&this.state.pending.length<DISCOVERY_QUEUE_LIMIT&&this.state.pending.filter(isRecent).length<RECENT_QUEUE_LIMIT){
+    const prior=this.state.recentCursor;
+    const cursor=prior&&prior.time>=recentFloor?prior:initialCursor(recentFloor);
+    const rows=await discover(cursor);
+    rows.forEach(enqueueNew);
+    recentStartup=!prior&&rows.length>0;
+    this.state.recentCursor=rows.length?cursorOf(rows.at(-1)):cursor;
+    this.save();
+   }
+   if(!recentStartup&&this.state.pending.length<HISTORY_QUEUE_LIMIT){
+    if(ms>=this.state.repairAt){
+     // Alternate chronological discovery with a bounded page for backdated inserts.
+     const floor=new Date(wallTime-48*3600000).toISOString().slice(0,19);
+     const cursor=this.state.repair.time>=floor?this.state.repair:initialCursor(floor);
+     const rows=await discover(cursor);
+     rows.forEach(row=>{const old=this.state.latest[keyOf(row)];if(!old||ms-old.checkedAt>=900000)enqueue(row);});
+     this.state.repair=rows.length===32?cursorOf(rows.at(-1)):initialCursor(floor);
+     this.state.repairAt=ms+60000;
+    }else{
+     const rows=await discover(this.state.cursor);
+     rows.forEach(enqueueNew);
+     if(rows.length)this.state.cursor=cursorOf(rows.at(-1));
+    }
+    this.save();
    }
    // Fast revisions for recent orders; historical/terminal state letters never imply completion.
    for(const [key,v] of Object.entries(this.state.latest)){
     const age=ms-Date.parse(v.row.DTHRABERMESA.slice(0,23)+'-03:00');
     const interval=age<300000?15000:age<7200000?60000:900000;
-    if(age<=48*3600000&&ms-v.checkedAt>=interval&&this.state.pending.length<128)enqueue(v.row);
+    const queueLimit=isRecent(v)?HISTORY_QUEUE_LIMIT+RECENT_QUEUE_LIMIT:HISTORY_QUEUE_LIMIT;
+    if(age<=48*3600000&&ms-v.checkedAt>=interval&&this.state.pending.length<queueLimit)enqueue(v.row);
    }
    this.save();
-   for(let n=0;n<16&&this.state.pending.length&&Date.now()-start<1500;n++){
-    const p=this.state.pending[0];let event;
+   for(let n=0;n<CAPTURES_PER_TICK&&this.state.pending.length&&Date.now()-start<1500;n++){
+    // Read a recent order first and reserve the second slot for older orders.
+    const preferRecent=n!==1;
+    const preferred=this.state.pending.findIndex(p=>isRecent(p)===preferRecent);
+    const at=Math.max(0,preferred);
+    const p=this.state.pending[at];let event;
     try{const raw=await this.source.capture(p.row);stats.queries++;stats.captured++;
      event=buildCapture(raw,p.key,now,this.service(raw.headerRows?.[0]?.DTHRABERMESA));
      delete this.state.holds[p.key];
     }catch(e){
      this.state.holds[p.key]={code:/^[A-Z0-9_]+$/.test(e.message)?e.message:'CAPTURE_FAILED',at:now.toISOString()};
-     this.state.pending.push(this.state.pending.shift());this.save();throw e;
+     this.state.pending.splice(at,1);this.state.pending.push(p);this.save();throw e;
     }
-    const old=this.state.latest[p.key];this.state.pending.shift();
+    const old=this.state.latest[p.key];this.state.pending.splice(at,1);
     this.state.latest[p.key]={row:p.row,checkedAt:ms,revision:event.revision};
     if(!old||old.revision!==event.revision){this.state.seq++;this.state.outbox={seq:this.state.seq,event};stats.emitted++;}
     this.save();this.fault('after_checkpoint');this.flush();
