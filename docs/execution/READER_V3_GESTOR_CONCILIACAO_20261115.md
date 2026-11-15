@@ -83,6 +83,30 @@ lido de forma passiva.
 - Prova: `run-gestor-local-tests.ts` **12/12** (LevelDB real de fixture, canários de dado pessoal,
   HTTP pelo servidor de `dist/`) e `tools/mutantes-gestor-local.cjs` **5/5 mortos**.
 
+## 3a. Defeito achado pela conciliação: observação no item vizinho
+
+A Home do laboratório, com dados reais, classificou 2 pares como "observação divergente". O script
+do caixa tinha achado as 5 observações. Diagnóstico no caixa, imprimindo só índices e booleanos: o
+texto do iFood estava no evento do Reader, mas o `item_index` da linha de observação é a posição
+**0-based** em `items`. Em 7.079 de 7.079 linhas com índice e `CDPRODUTO`, a base 0 bate (6.627 só
+nela e 452 nas duas, por produto repetido), e nenhuma bate só em base 1.
+
+A camada 1 lia em base 1 e pendurava a observação do cliente **no item seguinte**, um risco direto
+para restrição alimentar. Corrigido em `pedidos-reais-do-reader.ts`: índice 0-based e, quando a linha
+traz `CDPRODUTO`, ele tem de ser o da linha apontada. Se não for, a observação vai para o pedido e a
+leitura vira "parcial". Regressão: R15 e dois mutantes (`observacao_base_1`,
+`observacao_sem_conferir_produto`), ambos mortos. As fixtures antigas usavam base 1, ou seja, os
+testes reproduziam a hipótese errada, não o esquema real.
+
+## 3b. Identidade do Reader e onde a camada 2 pode rodar
+
+O serviço `TataComandaReader` roda como `NT SERVICE\TataComandaReader` (conta virtual) e acessa o SQL
+por segurança integrada, numa instância nomeada, sem senha no script. Uma conta virtual só existe
+dentro do próprio serviço. Ler `ITCOMANDAEST`, `OBSITCOMANDAVEN`, `OBSITCOMANDAEST` e `OCORRENCIA`
+com a identidade legítima significa rodar **dentro do serviço do Reader**, como watcher V3 sob o
+supervisor. Isso é intervenção produtiva e exige o procedimento supervisionado; criar outro login ou
+ACL está fora de cogitação (decisão C, recusa de B).
+
 ## 4. O que não está provado
 
 - A leitura com o Gestor **em serviço**: pedidos em andamento, categorias que não sejam `CONCLUDED`,

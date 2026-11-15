@@ -174,19 +174,29 @@ function nomesDaDecisao(raiz: string, nomeDoEvento: string): Map<string, string>
  * Observacoes do evento. So valem quando o Reader declarou a varredura COMPLETA e cada linha tem a
  * ligacao provada; o resto e "parcial" (ha linha, mas nao da para dizer que e tudo) ou "nao lidas".
  */
-function observacoes(o: Record<string, unknown>, nItens: number) {
+function observacoes(o: Record<string, unknown>, itens: readonly unknown[]) {
+  const nItens = itens.length;
   const linhas = Array.isArray(o["observation_rows"]) ? (o["observation_rows"] as unknown[]).filter(objeto) : null;
   if (linhas === null) return { estado: "nao_lidas_pela_fonte" as const, pedido: null, porItem: null };
   const todasProvadas = linhas.every((l) => l["join_proven"] === true && texto(l["value"], 500));
-  const completa = o["observation_scan_complete"] === true && todasProvadas;
+  let ligacaoQuebrada = false;
   const pedido: string[] = [];
   const porItem: string[][] = Array.from({ length: nItens }, () => []);
   for (const l of linhas) {
     if (!texto(l["value"], 500)) continue;
+    // `item_index` do Reader e a POSICAO 0-based da linha em `items` (medido em 15/11: 7079 de 7079
+    // linhas com indice e produto batem em base 0; nenhuma so em base 1). Quando a linha de observacao
+    // traz o CDPRODUTO, ele tem de ser o da linha apontada; se nao for, a observacao NAO e pendurada em
+    // item nenhum (fica no pedido) e a leitura deixa de ser completa.
+    const temIndice = l["item_index"] !== undefined && l["item_index"] !== null;
     const idx = Number(l["item_index"]);
-    if (Number.isInteger(idx) && idx >= 1 && idx <= nItens) porItem[idx - 1]!.push(l["value"] as string);
-    else pedido.push(l["value"] as string);
+    if (!temIndice) { pedido.push(l["value"] as string); continue; }
+    const alvo = Number.isInteger(idx) && idx >= 0 && idx < nItens ? itens[idx] : undefined;
+    const produtoBate = typeof l["CDPRODUTO"] !== "string" || (objeto(alvo) && alvo["CDPRODUTO"] === l["CDPRODUTO"]);
+    if (alvo !== undefined && produtoBate) porItem[idx]!.push(l["value"] as string);
+    else { ligacaoQuebrada = true; pedido.push(l["value"] as string); }
   }
+  const completa = o["observation_scan_complete"] === true && todasProvadas && !ligacaoQuebrada;
   // `observation_scan_complete=true` e AUTODECLARADO pelo Reader, e a consulta instalada so le as
   // colunas de texto de ITCOMANDAVEN, nunca OBSITCOMANDAVEN/OBSITCOMANDAEST/OCORRENCIA (medido no
   // codigo instalado em 15/11). Logo, nem "completa" vira "observadas": vira "campos_de_texto_lidos".
@@ -261,7 +271,7 @@ function pedidoDoEvento(raiz: string, nome: string, ev: unknown, chave: string |
   if (typeof aberto !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(aberto) || !Number.isFinite(observado) ||
       !texto(o["IDSTCOMANDA"], 20) || !Array.isArray(itens) || itens.length > 200) return { tipo: "invalido" };
   const nomes = nomesDaDecisao(raiz, nome);
-  const obs = observacoes(o, itens.length);
+  const obs = observacoes(o, itens as unknown[]);
   const lista: ItemReal[] = [];
   for (const [i, item] of (itens as unknown[]).entries()) {
     if (!objeto(item) || !texto(item["CDPRODUTO"], 40) || !texto(item["IDSTPRCOMVEN"], 20) || !texto(item["QTPRODCOMVEN"], 24)) return { tipo: "invalido" };

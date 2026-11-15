@@ -200,7 +200,7 @@ function eventoTeknisa(curto: string, minAtras: number, itens: Array<{ arv: stri
   const hash = createHash("sha256").update(key + abertura).digest("hex").toUpperCase();
   const order = { CDFILIAL: "0001", CDLOJA: "01", NRVENDAREST: "77" + curto, NRCOMANDA: "55" + curto, NRCOMANDAEXT: curto, IDORGCMDVENDA: "DLV_IFO", IDSTCOMANDA: "P", DTHRABERMESA: abertura,
     items: itens.map((i, k) => ({ NRPRODCOMVEN: String(k + 1), CDPRODUTO: "10" + k, CDARVPROD: i.arv, QTPRODCOMVEN: i.q, IDSTPRCOMVEN: "4" })), observation_scan_complete: true,
-    observation_rows: [{ source_field: "DSOBSDESCIT", value: "sem cebolinha", scope_hint: "item", join_proven: true, item_index: 1, CDPRODUTO: "100" }] };
+    observation_rows: [{ source_field: "DSOBSDESCIT", value: "sem cebolinha", scope_hint: "item", join_proven: true, item_index: 0, CDPRODUTO: "100" }] };
   writeFileSync(join(EV, `55${curto}_${hash}.json`), JSON.stringify({ schema: "deliveryos.tata-reader-stable-order-event.v1", order_key: key, snapshot_hash: hash,
     observed_at: new Date(AGORA - (minAtras - 1) * 60_000).toISOString(), order, ready_for_downstream_shadow: true, blockers: [], effects: {} }));
 }
