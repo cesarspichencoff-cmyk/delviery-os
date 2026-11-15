@@ -240,3 +240,36 @@ até o fim e o reinício retomou o cursor recente. Outro teste processou 1.000
 pedidos com o mesmo horário e preservou 1.000 projeções distintas. A
 comparação de carga SQL e a latência dos pedidos do turno exigem nova amostra
 em campo. A ocorrência de espera por bloqueio no V2 continua no pré-voo.
+
+### Reensaio com prioridade recente no jantar de 15/11
+
+CAIXA_MOOCA, Itaim. Candidata `29674347d10328244a07b262af72309e75c4bcc3`,
+pacote `eda7ea2128cb3a662d8e77315650c1864a403087313f05539e8ec0514d6d5d47`.
+O ensaio curto autorizado rodou em sombra das 20h35m13s às 20h40m33s.
+A primeira projeção saiu após 69,7 s de partida do serviço e já continha
+cinco pedidos do jantar. O primeiro deles havia aberto às 20h31.
+
+O V3 terminou com 108 comandas distintas, 110 eventos projetados e duas
+revisões após a primeira captura. As sete comandas do jantar somaram 25
+linhas e tiveram par no Gestor: cinco correspondências nos campos
+comparáveis, um complemento sem confirmação na Teknisa e um vínculo sem
+prova independente. Zero divergências de itens ou quantidades nesses pares.
+As duas comandas iFood registradas pelo V2 antes do fim da janela e abertas
+após o reinício também foram capturadas pelo V3. Outras seis apareceram no
+journal V2 após o fim da janela. As duas capturas novas do V3 levaram cerca
+de 49 s entre abertura na Teknisa e gravação do evento, incluindo a partida.
+A amostra não contém pedidos com abertura posterior à primeira projeção do
+V3 que tenham aparecido no journal V2 durante a janela.
+
+Zero falhas do V3 e zero atraso entre eventos e projeção no fechamento.
+O consumidor acumulou 142 ms de CPU em 251,354 s de execução. Na leitura
+das 20h40m21s, a sessão SQL do V3 acumulava 375 ms de CPU e 54.686 leituras
+lógicas, sem escritas ou sessões bloqueadas por ela naquele instante.
+
+O monitor encerrou no prazo. A primeira espera do restaurador venceu antes
+do ciclo do V2. A verificação independente confirmou SHA-256 original,
+serviço ativo, V3 desativado e um novo ciclo V2 às 20h41m37s com zero falhas
+consecutivas. Nova conferência às 20h43 confirmou ciclo às 20h42m37s e zero
+falhas. As 30 permissões temporárias foram revogadas às 20h41m26s. O ensaio
+qualifica a prioridade recente em campo. A latência após a partida e a
+cobertura dos dois turnos seguem para a janela de 16/11.
