@@ -164,7 +164,15 @@ const pgRodando = async () => !(await portaLivre(L.dbHost, L.dbPort));
 function pgCtl(args, ms) { return rodarParaArquivo(path.join(L.pgBin, 'pg_ctl.exe'), ['-D', L.pgData, ...args], ms); }
 
 // Ambientes: os MESMOS que local-control.cjs e remote-pilot.cjs montam hoje, mais o que o V1 exige.
-function ambientes() {
+// Onde o piloto do CANDIDATO escuta. loopback: so 127.0.0.1, modo local, sem contas remotas nem
+// origem publica - o endereco do NetBird fica exatamente como estava (padrao da linha de base
+// parada, em que o NetBird hoje nao serve nada). netbird: o mesmo endereco, porta e modo de teste
+// do ensaio antigo (padrao da linha de base ativa, para nao mudar a disponibilidade dele).
+const MODOS_PILOTO = ['loopback', 'netbird'];
+let PILOTO = L.enderecoPiloto;
+const hostDoPiloto = (modo) => (modo === 'loopback' ? '127.0.0.1' : L.enderecoPiloto);
+
+function ambientes(modoPiloto = 'netbird') {
   const sec = lerJson(path.join(A, 'private-local.json'));
   const v1 = lerJson(F.segredos);
   const stamp = lerJson(path.join(appC, 'dist', 'build-stamp.json'));
@@ -177,15 +185,19 @@ function ambientes() {
     if (!/^lab-mooca-\d+$/.test(u.actor_id) || !/^[a-f0-9]{64}$/.test(u.token) || [u.actor_id, u.role, u.label].some((v) => typeof v !== 'string' || /[;:]/.test(v))) throw Error('conta sintetica invalida');
     return [u.actor_id, u.role, u.label, u.token].join(':');
   }).join(';');
+  const pilotoNetbird = { ...base, ENTREGAS_ENV: 'cloud', ENTREGAS_BIND: L.enderecoPiloto, ENTREGAS_UI_PORT: String(L.portaPiloto), ENTREGAS_UNIT_ID: 'ITAIM',
+    ENTREGAS_PILOT_CONFIG: path.join(A, 'pilot-local.json'), ENTREGAS_DATA_DIR: F.dados, ENTREGAS_GPS_FLAGS_CONFIG: path.join(A, 'gps-disabled.json'),
+    ENTREGAS_PLATFORM_URL: `http://127.0.0.1:${L.portaCritico}`, ENTREGAS_PLATFORM_READ_SECRET: sec.read, ENTREGAS_USERS: usuarios,
+    ENTREGAS_ALLOWED_ORIGINS: L.publicUrl, ENTREGAS_PUBLIC_URL: L.publicUrl, ENTREGAS_TATA_READER_ROOT: L.readerRoot,
+    ENTREGAS_TATA_BINDING_PATH: path.join(A, 'tata-source-binding.json'), ENTREGAS_TRIP_GRANT_SECRET: v1.trip_grant };
+  // O mesmo que remote-pilot.cjs start-local faz: modo local, so loopback, sem contas e origens remotas.
+  const pilotoLoopback = { ...pilotoNetbird, ENTREGAS_ENV: 'local', ENTREGAS_BIND: '127.0.0.1' };
+  for (const k of ['ENTREGAS_USERS', 'ENTREGAS_ALLOWED_ORIGINS', 'ENTREGAS_PUBLIC_URL']) delete pilotoLoopback[k];
   return {
     commit: stamp.commit,
+    pilot: modoPiloto === 'loopback' ? pilotoLoopback : pilotoNetbird,
     critical: { ...comum, DELIVERYOS_DATABASE_URL: db('deliveryos_critical', sec.critical) },
     async: { ...comum, DELIVERYOS_DATABASE_URL: db('deliveryos_async', sec.async), DELIVERYOS_INSTANCE_ID: 'mooca-lab-async' },
-    pilot: { ...base, ENTREGAS_ENV: 'cloud', ENTREGAS_BIND: L.enderecoPiloto, ENTREGAS_UI_PORT: String(L.portaPiloto), ENTREGAS_UNIT_ID: 'ITAIM',
-      ENTREGAS_PILOT_CONFIG: path.join(A, 'pilot-local.json'), ENTREGAS_DATA_DIR: F.dados, ENTREGAS_GPS_FLAGS_CONFIG: path.join(A, 'gps-disabled.json'),
-      ENTREGAS_PLATFORM_URL: `http://127.0.0.1:${L.portaCritico}`, ENTREGAS_PLATFORM_READ_SECRET: sec.read, ENTREGAS_USERS: usuarios,
-      ENTREGAS_ALLOWED_ORIGINS: L.publicUrl, ENTREGAS_PUBLIC_URL: L.publicUrl, ENTREGAS_TATA_READER_ROOT: L.readerRoot,
-      ENTREGAS_TATA_BINDING_PATH: path.join(A, 'tata-source-binding.json'), ENTREGAS_TRIP_GRANT_SECRET: v1.trip_grant },
   };
 }
 
@@ -259,9 +271,11 @@ async function plano() {
       if (livre < tam * 3) falhas.push('espaco livre insuficiente para a copia a frio do banco');
     }
   }
+  const modoPiloto = opt('--piloto') || (linhaDeBase === 'parado' ? 'loopback' : 'netbird');
+  if (!MODOS_PILOTO.includes(modoPiloto)) falhas.push(`--piloto ${modoPiloto} invalido (loopback | netbird)`);
   let preflight = null;
   if (fs.existsSync(F.segredos)) {
-    const amb = ambientes();
+    const amb = ambientes(modoPiloto);
     preflight = { critico: testar(TESTE_CRITICO, amb.critical), assincrono: testar(TESTE_CRITICO, amb.async), piloto: testar(TESTE_PILOTO, amb.pilot) };
     for (const [k, v] of Object.entries(preflight)) if (JSON.stringify(v).includes('RECUSADO') || v.erro || v.ok === false) falhas.push(`preflight ${k} recusado`);
     if (preflight.critico.concessaoUnidades !== 1) falhas.push('concessao de viagem nao configurada para ITAIM');
@@ -275,7 +289,7 @@ async function plano() {
   const reversao = linhaDeBase === 'parado'
     ? 'automatica em qualquer falha (executor ou vigia): para o candidato, para o PostgreSQL, devolve o diretorio de dados byte a byte e confere o manifesto'
     : 'automatica em qualquer falha (executor ou vigia): para o candidato, local-control.cjs start, switch-pilot.ps1 -Mode Remote, confere saude';
-  return { comando: 'plano', maquina: process.env.COMPUTERNAME, em: agora(), candidato: recibo && recibo.commit, linhaDeBase, antigos, saude, banco, preflight,
+  return { comando: 'plano', maquina: process.env.COMPUTERNAME, em: agora(), candidato: recibo && recibo.commit, linhaDeBase, modoPiloto, enderecoDoPilotoCandidato: hostDoPiloto(modoPiloto), antigos, saude, banco, preflight,
     escutasAtuais: insp.escutas, passos, reversao, pronto: falhas.length === 0, falhas };
 }
 
@@ -305,7 +319,7 @@ function despachar(acao, autorizacao) {
   try {
     mudar({ pendente: { id, acao, autorizacao: autorizacao.trim(), pedidoEm: agora() } });
     fs.mkdirSync(F.logs, { recursive: true });
-    const extra = opt('--layout') ? ['--layout', opt('--layout')] : [];
+    const extra = [...(opt('--layout') ? ['--layout', opt('--layout')] : []), ...(opt('--piloto') ? ['--piloto', opt('--piloto')] : [])];
     const destacar = (args, log) => { const fd = fs.openSync(path.join(F.logs, log), 'a'); const p = cp.spawn(L.node, [__filename, ...args, ...extra], { cwd: C, stdio: ['ignore', fd, fd], detached: true, windowsHide: true }); fs.closeSync(fd); p.unref(); return p.pid; };
     exec = destacar(['executar', '--execucao', id], 'ativacao-executor.log');
     fs.writeFileSync(F.trava, String(exec));
@@ -331,7 +345,7 @@ async function reverter(motivo, inicio) {
   }
   if (fs.existsSync(F.pidsC)) fs.renameSync(F.pidsC, F.pidsC.replace(/\.json$/, `.revertido-${Date.now()}.json`));
   if (fs.existsSync(F.dados)) fs.renameSync(F.dados, F.dados + '.revertido-' + carimbo());
-  await esperarPortaLivre('127.0.0.1', L.portaCritico, 15); await esperarPortaLivre(L.enderecoPiloto, L.portaPiloto, 15);
+  await esperarPortaLivre('127.0.0.1', L.portaCritico, 15); await esperarPortaLivre(L.enderecoPiloto, L.portaPiloto, 15); await esperarPortaLivre('127.0.0.1', L.portaPiloto, 15);
 
   if (e0.linhaDeBase === 'parado') {
     if (e0.pgIniciadoPorNos && await pgRodando()) {
@@ -383,8 +397,9 @@ async function reverter(motivo, inicio) {
 async function ativar(id, autorizacao) {
   const p = await plano();
   if (!p.pronto) { diario('RECUSADO_NO_PLANO', { falhas: p.falhas }); mudar({ pendente: null, ultimaRecusa: { em: agora(), falhas: p.falhas } }); return; }
-  const amb = ambientes(), antigos = p.antigos, inicio = agora();
-  gravarAtomico(F.estado, { fase: 'EXECUTANDO', execucao: id, inicio, autorizacao, candidato: amb.commit, linhaDeBase: p.linhaDeBase, antigos, novos: {}, pendente: null });
+  const amb = ambientes(p.modoPiloto), antigos = p.antigos, inicio = agora();
+  PILOTO = hostDoPiloto(p.modoPiloto);
+  gravarAtomico(F.estado, { fase: 'EXECUTANDO', execucao: id, inicio, autorizacao, candidato: amb.commit, linhaDeBase: p.linhaDeBase, modoPiloto: p.modoPiloto, antigos, novos: {}, pendente: null });
   diario('INICIO', { autorizacao, candidato: amb.commit, linhaDeBase: p.linhaDeBase, antigos });
   let tocou = false;
   try {
@@ -419,7 +434,7 @@ async function ativar(id, autorizacao) {
       diario('BANCO_VERIFICADO', { schema });
       if (schema.schema_current !== true) throw Error('o schema do banco do ensaio nao e o do candidato');
     }
-    await esperarPortaLivre('127.0.0.1', L.portaCritico, 15); await esperarPortaLivre(L.enderecoPiloto, L.portaPiloto, 15);
+    await esperarPortaLivre('127.0.0.1', L.portaCritico, 15); await esperarPortaLivre(L.enderecoPiloto, L.portaPiloto, 15); await esperarPortaLivre('127.0.0.1', L.portaPiloto, 15);
     const novos = {};
     const registrar = () => { gravarAtomico(F.pidsC, { ...novos, pilotMode: 'remote-lab-v1', commit: amb.commit }); mudar({ novos }); };
     tocou = true;
@@ -430,19 +445,22 @@ async function ativar(id, autorizacao) {
     novos.async = lancar('async', appC, SCRIPTS.async, amb.async); registrar(); diario('SUBIU', { papel: 'async', pid: novos.async });
     fs.mkdirSync(F.dados, { recursive: true });
     novos.pilot = lancar('pilot', appC, SCRIPTS.pilot, amb.pilot); registrar(); diario('SUBIU', { papel: 'pilot', pid: novos.pilot });
-    await esperar(`http://${L.enderecoPiloto}:${L.portaPiloto}/api/health`, [200], 40);
-    const termo = await esperar(`http://${L.enderecoPiloto}:${L.portaPiloto}/api/term`, [401, 403], 10);
+    await esperar(`http://${PILOTO}:${L.portaPiloto}/api/health`, [200], 40);
+    const termo = await esperar(`http://${PILOTO}:${L.portaPiloto}/api/term`, [401, 403], 10);
     // Impressao digital do candidato: so o V1 tem a rota de concessao delegada (sem token: 401).
     let digital = 0;
-    try { digital = (await fetch(`http://${L.enderecoPiloto}:${L.portaPiloto}/api/device/trip-grants`, { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(3000) })).status; } catch {}
+    try { digital = (await fetch(`http://${PILOTO}:${L.portaPiloto}/api/device/trip-grants`, { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(3000) })).status; } catch {}
     if (digital !== 401) throw Error(`o piloto que respondeu nao e o candidato (trip-grants ${digital})`);
-    diario('SAUDE_INICIAL', { termoSemSessao: termo, rotaDoCandidato: digital });
+    // Prova de nao exposicao: no modo loopback NADA pode aceitar conexao no endereco do NetBird.
+    const naoExposto = p.modoPiloto !== 'loopback' || (await portaLivre(L.enderecoPiloto, L.portaPiloto));
+    if (!naoExposto) throw Error('modo loopback, mas ha algo escutando no endereco do NetBird');
+    diario('SAUDE_INICIAL', { termoSemSessao: termo, rotaDoCandidato: digital, modoPiloto: p.modoPiloto, enderecoNetbirdSemEscuta: p.modoPiloto === 'loopback' ? true : null });
     if (INJETAR === 'matar-piloto-na-observacao') { process.kill(novos.pilot); diario('FALHA_INJETADA', { tipo: INJETAR }); }
     const fim = Date.now() + L.observacaoSeg * 1000;
     while (Date.now() < fim) {
       for (const papel of ['critical', 'async', 'pilot']) if (!vivo(novos[papel])) throw Error(`${papel} do candidato morreu na observacao`);
       if (await status(`http://127.0.0.1:${L.portaCritico}/health`) !== 200) throw Error('critico do candidato perdeu a saude');
-      if (await status(`http://${L.enderecoPiloto}:${L.portaPiloto}/api/health`) !== 200) throw Error('piloto do candidato perdeu a saude');
+      if (await status(`http://${PILOTO}:${L.portaPiloto}/api/health`) !== 200) throw Error('piloto do candidato perdeu a saude');
       await dormir(5000);
     }
     mudar({ fase: 'ATIVO', ativadoDesde: inicio, ativadoEm: agora() });
