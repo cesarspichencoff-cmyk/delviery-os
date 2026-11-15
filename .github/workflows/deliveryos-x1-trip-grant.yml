@@ -22,6 +22,10 @@ on:
       - src/platform/concessao-de-teste.ts
       - src/platform/run-concessao-de-viagem-tests.ts
       - src/platform/run-cadeia-*.ts
+      - src/platform/run-home-entregas-tests.ts
+      - src/product/viewmodels/entregas-vm.ts
+      - src/product/ui/surfaces/home.js
+      - tools/product_system_server.ts
       - src/entregas/pilot/access-throttle.ts
       - src/entregas/pilot/run-access-throttle-tests.ts
       - src/platform/database-preflight.ts
@@ -82,6 +86,8 @@ jobs:
         run: npx tsx src/platform/run-cadeia-multiaparelho-tests.ts
       - name: Tres e cinco motoboys ao mesmo tempo, PostgreSQL real (logicos, nao fisicos)
         run: npx tsx src/platform/run-cadeia-n-motoboys-tests.ts
+      - name: Entregas na Home do gerente (servidor da Home de dist/, tres motoboys, sem banco e banco fora)
+        run: npx tsx src/platform/run-home-entregas-tests.ts
       - name: Login atras de origem compartilhada, preflight sem drift da sonda, minuta do termo nao publicavel
         run: |
           npx tsx src/entregas/pilot/run-access-throttle-tests.ts

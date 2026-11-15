@@ -964,6 +964,69 @@ function resto(vm) {
   </section>`;
 }
 
+/* ------------------------------------------------------------------ *
+ * Entregas na rua — a mesma leitura da superficie /entregas (decisao do Cesar,
+ * 15/11). Linha calma com a contagem e uma dobra com as viagens e o que pede
+ * conferencia. Sem mapa, sem coordenada, sem previsao: so o que tem fato, com a
+ * idade de cada fato. Sem leitura, a ausencia declarada — nunca zero.
+ * ------------------------------------------------------------------ */
+
+function viagemNaRua(v) {
+  // `idade` ja vem legivel do viewmodel ("ha 1 min"): nao repetir o "ha".
+  const idade = v.posicao && v.posicao.observado ? `posicao ${v.posicao.idade}` : "sem posicao confiavel";
+  return `<li class="org-sinal" data-frescor="${esc(v.frescor)}" data-procedencia="${esc(v.procedencia)}">
+    <span class="org-sinal__nome">${esc(v.aparelho || "Aparelho fora do cadastro lido")}</span>
+    <span class="org-sinal__resumo">${esc(v.estado_legivel)} · ${esc(idade)}${
+      v.ocorrencias > 0 ? ` · ${esc(String(v.ocorrencias))} ocorrencia(s) registrada(s)` : ""
+    }${v.procedencia !== "real" ? ` · ${esc(v.procedencia)}` : ""}</span>
+  </li>`;
+}
+
+function entregasNaRua(rua) {
+  if (!rua) return "";
+  if (!rua.disponivel) {
+    return `<section class="org-resto org-entregas" data-entregas="indisponivel">
+      <div class="org-resto__linha">
+        <span class="org-resto__rotulo">entregas na rua</span>
+        <span class="org-resto__conta">${esc(rua.titulo)}</span>
+      </div>
+      <p class="org-resto__nota">${esc(rua.explicacao)} ${esc(rua.restricao)}</p>
+    </section>`;
+  }
+  const c = rua.contagens;
+  // "Na rua" exige o ciclo da viagem (saida). Viagem com posicao recente e ciclo nao
+  // confirmado tambem e rua para quem acompanha: dizer "nenhuma viagem" com motoboy
+  // mandando posicao agora seria falso (medido na prova visual de 15/11).
+  const comPosicao = c.ciclo_desconhecido_com_posicao;
+  const linha = [
+    c.na_rua === 0 && comPosicao === 0
+      ? "Nenhuma viagem com posicao recente nesta leitura"
+      : c.na_rua > 0 ? `${c.na_rua} ${c.na_rua === 1 ? "viagem na rua" : "viagens na rua"}` : null,
+    comPosicao > 0 ? `${comPosicao} com posicao recente, saida e fim nao confirmados` : null,
+    c.na_rua_sem_posicao_recente > 0 ? `${c.na_rua_sem_posicao_recente} sem posicao recente` : null,
+    c.aguardando_saida > 0 ? `${c.aguardando_saida} aguardando saida` : null,
+    c.conferir > 0 ? `${c.conferir} para conferir` : null,
+    `lida as ${rua.lida_as}`,
+  ].filter(Boolean).join(" · ");
+  const naRua = [...rua.viagens.na_rua, ...rua.viagens.ciclo_desconhecido_com_posicao];
+  return `<section class="org-resto org-entregas" data-entregas="observado" data-solidez="${esc(rua.solidez)}">
+    <div class="org-resto__linha">
+      <span class="org-resto__rotulo">entregas na rua</span>
+      <span class="org-resto__conta">${esc(linha)}</span>
+      <span class="org-fonte__selo">${selos(rua.selos)}</span>
+    </div>
+    ${naRua.length ? dobra("entregas-na-rua", `Ver as ${naRua.length} ${naRua.length === 1 ? "viagem" : "viagens"} com posicao`, `<ul class="org-sinais">${naRua.map(viagemNaRua).join("")}</ul>`) : ""}
+    ${rua.conferir.length ? dobra("entregas-conferir", `Ver o que pede conferencia (${rua.conferir.length})`,
+      `<ul class="org-sinais">${rua.conferir.map((x) => `<li class="org-sinal">
+        <span class="org-sinal__nome">${esc(x.titulo)}</span>
+        <span class="org-sinal__resumo">${esc(x.detalhe)}${x.desde && x.desde.observado ? ` · desde ${esc(x.desde.idade)}` : ""}</span>
+        <span class="org-ctx__ausencia">${esc(x.restricao)}</span>
+      </li>`).join("")}</ul>`) : ""}
+    ${rua.restricao ? `<p class="org-resto__nota">${esc(rua.restricao)}</p>` : ""}
+    <ul class="org-aprof"><li><a class="org-aprof__link" href="#/entregas"><span class="org-aprof__nome">Entregas</span><span class="org-aprof__papel">viagens, aparelhos e conferencia em detalhe</span></a></li></ul>
+  </section>`;
+}
+
 /* ------------------------------------------------------------------ */
 
 /**
@@ -1016,6 +1079,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
+    ${entregasNaRua(vm.entregas)}
     ${resto(vm)}
   </div>`;
 }

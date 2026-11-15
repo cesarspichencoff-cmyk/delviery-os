@@ -2245,3 +2245,16 @@ cai para ele quando a fila do aparelho não está anunciada, e o domínio já ex
    correção X1 e a restrição de papel); expor o portão na frente da versão atual do caixa exporia a falha X1.
 5. **Aparelhos físicos:** por último.
 
+### D103 — Entregas na Home do gerente (15/11/2026)
+
+**Decisao do Cesar** (mensagem "AUTORIZACAO AMPLIADA", Frente C, prioritaria): o gerente acompanha o delivery pela Home. Implementado
+como a MESMA leitura da rua da superficie /entregas (`leituraDaRuaDe`, pura) sobre a MESMA porta de realidade, anexada a /api/home:
+nenhum motor, tabela, fila ou SQL novo; linha calma + dobra na Home, link para /entregas. Sem coordenada, previsao ou confirmacao de
+entrega; procedencia por item (simulado nunca real); ausencia declarada sem banco ou com banco fora (Home segue 200).
+
+**Alternativa recusada:** um viewmodel proprio da Home para Entregas. Duplicaria as regras de frescor, solidez e conferencia que a
+leitura da rua ja tem, e as duas telas poderiam divergir sobre o mesmo motoboy.
+
+**Achado:** a leitura declara que o ciclo de vida da viagem (saida e fim) ainda nao chega pela cadeia canonica; viagem com GPS fica
+"ciclo nao confirmado". A Home diz isso; nao chama de "na rua" nem diz "nenhuma viagem".
+

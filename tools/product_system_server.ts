@@ -19,7 +19,7 @@ import { join, extname, normalize, isAbsolute } from "node:path";
 import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 
-import { entregasVM } from "../src/product/viewmodels/entregas-vm";
+import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
@@ -644,8 +644,15 @@ export async function criarServidor(): Promise<http.Server> {
           });
         }
         const agoraMs = Date.now();
-        void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata)
-          .then((reader) => {
+        // Entregas na Home (decisao do Cesar de 15/11, Frente C): a MESMA leitura da rua da
+        // superficie /entregas, sobre a MESMA porta de realidade. Falha da plataforma vira
+        // ausencia declarada no bloco; nunca derruba a Home nem vira zero.
+        const unidadeDaHome = ESCOPO_SHADOW?.unit_id || (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        const ruaDaHome = lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id)
+          .catch((): LeituraDeRealidade => ({ disponivel: false, motivo: "indisponivel", explicacao: "A leitura da plataforma falhou nesta requisicao." }))
+          .then((l) => leituraDaRuaDe(l, new Date(agoraMs).toISOString(), unidadeDaHome));
+        void Promise.all([lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome])
+          .then(([reader, rua]) => {
             const gestor = lerDemandaDoGestor(dirDemandaGestor, agoraMs);
             // Nivel 2: so ha o que cruzar quando ha janela observada. O Reader
             // e lido AGORA, do disco, e quem decide o casamento e o
@@ -657,7 +664,7 @@ export async function criarServidor(): Promise<http.Server> {
                   chave_privada_hex: chaveDoCruzamento,
                 })
               : null;
-            json(res, 200, homeDaOperacao(reader, gestor, agoraMs, conciliacao));
+            json(res, 200, { ...homeDaOperacao(reader, gestor, agoraMs, conciliacao), entregas: rua });
           })
           .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
         return;
