@@ -144,6 +144,10 @@ if (-not $lab) {
   if (-not $existing.present) {
     $xml = [System.Text.Encoding]::UTF8.GetString($xmlBytes).TrimStart([char]0xFEFF)
     if ($xml -notmatch '<Settings>[\s\S]*<Enabled>false</Enabled>[\s\S]*</Settings>') { throw 'O XML da tarefa nao esta desativado. Tarefa nao registrada.' }
+    # O Agendador recebe a tarefa como TEXTO em memoria (UTF-16) e recusa a declaracao
+    # encoding="UTF-8" ("nao e possivel alternar codificacao", medido no caixa em 15/11).
+    # A declaracao sai; o conteudo, conferido pelo blob acima, nao muda.
+    $xml = $xml -replace '^\s*<\?xml[^>]*\?>\s*', ''
     Register-ScheduledTask -TaskName $TaskName -Xml $xml | Out-Null
   }
   $after = Get-TaskState

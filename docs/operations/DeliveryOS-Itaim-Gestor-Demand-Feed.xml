@@ -14,7 +14,7 @@
     </CalendarTrigger>
   </Triggers>
   <Principals><Principal id="Author">
-    <UserId>S-1-5-18</UserId><LogonType>ServiceAccount</LogonType><RunLevel>HighestAvailable</RunLevel>
+    <UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel>
   </Principal></Principals>
   <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>

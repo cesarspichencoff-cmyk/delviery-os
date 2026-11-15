@@ -33,12 +33,17 @@ param(
   [double]$DurationSeconds = 20,
   [int]$IntervalMs = 15,
   [string]$LogPath = (Join-Path $env:TEMP ("medir-janelas-{0:yyyyMMdd-HHmmss}.jsonl" -f (Get-Date))),
-  [switch]$PositiveControl
+  [switch]$PositiveControl,
+  # Só leitura de janelas. No caixa, só com esta chave e NUNCA com -PositiveControl
+  # (o controle positivo abre uma janela de propósito). Autorizado pelo César em 15/11/2026
+  # para medir a preparação do feed do Gestor.
+  [switch]$PermitirCaixa
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'Este medidor NUNCA roda no CAIXA_MOOCA.' }
+if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA' -and -not $PermitirCaixa) { throw 'No CAIXA_MOOCA o medidor so roda com -PermitirCaixa.' }
+if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA' -and $PositiveControl) { throw 'No CAIXA_MOOCA o controle positivo (janela visivel de proposito) e proibido.' }
 
 Add-Type -TypeDefinition @'
   using System;
