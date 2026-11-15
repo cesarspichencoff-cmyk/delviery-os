@@ -122,15 +122,17 @@ async function esperar(url, aceitos, seg) {
   while (Date.now() < fim) { s = await status(url); if (aceitos.includes(s)) return s; await dormir(500); }
   throw Error(`${url} respondeu ${s} (esperado ${aceitos.join('/')})`);
 }
-// Livre = ninguem aceita conexao. Testa CONECTANDO, nunca escutando: escutar, mesmo por milissegundos,
-// abriria a porta no endereco do NetBird do caixa.
-const portaLivre = (host, porta) => new Promise((ok) => {
-  const s = net.connect({ host, port: porta });
   s.setTimeout(1000, () => { s.destroy(); ok(false); });
   s.once('connect', () => { s.destroy(); ok(false); });
   s.once('error', (e) => ok(e.code === 'ECONNREFUSED'));
 });
-async function esperarPortaLivre(host, porta, seg) { const fim = Date.now() + seg * 1000; while (Date.now() < fim) { if (await portaLivre(host, porta)) return; await dormir(300); } throw Error(`porta ${host}:${porta} continua ocupada`); }
+// Quem ESCUTA numa porta, pela tabela do sistema (so leitura, nenhum socket). Conectar nao serve: no
+// caixa a guarda do NetBird DESCARTA conexao ao endereco do wt0, a tentativa expira, e expirar nao e
+// "ocupado" (medido no caixa em 15/11: o ensaio reverteu por uma porta que ninguem escutava).
+const CURINGAS = ['0.0.0.0', '::'];
+function escutasEm(porta) { return inspecionar([], [porta]).escutas.filter((l) => l.porta === porta); }
+function ocupada(host, porta) { return escutasEm(porta).some((l) => l.endereco === host || CURINGAS.includes(l.endereco) || (host === '127.0.0.1' && l.endereco === '::1')); }
+async function esperarPortaLivre(host, porta, seg) { const fim = Date.now() + seg * 1000; while (Date.now() < fim) { if (!ocupada(host, porta)) return; await dormir(500); } throw Error(`porta ${host}:${porta} continua ocupada (escuta: ${JSON.stringify(escutasEm(porta))})`); }
 async function parar(pid, seg = 10) { if (!vivo(pid)) return; process.kill(pid); const fim = Date.now() + seg * 1000; while (vivo(pid) && Date.now() < fim) await dormir(200); if (vivo(pid)) throw Error(`pid ${pid} nao terminou`); }
 function lancar(rotulo, app, script, env) {
   fs.mkdirSync(F.logs, { recursive: true });
@@ -160,7 +162,7 @@ function manifesto(dir) {
   const linhas = arquivos(dir).map((r) => crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, r))).digest('hex') + ' ' + r);
   return { arquivos: linhas.length, sha256: crypto.createHash('sha256').update(linhas.join('\n')).digest('hex') };
 }
-const pgRodando = async () => !(await portaLivre(L.dbHost, L.dbPort));
+const pgRodando = async () => ocupada(L.dbHost, L.dbPort);
 function pgCtl(args, ms) { return rodarParaArquivo(path.join(L.pgBin, 'pg_ctl.exe'), ['-D', L.pgData, ...args], ms); }
 
 // Ambientes: os MESMOS que local-control.cjs e remote-pilot.cjs montam hoje, mais o que o V1 exige.
@@ -452,7 +454,7 @@ async function ativar(id, autorizacao) {
     try { digital = (await fetch(`http://${PILOTO}:${L.portaPiloto}/api/device/trip-grants`, { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(3000) })).status; } catch {}
     if (digital !== 401) throw Error(`o piloto que respondeu nao e o candidato (trip-grants ${digital})`);
     // Prova de nao exposicao: no modo loopback NADA pode aceitar conexao no endereco do NetBird.
-    const naoExposto = p.modoPiloto !== 'loopback' || (await portaLivre(L.enderecoPiloto, L.portaPiloto));
+    const naoExposto = p.modoPiloto !== 'loopback' || !ocupada(L.enderecoPiloto, L.portaPiloto);
     if (!naoExposto) throw Error('modo loopback, mas ha algo escutando no endereco do NetBird');
     diario('SAUDE_INICIAL', { termoSemSessao: termo, rotaDoCandidato: digital, modoPiloto: p.modoPiloto, enderecoNetbirdSemEscuta: p.modoPiloto === 'loopback' ? true : null });
     if (INJETAR === 'matar-piloto-na-observacao') { process.kill(novos.pilot); diario('FALHA_INJETADA', { tipo: INJETAR }); }
@@ -481,7 +483,7 @@ async function executar(id) {
   const { acao, autorizacao } = e0.pendente;
   try {
     if (acao === 'reverter' || acao === 'recuperar') {
-      const permitido = acao === 'reverter' ? e0.fase === 'ATIVO' : ['EXECUTANDO', 'REVERTENDO'].includes(e0.fase);
+      const permitido = acao === 'reverter' ? e0.fase === 'ATIVO' : ['EXECUTANDO', 'REVERTENDO', 'REVERSAO_FALHOU'].includes(e0.fase);
       if (!permitido) throw Error(`${acao} nao se aplica ao estado ${e0.fase}`);
       mudar({ execucao: id, pendente: null });
       diario(acao === 'reverter' ? 'PEDIDO_REVERSAO' : 'PEDIDO_RECUPERACAO', { autorizacao });
@@ -535,7 +537,7 @@ async function vigiar(id, executorPid) {
   else if (cmd === 'reverter') { if (estado().fase !== 'ATIVO') throw Error(`reverter so a partir de ATIVO (estado ${estado().fase})`); r = despachar('reverter', opt('--autorizacao')); }
   else if (cmd === 'recuperar') {
     const e = estado();
-    if (!['EXECUTANDO', 'REVERTENDO'].includes(e.fase)) throw Error(`recuperar so com execucao interrompida (estado ${e.fase})`);
+    if (!['EXECUTANDO', 'REVERTENDO', 'REVERSAO_FALHOU'].includes(e.fase)) throw Error(`recuperar so com execucao interrompida ou reversao falha (estado ${e.fase})`);
     if (vivo(donoDaTrava())) throw Error(`a execucao ainda esta viva (pid ${donoDaTrava()}); nao ha o que recuperar`);
     try { fs.unlinkSync(F.trava); } catch {}
     r = despachar('recuperar', opt('--autorizacao'));
