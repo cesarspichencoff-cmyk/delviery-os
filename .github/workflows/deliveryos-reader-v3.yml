@@ -31,7 +31,11 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts
       - run: npx tsc
-      - run: node --test tests/reader-v3/core.test.cjs tests/reader-v3/home.test.cjs
+      - run: node --test tests/reader-v3/core.test.cjs tests/reader-v3/home.test.cjs tests/reader-v3/transport.test.cjs tests/reader-v3/staging.test.cjs
+      - name: Windows PowerShell 5.1 and native zero-window check
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tests/reader-v3/windows.test.ps1
       - run: node tests/reporting/run-native-reader-n2-child-tables-review-tests.cjs
       - run: node dist/src/platform/run-m1-bridge-tests.js
       - run: node dist/src/platform/run-governance-tests.js

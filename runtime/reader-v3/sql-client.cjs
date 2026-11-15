@@ -1,8 +1,8 @@
 'use strict';
 const {spawn}=require('node:child_process');const path=require('node:path');
 class SqlSource {
- constructor({executable='C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',script=path.join(__dirname,'sql-source.ps1')}={}) {
-  this.child=spawn(executable,['-NoLogo','-NoProfile','-NonInteractive','-File',script],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+ constructor({executable='C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',script=path.join(__dirname,'sql-source.ps1'),spawnProcess=spawn}={}) {
+  this.child=spawnProcess(executable,['-NoLogo','-NoProfile','-NonInteractive','-File',script],{windowsHide:true,stdio:['pipe','pipe','pipe']});
   this.pending=null;this.buffer='';this.dead=false;
   this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',s=>{this.buffer+=s;if(Buffer.byteLength(this.buffer)>4*1024*1024)return this.fail('SQL_RESPONSE_BOUNDS');
    const i=this.buffer.indexOf('\n');if(i<0)return;const line=this.buffer.slice(0,i);this.buffer=this.buffer.slice(i+1);const p=this.pending;
