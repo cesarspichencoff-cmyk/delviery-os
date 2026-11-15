@@ -203,16 +203,20 @@ físicas, 104.119 leituras lógicas e zero escritas. Trata-se de uma amostra
 do carregamento inicial, sem medição comparativa do impacto em atendimento.
 
 Às 20h02m07s o observador V2 encerrou um lote com `WATCHER_EXIT_1` e uma
-`SqlException` durante `Read()` na linha 231 do script instalado. O mesmo
-ponto de falha aparece às 19h50 e às 19h51, antes do ensaio. O monitor
-interrompeu a execução em sombra pelo critério de degradação do V2. A causa
-raiz e a contribuição da carga concorrente ainda precisam de confirmação.
+`SqlException` de limite de espera por bloqueio durante `Read()` na linha 231
+do script instalado. O mesmo ponto de falha aparece às 19h50 e às 19h51,
+antes do ensaio. O monitor interrompeu a execução em sombra pelo critério de
+degradação do V2. Às 20h10 o erro de bloqueio voltou a aparecer só com o
+V2 ativo. A sessão responsável pelo bloqueio e a contribuição da carga
+concorrente durante o ensaio ainda precisam de confirmação.
 
 Às 20h03m00s as permissões temporárias tinham sido revogadas e a lista
 original de 53 entradas diretas foi recuperada, com as 23 colunas efetivamente
 legíveis de antes. O consumidor V2 retomou com seu SHA-256 original e ciclo
-bem-sucedido às 20h03m11s. A verificação das 20h08 mostrou sequência 83,
-ciclo às 20h08m12s e zero falhas consecutivas. A candidata ficou desativada.
+bem-sucedido às 20h03m11s. Após a recorrência das 20h10, o V2 registrou novo
+ciclo bem-sucedido às 20h11m04s, sequência 118 e zero falhas consecutivas.
+A candidata ficou desativada e os dois processos de restauração automática
+encerraram.
 
 Para a janela reservada de 16/11, registrar um ciclo V2 completo e examinar as
 falhas recentes do V2 antes da troca. Durante a observação, guardar o código
