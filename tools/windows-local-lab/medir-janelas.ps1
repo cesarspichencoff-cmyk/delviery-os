@@ -34,9 +34,9 @@ param(
   [int]$IntervalMs = 15,
   [string]$LogPath = (Join-Path $env:TEMP ("medir-janelas-{0:yyyyMMdd-HHmmss}.jsonl" -f (Get-Date))),
   [switch]$PositiveControl,
-  # Só leitura de janelas. No caixa, só com esta chave e NUNCA com -PositiveControl
-  # (o controle positivo abre uma janela de propósito). Autorizado pelo César em 15/11/2026
-  # para medir a preparação do feed do Gestor.
+  # So leitura de janelas. No caixa, so com esta chave e NUNCA com -PositiveControl
+  # (o controle positivo abre uma janela de proposito). Autorizado pelo Cesar em 15/11/2026
+  # para medir a preparacao do feed do Gestor.
   [switch]$PermitirCaixa
 )
 $ErrorActionPreference = 'Stop'
