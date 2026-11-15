@@ -12,10 +12,11 @@ function prepare({repo,legacyFile,output,readerRoot,productRoot,from,expectedLeg
  if(!/^\d{4}-\d{2}-\d{2}T00:00:00$/.test(from))throw Error('EXPLICIT_START_REQUIRED');
  const legacy=fs.readFileSync(legacyFile);if(sha(legacy)!==expectedLegacySha)throw Error('LEGACY_SHA_MISMATCH');
  if(legacy.includes(Buffer.from('reader-v3-candidate')))throw Error('ALREADY_INSTRUMENTED');
+ if(!legacy.includes(Buffer.from('let stopped = false;')))throw Error('LEGACY_STOP_FLAG_REQUIRED');
  const target=path.join(readerRoot,'shadow','reader-v3-candidate');
  const cfg={schema:'deliveryos.reader-v3.shadow-config.v1',mode:'SHADOW_ONLY',productionApproved:false,readerRoot,root:path.join(readerRoot,'state','reader-v3-shadow'),productRoot,from};
  // Append after the existing module, preserving its exact bytes and strict-mode prologue.
- const append='\n;try{require('+JSON.stringify(path.join(target,'runtime/reader-v3/service-sidecar.cjs'))+').start('+JSON.stringify(path.join(target,'shadow-config.json'))+').catch(()=>{});}catch{console.error("READER_V3_SHADOW_HELD");}\n';
+ const append='\n;try{require('+JSON.stringify(path.join(target,'runtime/reader-v3/service-sidecar.cjs'))+').start('+JSON.stringify(path.join(target,'shadow-config.json'))+',()=>stopped).catch(()=>{});}catch{console.error("READER_V3_SHADOW_HELD");}\n';
  const entries=[];fs.mkdirSync(output,{recursive:false});
  function put(name,bytes){const dest=path.join(output,name);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,bytes,{flag:'wx'});entries.push({path:name,sha256:sha(bytes),bytes:Buffer.byteLength(bytes)});}
  for(const name of FILES)put('candidate/'+name,fs.readFileSync(path.join(repo,name)));

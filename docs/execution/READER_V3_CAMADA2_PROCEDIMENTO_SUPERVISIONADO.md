@@ -72,3 +72,18 @@ Partes relacionadas exigem conferência individual com o Gestor. Repetição da
 mesma leitura SQL e estado nativo são insuficientes para atestar conclusão da
 gravação. Uma eventual substituição do V2 requer decisão própria depois das
 medições e do aceite humano.
+
+## Pré-verificação de 15/11/2026
+
+O CAIXA_MOOCA respondeu pela leitura passiva e o heartbeat V2 registrou
+`RUNNING` durante o almoço. A cópia textual do consumidor recomposta em
+laboratório, com 6.871 bytes, tem SHA-256
+`23f301a0decdb6aab79b52274019808b786ec1bf7510c966d44862b5f38a603a`.
+A troca e a restauração em cópia isolada recuperaram esse mesmo hash.
+Conferir o hash diretamente no caixa antes da troca. A identidade do processo
+e sua filiação ao serviço ainda exigem verificação no pré-voo supervisionado.
+
+A janela reservada para 16/11/2026 começa às 09h30, em São Paulo. A
+instalação depende de cobertura contínua do almoço (11h–15h) e do jantar
+(18h–23h), com possibilidade de restauração imediata. Uma reserva de agenda
+registra a janela. O início deve ser confirmado no pré-voo.
