@@ -159,10 +159,30 @@ def read_logcat(logcat_file, max_lines=14):
             labels = list(found)
         except Exception:
             labels = []
-    for line in lines[-max_lines:]:
+    # The plain tail was measured to be the test-APK teardown ("pkg removed",
+    # obituary of the instrumentation process) and NOT the failure (run
+    # 43683549834, 15/11). Failure lines come first: the instrumentation's own
+    # verdict (TestRunner failed/exception), the assertion or exception class
+    # line, and renderer death. Same scrubbing, same caps.
+    _FAILURE = re.compile(
+        r"TestRunner.*(failed|exception|error)|AssertionError|Exception:|"
+        r"Process crashed|Instrumentation run failed|RenderProcessGone|renderer|"
+        r"WEBVIEW_NEVER_BECAME_LIVE|DEAD_WEBVIEW|APP_PROCESS_WAS_REPLACED|"
+        r"RECOVERED_WEBVIEW|RENDERER_",
+        re.I,
+    )
+    chosen = []
+    for line in lines:
+        if _FAILURE.search(line):
+            s = scrub(line, 160)
+            if s and s not in chosen:
+                chosen.append(s)
+    chosen = chosen[-8:]
+    for line in lines[-max(0, max_lines - len(chosen)):] if max_lines > len(chosen) else []:
         s = scrub(line, 160)
-        if s:
-            tail.append(s)
+        if s and s not in chosen:
+            chosen.append(s)
+    tail = chosen
     return labels, tail
 
 
@@ -180,6 +200,10 @@ def build(title, results, logcat, facts, max_chars):
     parts.append("FAILED_TEST=" + ("; ".join(failed) if failed else "none_in_junit"))
     if first_exc:
         parts.append("EXC_FIRST_LINE=" + first_exc)
+    elif failed:
+        # Measured on 15/11: a failed case with NO message in JUnit. Say so
+        # explicitly instead of letting the absence read as "no exception".
+        parts.append("EXC_FIRST_LINE=EMPTY_IN_JUNIT")
     if death_labels:
         parts.append("PROCESS_DEATH=" + " ".join(death_labels))
     boot = fact_map.get("emulator_uptime_s") or fact_map.get("boot_s")

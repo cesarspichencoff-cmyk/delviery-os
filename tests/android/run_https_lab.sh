@@ -253,7 +253,7 @@ print("LAB_HTTPS_CRASH_CLASSES_ONLY",len(seen))
     { echo "emulator_uptime_s=$(adb shell cat /proc/uptime 2>/dev/null | awk '{print int($1)}')"
       echo "mem_available_kb=$(adb shell cat /proc/meminfo 2>/dev/null | awk '/MemAvailable/{print $2}')"; } \
       > "$work/ci-facts.txt" 2>/dev/null || true
-    adb logcat -d -v brief AndroidRuntime:* chromium:* ActivityManager:* lowmemorykiller:* cr_AwContents:* WebView:* '*:S' \
+    adb logcat -d -v brief TestRunner:* AndroidRuntime:* chromium:* ActivityManager:* lowmemorykiller:* cr_AwContents:* WebView:* '*:S' \
       > "$work/ci-logcat.txt" 2>/dev/null || true
   fi
   python3 ../tests/android/ci_lab_failure_annotation_v1.py \
