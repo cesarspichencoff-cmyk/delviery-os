@@ -409,3 +409,21 @@ Fora deste pedido, e não feito: deixar o candidato rodando, portão de campo, N
   lê as tabelas filhas de itens e observações (PR #135). Sem isso a Home não pode mostrar produtos, complementos e observações
   reais com verdade: é mudança no serviço produtivo do Reader, fora do que posso fazer sozinho.
 
+## 18. Entregas na Home do gerente (D103) e o que vem a seguir (15/11)
+
+**Feito e provado (CODE_READY, TEST_PASS):** `/api/home` traz a leitura da rua da própria plataforma (a mesma da tela /entregas); a
+Home desenha uma linha calma e uma dobra com cada viagem, o aparelho, o ciclo conhecido, a idade da última posição confiável e a
+procedência. Viagem despachada pelo piloto chega como "na rua" (cadeia integrada 10/10). Sem banco ou com o banco fora, a Home
+segue de pé e diz "indisponível". Não instalado no caixa: o laboratório de lá roda o candidato 0359e304, anterior a isso.
+
+**Frente B — convite por QR (desenho decidido, a executar primeiro):** hoje o vínculo do aparelho é ato humano com a credencial
+de dono do banco (ferramenta administrativa), e os papéis de runtime não podem vincular, por desenho. O convite que dispensa o
+motoboy de digitar exige: (1) o gerente gera no piloto um convite de uso único, 10 min, preso ao motoboy e à unidade (o ato
+humano passa a ser o convite); (2) o app troca o convite pela credencial do motoboy, guardada no Keystore, e registra o pedido
+de vínculo com a prova do aparelho; (3) um papel novo e estreito (`deliveryos_device_binder`) grava SÓ `secret_hash` de aparelho
+convidado e ainda não vinculado, nunca revoga nem troca motoboy. Isso muda a matriz de papéis mínimos (só no laboratório até
+aprovação) e toca Kotlin, piloto e plataforma. Troca de celular = convite novo + revogação do antigo (já provada em A2).
+
+**No caixa, a seguir:** ligar o source-ingest e a chave do produtor no laboratório (para o ciclo da viagem chegar à Home de lá) e
+preparar um candidato novo com Entregas na Home, a correção do preflight e o login por origem compartilhada.
+
