@@ -30,6 +30,11 @@ os hashes, a identidade do serviço ou a filial divergirem, interromper a opera�
    Confirmar a conta `NT SERVICE\TataComandaReader`, os caminhos, a política
    semanal e acesso de leitura pelo próprio serviço. Guardar cópia do consumidor
    original fora do caminho ativo e conferir seu hash.
+   Antes de trocar o consumidor, validar em sessão SQL administrativa de leitura
+   a consulta exata de `capture.sql` sob o usuário de banco do Reader, com
+   chaves artificiais, sem retornar dados de pedidos. Exigir oito conjuntos de
+   resultados. Em erro de permissão, manter o V2 ativo e registrar a diferença
+   entre a leitura efetiva por coluna e o contrato da candidata.
 2. Preparar `<readerRoot>\shadow\reader-v3-candidate` com os bytes conferidos.
    Após o aceite, registrar o hash da configuração aprovada e trocar a cópia
    ativa de `live_shadow_consumer_loop_v1.cjs` em janela de manutenção, usando
@@ -119,3 +124,47 @@ O lançamento corrigido usa `RemoteSigned` somente na sessão filha do
 Windows PowerShell para o script local conferido por hash. A guarda da conta
 Windows e a verificação de identidade SQL continuam obrigatórias. Validar o
 retorno da projeção com o pacote corrigido em um ensaio supervisionado.
+
+### Ensaio das 19h06 e acesso de leitura do SQL Server
+
+Pacote do commit `3e914e20c182a1a7be2a91995b7b3ef584e5bc91`, SHA-256
+`a47f7c8f8bf24bb39f84fe454b4061f2966556229b0b04f5cf3c71437ecda624`.
+A descoberta SQL colocou 32 comandas na fila inicial. A captura do detalhe
+falhou às 19h06m27s e o V3 encerrou com zero revisões e zero projeções.
+A verificação independente das 19h08 confirmou o SHA-256 original do V2,
+serviço `Running`, ciclo novo às 19h07m35s, sequência 24, zero falhas
+consecutivas e ativação da candidata desligada.
+
+Uma sessão SQL administrativa com contexto de leitura do usuário de banco do
+Reader repetiu a consulta exata de captura com chaves artificiais. SQL Server
+retornou o erro 230 (leitura de coluna negada) em `ITCOMANDAVEN`. A auditoria
+de metadados confirmou que as 53 colunas necessárias existem e que 23 são
+legíveis pelo Reader. As 30 colunas abaixo requerem autorização específica
+antes de qualquer ajuste. O ensaio preservou as permissões existentes.
+
+| Tabela | Colunas sem SELECT efetivo |
+| --- | --- |
+| `ITCOMANDAEST` | `CDFILIAL`, `CDPRODUTO`, `NRCOMANDA`, `NRPRODCOMVEN`, `NRVENDAREST`, `QTPROCOMEST` |
+| `ITCOMANDAVEN` | `CDLOJA`, `CDPRODPROMOCAO`, `NRSEQPRODCOM` |
+| `OBSITCOMANDAEST` | `CDFILIAL`, `CDGRPOCOR`, `CDOCORR`, `CDPRODUTO`, `NRCOMANDA`, `NRPRODCOMVEN`, `NRVENDAREST` |
+| `OBSITCOMANDAVEN` | `CDFILIAL`, `CDGRPOCOR`, `CDOCORR`, `NRCOMANDA`, `NRPRODCOMVEN`, `NRPRODCOMVENOBS`, `NRVENDAREST`, `QTPRODCOMVENOBS` |
+| `OCORRENCIA` | `CDGRPOCOR`, `CDOCORR`, `CDPRODUTO`, `DSAPELIDOOBS`, `DSOCORR` |
+| `PRODUTO` | `NMPRODUTO` |
+
+Se houver autorização, registrar as permissões diretas e efetivas antes de
+qualquer ajuste. Revisar `DENY` explícitos e a origem da permissão efetiva.
+Limitar o ajuste ao `SELECT` por coluna para a conta existente. Preparar a
+reversão somente das entradas novas antes de confirmar a transação. Validar
+53/53 colunas legíveis, oito conjuntos de resultados e a ausência de novos
+direitos de escrita ou permissões amplas antes de reiniciar o serviço. Na
+reversão, repetir a comparação com a lista original de permissões e verificar
+a retomada do V2. Os números do V3 ficam em aberto até nova captura real.
+
+Às 19h12m48s, o leitor do Gestor Electron e os eventos existentes do V2
+forneceram 78 pedidos iFood do jantar em cada fonte. O reconciliador utilizado
+pelo Copiloto encontrou 78 pares nativos: 63 correspondências nos campos
+comparáveis, 12 com complemento sem leitura na Teknisa via V2 e 3 com
+divergência de item ou quantidade. Zero divergências de observação na amostra
+comparável. O leitor do checkpoint V2 levou 473 ms e retornou zero eventos
+inválidos. A latência, a CPU e o impacto SQL do V3 em regime de operação
+continuam sem medição.
