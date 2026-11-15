@@ -18,15 +18,26 @@ async function main(configPath=process.argv[2],options={}){
 }
 async function runRuntime({cfg,service,sourceFactory=()=>new SqlSource(),clock=()=>new Date(),shouldStop=()=>false,wait=()=>new Promise(r=>setTimeout(r,5000))}){
  let source,watcher,consumer;
+ let consumerCpuUs=0;
+ const runtimeStarted=performance.now();
  try{
-  source=sourceFactory();
   const proxy={discover:(...a)=>source.discover(...a),capture:(...a)=>source.capture(...a)};
   watcher=new Watcher({root:cfg.root,source:proxy,from:cfg.from,service,clock});
   consumer=new Consumer({root:path.join(cfg.root,'projection'),sourceRoot:cfg.root,project,clock});
+  source=sourceFactory();
   while(!shouldStop()){let result,state='HEALTHY';
    try{result=await watcher.tick();}catch(e){state=/^[A-Z0-9_]+$/.test(e.message)?e.message:'CAPTURE_FAILED';if(source.dead){source.close();source=sourceFactory();}}
-   consumer.tick(32);
-   S.atomic(path.join(cfg.root,'health.json'),{schema:1,at:new Date().toISOString(),state,metrics:result??null,seq:watcher.state.seq,consumerSeq:consumer.state.seq,mode:'SHADOW_ONLY',effects:{print:false,database_write:false}});
+   if(result?.backoff&&watcher.state.failures>0)state='CAPTURE_BACKOFF';
+   const cpuStart=process.cpuUsage();
+   const consumption=consumer.tick(32);
+   const cpuDelta=process.cpuUsage(cpuStart);
+   consumerCpuUs+=cpuDelta.user+cpuDelta.system;
+   S.atomic(path.join(cfg.root,'health.json'),{
+    schema:1,at:new Date().toISOString(),state,metrics:result??null,
+    seq:watcher.state.seq,consumerSeq:consumer.state.seq,
+    consumer:{...consumption,cpuUs:consumerCpuUs,elapsedMs:Math.round(performance.now()-runtimeStarted)},
+    mode:'SHADOW_ONLY',effects:{print:false,database_write:false},
+   });
    await wait();
   }
  }finally{

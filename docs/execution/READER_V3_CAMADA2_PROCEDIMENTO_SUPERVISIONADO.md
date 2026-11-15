@@ -41,8 +41,11 @@ os hashes, a identidade do serviço ou a filial divergirem, interromper a opera�
    Definir `DELIVERYOS_READER_V3_UNIT_ID` com o identificador confirmado da
    unidade para habilitar o resumo na célula Caixa do Copiloto de homologação.
    A Home em uso continua na configuração V2. Conferir saúde, sequência e
-   atraso em `health.json` e `projection\source-status.json`, sem publicar
-   textos de pedidos, chaves nativas ou dados de clientes.
+   atraso em `health.json` e `projection\source-status.json`. Medir a CPU do
+   consumidor V3 pela diferença de `consumer.cpuUs` entre duas amostras do
+   mesmo processo, dividida por 1.000 vezes a diferença de `consumer.elapsedMs`.
+   Registrar a porcentagem de um núcleo sem publicar textos de pedidos,
+   chaves nativas ou dados de clientes.
 4. Acompanhar um almoço e um jantar completos. Abortar ao primeiro incidente de
    atendimento, impressão, janela visível, pressão perceptível no SQL, falha de
    consulta recorrente ou degradação do V2. Guardar apenas as métricas e contagens
