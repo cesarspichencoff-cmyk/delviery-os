@@ -168,3 +168,54 @@ divergência de item ou quantidade. Zero divergências de observação na amostr
 comparável. O leitor do checkpoint V2 levou 473 ms e retornou zero eventos
 inválidos. A latência, a CPU e o impacto SQL do V3 em regime de operação
 continuam sem medição.
+
+### Ensaio das 20h01 com SELECT temporário
+
+Autorização específica para 30 colunas. A concessão e a revogação foram
+testadas dentro de uma transação revertida. Após conferir backup, identidade,
+hash, saúde e fila sem mudança observada, o ensaio aplicou somente as 30
+permissões aprovadas, com uma restauração automática de reserva no caixa.
+Uma nova sessão confirmou 53/53 colunas e oito conjuntos na consulta de
+captura com chaves artificiais. A cópia do consumidor V2 ficou disponível
+para restauração.
+
+O V3 ficou saudável 9,6 s após a partida do serviço. Registrou 96 comandas
+distintas e 96 projeções verificadas, com 367 linhas de itens, zero novas
+revisões de comandas já capturadas e zero falhas no observador V3. Entre as
+linhas nativas havia sete com agrupamento de combo, 22 registros de ocorrência
+e 179 registros nos campos de texto de pedido ou item. As tabelas de extensão
+vieram vazias nessa amostra. A projeção registrou zero componentes e zero
+complementos estruturados.
+
+As 93 comandas iFood capturadas foram abertas entre 11h12 e 15h49. Em uma
+comparação posterior dos eventos arquivados com o Gestor Electron, 91/93
+tinham par: 72 correspondências nos campos comparáveis, 16 com opções do
+Gestor sem complemento confirmado na Teknisa, duas com relações sem prova
+independente e uma divergência de item ou quantidade. No checkpoint V2
+consultado, 90 das 93 chaves estavam presentes. O V3 não alcançou pedidos do
+jantar, que já tinha 141 pedidos no Gestor às 20h02. Não há amostra de
+latência de pedido novo ou comprovação de cobertura de um turno completo.
+
+O consumidor V3 registrou 79 ms de CPU em 49,513 s de execução interna
+(aproximadamente 0,16% de um núcleo). Em uma amostra da sessão SQL do V3 às
+20h01m54s, os contadores acumulados estavam em 406 ms de CPU, 11 leituras
+físicas, 104.119 leituras lógicas e zero escritas. Trata-se de uma amostra
+do carregamento inicial, sem medição comparativa do impacto em atendimento.
+
+Às 20h02m07s o observador V2 encerrou um lote com `WATCHER_EXIT_1` e uma
+`SqlException` durante `Read()` na linha 231 do script instalado. O mesmo
+ponto de falha aparece às 19h50 e às 19h51, antes do ensaio. O monitor
+interrompeu a execução em sombra pelo critério de degradação do V2. A causa
+raiz e a contribuição da carga concorrente ainda precisam de confirmação.
+
+Às 20h03m00s as permissões temporárias tinham sido revogadas e a lista
+original de 53 entradas diretas foi recuperada, com as 23 colunas efetivamente
+legíveis de antes. O consumidor V2 retomou com seu SHA-256 original e ciclo
+bem-sucedido às 20h03m11s. A verificação das 20h08 mostrou sequência 83,
+ciclo às 20h08m12s e zero falhas consecutivas. A candidata ficou desativada.
+
+Para a janela reservada de 16/11, registrar um ciclo V2 completo e examinar as
+falhas recentes do V2 antes da troca. Durante a observação, guardar o código
+e o horário da falha do V2 no momento do corte, junto da amostra da sessão
+SQL. O ensaio dos dois turnos exige acompanhamento contínuo e possibilidade
+de restauração imediata.
