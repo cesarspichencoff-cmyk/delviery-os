@@ -261,3 +261,14 @@ confirmar na conta real que o serviço sem login aponta para o portão ✘.
 **CI em `19bea59a`: 7/7 workflows verdes** — X1 (com PostgreSQL e mutações), portão de campo (com mutações), Home em Edge e em
 WebKit/iPhone 13, Gestor→Home, fixture silenciosa e os três labs Android. Continua sem prova de campo: caixa, celulares físicos,
 proxy real, Safari num iPhone de verdade.
+
+## 12. Caixa — preparação feita (15/11, ~23:57 no relógio do caixa)
+
+Três arquivos do executor conferidos por blob em `C:\ProgramData\DeliveryOS-Itaim-Observer\` e a tarefa
+`\DeliveryOS-Itaim-Gestor-Demand-Feed` registrada **desativada** e nunca executada; recibo `gestor-demand-feed-stage-receipt.json`.
+Nenhum processo do produto iniciado. Medidor de janelas no próprio caixa: nenhuma janela nem troca de foco durante a execução; os
+eventos registrados antes e depois são de uma pessoa usando o computador. A 1ª tentativa falhou sem efeito colateral (o Agendador
+recusou o XML); a correção foi reproduzida no Foxxy e publicada (`0103ad23`). Reversão: `preparar-feed-do-gestor.ps1 -Mode Rollback`.
+
+Decisões do César em 15/11 registradas como **D102**.
+

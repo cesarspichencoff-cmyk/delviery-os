@@ -34,7 +34,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Commit = '5afe35971f43301fa98ab8e9b0e502a0ad1d533d'
+$Commit = '0103ad23ac9e2a67b526b387a9735a694fbac2c3'
 $Repo = 'cesarspichencoff-cmyk/delviery-os'
 $TaskName = 'DeliveryOS-Itaim-Gestor-Demand-Feed'
 $Files = @(
@@ -42,7 +42,7 @@ $Files = @(
   @{ Path = 'runtime/reporting/gestor_mounted_window_differential_v1.cjs'; Blob = '75e5275513d53ccc35d0b29fcb9873075fdc8464' },
   @{ Path = 'runtime/reporting/gestor_v3_visible_sensor.js'; Blob = '106e9a77e7e34ebb5f0f5fff9f54069110fdcb87' }
 )
-$TaskXml = @{ Path = 'docs/operations/DeliveryOS-Itaim-Gestor-Demand-Feed.xml'; Blob = 'ac4e608d6fd39fde52d2a16c836bd7ba73d139a0' }
+$TaskXml = @{ Path = 'docs/operations/DeliveryOS-Itaim-Gestor-Demand-Feed.xml'; Blob = '862ebb45656c834b33f67bcd1ed89b95991e08ac' }
 
 $lab = -not [string]::IsNullOrEmpty($LabRoot)
 if ($lab) {

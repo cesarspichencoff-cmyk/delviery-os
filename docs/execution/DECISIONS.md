@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-11-14"
+  atualizado_em: "2026-11-15"
   state_basis: 953a3fb
 ---
 
@@ -2232,4 +2232,16 @@ fechada de rotas, com teto de corpo por rota, sem cookie, e marca as requisiçõ
 motoboy. A lista do proxy vira defesa em profundidade, não a única barreira. Recusado: repassar ao crítico pelo próprio piloto
 (o segredo do aparelho passaria pelo processo de domínio). O comando direto (`/api/command`) fica na lista: a página do motoboy
 cai para ele quando a fila do aparelho não está anunciada, e o domínio já exige que a viagem seja do motoboy.
+
+### D102 — Decisões do César em 15/11/2026 sobre o campo
+
+1. **Preparação do caixa pelo conector:** autorizada e feita (ver evidência `caixa-preparacao-feed-gestor-2026-11-15`).
+2. **Ações offline do motoboy:** o piloto de campo volta a gravar em ARQUIVO (tem recibo nativo durável). Implementação no caixa
+   entra na instalação do candidato, que ainda depende de autorização própria (troca de processo em produção).
+3. **Códigos de acesso continuam com quatro dígitos** (decisão de 31/10 mantida). Risco aceito e declarado: pela porta pública todo
+   acesso chega de dois endereços do proxy; erros repetidos travam por 15 min o login NOVO de todos naquela origem (quem já entrou
+   segue) e a adivinhação fica limitada a 5 tentativas a cada 15 min por origem.
+4. **Serviço de campo no NetBird:** autorizado. Ordem obrigatória: só depois do candidato instalado no caixa (piloto e crítico com a
+   correção X1 e a restrição de papel); expor o portão na frente da versão atual do caixa exporia a falha X1.
+5. **Aparelhos físicos:** por último.
 
