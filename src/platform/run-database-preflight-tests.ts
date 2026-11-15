@@ -127,6 +127,38 @@ ok("DBP6 migration futura no banco bloqueia checkout antigo", () => {
   assert.deepEqual(r.unknown_migrations, ["9999_future"]);
 });
 
+ok("DBP6b a sonda de escrita do /ready (probe:escrita) nao e drift; nome parecido e", () => {
+  const sonda = evaluateDatabasePreflight({
+    facts: facts({
+      migration_table_present: true,
+      applied_migrations: [
+        ...LOCAL.map((m) => ({ version: m.version, checksum: m.checksum })),
+        { version: "probe:escrita", checksum: "probe" },
+      ],
+    }),
+    local_migrations: LOCAL,
+    tls_required: true,
+  });
+  assert.deepEqual(sonda.unknown_migrations, []);
+  assert.equal(sonda.schema_current, true);
+  // Controles: o filtro e o prefixo exato `probe:`, nunca "qualquer coisa com probe".
+  for (const v of ["probe_escrita", "0099_probe", "Probe:escrita", "9999_future"]) {
+    const r = evaluateDatabasePreflight({
+      facts: facts({
+        migration_table_present: true,
+        applied_migrations: [
+          ...LOCAL.map((m) => ({ version: m.version, checksum: m.checksum })),
+          { version: v, checksum: "9999999999999999" },
+        ],
+      }),
+      local_migrations: LOCAL,
+      tls_required: true,
+    });
+    assert.deepEqual(r.unknown_migrations, [v], "deveria acusar " + v);
+    assert.equal(r.schema_current, false);
+  }
+});
+
 ok("DBP7 checksum divergente bloqueia antes de migrate", () => {
   const r = evaluateDatabasePreflight({
     facts: facts({
@@ -183,4 +215,4 @@ ok("DBP9 texto anterior DECLARADO equivalente pela propria migration nao e drift
   assert.equal(outro.ready_for_migration, false);
 });
 
-console.log(`DATABASE_PREFLIGHT: ${passed}/9 PASS`);
+console.log(`DATABASE_PREFLIGHT: ${passed}/10 PASS`);

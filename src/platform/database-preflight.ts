@@ -154,8 +154,16 @@ export function evaluateDatabasePreflight(args: {
   }
 
   const local = new Map(local_migrations.map((m) => [m.version, m]));
+  // `probe:*` nao e migration: e a sonda de escrita do /ready do critico
+  // (`probe:escrita`, critical.ts), que grava nesta tabela de proposito (L5).
+  // Sem este filtro, todo banco em que o critico ja respondeu /ready aparecia
+  // em "drift" (medido na bancada do caixa em 15/11). Mesma convencao das
+  // suites que contam migrations (`version NOT LIKE 'probe:%'`). So o prefixo
+  // exato com dois-pontos: nome de migration real nunca tem ':'.
   const applied = new Map(
-    facts.applied_migrations.map((m) => [m.version, m.checksum]),
+    facts.applied_migrations
+      .filter((m) => !m.version.startsWith("probe:"))
+      .map((m) => [m.version, m.checksum]),
   );
 
   const unknown_migrations = [...applied.keys()]
