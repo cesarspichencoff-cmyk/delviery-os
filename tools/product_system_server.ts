@@ -20,7 +20,7 @@ import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 
 import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
-import { lerPedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
+import { lerPedidosReaisDoReaderIncremental, novoCacheIncremental } from "../src/platform/leitura/pedidos-reais-do-reader";
 import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
@@ -171,9 +171,11 @@ const DIR_LEITOR_TATA = (process.env.TATA_READER_INSTALL_ROOT || "").trim();
  * no maximo uma vez a cada 10 s: o polling da Home nunca vira releitura do disco do caixa por requisicao.
  */
 let memoPedidosTeknisa: { em: number; vm: PedidosDaTeknisaVM } | null = null;
+const cacheTeknisa = novoCacheIncremental();
 function pedidosDaTeknisaAgora(agoraMs: number): PedidosDaTeknisaVM {
   if (memoPedidosTeknisa && agoraMs - memoPedidosTeknisa.em < 10_000) return memoPedidosTeknisa.vm;
-  const vm = pedidosDaTeknisaVM(lerPedidosReaisDoReader(DIR_LEITOR_TATA || null, new Date(agoraMs)), new Date(agoraMs));
+  // Incremental (sem o teto de 250 do checkpoint do Reader): so arquivos novos a cada leitura.
+  const vm = pedidosDaTeknisaVM(lerPedidosReaisDoReaderIncremental(DIR_LEITOR_TATA || null, cacheTeknisa, new Date(agoraMs)), new Date(agoraMs));
   memoPedidosTeknisa = { em: agoraMs, vm };
   return vm;
 }

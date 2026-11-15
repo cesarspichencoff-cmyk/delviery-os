@@ -3,13 +3,13 @@
  * Fixtures com o ESQUEMA medido no caixa em 15/11 (nomes de campo do diagnostico), valores inventados.
  */
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, copyFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { pedidosDaTeknisaVM } from "../product/viewmodels/home-pedidos-reader-vm";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { lerPedidosReaisDoReader, turnoDe, lerPolitica } from "./leitura/pedidos-reais-do-reader";
+import { lerPedidosReaisDoReader, lerPedidosReaisDoReaderIncremental, novoCacheIncremental, turnoDe, lerPolitica } from "./leitura/pedidos-reais-do-reader";
 
 let n = 0;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
@@ -137,6 +137,37 @@ ok("R11 fronteiras da politica: inicio inclusivo, fim exclusivo, dia da semana c
   assert.equal(turnoDe(pol, "2026-11-13T16:29:00"), "FORA_DO_HORARIO", "sexta: almoco so ate 15:00");
   assert.equal(turnoDe(pol, "2026-10-01T19:00:00"), "SEM_POLITICA", "antes da vigencia");
 });
+ok("R14 incremental: le pedido FORA do checkpoint (sem teto de 250), so arquivos novos, revisao mais nova vence, hash do nome confere, arquivo velho fica de fora", () => {
+  const foraDoCk = pedido({ venda: "900011", comanda: "100011", abertura: "2026-11-14T21:00:00.0000000" });
+  entradas.pop(); // escrito na pasta, mas NAO no checkpoint (o caso do dia 14/11: 313 pedidos, 250 no checkpoint)
+  const cache = novoCacheIncremental();
+  const agora = new Date();
+  const a = lerPedidosReaisDoReaderIncremental(raiz, cache, agora);
+  if (a.estado !== "lido") throw Error("nao leu");
+  assert.ok(a.pedidos.some((x) => x.chave === foraDoCk), "o pedido fora do checkpoint precisa aparecer");
+  assert.equal(a.pedidos.length, 8, "7 do checkpoint + 1 fora dele");
+  assert.equal(a.invalidos, 1, "o arquivo com hash do nome diferente do conteudo e invalido");
+  const b = lerPedidosReaisDoReaderIncremental(raiz, cache, agora);
+  if (b.estado !== "lido") throw Error("nao leu");
+  assert.equal((b as unknown as { arquivos_lidos_nesta_leitura: number }).arquivos_lidos_nesta_leitura, 0, "segunda leitura nao rele nada");
+  assert.equal(b.pedidos.length, 8);
+  // revisao nova do mesmo pedido, observada depois: substitui.
+  const ev = JSON.parse(readFileSync(join(EV, readdirSync(EV).find((n) => n.startsWith("100011_"))!), "utf8"));
+  ev.observed_at = "2026-11-14T23:30:00.000Z"; ev.order.items.push({ NRPRODCOMVEN: "2", CDPRODUTO: "1009", CDARVPROD: "x", QTPRODCOMVEN: "3", IDSTPRCOMVEN: "P" });
+  const h2 = "B".repeat(64); ev.snapshot_hash = h2;
+  writeFileSync(join(EV, `100011_${h2}.json`), JSON.stringify(ev));
+  const c = lerPedidosReaisDoReaderIncremental(raiz, cache, agora);
+  if (c.estado !== "lido") throw Error("nao leu");
+  const x = c.pedidos.find((y) => y.chave === foraDoCk)!;
+  assert.equal(x.itens.length, 2, "a revisao mais nova tem de substituir a anterior");
+  assert.equal(c.pedidos.length, 8, "revisao nova nao duplica pedido");
+  // arquivo antigo (fora da janela de horas) nao entra numa leitura nova.
+  const velho = novoCacheIncremental();
+  const d = lerPedidosReaisDoReaderIncremental(raiz, velho, new Date(Date.now() + 72 * 3600_000));
+  if (d.estado !== "lido") throw Error("nao leu");
+  assert.equal(d.pedidos.length, 0, "arquivos de mais de 36 h nao entram");
+});
+
 ok("R12 viewmodel da Home: dia mostrado, retidos com codigo, estado X so como codigo, completude dita", () => {
   const vm = pedidosDaTeknisaVM(r, new Date("2026-11-15T08:00:00Z"));
   if (!vm.disponivel) throw Error("indisponivel");
@@ -169,12 +200,12 @@ void (async () => {
       assert.ok(corpo, "a Home nao respondeu");
       const t = corpo!.pedidos_teknisa;
       assert.equal(t.disponivel, true);
-      assert.equal(t.contagens.pedidos, 7);
+      assert.equal(t.contagens.pedidos, 8, "incremental: os 7 do checkpoint + o que ficou fora dele (R14)");
       assert.doesNotMatch(JSON.stringify(t), /Fulano|rua X/);
     });
   } finally { filho.kill(); }
 })().finally(() => {
   rmSync(raiz, { recursive: true, force: true });
-  console.log(`PEDIDOS_REAIS_DO_READER_PASS ${n}/13 FIXTURE_COM_ESQUEMA_REAL`);
-  if (n !== 13) process.exitCode = 1;
+  console.log(`PEDIDOS_REAIS_DO_READER_PASS ${n}/14 FIXTURE_COM_ESQUEMA_REAL`);
+  if (n !== 14) process.exitCode = 1;
 });

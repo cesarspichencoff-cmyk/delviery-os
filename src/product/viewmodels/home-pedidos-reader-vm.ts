@@ -82,7 +82,7 @@ export function pedidosDaTeknisaVM(leitura: PedidosReaisDoReader, agora: Date): 
     completude: "Itens, quantidades e observacoes de texto lidos. Observacoes por ocorrencia, componentes de combinados e complementos ainda nao sao lidos pela fonte.",
     politica: leitura.politica.valida ? leitura.politica.versao : null,
     limitacoes: [
-      "Janela do proprio Reader: os 250 pedidos mais recentes; um dia com mais pedidos do que isso aparece cortado.",
+      "Leitura dos eventos do Reader das ultimas 36 horas; pedidos mais antigos nao aparecem aqui.",
       "Revisao estavel do Reader nao prova que a Teknisa terminou de gravar o pedido.",
       "Estado da Teknisa mostrado como codigo; X nao e necessariamente cancelamento.",
     ],

@@ -21,7 +21,7 @@
  * exporta nada do caixa.
  */
 import { isAbsolute, join, resolve } from "node:path";
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 
 const TETO_DE_ARQUIVO = 1_048_576;
 const TETO_TOTAL = 16 * 1024 * 1024;
@@ -225,52 +225,121 @@ export function lerPedidosReaisDoReader(raiz: string | null, agora: Date = new D
     if (bruto === null) { invalidos++; continue; }
     bytes += bruto.length;
     if (bytes > TETO_TOTAL) return { estado: "indisponivel", motivo: "teto_excedido" };
-    const ev = json(bruto);
-    const o = objeto(ev) ? ev["order"] : null;
-    if (!objeto(ev) || ev["schema"] !== "deliveryos.tata-reader-stable-order-event.v1" || !objeto(o) ||
-        ev["order_key"] !== e["order_key"] || ev["snapshot_hash"] !== hash ||
-        [o["CDFILIAL"], o["CDLOJA"], o["NRVENDAREST"], o["NRCOMANDA"]].some((v, i) => v !== partes[i])) { invalidos++; continue; }
-    if (typeof o["IDORGCMDVENDA"] !== "string" || !/^DLV_[A-Z0-9]{1,10}$/.test(o["IDORGCMDVENDA"])) { fora++; continue; }
-    const aberto = o["DTHRABERMESA"];
-    const observado = typeof ev["observed_at"] === "string" ? Date.parse(ev["observed_at"]) : Number.NaN;
-    const itens = o["items"];
-    if (typeof aberto !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(aberto) || !Number.isFinite(observado) ||
-        !texto(o["IDSTCOMANDA"], 20) || !Array.isArray(itens) || itens.length > 200) { invalidos++; continue; }
-    const nomes = nomesDaDecisao(raiz, nome);
-    const obs = observacoes(o, itens.length);
-    const lista: ItemReal[] = [];
-    let itemRuim = false;
-    for (const [i, item] of (itens as unknown[]).entries()) {
-      if (!objeto(item) || !texto(item["CDPRODUTO"], 40) || !texto(item["IDSTPRCOMVEN"], 20) || !texto(item["QTPRODCOMVEN"], 24)) { itemRuim = true; break; }
-      const q = item["QTPRODCOMVEN"] as string;
-      const inteiro = /^0*[1-9]\d*(?:\.0+)?$/.test(q) && Number.isSafeInteger(Number(q));
-      lista.push({ indice: i + 1, codigo: item["CDPRODUTO"], nome: nomes.get(item["CDPRODUTO"]) ?? null,
-        quantidade: inteiro ? Number(q) : null, quantidade_nativa: q, estado_nativo: item["IDSTPRCOMVEN"],
-        observacoes: obs.porItem ? obs.porItem[i]! : null });
-    }
-    if (itemRuim) { invalidos++; continue; }
-    const turno = turnoDe(politica, aberto);
-    const codigos = [
-      ...(Array.isArray(ev["blockers"]) ? ev["blockers"] : []),
-      ...(objeto(ev["service_resolution"]) && Array.isArray(ev["service_resolution"]["blockers"]) ? ev["service_resolution"]["blockers"] : []),
-    ].map((c) => (typeof c === "string" && CODIGO.test(c) ? c : "OUTRO_BLOQUEIO"));
-    const unicos = [...new Set(codigos)];
-    const politicaResolve = turno === "ALMOCO" || turno === "JANTAR";
-    const substituidos = politicaResolve ? unicos.filter((c) => BLOQUEIOS_DE_TURNO.has(c)) : [];
-    const restantes = unicos.filter((c) => !substituidos.includes(c));
-    // ready=false sem codigo nenhum continua retendo: ausencia de motivo nao e liberacao.
-    const retidoSemMotivo = ev["ready_for_downstream_shadow"] === false && unicos.length === 0;
-    const motivos = retidoSemMotivo ? ["RETIDO_PELO_PRODUTOR_SEM_CODIGO"] : restantes;
-    pedidos.push({
-      chave: e["order_key"], codigo_curto: typeof o["NRCOMANDAEXT"] === "string" && /^[0-9A-Za-z]{1,12}$/.test(o["NRCOMANDAEXT"]) ? o["NRCOMANDAEXT"] : null,
-      origem: o["IDORGCMDVENDA"], aberto_em_local: aberto.slice(0, 19), dia: aberto.slice(0, 10), turno,
-      revisao: hash.toLowerCase(), observado_em: new Date(observado).toISOString(), estado_nativo: o["IDSTCOMANDA"] as string,
-      retido: motivos.length > 0, motivos_de_retencao: motivos, bloqueios_de_turno_substituidos: substituidos,
-      itens: lista, observacoes_do_pedido: obs.pedido,
-      completude: { itens: "observados", observacoes: obs.estado, observacoes_por_ocorrencia: "nao_lidas_pela_fonte", componentes: "nao_lidos_pela_fonte", complementos: "nao_lidos_pela_fonte" },
-    });
+    const r = pedidoDoEvento(raiz, nome, json(bruto), e["order_key"], hash, politica);
+    if (r.tipo === "fora") fora++; else if (r.tipo === "invalido") invalidos++; else pedidos.push(r.pedido);
   }
-  pedidos.sort((a, b) => (a.aberto_em_local < b.aberto_em_local ? 1 : a.aberto_em_local > b.aberto_em_local ? -1 : 0));
+  pedidos.sort(maisNovoPrimeiro);
   return { estado: "lido", lido_em: agora.toISOString(), politica: { versao: politica?.versao ?? null, valida: politica !== null },
     pedidos, fora_do_escopo: fora, invalidos, bytes_lidos: bytes, duracao_ms: Date.now() - t0 };
+}
+
+const maisNovoPrimeiro = (a: PedidoReal, b: PedidoReal) => (a.aberto_em_local < b.aberto_em_local ? 1 : a.aberto_em_local > b.aberto_em_local ? -1 : 0);
+
+type ResultadoDoEvento = { tipo: "ok"; pedido: PedidoReal } | { tipo: "fora" } | { tipo: "invalido" };
+
+/**
+ * Um evento estavel do Reader -> pedido da Home, com TODAS as travas. `chave`/`hash` esperados: o
+ * caminho pelo checkpoint confere contra ele; o caminho incremental confere contra o NOME do arquivo.
+ */
+function pedidoDoEvento(raiz: string, nome: string, ev: unknown, chave: string | null, hashEsperado: string, politica: Politica | null): ResultadoDoEvento {
+  const o = objeto(ev) ? ev["order"] : null;
+  if (!objeto(ev) || ev["schema"] !== "deliveryos.tata-reader-stable-order-event.v1" || !objeto(o) ||
+      typeof ev["order_key"] !== "string" || (chave !== null && ev["order_key"] !== chave) ||
+      typeof ev["snapshot_hash"] !== "string" || ev["snapshot_hash"].toUpperCase() !== hashEsperado.toUpperCase()) return { tipo: "invalido" };
+  const partes = (ev["order_key"] as string).split("|");
+  if (partes.length !== 4 || [o["CDFILIAL"], o["CDLOJA"], o["NRVENDAREST"], o["NRCOMANDA"]].some((v, i) => v !== partes[i])) return { tipo: "invalido" };
+  if (partes[0] !== "0001" || partes[1] !== "01") return { tipo: "fora" };
+  if (typeof o["IDORGCMDVENDA"] !== "string" || !/^DLV_[A-Z0-9]{1,10}$/.test(o["IDORGCMDVENDA"])) return { tipo: "fora" };
+  const aberto = o["DTHRABERMESA"];
+  const observado = typeof ev["observed_at"] === "string" ? Date.parse(ev["observed_at"]) : Number.NaN;
+  const itens = o["items"];
+  if (typeof aberto !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(aberto) || !Number.isFinite(observado) ||
+      !texto(o["IDSTCOMANDA"], 20) || !Array.isArray(itens) || itens.length > 200) return { tipo: "invalido" };
+  const nomes = nomesDaDecisao(raiz, nome);
+  const obs = observacoes(o, itens.length);
+  const lista: ItemReal[] = [];
+  for (const [i, item] of (itens as unknown[]).entries()) {
+    if (!objeto(item) || !texto(item["CDPRODUTO"], 40) || !texto(item["IDSTPRCOMVEN"], 20) || !texto(item["QTPRODCOMVEN"], 24)) return { tipo: "invalido" };
+    const q = item["QTPRODCOMVEN"] as string;
+    const inteiro = /^0*[1-9]\d*(?:\.0+)?$/.test(q) && Number.isSafeInteger(Number(q));
+    lista.push({ indice: i + 1, codigo: item["CDPRODUTO"], nome: nomes.get(item["CDPRODUTO"]) ?? null,
+      quantidade: inteiro ? Number(q) : null, quantidade_nativa: q, estado_nativo: item["IDSTPRCOMVEN"],
+      observacoes: obs.porItem ? obs.porItem[i]! : null });
+  }
+  const turno = turnoDe(politica, aberto);
+  const codigos = [
+    ...(Array.isArray(ev["blockers"]) ? ev["blockers"] : []),
+    ...(objeto(ev["service_resolution"]) && Array.isArray(ev["service_resolution"]["blockers"]) ? ev["service_resolution"]["blockers"] : []),
+  ].map((c) => (typeof c === "string" && CODIGO.test(c) ? c : "OUTRO_BLOQUEIO"));
+  const unicos = [...new Set(codigos)];
+  const politicaResolve = turno === "ALMOCO" || turno === "JANTAR";
+  const substituidos = politicaResolve ? unicos.filter((c) => BLOQUEIOS_DE_TURNO.has(c)) : [];
+  const restantes = unicos.filter((c) => !substituidos.includes(c));
+  // ready=false sem codigo nenhum continua retendo: ausencia de motivo nao e liberacao.
+  const retidoSemMotivo = ev["ready_for_downstream_shadow"] === false && unicos.length === 0;
+  const motivos = retidoSemMotivo ? ["RETIDO_PELO_PRODUTOR_SEM_CODIGO"] : restantes;
+  return { tipo: "ok", pedido: {
+    chave: ev["order_key"] as string, codigo_curto: typeof o["NRCOMANDAEXT"] === "string" && /^[0-9A-Za-z]{1,12}$/.test(o["NRCOMANDAEXT"]) ? o["NRCOMANDAEXT"] : null,
+    origem: o["IDORGCMDVENDA"], aberto_em_local: aberto.slice(0, 19), dia: aberto.slice(0, 10), turno,
+    revisao: hashEsperado.toLowerCase(), observado_em: new Date(observado).toISOString(), estado_nativo: o["IDSTCOMANDA"] as string,
+    retido: motivos.length > 0, motivos_de_retencao: motivos, bloqueios_de_turno_substituidos: substituidos,
+    itens: lista, observacoes_do_pedido: obs.pedido,
+    completude: { itens: "observados", observacoes: obs.estado, observacoes_por_ocorrencia: "nao_lidas_pela_fonte", componentes: "nao_lidos_pela_fonte", complementos: "nao_lidos_pela_fonte" },
+  } };
+}
+
+/** Estado do leitor incremental: guardado pelo CHAMADOR (memoria do servidor da Home), nunca no disco do Reader. */
+export interface CacheIncremental {
+  /** Arquivos ja vistos (lidos ou descartados por idade): nunca de novo. */
+  readonly vistos: Set<string>;
+  /** Revisao mais recente por pedido. */
+  readonly porPedido: Map<string, PedidoReal>;
+}
+export const novoCacheIncremental = (): CacheIncremental => ({ vistos: new Set(), porPedido: new Map() });
+
+/**
+ * Leitura INCREMENTAL: lista a pasta de eventos, le SO os arquivos novos desta instancia (e, na
+ * primeira vez, so os modificados nas ultimas `horas`), e guarda a revisao mais recente de cada
+ * pedido. Sem o teto de 250 do checkpoint do Reader: medido em 15/11, o dia 14/11 teve 313 pedidos
+ * distintos e o checkpoint mostrava 250. O nome do arquivo e `<comanda>_<hash>.json`: o hash do nome
+ * tem de bater com o do conteudo.
+ */
+export function lerPedidosReaisDoReaderIncremental(raiz: string | null, cache: CacheIncremental, agora: Date = new Date(), horas = 36): PedidosReaisDoReader {
+  const t0 = Date.now();
+  if (raiz === null || raiz.trim() === "") return { estado: "nao_configurado" };
+  const eventos = join(raiz, "state", "reader-events-v1");
+  let nomes: string[];
+  try {
+    if (!isAbsolute(raiz)) return { estado: "indisponivel", motivo: "caminho_invalido" };
+    for (const p of [raiz, join(raiz, "state"), eventos]) {
+      const st = lstatSync(p);
+      if (!st.isDirectory() || st.isSymbolicLink() || realpathSync(p) !== resolve(p)) return { estado: "indisponivel", motivo: "caminho_invalido" };
+    }
+    nomes = readdirSync(eventos);
+  } catch { return { estado: "indisponivel", motivo: "caminho_invalido" }; }
+  const politica = lerPolitica(raiz);
+  const limite = agora.getTime() - horas * 3600_000;
+  let fora = 0, invalidos = 0, bytes = 0, lidos = 0;
+  for (const nome of nomes) {
+    if (cache.vistos.has(nome)) continue;
+    cache.vistos.add(nome);
+    const m = /^[0-9A-Za-z_-]{1,40}_([A-Fa-f0-9]{64})\.json$/.exec(nome);
+    if (!m) continue;
+    let mtime = 0;
+    try { const st = lstatSync(join(eventos, nome)); if (!st.isFile() || st.isSymbolicLink()) continue; mtime = st.mtimeMs; } catch { continue; }
+    if (mtime < limite) continue;
+    const bruto = lerArquivo(join(eventos, nome), TETO_DE_ARQUIVO);
+    if (bruto === null) { invalidos++; continue; }
+    bytes += bruto.length; lidos++;
+    const r = pedidoDoEvento(raiz, nome, json(bruto), null, m[1]!, politica);
+    if (r.tipo === "fora") { fora++; continue; }
+    if (r.tipo === "invalido") { invalidos++; continue; }
+    const atual = cache.porPedido.get(r.pedido.chave);
+    if (!atual || r.pedido.observado_em > atual.observado_em) cache.porPedido.set(r.pedido.chave, r.pedido);
+  }
+  const corte = new Date(limite).toISOString().slice(0, 10);
+  for (const [k, p] of cache.porPedido) if (p.dia < corte) cache.porPedido.delete(k);
+  const pedidos = [...cache.porPedido.values()].sort(maisNovoPrimeiro);
+  return { estado: "lido", lido_em: agora.toISOString(), politica: { versao: politica?.versao ?? null, valida: politica !== null },
+    pedidos, fora_do_escopo: fora, invalidos, bytes_lidos: bytes, duracao_ms: Date.now() - t0, ...{ arquivos_lidos_nesta_leitura: lidos } };
 }
