@@ -272,3 +272,18 @@ recusou o XML); a correção foi reproduzida no Foxxy e publicada (`0103ad23`). 
 
 Decisões do César em 15/11 registradas como **D102**.
 
+## 13. Instalação do candidato — autorizada em 15/11, parada antes da troca
+
+César autorizou instalar o candidato no caixa. A troca NÃO foi feita: a cota do conector remoto caiu para **2%**. Trocar os
+processos do ensaio com verificação e reversão pede de 8 a 10 chamadas supervisionadas; sem cota no meio, o caixa ficaria com o
+ensaio parado e sem como reverter remotamente.
+
+Pronto e ensaiado no Foxxy: `tools/windows-local-lab/preparar-candidato-v1.ps1 -Commit <sha>` — baixa o commit publicado,
+confere a raiz do zip, roda `npm ci` e a compilação numa pasta NOVA (`C:UsersTataDeliveryOS-Ensaio-V1`), confere o carimbo e
+grava recibo; não toca processo, porta, firewall nem banco; reverter = apagar a pasta. Medido: 65 s, idempotente, recusa outro commit.
+
+**Conflito com a decisão de 15/11 (códigos de 4 dígitos):** o piloto já RECUSA subir em modo remoto com código de menos de 24
+caracteres (`cloud-config.ts`, decisão de 01/11: código curto só no próprio caixa). Pela porta de campo o piloto roda em modo
+remoto; logo, os motoboys precisam de código longo lá, ou essa trava precisa ser revista explicitamente.
+
+**Ainda impede o GPS de campo, independente da instalação:** o termo de localização do caixa não é publicável (decisão do César).
