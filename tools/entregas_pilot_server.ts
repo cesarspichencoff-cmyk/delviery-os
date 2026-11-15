@@ -650,6 +650,17 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     else accessThrottle.failure(origem);
   }
   /*
+   * D101 — pelo portão de campo (a porta pública dos celulares), só motoboy.
+   * A marca só RESTRINGE: quem a forjar pela porta interna perde poder, não
+   * ganha. Um código de gerente vazado não lê a operação pela internet.
+   */
+  const doCampo = req.headers["x-deliveryos-field"] === "1";
+  if (doCampo && actor && actor.role !== "motoboy_interno") {
+    res.writeHead(403, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
+      ...corsHeaders(req.headers.origin) });
+    return res.end(JSON.stringify({ ok: false, code: "papel_fora_do_campo" }));
+  }
+  /*
    * Q-028 — o observador local é identidade de MÁQUINA, exclusivamente de
    * leitura: chega a UMA rota, só com GET e sem parâmetro. Recusado aqui, antes
    * de qualquer outra regra, em toda outra rota ou método — inclusive as que
@@ -718,6 +729,12 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       const tentativa = body.token || "";
       const origemLogin = req.socket.remoteAddress || "desconhecida";
       if (accessThrottle.blocked(origemLogin, tentativa)) return reply(429, { ok: false, human: MUITAS_TENTATIVAS });
+      // D101: no campo, código de outro papel recebe a MESMA recusa do código errado
+      // (a tela não confirma códigos) e conta como erro para o limite de tentativas.
+      if (doCampo && requestActor(tentativa)?.role !== "motoboy_interno") {
+        accessThrottle.failure(origemLogin);
+        return reply(401, facade.login(""));
+      }
       // login() valida e registra a entrada; o vinculo desta requisicao ja'
       // foi feito no topo do handler e nao depende deste corpo.
       const result = facade.login(tentativa);
@@ -1029,6 +1046,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         platform_base_url: PLATFORM_URL, now_s: Math.floor(Date.now() / 1000),
       });
       if (!auth.ok) return reply(auth.status, { ok: false, code: auth.reason, retryable: auth.status === 503 });
+      if (doCampo && auth.claims.role !== "motoboy_interno") return reply(403, { ok: false, code: "papel_fora_do_campo" });
       if (!TRIP_GRANT_SECRET) return reply(503, { ok: false, code: "trip_grant_not_configured", retryable: true });
       let corpo: { trip_ids?: unknown };
       try { corpo = JSON.parse(await readBody(req)) as { trip_ids?: unknown }; }
@@ -1065,6 +1083,8 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         eventActor = {actor_id:auth.claims.actor_id,role:auth.claims.role};
         attestedDeviceId = auth.claims.device_id;
       }
+      if (doCampo && eventActor && eventActor.role !== "motoboy_interno")
+        return reply(403, { ok: false, code: "papel_fora_do_campo" });
       if (!eventActor) return reply(401, { ok: false, human: NO_SESSION });
       if (!persistenceBackend?.native_inbound_receipts.available) {
         return reply(503, { ok: false, code: "DURABLE_RECEIPTS_UNAVAILABLE", retryable: true });

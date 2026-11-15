@@ -27,6 +27,12 @@ on:
       - src/entregas/pilot/**
       - tools/entregas_pilot_server.ts
       - tests/x1/**
+      - src/platform/campo/**
+      - src/platform/bin/portao-de-campo.ts
+      - src/platform/run-portao-de-campo-tests.ts
+      - tests/campo/**
+      - deploy/compose.platform.yaml
+      - tools/pb19_ingestao_real.js
   workflow_dispatch:
 
 permissions:
@@ -83,3 +89,22 @@ jobs:
         run: npx tsx src/platform/run-cadeia-multiaparelho-mutation-tests.ts
         env:
           MULTI_MUT: MA8,MA9
+
+  # D101: a única porta que os celulares alcançam. Lista fechada de rotas, só motoboy no campo.
+  portao-de-campo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Compilar plataforma (binários de dist/)
+        run: npm run -s build:platform
+      - name: Portão de campo com o piloto real (superfície, papel, teto de corpo)
+        run: npx tsx src/platform/run-portao-de-campo-tests.ts
+      - name: Mutações do portão e da restrição de papel (zero cegas)
+        run: node tests/campo/run-portao-de-campo-mutation-tests.cjs
