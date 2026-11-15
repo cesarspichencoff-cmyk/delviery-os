@@ -29,6 +29,8 @@ on:
       - tools/gestor-native-shadow-reconcile/**
       - tests/gestor-shadow/**
       - labs/gestor-demand-feed/**
+      - docs/operations/DeliveryOS-Itaim-Gestor-Demand-Feed.xml
+      - tools/windows-local-lab/preparar-feed-do-gestor.ps1
       - src/platform/run-home-signals-tests.ts
       - src/platform/run-r5d1-event-lineage-tests.ts
   workflow_dispatch:
@@ -115,3 +117,18 @@ jobs:
           $vivos = @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*gestor-demand-lab-*' })
           "processos Edge da bancada: $($vivos.Count)"
           if ($vivos.Count -ne 0) { exit 1 }
+
+  # O contrato da tarefa do caixa medido no Agendador REAL do Windows, nao por expressao
+  # regular: registra o XML publicado DESATIVADO em DeliveryOS-CI, le o que o Agendador
+  # gravou (SYSTEM por SID -> LogonType ServiceAccount), prova que LogonType explicito e a
+  # declaracao de codificacao sao recusados, e remove tudo. Sem administrador sai PULADO (3).
+  agendador-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Tarefa do caixa no Agendador real (registro desativado, leitura, remocao)
+        shell: powershell
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tests/gestor-shadow/run-task-xml-registration-tests.ps1

@@ -315,18 +315,51 @@ test('linha de comando: FIELD nao aceita caminho por argumento; laboratorio exig
   assert.equal(ok.once, true);
 });
 
-test('modelo de tarefa do caixa: desativado, SYSTEM sem sessao interativa, Node direto, sem shell nem Edge', () => {
+// Contrato da tarefa do caixa. A conta de servico e escolhida pelo SID: o esquema XML do
+// Agendador NAO tem o valor ServiceAccount para <LogonType>, e o registro com ele e recusado;
+// sem o elemento, SYSTEM registra como LogonType=ServiceAccount (sessao 0, sem janela).
+// Medido no Agendador real por tests/gestor-shadow/run-task-xml-registration-tests.ps1
+// (Foxxy e job Windows da CI; no caixa, -SomenteLeitura sobre a tarefa ja registrada).
+function violacoesDaTarefa(xml) {
+  const v = [];
+  if (/^\s*<\?xml[^>]*encoding/i.test(xml.replace(/^\uFEFF/, '')) === false) v.push('sem declaracao (o arquivo publicado a tem; o preparo a retira)');
+  if (!/<Principal id="Author">\s*<UserId>S-1-5-18<\/UserId>/.test(xml)) v.push('principal nao e SYSTEM por SID');
+  if (/<LogonType>/i.test(xml)) v.push('LogonType explicito (recusado pelo Agendador ou interativo)');
+  if (!/<RunLevel>HighestAvailable<\/RunLevel>/.test(xml)) v.push('RunLevel');
+  if (!/<Enabled>false<\/Enabled>\s*<Hidden>true<\/Hidden>/.test(xml)) v.push('tarefa nao nasce desativada e oculta');
+  if (!/<AllowStartOnDemand>false<\/AllowStartOnDemand>/.test(xml)) v.push('inicio sob demanda');
+  if (!/<MultipleInstancesPolicy>IgnoreNew<\/MultipleInstancesPolicy>/.test(xml)) v.push('instancias multiplas');
+  if (!/<Command>C:\\Program Files\\nodejs\\node\.exe<\/Command>/.test(xml)) v.push('comando nao e node direto');
+  if (!/<Arguments>"C:\\ProgramData\\DeliveryOS-Itaim-Observer\\gestor_mounted_demand_feed_v1\.cjs"<\/Arguments>/.test(xml)) v.push('argumento');
+  if ((xml.match(/<Exec>/g) || []).length !== 1) v.push('mais de uma acao');
+  if (/powershell|cmd\.exe|msedge|wscript|schtasks|--fixture|InteractiveToken|<UserId>(?!S-1-5-18<)/i.test(xml)) v.push('shell, Edge, fixture ou usuario interativo');
+  return v;
+}
+
+test('modelo de tarefa do caixa: desativado, SYSTEM por SID sem LogonType, Node direto, sem shell nem Edge', () => {
   const xml = fs.readFileSync(path.join(__dirname, '../../docs/operations/DeliveryOS-Itaim-Gestor-Demand-Feed.xml'), 'utf8');
-  assert.match(xml, /<Enabled>false<\/Enabled>\s*<Hidden>true<\/Hidden>/);
-  assert.match(xml, /<UserId>S-1-5-18<\/UserId><LogonType>ServiceAccount<\/LogonType>/);
-  assert.match(xml, /<MultipleInstancesPolicy>IgnoreNew<\/MultipleInstancesPolicy>/);
-  assert.match(xml, /<Command>C:\\Program Files\\nodejs\\node\.exe<\/Command>/);
-  assert.match(xml, /<Arguments>"C:\\ProgramData\\DeliveryOS-Itaim-Observer\\gestor_mounted_demand_feed_v1\.cjs"<\/Arguments>/);
-  assert.equal((xml.match(/<Exec>/g) || []).length, 1);
-  assert.doesNotMatch(xml, /powershell|cmd\.exe|msedge|wscript|schtasks|--fixture|InteractiveToken/i);
+  assert.deepEqual(violacoesDaTarefa(xml), []);
   // O arquivo que a tarefa aponta nao aceita caminho por argumento em FIELD:
   // a tarefa nao consegue apontar o executor para outro perfil ou outra pasta.
   assert.equal(parseArgs([]).fixture, false);
+});
+
+test('modelo de tarefa do caixa: cada mutante perigosa e acusada (o contrato nao e cego)', () => {
+  const xml = fs.readFileSync(path.join(__dirname, '../../docs/operations/DeliveryOS-Itaim-Gestor-Demand-Feed.xml'), 'utf8');
+  const mutantes = {
+    'LogonType ServiceAccount de volta': xml.replace('<UserId>S-1-5-18</UserId>', '<UserId>S-1-5-18</UserId><LogonType>ServiceAccount</LogonType>'),
+    'InteractiveToken': xml.replace('<UserId>S-1-5-18</UserId>', '<UserId>S-1-5-18</UserId><LogonType>InteractiveToken</LogonType>'),
+    'usuario comum no lugar de SYSTEM': xml.replace('<UserId>S-1-5-18</UserId>', '<UserId>S-1-5-21-1-2-3-1001</UserId>'),
+    'tarefa habilitada': xml.replace('<Enabled>false</Enabled>\n    <Hidden>', '<Enabled>true</Enabled>\n    <Hidden>'),
+    'inicio sob demanda': xml.replace('<AllowStartOnDemand>false</AllowStartOnDemand>', '<AllowStartOnDemand>true</AllowStartOnDemand>'),
+    'powershell como comando': xml.replace('C:\\Program Files\\nodejs\\node.exe', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'),
+    'segunda acao': xml.replace('</Exec></Actions>', '</Exec><Exec><Command>C:\\Program Files\\nodejs\\node.exe</Command></Exec></Actions>'),
+    'RunLevel menor': xml.replace('HighestAvailable', 'LeastPrivilege'),
+  };
+  for (const [nome, m] of Object.entries(mutantes)) {
+    assert.notEqual(m, xml, 'mutante nao aplicado: ' + nome);
+    assert.ok(violacoesDaTarefa(m).length > 0, 'mutante cego: ' + nome);
+  }
 });
 
 (async () => {
