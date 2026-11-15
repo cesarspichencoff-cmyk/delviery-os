@@ -2,12 +2,6 @@
 # No arbitrary SQL, connection string, user/password or endpoint from requests.
 param()
 $ErrorActionPreference='Stop'
-[Console]::InputEncoding=New-Object Text.UTF8Encoding($false)
-[Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
-$identity=[Security.Principal.WindowsIdentity]::GetCurrent().Name
-if($identity -ine 'NT SERVICE\TataComandaReader'){throw 'SERVICE_IDENTITY_REQUIRED'}
-$connectionString='Server=(local)\SQLEXPRESS;Database=teknisa;Integrated Security=SSPI;Application Name=TataReaderV3Shadow;Connect Timeout=5;Encrypt=False;TrustServerCertificate=True'
-$conn=New-Object Data.SqlClient.SqlConnection($connectionString)
 function Rows($cmd){
  $r=$cmd.ExecuteReader();$all=New-Object 'System.Collections.Generic.List[object]'
  try{do{$rows=New-Object 'System.Collections.Generic.List[object]';while($r.Read()){
@@ -16,10 +10,24 @@ function Rows($cmd){
   };$rows.Add($o)
  };$all.Add(@($rows.ToArray()))}while($r.NextResult())}catch{$failure=$_;try{$cmd.Cancel()}catch{};try{$r.Dispose()}catch{};throw $failure}finally{if(-not $r.IsClosed){$r.Dispose()}};return ,$all.ToArray()
 }
+$startup='SQL_BOOT_STDIO_FAILED'
+$conn=$null
 try{
- $conn.Open();$identityCmd=$conn.CreateCommand();$identityCmd.CommandText='SELECT ORIGINAL_LOGIN() AS login_name,DB_NAME() AS db_name;';$identityCmd.CommandTimeout=3
+ [Console]::InputEncoding=New-Object Text.UTF8Encoding($false)
+ [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
+ $startup='SQL_BOOT_WINDOWS_IDENTITY_FAILED'
+ $identity=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+ if($identity -ine 'NT SERVICE\TataComandaReader'){throw 'SERVICE_IDENTITY_REQUIRED'}
+ $startup='SQL_BOOT_CONNECT_FAILED'
+ $connectionString='Server=(local)\SQLEXPRESS;Database=teknisa;Integrated Security=SSPI;Application Name=TataReaderV3Shadow;Connect Timeout=5;Encrypt=False;TrustServerCertificate=True'
+ $conn=New-Object Data.SqlClient.SqlConnection($connectionString)
+ $conn.Open()
+ $startup='SQL_BOOT_LOGIN_CHECK_FAILED'
+ $identityCmd=$conn.CreateCommand();$identityCmd.CommandText='SELECT ORIGINAL_LOGIN() AS login_name,DB_NAME() AS db_name;';$identityCmd.CommandTimeout=3
  $ir=Rows $identityCmd;$identityCmd.Dispose()
+ $startup='SQL_BOOT_LOGIN_MISMATCH'
  if($ir[0][0].login_name -ine 'NT SERVICE\TataComandaReader' -or $ir[0][0].db_name -ine 'teknisa'){throw 'SQL_IDENTITY_REQUIRED'}
+ $startup='SQL_PROTOCOL_STOPPED'
  while($null -ne ($line=[Console]::ReadLine())){
   $cmd=$null
   try{
@@ -45,4 +53,8 @@ try{
    [Console]::WriteLine((@{ok=$false;code=$code}|ConvertTo-Json -Compress))
   }finally{if($null -ne $cmd){$cmd.Dispose()}}
  }
-}finally{$conn.Dispose()}
+}catch{
+ # Static classifications only. Driver strings can contain private paths or connection details.
+ [Console]::Error.WriteLine('READER_V3_STARTUP '+$startup)
+ exit 1
+}finally{if($null -ne $conn){$conn.Dispose()}}

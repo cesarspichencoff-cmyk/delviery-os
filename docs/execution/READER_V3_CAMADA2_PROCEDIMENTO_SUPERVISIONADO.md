@@ -87,3 +87,23 @@ A janela reservada para 16/11/2026 começa às 09h30, em São Paulo. A
 instalação depende de cobertura contínua do almoço (11h–15h) e do jantar
 (18h–23h), com possibilidade de restauração imediata. Uma reserva de agenda
 registra a janela. O início deve ser confirmado no pré-voo.
+
+## Ensaio de campo em 15/11 — Itaim, CAIXA_MOOCA
+
+O teste curto das 18h03 foi interrompido após 35 segundos sem estado do V3.
+Na nova tentativa, o V3 conseguiu iniciar e publicar seu primeiro estado em
+67,8 segundos após o reinício. O adaptador encerrou com `SQL_PROCESS_EXITED`
+antes da primeira captura. O Gestor registrava 14 pedidos do jantar na amostra
+das 18h11. Cobertura V3 e conciliação desses pedidos ficaram sem confirmação.
+
+O consumidor V2 voltou ao SHA-256 original. O ciclo das 18h12m19s e a
+verificação das 18h12m49s confirmaram serviço ativo e zero falhas
+consecutivas. A ativação da candidata foi desabilitada após a reversão.
+
+O adaptador agora reporta somente códigos de etapa para configuração dos pipes,
+identidade Windows, abertura de conexão, verificação da identidade SQL e
+bloqueio de execução do PowerShell. O erro específico do ensaio anterior
+continua desconhecido, pois a candidata anterior descartava stderr.
+Medir a partida fria sem usar o limite de 35 segundos que interrompeu o
+primeiro ensaio. Comprovar o retorno do V2 por um ciclo novo após a restauração,
+incluindo a verificação independente se a primeira espera expirar.
