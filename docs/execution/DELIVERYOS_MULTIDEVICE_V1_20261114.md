@@ -427,3 +427,29 @@ aprovação) e toca Kotlin, piloto e plataforma. Troca de celular = convite novo
 **No caixa, a seguir:** ligar o source-ingest e a chave do produtor no laboratório (para o ciclo da viagem chegar à Home de lá) e
 preparar um candidato novo com Entregas na Home, a correção do preflight e o login por origem compartilhada.
 
+## 19. Pedido consolidado ao César (Q-030) — o que falta para sair do laboratório
+
+O laboratório do candidato está ativo no caixa (só loopback, ~300 MB, CPU desprezível; desligável por `reverter`). O que segue
+depende de decisão humana, em ordem de impacto no uso real:
+
+1. **Reader (pedidos reais na Home).** Leitura passiva: 20/20 arquivos do Itaim, legíveis, mas **20/20 bloqueados pelo próprio
+   produtor** (provável: não lê as tabelas filhas de itens e observações); o estado de serviço do Reader está parado em **14/10**; e
+   o consumidor sombra do Reader roda a **~70% de um núcleo** desde 11/11. Recomendação: autorizar uma investigação SÓ LEITURA do
+   produtor instalado (sem mudar o serviço) e, com o diagnóstico, uma mudança supervisionada fora do horário (almoço 11–15/16:30,
+   jantar 18–23). Sem isso a Home não mostra produto, complemento e observação reais com verdade.
+2. **Campo e outros celulares (HTTPS).** O portão de campo e a Home por hostname estão prontos e provados; falta expor pelo serviço
+   do NetBird que já existe (sem porta nova na internet, sem custo). Recomendação: autorizar quando o candidato novo estiver no
+   laboratório do caixa, primeiro só a Home para os gerentes, depois o campo dos motoboys.
+3. **Termo de GPS.** Minuta r2, procedimento de consentimento e recomendação de retenção em `docs/entregas/pilot/` (técnica, não
+   jurídica: ponto detalhado 30 dias, evento operacional 365 dias). Faltam razão social, CNPJ, canal, responsável, vigência, os dois
+   prazos e a aprovação. **Duas travas antes de aprovar:** (a) nada apaga ponto de GPS hoje — o `platform.event_log` é append-only
+   contra UPDATE, DELETE e TRUNCATE (lei do projeto); cumprir "apagar no prazo" exige decidir como (ex.: guardar o ponto detalhado
+   fora do log append-only, ou particionar e descartar por prazo), e isso mexe na invariante — decisão sua (liga-se à Q-015);
+   (b) não há retirada do aceite dentro do sistema (só desligar a permissão ou revogar o aparelho); se a base legal for
+   consentimento, é lacuna (LGPD art. 8º §5º). Sem o termo aprovado o GPS real fica desligado, por código.
+4. **Aparelhos físicos.** Roteiro pronto em `docs/entregas/pilot/ROTEIRO_TESTE_FISICO_V1.md`; faltam a data e os três motoboys.
+5. **Convite por QR.** Exige um papel novo e estreito no banco (`deliveryos_device_binder`): no laboratório faço sozinho; no banco
+   operacional, só com o cutover que você aprovar.
+
+Sem resposta, `default_behavior: PAUSE`: nada disso é feito; o trabalho de código e de laboratório continua.
+
