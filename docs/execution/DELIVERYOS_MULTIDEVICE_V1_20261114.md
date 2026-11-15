@@ -339,3 +339,56 @@ conector, o mesmo contexto dos processos de lá.
 O que continua não provado: a troca no próprio caixa (tempos de lá), o piloto do candidato com o Reader real do caixa e o
 banco do ensaio do caixa (o que ele aplicou de migration não foi lido).
 
+## 16. CI do Gestor corrigida pela causa; o caixa está parado; pedido único de ensaio supervisionado (15/11)
+
+**CI.** A falha do run 43682025339 era a asserção da linha 321 exigindo `<LogonType>ServiceAccount</LogonType>`, que o
+`0103ad23` tirou do XML porque o Agendador o recusa — commit `[skip ci]`, e o XML nem estava nos `paths` do workflow. O XML
+de produção não mudou. O contrato agora é medido no Agendador real (`run-task-xml-registration-tests.ps1`): SYSTEM por SID
+registra como ServiceAccount; LogonType explícito e declaração de codificação são recusados. Foxxy 14/14, job Windows da CI
+verde, caixa só leitura 11/11. Workflow do Gestor verde em `399dd2ca` (3 jobs). O Android HTTPS falhou no mesmo commit:
+intermitência conhecida (4 de 30), uma amostra com diagnóstico, causa UNKNOWN; a anotação agora mostra a asserção.
+
+**O caixa (FACT, só leitura).** O ensaio está parado desde 29/10 01:29: o PostgreSQL do ensaio terminou e nada voltou depois do
+boot de 11/11; banco com desligamento sujo (64,5 MB). Logo, não há processo do DeliveryOS para trocar. `plano` no caixa:
+`pronto: true`, linha de base **parada**. O conector roda como administrador (`CAIXA_MOOCA\Tata`).
+
+**A cadeia** (`5a370435`) mede a linha de base. Parada: cópia a frio do banco com manifesto SHA-256 → PostgreSQL sobe →
+schema conferido pelas funções do próprio candidato → crítico, assíncrono e piloto → observação. Reversão: para tudo e devolve
+o diretório de dados **byte a byte**. Um **vigia** destacado reverte se o executor morrer; `recuperar` cobre os dois mortos.
+
+**Perder a conexão ≠ executor interrompido.** Perder a conexão não afeta nada: o processo do conector termina na hora e o
+executor e o vigia seguem sozinhos (medido). Executor interrompido (morto, travado): o vigia assume em ~2 s e reverte (medido
+depois de subir o crítico e no meio da reversão). Os dois mortos (ex.: o Windows reiniciar no meio): nada do ensaio volta
+sozinho no boot — o caixa fica parado, como hoje —, o estado fica EXECUTANDO, `plano` acusa e `recuperar` devolve o banco.
+
+**Intocados por construção** (código lido, não suposto): a cadeia só para processos que ELA subiu (pid + executável + script +
+horário); grava só em `DeliveryOS-Ensaio-V1\` e no diretório de dados do ensaio (devolvido); o piloto **lê** o Reader e nunca
+escreve nele; nada de Edge, Gestor, pedido, impressão, tarefa agendada, firewall ou NetBird. Os servidores TATA Caixa RC4 QA e o
+consumidor do Reader não são tocados (não passam na identidade).
+
+### Pedido ao César (um só)
+
+**Ensaio supervisionado curto no caixa:** subir o PostgreSQL do ensaio e o candidato `0359e304`, observar, e reverter com
+comprovante de restauração. Sem migration, sem firewall, sem NetBird, sem GPS, sem tarefa.
+
+- **Janela proposta:** madrugada, com o caixa sem uso e a loja fechada — por exemplo entre 03:00 e 05:00. O horário de
+  funcionamento da loja não está no repositório: **a janela é sua**. Em 15/11 às 01:38 o caixa estava sem uso; às 23:57 de 14/11
+  havia alguém usando.
+- **Duração:** menos de 10 minutos. Na bancada: candidato saudável 3,7 s após o início, 60 s de observação automática, alguns
+  minutos de conferência (saúde, termo exigindo sessão, rota do candidato), reversão 5,9 s; no caixa, mais lento (banco de 64,5
+  MB contra 48 MB, disco e CPU do caixa).
+- **Indisponibilidade esperada:** nenhuma para a loja. Gestor, Reader, impressão e pedidos não são tocados. O ensaio do
+  DeliveryOS já está fora do ar desde 29/10 e volta a ficar fora no fim (é o estado de hoje, devolvido).
+- **Risco residual:** (1) por alguns minutos o piloto de teste volta a escutar em `100.107.78.202:5193`, o que torna o endereço
+  de campo do NetBird acessível de novo — contas sintéticas de 64 caracteres, modo de teste, GPS desligado (como era antes de
+  29/10); (2) carga breve de disco e CPU na cópia de 64,5 MB e na recuperação do banco; (3) se o Windows reiniciar no meio, o
+  banco pode ficar alterado até alguém rodar `recuperar` (a cópia de antes fica guardada em `DeliveryOS-Ensaio-V1\`); (4) o
+  candidato não tem a correção do preflight nem a do login por origem compartilhada (vieram depois) — irrelevantes para o ensaio.
+- **Reversão exata:** automática em qualquer falha (executor ou vigia) e manual no fim: `node ativar-candidato-v1.cjs reverter
+  --autorizacao "<texto>"`. Para os três processos que ela subiu, `pg_ctl stop -m fast`, troca o diretório de dados pela cópia
+  de antes e confere o manifesto (arquivos e SHA-256 iguais); o diretório usado no ensaio fica guardado para análise.
+- **Comprovante:** o `REVERTIDO` do diário com manifesto antes = depois, nenhuma porta do ensaio escutando, e o medidor de
+  janelas do caixa (0 janela) cobrindo do início ao fim.
+
+Fora deste pedido, e não feito: deixar o candidato rodando, portão de campo, NetBird, GPS real, aparelhos físicos.
+
