@@ -22,6 +22,12 @@ on:
       - src/platform/concessao-de-teste.ts
       - src/platform/run-concessao-de-viagem-tests.ts
       - src/platform/run-cadeia-*.ts
+      - src/entregas/pilot/access-throttle.ts
+      - src/entregas/pilot/run-access-throttle-tests.ts
+      - src/platform/database-preflight.ts
+      - src/platform/run-database-preflight-tests.ts
+      - src/entregas/consent/**
+      - docs/entregas/pilot/termo-localizacao-minuta.json
       - src/platform/run-relogio-tests.ts
       - src/platform/run-q017-source-mode-tests.ts
       - src/entregas/pilot/**
@@ -74,6 +80,13 @@ jobs:
         run: npx tsx src/entregas/pilot/run-trip-grants-delegated-http-tests.ts
       - name: Dois motoboys, dois aparelhos, PostgreSQL real — X1 fechada
         run: npx tsx src/platform/run-cadeia-multiaparelho-tests.ts
+      - name: Tres e cinco motoboys ao mesmo tempo, PostgreSQL real (logicos, nao fisicos)
+        run: npx tsx src/platform/run-cadeia-n-motoboys-tests.ts
+      - name: Login atras de origem compartilhada, preflight sem drift da sonda, minuta do termo nao publicavel
+        run: |
+          npx tsx src/entregas/pilot/run-access-throttle-tests.ts
+          npx tsx src/platform/run-database-preflight-tests.ts
+          npx tsx src/entregas/consent/run-termo-minuta-tests.ts
       - name: Cadeias existentes que enviam GPS seguem verdes
         run: |
           npx tsx src/platform/run-cadeia-real-tests.ts
