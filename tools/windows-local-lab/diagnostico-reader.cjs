@@ -35,7 +35,7 @@ const r = {
   leitura_de_diretorio_ms: Date.now() - t0,
   eventos_sem_decisao: 0, pronto_para_jusante: { sim: 0, nao: 0, ausente: 0 },
   bloqueios_do_evento: {}, bloqueios_do_servico: {}, decisao: { ready: 0, blocked: 0 }, motivos_da_decisao: {},
-  esquemas: {}, por_dia: {}, campos_do_evento: {}, campos_da_decisao: {}, ilegiveis: 0,
+  esquemas: {}, por_dia: {}, campos_do_evento: {}, campos_da_decisao: {}, ilegiveis: 0, _pedidos: {},
 };
 let amostraEv = 0, amostraDe = 0;
 for (const f of evs) {
@@ -48,6 +48,12 @@ for (const f of evs) {
   const quando = e.observed_at || e.captured_at || (e.order && (e.order.DTHRABERTURA || e.order.DTABERTURA)) || null;
   const dia = typeof quando === 'string' && /^\d{4}-\d{2}-\d{2}/.test(quando) ? quando.slice(0, 10) : 'sem_data';
   conta(r.por_dia, dia);
+  // Pedidos DISTINTOS por dia de abertura (delivery do Itaim), e quantas revisoes cada um teve.
+  const o = e.order || {};
+  if (o.CDFILIAL === '0001' && o.CDLOJA === '01' && /^DLV_/.test(String(o.IDORGCMDVENDA || '')) && typeof o.DTHRABERMESA === 'string') {
+    const d = o.DTHRABERMESA.slice(0, 10);
+    (r._pedidos[d] = r._pedidos[d] || new Map()).set(e.order_key, ((r._pedidos[d].get(e.order_key)) || 0) + 1);
+  }
   if (amostraEv < 400) { chaves(e, '', r.campos_do_evento, 0); amostraEv++; }
   const d = f.replace(/\.json$/i, '.decision.json');
   if (!dec.has(d)) { r.eventos_sem_decisao++; continue; }
@@ -57,6 +63,11 @@ for (const f of evs) {
   if (amostraDe < 400) { chaves(x, '', r.campos_da_decisao, 0); amostraDe++; }
 }
 r.duracao_ms = Date.now() - t0;
+r.pedidos_distintos_por_dia = Object.fromEntries(Object.keys(r._pedidos).sort().slice(-14).map((d) => {
+  const revs = [...r._pedidos[d].values()];
+  return [d, { pedidos: revs.length, revisoes: revs.reduce((s, x) => s + x, 0), max_revisoes_de_um_pedido: Math.max(...revs) }];
+}));
+delete r._pedidos;
 const dias = Object.keys(r.por_dia).sort();
 r.por_dia = Object.fromEntries(dias.slice(-20).map((d) => [d, r.por_dia[d]]));
 r.dias_com_evento = dias.length;
