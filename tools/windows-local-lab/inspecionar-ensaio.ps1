@@ -28,7 +28,9 @@ function Script([string]$cmd) {
   if ($achados.Count) { return ($achados -join ' ') } else { return '(sem caminho de script)' }
 }
 $procs = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -in @('node.exe', 'postgres.exe', 'pg_ctl.exe') } | ForEach-Object {
+    $gp = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
     [ordered]@{ pid = [int]$_.ProcessId; pai = [int]$_.ParentProcessId; nome = $_.Name; criado = $_.CreationDate.ToString('o');
+      memoriaMB = $(if ($gp) { [math]::Round($gp.WorkingSet64 / 1MB, 1) } else { $null }); cpuSeg = $(if ($gp -and $gp.TotalProcessorTime) { [math]::Round($gp.TotalProcessorTime.TotalSeconds, 1) } else { $null });
       executavel = $(if ($_.ExecutablePath) { $_.ExecutablePath } else { '(ilegivel neste contexto)' }); script = (Script $_.CommandLine) } })
 $escutas = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in @(8080, 5193, 55436) } |
   ForEach-Object { [ordered]@{ porta = [int]$_.LocalPort; endereco = $_.LocalAddress; pid = [int]$_.OwningProcess } })
