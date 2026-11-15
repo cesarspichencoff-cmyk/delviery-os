@@ -38,6 +38,8 @@ os hashes, a identidade do serviço ou a filial divergirem, interromper a opera�
    persistente com consultas parametrizadas, `READ COMMITTED` e `LOCK_TIMEOUT 2000`.
 3. Abrir a Home de homologação em loopback com
    `DELIVERYOS_READER_V3_PROJECTION_DIR=<readerRoot>\state\reader-v3-shadow\projection`.
+   Definir `DELIVERYOS_READER_V3_UNIT_ID` com o identificador confirmado da
+   unidade para habilitar o resumo na célula Caixa do Copiloto de homologação.
    A Home em uso continua na configuração V2. Conferir saúde, sequência e
    atraso em `health.json` e `projection\source-status.json`, sem publicar
    textos de pedidos, chaves nativas ou dados de clientes.

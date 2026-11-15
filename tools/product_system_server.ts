@@ -191,6 +191,7 @@ const pedidosDaTeknisaAgora = (agoraMs: number): PedidosDaTeknisaVM => leituraDa
  * Teknisa. Sem a variavel: bloco "nao configurado", nunca zero. Mesma cadencia de 10 s.
  */
 const DIR_GESTOR_LOCAL = (process.env.DELIVERYOS_GESTOR_LOCAL_DIR || "").trim();
+const UNIDADE_READER_V3 = (process.env.DELIVERYOS_READER_V3_UNIT_ID || "").trim();
 let memoIfood: { em: number; vm: OperacaoDoIfoodVM } | null = null;
 function operacaoDoIfoodAgora(agoraMs: number): OperacaoDoIfoodVM {
   if (memoIfood && agoraMs - memoIfood.em < 10_000) return memoIfood.vm;
@@ -788,19 +789,40 @@ export async function criarServidor(): Promise<http.Server> {
         // A demo ja montada permanece separada do bloco observado do servidor.
         const unidade = ESCOPO_SHADOW?.unit_id ||
           (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        const agoraMs = Date.now();
         void Promise.all([
           lerHistorico(clientePlataforma, pronto.historico, unidade),
           lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id),
         ])
           .then(([h, leitura]) => {
             const entregas = copilotoEntregasLeitura(leitura, unidade);
-            // Uma única leitura: células herdam os mesmos fatos e o mesmo
-            // recorte, sem segundo SQL, cor operacional ou ação implícita.
+            const cobertura = celulasCopilotoV33(entregas);
+            let celulas = cobertura.celulas;
+            const readerNaUnidade = Boolean(process.env.DELIVERYOS_READER_V3_PROJECTION_DIR?.trim())
+              && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_READER_V3)
+              && (unidade === null || unidade === UNIDADE_READER_V3);
+            if (readerNaUnidade) {
+              // O Caixa herda a mesma leitura local e o mesmo cache da Home.
+              const reader = pedidosDaTeknisaAgora(agoraMs);
+              const ifood = reader.disponivel && reader.contagens.pedidos > 0 ? operacaoDoIfoodAgora(agoraMs) : null;
+              const concil = ifood?.disponivel && !ifood.leitura_velha
+                ? `${ifood.conciliacao["correspondencia_comprovada"] ?? 0} correspondências nos campos comparáveis do iFood.`
+                : "Conciliação recente com o Gestor indisponível.";
+              const descricao = reader.disponivel
+                ? reader.contagens.pedidos > 0
+                  ? `Reader V3 em sombra · ${reader.dia} · ${reader.contagens.pedidos} ${reader.contagens.pedidos === 1 ? "pedido lido" : "pedidos lidos"}, ${reader.contagens.retidos} retidos. ${concil}`
+                  : "Reader V3 em sombra. Nenhum pedido na projeção desta leitura."
+                : "Reader V3 em sombra. Projeção indisponível nesta leitura.";
+              const estado = reader.disponivel
+                ? reader.contagens.pedidos > 0 ? "historico_real_parcial" : "sem_evidencia"
+                : "nao_conectada";
+              celulas = celulas.map(c => c.id === "caixa" ? { ...c, estado, descricao } : c);
+            }
             json(res, 200, {
               ...(pronto.copiloto as object),
               historico: h.copiloto,
               entregas_observadas: entregas,
-              celulas_operacionais: celulasCopilotoV33(entregas),
+              celulas_operacionais: { ...cobertura, celulas },
             });
           })
           .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));

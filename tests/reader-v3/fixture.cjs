@@ -15,3 +15,16 @@ function fixture(n=1){
 }
 const key=f=>['CDFILIAL','CDLOJA','NRVENDAREST','NRCOMANDA'].map(k=>f.headerRows[0][k]).join('|');
 module.exports={fixture,key};
+
+// The product serves these modules as browser ESM. Load their unchanged logic
+// here without changing the repository's CommonJS package or requiring a browser.
+async function renderCopiloto(vm) {
+ const fs=require('node:fs'),path=require('node:path');
+ const root=path.resolve(__dirname,'../../src/product/ui');
+ const moduleUrl=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+ const ui=moduleUrl(fs.readFileSync(path.join(root,'components/ui.js')));
+ const surface=fs.readFileSync(path.join(root,'surfaces/copiloto.js'),'utf8').replace('../components/ui.js',ui);
+ const {telaCopiloto}=await import(moduleUrl(surface));
+ return telaCopiloto(vm);
+}
+module.exports.renderCopiloto=renderCopiloto;

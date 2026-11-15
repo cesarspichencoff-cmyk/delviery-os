@@ -104,8 +104,10 @@ function compararObservacoes(g: PedidoDoGestor, t: PedidoReal): "sem_observacao"
     // A shared SKU or order note cannot attest a specific native item line.
     for (const i of comTexto) {
       const linhas = t.itens.filter(x => x.codigo_arvore === i.codigo_externo);
-      if (!norm(i.observacao!) || linhas.length !== 1 ||
-          !(linhas[0]!.observacoes ?? []).some(texto => norm(texto) === norm(i.observacao!))) return "divergem";
+      const nota = norm(i.observacao!);
+      const codigoUnicoNoGestor = g.itens.filter(x => x.codigo_externo === i.codigo_externo).length === 1;
+      if (!nota || !codigoUnicoNoGestor || linhas.length !== 1 ||
+          !(linhas[0]!.observacoes ?? []).some(texto => norm(texto) === nota)) return "divergem";
     }
     return "conferem";
   }
@@ -160,10 +162,12 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
       detalhes.push(itens === "nao_comparavel" ? "item sem codigo comparavel em uma das fontes" : "itens ou quantidades diferentes entre iFood e Teknisa");
     } else if (obs === "divergem") { classe = "observacao_divergente"; detalhes.push("observacao do cliente no iFood nao encontrada no texto lido da Teknisa"); }
     else if (obs === "nao_lidas") { classe = "observacao_nao_lida_pela_teknisa"; detalhes.push("ha observacao no iFood; a leitura da Teknisa nao provou as observacoes deste pedido"); }
-    else if (itens === "iguais_sem_opcoes") { classe = "complemento_nao_lido_pela_teknisa"; detalhes.push("itens conferem; os complementos do iFood nao aparecem como linha na leitura atual da Teknisa"); }
     else if (alvo.reader_v3 && alvo.itens.some(i => (i.componentes?.length ?? 0) > 0 || (i.complementos?.length ?? 0) > 0 || i.combinado)) {
       classe = "relacoes_nao_confirmadas";
-      detalhes.push("itens diretos conferem; as ligacoes de componentes e complementos foram lidas, mas ainda exigem conferencia individual com o iFood");
+      detalhes.push("itens conferem; as ligacoes de componentes e complementos foram lidas, mas ainda exigem conferencia individual com o iFood");
+    } else if (itens === "iguais_sem_opcoes") {
+      classe = "complemento_nao_lido_pela_teknisa";
+      detalhes.push("itens conferem; os complementos do iFood nao aparecem como linha na leitura atual da Teknisa");
     } else classe = "correspondencia_comprovada";
     if (g.eventos["CANCELLED"]) detalhes.push(`cancelado no iFood; Teknisa mostra estado ${alvo.estado_nativo}`);
     if (g.itens_cancelados + g.itens_alterados > 0) detalhes.push("o iFood registra item cancelado ou alterado neste pedido");

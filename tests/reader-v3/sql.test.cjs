@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),a=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),cp=require('node:child_process');
-const {fixture,key}=require('./fixture.cjs');const {SqlSource}=require('../../runtime/reader-v3/sql-client.cjs');const {buildCapture}=require('../../runtime/reader-v3/capture.cjs');const {project}=require('../../runtime/reader-v3/projection.cjs');
+const {fixture,key,renderCopiloto}=require('./fixture.cjs');const {SqlSource}=require('../../runtime/reader-v3/sql-client.cjs');const {buildCapture}=require('../../runtime/reader-v3/capture.cjs');const {project}=require('../../runtime/reader-v3/projection.cjs');
 const REPO=path.resolve(__dirname,'../..'),ps=process.env.TATA_PWSH||'pwsh';
 function run(op,fixturePath){const r=cp.spawnSync(ps,['-NoLogo','-NoProfile','-NonInteractive','-File',path.join(__dirname,'sql-lab.ps1'),'-Op',op,...(fixturePath?['-Fixture',fixturePath]:[])],{windowsHide:true,encoding:'utf8',timeout:110000});a.equal(r.status,0,(r.stderr||r.stdout).slice(-1600));return r.stdout;}
 test('SQL Server real: parameterized eight rowsets, least privilege, lock timeout, recovery, dangling relation',async t=>{
@@ -36,12 +36,21 @@ test('SQL Server real: parameterized eight rowsets, least privilege, lock timeou
  const health=S.read(path.join(root,'health.json'));
  a.equal(health.state,'HEALTHY');a.equal(health.seq,1);a.equal(health.consumerSeq,1);
  const net=require('node:net'),port=await new Promise(r=>{const srv=net.createServer();srv.listen(0,'127.0.0.1',()=>{const p=srv.address().port;srv.close(()=>r(p));});});
- const home=cp.spawn(process.execPath,['dist/tools/product_system_server.js'],{cwd:REPO,windowsHide:true,stdio:'ignore',env:{...process.env,PRODUCT_UI_PORT:String(port),DELIVERYOS_READER_V3_PROJECTION_DIR:projection,DELIVERYOS_DATABASE_URL:'',TATA_READER_INSTALL_ROOT:'',DELIVERYOS_GESTOR_LOCAL_DIR:''}});
+ const home=cp.spawn(process.execPath,['dist/tools/product_system_server.js'],{cwd:REPO,windowsHide:true,stdio:'ignore',env:{...process.env,PRODUCT_UI_PORT:String(port),DELIVERYOS_READER_V3_PROJECTION_DIR:projection,DELIVERYOS_READER_V3_UNIT_ID:'LAB_V3',DELIVERYOS_DATABASE_URL:'',TATA_READER_INSTALL_ROOT:'',DELIVERYOS_GESTOR_LOCAL_DIR:''}});
  t.after(async()=>{if(home.exitCode===null){const exited=new Promise(r=>home.once('exit',r));home.kill();await exited;}});
  let body;for(let i=0;i<70&&!body;i++){try{const response=await fetch(`http://127.0.0.1:${port}/api/home`);if(response.ok)body=await response.json();}catch{}if(!body)await new Promise(r=>setTimeout(r,100));}
  a.ok(body,'SQL to HTTP Home required');a.equal(body.pedidos_teknisa.contagens.pedidos,1);const order=body.pedidos_teknisa.pedidos[0];a.equal(order.retido,false);
  a.ok(order.itens[0].observacoes.some(x=>x.includes('Componente:')&&x.includes('FICT_CHILD_NOTE')));
  a.ok(order.itens[0].observacoes.some(x=>x.includes('Complemento:')));
  console.log('SQL_REAL_LOCK_RECOVERY_AND_CHILDREN_PROVEN_LAB_ONLY');
- console.log('SQL_REAL_TO_WATCHER_CONSUMER_HTTP_HOME_PASS');
+ const copilotoUrl=`http://127.0.0.1:${port}/api/copiloto`;
+ const observed=await fetch(copilotoUrl+'?unit_id=LAB_V3');a.equal(observed.status,200);
+ const cockpit=await observed.json(), cells=cockpit.celulas_operacionais.celulas;
+ const cash=cells.find(cell=>cell.id==='caixa');a.equal(cash.estado,'historico_real_parcial');a.match(cash.descricao,/Reader V3 em sombra.*1 pedido lido/);
+ a.equal(cash.pressao,null);a.equal(cash.nenhuma_acao_executada,true);
+ a.doesNotMatch(JSON.stringify(cash),/FICT_CHILD_NOTE|0000010001/);
+ const foreign=await fetch(copilotoUrl+'?unit_id=OUTRA_UNIDADE');a.equal(foreign.status,200);
+ a.equal((await foreign.json()).celulas_operacionais.celulas.find(cell=>cell.id==='caixa').estado,'nao_conectada');
+ a.match(await renderCopiloto(cockpit),/Reader V3 em sombra/);
+ console.log('SQL_REAL_TO_WATCHER_CONSUMER_HTTP_HOME_AND_COPILOTO_PASS');
 });
