@@ -28,14 +28,17 @@ const MUTATIONS = [
   ['P2 login de gerente no campo', [[PILOT, 'if (doCampo && requestActor(tentativa)?.role !== "motoboy_interno") {', 'if (false) {']]],
 ];
 
+const anotar = (m) => { if (process.env.GITHUB_ACTIONS === 'true') console.log('::error title=mutações do portão::' + String(m).slice(0, 900).replace(/%/g, '%25')); };
+let ultimaSaida = '';
 function run([command, args]) {
   const r = spawnSync(command, args, {cwd: ROOT, encoding: 'utf8', shell: process.platform === 'win32', timeout: 600000});
+  ultimaSaida = String(r.stdout || '') + String(r.stderr || '');
   return r.status === 0;
 }
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const write = (f, text) => fs.writeFileSync(path.join(ROOT, f), text);
 
-if (!run(BUILD) || !run(SUITE)) { console.error('CONTROLE POSITIVO FALHOU: a prova do portão não está verde sem mutação'); process.exit(1); }
+if (!run(BUILD) || !run(SUITE)) { console.error('CONTROLE POSITIVO FALHOU: a prova do portão não está verde sem mutação'); anotar('controle positivo falhou: ' + ultimaSaida.split(/\r?\n/).filter((l) => /FAIL|Error|Assert|PASS/.test(l)).slice(-6).join(' | ')); process.exit(1); }
 console.log('CONTROLE portão verde sem mutação');
 const blind = [];
 let killed = 0;
@@ -52,8 +55,8 @@ for (const [label, edits] of MUTATIONS.filter(([l]) => !SOMENTE.length || SOMENT
       write(file, current.replace(needle, () => swap));
     }
     if (!run(BUILD)) { killed += 1; console.log('MORTA ' + label + ' (não compila)'); continue; }
-    if (run(SUITE)) { blind.push(label); console.log('CEGA  ' + label); } else { killed += 1; console.log('MORTA ' + label); }
-  } catch (e) { console.error(String(e.message || e)); process.exitCode = 1; }
+    if (run(SUITE)) { blind.push(label); console.log('CEGA  ' + label); anotar('mutação cega: ' + label); } else { killed += 1; console.log('MORTA ' + label); }
+  } catch (e) { console.error(String(e.message || e)); anotar(String(e.message || e)); process.exitCode = 1; }
   finally {
     for (const [file, original] of originals) write(file, original);
     for (const [file, original] of originals) if (read(file) !== original) { console.error('ORIGINAL NÃO RESTAURADO: ' + file); process.exit(2); }

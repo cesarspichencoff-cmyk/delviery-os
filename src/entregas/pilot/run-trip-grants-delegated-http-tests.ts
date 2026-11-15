@@ -174,4 +174,10 @@ async function main(): Promise<void> {
     rmSync(dir, { recursive: true, force: true });
   }
 }
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  // Na CI, a falha vira anotação pública (sem segredo: só a mensagem do teste).
+  if (process.env.GITHUB_ACTIONS === "true")
+    console.log("::error title=X1 rota delegada::" + String((e as Error)?.message ?? e).split(/\r?\n/).slice(0, 4).join(" | ").slice(0, 900).replace(/%/g, "%25"));
+  process.exit(1);
+});
