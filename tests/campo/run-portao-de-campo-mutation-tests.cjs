@@ -23,7 +23,8 @@ const MUTATIONS = [
   ['C6 teto de corpo declarado ignorado', [[GATE, 'if (Number.isFinite(declarado) && declarado > rota.tetoBytes && rota.tetoBytes > 0) return negar(res, 413, "corpo_grande_demais");', '']]],
   ['C7 Set-Cookie da origem volta ao celular', [[GATE, 'const NAO_VOLTAM = ["set-cookie", ', 'const NAO_VOLTAM = [']]],
   ['C8 escuta em todas as interfaces aceita', [[GATE, 'if (escuta.host === "0.0.0.0" ||', 'if (false && escuta.host === "0.0.0.0" ||']]],
-  ['C9 GET com corpo passa', [[GATE, 'if (rota.tetoBytes === 0 && (req.headers["transfer-encoding"] || (Number.isFinite(declarado) && declarado > 0)))', 'if (false)']]],
+  // Sem C9: corpo em rota de teto zero é recusado pela conferência do cabeçalho E pelo corte durante o envio.
+  // Mutar só uma camada é equivalente por desenho (medido: cega no Linux, morta no Windows por tempo de rede).
   ['P1 piloto aceita gerente no campo', [[PILOT, 'if (doCampo && actor && actor.role !== "motoboy_interno") {', 'if (false) {']]],
   ['P2 login de gerente no campo', [[PILOT, 'if (doCampo && requestActor(tentativa)?.role !== "motoboy_interno") {', 'if (false) {']]],
 ];

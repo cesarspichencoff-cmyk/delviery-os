@@ -91,7 +91,8 @@ async function main(): Promise<void> {
     ENTREGAS_PILOT_DELEGATION_KEY_ID: KID };
   for (const k of ["ENTREGAS_BIND", "ENTREGAS_HTTPS", "ENTREGAS_USERS", "ENTREGAS_STORAGE_BACKEND"]) delete env[k];
   const proc: ChildProcess = spawn(process.execPath, [join(ROOT, "dist", "tools", "entregas_pilot_server.js")],
-    { cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+    // Grupo próprio (fora do Windows): é o que deixa a limpeza encerrar o piloto e os filhos dele.
+    { cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true, detached: process.platform !== "win32" });
   const log: string[] = [];
   proc.stdout?.on("data", (d) => log.push(String(d)));
   proc.stderr?.on("data", (d) => log.push(String(d)));
