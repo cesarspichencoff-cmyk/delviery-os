@@ -7,7 +7,7 @@ class SqlSource {
   this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',s=>{this.buffer+=s;if(Buffer.byteLength(this.buffer)>4*1024*1024)return this.fail('SQL_RESPONSE_BOUNDS');
    const i=this.buffer.indexOf('\n');if(i<0)return;const line=this.buffer.slice(0,i);this.buffer=this.buffer.slice(i+1);const p=this.pending;
    if(!p)return this.fail('UNSOLICITED_RESPONSE');this.pending=null;clearTimeout(p.timer);
-   try{const v=JSON.parse(line);if(v.ok!==true)throw Error(v.code==='LOCK_TIMEOUT'?'LOCK_TIMEOUT':'SQL_CAPTURE_FAILED');p.resolve(v.value);}catch(e){p.reject(Error(/^[A-Z_]+$/.test(e.message)?e.message:'SQL_RESPONSE_INVALID'));}
+   try{const v=JSON.parse(line);if(v.ok!==true)throw Error(['LOCK_TIMEOUT','QUERY_TIMEOUT'].includes(v.code)?v.code:'SQL_CAPTURE_FAILED');p.resolve(v.value);}catch(e){p.reject(Error(/^[A-Z_]+$/.test(e.message)?e.message:'SQL_RESPONSE_INVALID'));}
   });
   this.child.stderr.on('data',()=>{});this.child.on('error',()=>this.fail('SQL_PROCESS_FAILED'));this.child.on('exit',()=>this.fail('SQL_PROCESS_EXITED'));
  }

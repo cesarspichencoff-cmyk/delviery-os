@@ -14,7 +14,7 @@ function Rows($cmd){
   $o=[ordered]@{};for($i=0;$i -lt $r.FieldCount;$i++){$v=$r.GetValue($i)
    $o[$r.GetName($i)]=if($v -is [DBNull]){$null}elseif($v -is [datetime]){$v.ToString('yyyy-MM-ddTHH:mm:ss.fff',[Globalization.CultureInfo]::InvariantCulture)}else{[Convert]::ToString($v,[Globalization.CultureInfo]::InvariantCulture).TrimEnd()}
   };$rows.Add($o)
- };$all.Add(@($rows.ToArray()))}while($r.NextResult())}finally{$r.Close();$r.Dispose()};return ,$all.ToArray()
+ };$all.Add(@($rows.ToArray()))}while($r.NextResult())}catch{$failure=$_;try{$cmd.Cancel()}catch{};try{$r.Dispose()}catch{};throw $failure}finally{if(-not $r.IsClosed){$r.Dispose()}};return ,$all.ToArray()
 }
 try{
  $conn.Open();$identityCmd=$conn.CreateCommand();$identityCmd.CommandText='SELECT ORIGINAL_LOGIN() AS login_name,DB_NAME() AS db_name;';$identityCmd.CommandTimeout=3
@@ -40,7 +40,7 @@ try{
    }else{throw 'OP_FORBIDDEN'}
    [Console]::WriteLine((@{ok=$true;value=$answer}|ConvertTo-Json -Compress -Depth 30))
   }catch{
-   $ex=$_.Exception;while($null -ne $ex.InnerException){$ex=$ex.InnerException};$code='SQL_CAPTURE_FAILED';if($ex.Number -eq 1222){$code='LOCK_TIMEOUT'}elseif($ex.Number -eq -2){$code='QUERY_TIMEOUT'}
+   $ex=$_.Exception;$code='SQL_CAPTURE_FAILED';while($null -ne $ex){if($ex.Number -eq 1222){$code='LOCK_TIMEOUT';break}elseif($ex.Number -eq -2){$code='QUERY_TIMEOUT';break};$ex=$ex.InnerException}
    # Never return SQL text, identifiers, customer observations or driver messages.
    [Console]::WriteLine((@{ok=$false;code=$code}|ConvertTo-Json -Compress))
   }finally{if($null -ne $cmd){$cmd.Dispose()}}

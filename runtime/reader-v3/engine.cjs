@@ -15,8 +15,8 @@ class Watcher {
  constructor({root,source,from,service,clock=()=>new Date(),fault=()=>{}}){
   if(!/^\d{4}-\d{2}-\d{2}T00:00:00$/.test(from))throw Error('EXPLICIT_START_REQUIRED');
   this.root=root;this.source=source;this.service=service;this.clock=clock;this.fault=fault;this.busy=false;
-  this.release=S.lock(root,'watcher');S.directory(path.join(root,'events'));
-  try{this.file=path.join(root,'watcher.json');this.state=S.readOrNew(this.file,()=>({schema:1,from,cursor:initialCursor(from),repair:initialCursor(from),repairAt:0,seq:0,pending:[],latest:{},holds:{},outbox:null,failures:0,nextAt:0}));
+  this.release=S.lock(root,'watcher');
+  try{S.directory(path.join(root,'events'));this.file=path.join(root,'watcher.json');this.state=S.readOrNew(this.file,()=>({schema:1,from,cursor:initialCursor(from),repair:initialCursor(from),repairAt:0,seq:0,pending:[],latest:{},holds:{},outbox:null,failures:0,nextAt:0}));
    if(this.state.schema!==1||this.state.from!==from||!Number.isSafeInteger(this.state.seq)||this.state.seq<0||!Array.isArray(this.state.pending))throw Error('CHECKPOINT_INVALID');
   }catch(e){this.release();throw e;}
  }
@@ -72,7 +72,7 @@ class Watcher {
 }
 // Sequential exact-path consumer: no readdir/exists calls per historical event.
 class Consumer {
- constructor({root,sourceRoot,project,fault=()=>{}}){this.root=root;this.sourceRoot=sourceRoot;this.project=project;this.fault=fault;this.release=S.lock(root,'consumer');
+ constructor({root,sourceRoot,project,clock=()=>new Date(),fault=()=>{}}){this.clock=clock;this.root=root;this.sourceRoot=sourceRoot;this.project=project;this.fault=fault;this.release=S.lock(root,'consumer');
   try{this.file=path.join(root,'consumer.json');this.state=S.readOrNew(this.file,()=>({schema:1,seq:0,latest:{}}));if(this.state.schema!==1||!Number.isSafeInteger(this.state.seq)||this.state.seq<0)throw Error('CONSUMER_CHECKPOINT_INVALID');}catch(e){this.release();throw e;}}
  tick(limit=32){if(!Number.isInteger(limit)||limit<1||limit>128)throw Error('BATCH_INVALID');let count=0;
   const producer=S.read(path.join(this.sourceRoot,'watcher.json'));
@@ -80,7 +80,10 @@ class Consumer {
   while(this.state.seq<committed&&count<limit){const n=this.state.seq+1;const entry=S.read(path.join(this.sourceRoot,'events',S.eventName(n)),4*1024*1024);
    if(entry.seq!==n||entry.event?.schema!=='deliveryos.reader-v3.capture.v1'||entry.event.revision!==S.hash({order:entry.event.order,childRows:entry.event.childRows,service:entry.event.service}))throw Error('EVENT_INTEGRITY');
    const projected=this.project(entry.event);this.fault('before_consumer_checkpoint');
-   this.state.latest[entry.event.order_key]=projected;this.state.seq=n;S.atomic(this.file,this.state);count++;
+   const latest={...this.state.latest,[entry.event.order_key]:projected};
+   // Bound the serving projection; the immutable journal retains every revision.
+   for(const [k,p] of Object.entries(latest))if(this.clock().getTime()-Date.parse(p.aberto_em_local+'-03:00')>49*3600000)delete latest[k];
+   const next={...this.state,latest,seq:n};S.atomic(this.file,next);this.state=next;count++;
   }
   S.atomic(path.join(this.root,'source-status.json'),{schema:1,at:new Date().toISOString(),seq:this.state.seq,producerSeq:committed,holds:producer.holds??{},failures:producer.failures});
   return {count,seq:this.state.seq,lag:committed-this.state.seq};}
