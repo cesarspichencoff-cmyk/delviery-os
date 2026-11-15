@@ -287,3 +287,21 @@ caracteres (`cloud-config.ts`, decisão de 01/11: código curto só no próprio 
 remoto; logo, os motoboys precisam de código longo lá, ou essa trava precisa ser revista explicitamente.
 
 **Ainda impede o GPS de campo, independente da instalação:** o termo de localização do caixa não é publicável (decisão do César).
+
+## 14. Missão mestre (15/11, madrugada) — candidato preparado no caixa, troca não feita
+
+Correção da seção 13: o destino é `C:\Users\Tata\DeliveryOS-Ensaio-V1`.
+
+- **Executor do Gestor:** reverificado só lendo; continua como em §12 (FACT).
+- **Script de preparação endurecido** (`0359e304`): cada arquivo conferido pelo blob do Git contra a árvore fixada (`-Tree`, tirada
+  do git local e cruzada com a API); tudo ou nada por rename; prioridade baixa; tempo máximo com encerramento da árvore de
+  processos; uma execução por vez; modos Verify e Remove. Foxxy: 18/18 casos negativos; lançador pelo conector sem janela
+  (medidor 0, controle positivo 1) (FACT, TEST_PASS).
+- **Caixa:** candidato `0359e304` preparado em pasta isolada em 52 s; Verify no próprio caixa verde; medidor 300 s: 0 janela, 0
+  troca de foco; 0 processo, porta, tarefa ou firewall alterado (FACT, STAGED). Nenhum processo do ensaio foi tocado.
+- **Migrations idênticas** entre o app ativo (`be5a3e3`) e o candidato: a troca não migra e a volta encontra o mesmo schema (FACT).
+  O que o banco do ensaio aplicou não foi lido (UNKNOWN).
+
+A troca de processos (crítico, assíncrono e piloto do ensaio para o candidato) **não está autorizada** pela missão mestre e não foi
+feita. A cadeia supervisionada para fazê-la, com reversão local, é a próxima seção.
+
