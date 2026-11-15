@@ -338,8 +338,8 @@ async function reverter(motivo, inicio) {
     const pid = novos[papel];
     if (!Number.isInteger(pid) || !vivo(pid)) continue;
     const x = identidade(insp, pid, papel, inicio);
-    if (x) { diario('REVERSAO_NAO_PAROU', { papel, pid, motivo: x }); continue; }
-    await parar(pid); diario('REVERSAO_PAROU_CANDIDATO', { papel, pid });
+    if (x) { diario('REVERSAO_NAO_PAROU', { papel, filho: pid, motivo: x }); continue; }
+    await parar(pid); diario('REVERSAO_PAROU_CANDIDATO', { papel, filho: pid });
   }
   if (fs.existsSync(F.pidsC)) fs.renameSync(F.pidsC, F.pidsC.replace(/\.json$/, `.revertido-${Date.now()}.json`));
   if (fs.existsSync(F.dados)) fs.renameSync(F.dados, F.dados + '.revertido-' + carimbo());
@@ -375,7 +375,7 @@ async function reverter(motivo, inicio) {
   for (const papel of ['pilot', 'async', 'critical']) {
     const pid = antigos[papel];
     if (!Number.isInteger(pid) || !vivo(pid) || identidade(inspA, pid, papel)) continue;
-    await parar(pid); diario('REVERSAO_PAROU_SOBRA_ANTIGA', { papel, pid });
+    await parar(pid); diario('REVERSAO_PAROU_SOBRA_ANTIGA', { papel, filho: pid });
   }
   if (fs.existsSync(F.pidsA)) fs.renameSync(F.pidsA, F.pidsA.replace(/\.json$/, `.antes-reversao-${Date.now()}.json`));
   const lc = rodarParaArquivo(L.node, [path.join(A, 'local-control.cjs'), 'start'], 90000);
@@ -406,7 +406,7 @@ async function ativar(id, autorizacao) {
       const insp = inspecionar([antigos.critical, antigos.async, antigos.pilot], []);
       for (const papel of ['pilot', 'async', 'critical']) {
         const x = identidade(insp, antigos[papel], papel); if (x) throw Error(x);
-        tocou = true; await parar(antigos[papel]); diario('PAROU_ANTIGO', { papel, pid: antigos[papel] });
+        tocou = true; await parar(antigos[papel]); diario('PAROU_ANTIGO', { papel, filho: antigos[papel] });
       }
       fs.renameSync(F.pidsA, F.pidsA.replace(/\.json$/, `.substituido-v1-${Date.now()}.json`));
     } else {
@@ -436,13 +436,13 @@ async function ativar(id, autorizacao) {
     const novos = {};
     const registrar = () => { gravarAtomico(F.pidsC, { ...novos, pilotMode: 'remote-lab-v1', commit: amb.commit }); mudar({ novos }); };
     tocou = true;
-    novos.critical = lancar('critical', appC, SCRIPTS.critical, amb.critical); registrar(); diario('SUBIU', { papel: 'critical', pid: novos.critical });
+    novos.critical = lancar('critical', appC, SCRIPTS.critical, amb.critical); registrar(); diario('SUBIU', { papel: 'critical', filho: novos.critical });
     if (INJETAR === 'matar-critico-antes-do-ready') { process.kill(novos.critical); diario('FALHA_INJETADA', { tipo: INJETAR }); }
     if (INJETAR === 'matar-executor-apos-subir-critico' || INJETAR === 'matar-executor-e-vigia') { diario('FALHA_INJETADA', { tipo: INJETAR }); process.kill(process.pid); await dormir(5000); }
     await esperar(`http://127.0.0.1:${L.portaCritico}/ready`, [200], 40);
-    novos.async = lancar('async', appC, SCRIPTS.async, amb.async); registrar(); diario('SUBIU', { papel: 'async', pid: novos.async });
+    novos.async = lancar('async', appC, SCRIPTS.async, amb.async); registrar(); diario('SUBIU', { papel: 'async', filho: novos.async });
     fs.mkdirSync(F.dados, { recursive: true });
-    novos.pilot = lancar('pilot', appC, SCRIPTS.pilot, amb.pilot); registrar(); diario('SUBIU', { papel: 'pilot', pid: novos.pilot });
+    novos.pilot = lancar('pilot', appC, SCRIPTS.pilot, amb.pilot); registrar(); diario('SUBIU', { papel: 'pilot', filho: novos.pilot });
     await esperar(`http://${PILOTO}:${L.portaPiloto}/api/health`, [200], 40);
     const termo = await esperar(`http://${PILOTO}:${L.portaPiloto}/api/term`, [401, 403], 10);
     // Impressao digital do candidato: so o V1 tem a rota de concessao delegada (sem token: 401).
