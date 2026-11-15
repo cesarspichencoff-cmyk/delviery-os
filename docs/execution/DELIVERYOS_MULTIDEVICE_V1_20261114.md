@@ -305,3 +305,31 @@ Correção da seção 13: o destino é `C:\Users\Tata\DeliveryOS-Ensaio-V1`.
 A troca de processos (crítico, assíncrono e piloto do ensaio para o candidato) **não está autorizada** pela missão mestre e não foi
 feita. A cadeia supervisionada para fazê-la, com reversão local, é a próxima seção.
 
+## 15. Cadeia supervisionada de ativação — pronta e ensaiada, não executada no caixa
+
+`tools/windows-local-lab/ativar-candidato-v1.cjs` (`68db4e47`). Comandos: `plano` (só lê; testa a configuração do candidato com os
+carregadores reais dele, sem porta nem conexão), `segredos` (cria o segredo da concessão de viagem sem imprimir), `ativar` e
+`reverter` (exigem `--autorizacao "<quem e quando>"`, gravada no diário) e `estado`. `ativar`/`reverter` entregam o trabalho a um
+executor destacado: se a conexão remota cair, ele termina sozinho — conclui ou reverte. A reversão usa os lançadores da própria
+pasta ativa (`local-control.cjs start` e `switch-pilot.ps1 -Mode Remote`), os mesmos que puseram o caixa no estado de hoje.
+
+Escopo da troca: só os três processos do ensaio, mesmo endereço, porta e modo de teste. Muda o código (X1, restrição de papel do
+campo) e o armazenamento do piloto (arquivo novo, D102). **Não** faz migration (idênticas), firewall, NetBird, portão de campo,
+Home por hostname, GPS, pedido, impressão, Edge nem Reader. A delegação `pt1` fica desligada no caixa (o crítico é `http` local); a
+concessão chega ao app pelo `capture-state`.
+
+Bancada no Foxxy com a topologia do caixa: **13/13**; piloto fora do ar 1,2 s; reversão 6,5–6,8 s; pelo conector, com medidor:
+0 janela. Dois defeitos achados e corrigidos antes da contagem (pipe herdado pelo processo destacado do lançador antigo; despacho
+concorrente trocando o pedido pendente). Achado à parte: um `run-portao-de-campo-tests.ts` de 14/11 ficou vivo com o piloto dele
+(porta 56844) até hoje — encerrado; a causa da execução presa não foi investigada.
+
+**Roteiro no caixa, quando o César autorizar (Q-029):**
+
+1. `baixar-fixado.ps1` traz `ativar-candidato-v1.cjs` do commit publicado, conferindo o blob, para `C:\Users\Tata\DeliveryOS-Ensaio-V1\`.
+2. `node ativar-candidato-v1.cjs segredos` e `node ativar-candidato-v1.cjs plano` — precisa sair `"pronto": true`.
+3. Medidor de janelas `-PermitirCaixa` ligado; `node ativar-candidato-v1.cjs ativar --autorizacao "<texto do César>"`.
+4. `estado` até `ATIVO` (ou `REVERTIDO`, que já devolve o caixa como estava). Reverter depois: `reverter --autorizacao "..."`.
+
+O que continua não provado: a troca no próprio caixa (tempos de lá), o piloto do candidato com o Reader real do caixa e o
+banco do ensaio do caixa (o que ele aplicou de migration não foi lido).
+
