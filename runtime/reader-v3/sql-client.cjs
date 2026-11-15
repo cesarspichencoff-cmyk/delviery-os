@@ -2,7 +2,14 @@
 const {spawn}=require('node:child_process');const path=require('node:path');
 class SqlSource {
  constructor({executable='C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',script=path.join(__dirname,'sql-source.ps1'),spawnProcess=spawn}={}) {
-  this.child=spawnProcess(executable,['-NoLogo','-NoProfile','-NonInteractive','-File',script],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+  const args=['-NoLogo','-NoProfile','-NonInteractive'];
+  // The Windows service account has no per-user execution policy. Permit the
+  // locally staged script in this child session while retaining signature checks for remote files.
+  if(path.win32.basename(executable).toLowerCase()==='powershell.exe'){
+   args.push('-ExecutionPolicy','RemoteSigned');
+  }
+  args.push('-File',script);
+  this.child=spawnProcess(executable,args,{windowsHide:true,stdio:['pipe','pipe','pipe']});
   this.pending=null;this.buffer='';this.dead=false;
   this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',s=>{this.buffer+=s;if(Buffer.byteLength(this.buffer)>4*1024*1024)return this.fail('SQL_RESPONSE_BOUNDS');
    const i=this.buffer.indexOf('\n');if(i<0)return;const line=this.buffer.slice(0,i);this.buffer=this.buffer.slice(i+1);if(this.buffer.trim())return this.fail('SQL_RESPONSE_FRAMING');const p=this.pending;

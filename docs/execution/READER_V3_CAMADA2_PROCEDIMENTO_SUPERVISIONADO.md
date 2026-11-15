@@ -107,3 +107,15 @@ continua desconhecido, pois a candidata anterior descartava stderr.
 Medir a partida fria sem usar o limite de 35 segundos que interrompeu o
 primeiro ensaio. Comprovar o retorno do V2 por um ciclo novo após a restauração,
 incluindo a verificação independente se a primeira espera expirar.
+
+### Diagnóstico adicional das 18h58
+
+Dois eventos 4100 do PowerShell no caixa confirmaram execução de scripts
+desabilitada para o adaptador, antes de qualquer consulta. O Gestor registrava
+58 pedidos do jantar na amostra das 18h59. O V2 foi confirmado saudável às
+19h01, com hash original e candidata desativada.
+
+O lançamento corrigido usa `RemoteSigned` somente na sessão filha do
+Windows PowerShell para o script local conferido por hash. A guarda da conta
+Windows e a verificação de identidade SQL continuam obrigatórias. Validar o
+retorno da projeção com o pacote corrigido em um ensaio supervisionado.
