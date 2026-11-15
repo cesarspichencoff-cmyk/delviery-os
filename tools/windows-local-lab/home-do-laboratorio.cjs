@@ -1,7 +1,8 @@
 'use strict';
 /*
  * Home do LABORATORIO no caixa: so o servidor da Home (product_system_server) de uma pasta de candidato
- * preparada, ouvindo SO em 127.0.0.1, lendo a pasta REAL do Reader em modo leitura (sem banco).
+ * preparada, ouvindo SO em 127.0.0.1, lendo a pasta REAL do Reader e a pasta de dados do Gestor de
+ * Pedidos em modo leitura (sem banco, sem tocar no aplicativo).
  *   node home-do-laboratorio.cjs iniciar <pasta-do-candidato>
  *   node home-do-laboratorio.cjs estado
  *   node home-do-laboratorio.cjs parar
@@ -28,7 +29,11 @@ const linhaDe = (pid) => {
     if (!fs.existsSync(path.join(pasta, 'preparacao-candidato.json')) || !fs.existsSync(bin)) throw Error('pasta sem preparacao de candidato ou sem servidor da Home');
     if (fs.existsSync(REGISTRO) && vivo(JSON.parse(fs.readFileSync(REGISTRO, 'utf8')).pid)) throw Error('Home do laboratorio ja esta no ar');
     const log = fs.openSync(path.join(__dirname, 'home-do-laboratorio.log'), 'a');
-    const env = { ...process.env, PRODUCT_UI_PORT: String(PORTA), TATA_READER_INSTALL_ROOT: READER, DELIVERYOS_DATABASE_URL: '' };
+    // Pasta de dados do aplicativo Gestor de Pedidos desta conta: lida so como arquivo (LevelDB), sem
+    // abrir o aplicativo. Ausente -> o bloco do iFood diz "nao configurado", nunca zero.
+    const gestor = path.join(process.env.APPDATA || '', 'Gestor de Pedidos');
+    const env = { ...process.env, PRODUCT_UI_PORT: String(PORTA), TATA_READER_INSTALL_ROOT: READER, DELIVERYOS_DATABASE_URL: '',
+      DELIVERYOS_GESTOR_LOCAL_DIR: process.env.APPDATA && fs.existsSync(gestor) ? gestor : '' };
     const f = cp.spawn(process.execPath, [bin], { cwd: app, env, stdio: ['ignore', log, log], detached: true, windowsHide: true });
     fs.closeSync(log); f.unref();
     fs.writeFileSync(REGISTRO, JSON.stringify({ pid: f.pid, pasta, porta: PORTA, em: new Date().toISOString() }));

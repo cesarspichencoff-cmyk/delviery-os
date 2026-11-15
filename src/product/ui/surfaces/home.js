@@ -1028,6 +1028,60 @@ function entregasNaRua(rua) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Pedidos do iFood (Gestor local) conciliados com a Teknisa. A etapa e a oficial do iFood; a
+ * conferencia de itens e da Teknisa; o alerta de preparo compara com o tempo informado ao iFood.
+ * Atencao so aparece quando ha o que conferir; o resto fica na dobra.
+ * ------------------------------------------------------------------ */
+
+function pedidoDoIfood(p) {
+  const itens = p.itens.map((i) => `<li>${esc(i.descricao)}${i.opcoes.length ? ` (${esc(i.opcoes.join(", "))})` : ""}${
+    i.observacao ? ` — <em>${esc(i.observacao)}</em>` : ""}</li>`).join("");
+  const preparo = p.preparo ? ` · preparo informado ${esc(String(p.preparo.informado_min))} min${
+    p.preparo.passou_min ? `, passou ${esc(String(p.preparo.passou_min))} min` : ""}` : "";
+  return `<li class="org-sinal" data-ativo="${p.ativo ? "sim" : "nao"}" data-teknisa="${esc(p.teknisa.classe)}">
+    <span class="org-sinal__nome">${esc(p.hora)} · ${esc(p.codigo)} · ${esc(p.etapa)}</span>
+    <span class="org-sinal__resumo">${esc(p.modalidade)} · ha ${esc(String(p.minutos))} min${preparo} · ${esc(p.teknisa.texto)}${
+      p.teknisa.estado ? ` (estado ${esc(p.teknisa.estado)})` : ""}</span>
+    <ul class="org-ctx__sinais">${itens}</ul>
+    ${p.detalhes.length ? `<p class="org-ctx__ausencia">${esc(p.detalhes.join(" · "))}</p>` : ""}
+  </li>`;
+}
+
+function operacaoDoIfood(o) {
+  if (!o) return "";
+  if (!o.disponivel) {
+    return `<section class="org-resto org-ifood" data-ifood="indisponivel">
+      <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
+      <span class="org-resto__conta">${esc(o.titulo)}</span></div>
+      <p class="org-resto__nota">${esc(o.explicacao)}</p>
+    </section>`;
+  }
+  const c = o.contagens;
+  const linha = [o.titulo, c.em_preparo ? `${c.em_preparo} em preparo` : null, c.prontos ? `${c.prontos} pronto(s)` : null,
+    c.na_rua ? `${c.na_rua} na rua` : null].filter(Boolean).join(" · ");
+  const velho = o.leitura_velha
+    ? `<p class="org-resto__nota">${o.gravado_ha_min === null ? "Sem data da ultima gravacao do Gestor." : `O Gestor nao grava ha ${esc(String(o.gravado_ha_min))} min; esta leitura pode estar velha.`}</p>` : "";
+  const atencao = o.atencao.length
+    ? `<ul class="org-sinais" data-atencao="sim">${o.atencao.map((a) => `<li class="org-sinal"><span class="org-sinal__nome">${esc(a.hora)} · ${esc(a.codigo)}</span><span class="org-sinal__resumo">${esc(a.motivo)}</span></li>`).join("")}</ul>` : "";
+  const k = o.conciliacao;
+  const conc = `Na janela ${esc(o.janela || "—")}: ${k.correspondencia_comprovada} conferem com a Teknisa` +
+    (k.complemento_nao_lido_pela_teknisa ? ` · ${k.complemento_nao_lido_pela_teknisa} com complemento nao lido` : "") +
+    (k.sem_comanda_na_teknisa ? ` · ${k.sem_comanda_na_teknisa} sem comanda vista` : "") +
+    (k.item_ou_quantidade_divergente ? ` · ${k.item_ou_quantidade_divergente} com itens diferentes` : "") +
+    (k.somente_na_teknisa_na_janela ? ` · ${k.somente_na_teknisa_na_janela} so na Teknisa` : "");
+  return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
+    <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
+    <span class="org-resto__conta">${esc(linha)}</span></div>
+    ${velho}${atencao}
+    ${o.pedidos.length ? dobra("ifood-pedidos", `Ver os ${o.pedidos.length} pedidos do Gestor`,
+      `<ul class="org-sinais">${o.pedidos.map(pedidoDoIfood).join("")}</ul>`) : ""}
+    <p class="org-resto__nota">${conc}</p>
+    ${dobra("ifood-limites", `Ver o que esta leitura nao prova (${o.limitacoes.length})`,
+      `<ul class="org-sinais">${o.limitacoes.map((l) => `<li class="org-sinal"><span class="org-sinal__resumo">${esc(l)}</span></li>`).join("")}</ul>`)}
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ *
  * Pedidos da Teknisa (Reader V3) — o que o Reader viu, com itens e observacoes de texto, e sempre
  * o que a fonte NAO le. Estado da Teknisa como codigo, sem interpretar. Sem leitura, ausencia dita.
  * ------------------------------------------------------------------ */
@@ -1121,6 +1175,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
+    ${operacaoDoIfood(vm.operacao_ifood)}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}

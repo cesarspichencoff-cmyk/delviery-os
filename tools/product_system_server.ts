@@ -20,7 +20,9 @@ import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 
 import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
-import { lerPedidosReaisDoReaderIncremental, novoCacheIncremental } from "../src/platform/leitura/pedidos-reais-do-reader";
+import { lerPedidosReaisDoReaderIncremental, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
+import { lerPedidosDoGestorLocal } from "../src/platform/leitura/pedidos-do-gestor-local";
+import { operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
 import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
@@ -170,13 +172,29 @@ const DIR_LEITOR_TATA = (process.env.TATA_READER_INSTALL_ROOT || "").trim();
  * Pedidos reais da Teknisa na Home (Reader V3, camada 1). Le o checkpoint do Reader (ate 250 pedidos)
  * no maximo uma vez a cada 10 s: o polling da Home nunca vira releitura do disco do caixa por requisicao.
  */
-let memoPedidosTeknisa: { em: number; vm: PedidosDaTeknisaVM } | null = null;
+let memoPedidosTeknisa: { em: number; leitura: PedidosReaisDoReader; vm: PedidosDaTeknisaVM } | null = null;
 const cacheTeknisa = novoCacheIncremental();
-function pedidosDaTeknisaAgora(agoraMs: number): PedidosDaTeknisaVM {
-  if (memoPedidosTeknisa && agoraMs - memoPedidosTeknisa.em < 10_000) return memoPedidosTeknisa.vm;
+function leituraDaTeknisaAgora(agoraMs: number) {
+  if (memoPedidosTeknisa && agoraMs - memoPedidosTeknisa.em < 10_000) return memoPedidosTeknisa;
   // Incremental (sem o teto de 250 do checkpoint do Reader): so arquivos novos a cada leitura.
-  const vm = pedidosDaTeknisaVM(lerPedidosReaisDoReaderIncremental(DIR_LEITOR_TATA || null, cacheTeknisa, new Date(agoraMs)), new Date(agoraMs));
-  memoPedidosTeknisa = { em: agoraMs, vm };
+  const leitura = lerPedidosReaisDoReaderIncremental(DIR_LEITOR_TATA || null, cacheTeknisa, new Date(agoraMs));
+  memoPedidosTeknisa = { em: agoraMs, leitura, vm: pedidosDaTeknisaVM(leitura, new Date(agoraMs)) };
+  return memoPedidosTeknisa;
+}
+const pedidosDaTeknisaAgora = (agoraMs: number): PedidosDaTeknisaVM => leituraDaTeknisaAgora(agoraMs).vm;
+
+/*
+ * Pedidos do iFood pelo que o PROPRIO aplicativo Gestor de Pedidos grava no disco do caixa
+ * (`DELIVERYOS_GESTOR_LOCAL_DIR`, pasta de dados do aplicativo, caminho absoluto), conciliados com a
+ * Teknisa. Sem a variavel: bloco "nao configurado", nunca zero. Mesma cadencia de 10 s.
+ */
+const DIR_GESTOR_LOCAL = (process.env.DELIVERYOS_GESTOR_LOCAL_DIR || "").trim();
+let memoIfood: { em: number; vm: OperacaoDoIfoodVM } | null = null;
+function operacaoDoIfoodAgora(agoraMs: number): OperacaoDoIfoodVM {
+  if (memoIfood && agoraMs - memoIfood.em < 10_000) return memoIfood.vm;
+  const agora = new Date(agoraMs);
+  const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora), leituraDaTeknisaAgora(agoraMs).leitura, agora);
+  memoIfood = { em: agoraMs, vm };
   return vm;
 }
 
@@ -680,7 +698,7 @@ export async function criarServidor(): Promise<http.Server> {
                   chave_privada_hex: chaveDoCruzamento,
                 })
               : null;
-            json(res, 200, { ...homeDaOperacao(reader, gestor, agoraMs, conciliacao), entregas: rua, pedidos_teknisa: pedidosDaTeknisaAgora(agoraMs) });
+            json(res, 200, { ...homeDaOperacao(reader, gestor, agoraMs, conciliacao), entregas: rua, pedidos_teknisa: pedidosDaTeknisaAgora(agoraMs), operacao_ifood: operacaoDoIfoodAgora(agoraMs) });
           })
           .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
         return;

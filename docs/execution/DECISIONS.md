@@ -2258,3 +2258,19 @@ leitura da rua ja tem, e as duas telas poderiam divergir sobre o mesmo motoboy.
 **Achado:** a leitura declara que o ciclo de vida da viagem (saida e fim) ainda nao chega pela cadeia canonica; viagem com GPS fica
 "ciclo nao confirmado". A Home diz isso; nao chama de "na rua" nem diz "nenhuma viagem".
 
+
+### D104 — Gestor do iFood lido do proprio armazenamento do aplicativo, como fonte separada (15/11/2026)
+
+**Decisao** (missao "Reader V3 + Gestor iFood + Copiloto V3.3"): os pedidos do iFood chegam a Home pelo que o aplicativo Gestor de
+Pedidos ja grava no disco do caixa (`Local Storage\leveldb`), lido como arquivo, sem abrir o banco, sem janela, sem DevTools, sem API
+e sem token (`pedidos-do-gestor-local.ts`), e conciliados com a Teknisa por funcao pura (`conciliacao-gestor-teknisa.ts`). Bloco
+proprio na Home ("pedidos no ifood"), ligado so por `DELIVERYOS_GESTOR_LOCAL_DIR`. Identidade: codigo curto + horario + itens por
+`externalCode` = `CDARVPROD` (medido: 22/22 pares; o `CDPRODUTO` nao e o codigo do iFood).
+
+**Alternativa recusada:** alimentar o pipeline de demanda observada existente (feed do sensor de tela + reconciliador de janela).
+Aquele caminho afirma "cartao montado na expedicao", exige o Edge com DevTools que nao existe no caixa hoje, e nunca rodou em campo;
+vestir a fonte local com o formato dele faria um dado gravado pelo aplicativo parecer tela observada. O pipeline segue intacto e
+desligado.
+
+**Limites declarados:** janela movel de ~25 pedidos, nao o total do dia; ausencia na Teknisa nao prova falha da integracao; a
+documentacao oficial do iFood recusou leitura automatizada (403) — etapas vem dos eventos que o proprio Gestor grava.

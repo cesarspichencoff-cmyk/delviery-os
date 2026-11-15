@@ -41,6 +41,11 @@ export type Turno = "ALMOCO" | "JANTAR" | "FORA_DO_HORARIO" | "SEM_POLITICA";
 export interface ItemReal {
   readonly indice: number;
   readonly codigo: string;
+  /**
+   * CDARVPROD da linha. Medido em 15/11 contra 22 pedidos reais: e o `externalCode` que o iFood
+   * mostra no Gestor (o CDPRODUTO nao e). `null` quando a linha nao o traz.
+   */
+  readonly codigo_arvore: string | null;
   /** Nome que o proprio Reader atribuiu (decisao); `null` quando nao ha. */
   readonly nome: string | null;
   /** Inteiro positivo, ou `null` quando a quantidade nativa nao e inteira. */
@@ -262,7 +267,8 @@ function pedidoDoEvento(raiz: string, nome: string, ev: unknown, chave: string |
     if (!objeto(item) || !texto(item["CDPRODUTO"], 40) || !texto(item["IDSTPRCOMVEN"], 20) || !texto(item["QTPRODCOMVEN"], 24)) return { tipo: "invalido" };
     const q = item["QTPRODCOMVEN"] as string;
     const inteiro = /^0*[1-9]\d*(?:\.0+)?$/.test(q) && Number.isSafeInteger(Number(q));
-    lista.push({ indice: i + 1, codigo: item["CDPRODUTO"], nome: nomes.get(item["CDPRODUTO"]) ?? null,
+    lista.push({ indice: i + 1, codigo: item["CDPRODUTO"], codigo_arvore: texto(item["CDARVPROD"], 40) ? item["CDARVPROD"] : null,
+      nome: nomes.get(item["CDPRODUTO"]) ?? null,
       quantidade: inteiro ? Number(q) : null, quantidade_nativa: q, estado_nativo: item["IDSTPRCOMVEN"],
       observacoes: obs.porItem ? obs.porItem[i]! : null });
   }
