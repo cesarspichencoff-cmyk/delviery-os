@@ -2,7 +2,7 @@
 // Offline, pure child-table reconciliation for one native Reader order.
 // Source is caller supplied. No SQL, browser, I/O, prints, writes, or effect authority.
 // Uses the existing N2 base-table reviewer; never substitutes for it.
-const {review:reviewBase,INPUT:BASE_INPUT}=require('./native_reader_n2_base_tables_review_v1.cjs');
+const {review:reviewBase,reviewCaptureV3,INPUT:BASE_INPUT}=require('./native_reader_n2_base_tables_review_v1.cjs');
 const SCHEMA='deliveryos.native-reader-n2-child-tables-review.v1';
 const INPUT='deliveryos.native-reader-n2-child-tables-input.v1';
 const TABLES=['ITCOMANDAVEN_COMBO','ITCOMANDAEST','OBSITCOMANDAVEN','OBSITCOMANDAEST','OCORRENCIA','PRODUTO'];
@@ -30,7 +30,7 @@ const denial=(reason,extra={})=>Object.freeze({
  rawProductNamesExported:0,customerDataExported:false,
  ...extra
 });
-function reconcile(input){
+function reconcile(input,baseReviewer=reviewBase){
  try{
   if(!obj(input)||input.schema!==INPUT||!obj(input.baseInput)||
       input.baseInput.schema!==BASE_INPUT||!obj(input.childRows))
@@ -41,7 +41,7 @@ function reconcile(input){
   if(obj(event)&&(event.ready_for_downstream_shadow===false||
       (Array.isArray(event.blockers)&&event.blockers.length>0)))
    return denial('READER_DECLARED_SOURCE_OR_CHILD_INCOMPLETE');
-  const base=reviewBase(input.baseInput);
+  const base=baseReviewer(input.baseInput);
   if(base.reason!=='ONE_ORDER_BASE_TABLE_FIELDS_MATCH_NOT_ATOMIC'||
       base.headMatching!==true||base.itemsMatching!==true||
       base.notesMatching!==true||base.eventHashRecomputed!==true)
@@ -224,4 +224,4 @@ function reconcile(input){
   });
  }catch{return denial('CHILD_RECONCILIATION_EXCEPTION_HOLD');}
 }
-module.exports=Object.freeze({SCHEMA,INPUT,TABLES,reconcile});
+module.exports=Object.freeze({SCHEMA,INPUT,TABLES,reconcile:input=>reconcile(input,reviewBase),reconcileCaptureV3:input=>reconcile(input,reviewCaptureV3)});

@@ -23,7 +23,7 @@ function hold(reason,extra={}){
   customerDataExported:false,rawOrderIdsExported:0,rawHashExported:false,
   ...extra});
 }
-function review(input){
+function review(input,captureV3=false){
  try{
   if(!obj(input)||input.schema!==INPUT||!obj(input.event)||
      !obj(input.base)||!obj(input.event.order))
@@ -43,7 +43,7 @@ function review(input){
    return hold('BASE_HEADER_OR_SALE_NOT_UNIQUE');
   const hdr=b.headerRows[0],sale=b.vendaRows[0];
   if(!obj(hdr)||!obj(sale)||H.some(k=>!Object.hasOwn(hdr,k))||
-     o.CDFILIAL!=='0001'||o.CDLOJA!=='01'||o.IDORGCMDVENDA!=='DLV_IFO'||
+     o.CDFILIAL!=='0001'||o.CDLOJA!=='01'||!(captureV3?['DLV_IFO','DLV_NMO']:['DLV_IFO']).includes(o.IDORGCMDVENDA)||
      H.some(k=>!eq(hdr[k],o[k]))||
      !['CDFILIAL','CDLOJA','NRVENDAREST','DTHRABERMESA']
        .every(k=>eq(sale[k],o[k]))||
@@ -92,10 +92,11 @@ function review(input){
     if(populated(src[field])){
      // A producer-assigned item_index + SKU is not an independent line witness
      // when multiple native lines share that same product code.
-     if(bySku.get(src.CDPRODUTO)>1)
+     if(!captureV3&&bySku.get(src.CDPRODUTO)>1)
       return hold('DUPLICATE_SKU_ITEM_NOTE_LINE_UNPROVEN');
      noteRows.push({source_field:field,scope_hint:'item',item_index:idx,
-      CDPRODUTO:src.CDPRODUTO,value:src[field].trim()});
+      CDPRODUTO:src.CDPRODUTO,value:src[field].trim(),
+      ...(captureV3?{NRPRODCOMVEN:src.NRPRODCOMVEN}:{})});
     }
    }
   }
@@ -117,4 +118,5 @@ function review(input){
    observationRows:o.observation_rows.length});
  }catch{return hold('BASE_ROW_COMPARISON_EXCEPTION');}
 }
-module.exports=Object.freeze({SCHEMA,INPUT,review});
+// V3 carries the native line on every note; the original review contract stays unchanged.
+module.exports=Object.freeze({SCHEMA,INPUT,review:input=>review(input,false),reviewCaptureV3:input=>review(input,true)});

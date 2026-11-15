@@ -39,6 +39,9 @@ export type Turno = "ALMOCO" | "JANTAR" | "FORA_DO_HORARIO" | "SEM_POLITICA";
 
 
 export interface ItemReal {
+  readonly componentes?: readonly { codigo: string; nome: string; quantidade_nativa: string; observacoes: readonly string[] }[];
+  readonly complementos?: readonly { linha: string; codigo: string; nome: string; quantidade_nativa: string }[];
+  readonly combinado?: { codigo: string; nome: string; grupo: string } | null;
   readonly indice: number;
   readonly codigo: string;
   /**
@@ -57,6 +60,7 @@ export interface ItemReal {
 }
 
 export interface PedidoReal {
+  readonly reader_v3?: { politica: string | null; independent_ifood_completeness: "NOT_CONFIRMED"; sql_snapshot_atomicity_proven: false; source_writer_finished_proven: false };
   readonly chave: string;
   readonly codigo_curto: string | null;
   readonly origem: string;
@@ -80,8 +84,8 @@ export interface PedidoReal {
     /** Nunca "completas": as tabelas filhas de observacao nao sao lidas pela fonte instalada. */
     readonly observacoes: "campos_de_texto_lidos" | "nao_lidas_pela_fonte" | "parcial";
     readonly observacoes_por_ocorrencia: "nao_lidas_pela_fonte";
-    readonly componentes: "nao_lidos_pela_fonte";
-    readonly complementos: "nao_lidos_pela_fonte";
+    readonly componentes: "nao_lidos_pela_fonte" | "relacoes_lidas_nao_confirmadas";
+    readonly complementos: "nao_lidos_pela_fonte" | "relacoes_lidas_nao_confirmadas";
   };
 }
 

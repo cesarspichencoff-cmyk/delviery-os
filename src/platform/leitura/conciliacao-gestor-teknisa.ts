@@ -23,6 +23,7 @@ export const JANELA_DE_IDENTIDADE_MIN = 10;
 export const ESPERA_PELA_TEKNISA_MIN = 6;
 
 export type ClasseDoPar =
+  | "revisao_retida"
   | "correspondencia_comprovada"
   | "complemento_nao_lido_pela_teknisa"
   | "observacao_nao_lida_pela_teknisa"
@@ -111,7 +112,7 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
   const ifood = teknisa.filter((t) => t.origem === "DLV_IFO" && t.codigo_curto !== null);
   const usados = new Set<string>();
   const pares: ParDaConciliacao[] = [];
-  const contagens: Record<string, number> = { correspondencia_comprovada: 0, complemento_nao_lido_pela_teknisa: 0, observacao_nao_lida_pela_teknisa: 0,
+  const contagens: Record<string, number> = { revisao_retida: 0, correspondencia_comprovada: 0, complemento_nao_lido_pela_teknisa: 0, observacao_nao_lida_pela_teknisa: 0,
     observacao_divergente: 0, item_ou_quantidade_divergente: 0, identidade_ambigua: 0, aguardando_teknisa: 0, sem_comanda_na_teknisa: 0, somente_na_teknisa_na_janela: 0 };
   // Mais antigos primeiro: um candidato ja usado nao casa de novo.
   for (const g of [...gestor].sort((a, b) => placedDe(a) - placedDe(b))) {
@@ -143,7 +144,8 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
     const itens = compararItens(g, alvo), obs = compararObservacoes(g, alvo);
     const detalhes: string[] = [];
     let classe: ClasseDoPar;
-    if (itens === "divergentes" || itens === "nao_comparavel") {
+    if (alvo.retido) { classe = "revisao_retida"; detalhes.push("revisao do Reader retida; nao confirma o pedido do iFood"); }
+    else if (itens === "divergentes" || itens === "nao_comparavel") {
       classe = "item_ou_quantidade_divergente";
       detalhes.push(itens === "nao_comparavel" ? "item sem codigo comparavel em uma das fontes" : "itens ou quantidades diferentes entre iFood e Teknisa");
     } else if (obs === "divergem") { classe = "observacao_divergente"; detalhes.push("observacao do cliente no iFood nao encontrada no texto lido da Teknisa"); }

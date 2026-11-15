@@ -53,7 +53,12 @@ function pedidoDaHome(p: PedidoReal): PedidoDaHome {
     hora: p.aberto_em_local.slice(11, 16), codigo: p.codigo_curto, origem: ORIGEM[p.origem] ?? p.origem,
     turno: TURNO[p.turno] ?? p.turno, estado_teknisa: p.estado_nativo, retido: p.retido, motivos: p.motivos_de_retencao,
     turno_resolvido_pela_politica: p.bloqueios_de_turno_substituidos.length > 0,
-    itens: p.itens.map((i) => ({ descricao: i.nome ?? `produto ${i.codigo}`, quantidade: i.quantidade !== null ? String(i.quantidade) : i.quantidade_nativa, observacoes: i.observacoes })),
+    itens: p.itens.map((i) => ({ descricao: i.nome ?? `produto ${i.codigo}`, quantidade: i.quantidade !== null ? String(i.quantidade) : i.quantidade_nativa, observacoes: p.reader_v3 ? [
+      ...(i.observacoes ?? []),
+      ...(i.combinado ? [`Combinado: ${i.combinado.nome} (grupo ${i.combinado.grupo})`] : []),
+      ...(i.componentes ?? []).map(c => `Componente: ${c.quantidade_nativa} × ${c.nome}${c.observacoes.length ? " — " + c.observacoes.join("; ") : ""}`),
+      ...(i.complementos ?? []).map(c => `Complemento: ${c.quantidade_nativa} × ${c.nome} (linha ${c.linha})`),
+    ] : i.observacoes })),
     observacoes_do_pedido: p.observacoes_do_pedido, observacoes: obs,
   };
 }
@@ -79,10 +84,10 @@ export function pedidosDaTeknisaVM(leitura: PedidosReaisDoReader, agora: Date): 
     contagens: { pedidos: n, retidos: conta((p) => p.retido), estado_x: conta((p) => p.estado_nativo === "X"),
       almoco: conta((p) => p.turno === "ALMOCO"), jantar: conta((p) => p.turno === "JANTAR"), fora_do_horario: conta((p) => p.turno === "FORA_DO_HORARIO") },
     pedidos: doDia.slice(0, LIMITE_DA_LISTA).map(pedidoDaHome), limite_da_lista: LIMITE_DA_LISTA,
-    completude: "Itens, quantidades e observacoes de texto lidos. Observacoes por ocorrencia, componentes de combinados e complementos ainda nao sao lidos pela fonte.",
+    completude: doDia.some(p => p.reader_v3) ? "Reader V3: itens, quantidades, componentes, complementos e observacoes lidos; relacoes verificadas. Conclusao da gravacao e completude independente ainda nao confirmadas." : "Itens, quantidades e observacoes de texto lidos. Observacoes por ocorrencia, componentes de combinados e complementos ainda nao sao lidos pela fonte.",
     politica: leitura.politica.valida ? leitura.politica.versao : null,
     limitacoes: [
-      "Leitura dos eventos do Reader das ultimas 36 horas; pedidos mais antigos nao aparecem aqui.",
+      doDia.some(p => p.reader_v3) ? "Sombra Reader V3 das ultimas 48 horas; nenhuma acao operacional autorizada." : "Leitura dos eventos do Reader das ultimas 36 horas; pedidos mais antigos nao aparecem aqui.",
       "Revisao estavel do Reader nao prova que a Teknisa terminou de gravar o pedido.",
       "Estado da Teknisa mostrado como codigo; X nao e necessariamente cancelamento.",
     ],

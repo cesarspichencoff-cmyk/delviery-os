@@ -23,6 +23,7 @@ import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-v
 import { lerPedidosReaisDoReaderIncremental, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
 import { lerPedidosDoGestorLocal } from "../src/platform/leitura/pedidos-do-gestor-local";
 import { operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
+import { lerPedidosReaderV3 } from "../src/platform/leitura/pedidos-reader-v3";
 import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
@@ -177,7 +178,8 @@ const cacheTeknisa = novoCacheIncremental();
 function leituraDaTeknisaAgora(agoraMs: number) {
   if (memoPedidosTeknisa && agoraMs - memoPedidosTeknisa.em < 10_000) return memoPedidosTeknisa;
   // Incremental (sem o teto de 250 do checkpoint do Reader): so arquivos novos a cada leitura.
-  const leitura = lerPedidosReaisDoReaderIncremental(DIR_LEITOR_TATA || null, cacheTeknisa, new Date(agoraMs));
+  const v3 = (process.env.DELIVERYOS_READER_V3_PROJECTION_DIR || "").trim();
+  const leitura = v3 ? lerPedidosReaderV3(v3, new Date(agoraMs)) : lerPedidosReaisDoReaderIncremental(DIR_LEITOR_TATA || null, cacheTeknisa, new Date(agoraMs));
   memoPedidosTeknisa = { em: agoraMs, leitura, vm: pedidosDaTeknisaVM(leitura, new Date(agoraMs)) };
   return memoPedidosTeknisa;
 }

@@ -21,6 +21,7 @@ const ETAPAS: readonly [string, string][] = [
   ["GOING_TO_ORIGIN", "pronto · entregador a caminho"], ["READY_TO_PICKUP", "pronto"], ["CONFIRMED", "em preparo"], ["PLACED", "aguardando aceite"],
 ];
 const TEKNISA: Record<ClasseDoPar, string> = {
+  revisao_retida: "Reader retido; conferir pedido",
   correspondencia_comprovada: "Teknisa confere",
   complemento_nao_lido_pela_teknisa: "Teknisa confere os itens; complementos nao lidos",
   observacao_nao_lida_pela_teknisa: "Teknisa confere os itens; observacao nao lida",
@@ -99,6 +100,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   const atencao: AtencaoDaHome[] = [];
   for (const p of ativos) {
     const m = (motivo: string) => atencao.push({ codigo: p.codigo, hora: p.hora, motivo });
+    if (p.teknisa.classe === "revisao_retida") m("Reader reteve a revisao; conferir pedido no iFood");
     if (p.teknisa.classe === "sem_comanda_na_teknisa") m(`no iFood ha ${p.minutos} min e sem comanda vista na Teknisa`);
     if (p.teknisa.classe === "item_ou_quantidade_divergente") m("itens do iFood diferentes dos da Teknisa");
     if (p.teknisa.classe === "observacao_divergente") m("observacao do cliente nao encontrada na Teknisa");
@@ -122,7 +124,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
     limitacoes: [
       "O Gestor guarda so os pedidos recentes (cerca de 25), nao o total do dia; a conciliacao vale so para essa janela.",
       "Sem comanda vista na Teknisa nao prova falha da integracao: o Reader pode nao ter visto.",
-      "Complementos e observacoes por ocorrencia da Teknisa ainda nao sao lidos pela fonte; quando faltam, o pedido diz isso.",
+      reais.some(p=>p.reader_v3) ? "Reader V3 le relacoes filhas; correspondencia vale para os campos comparaveis enviados pelo iFood, nao atesta fim da gravacao na Teknisa." : "Complementos e observacoes por ocorrencia da Teknisa ainda nao sao lidos pela fonte; quando faltam, o pedido diz isso.",
       "Etapa e tempo de preparo vem dos eventos que o proprio Gestor grava; preparo fisico na cozinha nao e observado.",
     ],
   };
