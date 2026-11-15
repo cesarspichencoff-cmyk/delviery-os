@@ -258,3 +258,6 @@ confirmar na conta real que o serviço sem login aponta para o portão ✘.
 
 **CI em 90c807c4/286f2bd3:** seis workflows verdes, inclusive a Home em Edge e em WebKit com perfil de iPhone 13 e os labs Android. No workflow da X1, todas as asserções passaram no Linux; caíram a limpeza da rota delegada (piloto filho sem grupo próprio) e a mutação C9 (camada redundante por desenho) — ambas corrigidas no commit seguinte, CI a reler.
 
+**CI em `19bea59a`: 7/7 workflows verdes** — X1 (com PostgreSQL e mutações), portão de campo (com mutações), Home em Edge e em
+WebKit/iPhone 13, Gestor→Home, fixture silenciosa e os três labs Android. Continua sem prova de campo: caixa, celulares físicos,
+proxy real, Safari num iPhone de verdade.
