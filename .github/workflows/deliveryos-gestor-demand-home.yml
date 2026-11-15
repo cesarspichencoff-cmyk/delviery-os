@@ -20,6 +20,10 @@ on:
       - runtime/reporting/gestor_v3_visible_sensor.js
       - src/platform/leitura/demanda-do-gestor.ts
       - src/platform/leitura/pedidos-do-reader.ts
+      - src/platform/leitura/pedidos-reais-do-reader.ts
+      - src/platform/run-pedidos-reais-do-reader-tests.ts
+      - src/product/viewmodels/home-pedidos-reader-vm.ts
+      - tools/windows-local-lab/production-service-weekly-policy.json
       - src/product/eventos/**
       - src/product/viewmodels/home-vm.ts
       - src/product/ui/surfaces/home.js
@@ -61,6 +65,8 @@ jobs:
         run: node tests/gestor-shadow/run-mounted-demand-feed-tests.cjs
       - name: Feed -> contratos existentes -> projetor -> homeVM -> /api/home
         run: npx tsx tests/gestor-shadow/run-demand-feed-home-chain-tests.ts
+      - name: Reader V3 camada 1 - pedidos reais da pasta do Reader ate a Home (esquema real, valores inventados)
+        run: npx tsx src/platform/run-pedidos-reais-do-reader-tests.ts
       - name: Cruzamento com o Reader pelo reconciliador de janela existente
         run: npx tsx tests/gestor-shadow/run-reader-reconciliation-tests.ts
       - name: Mutacoes do elo (zero cegas)

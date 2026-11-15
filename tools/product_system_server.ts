@@ -20,6 +20,8 @@ import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 
 import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
+import { lerPedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
+import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
@@ -163,6 +165,18 @@ const FAIXA_DE_AMBIENTE = LEITURA_DO_SERVIDOR
  * ausência. Só faz sentido na mesma máquina do leitor (relógio).
  */
 const DIR_LEITOR_TATA = (process.env.TATA_READER_INSTALL_ROOT || "").trim();
+
+/*
+ * Pedidos reais da Teknisa na Home (Reader V3, camada 1). Le o checkpoint do Reader (ate 250 pedidos)
+ * no maximo uma vez a cada 10 s: o polling da Home nunca vira releitura do disco do caixa por requisicao.
+ */
+let memoPedidosTeknisa: { em: number; vm: PedidosDaTeknisaVM } | null = null;
+function pedidosDaTeknisaAgora(agoraMs: number): PedidosDaTeknisaVM {
+  if (memoPedidosTeknisa && agoraMs - memoPedidosTeknisa.em < 10_000) return memoPedidosTeknisa.vm;
+  const vm = pedidosDaTeknisaVM(lerPedidosReaisDoReader(DIR_LEITOR_TATA || null, new Date(agoraMs)), new Date(agoraMs));
+  memoPedidosTeknisa = { em: agoraMs, vm };
+  return vm;
+}
 
 /**
  * Onde o executor do sensor do Gestor escreve o feed de demanda observada
@@ -664,7 +678,7 @@ export async function criarServidor(): Promise<http.Server> {
                   chave_privada_hex: chaveDoCruzamento,
                 })
               : null;
-            json(res, 200, { ...homeDaOperacao(reader, gestor, agoraMs, conciliacao), entregas: rua });
+            json(res, 200, { ...homeDaOperacao(reader, gestor, agoraMs, conciliacao), entregas: rua, pedidos_teknisa: pedidosDaTeknisaAgora(agoraMs) });
           })
           .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
         return;

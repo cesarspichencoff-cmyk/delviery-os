@@ -36,7 +36,7 @@ export const BLOQUEIOS_DE_TURNO = new Set([
 const CODIGO = /^[A-Z][A-Z0-9_]{2,80}$/;
 
 export type Turno = "ALMOCO" | "JANTAR" | "FORA_DO_HORARIO" | "SEM_POLITICA";
-export type Completude = "observados" | "observadas" | "nao_lidas_pela_fonte" | "nao_lidos_pela_fonte" | "parcial";
+
 
 export interface ItemReal {
   readonly indice: number;
@@ -72,7 +72,9 @@ export interface PedidoReal {
   readonly observacoes_do_pedido: readonly string[] | null;
   readonly completude: {
     readonly itens: "observados";
-    readonly observacoes: "observadas" | "nao_lidas_pela_fonte" | "parcial";
+    /** Nunca "completas": as tabelas filhas de observacao nao sao lidas pela fonte instalada. */
+    readonly observacoes: "campos_de_texto_lidos" | "nao_lidas_pela_fonte" | "parcial";
+    readonly observacoes_por_ocorrencia: "nao_lidas_pela_fonte";
     readonly componentes: "nao_lidos_pela_fonte";
     readonly complementos: "nao_lidos_pela_fonte";
   };
@@ -180,8 +182,11 @@ function observacoes(o: Record<string, unknown>, nItens: number) {
     if (Number.isInteger(idx) && idx >= 1 && idx <= nItens) porItem[idx - 1]!.push(l["value"] as string);
     else pedido.push(l["value"] as string);
   }
+  // `observation_scan_complete=true` e AUTODECLARADO pelo Reader, e a consulta instalada so le as
+  // colunas de texto de ITCOMANDAVEN, nunca OBSITCOMANDAVEN/OBSITCOMANDAEST/OCORRENCIA (medido no
+  // codigo instalado em 15/11). Logo, nem "completa" vira "observadas": vira "campos_de_texto_lidos".
   return completa
-    ? { estado: "observadas" as const, pedido, porItem }
+    ? { estado: "campos_de_texto_lidos" as const, pedido, porItem }
     : { estado: "parcial" as const, pedido, porItem };
 }
 
@@ -262,7 +267,7 @@ export function lerPedidosReaisDoReader(raiz: string | null, agora: Date = new D
       revisao: hash.toLowerCase(), observado_em: new Date(observado).toISOString(), estado_nativo: o["IDSTCOMANDA"] as string,
       retido: motivos.length > 0, motivos_de_retencao: motivos, bloqueios_de_turno_substituidos: substituidos,
       itens: lista, observacoes_do_pedido: obs.pedido,
-      completude: { itens: "observados", observacoes: obs.estado, componentes: "nao_lidos_pela_fonte", complementos: "nao_lidos_pela_fonte" },
+      completude: { itens: "observados", observacoes: obs.estado, observacoes_por_ocorrencia: "nao_lidas_pela_fonte", componentes: "nao_lidos_pela_fonte", complementos: "nao_lidos_pela_fonte" },
     });
   }
   pedidos.sort((a, b) => (a.aberto_em_local < b.aberto_em_local ? 1 : a.aberto_em_local > b.aberto_em_local ? -1 : 0));

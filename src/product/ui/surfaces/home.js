@@ -1027,6 +1027,48 @@ function entregasNaRua(rua) {
   </section>`;
 }
 
+/* ------------------------------------------------------------------ *
+ * Pedidos da Teknisa (Reader V3) — o que o Reader viu, com itens e observacoes de texto, e sempre
+ * o que a fonte NAO le. Estado da Teknisa como codigo, sem interpretar. Sem leitura, ausencia dita.
+ * ------------------------------------------------------------------ */
+
+function pedidoDaTeknisa(p) {
+  const itens = p.itens.map((i) => `<li>${esc(i.quantidade)}× ${esc(i.descricao)}${
+    i.observacoes && i.observacoes.length ? ` — <em>${esc(i.observacoes.join(" · "))}</em>` : ""}</li>`).join("");
+  const obsPedido = p.observacoes_do_pedido && p.observacoes_do_pedido.length
+    ? `<p class="org-ctx__ausencia">Pedido: ${esc(p.observacoes_do_pedido.join(" · "))}</p>` : "";
+  return `<li class="org-sinal" data-retido="${p.retido ? "sim" : "nao"}">
+    <span class="org-sinal__nome">${esc(p.hora)} · ${esc(p.codigo || "sem codigo")} · ${esc(p.origem)}</span>
+    <span class="org-sinal__resumo">${esc(p.turno)} · Teknisa: ${esc(p.estado_teknisa)}${
+      p.retido ? ` · retido (${esc(p.motivos.join(", "))})` : ""} · ${esc(p.observacoes)}</span>
+    <ul class="org-ctx__sinais">${itens}</ul>
+    ${obsPedido}
+  </li>`;
+}
+
+function pedidosDaTeknisa(t) {
+  if (!t) return "";
+  if (!t.disponivel) {
+    return `<section class="org-resto org-teknisa" data-teknisa="indisponivel">
+      <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos na teknisa</span>
+      <span class="org-resto__conta">${esc(t.titulo)}</span></div>
+      <p class="org-resto__nota">${esc(t.explicacao)}</p>
+    </section>`;
+  }
+  const c = t.contagens;
+  const linha = [t.titulo, c.retidos > 0 ? `${c.retidos} retido(s)` : null,
+    c.estado_x > 0 ? `${c.estado_x} com estado X na Teknisa` : null].filter(Boolean).join(" · ");
+  return `<section class="org-resto org-teknisa" data-teknisa="lido" data-hoje="${t.dia_e_hoje ? "sim" : "nao"}">
+    <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos na teknisa</span>
+    <span class="org-resto__conta">${esc(linha)}</span></div>
+    ${t.pedidos.length ? dobra("teknisa-pedidos", `Ver ${t.pedidos.length === c.pedidos ? "os" : `os ${t.pedidos.length} mais recentes de`} ${c.pedidos} pedidos`,
+      `<ul class="org-sinais">${t.pedidos.map(pedidoDaTeknisa).join("")}</ul>`) : ""}
+    <p class="org-resto__nota">${esc(t.completude)}</p>
+    ${dobra("teknisa-limites", `Ver o que esta leitura nao prova (${t.limitacoes.length})`,
+      `<ul class="org-sinais">${t.limitacoes.map((l) => `<li class="org-sinal"><span class="org-sinal__resumo">${esc(l)}</span></li>`).join("")}</ul>`)}
+  </section>`;
+}
+
 /* ------------------------------------------------------------------ */
 
 /**
@@ -1079,6 +1121,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
+    ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}
   </div>`;
