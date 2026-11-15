@@ -23,6 +23,7 @@ export const JANELA_DE_IDENTIDADE_MIN = 10;
 export const ESPERA_PELA_TEKNISA_MIN = 6;
 
 export type ClasseDoPar =
+  | "relacoes_nao_confirmadas"
   | "revisao_retida"
   | "correspondencia_comprovada"
   | "complemento_nao_lido_pela_teknisa"
@@ -99,6 +100,15 @@ function compararObservacoes(g: PedidoDoGestor, t: PedidoReal): "sem_observacao"
   const comTexto = g.itens.filter((i) => i.observacao !== null);
   if (!comTexto.length) return "sem_observacao";
   if (t.completude.observacoes !== "campos_de_texto_lidos") return "nao_lidas";
+  if (t.reader_v3) {
+    // A shared SKU or order note cannot attest a specific native item line.
+    for (const i of comTexto) {
+      const linhas = t.itens.filter(x => x.codigo_arvore === i.codigo_externo);
+      if (!norm(i.observacao!) || linhas.length !== 1 ||
+          !(linhas[0]!.observacoes ?? []).some(texto => norm(texto) === norm(i.observacao!))) return "divergem";
+    }
+    return "conferem";
+  }
   const doPedido = (t.observacoes_do_pedido ?? []).map(norm).join(" | ");
   for (const i of comTexto) {
     const alvo = norm(i.observacao!);
@@ -112,7 +122,7 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
   const ifood = teknisa.filter((t) => t.origem === "DLV_IFO" && t.codigo_curto !== null);
   const usados = new Set<string>();
   const pares: ParDaConciliacao[] = [];
-  const contagens: Record<string, number> = { revisao_retida: 0, correspondencia_comprovada: 0, complemento_nao_lido_pela_teknisa: 0, observacao_nao_lida_pela_teknisa: 0,
+  const contagens: Record<string, number> = { relacoes_nao_confirmadas: 0, revisao_retida: 0, correspondencia_comprovada: 0, complemento_nao_lido_pela_teknisa: 0, observacao_nao_lida_pela_teknisa: 0,
     observacao_divergente: 0, item_ou_quantidade_divergente: 0, identidade_ambigua: 0, aguardando_teknisa: 0, sem_comanda_na_teknisa: 0, somente_na_teknisa_na_janela: 0 };
   // Mais antigos primeiro: um candidato ja usado nao casa de novo.
   for (const g of [...gestor].sort((a, b) => placedDe(a) - placedDe(b))) {
@@ -151,7 +161,10 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
     } else if (obs === "divergem") { classe = "observacao_divergente"; detalhes.push("observacao do cliente no iFood nao encontrada no texto lido da Teknisa"); }
     else if (obs === "nao_lidas") { classe = "observacao_nao_lida_pela_teknisa"; detalhes.push("ha observacao no iFood; a leitura da Teknisa nao provou as observacoes deste pedido"); }
     else if (itens === "iguais_sem_opcoes") { classe = "complemento_nao_lido_pela_teknisa"; detalhes.push("itens conferem; os complementos do iFood nao aparecem como linha na leitura atual da Teknisa"); }
-    else classe = "correspondencia_comprovada";
+    else if (alvo.reader_v3 && alvo.itens.some(i => (i.componentes?.length ?? 0) > 0 || (i.complementos?.length ?? 0) > 0 || i.combinado)) {
+      classe = "relacoes_nao_confirmadas";
+      detalhes.push("itens diretos conferem; as ligacoes de componentes e complementos foram lidas, mas ainda exigem conferencia individual com o iFood");
+    } else classe = "correspondencia_comprovada";
     if (g.eventos["CANCELLED"]) detalhes.push(`cancelado no iFood; Teknisa mostra estado ${alvo.estado_nativo}`);
     if (g.itens_cancelados + g.itens_alterados > 0) detalhes.push("o iFood registra item cancelado ou alterado neste pedido");
     contagens[classe]!++;

@@ -5,7 +5,7 @@ class SqlSource {
   this.child=spawnProcess(executable,['-NoLogo','-NoProfile','-NonInteractive','-File',script],{windowsHide:true,stdio:['pipe','pipe','pipe']});
   this.pending=null;this.buffer='';this.dead=false;
   this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',s=>{this.buffer+=s;if(Buffer.byteLength(this.buffer)>4*1024*1024)return this.fail('SQL_RESPONSE_BOUNDS');
-   const i=this.buffer.indexOf('\n');if(i<0)return;const line=this.buffer.slice(0,i);this.buffer=this.buffer.slice(i+1);const p=this.pending;
+   const i=this.buffer.indexOf('\n');if(i<0)return;const line=this.buffer.slice(0,i);this.buffer=this.buffer.slice(i+1);if(this.buffer.trim())return this.fail('SQL_RESPONSE_FRAMING');const p=this.pending;
    if(!p)return this.fail('UNSOLICITED_RESPONSE');this.pending=null;clearTimeout(p.timer);
    try{const v=JSON.parse(line);if(v.ok!==true)throw Error(['LOCK_TIMEOUT','QUERY_TIMEOUT'].includes(v.code)?v.code:'SQL_CAPTURE_FAILED');p.resolve(v.value);}catch(e){p.reject(Error(/^[A-Z_]+$/.test(e.message)?e.message:'SQL_RESPONSE_INVALID'));}
   });

@@ -6,7 +6,8 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const FILES=['capture.cjs','capture.sql','discover.sql','engine.cjs','projection.cjs','run.cjs','service-sidecar.cjs','sql-client.cjs','sql-source.ps1','store.cjs'].map(n=>'runtime/reader-v3/'+n).concat(['native_reader_n2_base_tables_review_v1.cjs','native_reader_n2_child_tables_review_v1.cjs','native_reader_shadow_replay_v1.cjs'].map(n=>'runtime/reporting/'+n));
 function prepare({repo,legacyFile,output,readerRoot,productRoot,from,expectedLegacySha}){
  for(const p of [repo,legacyFile,output,readerRoot,productRoot])if(!path.isAbsolute(p))throw Error('ABSOLUTE_PATH_REQUIRED');
- const relative=path.relative(readerRoot,output);if(relative===''||(!relative.startsWith('..'+path.sep)&&relative!=='..'&&!path.isAbsolute(relative)))throw Error('STAGING_INSIDE_READER_FORBIDDEN');
+ const realOutput=path.join(fs.realpathSync(path.dirname(output)),path.basename(output));
+ const relative=path.relative(fs.realpathSync(readerRoot),realOutput);if(relative===''||(!relative.startsWith('..'+path.sep)&&relative!=='..'&&!path.isAbsolute(relative)))throw Error('STAGING_INSIDE_READER_FORBIDDEN');
  if(fs.existsSync(output))throw Error('NEW_STAGING_DIRECTORY_REQUIRED');
  if(!/^\d{4}-\d{2}-\d{2}T00:00:00$/.test(from))throw Error('EXPLICIT_START_REQUIRED');
  const legacy=fs.readFileSync(legacyFile);if(sha(legacy)!==expectedLegacySha)throw Error('LEGACY_SHA_MISMATCH');

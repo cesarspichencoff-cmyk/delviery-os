@@ -21,6 +21,7 @@ const ETAPAS: readonly [string, string][] = [
   ["GOING_TO_ORIGIN", "pronto · entregador a caminho"], ["READY_TO_PICKUP", "pronto"], ["CONFIRMED", "em preparo"], ["PLACED", "aguardando aceite"],
 ];
 const TEKNISA: Record<ClasseDoPar, string> = {
+  relacoes_nao_confirmadas: "Itens conferem; componentes e complementos a conferir",
   revisao_retida: "Reader retido; conferir pedido",
   correspondencia_comprovada: "Teknisa confere",
   complemento_nao_lido_pela_teknisa: "Teknisa confere os itens; complementos nao lidos",
@@ -100,6 +101,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   const atencao: AtencaoDaHome[] = [];
   for (const p of ativos) {
     const m = (motivo: string) => atencao.push({ codigo: p.codigo, hora: p.hora, motivo });
+    if (p.teknisa.classe === "relacoes_nao_confirmadas") m("componentes e complementos lidos; conferir ligacoes no iFood");
     if (p.teknisa.classe === "revisao_retida") m("Reader reteve a revisao; conferir pedido no iFood");
     if (p.teknisa.classe === "sem_comanda_na_teknisa") m(`no iFood ha ${p.minutos} min e sem comanda vista na Teknisa`);
     if (p.teknisa.classe === "item_ou_quantidade_divergente") m("itens do iFood diferentes dos da Teknisa");

@@ -10,27 +10,28 @@ function config(file){
   path.relative(cfg.readerRoot,cfg.root)!==path.join('state','reader-v3-shadow'))throw Error('ISOLATED_V3_ROOT_REQUIRED');
  return cfg;
 }
-async function main(configPath=process.argv[2]){
+async function main(configPath=process.argv[2],options={}){
  const cfg=config(configPath);
  const {lerPolitica,turnoDe}=require(path.join(cfg.productRoot,'dist/src/platform/leitura/pedidos-reais-do-reader.js'));
  const service=opened=>{const p=lerPolitica(cfg.readerRoot);return {turno:turnoDe(p,opened),versao:p?.versao??null};};
- let source,watcher,consumer,stop=false;
- const stopNow=()=>{stop=true;};for(const sig of ['SIGTERM','SIGINT'])process.on(sig,stopNow);
+ return runRuntime({cfg,service,...options});
+}
+async function runRuntime({cfg,service,sourceFactory=()=>new SqlSource(),clock=()=>new Date(),shouldStop=()=>false,wait=()=>new Promise(r=>setTimeout(r,5000))}){
+ let source,watcher,consumer;
  try{
-  source=new SqlSource();
+  source=sourceFactory();
   const proxy={discover:(...a)=>source.discover(...a),capture:(...a)=>source.capture(...a)};
-  watcher=new Watcher({root:cfg.root,source:proxy,from:cfg.from,service});
-  consumer=new Consumer({root:path.join(cfg.root,'projection'),sourceRoot:cfg.root,project});
-  while(!stop){let result,state='HEALTHY';
-   try{result=await watcher.tick();}catch(e){state=/^[A-Z0-9_]+$/.test(e.message)?e.message:'CAPTURE_FAILED';if(source.dead){source.close();source=new SqlSource();}}
+  watcher=new Watcher({root:cfg.root,source:proxy,from:cfg.from,service,clock});
+  consumer=new Consumer({root:path.join(cfg.root,'projection'),sourceRoot:cfg.root,project,clock});
+  while(!shouldStop()){let result,state='HEALTHY';
+   try{result=await watcher.tick();}catch(e){state=/^[A-Z0-9_]+$/.test(e.message)?e.message:'CAPTURE_FAILED';if(source.dead){source.close();source=sourceFactory();}}
    consumer.tick(32);
    S.atomic(path.join(cfg.root,'health.json'),{schema:1,at:new Date().toISOString(),state,metrics:result??null,seq:watcher.state.seq,consumerSeq:consumer.state.seq,mode:'SHADOW_ONLY',effects:{print:false,database_write:false}});
-   await new Promise(r=>setTimeout(r,5000));
+   await wait();
   }
  }finally{
-  for(const sig of ['SIGTERM','SIGINT'])process.removeListener(sig,stopNow);
-  source?.close();try{consumer?.close();}finally{watcher?.close();}
+  try{source?.close();}finally{try{consumer?.close();}finally{watcher?.close();}}
  }
 }
 if(require.main===module)main().catch(e=>{console.error(/^[A-Z0-9_]+$/.test(e.message)?e.message:'READER_V3_FAILED');process.exitCode=1;});
-module.exports={main,config};
+module.exports={main,config,runRuntime};

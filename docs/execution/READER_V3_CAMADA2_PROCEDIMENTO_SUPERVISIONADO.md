@@ -1,69 +1,69 @@
-# Reader V3 — camada 2: procedimento supervisionado único (15/11/2026)
+# Reader V3 — homologação em sombra
 
-**Estado: EM PREPARAÇÃO. Não está pronto para pedir autorização**, porque o código do watcher V3 e o
-do consumidor sombra incremental ainda não foram escritos. Este documento fixa o que a autorização vai
-cobrir, para que o pedido seja um só.
+A candidata lê a Teknisa, grava revisões em pasta própria e alimenta uma instância
+isolada da Home. A operação supervisionada no caixa depende de autorização expressa
+para o equipamento, a unidade e a janela. A autorização para leitura passiva do
+CAIXA_MOOCA cobre somente a leitura já aprovada.
 
-## 1. Por que precisa ser dentro do serviço
+## Preparação em bancada
 
-O Reader roda como `NT SERVICE\TataComandaReader` (conta virtual), com segurança integrada e sem senha
-no script. Essa identidade só existe dentro do serviço. Ler as tabelas filhas com ela é a única
-leitura legítima; criar outro login ou ACL na Teknisa foi recusado (decisão C).
+1. Registrar commit, execução da CI, unidade física e máquina pretendida. A consulta
+   está fixada em filial `0001`, loja `01` e origens `DLV_IFO` e `DLV_NMO`. Confirmar
+   a correspondência com a unidade pretendida antes de solicitar a intervenção.
+2. Com uma cópia do consumidor V2, calcular o SHA-256 integral e gerar o pacote
+   fora da árvore do Reader com
+   `node runtime/reader-v3/prepare-shadow.cjs <plano-absoluto.json>`.
+   Campos do plano: `repo`, `legacyFile`, `output`, `readerRoot`, `productRoot`,
+   `expectedLegacySha` e `from` (meia-noite local do dia acordado).
+   O destino deve ser novo e o diretório pai deve existir. Usar uma árvore
+   compilada do mesmo commit para `productRoot`.
+3. Conferir os hashes de `manifest.json`. O pacote traz a cópia integral do V2,
+   a versão com a chamada da candidata anexada, os módulos V3 e uma configuração
+   com `productionApproved: false`. A compilação da Home fica na árvore do produto.
 
-## 2. O que muda e o que não muda
+## Operação supervisionada única
 
-| Muda (com rollback) | Não muda nunca |
+Executar em janela ociosa acordada, com observação de janelas e foco. Se a máquina,
+os hashes, a identidade do serviço ou a filial divergirem, interromper a operação.
+
+1. Registrar saúde e PID do serviço V2, CPU do consumidor e latência de referência.
+   Confirmar a conta `NT SERVICE\TataComandaReader`, os caminhos, a política
+   semanal e acesso de leitura pelo próprio serviço. Guardar cópia do consumidor
+   original fora do caminho ativo e conferir seu hash.
+2. Preparar `<readerRoot>\shadow\reader-v3-candidate` com os bytes conferidos.
+   Após o aceite, registrar o hash da configuração aprovada e trocar a cópia
+   ativa de `live_shadow_consumer_loop_v1.cjs` em janela de manutenção, usando
+   o controle de serviço existente na sessão supervisionada. Confirmar saúde do
+   V2 após a retomada. A candidata usa a mesma identidade e uma sessão SQL
+   persistente com consultas parametrizadas, `READ COMMITTED` e `LOCK_TIMEOUT 2000`.
+3. Abrir a Home de homologação em loopback com
+   `DELIVERYOS_READER_V3_PROJECTION_DIR=<readerRoot>\state\reader-v3-shadow\projection`.
+   A Home em uso continua na configuração V2. Conferir saúde, sequência e
+   atraso em `health.json` e `projection\source-status.json`, sem publicar
+   textos de pedidos, chaves nativas ou dados de clientes.
+4. Acompanhar um almoço e um jantar completos. Abortar ao primeiro incidente de
+   atendimento, impressão, janela visível, pressão perceptível no SQL, falha de
+   consulta recorrente ou degradação do V2. Guardar apenas as métricas e contagens
+   necessárias à comparação.
+5. Ao encerrar ou abortar, restaurar o consumidor original pela cópia validada,
+   conferir seu SHA-256, retomar o serviço pelo mecanismo existente e verificar
+   saúde e progresso do V2. Desligar a Home de homologação. Preservar a pasta V3
+   isolada para diagnóstico. Em caso de parada abrupta, verificar o fim do PID
+   proprietário antes da recuperação explícita de cada lock pelo módulo
+   `store.cjs`. Um PID vivo ou reutilizado mantém a recuperação bloqueada.
+
+## Critérios para encerrar a homologação
+
+| Medida | Critério |
 |---|---|
-| `bin\tata_reader_continuous_watch_candidate_v2.ps1` (sha256 `92B33E82…`) ganha um irmão V3, primeiro em **sombra** | escrita da Teknisa, impressão, fiscal, ACL, credenciais, firewall, NetBird |
-| `shadow\live_shadow_consumer_loop_v1.cjs` vira incremental | conta e definição do serviço, supervisor, Gestor, TATÁ Caixa |
-| eventos V3 em pasta própria (`state\reader-events-v3`), sem sobrescrever os V2 | eventos, decisões e checkpoint V2 existentes |
+| Cobertura de pedidos | Contagem e chaves do mesmo intervalo reconciliadas entre V2 e V3 |
+| Itens e quantidades | 100% de concordância nos pares com identidade resolvida e itens comparáveis. Registrar denominador, divergências, ambiguidade e pedidos sem par |
+| Filhos e observações | Verificar vínculos na revisão nativa e registrar o que o Gestor permite confirmar de forma independente |
+| Latência | Primeira revisão V3 com mediana até a do V2 na mesma janela. Registrar também p95 e quantidade de pares |
+| Carga | Consumidor em sombra abaixo de 5% de um núcleo. Watcher abaixo da referência V2. Sem timeout SQL ou interferência operacional atribuível |
+| Caixa | Zero janela visível, mudança de foco ou incidente de atendimento e impressão |
 
-## 3. Requisitos do watcher V3 (derivados de medição)
-
-1. **Consulta sargável e incremental.** Sem `CONVERT(...) LIKE` sobre a coluna. Origem por igualdade
-   numa lista explícita (`DLV_IFO`, `DLV_NMO`, as duas medidas em 14/11). Marca d'água por abertura,
-   com margem, e reconsulta só dos pedidos abertos recentes. Meta: tirar as releituras (hoje 5,89
-   milhões de duplicatas suprimidas).
-2. **Filhos na mesma revisão.** Usa a receita existente de seis conjuntos
-   (`tools/comandas_reader_one_order_children_CAPTURE_OFFLINE_ONLY.sql`) e o reconciliador
-   `native_reader_n2_child_tables_review_v1.cjs` (56 testes). Isolamento igual ao do V2: `READ
-   COMMITTED` e `LOCK_TIMEOUT 2000`; **sem NOLOCK nem SERIALIZABLE**.
-3. **Integridade sem releitura.** Ler duas vezes igual não prova nada. A testemunha independente é o
-   **Gestor**: itens, opções e observações por `externalCode` = `CDARVPROD` (22 de 22 em 14/11). Uma
-   revisão só vira "completa para o que o iFood enviou" quando bate com o pedido do Gestor; sem par,
-   fica "não confirmada", nunca "completa".
-4. **Observação por item em base 0**, com o `CDPRODUTO` conferido (defeito corrigido na camada 1 em
-   15/11).
-5. **Turno pela política semanal**, no produtor, no lugar do arquivo manual parado desde 14/10.
-
-## 4. Critérios objetivos da sombra (antes de qualquer troca)
-
-Sombra de no mínimo um almoço e um jantar completos, lado a lado com o V2:
-
-- **CPU:** consumidor sombra abaixo de 5% de um núcleo (hoje cerca de 70%); watcher V3 abaixo do V2.
-- **SQL:** nenhuma espera de lock acima de 2 s causada pelo V3; zero erro de consulta.
-- **Cobertura:**
-  - todo pedido do V2 aparece no V3;
-  - contra o Gestor, na janela que ele guarda, 100% dos pares com itens iguais;
-  - complemento e observação do iFood presentes como filho ou declarados "não gravados pela Teknisa".
-- **Latência:** primeira revisão V3 no máximo igual à do V2, que hoje tem mediana de 1,8 min depois do
-  PLACED.
-- **Impressão e atendimento:** nenhuma janela aberta e nenhum incidente.
-
-## 5. Execução e rollback (quando o código existir)
-
-Fora do serviço (antes de 10:30 ou depois de 23:30), com o caixa ocioso medido por `caixa-em-uso.ps1`
-e o medidor de janelas ligado.
-
-1. Hash e cópia de `bin\` e `shadow\`.
-2. V3 em sombra sob o supervisor, gravando só em `reader-events-v3`.
-3. Rollback: desligar o V3, restaurar os arquivos pela cópia (conferência de hash) e verificar a saúde
-   do serviço. Os eventos V2 nunca foram tocados.
-
-A troca do V2 pelo V3 é um **segundo ato**, só depois dos critérios da seção 4 e do aceite do César.
-
-## 6. Próximo passo
-
-Escrever o watcher V3 e o consumidor incremental a partir da leitura do código instalado (só leitura)
-e testá-los em laboratório: SQL Server de bancada com o esquema da receita e dados inventados. Depois
-disso, pedir **uma** autorização para os passos 1 a 3 da seção 5.
+Partes relacionadas exigem conferência individual com o Gestor. Repetição da
+mesma leitura SQL e estado nativo são insuficientes para atestar conclusão da
+gravação. Uma eventual substituição do V2 requer decisão própria depois das
+medições e do aceite humano.

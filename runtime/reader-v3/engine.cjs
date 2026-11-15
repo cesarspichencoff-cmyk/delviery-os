@@ -77,13 +77,17 @@ class Consumer {
  tick(limit=32){if(!Number.isInteger(limit)||limit<1||limit>128)throw Error('BATCH_INVALID');let count=0;
   const producer=S.read(path.join(this.sourceRoot,'watcher.json'));
   const committed=producer.seq-(producer.outbox?1:0);
-  while(this.state.seq<committed&&count<limit){const n=this.state.seq+1;const entry=S.read(path.join(this.sourceRoot,'events',S.eventName(n)),4*1024*1024);
+  if(!Number.isSafeInteger(committed)||committed<this.state.seq||producer.outbox&&producer.outbox.seq!==producer.seq)throw Error('PRODUCER_SEQUENCE_INVALID');
+  const next=this.state.seq<committed?{...this.state,latest:{...this.state.latest}}:this.state;
+  while(next.seq<committed&&count<limit){const n=next.seq+1;const entry=S.read(path.join(this.sourceRoot,'events',S.eventName(n)),4*1024*1024);
    if(entry.seq!==n||entry.event?.schema!=='deliveryos.reader-v3.capture.v1'||entry.event.revision!==S.hash({order:entry.event.order,childRows:entry.event.childRows,service:entry.event.service}))throw Error('EVENT_INTEGRITY');
-   const projected=this.project(entry.event);this.fault('before_consumer_checkpoint');
-   const latest={...this.state.latest,[entry.event.order_key]:projected};
-   // Bound the serving projection; the immutable journal retains every revision.
-   for(const [k,p] of Object.entries(latest))if(this.clock().getTime()-Date.parse(p.aberto_em_local+'-03:00')>49*3600000)delete latest[k];
-   const next={...this.state,latest,seq:n};S.atomic(this.file,next);this.state=next;count++;
+   next.latest[entry.event.order_key]=this.project(entry.event);next.seq=n;count++;
+  }
+  if(count){
+   // One durable commit per bounded batch, not one rewrite per historical event.
+   // Failure anywhere retains the old in-memory and on-disk cursor for replay.
+   for(const [k,p] of Object.entries(next.latest))if(this.clock().getTime()-Date.parse(p.aberto_em_local+'-03:00')>49*3600000)delete next.latest[k];
+   this.fault('before_consumer_checkpoint');S.atomic(this.file,next);this.state=next;
   }
   S.atomic(path.join(this.root,'source-status.json'),{schema:1,at:new Date().toISOString(),seq:this.state.seq,producerSeq:committed,holds:producer.holds??{},failures:producer.failures});
   return {count,seq:this.state.seq,lag:committed-this.state.seq};}
