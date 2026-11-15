@@ -7,6 +7,8 @@
  * Teknisa; o alerta de preparo compara a hora atual com o tempo de preparo que a loja informou ao iFood
  * (fato contra fato, sem previsao). Nada de cliente chega aqui.
  */
+import { createHash } from "node:crypto";
+import { pedidoReaderVM, type PedidoDaHome } from "./home-pedidos-reader-vm";
 import type { PedidosDoGestorLocal, PedidoDoGestor } from "../../platform/leitura/pedidos-do-gestor-local";
 import type { PedidosReaisDoReader } from "../../platform/leitura/pedidos-reais-do-reader";
 import { conciliarGestorTeknisa, placedDe, type ClasseDoPar, type ParDaConciliacao } from "../../platform/leitura/conciliacao-gestor-teknisa";
@@ -45,6 +47,9 @@ export interface PedidoIfoodDaHome {
   readonly teknisa: { readonly classe: ClasseDoPar; readonly texto: string; readonly estado: string | null; readonly comanda_em_min: number | null };
   readonly itens: readonly ItemIfoodDaHome[];
   readonly detalhes: readonly string[];
+  readonly revisao_gestor?: string;
+  readonly horarios_gestor?: Readonly<Record<string, string>>;
+  readonly leitor?: { readonly observado_em: string; readonly aberto_em_local: string; readonly revisao: string; readonly pedido: PedidoDaHome };
 }
 export interface AtencaoDaHome { readonly codigo: string; readonly hora: string; readonly motivo: string }
 export type OperacaoDoIfoodVM =
@@ -74,7 +79,7 @@ function preparo(g: PedidoDoGestor, etapa: string, agora: number) {
   return { informado_min: Math.round(g.tempo_de_preparo_s / 60), passou_min: passou };
 }
 
-function pedidoDaHome(par: ParDaConciliacao, agora: number): PedidoIfoodDaHome {
+function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boolean): PedidoIfoodDaHome {
   const g = par.gestor; const etapa = etapaDe(g);
   return {
     hora: horaLocal(placedDe(g)), codigo: g.codigo_curto, etapa, ativo: etapa !== "concluido" && etapa !== "cancelado",
@@ -82,10 +87,18 @@ function pedidoDaHome(par: ParDaConciliacao, agora: number): PedidoIfoodDaHome {
     teknisa: { classe: par.classe, texto: TEKNISA[par.classe], estado: par.teknisa ? par.teknisa.estado_nativo : null, comanda_em_min: par.minutos_ate_a_comanda },
     itens: g.itens.map((i) => ({ descricao: `${i.quantidade}× ${i.nome}`, opcoes: i.opcoes.map((o) => `${o.quantidade}× ${o.nome}`), observacao: i.observacao })),
     detalhes: par.detalhes,
+    ...(incluirRevisoes ? {
+      revisao_gestor: createHash("sha256").update(JSON.stringify([g.eventos, g.itens, g.itens_alterados, g.itens_cancelados])).digest("hex"),
+      horarios_gestor: g.eventos,
+      ...(par.teknisa?.reader_v3 ? {
+        leitor: { observado_em: par.teknisa.observado_em, aberto_em_local: par.teknisa.aberto_em_local,
+          revisao: par.teknisa.revisao, pedido: pedidoReaderVM(par.teknisa) },
+      } : {}),
+    } : {}),
   };
 }
 
-export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: PedidosReaisDoReader, agora: Date): OperacaoDoIfoodVM {
+export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: PedidosReaisDoReader, agora: Date, incluirRevisoes = false): OperacaoDoIfoodVM {
   if (gestor.estado === "nao_configurado")
     return { disponivel: false, titulo: "Gestor do iFood nao configurado nesta instancia",
       explicacao: "Isto nao significa Gestor fechado na loja: esta instancia nao foi apontada para ele." };
@@ -95,7 +108,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   const t = agora.getTime();
   const reais = teknisa.estado === "lido" ? teknisa.pedidos : [];
   const c = conciliarGestorTeknisa(gestor.pedidos, reais, agora);
-  const todos = c.pares.map((p) => pedidoDaHome(p, t));
+  const todos = c.pares.map((p) => pedidoDaHome(p, t, incluirRevisoes));
   const ativos = todos.filter((p) => p.ativo).sort((a, b) => b.minutos - a.minutos);
   const concluidos = todos.filter((p) => !p.ativo).sort((a, b) => a.minutos - b.minutos).slice(0, LIMITE_DE_CONCLUIDOS);
   const atencao: AtencaoDaHome[] = [];

@@ -191,12 +191,14 @@ const pedidosDaTeknisaAgora = (agoraMs: number): PedidosDaTeknisaVM => leituraDa
  * Teknisa. Sem a variavel: bloco "nao configurado", nunca zero. Mesma cadencia de 10 s.
  */
 const DIR_GESTOR_LOCAL = (process.env.DELIVERYOS_GESTOR_LOCAL_DIR || "").trim();
+const DIR_READER_V3_COPILOTO = (process.env.DELIVERYOS_READER_V3_PROJECTION_DIR || "").trim();
 const UNIDADE_READER_V3 = (process.env.DELIVERYOS_READER_V3_UNIT_ID || "").trim();
 let memoIfood: { em: number; vm: OperacaoDoIfoodVM } | null = null;
 function operacaoDoIfoodAgora(agoraMs: number): OperacaoDoIfoodVM {
   if (memoIfood && agoraMs - memoIfood.em < 10_000) return memoIfood.vm;
   const agora = new Date(agoraMs);
-  const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora), leituraDaTeknisaAgora(agoraMs).leitura, agora);
+  const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora),
+    leituraDaTeknisaAgora(agoraMs).leitura, agora, Boolean(DIR_READER_V3_COPILOTO) && !ESCOPO_SHADOW);
   memoIfood = { em: agoraMs, vm };
   return vm;
 }
@@ -790,6 +792,21 @@ export async function criarServidor(): Promise<http.Server> {
         const unidade = ESCOPO_SHADOW?.unit_id ||
           (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
         const agoraMs = Date.now();
+        const readerNaUnidade = Boolean(DIR_READER_V3_COPILOTO)
+          && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_READER_V3)
+          && (unidade === null || unidade === UNIDADE_READER_V3);
+        const operacaoIfood = readerNaUnidade && !ESCOPO_SHADOW ? operacaoDoIfoodAgora(agoraMs) : null;
+        const pedidosIfood: OperacaoDoIfoodVM | null = operacaoIfood?.disponivel && operacaoIfood.leitura_velha
+          ? { disponivel: false, titulo: "Leitura do Gestor desatualizada",
+            explicacao: "Os pedidos voltam a aparecer após uma gravação recente do aplicativo." }
+          : operacaoIfood?.disponivel && leituraDaTeknisaAgora(agoraMs).leitura.estado !== "lido"
+            ? { disponivel: false, titulo: "Conferência com a Teknisa indisponível",
+              explicacao: "A projeção do Reader V3 está indisponível nesta leitura." }
+            : operacaoIfood;
+        if (url.searchParams.get("pedidos") === "1") {
+          if (!pedidosIfood) return json(res, 404, { erro: "pedidos_ifood_fora_do_escopo" });
+          return json(res, 200, { operacao_ifood: pedidosIfood });
+        }
         void Promise.all([
           lerHistorico(clientePlataforma, pronto.historico, unidade),
           lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id),
@@ -798,9 +815,6 @@ export async function criarServidor(): Promise<http.Server> {
             const entregas = copilotoEntregasLeitura(leitura, unidade);
             const cobertura = celulasCopilotoV33(entregas);
             let celulas = cobertura.celulas;
-            const readerNaUnidade = Boolean(process.env.DELIVERYOS_READER_V3_PROJECTION_DIR?.trim())
-              && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_READER_V3)
-              && (unidade === null || unidade === UNIDADE_READER_V3);
             if (readerNaUnidade) {
               // O Caixa herda a mesma leitura local e o mesmo cache da Home.
               const reader = pedidosDaTeknisaAgora(agoraMs);
@@ -823,6 +837,7 @@ export async function criarServidor(): Promise<http.Server> {
               historico: h.copiloto,
               entregas_observadas: entregas,
               celulas_operacionais: { ...cobertura, celulas },
+              ...(pedidosIfood ? { operacao_ifood: pedidosIfood } : {}),
             });
           })
           .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));

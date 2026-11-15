@@ -18,7 +18,7 @@ import {
   selos,
   skeleton,
 } from "./components/ui.js";
-import { telaHome } from "./surfaces/home.js";
+import { operacaoDoIfood, telaHome } from "./surfaces/home.js";
 import { telaEntregas } from "./surfaces/entregas.js";
 import { telaOperacaoViva } from "./surfaces/operacao-viva.js";
 import { telaConferenceBrain } from "./surfaces/conference-brain.js";
@@ -35,6 +35,7 @@ const estado = {
   rotaAnterior: null,
   /** O intervalo que envelhece a leitura na tela. Um so, trocado a cada desenho. */
   relogioDaLeitura: null,
+  pollingPedidos: null,
   /** O selo do shell quando a tela nao traz leitura do servidor (de /api/health). */
   molduraPadrao: [],
   /** Cada desenho incrementa; uma releitura que volta depois de outro desenho e descartada. */
@@ -346,8 +347,10 @@ function apiDaRota(rota) {
   const cena = new URLSearchParams(window.location.search).get("cena");
   let api =
     rota === "/" && cena ? `${s.api}?cena=${encodeURIComponent(cena)}` : s.api;
-  if ((rota === "/operacao-viva" || rota === "/copiloto") && estado.unidade) {
-    api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(estado.unidade)}`;
+  const unidadeCopiloto = rota === "/copiloto" ? hashAtual().consulta.get("unidade") : null;
+  const unidade = unidadeCopiloto || estado.unidade;
+  if ((rota === "/operacao-viva" || rota === "/copiloto") && unidade) {
+    api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(unidade)}`;
   }
   // Entregas filtra pela unidade DA LEITURA (as que o servidor encontrou), nao
   // pelo seletor do shell, que e de apresentacao.
@@ -358,7 +361,35 @@ function apiDaRota(rota) {
   return api;
 }
 
+function ligarPedidosDoCopiloto(alvo, api, geracao) {
+  const bloco = alvo.querySelector("[data-copiloto-ifood]");
+  if (!bloco) return;
+  let relendo = false;
+  let ultimo = bloco.innerHTML;
+  estado.pollingPedidos = setInterval(async () => {
+    if (document.hidden || relendo) return;
+    relendo = true;
+    let html;
+    try {
+      const vm = await obter(api + (api.includes("?") ? "&" : "?") + "pedidos=1");
+      html = operacaoDoIfood(vm.operacao_ifood);
+    } catch {
+      html = operacaoDoIfood({ disponivel: false, titulo: "Leitura do iFood indisponível",
+        explicacao: "A atualização será tentada novamente." });
+    } finally {
+      relendo = false;
+    }
+    if (geracao !== estado.geracao || html === ultimo) return;
+    const abertos = new Set([...bloco.querySelectorAll("details[open]")].map(d => d.id));
+    bloco.innerHTML = html;
+    ultimo = html;
+    for (const dobra of bloco.querySelectorAll("details")) dobra.open = abertos.has(dobra.id);
+  }, 15000);
+}
+
 async function desenhar(rota, opcoes = {}) {
+  clearInterval(estado.pollingPedidos);
+  estado.pollingPedidos = null;
   const geracao = ++estado.geracao;
   estado.relendo = false;
   // A unidade configurada para LEITURA PARCIAL do Copiloto nao participa das
@@ -407,7 +438,11 @@ async function desenhar(rota, opcoes = {}) {
     const tata = rota === "/operacao-viva" ? await blocoTataSomenteLeitura() : "";
     // Uma resposta de rota/unidade anterior nao pode substituir o contexto atual.
     if (geracao !== estado.geracao) return;
-    alvo.innerHTML = s.tela(vm) + tata;
+    const pedidosIfood = rota === "/copiloto" && vm.operacao_ifood
+      ? `<div class="org" data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>`
+      : "";
+    alvo.innerHTML = s.tela(vm) + pedidosIfood + tata;
+    ligarPedidosDoCopiloto(alvo, api, geracao);
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);

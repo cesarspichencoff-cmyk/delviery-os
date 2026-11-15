@@ -46,7 +46,7 @@ export type PedidosDaTeknisaVM =
 const hojeLocal = (agora: Date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(agora);
 
-function pedidoDaHome(p: PedidoReal): PedidoDaHome {
+export function pedidoReaderVM(p: PedidoReal): PedidoDaHome {
   const obs = p.completude.observacoes === "nao_lidas_pela_fonte" ? "observacoes nao lidas pela fonte"
     : p.completude.observacoes === "parcial" ? "observacoes parciais (ligacao nao provada)" : "observacoes de texto lidas";
   return {
@@ -83,7 +83,7 @@ export function pedidosDaTeknisaVM(leitura: PedidosReaisDoReader, agora: Date): 
       : `${n} ${n === 1 ? "pedido" : "pedidos"} do ultimo dia com pedidos (${dia.slice(8, 10)}/${dia.slice(5, 7)}); nenhum hoje ainda`,
     contagens: { pedidos: n, retidos: conta((p) => p.retido), estado_x: conta((p) => p.estado_nativo === "X"),
       almoco: conta((p) => p.turno === "ALMOCO"), jantar: conta((p) => p.turno === "JANTAR"), fora_do_horario: conta((p) => p.turno === "FORA_DO_HORARIO") },
-    pedidos: doDia.slice(0, LIMITE_DA_LISTA).map(pedidoDaHome), limite_da_lista: LIMITE_DA_LISTA,
+    pedidos: doDia.slice(0, LIMITE_DA_LISTA).map(pedidoReaderVM), limite_da_lista: LIMITE_DA_LISTA,
     completude: doDia.some(p => p.reader_v3) ? "Reader V3: itens, quantidades, componentes, complementos e observacoes lidos; relacoes verificadas. Conclusao da gravacao e completude independente ainda nao confirmadas." : "Itens, quantidades e observacoes de texto lidos. Observacoes por ocorrencia, componentes de combinados e complementos ainda nao sao lidos pela fonte.",
     politica: leitura.politica.valida ? leitura.politica.versao : null,
     limitacoes: [

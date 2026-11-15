@@ -1044,10 +1044,17 @@ function pedidoDoIfood(p) {
       p.teknisa.estado ? ` (estado ${esc(p.teknisa.estado)})` : ""}</span>
     <ul class="org-ctx__sinais">${itens}</ul>
     ${p.detalhes.length ? `<p class="org-ctx__ausencia">${esc(p.detalhes.join(" · "))}</p>` : ""}
+    ${p.horarios_gestor ? `<p class="org-ctx__ausencia">Horários do iFood: ${Object.entries(p.horarios_gestor)
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([evento, instante]) => `${esc(evento)} ${esc(new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit"
+      }).format(new Date(instante)))}`).join(" · ")}</p>` : ""}
+    ${p.leitor ? `<div class="org-ctx__ausencia">Leitura da Teknisa · revisão ${esc(p.leitor.revisao.slice(0, 10))}</div>
+      <ul class="org-sinais">${pedidoDaTeknisa(p.leitor.pedido)}</ul>` : ""}
   </li>`;
 }
 
-function operacaoDoIfood(o) {
+export function operacaoDoIfood(o) {
   if (!o) return "";
   if (!o.disponivel) {
     return `<section class="org-resto org-ifood" data-ifood="indisponivel">

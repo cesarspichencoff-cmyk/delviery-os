@@ -16,7 +16,7 @@ import type { PedidoReal } from "./leitura/pedidos-reais-do-reader";
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
 
 let n = 0;
-const TOTAL = 12;
+const TOTAL = 14;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -224,6 +224,66 @@ void (async () => {
       assert.equal(o.pedidos.find((p: any) => p.codigo === "1111").teknisa.classe, "correspondencia_comprovada");
       assert.doesNotMatch(JSON.stringify(corpo), /CANARIO_/);
     });
+    const v3 = join(raizR, "v3");
+    mkdirSync(v3);
+    const readerBase = pr("1111", 29, [{ arv: "2000000001", q: 2, obs: ["sem cebolinha"] }, { arv: "2000000002", q: 1 }]);
+    const readerV3: PedidoReal = { ...readerBase, chave: "0001|01|999001111|999002222",
+      reader_v3: { politica: "TESTE", independent_ifood_completeness: "NOT_CONFIRMED", sql_snapshot_atomicity_proven: false, source_writer_finished_proven: false },
+      itens: [{ ...readerBase.itens[0]!, nome: "Combinado",
+        componentes: [{ codigo: "FICT1", nome: "FICT_COMPONENTE", quantidade_nativa: "2.000", observacoes: ["FICT_NOTA_COMPONENTE"] }],
+        complementos: [{ linha: "1", codigo: "FICT2", nome: "FICT_COMPLEMENTO", quantidade_nativa: "1.000" }] }, readerBase.itens[1]!],
+    };
+    const publicar = (nome: string, data: unknown) => {
+      const digest = createHash("sha256").update(JSON.stringify(data)).digest("hex");
+      writeFileSync(join(v3, nome), JSON.stringify({ data, digest }));
+    };
+    publicar("consumer.json", { schema: 1, seq: 1, latest: { [readerV3.chave]: readerV3 } });
+    publicar("source-status.json", { schema: 1, seq: 1, producerSeq: 1, failures: 0, holds: {}, at: new Date().toISOString() });
+    const v3Porta = porta + 100;
+    const v3Processo = spawn(process.execPath, [bin], { cwd: join(__dirname, "../.."), windowsHide: true, stdio: "ignore",
+      env: { ...process.env, PRODUCT_UI_PORT: String(v3Porta), DELIVERYOS_GESTOR_LOCAL_DIR: raizG, DELIVERYOS_DATABASE_URL: "",
+        DELIVERYOS_READER_V3_PROJECTION_DIR: v3, DELIVERYOS_READER_V3_UNIT_ID: "ITAIM" } });
+    try {
+      const base = `http://127.0.0.1:${v3Porta}/api/copiloto`;
+      const url = base + "?unit_id=ITAIM&pedidos=1";
+      let dados: Record<string, any> | null = null;
+      for (let i = 0; i < 80 && !dados; i++) {
+        try { const r = await fetch(url); if (r.ok) dados = await r.json(); } catch { /* subindo */ }
+        if (!dados) await new Promise(r => setTimeout(r, 150));
+      }
+      const outra = await fetch(base + "?unit_id=OUTRA&pedidos=1");
+      const geral = await (await fetch(base + "?unit_id=ITAIM")).json() as typeof dados;
+      ok("G13 Copiloto recebe a mesma revisão, os horários e os filhos do par identificado sem canários nem acesso entre unidades", () => {
+        assert.ok(dados && geral);
+        const pedido = dados.operacao_ifood.pedidos.find((p: any) => p.codigo === "1111");
+        assert.deepEqual(geral.operacao_ifood, dados.operacao_ifood);
+        assert.equal(pedido.etapa, "em preparo");
+        assert.equal(pedido.teknisa.classe, "relacoes_nao_confirmadas");
+        assert.ok(pedido.horarios_gestor.PLACED);
+        assert.match(pedido.revisao_gestor, /^[a-f0-9]{64}$/);
+        assert.equal(pedido.leitor.revisao, readerV3.revisao);
+        assert.match(JSON.stringify(pedido.leitor.pedido.itens), /FICT_COMPONENTE.*FICT_NOTA_COMPONENTE.*FICT_COMPLEMENTO/);
+        assert.doesNotMatch(JSON.stringify(dados), /CANARIO_|999001111|999002222|00000000-0000-4000/);
+        assert.equal(outra.status, 404);
+      });
+      const inicio = dados!.operacao_ifood.pedidos.find((p: any) => p.codigo === "1111").revisao_gestor;
+      writeFileSync(join(dirLS, "000008.log"), diario([{ k: chave("order/" + gA.id), v: valor({
+        ...gA, items: [{ ...gA.items[0], observations: "sem gergelim" }, ...gA.items.slice(1)],
+      }) }], 1000));
+      // Exercise the real 10s server cache and keep the simulated producer live.
+      await new Promise(r => setTimeout(r, 10_200));
+      publicar("source-status.json", { schema: 1, seq: 1, producerSeq: 1, failures: 0, holds: {}, at: new Date().toISOString() });
+      const fresh = await (await fetch(url)).json() as typeof dados;
+      ok("G14 a consulta leve detecta nova revisão do Electron no mesmo servidor", () => {
+        assert.ok(fresh);
+        const pedido = fresh.operacao_ifood.pedidos.find((p: any) => p.codigo === "1111");
+        assert.notEqual(pedido.revisao_gestor, inicio);
+        assert.equal(pedido.itens[0].observacao, "sem gergelim");
+        assert.equal(pedido.teknisa.classe, "observacao_divergente");
+      });
+    } finally {
+      v3Processo.kill();
+    }
   } finally {
     // GESTOR_LOCAL_PRENDER=1: deixa a Home da fixture no ar para a prova visual (nada real nela).
     if (process.env.GESTOR_LOCAL_PRENDER) console.log(`PRENDER http://127.0.0.1:${porta}/`); else filho.kill();
