@@ -217,3 +217,33 @@ O conector remoto do caixa continua em `Needs authentication`: nenhuma leitura d
 **Não lido:** os logs dos jobs da CI exigem credencial; só conclusão, passos e anotações foram lidos. A segunda forma
 da falha da bancada (dois motivos de retenção seguidos) não foi reproduzida no Foxxy — foi corrigida pela anotação e
 confirmada pela CI.
+
+## Retomada de 15/11 — fontes disponíveis e tela do Copiloto
+
+Leitura passiva no CAIXA_MOOCA. O perfil Edge existe e os metadados do
+`DevToolsActivePort` registram modificação em 12/11. O último recibo estrutural
+Gestor V2 é de 03/11, com identidade de loja e cobertura sem confirmação.
+O supervisor de recuperação do receptor V2 não foi localizado sob o nome
+versionado. A tarefa do executor V3 está registrada com `Settings.Enabled=false`,
+coerente com o recibo de preparação, e o feed de saída está ausente. Os arquivos
+do sensor, executor e receptor permanecem disponíveis. O status atualizado do
+outro observador é de diagnóstico e não qualifica pedidos reais. Os recibos não
+atestam que a sessão do Edge segue autenticada, que o receptor 5195 está ativo
+ou a causa original do fim das emissões do V2.
+
+O diretório LevelDB do Gestor Electron registrou atividade em 15/11. A
+conciliação existente do Electron com o Reader permanece a fonte de pedidos e
+eventos do iFood. O Reader V3 traz a revisão nativa e seus relacionamentos.
+O Edge fica disponível para conferência complementar após um ensaio passivo de
+identidade, autenticação e ausência de efeitos.
+
+O Copiloto reutiliza o bloco iFood da Home e o mesmo cache de leitura. Na unidade
+configurada ele apresenta horários do iFood, itens, observações e opções
+registradas no Gestor, além de componentes, complementos, observações e revisão
+na Teknisa para o par identificado. Identidade ambígua e relações sem prova
+independente continuam sinalizadas. A consulta leve atualiza o bloco a cada
+15 s com a página visível, sem consultar a plataforma de Entregas nem recarregar
+a página. Fonte indisponível ou envelhecida interrompe a exibição atual. O
+atalho para a origem de operador, quando autorizada, termina em
+`/#/copiloto?unidade=ITAIM`. O proxy e o Safari físico não foram exercitados
+com dados de campo. A homologação do Reader em 16/11 continua na janela reservada.
