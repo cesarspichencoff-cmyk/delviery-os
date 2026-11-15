@@ -70,12 +70,10 @@ import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
 import { classifyQuality } from "../src/entregas/gps/validate";
 import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
 import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
-import { createAccessThrottle, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
+import { createAccessThrottle, loadSharedOrigins, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
 import { createHomeOperatorGateway, loadHomeGatewayConfig } from "../src/platform/auth/home-operator-gateway";
 import { emitTripCaptureGrant, isUsableTripGrantSecret } from "../src/entregas/foundation/trip-capture-grant";
 
-// Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
-const accessThrottle = createAccessThrottle();
 
 const tataSourceStatus = criarLeitorStatusTata(process.env);
 const operatorRuntime = createOperatorPilotRuntime(process.env);
@@ -167,6 +165,19 @@ if (!cloudResult.ok) {
   process.exit(1);
 }
 const cloud = cloudResult.config;
+
+// Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
+// Atrás do proxy e do portão de campo todos chegam do mesmo endereço: essas origens,
+// e só se DECLARADAS, ganham orçamento próprio (access-throttle.ts).
+let sharedOrigins: ReadonlySet<string>;
+try {
+  sharedOrigins = loadSharedOrigins(process.env.ENTREGAS_SHARED_ORIGINS, cloud.remote);
+} catch (e) {
+  console.error(`[piloto] ${e instanceof Error ? e.message : String(e)} — servidor NÃO subiu`);
+  process.exit(78);
+}
+const accessThrottle = createAccessThrottle({ sharedOrigins });
+if (sharedOrigins.size) console.log(`[piloto] origens compartilhadas declaradas: ${sharedOrigins.size}`);
 
 const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
 /**
