@@ -37,6 +37,10 @@ const VIAGEM = `t-${SUFIXO}`;
 // sem ela no banco compartilhado, o crítico respondia 503 e este controle
 // caía por um fato do ambiente, não do produto.
 const { bancoIsolado } = require(join(process.cwd(), "dist/src/platform/banco-isolado.js"));
+// X1 (D100): sem concessão do piloto a plataforma não grava GPS. Aqui a ferramenta faz o
+// papel do piloto, com um segredo sintético só desta execução.
+const { emitTripCaptureGrant } = require(join(process.cwd(), "dist/src/entregas/foundation/trip-capture-grant.js"));
+const SEGREDO_CONCESSAO = "pb19-concessao-sintetica-" + SUFIXO + "-0123456789abcdef";
 let URL_BANCO = "";
 function sql(comando) {
   return execFileSync("psql", [URL_BANCO, "-At", "-c", comando], { encoding: "utf8" }).trim();
@@ -87,6 +91,7 @@ async function ingestao() {
       // DECLARADO (Q-017): o crítico não sobe sem modo. `simulated` sempre —
       // o lote desta ferramenta é sintético, e nunca pode virar fato `real`.
       DELIVERYOS_SOURCE_MODE: "simulated",
+      DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: JSON.stringify({ [UNIDADE]: SEGREDO_CONCESSAO }),
     },
   });
   let log = "";
@@ -118,7 +123,9 @@ async function ingestao() {
       provider: "fused",
       is_mock: false,
     };
-    const corpo = { device_id: APARELHO, correlation_id: `pb19-${SUFIXO}`, points: [ponto] };
+    const concessao = emitTripCaptureGrant({ unit_id: UNIDADE, actor_id: `a-${SUFIXO}`, device_id: APARELHO, trip_id: VIAGEM,
+      started_at: new Date(Date.now() - 600_000), closed_at: null, now: new Date(), secret: SEGREDO_CONCESSAO });
+    const corpo = { device_id: APARELHO, correlation_id: `pb19-${SUFIXO}`, points: [ponto], trip_grants: [concessao] };
 
     const envia = () =>
       fetch(`http://127.0.0.1:${PORTA}/api/gps/batch`, {

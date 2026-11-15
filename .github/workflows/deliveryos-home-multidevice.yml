@@ -73,3 +73,23 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Edge real, celular e desktop, pela porta de operador
         run: node labs/home-multidevice/browser-proof.cjs
+
+  # Motor do Safari (WebKit) com o perfil de iPhone do Playwright. NÃO é Safari num iPhone:
+  # é o mesmo motor de renderização, cookies e CSP, na bancada.
+  navegador-webkit-iphone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Motor WebKit da mesma versão do Playwright do repositório
+        run: npx playwright install --with-deps webkit
+      - name: WebKit (perfil iPhone 13) e desktop, pela porta de operador
+        run: node labs/home-multidevice/browser-proof.cjs
+        env:
+          LAB_BROWSER: webkit
