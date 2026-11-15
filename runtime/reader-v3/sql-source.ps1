@@ -27,7 +27,7 @@ try{
    $cmd=$conn.CreateCommand();$cmd.CommandTimeout=3
    if($q.op -eq 'discover'){
     $cmd.CommandText=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'discover.sql'))
-    foreach($n in @('after','until')){[void]$cmd.Parameters.Add('@'+$n,[Data.SqlDbType]::DateTime);$cmd.Parameters['@'+$n].Value=[datetime]::ParseExact([string]$q.$n,@('yyyy-MM-ddTHH:mm:ss','yyyy-MM-ddTHH:mm:ss.fff'),[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::None)}
+    foreach($n in @('after','until')){[void]$cmd.Parameters.Add('@'+$n,[Data.SqlDbType]::DateTime);$cmd.Parameters['@'+$n].Value=[datetime]::ParseExact([string]$q.$n,[string[]]@('yyyy-MM-ddTHH:mm:ss','yyyy-MM-ddTHH:mm:ss.fff'),[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::None)}
     foreach($n in @('sale','order')){if([string]$q.$n -notmatch '^[A-Za-z0-9_-]{0,10}$'){throw 'KEY_INVALID'};[void]$cmd.Parameters.Add('@'+$n,[Data.SqlDbType]::VarChar,10);$cmd.Parameters['@'+$n].Value=[string]$q.$n}
     $sets=Rows $cmd;$answer=@($sets[0])
    }elseif($q.op -eq 'capture'){

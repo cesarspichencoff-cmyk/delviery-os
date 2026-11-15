@@ -14,11 +14,13 @@ test('SQL Server real: parameterized eight rowsets, least privilege, lock timeou
  script=script.replace("$identity=[Security.Principal.WindowsIdentity]::GetCurrent().Name","$identity='NT SERVICE\\TataComandaReader'");
  script=script.replace(/\$connectionString='[^']*'/,"$connectionString=\"Server=$env:TATA_HARNESS_SQLSERVER;Database=reader_v3_lab;User ID=reader_v3_lab;Password=$env:READER_V3_LAB_PASSWORD;Encrypt=False;TrustServerCertificate=True;Connect Timeout=5\"");
  script=script.replace("$ir[0][0].login_name -ine 'NT SERVICE\\TataComandaReader'","$ir[0][0].login_name -ine 'reader_v3_lab'").replace("$ir[0][0].db_name -ine 'teknisa'","$ir[0][0].db_name -ine 'reader_v3_lab'");
+ script=script.replace("$code='SQL_CAPTURE_FAILED';","[Console]::Error.WriteLine($ex.Message);$code='SQL_CAPTURE_FAILED';");
  fs.writeFileSync(path.join(temp,'source.ps1'),script);for(const n of ['discover.sql','capture.sql'])fs.copyFileSync(path.join(REPO,'runtime/reader-v3',n),path.join(temp,n));
- const source=new SqlSource({executable:ps,script:path.join(temp,'source.ps1')});t.after(()=>source.close());
+ const source=new SqlSource({executable:ps,script:path.join(temp,'source.ps1')});t.after(()=>source.close());source.child.stderr.on('data',d=>console.log('LAB_ADAPTER_DIAGNOSTIC '+d.toString().slice(0,1200)));
+ console.log('LAB_STAGE_DISCOVER');
  const discovered=await source.discover({time:'2026-11-15T00:00:00',sale:'',order:''},'2026-11-15T23:00:00');a.equal(discovered.length,1);
  const now=new Date('2026-11-15T15:01:00Z'),service={turno:'ALMOCO',versao:'LAB'};
- const start=performance.now();const raw=await source.capture(h);const event=buildCapture(raw,key(f),now,service);a.equal(project(event).itens[0].componentes[0].observacoes[0],'FICT_CHILD_NOTE');
+ console.log('LAB_STAGE_CAPTURE');const start=performance.now();const raw=await source.capture(h);const event=buildCapture(raw,key(f),now,service);a.equal(project(event).itens[0].componentes[0].observacoes[0],'FICT_CHILD_NOTE');
  console.log('SQL_CAPTURE_MS',Math.round(performance.now()-start));
  a.match(run('deny-write'),/WRITE_DENIED/);
  const locker=cp.spawn(ps,['-NoLogo','-NoProfile','-NonInteractive','-File',path.join(__dirname,'sql-lab.ps1'),'-Op','lock'],{windowsHide:true,stdio:'ignore'});
