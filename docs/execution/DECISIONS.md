@@ -2226,3 +2226,10 @@ APK; o piloto encaminhando para o crítico (o segredo do aparelho passaria pelo 
 que funcione atrás do proxy (todos chegam de 2 origens); no hostname de campo o piloto só atende papel de motoboy; encaminhador da 8080
 sem TLS só para os dois proxies; confirmar na conta real Bypass/Block por caminho, Host preservado e dois alvos no mesmo peer.
 
+**Adendo à D101 (14/11/2026):** em vez de depender de bloqueio por caminho no proxy NetBird (recurso beta, não confirmado na
+conta real), o proxy aponta para UM alvo — o portão de campo (`src/platform/campo/portao-de-campo.ts`), que só repassa a lista
+fechada de rotas, com teto de corpo por rota, sem cookie, e marca as requisições do piloto; com a marca o piloto aceita só papel de
+motoboy. A lista do proxy vira defesa em profundidade, não a única barreira. Recusado: repassar ao crítico pelo próprio piloto
+(o segredo do aparelho passaria pelo processo de domínio). O comando direto (`/api/command`) fica na lista: a página do motoboy
+cai para ele quando a fila do aparelho não está anunciada, e o domínio já exige que a viagem seja do motoboy.
+

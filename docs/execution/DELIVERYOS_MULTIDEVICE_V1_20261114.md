@@ -239,3 +239,22 @@ até dois aparelhos lógicos com processos reais; o limite de cinco não foi med
 3. **Códigos longos** para gerentes, líderes e motoboys (revê a decisão de 31/10 de quatro dígitos), por causa da exposição.
 4. **Dois Androids físicos de pessoas diferentes** ligados ao Foxxy para começar a homologação; nenhum aparelho estava conectado.
 
+## 11. Portão de campo e o que muda na superfície pública (14/11, noite)
+
+| Item | Estado | Prova |
+|---|---|---|
+| Portão de campo (`src/platform/campo/portao-de-campo.ts`, binário `start:campo`) | **TESTE_PASS** | 10/10 com processos reais; mutações 10/10 |
+| Piloto: só motoboy pela porta de campo | **TESTE_PASS** | mesmo código de gerente: recusa idêntica ao código errado; snapshot 403 |
+| Composição oficial com a concessão | **TESTE_PASS** parcial | deploy-audit 30/30; PB19 verde; testes de container não rodados (sem Docker) |
+| Home em WebKit com perfil de iPhone | **na CI** | job novo `navegador-webkit-iphone`; motor do Safari, não Safari num iPhone |
+| Fila offline de ações no caixa | **BLOQUEADO por configuração** | piloto em PostgreSQL recusa lote nativo; ver `BLOCKERS.md` |
+
+Com o portão, a configuração do NetBird fica simples: **um** serviço novo, sem login do proxy, com alvo único no portão (IP do `wt0`,
+porta nova). A regra do guard precisa liberar essa porta só para os dois proxies — mesma forma da regra da 5193.
+
+**Pré-requisitos da D101 agora:** X1 ✔ · teto de corpo ✔ · só motoboy no campo ✔ · portão/encaminhador ✔ (em bancada) · códigos
+longos ✘ (decisão do César) · limite de tentativas atrás do proxy ✘ (todos chegam de 2 origens; com códigos longos o risco cai) ·
+confirmar na conta real que o serviço sem login aponta para o portão ✘.
+
+**CI em 90c807c4/286f2bd3:** seis workflows verdes, inclusive a Home em Edge e em WebKit com perfil de iPhone 13 e os labs Android. No workflow da X1, todas as asserções passaram no Linux; caíram a limpeza da rota delegada (piloto filho sem grupo próprio) e a mutação C9 (camada redundante por desenho) — ambas corrigidas no commit seguinte, CI a reler.
+

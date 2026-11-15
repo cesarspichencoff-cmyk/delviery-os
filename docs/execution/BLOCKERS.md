@@ -1614,3 +1614,8 @@ Detalhe: `docs/security/DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md`
   `ENTREGAS_TRIP_GRANT_SECRET` no piloto. Falha fechada, não aberta. Não verificado aqui: o Foxxy não tem Docker.
 - **Caixa, 14/11:** rota invisível provada só no Foxxy (0 janela em 4667 amostras, mesma versão do conector e mesmo terminal padrão);
   no caixa nada foi executado nem medido. A preparação (`preparar-feed-do-gestor.ps1 -Mode Stage`) aguarda decisão do César.
+- **Campo, 14/11 — fila offline de ações no caixa:** o piloto do caixa grava em PostgreSQL e, nesse modo, recusa o lote de ações do
+  aparelho (503 `DURABLE_RECEIPTS_UNAVAILABLE`). GPS offline sobe; saída/chegada/entrega feitas sem rede ficam no aparelho até haver
+  recibo nativo. Decisão do César: piloto de campo em arquivo, ou a migração de recibos por unidade no PostgreSQL.
+- **Composição oficial, 14/11:** já recebe `DELIVERYOS_PILOT_TRIP_GRANT_SECRETS` (PB19 verde). Ainda sem a concessão: as ferramentas
+  de container `tools/q017_gps_no_container.js`, `tools/papeis_compose_real.sh` e `tools/bancada_q018_*` — não verificáveis no Foxxy.
