@@ -67,3 +67,27 @@ componente ou complemento.
 O que **não** se faz: apagar os bloqueios para a tela ficar limpa. O bloqueio de estado de serviço é
 substituído por uma regra automática (política semanal + hora nativa), registrada por pedido; os
 demais bloqueios continuam valendo; o que a fonte não lê aparece como **não lido**, nunca como vazio.
+
+## 6. Camada 1 no laboratório do caixa — medido (15/11, 06:15 local)
+
+Home do laboratório (`home-do-laboratorio.cjs`, só o servidor da Home, `127.0.0.1:5310`, pasta do
+Reader em leitura, sem banco) refeita no commit `76ab11f1` (tree `295ec54a`, preparação com
+manifesto de fonte e de `dist`, 0 processo alterado, 0 porta aberta além da própria, firewall
+intocado). Caixa ocioso havia 1.186 s antes de mexer.
+
+| Medida | Antes (`4fa227c2`, checkpoint) | Agora (`76ab11f1`, incremental) |
+|---|---|---|
+| Pedidos de delivery do Itaim em 14/11 | 250 (teto do checkpoint) | **313** |
+| Pedidos distintos em 14/11 contados direto nos eventos (`diagnostico-reader.cjs`) | 313 | 313 |
+| Retidos / estado nativo X | 2 / 13 | 2 / 19 |
+| Almoço / jantar / fora do horário (política semanal) | — | 95 / 216 / 2 |
+| Itens listados sem nome (nos 60 mostrados) | 0 | 0 |
+| `/api/home` a frio / com cache | — | 84 ms / 36–38 ms |
+| Processo da Home | — | 86 MB, 3,1 s de CPU no arranque |
+
+**O que isto prova:** a Home deixou de cortar o dia de pico; a contagem bate exatamente com a
+contagem independente feita nos mesmos arquivos. **O que não prova:** que o Reader viu todo pedido
+que a Teknisa recebeu (o denominador da Teknisa não é conhecido por esta camada), que a revisão
+estável é a final, nem nada sobre componentes, complementos e observações por ocorrência — esses
+seguem **não lidos pela fonte** até a camada 2. A cobertura contra o Gestor e a latência ao vivo
+(almoço e jantar de hoje) ainda não foram medidas.
