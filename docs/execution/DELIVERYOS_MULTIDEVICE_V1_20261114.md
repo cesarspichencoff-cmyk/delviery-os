@@ -392,3 +392,20 @@ comprovante de restauração. Sem migration, sem firewall, sem NetBird, sem GPS,
 
 Fora deste pedido, e não feito: deixar o candidato rodando, portão de campo, NetBird, GPS real, aparelhos físicos.
 
+## 17. Q-029 executado no caixa — candidato ATIVO no laboratório, só em loopback (15/11, 05:03 local)
+
+- **Condição:** caixa sem entrada de teclado/mouse havia 3 h 38 min (`caixa-em-uso.ps1`), fora do horário da loja (almoço
+  11–15/16:30, jantar 18–23, lido da política de serviço do próprio Reader). Medidor de janelas ligado do início ao fim.
+- **1ª tentativa:** defeito real — a guarda do NetBird descarta conexão ao endereço do wt0 e o teste de porta por conexão lia
+  "ocupado"; reverteu e a reversão falhou pelo mesmo motivo. Corrigido (ocupação pela tabela de escutas do sistema) e ensaiado
+  9/9 na bancada; `recuperar` devolveu o banco do ensaio **byte a byte no caixa** (1412 arquivos, SHA-256 igual) em 10,7 s.
+- **2ª tentativa: ATIVO** em 74,7 s (saudável em 14,5 s, 60 s de observação). Crítico, assíncrono e piloto do candidato `0359e304`
+  e o PostgreSQL do ensaio escutam **só em 127.0.0.1**; nada no endereço do NetBird nem em curinga. Piloto em arquivo com recibos
+  nativos duráveis (D102 resolvido no laboratório). Medidor: 0 janela.
+- **Mantido ativo** pelas condições do César (isolado, sem exposição, NetBird inalterado — já não servia nada). Desligar:
+  `node C:\Users\Tata\DeliveryOS-Ensaio-V1\ativar-candidato-v1.cjs reverter --autorizacao "<texto>"`.
+- **Reader real, leitura passiva pelo laboratório:** 20/20 arquivos do Itaim, legíveis; **20/20 bloqueados pelo produtor** com
+  código fora da lista conhecida; estado de serviço do Reader parado em 14/10. Provável (não provado): o produtor declara que não
+  lê as tabelas filhas de itens e observações (PR #135). Sem isso a Home não pode mostrar produtos, complementos e observações
+  reais com verdade: é mudança no serviço produtivo do Reader, fora do que posso fazer sozinho.
+
