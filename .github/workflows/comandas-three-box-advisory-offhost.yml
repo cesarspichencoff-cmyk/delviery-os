@@ -1,0 +1,35 @@
+name: Comandas three-box synthetic advisory (offhost)
+
+on:
+  pull_request:
+    branches:
+      - audit/comandas-native-chain-20261102
+    paths:
+      - "tools/comandas_three_box_kit_bag_advisory_v1_offline.cjs"
+      - "tools/verificar_comandas_three_box_kit_bag_advisory_v1_offline.cjs"
+      - "tools/fixtures/canonical-packaging-v63-pinned.js"
+      - ".github/workflows/comandas-three-box-advisory-offhost.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comandas-three-box-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-advisory:
+    name: Pinned motor contrast and zero-effects (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run synthetic advisory and exact pinned-motor differential
+        run: node tools/verificar_comandas_three_box_kit_bag_advisory_v1_offline.cjs
