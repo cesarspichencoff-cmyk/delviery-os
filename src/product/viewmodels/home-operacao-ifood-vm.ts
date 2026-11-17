@@ -20,8 +20,8 @@ export const GESTOR_VELHO_MIN = 20;
 
 const ETAPAS: readonly [string, string][] = [
   ["CANCELLED", "cancelado"], ["CONCLUDED", "concluido"], ["ARRIVED_AT_DESTINATION", "entregador no destino"],
-  ["DISPATCHED", "saiu para entrega"], ["COLLECTED", "saiu para entrega"], ["ARRIVED_AT_ORIGIN", "pronto · entregador na loja"],
-  ["GOING_TO_ORIGIN", "pronto · entregador a caminho"], ["READY_TO_PICKUP", "pronto"], ["CONFIRMED", "em preparo"], ["PLACED", "aguardando aceite"],
+  ["DISPATCHED", "saiu para entrega"], ["COLLECTED", "saiu para entrega"],
+  ["READY_TO_PICKUP", "pronto"], ["CONFIRMED", "em preparo"], ["PLACED", "aguardando aceite"],
 ];
 const TEKNISA: Record<ClasseDoPar, string> = {
   relacoes_nao_confirmadas: "Itens conferem; componentes e complementos a conferir",
@@ -88,7 +88,15 @@ export type OperacaoDoIfoodVM =
     };
 
 const horaLocal = (ms: number) => new Date(ms - 3 * 3600_000).toISOString().slice(11, 16);
-const etapaDe = (g: PedidoDoGestor) => (ETAPAS.find(([c]) => g.eventos[c]) ?? ["", g.categoria ? g.categoria.toLowerCase() : "sem evento"])[1];
+function etapaDe(g: PedidoDoGestor): string {
+  const etapa = ETAPAS.find(([evento]) => g.eventos[evento])?.[1];
+  // A chegada do entregador pode ocorrer antes de a cozinha marcar o pedido pronto.
+  if (etapa === "pronto") {
+    if (g.eventos.ARRIVED_AT_ORIGIN) return "pronto · entregador na loja";
+    if (g.eventos.GOING_TO_ORIGIN) return "pronto · entregador a caminho";
+  }
+  return etapa ?? g.categoria?.toLowerCase() ?? "sem evento";
+}
 const modalidade = (g: PedidoDoGestor) => (g.tipo === "TAKEOUT" ? "retirada" : g.entrega_por === "MERCHANT" ? "entrega propria" : g.entrega_por === "IFOOD" ? "entrega iFood" : g.tipo ? g.tipo.toLowerCase() : "modalidade nao informada");
 
 function preparo(g: PedidoDoGestor, etapa: string, agora: number) {

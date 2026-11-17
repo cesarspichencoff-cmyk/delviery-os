@@ -16,7 +16,7 @@ import { lerPracasDaRevisao, type PedidoReal } from "./leitura/pedidos-reais-do-
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
 
 let n = 0;
-const TOTAL = 21;
+const TOTAL = 22;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -200,6 +200,27 @@ ok("G9 Home: etapa oficial, preparo acima do informado, atencao so para ativos, 
 ok("G10 Home sem Gestor configurado: bloco declarado, nunca zero", () => {
   const vm = operacaoDoIfoodVM({ estado: "nao_configurado" }, { estado: "nao_configurado" }, new Date(AGORA));
   assert.equal(vm.disponivel, false);
+});
+ok("G23 presença do entregador antes de pronto preserva preparo, atraso e prévia por praça", () => {
+  if (g.estado !== "lido") throw Error("fixture do Gestor");
+  const base = g.pedidos.find(p => p.codigo_curto === "4444")!;
+  const rota = { ...base.eventos, GOING_TO_ORIGIN: iso(35) };
+  const chegou = { ...rota, ARRIVED_AT_ORIGIN: iso(32) };
+  const pronto = { ...chegou, READY_TO_PICKUP: iso(28) };
+  const pedidos = [
+    { ...base, codigo_curto: "4001", eventos: rota },
+    { ...base, codigo_curto: "4002", eventos: chegou },
+    { ...base, codigo_curto: "4003", eventos: pronto },
+    { ...base, codigo_curto: "4004", eventos: { ...pronto, DISPATCHED: iso(27) } },
+  ];
+  const vm = operacaoDoIfoodVM({ ...g, pedidos }, { estado: "nao_configurado" }, new Date(AGORA), false, () => null);
+  assert.ok(vm.disponivel && vm.previa_por_praca);
+  assert.equal(vm.contagens.em_preparo, 2);
+  assert.equal(vm.contagens.prontos, 1);
+  assert.equal(vm.contagens.na_rua, 1);
+  assert.equal(vm.pedidos.find(p => p.codigo === "4003")?.etapa, "pronto · entregador na loja");
+  assert.deepEqual(vm.previa_por_praca.pendentes.map(p => p.codigo).sort(), ["4001", "4002"]);
+  assert.ok(vm.atencao.some(p => p.codigo === "4002" && p.motivo.includes("preparo informado")));
 });
 ok("G11 diario truncado no meio do lote (o Gestor escrevendo): o lote incompleto e descartado inteiro", () => {
   const d2 = mkdtempSync(join(tmpdir(), "gestor-trunc-")); const ls = join(d2, "Local Storage", "leveldb"); mkdirSync(ls, { recursive: true });
