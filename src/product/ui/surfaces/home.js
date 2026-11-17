@@ -862,8 +862,8 @@ function pedidosObservados(vm) {
  *
  * A LEI QUE NAO MUDA: recuar nunca e sumir (D42). Nada saiu do DOM.
  */
-function dobra(id, rotulo, corpo) {
-  return `<details class="org-dobra" id="dobra-${esc(id)}">
+function dobra(id, rotulo, corpo, aberta = false) {
+  return `<details class="org-dobra" id="dobra-${esc(id)}"${aberta ? " open" : ""}>
     <summary class="org-dobra__gatilho">
       <span class="org-dobra__rotulo">${esc(rotulo)}</span>
       <span class="org-dobra__sinal" aria-hidden="true"></span>
@@ -1062,12 +1062,13 @@ function previaDasPracas(previa) {
   </li>`).join("");
   const pendentes = previa.pendentes.length ? `<li class="org-sinal">
     <span class="org-sinal__nome">A conferir</span>
-    <ul class="org-ctx__sinais">${previa.pendentes.map(p => `<li>${esc(p.hora)} · ${esc(p.codigo)} · ${esc(p.motivo)}</li>`).join("")}</ul>
+    <ul class="org-ctx__sinais">${previa.pendentes.map(p => `<li>${esc(p.hora)} · ${esc(p.codigo)}${p.descricao ? ` · ${esc(p.descricao)}` : ""} · ${esc(p.motivo)}${p.complementos?.length
+      ? `<ul class="org-ctx__sinais">${p.complementos.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}</li>`).join("")}</ul>
   </li>` : "";
   return dobra("ifood-previa-pracas", "Prévia por praça",
     '<p class="org-resto__nota">Confira a distribuição e as observações nas comandas do caixa.</p>' +
     (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
-      : '<p class="org-resto__nota">Nenhum pedido em preparo nesta leitura.</p>'));
+      : '<p class="org-resto__nota">Nenhum pedido em preparo nesta leitura.</p>'), true);
 }
 
 export function operacaoDoIfood(o) {
@@ -1095,7 +1096,7 @@ export function operacaoDoIfood(o) {
   return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
     <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
     <span class="org-resto__conta">${esc(linha)}</span></div>
-    ${velho}${atencao}${previaDasPracas(o.previa_por_praca)}
+    ${velho}${previaDasPracas(o.previa_por_praca)}${atencao}
     ${o.pedidos.length ? dobra("ifood-pedidos", `Ver os ${o.pedidos.length} pedidos do Gestor`,
       `<ul class="org-sinais">${o.pedidos.map(pedidoDoIfood).join("")}</ul>`) : ""}
     <p class="org-resto__nota">${conc}</p>

@@ -61,9 +61,14 @@ interface LinhaDaPrevia {
 }
 interface PreviaPorPraca {
   readonly grupos: readonly { readonly rotulo: string; readonly itens: readonly LinhaDaPrevia[] }[];
-  readonly pendentes: readonly AtencaoDaHome[];
+  readonly pendentes: readonly (AtencaoDaHome & { readonly descricao?: string; readonly complementos?: readonly string[] })[];
 }
-type LerPracas = (pedido: PedidoReal) => readonly PracaId[] | null;
+type LerPracas = (pedido: PedidoReal) => readonly (PracaId | null)[] | null;
+
+const CLASSES_COM_ITENS_CONCILIADOS = new Set<ClasseDoPar>([
+  "correspondencia_comprovada", "complemento_nao_lido_pela_teknisa", "relacoes_nao_confirmadas",
+  "observacao_nao_lida_pela_teknisa", "observacao_divergente",
+]);
 
 export type OperacaoDoIfoodVM =
   | { readonly disponivel: false; readonly titulo: string; readonly explicacao: string }
@@ -114,44 +119,42 @@ function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boo
 
 function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas): PreviaPorPraca {
   const grupos = new Map<PracaId, LinhaDaPrevia[]>();
-  const pendentes: AtencaoDaHome[] = [];
+  const pendentes: PreviaPorPraca["pendentes"][number][] = [];
   for (const { gestor, teknisa, classe } of pares) {
     if (gestor.teste || !gestor.eventos.CONFIRMED || etapaDe(gestor) !== "em preparo") continue;
     const referencia = { codigo: gestor.codigo_curto, hora: horaLocal(placedDe(gestor)) };
-    if (!teknisa || teknisa.retido || classe !== "correspondencia_comprovada" ||
-        gestor.itens_alterados > 0 || gestor.itens_cancelados > 0 ||
-        gestor.itens.some(i => i.opcoes.length > 0) ||
-        teknisa.itens.some(i => i.combinado || i.componentes?.length || i.complementos?.length)) {
-      pendentes.push({ ...referencia, motivo: "Conferir a comanda reconciliada, os itens e os complementos." });
-      continue;
-    }
-    if (!teknisa.reader_v3 && (teknisa.completude.observacoes !== "campos_de_texto_lidos" ||
-        teknisa.itens.some(i => i.observacoes?.length !== 0) || gestor.itens.some(i => i.observacao !== null))) {
-      pendentes.push({ ...referencia, motivo: "Conferir as observações dos itens na comanda." });
-      continue;
-    }
-    const pracas = lerPracas(teknisa);
-    const nomes = new Map(gestor.itens.map(i => [i.codigo_externo, i.nome]));
-    const linhas = teknisa.itens.map((i, index) => {
-      const nome = nomes.get(i.codigo_arvore);
-      const praca = pracas?.[index];
-      if (!praca || !nome || !Number.isSafeInteger(i.quantidade) || i.quantidade! < 1) return null;
-      return {
-        praca, item: {
-          ...referencia, descricao: `${i.quantidade}× ${nome}`,
-          conferir_observacao: teknisa.observacoes_do_pedido?.length !== 0 || i.observacoes?.length !== 0,
-        },
-      };
-    });
-    const validas = linhas.filter(linha => linha !== null);
-    if (!linhas.length || validas.length !== linhas.length) {
-      pendentes.push({ ...referencia, motivo: "Praça sem confirmação na revisão desta comanda." });
-      continue;
-    }
-    for (const { praca, item } of validas) {
+    const conciliado = teknisa && !teknisa.retido && CLASSES_COM_ITENS_CONCILIADOS.has(classe)
+      && gestor.itens_alterados === 0 && gestor.itens_cancelados === 0 ? teknisa : null;
+    const pracas = conciliado ? lerPracas(conciliado) : null;
+    const linhas = conciliado?.itens.map((item, posicao) => ({ item, praca: pracas?.[posicao] ?? null })) ?? [];
+    const codigosDeOpcao = new Set(gestor.itens.flatMap(item => item.opcoes.map(opcao => opcao.codigo_externo)));
+    if (!gestor.itens.length) pendentes.push({ ...referencia, motivo: "A leitura do iFood não trouxe os itens." });
+    for (const item of gestor.itens) {
+      const descricao = `${item.quantidade}× ${item.nome}`;
+      const complementos = item.opcoes.map(opcao => `${opcao.quantidade}× ${opcao.nome}`);
+      const codigo = item.codigo_externo;
+      const nativas = codigo === null ? [] : linhas.filter(linha => linha.item.codigo_arvore === codigo);
+      const praca = nativas[0]?.praca;
+      const quantidadeGestor = gestor.itens.filter(outra => outra.codigo_externo === codigo).reduce((soma, outra) => soma + outra.quantidade, 0);
+      const quantidadeNativa = nativas.reduce((soma, linha) => soma + (linha.item.quantidade ?? 0), 0);
+      const conferirTexto = item.observacao !== null || nativas.some(linha => linha.item.observacoes?.length !== 0);
+      const observacaoSemVinculo = conciliado && (conciliado.reader_v3
+        ? item.observacao !== null && (classe === "observacao_nao_lida_pela_teknisa" || classe === "observacao_divergente")
+        : conferirTexto || conciliado.completude.observacoes !== "campos_de_texto_lidos");
+      if (!conciliado || observacaoSemVinculo || !praca || codigosDeOpcao.has(codigo) ||
+          quantidadeNativa !== quantidadeGestor || nativas.some(linha => linha.praca !== praca)) {
+        const motivo = !conciliado ? "Conferir a comanda no caixa."
+          : observacaoSemVinculo ? "Conferir as observações dos itens na comanda."
+          : "Praça sem confirmação na revisão desta comanda.";
+        pendentes.push({ ...referencia, descricao, motivo, ...(complementos.length ? { complementos } : {}) });
+        continue;
+      }
       const grupo = grupos.get(praca) ?? [];
-      grupo.push(item);
+      grupo.push({ ...referencia, descricao, conferir_observacao: conferirTexto || conciliado.observacoes_do_pedido?.length !== 0 });
       grupos.set(praca, grupo);
+      if (complementos.length) {
+        pendentes.push({ ...referencia, descricao: `Complementos de ${item.nome}`, motivo: "Conferir na comanda.", complementos });
+      }
     }
   }
   return {

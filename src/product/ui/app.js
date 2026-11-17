@@ -380,10 +380,10 @@ function ligarPedidosDoCopiloto(alvo, api, geracao) {
       relendo = false;
     }
     if (geracao !== estado.geracao || html === ultimo) return;
-    const abertos = new Set([...bloco.querySelectorAll("details[open]")].map(d => d.id));
+    const dobras = new Map([...bloco.querySelectorAll("details")].map(d => [d.id, d.open]));
     bloco.innerHTML = html;
     ultimo = html;
-    for (const dobra of bloco.querySelectorAll("details")) dobra.open = abertos.has(dobra.id);
+    for (const dobra of bloco.querySelectorAll("details")) dobra.open = dobras.get(dobra.id) ?? dobra.open;
   }, 15000);
 }
 
@@ -441,7 +441,8 @@ async function desenhar(rota, opcoes = {}) {
     const pedidosIfood = rota === "/copiloto" && vm.operacao_ifood
       ? `<div class="org" data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>`
       : "";
-    alvo.innerHTML = s.tela(vm) + pedidosIfood + tata;
+    const tela = s.tela(vm);
+    alvo.innerHTML = vm.operacao_ifood?.previa_por_praca ? pedidosIfood + tela : tela + pedidosIfood + tata;
     ligarPedidosDoCopiloto(alvo, api, geracao);
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);

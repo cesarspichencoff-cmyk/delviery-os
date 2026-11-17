@@ -16,7 +16,7 @@ import { lerPracasDaRevisao, type PedidoReal } from "./leitura/pedidos-reais-do-
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
 
 let n = 0;
-const TOTAL = 18;
+const TOTAL = 20;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -253,6 +253,29 @@ ok("G16 praça depende da revisão e da linha exatas do Reader", () => {
   writeFileSync(caminhoDecisao, JSON.stringify(decisao));
   assert.deepEqual(lerPracasDaRevisao(raizR, p), ["enrolados_quentes"]);
   assert.equal(lerPracasDaRevisao(raizR, { ...p, revisao: "0".repeat(64) }), null);
+  const mista = { ...p, itens: [...p.itens, { ...p.itens[0]!, indice: 2 }] };
+  const linhaRetida = { ...decisao.items[0]!, item_index: 2,
+    classification: { station: "enrolados_quentes", review_required: true } };
+  writeFileSync(caminhoDecisao, JSON.stringify({ ...decisao, items: [...decisao.items, linhaRetida] }));
+  assert.deepEqual(lerPracasDaRevisao(raizR, mista), ["enrolados_quentes", null]);
+  writeFileSync(caminhoDecisao, JSON.stringify(decisao));
+});
+
+ok("G20 prévia preserva o item comprovado e lista o complemento e o item pendente", () => {
+  if (g.estado !== "lido") throw Error("fixture do Gestor");
+  const base = g.pedidos.find(p => p.codigo_curto === "2222")!;
+  const segundo = { codigo_externo: "2000000002", nome: "Temaki", quantidade: 2, observacao: null, opcoes: [] };
+  const gestor = { ...g, pedidos: [{ ...base,
+    eventos: { PLACED: iso(25), CONFIRMED: iso(24) }, itens: [...base.itens, segundo] }] };
+  const teknisa = pr("2222", 24, [{ arv: "2000000003", q: 1 }, { arv: "2000000002", q: 2 }]);
+  const vm = operacaoDoIfoodVM(gestor, { estado: "lido", pedidos: [teknisa], lido_em: iso(0),
+    politica: { versao: null, valida: false }, fora_do_escopo: 0, invalidos: 0, bytes_lidos: 0, duracao_ms: 0 }, new Date(AGORA), false,
+    () => ["montagem_outros", null]);
+  assert.ok(vm.disponivel && vm.previa_por_praca);
+  assert.equal(vm.previa_por_praca.grupos[0]?.itens[0]?.descricao, "1× Poke");
+  assert.deepEqual(vm.previa_por_praca.pendentes.map(p => [p.descricao, p.complementos]), [
+    ["Complementos de Poke", ["1× Molho tare"]], ["2× Temaki", undefined],
+  ]);
 });
 void (async () => {
   const raizProjeto = process.cwd();
@@ -298,6 +321,14 @@ void (async () => {
     ok("G18 observação de item sem ligação exata permanece pendente no Reader V2", () => {
       assert.ok(v2.operacao_ifood.previa_por_praca.pendentes.some((p: { codigo: string; motivo: string }) =>
         p.codigo === "1111" && p.motivo.includes("observações dos itens")));
+    });
+    ok("G21 todos os itens em preparo aparecem na praça ou em A conferir", () => {
+      const previa = v2.operacao_ifood.previa_por_praca;
+      const exibidos = [...previa.grupos.flatMap((p: any) => p.itens), ...previa.pendentes]
+        .map((i: any) => [i.codigo, i.descricao]).sort();
+      assert.deepEqual(exibidos, [
+        ["1111", "1× Temaki"], ["1111", "2× Combinado Salmao"], ["3333", "1× Uramaki"], ["4444", "3× Hot roll"],
+      ]);
     });
     const v3 = join(raizR, "v3");
     mkdirSync(v3);

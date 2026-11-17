@@ -176,7 +176,7 @@ function nomesDaDecisao(raiz: string, nomeDoEvento: string): Map<string, string>
 }
 
 /** Prévia da decisão do motor para esta revisão exata, sem inferir praça de um SKU solto. */
-export function lerPracasDaRevisao(raiz: string, pedido: PedidoReal): readonly PracaId[] | null {
+export function lerPracasDaRevisao(raiz: string, pedido: PedidoReal): readonly (PracaId | null)[] | null {
   const [unidade, loja, venda, comanda, extra] = pedido.chave.split("|");
   if (!isAbsolute(raiz) || unidade !== "0001" || loja !== "01" || !venda || !comanda || extra !== undefined ||
       pedido.origem !== "DLV_IFO" || pedido.retido || !/^[a-f0-9]{64}$/.test(pedido.revisao) ||
@@ -197,21 +197,24 @@ export function lerPracasDaRevisao(raiz: string, pedido: PedidoReal): readonly P
         linhas.has(d.item_index)) return null;
     linhas.set(d.item_index, d);
   }
-  const pracas: PracaId[] = [];
   const vistos = new Set<number>();
+  const pracas: (PracaId | null)[] = [];
   for (const item of pedido.itens) {
     const linha = linhas.get(item.indice);
-    if (!linha || vistos.has(item.indice) || linha.CDPRODUTO !== item.codigo || item.quantidade === null ||
+    if (!linha || vistos.has(item.indice)) return null;
+    vistos.add(item.indice);
+    if (linha.CDPRODUTO !== item.codigo || item.quantidade === null ||
         linha.quantity !== item.quantidade || typeof linha.canonical_code !== "string" ||
         item.codigo_arvore === null || linha.canonical_code.replaceAll(".", "") !== item.codigo_arvore ||
         !texto(linha.classification_source, 120) || !objeto(linha.classification) ||
-        linha.classification.review_required !== false) return null;
+        linha.classification.review_required !== false) {
+      pracas.push(null);
+      continue;
+    }
     const praca = PRACAS.find(p => p.id === (linha.classification as Record<string, unknown>).station);
-    if (!praca) return null;
-    vistos.add(item.indice);
-    pracas.push(praca.id);
+    pracas.push(praca?.id ?? null);
   }
-  return pracas;
+  return pracas.some(praca => praca !== null) ? pracas : null;
 }
 
 /**
