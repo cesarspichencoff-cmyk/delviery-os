@@ -6,8 +6,8 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-11-17",
-    "state_basis": "c3bd13787068f8131795f68270f2ad47e09cf2a0",
-    "_revalidacao_previa_itaim_2026_11_17": "Previa somente leitura por revisao exata da comanda, com aviso para conferir observacao. Integracao Gestor 18/18 e Home 51/51 na bancada. Ensaio isolado no Itaim reprocessou 45 pedidos, agrupou 42 linhas em sete pracas e manteve 18 pedidos a conferir. A confirmacao com pedido em preparo no fluxo do turno e a ativacao no endereco em uso seguem pendentes.",
+    "state_basis": "8f1ec2172669de7ad973db4ed0da0299cf294af1",
+    "_revalidacao_previa_itaim_2026_11_17": "Previa do Itaim ativada no endereco privado do iPhone. A avaliacao por linha preserva a identidade exata da revisao. Na comparacao do turno, 35 itens em preparo: 26 por praca e 9 a conferir, ante 17 por praca. A primeira leitura apos a troca mostrou 48 de 48 itens, sendo 26 por praca e 22 a conferir. Gestor 20/20 e Reader 15/15 na bancada. Praca dos itens a conferir e visualizacao no iPhone apos a troca ainda sem confirmacao.",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
