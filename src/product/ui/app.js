@@ -38,6 +38,7 @@ const estado = {
   pollingPedidos: null,
   /** O selo do shell quando a tela nao traz leitura do servidor (de /api/health). */
   molduraPadrao: [],
+  faixaPadrao: "",
   /** Cada desenho incrementa; uma releitura que volta depois de outro desenho e descartada. */
   geracao: 0,
   relendo: false,
@@ -172,6 +173,13 @@ const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sinteti
 function desenharMoldura(rota, vm) {
   const l = rota === "/entregas" && vm && vm.leitura && vm.leitura.disponivel === true ? vm.leitura : null;
   const sel = $("#seletorUnidade");
+  $("#faixaAmbiente").textContent = vm?.home_operacional ? "ITAIM · LEITURA OPERACIONAL" : estado.faixaPadrao;
+  if (vm?.home_operacional) {
+    $("#conexaoShell").innerHTML = selos([{ estado: vm.operacao_ifood?.disponivel ? "parcial" : "indisponivel" }]);
+    sel.hidden = true;
+    $("#unidadeAtiva").textContent = "Unidade da leitura · Itaim";
+    return;
+  }
   // Copiloto mistura proposta de demonstracao com leitura PARCIAL do servidor.
   // Nunca rotular essa composicao "SOMENTE DEMONSTRACAO" quando ha fatos lidos.
   const compartilhada = rota === "/copiloto" ? vm?.entregas_observadas : null;
@@ -438,11 +446,14 @@ async function desenhar(rota, opcoes = {}) {
     const tata = rota === "/operacao-viva" ? await blocoTataSomenteLeitura() : "";
     // Uma resposta de rota/unidade anterior nao pode substituir o contexto atual.
     if (geracao !== estado.geracao) return;
-    const pedidosIfood = rota === "/copiloto" && vm.operacao_ifood
-      ? `<div class="org" data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>`
-      : "";
-    const tela = s.tela(vm);
-    alvo.innerHTML = vm.operacao_ifood?.previa_por_praca ? pedidosIfood + tela : tela + pedidosIfood + tata;
+    if (vm.home_operacional) {
+      alvo.innerHTML = telaHome({ ...vm.home_operacional, operacao_ifood: vm.operacao_ifood,
+        rota_home: "/copiloto?unidade=ITAIM" });
+    } else {
+      const pedidosIfood = rota === "/copiloto" && vm.operacao_ifood
+        ? `<div class="org" data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : "";
+      alvo.innerHTML = s.tela(vm) + pedidosIfood + tata;
+    }
     ligarPedidosDoCopiloto(alvo, api, geracao);
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
@@ -526,7 +537,8 @@ async function iniciar() {
     estado.navegacao = navegacao;
     estado.unidade = navegacao.unidades[0] ? navegacao.unidades[0].unit_id : null;
 
-    $("#faixaAmbiente").textContent = saude.banner;
+    estado.faixaPadrao = saude.banner;
+    $("#faixaAmbiente").textContent = estado.faixaPadrao;
     estado.molduraPadrao = [{ estado: saude.demo ? "somente_demonstracao" : "real" }];
     $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
 

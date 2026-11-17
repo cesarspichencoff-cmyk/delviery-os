@@ -178,7 +178,9 @@ function nomesDaDecisao(raiz: string, nomeDoEvento: string): Map<string, string>
 // Praça confirmada por César em 12/11, PR #137. Vale apenas para a linha
 // comprovada da prévia do Itaim e quando a decisão não indicou outra praça.
 const PRACAS_CONFIRMADAS_ITAIM: ReadonlyMap<string, PracaId> = new Map([
+  ["9100500000", "duplas"], // Carpaccio de Salmão Trufado
   ["9100505000", "enrolados_quentes"], // Tartar de Salmão
+  ["9150007000", "combinados"], // Combinado Salmão/Atum 2 pessoas
 ]);
 
 /** Prévia da decisão do motor para esta revisão exata, sem inferir praça de um SKU solto. */

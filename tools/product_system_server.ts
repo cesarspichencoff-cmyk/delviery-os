@@ -816,6 +816,20 @@ export async function criarServidor(): Promise<http.Server> {
           if (!pedidosIfood) return json(res, 404, { erro: "pedidos_ifood_fora_do_escopo" });
           return json(res, 200, { operacao_ifood: pedidosIfood });
         }
+        if (previaItaim) {
+          // O endereço privado já distribuído usa a Home canônica com a leitura do Itaim.
+          // Nenhuma fixture nem payload do inspetor entra nesta resposta.
+          const demanda = lerDemandaDoGestor(dirDemandaGestor, agoraMs);
+          const demandaReal: DemandaDoGestor = "modo" in demanda && demanda.modo !== "real"
+            ? { estado: "nao_configurada" } : demanda;
+          void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata)
+            .then(reader => json(res, 200, {
+              home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null), aprofundamentos: [] },
+              operacao_ifood: pedidosIfood,
+            }))
+            .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
+          return;
+        }
         void Promise.all([
           lerHistorico(clientePlataforma, pronto.historico, unidade),
           lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id),

@@ -1776,6 +1776,27 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
  * palco, e o que a marca e a linha da esquerda, nao um retangulo aceso.
  */
 
+.org-previa__itens {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+}
+
+.org-previa__itens > li {
+  display: grid;
+  gap: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.org-previa__nota {
+  border-inline-start: 2px solid currentColor;
+  font-size: 0.875rem;
+  padding-inline-start: 0.65rem;
+  white-space: pre-wrap;
+}
+
 .org-dobra {
   border-left: 1px solid var(--org-linha);
   background: var(--org-palco-fundo);

@@ -16,7 +16,7 @@ import { lerPracasDaRevisao, type PedidoReal } from "./leitura/pedidos-reais-do-
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
 
 let n = 0;
-const TOTAL = 22;
+const TOTAL = 24;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -315,9 +315,23 @@ ok("G20 prévia preserva o item comprovado e lista o complemento e o item penden
     () => ["montagem_outros", null]);
   assert.ok(vm.disponivel && vm.previa_por_praca);
   assert.equal(vm.previa_por_praca.grupos[0]?.itens[0]?.descricao, "1× Poke");
-  assert.deepEqual(vm.previa_por_praca.pendentes.map(p => [p.descricao, p.complementos]), [
-    ["Complementos de Poke", ["1× Molho tare"]], ["2× Temaki", undefined],
-  ]);
+  assert.deepEqual(vm.previa_por_praca.grupos[0]?.itens[0]?.opcoes, ["1× Molho tare"]);
+  assert.deepEqual(vm.previa_por_praca.pendentes.map(p => p.descricao), ["2× Temaki"]);
+});
+
+ok("G25 a praça aceita a observação ligada à linha e preserva a origem dos textos diferentes", () => {
+  if (g.estado !== "lido") throw Error("fixture do Gestor");
+  const base = g.pedidos.find(p => p.codigo_curto === "4444")!;
+  const gestor = { ...g, pedidos: [{ ...base, itens: [{ ...base.itens[0]!, observacao: "Sem molho" }] }] };
+  const teknisa = pr("4444", 39, [{ arv: "2000000005", q: 3, obs: ["Sem pimenta"] }]);
+  const vm = operacaoDoIfoodVM(gestor, { estado: "lido", pedidos: [teknisa], lido_em: iso(0),
+    politica: { versao: null, valida: false }, fora_do_escopo: 0, invalidos: 0, bytes_lidos: 0, duracao_ms: 0 }, new Date(AGORA), false,
+    () => ["enrolados_quentes"]);
+  assert.ok(vm.disponivel && vm.previa_por_praca);
+  const item = vm.previa_por_praca.grupos[0]?.itens[0];
+  assert.deepEqual(item?.observacoes, [{ fonte: "iFood", texto: "Sem molho" }, { fonte: "Teknisa", texto: "Sem pimenta" }]);
+  assert.equal(item?.conferir_observacao, true);
+  assert.equal(vm.previa_por_praca.pendentes.length, 0);
 });
 void (async () => {
   const raizProjeto = process.cwd();
@@ -356,13 +370,23 @@ void (async () => {
       const item = previa.grupos[0].itens[0];
       assert.equal(item.codigo, "4444");
       assert.equal(item.descricao, "3× Hot roll");
-      assert.equal(item.conferir_observacao, true);
+      assert.equal(item.conferir_observacao, false);
+      assert.ok(previa.notas_gerais.some((nota: { codigo: string }) => nota.codigo === "4444"));
       assert.doesNotMatch(JSON.stringify(v2), /FICTICIO_OBSERVACAO_CABECALHO/);
       assert.equal(fora.status, 404);
     });
-    ok("G18 observação de item sem ligação exata permanece pendente no Reader V2", () => {
-      assert.ok(v2.operacao_ifood.previa_por_praca.pendentes.some((p: { codigo: string; motivo: string }) =>
-        p.codigo === "1111" && p.motivo.includes("observações dos itens")));
+    ok("G18 observação do Gestor aparece no próprio item mesmo sem praça confirmada", () => {
+      const nota = v2.operacao_ifood.previa_por_praca.pendentes.find((p: { codigo: string; descricao: string }) =>
+        p.codigo === "1111" && p.descricao === "2× Combinado Salmao");
+      assert.deepEqual(nota?.observacoes, [{ fonte: "iFood", texto: "sem cebolinha" }]);
+    });
+    const painel = await (await fetch(copilotoV2 + "?unit_id=ITAIM")).json();
+    ok("G24 endereço privado do Itaim recebe a Home viva sem a demonstração do inspetor", () => {
+      assert.equal(painel.home_operacional.demonstracao, false);
+      assert.equal(painel.home_operacional.foco, null);
+      assert.ok(painel.home_operacional.ambientes.length > 0);
+      assert.ok(painel.operacao_ifood.previa_por_praca);
+      assert.equal(painel.celulas_operacionais, undefined);
     });
     ok("G21 todos os itens em preparo aparecem na praça ou em A conferir", () => {
       const previa = v2.operacao_ifood.previa_por_praca;

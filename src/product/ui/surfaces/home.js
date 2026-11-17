@@ -115,7 +115,8 @@ function topo(vm) {
   // A etiqueta da demonstracao nao pode afirmar telemetria operacional viva.
   // Leitura parcial nao e falha tecnica nem "ao vivo": e incompleta, e fala a
   // linguagem do incompleto (neutro tracejado), com a hora do que foi lido.
-  const vivo = vm.leitura_parcial_de_pedidos ? "parcial" : vm.degradado ? "falha" :
+  const gestor = vm.rota_home && vm.operacao_ifood?.disponivel;
+  const vivo = gestor || vm.leitura_parcial_de_pedidos ? "parcial" : vm.degradado ? "falha" :
     vm.demonstracao ? "simulado" : vm.sem_leitura_operacional ? "sem-fonte" : "vivo";
   return `<header class="org-topo">
     <span class="org-topo__marca">DeliveryOS</span>
@@ -123,7 +124,7 @@ function topo(vm) {
     <span class="org-topo__vida" data-estado="${vivo}">
       <span class="org-topo__ponto" aria-hidden="true"></span>
       <span class="org-topo__nota">${
-        vm.leitura_parcial_de_pedidos
+        gestor ? "Pedidos do iFood · leitura do Gestor" : vm.leitura_parcial_de_pedidos
           ? `${vm.demonstracao ? "cenario simulado · " : ""}leitura parcial${h ? ` · Gestor lido as ${esc(h)}` : ""}`
           : vm.degradado
           ? `leitura degradada${h ? ` · ultima leitura ${esc(h)}` : ""}`
@@ -303,10 +304,10 @@ function subarea(s) {
 function area(a, vm) {
   const ausencia = especieDeAusencia(a);
   const forma = FORMA[a.id] || "pilula";
-  const href = `?${new URLSearchParams({
+  const href = vm.rota_home ? `#${vm.rota_home}&area=${encodeURIComponent(a.id)}` : `?${new URLSearchParams({
     ...(vm.cena ? { cena: vm.cena } : {}),
     area: a.id,
-  }).toString()}#/`;
+  }).toString()}#${vm.rota_home ?? "/"}`;
 
   // A causadora vem PRIMEIRO, e a troca acontece no DOM — nao com `order` no
   // CSS, que separaria a ordem vista da ordem lida por teclado e por leitor de
@@ -530,7 +531,7 @@ function aproximacao(vm, id) {
   const a = vm.ambientes.find((x) => x.id === id);
   if (!a) return "";
   const ausencia = especieDeAusencia(a);
-  const volta = `?${new URLSearchParams(vm.cena ? { cena: vm.cena } : {}).toString()}#/`;
+  const volta = vm.rota_home ? `#${vm.rota_home}` : `?${new URLSearchParams(vm.cena ? { cena: vm.cena } : {}).toString()}#/`;
 
   const entram = vm.ligacoes.filter((l) => l.para === id);
   const saem = vm.ligacoes.filter((l) => l.de === id);
@@ -885,7 +886,7 @@ function resto(vm) {
           criticos > 0 ? `, ${criticos} em pressao` : ""
         }`,
     `${semFonte} do catalogo sem fonte`,
-    vm.sem_leitura_operacional ? "pedidos sem fonte confiavel" :
+    vm.sem_leitura_operacional ? (vm.rota_home ? "carga operacional sem medição" : "pedidos sem fonte confiavel") :
       degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 
@@ -1056,19 +1057,27 @@ function pedidoDoIfood(p) {
 
 function previaDasPracas(previa) {
   if (!previa) return "";
+  const linha = i => `<li>
+    <span class="org-sinal__nome">${esc(i.descricao ?? "Pedido")}</span>
+    <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
+    ${i.opcoes?.length ? `<span class="org-sinal__resumo">Opções · ${esc(i.opcoes.join(" · "))}</span>` : ""}
+    ${(i.observacoes ?? []).map(n => `<span class="org-previa__nota"><strong>${esc(n.fonte)}</strong> ${esc(n.texto)}</span>`).join("")}
+    ${i.conferir_observacao ? '<span class="org-sinal__resumo">Conferir a observação com a Teknisa.</span>' : ""}
+  </li>`;
   const grupos = previa.grupos.map(p => `<li class="org-sinal">
     <span class="org-sinal__nome">${esc(p.rotulo)}</span>
-    <ul class="org-ctx__sinais">${p.itens.map(i => `<li>${esc(i.hora)} · ${esc(i.codigo)} · ${esc(i.descricao)}${i.conferir_observacao ? " · Conferir observação na comanda" : ""}</li>`).join("")}</ul>
+    <ul class="org-previa__itens">${p.itens.map(linha).join("")}</ul>
   </li>`).join("");
   const pendentes = previa.pendentes.length ? `<li class="org-sinal">
     <span class="org-sinal__nome">A conferir</span>
-    <ul class="org-ctx__sinais">${previa.pendentes.map(p => `<li>${esc(p.hora)} · ${esc(p.codigo)}${p.descricao ? ` · ${esc(p.descricao)}` : ""} · ${esc(p.motivo)}${p.complementos?.length
-      ? `<ul class="org-ctx__sinais">${p.complementos.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}</li>`).join("")}</ul>
+    <ul class="org-previa__itens">${previa.pendentes.map(linha).join("")}</ul>
   </li>` : "";
+  const notasGerais = previa.notas_gerais?.length ? dobra("ifood-notas-gerais", "Notas gerais no caixa",
+    `<p class="org-resto__nota">Estas notas pertencem à comanda inteira.</p><ul class="org-ctx__sinais">${previa.notas_gerais.map(n =>
+      `<li>${esc(n.hora)} · #${esc(n.codigo)}</li>`).join("")}</ul>`) : "";
   return dobra("ifood-previa-pracas", "Prévia por praça",
-    '<p class="org-resto__nota">Confira a distribuição e as observações nas comandas do caixa.</p>' +
     (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
-      : '<p class="org-resto__nota">Nenhum pedido em preparo nesta leitura.</p>'), true);
+      : '<p class="org-resto__nota">Nenhum pedido em preparo nesta leitura.</p>') + notasGerais, true);
 }
 
 export function operacaoDoIfood(o) {
@@ -1155,7 +1164,8 @@ function pedidosDaTeknisa(t) {
  */
 function areaAmpliada(vm) {
   if (typeof window === "undefined" || !window.location) return null;
-  const id = new URLSearchParams(window.location.search).get("area");
+  const consulta = vm.rota_home ? window.location.hash.split("?")[1] : window.location.search;
+  const id = new URLSearchParams(consulta).get("area");
   return id && vm.ambientes.some((a) => a.id === id) ? id : null;
 }
 
@@ -1199,7 +1209,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
-    ${operacaoDoIfood(vm.operacao_ifood)}
+    ${vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood)}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}

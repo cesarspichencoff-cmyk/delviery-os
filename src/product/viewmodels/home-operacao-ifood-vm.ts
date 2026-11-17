@@ -53,15 +53,19 @@ export interface PedidoIfoodDaHome {
   readonly leitor?: { readonly observado_em: string; readonly aberto_em_local: string; readonly revisao: string; readonly pedido: PedidoDaHome };
 }
 export interface AtencaoDaHome { readonly codigo: string; readonly hora: string; readonly motivo: string }
+interface ObservacaoDaPrevia { readonly fonte: "iFood" | "Teknisa"; readonly texto: string }
 interface LinhaDaPrevia {
   readonly codigo: string;
   readonly hora: string;
   readonly descricao: string;
   readonly conferir_observacao: boolean;
+  readonly observacoes: readonly ObservacaoDaPrevia[];
+  readonly opcoes: readonly string[];
 }
 interface PreviaPorPraca {
   readonly grupos: readonly { readonly rotulo: string; readonly itens: readonly LinhaDaPrevia[] }[];
-  readonly pendentes: readonly (AtencaoDaHome & { readonly descricao?: string; readonly complementos?: readonly string[] })[];
+  readonly pendentes: readonly (AtencaoDaHome & Partial<Pick<LinhaDaPrevia, "descricao" | "observacoes" | "opcoes" | "conferir_observacao">>)[];
+  readonly notas_gerais: readonly { readonly codigo: string; readonly hora: string }[];
 }
 type LerPracas = (pedido: PedidoReal) => readonly (PracaId | null)[] | null;
 
@@ -128,6 +132,7 @@ function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boo
 function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas): PreviaPorPraca {
   const grupos = new Map<PracaId, LinhaDaPrevia[]>();
   const pendentes: PreviaPorPraca["pendentes"][number][] = [];
+  const notasGerais: { codigo: string; hora: string }[] = [];
   for (const { gestor, teknisa, classe } of pares) {
     if (gestor.teste || !gestor.eventos.CONFIRMED || etapaDe(gestor) !== "em preparo") continue;
     const referencia = { codigo: gestor.codigo_curto, hora: horaLocal(placedDe(gestor)) };
@@ -136,33 +141,37 @@ function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas
     const pracas = conciliado ? lerPracas(conciliado) : null;
     const linhas = conciliado?.itens.map((item, posicao) => ({ item, praca: pracas?.[posicao] ?? null })) ?? [];
     const codigosDeOpcao = new Set(gestor.itens.flatMap(item => item.opcoes.map(opcao => opcao.codigo_externo)));
+    if (conciliado?.observacoes_do_pedido?.length) notasGerais.push(referencia);
     if (!gestor.itens.length) pendentes.push({ ...referencia, motivo: "A leitura do iFood não trouxe os itens." });
     for (const item of gestor.itens) {
       const descricao = `${item.quantidade}× ${item.nome}`;
-      const complementos = item.opcoes.map(opcao => `${opcao.quantidade}× ${opcao.nome}`);
+      const opcoes = item.opcoes.map(opcao => `${opcao.quantidade}× ${opcao.nome}`);
       const codigo = item.codigo_externo;
       const nativas = codigo === null ? [] : linhas.filter(linha => linha.item.codigo_arvore === codigo);
       const praca = nativas[0]?.praca;
-      const quantidadeGestor = gestor.itens.filter(outra => outra.codigo_externo === codigo).reduce((soma, outra) => soma + outra.quantidade, 0);
+      const linhasGestor = gestor.itens.filter(outra => outra.codigo_externo === codigo);
+      const quantidadeGestor = linhasGestor.reduce((soma, outra) => soma + outra.quantidade, 0);
       const quantidadeNativa = nativas.reduce((soma, linha) => soma + (linha.item.quantidade ?? 0), 0);
-      const conferirTexto = item.observacao !== null || nativas.some(linha => linha.item.observacoes?.length !== 0);
-      const observacaoSemVinculo = conciliado && (conciliado.reader_v3
-        ? item.observacao !== null && (classe === "observacao_nao_lida_pela_teknisa" || classe === "observacao_divergente")
-        : conferirTexto || conciliado.completude.observacoes !== "campos_de_texto_lidos");
-      if (!conciliado || observacaoSemVinculo || !praca || codigosDeOpcao.has(codigo) ||
+      const notasNativas = nativas.flatMap(linha => linha.item.observacoes ?? []);
+      const notasLigadas = conciliado?.completude.observacoes === "campos_de_texto_lidos"
+        && linhasGestor.length === 1 && nativas.length === 1 && quantidadeNativa === quantidadeGestor && !codigosDeOpcao.has(codigo);
+      const observacoes: ObservacaoDaPrevia[] = item.observacao ? [{ fonte: "iFood", texto: item.observacao }] : [];
+      if (notasLigadas) for (const texto of new Set(notasNativas)) {
+        if (texto !== item.observacao) observacoes.push({ fonte: "Teknisa", texto });
+      }
+      const conferir_observacao = (notasNativas.length > 0 && !notasLigadas)
+        || (item.observacao !== null && (classe === "observacao_nao_lida_pela_teknisa" || classe === "observacao_divergente"));
+      const linha = { ...referencia, descricao, observacoes, opcoes, conferir_observacao };
+      if (!conciliado || !praca || codigosDeOpcao.has(codigo) ||
           quantidadeNativa !== quantidadeGestor || nativas.some(linha => linha.praca !== praca)) {
         const motivo = !conciliado ? "Conferir a comanda no caixa."
-          : observacaoSemVinculo ? "Conferir as observações dos itens na comanda."
           : "Praça sem confirmação na revisão desta comanda.";
-        pendentes.push({ ...referencia, descricao, motivo, ...(complementos.length ? { complementos } : {}) });
+        pendentes.push({ ...linha, motivo });
         continue;
       }
       const grupo = grupos.get(praca) ?? [];
-      grupo.push({ ...referencia, descricao, conferir_observacao: conferirTexto || conciliado.observacoes_do_pedido?.length !== 0 });
+      grupo.push(linha);
       grupos.set(praca, grupo);
-      if (complementos.length) {
-        pendentes.push({ ...referencia, descricao: `Complementos de ${item.nome}`, motivo: "Conferir na comanda.", complementos });
-      }
     }
   }
   return {
@@ -171,6 +180,7 @@ function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas
       return itens ? [{ rotulo: p.rotulo, itens }] : [];
     }),
     pendentes,
+    notas_gerais: notasGerais,
   };
 }
 
