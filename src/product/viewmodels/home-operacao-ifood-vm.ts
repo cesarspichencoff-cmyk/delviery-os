@@ -10,8 +10,9 @@
 import { createHash } from "node:crypto";
 import { pedidoReaderVM, type PedidoDaHome } from "./home-pedidos-reader-vm";
 import type { PedidosDoGestorLocal, PedidoDoGestor } from "../../platform/leitura/pedidos-do-gestor-local";
-import type { PedidosReaisDoReader } from "../../platform/leitura/pedidos-reais-do-reader";
+import type { PedidoReal, PedidosReaisDoReader } from "../../platform/leitura/pedidos-reais-do-reader";
 import { conciliarGestorTeknisa, placedDe, type ClasseDoPar, type ParDaConciliacao } from "../../platform/leitura/conciliacao-gestor-teknisa";
+import { PRACAS, type PracaId } from "./areas";
 
 export const LIMITE_DE_CONCLUIDOS = 15;
 /** O Gestor grava a cada mudanca; sem escrita ha mais que isto, a leitura e dita velha. */
@@ -52,6 +53,18 @@ export interface PedidoIfoodDaHome {
   readonly leitor?: { readonly observado_em: string; readonly aberto_em_local: string; readonly revisao: string; readonly pedido: PedidoDaHome };
 }
 export interface AtencaoDaHome { readonly codigo: string; readonly hora: string; readonly motivo: string }
+interface LinhaDaPrevia {
+  readonly codigo: string;
+  readonly hora: string;
+  readonly descricao: string;
+  readonly conferir_observacao: boolean;
+}
+interface PreviaPorPraca {
+  readonly grupos: readonly { readonly rotulo: string; readonly itens: readonly LinhaDaPrevia[] }[];
+  readonly pendentes: readonly AtencaoDaHome[];
+}
+type LerPracas = (pedido: PedidoReal) => readonly PracaId[] | null;
+
 export type OperacaoDoIfoodVM =
   | { readonly disponivel: false; readonly titulo: string; readonly explicacao: string }
   | {
@@ -66,6 +79,7 @@ export type OperacaoDoIfoodVM =
       readonly conciliacao: Readonly<Record<string, number>>;
       readonly janela: string | null;
       readonly limitacoes: readonly string[];
+      readonly previa_por_praca?: PreviaPorPraca;
     };
 
 const horaLocal = (ms: number) => new Date(ms - 3 * 3600_000).toISOString().slice(11, 16);
@@ -98,7 +112,58 @@ function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boo
   };
 }
 
-export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: PedidosReaisDoReader, agora: Date, incluirRevisoes = false): OperacaoDoIfoodVM {
+function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas): PreviaPorPraca {
+  const grupos = new Map<PracaId, LinhaDaPrevia[]>();
+  const pendentes: AtencaoDaHome[] = [];
+  for (const { gestor, teknisa, classe } of pares) {
+    if (gestor.teste || !gestor.eventos.CONFIRMED || etapaDe(gestor) !== "em preparo") continue;
+    const referencia = { codigo: gestor.codigo_curto, hora: horaLocal(placedDe(gestor)) };
+    if (!teknisa || teknisa.retido || classe !== "correspondencia_comprovada" ||
+        gestor.itens_alterados > 0 || gestor.itens_cancelados > 0 ||
+        gestor.itens.some(i => i.opcoes.length > 0) ||
+        teknisa.itens.some(i => i.combinado || i.componentes?.length || i.complementos?.length)) {
+      pendentes.push({ ...referencia, motivo: "Conferir a comanda reconciliada, os itens e os complementos." });
+      continue;
+    }
+    if (!teknisa.reader_v3 && (teknisa.completude.observacoes !== "campos_de_texto_lidos" ||
+        teknisa.itens.some(i => i.observacoes?.length !== 0) || gestor.itens.some(i => i.observacao !== null))) {
+      pendentes.push({ ...referencia, motivo: "Conferir as observações dos itens na comanda." });
+      continue;
+    }
+    const pracas = lerPracas(teknisa);
+    const nomes = new Map(gestor.itens.map(i => [i.codigo_externo, i.nome]));
+    const linhas = teknisa.itens.map((i, index) => {
+      const nome = nomes.get(i.codigo_arvore);
+      const praca = pracas?.[index];
+      if (!praca || !nome || !Number.isSafeInteger(i.quantidade) || i.quantidade! < 1) return null;
+      return {
+        praca, item: {
+          ...referencia, descricao: `${i.quantidade}× ${nome}`,
+          conferir_observacao: teknisa.observacoes_do_pedido?.length !== 0 || i.observacoes?.length !== 0,
+        },
+      };
+    });
+    const validas = linhas.filter(linha => linha !== null);
+    if (!linhas.length || validas.length !== linhas.length) {
+      pendentes.push({ ...referencia, motivo: "Praça sem confirmação na revisão desta comanda." });
+      continue;
+    }
+    for (const { praca, item } of validas) {
+      const grupo = grupos.get(praca) ?? [];
+      grupo.push(item);
+      grupos.set(praca, grupo);
+    }
+  }
+  return {
+    grupos: PRACAS.flatMap(p => {
+      const itens = grupos.get(p.id);
+      return itens ? [{ rotulo: p.rotulo, itens }] : [];
+    }),
+    pendentes,
+  };
+}
+
+export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: PedidosReaisDoReader, agora: Date, incluirRevisoes = false, lerPracas?: LerPracas): OperacaoDoIfoodVM {
   if (gestor.estado === "nao_configurado")
     return { disponivel: false, titulo: "Gestor do iFood nao configurado nesta instancia",
       explicacao: "Isto nao significa Gestor fechado na loja: esta instancia nao foi apontada para ele." };
@@ -127,14 +192,16 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   for (const p of todos) if (p.etapa === "cancelado" && p.teknisa.estado !== null && p.minutos <= 180) atencao.push({ codigo: p.codigo, hora: p.hora, motivo: `cancelado no iFood; Teknisa mostra estado ${p.teknisa.estado}` });
   const conta = (f: (p: PedidoIfoodDaHome) => boolean) => todos.filter(f).length;
   const gravadoHa = gestor.gravado_em ? Math.max(0, Math.round((t - Date.parse(gestor.gravado_em)) / 60_000)) : null;
+  const leituraVelha = gravadoHa === null || gravadoHa > GESTOR_VELHO_MIN;
   const n = ativos.length;
   return {
-    disponivel: true, lido_em: gestor.lido_em, gravado_ha_min: gravadoHa, leitura_velha: gravadoHa === null || gravadoHa > GESTOR_VELHO_MIN,
+    disponivel: true, lido_em: gestor.lido_em, gravado_ha_min: gravadoHa, leitura_velha: leituraVelha,
     titulo: n === 0 ? "Nenhum pedido em andamento no Gestor nesta leitura" : `${n} ${n === 1 ? "pedido" : "pedidos"} em andamento no iFood`,
     contagens: { no_gestor: todos.length, em_andamento: n, aguardando_aceite: conta((p) => p.etapa === "aguardando aceite"), em_preparo: conta((p) => p.etapa === "em preparo"),
       prontos: conta((p) => p.etapa.startsWith("pronto")), na_rua: conta((p) => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino"),
       concluidos: conta((p) => p.etapa === "concluido"), cancelados: conta((p) => p.etapa === "cancelado") },
     atencao, pedidos: [...ativos, ...concluidos], conciliacao: c.contagens,
+    ...(!leituraVelha && lerPracas ? { previa_por_praca: previaPorPraca(c.pares, lerPracas) } : {}),
     janela: c.janela ? `${horaLocal(Date.parse(c.janela.de))}–${horaLocal(Date.parse(c.janela.ate))}` : null,
     limitacoes: [
       "O Gestor guarda so os pedidos recentes (cerca de 25), nao o total do dia; a conciliacao vale so para essa janela.",

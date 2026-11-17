@@ -22,6 +22,7 @@
  */
 import { isAbsolute, join, resolve } from "node:path";
 import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { PRACAS, type PracaId } from "../../product/viewmodels/areas";
 
 const TETO_DE_ARQUIVO = 1_048_576;
 const TETO_TOTAL = 16 * 1024 * 1024;
@@ -172,6 +173,45 @@ function nomesDaDecisao(raiz: string, nomeDoEvento: string): Map<string, string>
     for (const it of d["items"] as unknown[])
       if (objeto(it) && texto(it["CDPRODUTO"], 40) && texto(it["product_name"], 120)) nomes.set(it["CDPRODUTO"], it["product_name"]);
   return nomes;
+}
+
+/** Prévia da decisão do motor para esta revisão exata, sem inferir praça de um SKU solto. */
+export function lerPracasDaRevisao(raiz: string, pedido: PedidoReal): readonly PracaId[] | null {
+  const [unidade, loja, venda, comanda, extra] = pedido.chave.split("|");
+  if (!isAbsolute(raiz) || unidade !== "0001" || loja !== "01" || !venda || !comanda || extra !== undefined ||
+      pedido.origem !== "DLV_IFO" || pedido.retido || !/^[a-f0-9]{64}$/.test(pedido.revisao) ||
+      pedido.itens.length < 1 || pedido.itens.length > 200) return null;
+  const nome = comanda.replace(/[^0-9A-Za-z_-]/g, "_");
+  const pasta = join(raiz, "state", "reader-shadow-decisions-v1");
+  const ler = (hash: string) => json(lerArquivo(join(pasta, `${nome}_${hash}.decision.json`), TETO_DE_ARQUIVO));
+  const decisao = ler(pedido.revisao) ?? ler(pedido.revisao.toUpperCase());
+  if (!objeto(decisao) || decisao.schema !== "deliveryos.live-shadow-decision.v1" ||
+      decisao.order_key !== pedido.chave || typeof decisao.snapshot_hash !== "string" ||
+      decisao.snapshot_hash.toLowerCase() !== pedido.revisao ||
+      !objeto(decisao.effects) || decisao.effects.print !== false ||
+      !Array.isArray(decisao.items) || decisao.items.length !== pedido.itens.length) return null;
+
+  const linhas = new Map<number, Record<string, unknown>>();
+  for (const d of decisao.items as unknown[]) {
+    if (!objeto(d) || typeof d.item_index !== "number" || !Number.isSafeInteger(d.item_index) ||
+        linhas.has(d.item_index)) return null;
+    linhas.set(d.item_index, d);
+  }
+  const pracas: PracaId[] = [];
+  const vistos = new Set<number>();
+  for (const item of pedido.itens) {
+    const linha = linhas.get(item.indice);
+    if (!linha || vistos.has(item.indice) || linha.CDPRODUTO !== item.codigo || item.quantidade === null ||
+        linha.quantity !== item.quantidade || typeof linha.canonical_code !== "string" ||
+        item.codigo_arvore === null || linha.canonical_code.replaceAll(".", "") !== item.codigo_arvore ||
+        !texto(linha.classification_source, 120) || !objeto(linha.classification) ||
+        linha.classification.review_required !== false) return null;
+    const praca = PRACAS.find(p => p.id === (linha.classification as Record<string, unknown>).station);
+    if (!praca) return null;
+    vistos.add(item.indice);
+    pracas.push(praca.id);
+  }
+  return pracas;
 }
 
 /**

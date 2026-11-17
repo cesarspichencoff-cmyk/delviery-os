@@ -42,4 +42,18 @@ CAIXA_MOOCA (PC comercial do Itaim), **somente metadados de arquivos, sem SQL ou
 3. **Pronto físico**: uma classificação ou evento com campo `concluido` autodeclarado não atesta preparo terminado na bancada. Exigir fonte operacional identificada, autorização e prova de evento real; depois conferência/lacre e Entregas.
 4. **Home e campo**: só conectar à Home V3.3 depois dos gates de origem, classificação, frescor, conclusão física e segurança. `#/copiloto` é diagnóstico, não interface substituta.
 
+## Prévia por praça no Copiloto do Itaim
+
+Na instância de homologação, `DELIVERYOS_ITAIM_PREVIA_PRACAS=1`, unidade
+`ITAIM` e `TATA_READER_INSTALL_ROOT` absoluto habilitam a prévia em
+`/api/copiloto?unit_id=ITAIM`. A projeção lê somente o arquivo de decisão
+do motor existente. Confere chave, hash da revisão, índice da linha,
+identidade do produto, código canônico, quantidade e classificação. Se o
+V3 não tiver uma decisão para o próprio hash, a praça fica pendente.
+
+A observação do cabeçalho acrescenta um aviso para conferir a comanda.
+Divergência de item, complemento, observação de linha sem vínculo e
+revisão retida seguem para conferência. A prévia é uma leitura de apoio.
+Impressão e envio para Entregas exigem seus fluxos de autorização próprios.
+
 **Efeitos desta rodada:** criação de revisor e testes na PR #137, atualização de gate CI e este relatório. Metadados do PC comercial foram somente lidos. `SQL_WRITES=0`; `READER_RESTART=0`; `PRINT=0`; `DEPLOY=0`; `USER_ORDER_CAPTURE=0`; `NEW_COST=0`; `WORLD_PROVEN=NO`.

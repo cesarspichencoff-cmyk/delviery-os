@@ -1054,6 +1054,22 @@ function pedidoDoIfood(p) {
   </li>`;
 }
 
+function previaDasPracas(previa) {
+  if (!previa) return "";
+  const grupos = previa.grupos.map(p => `<li class="org-sinal">
+    <span class="org-sinal__nome">${esc(p.rotulo)}</span>
+    <ul class="org-ctx__sinais">${p.itens.map(i => `<li>${esc(i.hora)} · ${esc(i.codigo)} · ${esc(i.descricao)}${i.conferir_observacao ? " · Conferir observação na comanda" : ""}</li>`).join("")}</ul>
+  </li>`).join("");
+  const pendentes = previa.pendentes.length ? `<li class="org-sinal">
+    <span class="org-sinal__nome">A conferir</span>
+    <ul class="org-ctx__sinais">${previa.pendentes.map(p => `<li>${esc(p.hora)} · ${esc(p.codigo)} · ${esc(p.motivo)}</li>`).join("")}</ul>
+  </li>` : "";
+  return dobra("ifood-previa-pracas", "Prévia por praça",
+    '<p class="org-resto__nota">Confira a distribuição e as observações nas comandas do caixa.</p>' +
+    (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
+      : '<p class="org-resto__nota">Nenhum pedido em preparo nesta leitura.</p>'));
+}
+
 export function operacaoDoIfood(o) {
   if (!o) return "";
   if (!o.disponivel) {
@@ -1079,7 +1095,7 @@ export function operacaoDoIfood(o) {
   return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
     <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
     <span class="org-resto__conta">${esc(linha)}</span></div>
-    ${velho}${atencao}
+    ${velho}${atencao}${previaDasPracas(o.previa_por_praca)}
     ${o.pedidos.length ? dobra("ifood-pedidos", `Ver os ${o.pedidos.length} pedidos do Gestor`,
       `<ul class="org-sinais">${o.pedidos.map(pedidoDoIfood).join("")}</ul>`) : ""}
     <p class="org-resto__nota">${conc}</p>

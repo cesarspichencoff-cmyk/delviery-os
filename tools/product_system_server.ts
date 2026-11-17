@@ -20,7 +20,7 @@ import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 
 import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
-import { lerPedidosReaisDoReaderIncremental, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
+import { lerPedidosReaisDoReaderIncremental, lerPracasDaRevisao, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
 import { lerPedidosDoGestorLocal } from "../src/platform/leitura/pedidos-do-gestor-local";
 import { operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
 import { lerPedidosReaderV3 } from "../src/platform/leitura/pedidos-reader-v3";
@@ -193,14 +193,21 @@ const pedidosDaTeknisaAgora = (agoraMs: number): PedidosDaTeknisaVM => leituraDa
 const DIR_GESTOR_LOCAL = (process.env.DELIVERYOS_GESTOR_LOCAL_DIR || "").trim();
 const DIR_READER_V3_COPILOTO = (process.env.DELIVERYOS_READER_V3_PROJECTION_DIR || "").trim();
 const UNIDADE_READER_V3 = (process.env.DELIVERYOS_READER_V3_UNIT_ID || "").trim();
+const PREVIA_PRACAS_ITAIM = process.env.DELIVERYOS_ITAIM_PREVIA_PRACAS === "1"
+  && UNIDADE_READER_V3 === "ITAIM" && isAbsolute(DIR_LEITOR_TATA) && !ESCOPO_SHADOW;
 let memoIfood: { em: number; vm: OperacaoDoIfoodVM } | null = null;
-function operacaoDoIfoodAgora(agoraMs: number): OperacaoDoIfoodVM {
-  if (memoIfood && agoraMs - memoIfood.em < 10_000) return memoIfood.vm;
-  const agora = new Date(agoraMs);
-  const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora),
-    leituraDaTeknisaAgora(agoraMs).leitura, agora, Boolean(DIR_READER_V3_COPILOTO) && !ESCOPO_SHADOW);
-  memoIfood = { em: agoraMs, vm };
-  return vm;
+function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfoodVM {
+  if (!memoIfood || agoraMs - memoIfood.em >= 10_000) {
+    const agora = new Date(agoraMs);
+    const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora),
+      leituraDaTeknisaAgora(agoraMs).leitura, agora, Boolean(DIR_READER_V3_COPILOTO) && !ESCOPO_SHADOW,
+      PREVIA_PRACAS_ITAIM ? pedido => lerPracasDaRevisao(DIR_LEITOR_TATA, pedido) : undefined);
+    memoIfood = { em: agoraMs, vm };
+  }
+  const vm = memoIfood.vm;
+  if (comPrevia || !vm.disponivel || !vm.previa_por_praca) return vm;
+  const { previa_por_praca, ...semPrevia } = vm;
+  return semPrevia;
 }
 
 /**
@@ -795,11 +802,13 @@ export async function criarServidor(): Promise<http.Server> {
         const readerNaUnidade = Boolean(DIR_READER_V3_COPILOTO)
           && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_READER_V3)
           && (unidade === null || unidade === UNIDADE_READER_V3);
-        const operacaoIfood = readerNaUnidade && !ESCOPO_SHADOW ? operacaoDoIfoodAgora(agoraMs) : null;
+        const previaItaim = PREVIA_PRACAS_ITAIM && unidade === "ITAIM";
+        const operacaoIfood = (readerNaUnidade || previaItaim) && !ESCOPO_SHADOW
+          ? operacaoDoIfoodAgora(agoraMs, previaItaim) : null;
         const pedidosIfood: OperacaoDoIfoodVM | null = operacaoIfood?.disponivel && operacaoIfood.leitura_velha
           ? { disponivel: false, titulo: "Leitura do Gestor desatualizada",
             explicacao: "Os pedidos voltam a aparecer após uma gravação recente do aplicativo." }
-          : operacaoIfood?.disponivel && leituraDaTeknisaAgora(agoraMs).leitura.estado !== "lido"
+          : readerNaUnidade && operacaoIfood?.disponivel && leituraDaTeknisaAgora(agoraMs).leitura.estado !== "lido"
             ? { disponivel: false, titulo: "Conferência com a Teknisa indisponível",
               explicacao: "A projeção do Reader V3 está indisponível nesta leitura." }
             : operacaoIfood;

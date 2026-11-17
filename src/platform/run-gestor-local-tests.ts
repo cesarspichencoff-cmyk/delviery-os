@@ -12,11 +12,11 @@ import { createHash } from "node:crypto";
 import { snappy } from "./leitura/leveldb-somente-leitura";
 import { lerPedidosDoGestorLocal, type PedidoDoGestor } from "./leitura/pedidos-do-gestor-local";
 import { conciliarGestorTeknisa } from "./leitura/conciliacao-gestor-teknisa";
-import type { PedidoReal } from "./leitura/pedidos-reais-do-reader";
+import { lerPracasDaRevisao, type PedidoReal } from "./leitura/pedidos-reais-do-reader";
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
 
 let n = 0;
-const TOTAL = 14;
+const TOTAL = 18;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -161,6 +161,25 @@ ok("G8 tempo: sem comanda ate 6 min = aguardando; depois = sem comanda; dois can
   const c = conciliarGestorTeknisa([ped("1111"), ped("4444")], [pr("8888", 35, [{ arv: "1", q: 1 }]), pr("8888", 300, [{ arv: "1", q: 1 }])], new Date(AGORA));
   assert.equal(c.contagens.somente_na_teknisa_na_janela, 1, "so a que abriu dentro da janela do Gestor");
 });
+ok("G15 colisao de codigo curto: dois pedidos nao reivindicam a mesma comanda por ordem de chegada", () => {
+  const primeiro = ped("1111");
+  const colocadoDepois = new Date(AGORA - 28 * 60_000).toISOString();
+  const segundo = { ...primeiro, id_interno: uuid(), eventos: { ...primeiro.eventos, PLACED: colocadoDepois } };
+  const apoio = pr("1111", 27, [{ arv: "2000000001", q: 2, obs: ["sem cebolinha"] }, { arv: "2000000002", q: 1 }]);
+  for (const pedidos of [[primeiro, segundo], [segundo, primeiro]]) {
+    const r = conciliarGestorTeknisa(pedidos, [apoio], new Date(AGORA));
+    assert.equal(r.contagens.identidade_ambigua, 2);
+    assert.equal(r.contagens.correspondencia_comprovada, 0);
+    assert.equal(r.contagens.sem_comanda_na_teknisa, 0);
+    assert.equal(r.contagens.somente_na_teknisa_na_janela, 0);
+    assert.ok(r.pares.every((p) => p.teknisa === null));
+  }
+  const segundoDistinto = { ...segundo, itens: [{ ...segundo.itens[0]!, codigo_externo: "2000000005", quantidade: 1, observacao: null }] };
+  const comandaDistinta = pr("1111", 26, [{ arv: "2000000005", q: 1 }]);
+  const r = conciliarGestorTeknisa([segundoDistinto, primeiro], [comandaDistinta, apoio], new Date(AGORA));
+  assert.equal(r.contagens.correspondencia_comprovada, 2);
+  assert.deepEqual(r.pares.map((p) => p.teknisa?.chave), [apoio.chave, comandaDistinta.chave]);
+});
 ok("G9 Home: etapa oficial, preparo acima do informado, atencao so para ativos, concluido fora da atencao", () => {
   const t = { estado: "lido" as const, lido_em: "", politica: { versao: null, valida: false }, pedidos: [pr("1111", 29, [{ arv: "2000000001", q: 2, obs: ["sem cebolinha"] }, { arv: "2000000002", q: 1 }]), pr("5555", 89, [{ arv: "2000000006", q: 1 }]), pr("2222", 24, [{ arv: "2000000003", q: 1 }])], fora_do_escopo: 0, invalidos: 0, bytes_lidos: 0, duracao_ms: 0 };
   const vm = operacaoDoIfoodVM(g, t, new Date(AGORA));
@@ -195,21 +214,55 @@ ok("G11 diario truncado no meio do lote (o Gestor escrevendo): o lote incompleto
 // ---------- HTTP pelo servidor de dist/ ----------
 const raizR = mkdtempSync(join(tmpdir(), "reader-ifood-"));
 const EV = join(raizR, "state", "reader-events-v1"); mkdirSync(EV, { recursive: true });
-function eventoTeknisa(curto: string, minAtras: number, itens: Array<{ arv: string; q: string }>) {
+function eventoTeknisa(curto: string, minAtras: number, itens: Array<{ arv: string; q: string }>, cabecalho = false) {
   const key = `0001|01|77${curto}|55${curto}`; const abertura = localTeknisa(minAtras);
   const hash = createHash("sha256").update(key + abertura).digest("hex").toUpperCase();
   const order = { CDFILIAL: "0001", CDLOJA: "01", NRVENDAREST: "77" + curto, NRCOMANDA: "55" + curto, NRCOMANDAEXT: curto, IDORGCMDVENDA: "DLV_IFO", IDSTCOMANDA: "P", DTHRABERMESA: abertura,
     items: itens.map((i, k) => ({ NRPRODCOMVEN: String(k + 1), CDPRODUTO: "10" + k, CDARVPROD: i.arv, QTPRODCOMVEN: i.q, IDSTPRCOMVEN: "4" })), observation_scan_complete: true,
-    observation_rows: [{ source_field: "DSOBSDESCIT", value: "sem cebolinha", scope_hint: "item", join_proven: true, item_index: 0, CDPRODUTO: "100" }] };
+    observation_rows: cabecalho
+      ? [{ source_field: "DSOBSCOMANDA", value: "FICTICIO_OBSERVACAO_CABECALHO", join_proven: true }]
+      : [{ source_field: "DSOBSDESCIT", value: "sem cebolinha", scope_hint: "item", join_proven: true, item_index: 0, CDPRODUTO: "100" }] };
   writeFileSync(join(EV, `55${curto}_${hash}.json`), JSON.stringify({ schema: "deliveryos.tata-reader-stable-order-event.v1", order_key: key, snapshot_hash: hash,
     observed_at: new Date(AGORA - (minAtras - 1) * 60_000).toISOString(), order, ready_for_downstream_shadow: true, blockers: [], effects: {} }));
+  return { key, hash };
 }
 eventoTeknisa("1111", 29, [{ arv: "2000000001", q: "2.000" }, { arv: "2000000002", q: "1.000" }]);
+const simples = eventoTeknisa("4444", 39, [{ arv: "2000000005", q: "3.000" }], true);
+const dirDecisao = join(raizR, "state", "reader-shadow-decisions-v1");
+mkdirSync(dirDecisao);
+const caminhoDecisao = join(dirDecisao, `554444_${simples.hash}.decision.json`);
+const decisao = {
+  schema: "deliveryos.live-shadow-decision.v1", order_key: simples.key, snapshot_hash: simples.hash, effects: { print: false },
+  items: [{ item_index: 1, CDPRODUTO: "100", canonical_code: "2.00.00.000.05", quantity: 3,
+    classification: { station: "enrolados_quentes", review_required: false }, classification_source: "FIXTURE" }],
+};
+ok("G16 praça depende da revisão e da linha exatas do Reader", () => {
+  const p = pr("4444", 39, [{ arv: "2000000005", q: 3, cd: "100" }],
+    { chave: simples.key, revisao: simples.hash.toLowerCase() });
+  for (const variante of [
+    { ...decisao, snapshot_hash: "0".repeat(64) },
+    { ...decisao, order_key: "0001|01|outra|554444" },
+    { ...decisao, effects: { print: true } },
+    { ...decisao, items: [{ ...decisao.items[0], quantity: 4 }] },
+    { ...decisao, items: [{ ...decisao.items[0], CDPRODUTO: "9" }] },
+    { ...decisao, items: [{ ...decisao.items[0], classification: { station: "enrolados_quentes", review_required: true } }] },
+  ]) {
+    writeFileSync(caminhoDecisao, JSON.stringify(variante));
+    assert.equal(lerPracasDaRevisao(raizR, p), null);
+  }
+  writeFileSync(caminhoDecisao, JSON.stringify(decisao));
+  assert.deepEqual(lerPracasDaRevisao(raizR, p), ["enrolados_quentes"]);
+  assert.equal(lerPracasDaRevisao(raizR, { ...p, revisao: "0".repeat(64) }), null);
+});
 void (async () => {
-  const bin = join(__dirname, "../../dist/tools/product_system_server.js");
+  const raizProjeto = process.cwd();
+  const bin = join(raizProjeto, "dist/tools/product_system_server.js");
   if (!existsSync(bin)) { console.log("PULADO G12: dist/tools/product_system_server.js ausente (rode npm run build:platform) — NAO e verde"); return; }
   const porta = 9500 + Math.floor(Math.random() * 90);
-  const filho = spawn(process.execPath, [bin], { cwd: join(__dirname, "../.."), env: { ...process.env, PRODUCT_UI_PORT: String(porta), TATA_READER_INSTALL_ROOT: raizR, DELIVERYOS_GESTOR_LOCAL_DIR: raizG, DELIVERYOS_DATABASE_URL: "" }, stdio: "ignore" });
+  const filho = spawn(process.execPath, [bin], { cwd: raizProjeto, windowsHide: true, stdio: "ignore",
+    env: { ...process.env, PRODUCT_UI_PORT: String(porta), TATA_READER_INSTALL_ROOT: raizR,
+      DELIVERYOS_GESTOR_LOCAL_DIR: raizG, DELIVERYOS_DATABASE_URL: "", DELIVERYOS_READER_V3_PROJECTION_DIR: "",
+      DELIVERYOS_READER_V3_UNIT_ID: "ITAIM", DELIVERYOS_ITAIM_PREVIA_PRACAS: "1" } });
   try {
     let corpo: Record<string, any> | null = null;
     for (let i = 0; i < 80 && !corpo; i++) {
@@ -223,6 +276,28 @@ void (async () => {
       assert.equal(o.contagens.no_gestor, 5);
       assert.equal(o.pedidos.find((p: any) => p.codigo === "1111").teknisa.classe, "correspondencia_comprovada");
       assert.doesNotMatch(JSON.stringify(corpo), /CANARIO_/);
+      assert.equal(o.previa_por_praca, undefined);
+    });
+    const copilotoV2 = `http://127.0.0.1:${porta}/api/copiloto`;
+    const respostaV2 = await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1");
+    const v2 = await respostaV2.json();
+    const fora = await fetch(copilotoV2 + "?unit_id=OUTRA&pedidos=1");
+    ok("G17 cabeçalho sinaliza conferência e preserva a praça pelo caminho real do Copiloto", () => {
+      assert.equal(respostaV2.status, 200);
+      const previa = v2.operacao_ifood.previa_por_praca;
+      assert.equal(previa.grupos.length, 1);
+      assert.equal(previa.grupos[0].rotulo, "Sushi Quentes");
+      assert.equal(previa.grupos[0].itens.length, 1);
+      const item = previa.grupos[0].itens[0];
+      assert.equal(item.codigo, "4444");
+      assert.equal(item.descricao, "3× Hot roll");
+      assert.equal(item.conferir_observacao, true);
+      assert.doesNotMatch(JSON.stringify(v2), /FICTICIO_OBSERVACAO_CABECALHO/);
+      assert.equal(fora.status, 404);
+    });
+    ok("G18 observação de item sem ligação exata permanece pendente no Reader V2", () => {
+      assert.ok(v2.operacao_ifood.previa_por_praca.pendentes.some((p: { codigo: string; motivo: string }) =>
+        p.codigo === "1111" && p.motivo.includes("observações dos itens")));
     });
     const v3 = join(raizR, "v3");
     mkdirSync(v3);
@@ -240,9 +315,9 @@ void (async () => {
     publicar("consumer.json", { schema: 1, seq: 1, latest: { [readerV3.chave]: readerV3 } });
     publicar("source-status.json", { schema: 1, seq: 1, producerSeq: 1, failures: 0, holds: {}, at: new Date().toISOString() });
     const v3Porta = porta + 100;
-    const v3Processo = spawn(process.execPath, [bin], { cwd: join(__dirname, "../.."), windowsHide: true, stdio: "ignore",
+    const v3Processo = spawn(process.execPath, [bin], { cwd: raizProjeto, windowsHide: true, stdio: "ignore",
       env: { ...process.env, PRODUCT_UI_PORT: String(v3Porta), DELIVERYOS_GESTOR_LOCAL_DIR: raizG, DELIVERYOS_DATABASE_URL: "",
-        DELIVERYOS_READER_V3_PROJECTION_DIR: v3, DELIVERYOS_READER_V3_UNIT_ID: "ITAIM" } });
+        DELIVERYOS_READER_V3_PROJECTION_DIR: v3, DELIVERYOS_READER_V3_UNIT_ID: "ITAIM", DELIVERYOS_ITAIM_PREVIA_PRACAS: "" } });
     try {
       const base = `http://127.0.0.1:${v3Porta}/api/copiloto`;
       const url = base + "?unit_id=ITAIM&pedidos=1";

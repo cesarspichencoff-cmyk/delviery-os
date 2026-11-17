@@ -4,7 +4,8 @@
  *
  * Identidade: nunca so o codigo curto. O par exige MESMO codigo curto + abertura da comanda na Teknisa
  * a ate JANELA_DE_IDENTIDADE_MIN do PLACED do iFood + origem iFood; havendo mais de um candidato, so os
- * itens desempatam. Itens: o `externalCode` do iFood contra o CDARVPROD da Teknisa (medido em 15/11:
+ * itens desempatam. Cada comanda precisa ter um unico pedido candidato. Itens: o `externalCode`
+ * do iFood contra o CDARVPROD da Teknisa (medido em 15/11:
  * 41 de 41 codigos com um unico CDARVPROD; o CDPRODUTO NAO e o codigo do iFood).
  *
  * Limiares MEDIDOS em 22 pedidos reais de 14/11 (detalhe no documento da conciliacao): comanda aberta
@@ -122,28 +123,38 @@ function compararObservacoes(g: PedidoDoGestor, t: PedidoReal): "sem_observacao"
 
 export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknisa: readonly PedidoReal[], agora: Date): ConciliacaoGestorTeknisa {
   const ifood = teknisa.filter((t) => t.origem === "DLV_IFO" && t.codigo_curto !== null);
-  const usados = new Set<string>();
+  const disputas = new Map<string, number>();
+  const candidaturas = [...gestor].sort((a, b) => placedDe(a) - placedDe(b)).map(g => {
+    const placed = placedDe(g);
+    const cand = ifood.filter(t => t.codigo_curto === g.codigo_curto &&
+      Math.abs(instanteDaTeknisa(t.aberto_em_local) - placed) <= JANELA_DE_IDENTIDADE_MIN * 60_000);
+    const batem = cand.length > 1 ? cand.filter(t => {
+      const c = compararItens(g, t);
+      return c === "iguais" || c === "iguais_sem_opcoes";
+    }) : cand;
+    const possiveis = batem.length ? batem : cand;
+    for (const chave of new Set(possiveis.map(t => t.chave))) {
+      disputas.set(chave, (disputas.get(chave) ?? 0) + 1);
+    }
+    return { g, placed, possiveis };
+  });
   const pares: ParDaConciliacao[] = [];
   const contagens: Record<string, number> = { relacoes_nao_confirmadas: 0, revisao_retida: 0, correspondencia_comprovada: 0, complemento_nao_lido_pela_teknisa: 0, observacao_nao_lida_pela_teknisa: 0,
     observacao_divergente: 0, item_ou_quantidade_divergente: 0, identidade_ambigua: 0, aguardando_teknisa: 0, sem_comanda_na_teknisa: 0, somente_na_teknisa_na_janela: 0 };
-  // Mais antigos primeiro: um candidato ja usado nao casa de novo.
-  for (const g of [...gestor].sort((a, b) => placedDe(a) - placedDe(b))) {
-    const placed = placedDe(g);
+  for (const { g, placed, possiveis } of candidaturas) {
     const minutos = Math.max(0, Math.round((agora.getTime() - placed) / 60_000));
-    const cand = ifood.filter((t) => !usados.has(t.chave) && t.codigo_curto === g.codigo_curto &&
-      Math.abs(instanteDaTeknisa(t.aberto_em_local) - placed) <= JANELA_DE_IDENTIDADE_MIN * 60_000);
-    let alvo: PedidoReal | null = null;
-    if (cand.length === 1) alvo = cand[0]!;
-    else if (cand.length > 1) {
-      const batem = cand.filter((t) => { const c = compararItens(g, t); return c === "iguais" || c === "iguais_sem_opcoes"; });
-      if (batem.length === 1) alvo = batem[0]!;
-      else {
-        pares.push({ gestor: g, teknisa: null, classe: "identidade_ambigua", minutos_desde_o_pedido: minutos, minutos_ate_a_comanda: null,
-          detalhes: [`${cand.length} comandas da Teknisa com o mesmo codigo e horario; os itens nao desempatam`] });
-        contagens["identidade_ambigua"]!++; continue;
-      }
+    const alvo = possiveis[0];
+    const disputa = alvo !== undefined && (disputas.get(alvo.chave) ?? 0) > 1;
+    if (possiveis.length > 1 || disputa) {
+      const motivo = possiveis.length > 1
+        ? `${possiveis.length} comandas da Teknisa com o mesmo codigo e horario; os itens nao desempatam`
+        : "mais de um pedido do iFood pode corresponder a esta mesma comanda da Teknisa";
+      pares.push({ gestor: g, teknisa: null, classe: "identidade_ambigua", minutos_desde_o_pedido: minutos,
+        minutos_ate_a_comanda: null, detalhes: [motivo] });
+      contagens["identidade_ambigua"]!++;
+      continue;
     }
-    if (alvo === null) {
+    if (!alvo) {
       const espera = minutos < ESPERA_PELA_TEKNISA_MIN && !g.eventos["CANCELLED"];
       const classe: ClasseDoPar = espera ? "aguardando_teknisa" : "sem_comanda_na_teknisa";
       pares.push({ gestor: g, teknisa: null, classe, minutos_desde_o_pedido: minutos, minutos_ate_a_comanda: null,
@@ -152,7 +163,6 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
              "nao prova falha da integracao: o Reader pode nao ter visto"] });
       contagens[classe]!++; continue;
     }
-    usados.add(alvo.chave);
     const itens = compararItens(g, alvo), obs = compararObservacoes(g, alvo);
     const detalhes: string[] = [];
     let classe: ClasseDoPar;
@@ -180,7 +190,7 @@ export function conciliarGestorTeknisa(gestor: readonly PedidoDoGestor[], teknis
   if (gestor.length) {
     const ts = gestor.map(placedDe); const de = Math.min(...ts), ate = Math.max(...ts) + JANELA_DE_IDENTIDADE_MIN * 60_000;
     janela = { de: new Date(de).toISOString(), ate: new Date(ate).toISOString() };
-    somente = ifood.filter((t) => !usados.has(t.chave) && instanteDaTeknisa(t.aberto_em_local) >= de && instanteDaTeknisa(t.aberto_em_local) <= ate);
+    somente = ifood.filter((t) => !disputas.has(t.chave) && instanteDaTeknisa(t.aberto_em_local) >= de && instanteDaTeknisa(t.aberto_em_local) <= ate);
     contagens["somente_na_teknisa_na_janela"] = somente.length;
   }
   return { pares, somente_na_teknisa_na_janela: somente, janela, contagens: contagens as ConciliacaoGestorTeknisa["contagens"] };
