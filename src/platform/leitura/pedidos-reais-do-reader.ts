@@ -175,6 +175,12 @@ function nomesDaDecisao(raiz: string, nomeDoEvento: string): Map<string, string>
   return nomes;
 }
 
+// Praça confirmada por César em 12/11, PR #137. Vale apenas para a linha
+// comprovada da prévia do Itaim e quando a decisão não indicou outra praça.
+const PRACAS_CONFIRMADAS_ITAIM: ReadonlyMap<string, PracaId> = new Map([
+  ["9100505000", "enrolados_quentes"], // Tartar de Salmão
+]);
+
 /** Prévia da decisão do motor para esta revisão exata, sem inferir praça de um SKU solto. */
 export function lerPracasDaRevisao(raiz: string, pedido: PedidoReal): readonly (PracaId | null)[] | null {
   const [unidade, loja, venda, comanda, extra] = pedido.chave.split("|");
@@ -205,14 +211,17 @@ export function lerPracasDaRevisao(raiz: string, pedido: PedidoReal): readonly (
     vistos.add(item.indice);
     if (linha.CDPRODUTO !== item.codigo || item.quantidade === null ||
         linha.quantity !== item.quantidade || typeof linha.canonical_code !== "string" ||
-        item.codigo_arvore === null || linha.canonical_code.replaceAll(".", "") !== item.codigo_arvore ||
-        !texto(linha.classification_source, 120) || !objeto(linha.classification) ||
-        linha.classification.review_required !== false) {
+        item.codigo_arvore === null || linha.canonical_code.replaceAll(".", "") !== item.codigo_arvore) {
       pracas.push(null);
       continue;
     }
-    const praca = PRACAS.find(p => p.id === (linha.classification as Record<string, unknown>).station);
-    pracas.push(praca?.id ?? null);
+    const classificacao = objeto(linha.classification) ? linha.classification : null;
+    const praca = PRACAS.find(p => p.id === classificacao?.station);
+    const confirmada = PRACAS_CONFIRMADAS_ITAIM.get(item.codigo_arvore);
+    if (confirmada && classificacao?.station != null && classificacao.station !== confirmada) pracas.push(null);
+    else if (classificacao?.review_required === false && praca && texto(linha.classification_source, 120)) pracas.push(praca.id);
+    else if (confirmada && (linha.classification == null || classificacao?.review_required === true)) pracas.push(confirmada);
+    else pracas.push(null);
   }
   return pracas.some(praca => praca !== null) ? pracas : null;
 }

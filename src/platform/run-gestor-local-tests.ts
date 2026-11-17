@@ -16,7 +16,7 @@ import { lerPracasDaRevisao, type PedidoReal } from "./leitura/pedidos-reais-do-
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
 
 let n = 0;
-const TOTAL = 20;
+const TOTAL = 21;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -259,6 +259,27 @@ ok("G16 praça depende da revisão e da linha exatas do Reader", () => {
   writeFileSync(caminhoDecisao, JSON.stringify({ ...decisao, items: [...decisao.items, linhaRetida] }));
   assert.deepEqual(lerPracasDaRevisao(raizR, mista), ["enrolados_quentes", null]);
   writeFileSync(caminhoDecisao, JSON.stringify(decisao));
+});
+
+ok("G22 praça aprovada do Tartar exige código nativo e revisão exatos e veta conflito", () => {
+  const p = pr("4444", 39, [{ arv: "9100505000", q: 3, cd: "100" }],
+    { chave: simples.key, revisao: simples.hash.toLowerCase() });
+  const linha = { ...decisao.items[0]!, canonical_code: "9.10.05.050.00",
+    classification: { station: null, review_required: true } };
+  try {
+    writeFileSync(caminhoDecisao, JSON.stringify({ ...decisao, items: [linha] }));
+    assert.deepEqual(lerPracasDaRevisao(raizR, p), ["enrolados_quentes"]);
+    writeFileSync(caminhoDecisao, JSON.stringify({ ...decisao, items: [{ ...linha, classification: null, classification_source: null }] }));
+    assert.deepEqual(lerPracasDaRevisao(raizR, p), ["enrolados_quentes"]);
+    assert.equal(lerPracasDaRevisao(raizR, { ...p, revisao: "0".repeat(64) }), null);
+    writeFileSync(caminhoDecisao, JSON.stringify({ ...decisao, items: [{ ...linha, CDPRODUTO: "999" }] }));
+    assert.equal(lerPracasDaRevisao(raizR, p), null);
+    writeFileSync(caminhoDecisao, JSON.stringify({ ...decisao, items: [{ ...linha,
+      classification: { station: "duplas", review_required: false } }] }));
+    assert.equal(lerPracasDaRevisao(raizR, p), null);
+  } finally {
+    writeFileSync(caminhoDecisao, JSON.stringify(decisao));
+  }
 });
 
 ok("G20 prévia preserva o item comprovado e lista o complemento e o item pendente", () => {
