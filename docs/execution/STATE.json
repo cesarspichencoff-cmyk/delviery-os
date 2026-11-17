@@ -6,8 +6,9 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-11-17",
-    "state_basis": "cd9e09083b30cbaf6610c6f425462c62ef9732ca",
+    "state_basis": "2eedf84fab1c4051e18565d76da47116b87489b7",
     "_revalidacao_previa_itaim_2026_11_17": "Previa do Itaim ativa no endereco privado do iPhone. A verificacao por linha preserva a identidade exata da revisao. Na comparacao do turno, com os mesmos 35 itens, a cobertura passou de 17 para 26 em pracas e 9 a conferir por item. Em reprocessamento de comanda real, o codigo 9100505000 passou de pendente a Sushi Quentes pela decisao operacional registrada na PR. A consulta apos a ultima troca retornou 21 de 21 itens em preparo, 19 em pracas e 2 a conferir. Gestor 21/21 e Reader 15/15. Visualizacao no iPhone apos a troca e a praca de itens ainda pendentes seguem sem confirmacao.",
+    "_revalidacao_preparo_ifood_2026_11_17": "Eventos do entregador antes de READY_TO_PICKUP deixam o pedido confirmado em preparo. Comparacao com a mesma leitura real das 20h42 no Itaim: 4 em preparo antes, 6 depois, 2 pedidos sem marca de pronto recuperados no contador e na previa. Validacao da API ativa nas consultas inicial e leve. Testes locais Gestor 22/22 e Reader 15/15. Comparacao simultanea com a tela do Gestor no iPhone segue pendente.",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
