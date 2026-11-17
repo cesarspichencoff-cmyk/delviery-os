@@ -5,8 +5,9 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-11-15",
-    "state_basis": "9cbcb8cdea86c5cc019e028c092a853e114b81ef",
+    "atualizado_em": "2026-11-17",
+    "state_basis": "c3bd13787068f8131795f68270f2ad47e09cf2a0",
+    "_revalidacao_previa_itaim_2026_11_17": "Previa somente leitura por revisao exata da comanda, com aviso para conferir observacao. Integracao Gestor 18/18 e Home 51/51 na bancada. Ensaio isolado no Itaim reprocessou 45 pedidos, agrupou 42 linhas em sete pracas e manteve 18 pedidos a conferir. A confirmacao com pedido em preparo no fluxo do turno e a ativacao no endereco em uso seguem pendentes.",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",

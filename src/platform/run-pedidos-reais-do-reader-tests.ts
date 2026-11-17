@@ -144,7 +144,7 @@ ok("R14 incremental: le pedido FORA do checkpoint (sem teto de 250), so arquivos
   const foraDoCk = pedido({ venda: "900011", comanda: "100011", abertura: "2026-11-14T21:00:00.0000000" });
   entradas.pop(); // escrito na pasta, mas NAO no checkpoint (o caso do dia 14/11: 313 pedidos, 250 no checkpoint)
   const cache = novoCacheIncremental();
-  const agora = new Date();
+  const agora = new Date("2026-11-15T08:00:00Z");
   const a = lerPedidosReaisDoReaderIncremental(raiz, cache, agora);
   if (a.estado !== "lido") throw Error("nao leu");
   assert.ok(a.pedidos.some((x) => x.chave === foraDoCk), "o pedido fora do checkpoint precisa aparecer");
@@ -166,7 +166,7 @@ ok("R14 incremental: le pedido FORA do checkpoint (sem teto de 250), so arquivos
   assert.equal(c.pedidos.length, 8, "revisao nova nao duplica pedido");
   // arquivo antigo (fora da janela de horas) nao entra numa leitura nova.
   const velho = novoCacheIncremental();
-  const d = lerPedidosReaisDoReaderIncremental(raiz, velho, new Date(Date.now() + 72 * 3600_000));
+  const d = lerPedidosReaisDoReaderIncremental(raiz, velho, new Date(agora.getTime() + 72 * 3600_000));
   if (d.estado !== "lido") throw Error("nao leu");
   assert.equal(d.pedidos.length, 0, "arquivos de mais de 36 h nao entram");
 });
@@ -201,7 +201,7 @@ ok("R15 observacao por item: item_index e 0-based e o CDPRODUTO da linha tem de 
   };
   escreve("300001", [{ source_field: "TXPRODCOMVEN", value: "sem gergelim", scope_hint: "item", join_proven: true, item_index: 1, CDPRODUTO: "B2" }]);
   escreve("300002", [{ source_field: "TXPRODCOMVEN", value: "sem gergelim", scope_hint: "item", join_proven: true, item_index: 0, CDPRODUTO: "B2" }]);
-  const l = lerPedidosReaisDoReaderIncremental(d, novoCacheIncremental(), new Date(), 36);
+  const l = lerPedidosReaisDoReaderIncremental(d, novoCacheIncremental(), new Date("2026-11-15T08:00:00Z"), 36);
   if (l.estado !== "lido") throw Error("nao leu");
   const certo = l.pedidos.find((x) => x.chave.endsWith("300001"))!, quebrado = l.pedidos.find((x) => x.chave.endsWith("300002"))!;
   assert.deepEqual(certo.itens.map((i) => i.observacoes), [[], ["sem gergelim"]], "a observacao e do SEGUNDO item");
@@ -214,10 +214,22 @@ ok("R15 observacao por item: item_index e 0-based e o CDPRODUTO da linha tem de 
 });
 
 void (async () => {
-  const bin = join(__dirname, "../../dist/tools/product_system_server.js");
+  const raizProjeto = process.cwd();
+  const bin = join(raizProjeto, "dist/tools/product_system_server.js");
   if (!existsSync(bin)) { console.log("PULADO R13: dist/tools/product_system_server.js ausente (rode npm run build:platform) — NAO e verde"); return; }
+  // A porta HTTP usa o relógio real. Atualiza somente as datas da fixture
+  // depois dos cenários que dependem do sábado histórico e do corte de 36 h.
+  const aberturaLocal = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 19);
+  for (const nome of readdirSync(EV)) {
+    const arquivo = join(EV, nome);
+    const evento = JSON.parse(readFileSync(arquivo, "utf8"));
+    evento.order.DTHRABERMESA = aberturaLocal;
+    writeFileSync(arquivo, JSON.stringify(evento));
+  }
   const porta = 9400 + Math.floor(Math.random() * 90);
-  const filho = spawn(process.execPath, [bin], { cwd: join(__dirname, "../.."), env: { ...process.env, PRODUCT_UI_PORT: String(porta), TATA_READER_INSTALL_ROOT: raiz, DELIVERYOS_DATABASE_URL: "" }, stdio: "ignore" });
+  const filho = spawn(process.execPath, [bin], { cwd: raizProjeto, windowsHide: true,
+    env: { ...process.env, PRODUCT_UI_PORT: String(porta), TATA_READER_INSTALL_ROOT: raiz,
+      DELIVERYOS_DATABASE_URL: "", DELIVERYOS_READER_V3_PROJECTION_DIR: "" }, stdio: "ignore" });
   try {
     let corpo: Record<string, any> | null = null;
     for (let i = 0; i < 80 && !corpo; i++) {
