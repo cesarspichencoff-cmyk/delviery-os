@@ -289,8 +289,11 @@ test("não existe caminho que ligue o serviço sem trip_id", () => {
   assert.match(svc, /require\(tripId\.isNotBlank\(\)\)/, "start() exige trip_id");
   assert.match(svc, /if \(stored\.isNullOrBlank\(\)\)[\s\S]{0,120}stopBecause/,
     "recriação sem viagem ativa não pode voltar a rastrear");
-  const bridge = read("app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt");
-  assert.match(bridge, /if \(tripId\.isNullOrBlank\(\)\) return/, "ponte exige trip_id");
+  const bridge = stripComments(read("app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt"));
+  const start = bridge.match(/@JavascriptInterface\s+fun startTripCapture\(proof: String\?, tripId: String\?\) \{([^}]+)\}/);
+  assert.match(start?.[1] ?? "",
+    /^\s*if \(!authorized\(proof\) \|\| tripId\.isNullOrBlank\(\)\) return\s*handler\.startTripCapture\(tripId\)\s*$/,
+    "a ponte só inicia captura com origem autorizada e trip_id preenchido");
 });
 
 test("o portão é consultado antes de pedir posição ao Fused", () => {
@@ -527,14 +530,21 @@ test("o domínio não é duplicado no Kotlin", () => {
  * 6. Sincronização
  * ------------------------------------------------------------------ */
 
-test("worker aplica o recibo por ponto e nunca apaga rejeição parcial", () => {
-  const w = read("app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt");
-  assert.match(w, /decideGpsReceipt\(/);
-  assert.match(w, /markSent\(decision\.sentIds\)/);
-  assert.match(w, /markRejected\(/);
-  assert.match(w, /is ApiResult\.Retryable -> \{[\s\S]{0,120}markFailed/);
-  assert.match(w, /is ApiResult\.Rejected -> db\.gpsPoints\(\)\.markRejected/);
-  assert.match(w, /Result\.retry\(\)/);
+test("worker aplica recibos por ponto e preserva recusas sem recibo individual", () => {
+  const worker = stripComments(read("app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt"));
+  const gps = worker.slice(worker.indexOf("internal suspend fun applyGpsBatchResponse("), worker.indexOf("class SyncWorker"));
+  assert.match(gps, /decideGpsReceipt\(/);
+  assert.match(gps, /markSent\(decision\.sentIds\)/);
+  assert.match(gps, /markRejected\(\s*decision\.rejected\.map \{ it\.pointId \},\s*"gps_recusa_individual_recebida",?\s*\)/);
+  assert.match(gps, /is ApiResult\.Retryable -> \{\s*db\.gpsPoints\(\)\.markFailed\(ids, r\.reason\)/);
+  assert.match(gps, /is ApiResult\.Unauthorized -> \{\s*db\.gpsPoints\(\)\.markFailed\(ids, r\.reason\)\s*GpsBatchOutcome\(credentialRefused = true\)/);
+  const refusal = gps.match(/is ApiResult\.Rejected -> \{\s*if \(r\.status == 400 \|\| r\.status == 403\) \{([\s\S]+?)\}\s*else \{([\s\S]+?)\}\s*\}/);
+  assert.ok(refusal, "o worker trata 400/403 de domínio separadamente das recusas sem recibo");
+  assert.match(refusal[1], /markRejected\(ids, "lote_gps_rejeitado_http_\$\{r\.status\}"\)/);
+  assert.match(refusal[2], /markFailed\(ids, "lote_gps_sem_recibo_http_\$\{r\.status\}"\)/);
+  assert.match(refusal[2], /GpsBatchOutcome\(unreceiptedBatchBlocked = true\)/);
+  assert.doesNotMatch(refusal[2], /markRejected|markSent/);
+  assert.match(worker, /Result\.retry\(\)/);
 });
 
 test("erro do servidor distingue retentável de recusa definitiva", () => {
@@ -624,7 +634,8 @@ function funBody(code: string, name: string): string {
 
 test("Q018 a ponte repassa as políticas do servidor ao PolicyStore, sem regra própria", () => {
   const bridge = stripComments(read(BRIDGE_KT));
-  assert.match(bridge, /@JavascriptInterface\s+fun applyServerPolicies\(json: String\?\): String\s*=\s*handler\.applyServerPoliciesJson\(json\.orEmpty\(\)\)/);
+  assert.match(bridge,
+    /@JavascriptInterface\s+fun applyServerPolicies\(proof: String\?, json: String\?\): String\s*=\s*if \(authorized\(proof\)\) handler\.applyServerPoliciesJson\(json\.orEmpty\(\)\) else deniedJson\(\)/);
   const body = funBody(stripComments(read(MAIN_KT)), "applyServerPoliciesJson");
   assert.match(body, /PolicyStore\.applyServerPolicies\(db, JSONObject\(json\)\)/);
   // Guardar é tudo o que ela faz: nada de ligar serviço ou decidir captura.
