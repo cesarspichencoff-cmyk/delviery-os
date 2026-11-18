@@ -58,13 +58,17 @@ interface LinhaDaPrevia {
   readonly codigo: string;
   readonly hora: string;
   readonly descricao: string;
+  readonly produto: string;
+  readonly codigo_produto: string | null;
+  readonly quantidade: number;
+  readonly etapa: "em preparo" | "pronto";
   readonly conferir_observacao: boolean;
   readonly observacoes: readonly ObservacaoDaPrevia[];
   readonly opcoes: readonly string[];
 }
 interface PreviaPorPraca {
   readonly grupos: readonly { readonly rotulo: string; readonly itens: readonly LinhaDaPrevia[] }[];
-  readonly pendentes: readonly (AtencaoDaHome & Partial<Pick<LinhaDaPrevia, "descricao" | "observacoes" | "opcoes" | "conferir_observacao">>)[];
+  readonly pendentes: readonly (AtencaoDaHome & Partial<Omit<LinhaDaPrevia, "codigo" | "hora">>)[];
   readonly notas_gerais: readonly { readonly codigo: string; readonly hora: string }[];
 }
 type LerPracas = (pedido: PedidoReal) => readonly (PracaId | null)[] | null;
@@ -134,8 +138,12 @@ function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas
   const pendentes: PreviaPorPraca["pendentes"][number][] = [];
   const notasGerais: { codigo: string; hora: string }[] = [];
   for (const { gestor, teknisa, classe } of pares) {
-    if (gestor.teste || !gestor.eventos.CONFIRMED || etapaDe(gestor) !== "em preparo") continue;
-    const referencia = { codigo: gestor.codigo_curto, hora: horaLocal(placedDe(gestor)) };
+    const status = etapaDe(gestor);
+    const etapa = status.startsWith("pronto") ? "pronto" : status === "em preparo" ? status : null;
+    if (gestor.teste || !etapa) continue;
+    const referencia: Pick<LinhaDaPrevia, "codigo" | "hora" | "etapa"> = {
+      codigo: gestor.codigo_curto, hora: horaLocal(placedDe(gestor)), etapa,
+    };
     const conciliado = teknisa && !teknisa.retido && CLASSES_COM_ITENS_CONCILIADOS.has(classe)
       && gestor.itens_alterados === 0 && gestor.itens_cancelados === 0 ? teknisa : null;
     const pracas = conciliado ? lerPracas(conciliado) : null;
@@ -161,7 +169,8 @@ function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas
       }
       const conferir_observacao = (notasNativas.length > 0 && !notasLigadas)
         || (item.observacao !== null && (classe === "observacao_nao_lida_pela_teknisa" || classe === "observacao_divergente"));
-      const linha = { ...referencia, descricao, observacoes, opcoes, conferir_observacao };
+      const linha = { ...referencia, descricao, produto: item.nome, codigo_produto: codigo, quantidade: item.quantidade,
+        observacoes, opcoes, conferir_observacao };
       if (!conciliado || !praca || codigosDeOpcao.has(codigo) ||
           quantidadeNativa !== quantidadeGestor || nativas.some(linha => linha.praca !== praca)) {
         const motivo = !conciliado ? "Conferir a comanda no caixa."

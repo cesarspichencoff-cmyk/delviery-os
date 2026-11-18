@@ -1776,6 +1776,19 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
  * palco, e o que a marca e a linha da esquerda, nao um retangulo aceso.
  */
 
+.org-fila__produto summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.org-fila__etapa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.65rem;
+  font-size: 0.875rem;
+  margin-block-start: 0.3rem;
+}
+
 .org-previa__itens {
   display: grid;
   gap: 0.65rem;

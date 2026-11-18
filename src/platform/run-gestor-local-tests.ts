@@ -219,7 +219,9 @@ ok("G23 presença do entregador antes de pronto preserva preparo, atraso e prév
   assert.equal(vm.contagens.prontos, 1);
   assert.equal(vm.contagens.na_rua, 1);
   assert.equal(vm.pedidos.find(p => p.codigo === "4003")?.etapa, "pronto · entregador na loja");
-  assert.deepEqual(vm.previa_por_praca.pendentes.map(p => p.codigo).sort(), ["4001", "4002"]);
+  assert.deepEqual(vm.previa_por_praca.pendentes.map(p => [p.codigo, p.etapa, p.produto, p.quantidade]).sort(), [
+    ["4001", "em preparo", "Hot roll", 3], ["4002", "em preparo", "Hot roll", 3], ["4003", "pronto", "Hot roll", 3],
+  ]);
   assert.ok(vm.atencao.some(p => p.codigo === "4002" && p.motivo.includes("preparo informado")));
 });
 ok("G11 diario truncado no meio do lote (o Gestor escrevendo): o lote incompleto e descartado inteiro", () => {
@@ -388,12 +390,12 @@ void (async () => {
       assert.ok(painel.operacao_ifood.previa_por_praca);
       assert.equal(painel.celulas_operacionais, undefined);
     });
-    ok("G21 todos os itens em preparo aparecem na praça ou em A conferir", () => {
+    ok("G21 todos os itens em preparo ou prontos aparecem na praça ou em A conferir", () => {
       const previa = v2.operacao_ifood.previa_por_praca;
       const exibidos = [...previa.grupos.flatMap((p: any) => p.itens), ...previa.pendentes]
         .map((i: any) => [i.codigo, i.descricao]).sort();
       assert.deepEqual(exibidos, [
-        ["1111", "1× Temaki"], ["1111", "2× Combinado Salmao"], ["3333", "1× Uramaki"], ["4444", "3× Hot roll"],
+        ["1111", "1× Temaki"], ["1111", "2× Combinado Salmao"], ["2222", "1× Poke"], ["3333", "1× Uramaki"], ["4444", "3× Hot roll"],
       ]);
     });
     const v3 = join(raizR, "v3");

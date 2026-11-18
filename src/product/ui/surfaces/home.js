@@ -190,7 +190,7 @@ function faixaTecnica(vm) {
   const h = hora(vm.observado_em);
   return `<div class="org-tecnico" role="status">
     <span class="org-tecnico__ponto" aria-hidden="true"></span>
-    <span class="org-tecnico__texto">${esc(nomes)} sem leitura confiavel${
+    <span class="org-tecnico__texto">${esc(nomes)} ${vm.rota_home ? "sem medição confiável" : "sem leitura confiavel"}${
       h ? ` · ultima leitura as ${esc(h)}` : ""
     }. As demais areas so podem ser avaliadas com leitura confiavel.</span>
   </div>`;
@@ -201,6 +201,13 @@ function faixaTecnica(vm) {
  * ------------------------------------------------------------------ */
 
 function legenda(vm) {
+  if (vm.rota_home && vm.sem_leitura_operacional) {
+    return `<div class="org-legenda">
+      <span class="org-legenda__kicker">Delivery · Itaim</span>
+      <h1 class="org-legenda__frase">Operação do Itaim</h1>
+      <p class="org-legenda__apoio">A fila de preparo e de prontos vem do Gestor do iFood. A medição de cada área aparece no mapa.</p>
+    </div>`;
+  }
   const p = vm.pulso;
   const d = vm.leitura_parcial_de_pedidos ? vm.demanda_observada : null;
   // "Observados no Gestor" e o que se pode afirmar. "Em andamento" afirmaria o
@@ -1055,11 +1062,53 @@ function pedidoDoIfood(p) {
   </li>`;
 }
 
+function totalDosItens(itens) {
+  return itens.reduce((total, item) => total + item.quantidade, 0);
+}
+
+function filaPorProduto(itens, linha) {
+  const produtos = new Map();
+  for (const item of itens) {
+    if (!item.produto || !Number.isFinite(item.quantidade) || item.quantidade <= 0) continue;
+    const chave = JSON.stringify([item.codigo_produto, item.produto]);
+    const produto = produtos.get(chave) ?? { nome: item.produto, itens: [] };
+    produto.itens.push(item);
+    produtos.set(chave, produto);
+  }
+  const etapa = (produto, estado, rotulo) => {
+    const linhas = produto.itens.filter(item => item.etapa === estado);
+    if (!linhas.length) return "";
+    const pedidos = new Map();
+    for (const item of linhas) {
+      const chave = JSON.stringify([item.hora, item.codigo]);
+      const pedido = pedidos.get(chave) ?? { codigo: item.codigo, quantidade: 0 };
+      pedido.quantidade += item.quantidade;
+      pedidos.set(chave, pedido);
+    }
+    return `<span class="org-fila__etapa" data-etapa="${esc(estado)}">
+      <strong>${esc(String(totalDosItens(linhas)))} ${rotulo}</strong>
+      <span>${[...pedidos.values()].map(p => `#${esc(p.codigo)} ×${esc(String(p.quantidade))}`).join(" · ")}</span>
+    </span>`;
+  };
+  const lista = [...produtos].sort(([, a], [, b]) => a.nome.localeCompare(b.nome, "pt-BR")).map(([chave, p]) =>
+    `<li class="org-sinal"><details class="org-fila__produto" id="fila-${esc(chave)}">
+      <summary><span class="org-sinal__nome">${esc(p.nome)}</span>
+        ${etapa(p, "em preparo", "em preparo")}
+        ${etapa(p, "pronto", "prontos no iFood")}
+      </summary>
+      <ul class="org-previa__itens">${p.itens.map(linha).join("")}</ul>
+    </details></li>`).join("");
+  const semItens = itens.filter(item => !item.produto);
+  const faltantes = semItens.length
+    ? `<p class="org-resto__nota">Pedidos sem itens na leitura · ${semItens.map(p => `#${esc(p.codigo)}`).join(" · ")}</p>` : "";
+  return (lista ? `<ul class="org-sinais">${lista}</ul>` : '<p class="org-resto__nota">Nenhum item em preparo ou pronto nesta leitura.</p>') + faltantes;
+}
+
 function previaDasPracas(previa) {
   if (!previa) return "";
   const linha = i => `<li>
     <span class="org-sinal__nome">${esc(i.descricao ?? "Pedido")}</span>
-    <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
+    <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.etapa ? ` · ${esc(i.etapa)}` : ""}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
     ${i.opcoes?.length ? `<span class="org-sinal__resumo">Opções · ${esc(i.opcoes.join(" · "))}</span>` : ""}
     ${(i.observacoes ?? []).map(n => `<span class="org-previa__nota"><strong>${esc(n.fonte)}</strong> ${esc(n.texto)}</span>`).join("")}
     ${i.conferir_observacao ? '<span class="org-sinal__resumo">Conferir a observação com a Teknisa.</span>' : ""}
@@ -1075,9 +1124,11 @@ function previaDasPracas(previa) {
   const notasGerais = previa.notas_gerais?.length ? dobra("ifood-notas-gerais", "Notas gerais no caixa",
     `<p class="org-resto__nota">Estas notas pertencem à comanda inteira.</p><ul class="org-ctx__sinais">${previa.notas_gerais.map(n =>
       `<li>${esc(n.hora)} · #${esc(n.codigo)}</li>`).join("")}</ul>`) : "";
-  return dobra("ifood-previa-pracas", "Prévia por praça",
+  const itens = [...previa.grupos.flatMap(grupo => grupo.itens), ...previa.pendentes];
+  return dobra("ifood-fila-itens", "Fila por item",
+    filaPorProduto(itens, linha), true) + dobra("ifood-previa-pracas", "Conferir por praça",
     (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
-      : '<p class="org-resto__nota">Nenhum pedido em preparo nesta leitura.</p>') + notasGerais, true);
+      : '<p class="org-resto__nota">Nenhum pedido em preparo ou pronto nesta leitura.</p>') + notasGerais);
 }
 
 export function operacaoDoIfood(o) {
