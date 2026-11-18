@@ -200,7 +200,7 @@ mutacao({ id: "MQ10", gate: "cadeia", prova: "I9", propriedade: "o token do obse
   edicoes: [{ arquivo: PS, de: "  if (alvo.protocol === \"https:\" || (alvo.protocol === \"http:\" && loopback)) return null;\n",
     para: "  return null;\n" }] });
 mutacao({ id: "MQ11", gate: "cadeia", prova: "I3", propriedade: "a apresentação ignora o observador local (fila nunca observada)", recompilar: true,
-  edicoes: [{ arquivo: PS, de: "        const motivo = motivoDoObservadorDaFila();\n", para: "        const motivo = \"observador_da_fila_nao_configurado\";\n" }] });
+  edicoes: [{ arquivo: PS, de: "  const motivo = motivoDoObservadorDaFila();\n", para: "  const motivo = \"observador_da_fila_nao_configurado\";\n" }] });
 
 console.log("\n3. RESTAURAÇÃO");
 teste("todos os alvos voltaram byte a byte à origem", () => {
