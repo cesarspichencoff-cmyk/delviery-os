@@ -1173,6 +1173,25 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   color: var(--org-verde-texto-5);
 }
 
+.org-foco__pedido {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 0.75rem;
+  padding-inline: 1rem;
+  border-radius: var(--org-raio);
+  background: var(--org-vivo);
+  color: var(--org-fundo);
+  font-weight: 600;
+}
+
+.org-foco__pedido:focus-visible,
+.org [data-pedido-destacado="sim"] {
+  outline: 2px solid var(--org-vivo);
+  outline-offset: 3px;
+}
+
 /* ------------------------------------------------------------------ *
  * Desktop largo: a legenda vira coluna, e o organismo cabe numa olhada
  * ------------------------------------------------------------------ *
@@ -2468,4 +2487,20 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--org-verde-texto-3);
+}
+
+.org-fila[data-paralelo="sim"] {
+  gap: clamp(0.35rem, 2vw, 1.2rem);
+}
+
+.org-fila[data-paralelo="sim"] > .org-area {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.org-fila[data-paralelo="sim"] .org-area[data-forma="nucleo"] .org-area__corpo {
+  max-width: 100%;
+  height: auto;
+  min-height: 44px;
+  aspect-ratio: 1;
 }

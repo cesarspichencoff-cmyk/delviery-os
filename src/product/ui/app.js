@@ -441,6 +441,27 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
   };
 }
 
+function mostrarPedidoDoCopiloto(alvo) {
+  const chave = hashAtual().consulta.get("pedido");
+  if (!/^[a-f0-9]{64}$/.test(chave ?? "")) return;
+  const pedido = alvo.querySelector(`[data-copiloto-ifood] [data-pedido-gestor="${chave}"]`);
+  if (!pedido) {
+    const aviso = document.createElement("p");
+    aviso.className = "org-resto__nota";
+    aviso.setAttribute("role", "status");
+    aviso.textContent = "O pedido não está disponível na leitura atual do Gestor.";
+    alvo.querySelector(".org-topo")?.after(aviso);
+    return;
+  }
+  for (let dobra = pedido.closest("details"); dobra; dobra = dobra.parentElement.closest("details")) {
+    dobra.open = true;
+  }
+  pedido.tabIndex = -1;
+  pedido.dataset.pedidoDestacado = "sim";
+  pedido.focus({ preventScroll: true });
+  pedido.scrollIntoView({ block: "center" });
+}
+
 async function desenhar(rota, opcoes = {}) {
   estado.pollingPedidos?.();
   estado.pollingPedidos = null;
@@ -503,6 +524,7 @@ async function desenhar(rota, opcoes = {}) {
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
+    if (vm.home_operacional) mostrarPedidoDoCopiloto(alvo);
   } catch (e) {
     if (geracao !== estado.geracao) return;
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",

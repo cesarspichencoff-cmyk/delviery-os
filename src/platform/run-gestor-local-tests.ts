@@ -444,6 +444,10 @@ void (async () => {
       assert.equal(previa.grupos[0].itens.length, 1);
       const item = previa.grupos[0].itens[0];
       assert.equal(item.codigo, "4444");
+      const pedido = v2.operacao_ifood.pedidos.find((p: { codigo: string }) => p.codigo === "4444");
+      assert.match(item.chave_gestor, /^[a-f0-9]{64}$/);
+      assert.equal(item.chave_gestor, pedido.chave_gestor);
+      assert.ok(!JSON.stringify(v2).includes(ped("4444").id_interno));
       assert.equal(item.descricao, "3× Hot roll");
       assert.equal(item.conferir_observacao, false);
       assert.ok(previa.notas_gerais.some((nota: { codigo: string }) => nota.codigo === "4444"));

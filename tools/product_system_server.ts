@@ -59,6 +59,7 @@ import { lerSaudeDaFonteTata, type AvaliadorDeSaude, type SaudeDaFonteTata } fro
 import { lerDemandaDoGestor, type DemandaDoGestor } from "../src/platform/leitura/demanda-do-gestor";
 import { leituraDaDemanda } from "../src/product/eventos/demanda-gestor";
 import { criarAtencaoDoGestor, fatosDoGestorLocal } from "../src/product/eventos/atencao-gestor-local";
+import { criarMedicaoFocoItaim } from "../src/product/eventos/medicao-foco-itaim";
 import { lerPedidosDoReader } from "../src/platform/leitura/pedidos-do-reader";
 import {
   conciliarComReader,
@@ -200,6 +201,9 @@ let memoIfood: {
   em: number; vm: OperacaoDoIfoodVM; gestor: ReturnType<typeof lerPedidosDoGestorLocal>;
 } | null = null;
 const atencaoItaim = criarAtencaoDoGestor();
+const medirFocoItaim = criarMedicaoFocoItaim(
+  process.env.DELIVERYOS_ITAIM_MEDICAO_ARQUIVO ?? "", process.env.DELIVERYOS_ITAIM_MEDICAO_DIA ?? "",
+);
 function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfoodVM {
   if (!memoIfood || agoraMs - memoIfood.em >= 10_000) {
     const agora = new Date(agoraMs);
@@ -837,11 +841,14 @@ export async function criarServidor(): Promise<http.Server> {
                 explicacao: "A leitura da plataforma falhou nesta requisicao." }))
               .then(l => leituraDaRuaDe(l, new Date(agoraMs).toISOString(), "ITAIM"));
           void Promise.all([lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome])
-            .then(([reader, rua]) => json(res, 200, {
-              home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null, fatos),
-                aprofundamentos: [], ...(rua ? { entregas: rua } : {}) },
-              operacao_ifood: pedidosIfood,
-            }))
+            .then(([reader, rua]) => {
+              const home = homeDaOperacao(reader, demandaReal, agoraMs, null, fatos);
+              medirFocoItaim(agoraMs, home, pedidosIfood, fatos.idade_min);
+              json(res, 200, {
+                home_operacional: { ...home, aprofundamentos: [], ...(rua ? { entregas: rua } : {}) },
+                operacao_ifood: pedidosIfood,
+              });
+            })
             .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
           return;
         }

@@ -1,8 +1,7 @@
-import { createHash } from "node:crypto";
 import type { PedidosDoGestorLocal } from "../../platform/leitura/pedidos-do-gestor-local";
 import { elegerModo, ESTADO_INICIAL, POLITICA_CANONICA, type EstadoTemporal } from "../atencao/politica-temporal";
 import { sinaisDe, type FonteLeitura, type LeituraOperacional, type PedidoLeitura } from "../viewmodels/sinais";
-import { GESTOR_VELHO_MIN } from "../viewmodels/home-operacao-ifood-vm";
+import { chaveDoPedidoGestor, GESTOR_VELHO_MIN } from "../viewmodels/home-operacao-ifood-vm";
 
 const FONTE = "gestor_ifood_eventos";
 const JANELA_ENTRE_LEITURAS_MS = 90_000;
@@ -39,7 +38,7 @@ export function fatosDoGestorLocal(gestor: PedidosDoGestorLocal, agoraMs: number
       const preparo = !saiu && !pronto && desde(e.CONFIRMED) !== null ? desde(p.inicio_do_preparo) : null;
       if (espera === null && rua === null && preparo === null) continue;
       pedidos.push({
-        id: createHash("sha256").update(p.id_interno).digest("hex"), codigo_publico: p.codigo_curto,
+        id: chaveDoPedidoGestor(p.id_interno), codigo_publico: p.codigo_curto,
         itens: [], minutos_pronto_sem_sair: espera, minutos_sem_ficar_pronto: preparo,
         minutos_em_rua: rua, motivo_duas_sacolas: null, risco_de_conferencia: null,
       });

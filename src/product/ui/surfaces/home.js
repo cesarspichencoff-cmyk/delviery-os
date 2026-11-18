@@ -49,6 +49,7 @@ import { blocoLimitacoes, campo, esc, selos } from "../components/ui.js";
 const FORMA = {
   caixa: "pilula",
   sushi: "nucleo",
+  enrolados_quentes: "nucleo",
   cozinha: "nucleo",
   conferencia: "pilula",
   motoboy: "pilula",
@@ -57,10 +58,27 @@ const FORMA = {
 /** As tres fileiras da superficie, na ordem do pedido. */
 const FILEIRAS = [
   { id: "entrada", areas: ["caixa"] },
-  { id: "producao", areas: ["sushi", "cozinha"] },
+  { id: "producao", areas: ["sushi", "enrolados_quentes", "cozinha"] },
   { id: "fechamento", areas: ["conferencia"] },
   { id: "saida", areas: ["motoboy"] },
 ];
+
+function ambientesDaHome(vm) {
+  if (!vm.rota_home) return vm.ambientes;
+  const sushi = vm.ambientes.find(a => a.id === "sushi");
+  const quentes = sushi?.subareas.find(p => p.id === "enrolados_quentes");
+  if (!quentes) return vm.ambientes;
+  return vm.ambientes.flatMap(a => a !== sushi ? [a] : [
+    { ...a, subareas: a.subareas.filter(p => p !== quentes) },
+    { ...quentes, descricao: "Praça de Sushi Quentes.", medicao: a.medicao, subareas: [] },
+  ]);
+}
+
+function areaDoFoco(vm) {
+  const f = vm.foco;
+  return f?.subarea === "enrolados_quentes" && vm.ambientes.some(a => a.id === f.subarea)
+    ? f.subarea : f?.ambiente ?? null;
+}
 
 /**
  * Como a ausencia se apresenta. Sao motivos DIFERENTES e o contrato canonico
@@ -338,6 +356,9 @@ function area(a, vm) {
     (x, y) => Number(y.causadora) - Number(x.causadora),
   );
   const grupos = vm.operacao_ifood?.previa_por_praca?.grupos ?? [];
+  const quentesSeparado = vm.ambientes.some(area => area.id === "enrolados_quentes");
+  const demanda = grupos.filter(p => a.id === "enrolados_quentes" ? p.praca === a.id
+    : p.ambiente === a.id && !(quentesSeparado && p.praca === "enrolados_quentes"));
   const subs = a.subareas.length
     ? `<ul class="org-subs">${ordenadas.map(s => subarea(s, grupos)).join("")}</ul>`
     : "";
@@ -346,7 +367,7 @@ function area(a, vm) {
     a.cor,
   )}" data-degrau="${degrau(a.cor)}"${
     ausencia ? ` data-ausencia="${ausencia}"` : ""
-  }${vm.foco && vm.foco.ambiente === a.id ? ' data-foco="sim"' : ""}>
+  }${areaDoFoco(vm) === a.id ? ' data-foco="sim"' : ""}>
     <a class="org-area__corpo" href="${esc(href)}" aria-label="Aproximar de ${esc(
       a.rotulo,
     )}">
@@ -354,7 +375,7 @@ function area(a, vm) {
       <span class="org-area__nome">${esc(a.rotulo)}</span>
       <span class="org-area__estado">${esc(a.estado_texto)}</span>
     </a>
-    ${linhaDemandaDaPraca(grupos.filter(p => p.ambiente === a.id))}
+    ${linhaDemandaDaPraca(demanda)}
     <p class="org-area__info">${esc(a.motivo)}</p>
     ${subs}
   </div>`;
@@ -375,7 +396,7 @@ function segmento(l, d) {
   return `<line class="org-fio" data-intensidade="${i}" x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}">${titulo}</line>`;
 }
 
-function ligacoesEntrada(vm) {
+function ligacoesEntrada(vm, paralelo) {
   const a = achar(vm.ligacoes, "caixa", "sushi");
   const b = achar(vm.ligacoes, "caixa", "cozinha");
   // O tronco herda a maior das duas intensidades: ele carrega as duas.
@@ -389,12 +410,13 @@ function ligacoesEntrada(vm) {
           : b;
   return `<svg class="org-lig" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
     ${segmento(tronco, { x1: 50, y1: 0, x2: 50, y2: 6 })}
-    ${segmento(a, { x1: 50, y1: 6, x2: 25, y2: 20 })}
-    ${segmento(b, { x1: 50, y1: 6, x2: 75, y2: 20 })}
+    ${segmento(a, { x1: 50, y1: 6, x2: paralelo ? 16.67 : 25, y2: 20 })}
+    ${paralelo ? segmento(null, { x1: 50, y1: 6, x2: 50, y2: 20 }) : ""}
+    ${segmento(b, { x1: 50, y1: 6, x2: paralelo ? 83.33 : 75, y2: 20 })}
   </svg>`;
 }
 
-function ligacoesFechamento(vm) {
+function ligacoesFechamento(vm, paralelo) {
   const a = achar(vm.ligacoes, "sushi", "conferencia");
   const b = achar(vm.ligacoes, "cozinha", "conferencia");
   const tronco =
@@ -406,8 +428,9 @@ function ligacoesFechamento(vm) {
           ? a
           : b;
   return `<svg class="org-lig" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
-    ${segmento(a, { x1: 25, y1: 0, x2: 50, y2: 13 })}
-    ${segmento(b, { x1: 75, y1: 0, x2: 50, y2: 13 })}
+    ${segmento(a, { x1: paralelo ? 16.67 : 25, y1: 0, x2: 50, y2: 13 })}
+    ${paralelo ? segmento(null, { x1: 50, y1: 0, x2: 50, y2: 13 }) : ""}
+    ${segmento(b, { x1: paralelo ? 83.33 : 75, y1: 0, x2: 50, y2: 13 })}
     ${segmento(tronco, { x1: 50, y1: 13, x2: 50, y2: 20 })}
   </svg>`;
 }
@@ -446,9 +469,10 @@ function superficie(vm) {
   // Qual area o Foco aponta. Nao e decisao desta tela: vem pronta em
   // `vm.foco.ambiente`. Serve para o TERRITORIO se reorganizar em volta dela —
   // a fileira que a contem segue inteira, e as outras recuam (lei 4).
-  const idFoco = vm.foco ? vm.foco.ambiente : null;
+  const idFoco = areaDoFoco(vm);
+  const paralelo = porId.has("enrolados_quentes");
   const fileira = (f) =>
-    `<div class="org-fila" data-fila="${f.id}"${
+    `<div class="org-fila" data-fila="${f.id}"${f.id === "producao" && paralelo ? ' data-paralelo="sim"' : ""}${
       idFoco !== null && f.areas.includes(idFoco) ? ' data-tem-foco="sim"' : ""
     }>${f.areas
       .map((id) => (porId.has(id) ? area(porId.get(id), vm) : ""))
@@ -456,9 +480,9 @@ function superficie(vm) {
 
   return `<div class="org-superficie">
     ${fileira(FILEIRAS[0])}
-    ${ligacoesEntrada(vm)}
+    ${ligacoesEntrada(vm, paralelo)}
     ${fileira(FILEIRAS[1])}
-    ${ligacoesFechamento(vm)}
+    ${ligacoesFechamento(vm, paralelo)}
     ${fileira(FILEIRAS[2])}
     ${ligacaoSaida(vm)}
     ${fileira(FILEIRAS[3])}
@@ -503,6 +527,10 @@ function orientacao(o) {
 function foco(vm) {
   if (!vm.foco) return "";
   const f = vm.foco;
+  const leitura = vm.operacao_ifood;
+  const chave = f.sinal.pedido_id;
+  const pedido = vm.rota_home && /^[a-f0-9]{64}$/.test(chave ?? "") && leitura?.disponivel && !leitura.leitura_velha
+    ? leitura.pedidos.filter(p => p.chave_gestor === chave) : [];
   const local = [f.ambiente_rotulo, f.subarea_rotulo].filter(Boolean).join(" · ");
   const evid = f.evidencias.length
     ? `<ul class="org-foco__evidencias">${f.evidencias
@@ -522,6 +550,7 @@ function foco(vm) {
     ${evid}
     <p class="org-foco__tempo">${esc(f.tempo)}</p>
     ${orientacao(f.orientacao)}
+    ${pedido.length === 1 && pedido[0].ativo ? `<a class="org-foco__pedido" href="${esc(`#${vm.rota_home}&pedido=${chave}`)}">Ver pedido</a>` : ""}
   </aside>`;
 }
 
@@ -1065,7 +1094,7 @@ function pedidoDoIfood(p) {
     i.observacao ? ` — <em>${esc(i.observacao)}</em>` : ""}</li>`).join("");
   const preparo = p.preparo ? ` · preparo informado ${esc(String(p.preparo.informado_min))} min${
     p.preparo.passou_min ? `, passou ${esc(String(p.preparo.passou_min))} min` : ""}` : "";
-  return `<li class="org-sinal" data-ativo="${p.ativo ? "sim" : "nao"}" data-teknisa="${esc(p.teknisa.classe)}">
+  return `<li class="org-sinal"${identificarPedido(p)} data-ativo="${p.ativo ? "sim" : "nao"}" data-teknisa="${esc(p.teknisa.classe)}">
     <span class="org-sinal__nome">${esc(p.hora)} · ${esc(p.codigo)} · ${esc(p.etapa)}</span>
     <span class="org-sinal__resumo">${esc(p.modalidade)} · ha ${esc(String(p.minutos))} min${preparo} · ${esc(p.teknisa.texto)}${
       p.teknisa.estado ? ` (estado ${esc(p.teknisa.estado)})` : ""}</span>
@@ -1079,6 +1108,10 @@ function pedidoDoIfood(p) {
     ${p.leitor ? `<div class="org-ctx__ausencia">Leitura da Teknisa · revisão ${esc(p.leitor.revisao.slice(0, 10))}</div>
       <ul class="org-sinais">${pedidoDaTeknisa(p.leitor.pedido)}</ul>` : ""}
   </li>`;
+}
+
+function identificarPedido(p) {
+  return p.chave_gestor ? ` data-pedido-gestor="${esc(p.chave_gestor)}"` : "";
 }
 
 function totalDosItens(itens) {
@@ -1119,7 +1152,7 @@ function filaPorProduto(itens, linha, etapa) {
 
 function filaDoItaim(o, atencao, detalhes) {
   const previa = o.previa_por_praca;
-  const linha = i => `<li>
+  const linha = i => `<li${identificarPedido(i)}>
     <span class="org-sinal__nome">${esc(i.descricao ?? "Pedido")}</span>
     <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.etapa ? ` · ${esc(i.etapa)}` : ""}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
     ${i.opcoes?.length ? `<span class="org-sinal__resumo">Opções · ${esc(i.opcoes.join(" · "))}</span>` : ""}
@@ -1255,7 +1288,8 @@ function areaAmpliada(vm) {
   return id && vm.ambientes.some((a) => a.id === id) ? id : null;
 }
 
-export function telaHome(vm) {
+export function telaHome(leitura) {
+  const vm = { ...leitura, ambientes: ambientesDaHome(leitura) };
   const ampliada = areaAmpliada(vm);
   const pedidos = vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood);
   return `<div class="org" data-modo="${esc(vm.modo)}" data-degradado="${
