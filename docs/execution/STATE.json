@@ -6,10 +6,11 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-11-17",
-    "state_basis": "aff4c04b2d21a0568b9f250f7ab344ceb194b4f1",
+    "state_basis": "4d22ddb7631c0637cf59adfe9f9795700f33ddfe",
     "_revalidacao_previa_itaim_2026_11_17": "Previa do Itaim ativa no endereco privado do iPhone. A verificacao por linha preserva a identidade exata da revisao. Na comparacao do turno, com os mesmos 35 itens, a cobertura passou de 17 para 26 em pracas e 9 a conferir por item. Em reprocessamento de comanda real, o codigo 9100505000 passou de pendente a Sushi Quentes pela decisao operacional registrada na PR. A consulta apos a ultima troca retornou 21 de 21 itens em preparo, 19 em pracas e 2 a conferir. Gestor 21/21 e Reader 15/15. Visualizacao no iPhone apos a troca e a praca de itens ainda pendentes seguem sem confirmacao.",
     "_revalidacao_preparo_ifood_2026_11_17": "Eventos do entregador antes de READY_TO_PICKUP deixam o pedido confirmado em preparo. Comparacao com a mesma leitura real das 20h42 no Itaim: 4 em preparo antes, 6 depois, 2 pedidos sem marca de pronto recuperados no contador e na previa. Validacao da API ativa nas consultas inicial e leve. Testes locais Gestor 22/22 e Reader 15/15. Comparacao simultanea com a tela do Gestor no iPhone segue pendente.",
     "_revalidacao_home_notas_itaim_2026_11_17": "Home aprovada em leitura no endereço privado do Itaim, sem fixture do inspetor. Reprocessados quatro itens reais indicados pelo gerente em Combinados (1), Cozinha (1) e Duplas (2). Notas ligadas à linha e opções seguem o item; nota geral fica na comanda. Gestor 24/24, Reader 15/15, Organismo 27/27, ordem visual 6/6, HTML da API ativa e aproximação verificadas. Entregas prontos responde integracao_pendente nesta instância; teste em iPhone físico e jornada com motoboy pendentes.",
+    "_revalidacao_fila_por_item_itaim_2026_11_17": "Fila por item lançada no Copiloto privado. Soma produtos com os pedidos ao lado e preserva estágio do Gestor, opções, notas e consulta por praça. Na API ativa, cinco pedidos em preparo e dois prontos, 28 linhas reconciliadas com a lista do Gestor, 21 unidades em preparo e 17 em pedidos marcados prontos. Home identifica a fila do Gestor e separa a medição indisponível de cada área. Testes Gestor 24/24. Fila própria de expedição, confirmação física por item e visualização final no iPhone seguem pendentes.",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
