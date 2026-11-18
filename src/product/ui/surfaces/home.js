@@ -1066,7 +1066,7 @@ function totalDosItens(itens) {
   return itens.reduce((total, item) => total + item.quantidade, 0);
 }
 
-function filaPorProduto(itens, linha) {
+function filaPorProduto(itens, linha, etapa) {
   const produtos = new Map();
   for (const item of itens) {
     if (!item.produto || !Number.isFinite(item.quantidade) || item.quantidade <= 0) continue;
@@ -1075,9 +1075,7 @@ function filaPorProduto(itens, linha) {
     produto.itens.push(item);
     produtos.set(chave, produto);
   }
-  const etapa = (produto, estado, rotulo) => {
-    const linhas = produto.itens.filter(item => item.etapa === estado);
-    if (!linhas.length) return "";
+  const numeros = linhas => {
     const pedidos = new Map();
     for (const item of linhas) {
       const chave = JSON.stringify([item.hora, item.codigo]);
@@ -1085,27 +1083,23 @@ function filaPorProduto(itens, linha) {
       pedido.quantidade += item.quantidade;
       pedidos.set(chave, pedido);
     }
-    return `<span class="org-fila__etapa" data-etapa="${esc(estado)}">
-      <strong>${esc(String(totalDosItens(linhas)))} ${rotulo}</strong>
-      <span>${[...pedidos.values()].map(p => `#${esc(p.codigo)} ×${esc(String(p.quantidade))}`).join(" · ")}</span>
-    </span>`;
+    return [...pedidos.values()].map(p => `#${esc(p.codigo)} ×${esc(String(p.quantidade))}`).join(" · ");
   };
   const lista = [...produtos].sort(([, a], [, b]) => a.nome.localeCompare(b.nome, "pt-BR")).map(([chave, p]) =>
-    `<li class="org-sinal"><details class="org-fila__produto" id="fila-${esc(chave)}">
-      <summary><span class="org-sinal__nome">${esc(p.nome)}</span>
-        ${etapa(p, "em preparo", "em preparo")}
-        ${etapa(p, "pronto", "prontos no iFood")}
+    `<li class="org-sinal"><details class="org-fila__produto" id="fila-${esc(etapa)}-${esc(chave)}">
+      <summary><span class="org-sinal__nome">${esc(String(totalDosItens(p.itens)))} × ${esc(p.nome)}</span>
+        <span class="org-fila__pedidos">${numeros(p.itens)}</span>
       </summary>
       <ul class="org-previa__itens">${p.itens.map(linha).join("")}</ul>
     </details></li>`).join("");
   const semItens = itens.filter(item => !item.produto);
   const faltantes = semItens.length
     ? `<p class="org-resto__nota">Pedidos sem itens na leitura · ${semItens.map(p => `#${esc(p.codigo)}`).join(" · ")}</p>` : "";
-  return (lista ? `<ul class="org-sinais">${lista}</ul>` : '<p class="org-resto__nota">Nenhum item em preparo ou pronto nesta leitura.</p>') + faltantes;
+  return (lista ? `<ul class="org-sinais">${lista}</ul>` : '<p class="org-resto__nota">Nenhum item nesta etapa.</p>') + faltantes;
 }
 
-function previaDasPracas(previa) {
-  if (!previa) return "";
+function filaDoItaim(o, atencao, detalhes) {
+  const previa = o.previa_por_praca;
   const linha = i => `<li>
     <span class="org-sinal__nome">${esc(i.descricao ?? "Pedido")}</span>
     <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.etapa ? ` · ${esc(i.etapa)}` : ""}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
@@ -1125,20 +1119,29 @@ function previaDasPracas(previa) {
     `<p class="org-resto__nota">Estas notas pertencem à comanda inteira.</p><ul class="org-ctx__sinais">${previa.notas_gerais.map(n =>
       `<li>${esc(n.hora)} · #${esc(n.codigo)}</li>`).join("")}</ul>`) : "";
   const itens = [...previa.grupos.flatMap(grupo => grupo.itens), ...previa.pendentes];
-  return dobra("ifood-fila-itens", "Fila por item",
-    filaPorProduto(itens, linha), true) + dobra("ifood-previa-pracas", "Conferir por praça",
-    (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
-      : '<p class="org-resto__nota">Nenhum pedido em preparo ou pronto nesta leitura.</p>') + notasGerais);
-}
-
-function acompanharPedidos(pedidos) {
-  const prontos = pedidos.filter(p => p.etapa.startsWith("pronto"));
-  const emEntrega = pedidos.filter(p => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino");
-  const lista = (id, titulo, grupo) => dobra(id, `${titulo} · ${grupo.length}`,
-    grupo.length ? `<ul class="org-sinais">${grupo.map(pedidoDoIfood).join("")}</ul>`
-      : '<p class="org-resto__nota">Nenhum pedido nesta etapa.</p>');
-  return lista("ifood-prontos", "Prontos no iFood", prontos)
-    + lista("ifood-em-entrega", "Saíram para entrega", emEntrega);
+  const etapa = (id, titulo, total, corpo) => dobra(id, `${titulo} · ${total} ${total === 1 ? "pedido" : "pedidos"}`, corpo);
+  const emEntrega = o.pedidos.filter(p => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino");
+  const instante = new Date(o.lido_em);
+  const atualizado = Number.isFinite(instante.getTime()) ? new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
+  }).format(instante) : "";
+  return `<section class="org-resto org-ifood org-fila" data-ifood="lido" data-velha="nao" aria-label="Pedidos do Itaim">
+    <div class="org-fila__topo">
+      <h2>Pedidos do Itaim</h2>
+      <p>Gestor do iFood${atualizado ? ` · Atualizado às ${esc(atualizado)}` : ""}</p>
+    </div>
+    <div class="org-fila__fluxo">
+      ${etapa("ifood-em-preparo", "Em preparo", o.contagens.em_preparo, filaPorProduto(itens.filter(i => i.etapa === "em preparo"), linha, "preparo"))}
+      ${etapa("ifood-prontos", "Prontos", o.contagens.prontos, filaPorProduto(itens.filter(i => i.etapa === "pronto"), linha, "prontos"))}
+      ${etapa("ifood-em-entrega", "Saíram para entrega", o.contagens.na_rua,
+        emEntrega.length ? `<ul class="org-sinais">${emEntrega.map(pedidoDoIfood).join("")}</ul>`
+          : '<p class="org-resto__nota">Nenhum pedido nesta etapa.</p>')}
+    </div>
+    ${dobra("ifood-conferencia", o.atencao.length ? `Conferência por praça · ${o.atencao.length} avisos` : "Conferência por praça",
+      atencao + (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
+        : '<p class="org-resto__nota">Nenhum pedido em preparo ou pronto nesta leitura.</p>') + notasGerais)}
+    ${dobra("ifood-detalhes", "Histórico e fontes", detalhes)}
+  </section>`;
 }
 
 export function operacaoDoIfood(o) {
@@ -1163,15 +1166,18 @@ export function operacaoDoIfood(o) {
     (k.sem_comanda_na_teknisa ? ` · ${k.sem_comanda_na_teknisa} sem comanda vista` : "") +
     (k.item_ou_quantidade_divergente ? ` · ${k.item_ou_quantidade_divergente} com itens diferentes` : "") +
     (k.somente_na_teknisa_na_janela ? ` · ${k.somente_na_teknisa_na_janela} so na Teknisa` : "");
-  return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
-    <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
-    <span class="org-resto__conta">${esc(linha)}</span></div>
-    ${velho}${previaDasPracas(o.previa_por_praca)}${o.previa_por_praca ? acompanharPedidos(o.pedidos) : ""}${atencao}
+  const detalhes = `
     ${o.pedidos.length ? dobra("ifood-pedidos", `Ver os ${o.pedidos.length} pedidos do Gestor`,
       `<ul class="org-sinais">${o.pedidos.map(pedidoDoIfood).join("")}</ul>`) : ""}
     <p class="org-resto__nota">${conc}</p>
     ${dobra("ifood-limites", `Ver o que esta leitura nao prova (${o.limitacoes.length})`,
       `<ul class="org-sinais">${o.limitacoes.map((l) => `<li class="org-sinal"><span class="org-sinal__resumo">${esc(l)}</span></li>`).join("")}</ul>`)}
+  `;
+  if (o.previa_por_praca) return filaDoItaim(o, atencao, detalhes);
+  return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
+    <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
+    <span class="org-resto__conta">${esc(linha)}</span></div>
+    ${velho}${atencao}${detalhes}
   </section>`;
 }
 
@@ -1232,6 +1238,7 @@ function areaAmpliada(vm) {
 
 export function telaHome(vm) {
   const ampliada = areaAmpliada(vm);
+  const pedidos = vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood);
   return `<div class="org" data-modo="${esc(vm.modo)}" data-degradado="${
     vm.degradado ? "sim" : "nao"
   }" data-demonstracao="${vm.demonstracao ? "sim" : "nao"}" data-vista="${
@@ -1239,6 +1246,7 @@ export function telaHome(vm) {
   }">
     ${faixaDemonstracao(vm)}
     ${topo(vm)}
+    ${vm.rota_home && !ampliada ? pedidos : ""}
     ${faixaParcial(vm)}
     <div class="org-palco">
       ${faixaTecnica(vm)}
@@ -1270,7 +1278,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
-    ${vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood)}
+    ${!vm.rota_home || ampliada ? pedidos : ""}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}

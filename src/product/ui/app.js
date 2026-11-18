@@ -374,7 +374,7 @@ function ligarPedidosDoCopiloto(alvo, api, geracao) {
   if (!bloco) return;
   let relendo = false;
   let ultimo = bloco.innerHTML;
-  estado.pollingPedidos = setInterval(async () => {
+  const atualizar = async () => {
     if (document.hidden || relendo) return;
     relendo = true;
     let html;
@@ -392,11 +392,17 @@ function ligarPedidosDoCopiloto(alvo, api, geracao) {
     bloco.innerHTML = html;
     ultimo = html;
     for (const dobra of bloco.querySelectorAll("details")) dobra.open = dobras.get(dobra.id) ?? dobra.open;
-  }, 15000);
+  };
+  const intervalo = setInterval(atualizar, 15000);
+  document.addEventListener("visibilitychange", atualizar);
+  estado.pollingPedidos = () => {
+    clearInterval(intervalo);
+    document.removeEventListener("visibilitychange", atualizar);
+  };
 }
 
 async function desenhar(rota, opcoes = {}) {
-  clearInterval(estado.pollingPedidos);
+  estado.pollingPedidos?.();
   estado.pollingPedidos = null;
   const geracao = ++estado.geracao;
   estado.relendo = false;
