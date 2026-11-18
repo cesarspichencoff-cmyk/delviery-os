@@ -44,8 +44,8 @@ const estado = {
   relendo: false,
 };
 
-async function obter(caminho) {
-  const r = await fetch(caminho, { headers: { accept: "application/json" } });
+async function obter(caminho, signal) {
+  const r = await fetch(caminho, { headers: { accept: "application/json" }, signal });
   if (!r.ok) throw falhaDeLeituraHttp(r.status, r.headers.get("Retry-After"));
   return r.json();
 }
@@ -369,29 +369,79 @@ function apiDaRota(rota) {
   return api;
 }
 
-function ligarPedidosDoCopiloto(alvo, api, geracao) {
-  const bloco = alvo.querySelector("[data-copiloto-ifood]");
-  if (!bloco) return;
+function renderizarHomeItaim(vm) {
+  return telaHome({ ...vm.home_operacional, operacao_ifood: vm.operacao_ifood,
+    rota_home: "/copiloto?unidade=ITAIM" });
+}
+
+function trocarConteudo(bloco, novo) {
+  if (bloco.innerHTML === novo.innerHTML) return;
+  const dobras = new Map([...bloco.querySelectorAll("details[id]")].map(d => [d.id, d.open]));
+  const foco = bloco.contains(document.activeElement) ? document.activeElement.closest("details[id]")?.id : null;
+  bloco.replaceChildren(...novo.childNodes);
+  for (const dobra of bloco.querySelectorAll("details[id]")) {
+    dobra.open = dobras.get(dobra.id) ?? dobra.open;
+    if (dobra.id === foco) dobra.querySelector("summary")?.focus({ preventScroll: true });
+  }
+}
+
+function atualizarHomeItaim(alvo, vm) {
+  const atual = alvo.querySelector(".org");
+  const molde = document.createElement("template");
+  molde.innerHTML = renderizarHomeItaim(vm).trim();
+  const nova = molde.content.firstElementChild;
+  const seletores = [".org-topo", ".org-palco", "[data-copiloto-ifood]", "[data-resumo-operacao]"];
+  for (const seletor of seletores) {
+    trocarConteudo(atual.querySelector(seletor), nova.querySelector(seletor));
+  }
+  const fila = atual.querySelector("[data-copiloto-ifood]");
+  const palco = atual.querySelector(".org-palco");
+  const filaNoTopo = atual.querySelector(".org-topo").nextElementSibling === fila;
+  const moverParaOTopo = !vm.home_operacional.foco && nova.dataset.vista === "geral";
+  if (moverParaOTopo !== filaNoTopo) {
+    const focado = fila.contains(document.activeElement) ? document.activeElement : null;
+    if (moverParaOTopo) atual.querySelector(".org-topo").after(fila);
+    else palco.after(fila);
+    focado?.focus({ preventScroll: true });
+  }
+  atual.dataset.modo = nova.dataset.modo;
+  atual.dataset.degradado = nova.dataset.degradado;
+}
+
+function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
+  if (!alvo.querySelector("[data-copiloto-ifood]")) return;
   let relendo = false;
-  let ultimo = bloco.innerHTML;
+  const homeItaim = Boolean(inicial.home_operacional);
   const atualizar = async () => {
     if (document.hidden || relendo) return;
     relendo = true;
-    let html;
+    let vm;
     try {
-      const vm = await obter(api + (api.includes("?") ? "&" : "?") + "pedidos=1");
-      html = operacaoDoIfood(vm.operacao_ifood);
+      vm = await obter(api + (api.includes("?") ? "&" : "?") + "pedidos=1", AbortSignal.timeout(8000));
     } catch {
-      html = operacaoDoIfood({ disponivel: false, titulo: "Leitura do iFood indisponível",
-        explicacao: "A atualização será tentada novamente." });
+      vm = { operacao_ifood: { disponivel: false, titulo: "Leitura do iFood indisponível",
+        explicacao: "A atualização será tentada novamente." } };
     } finally {
       relendo = false;
     }
-    if (geracao !== estado.geracao || html === ultimo) return;
-    const dobras = new Map([...bloco.querySelectorAll("details")].map(d => [d.id, d.open]));
-    bloco.innerHTML = html;
-    ultimo = html;
-    for (const dobra of bloco.querySelectorAll("details")) dobra.open = dobras.get(dobra.id) ?? dobra.open;
+    if (geracao !== estado.geracao) return;
+    if (homeItaim) {
+      // Retira a orientação atual se uma atualização falhar. A próxima leitura
+      // completa repõe os sinais e o modo de operação.
+      if (!vm.home_operacional) {
+        for (const bloco of alvo.querySelectorAll(".org-palco, [data-resumo-operacao]")) bloco.hidden = true;
+        const novo = document.createElement("div");
+        novo.innerHTML = operacaoDoIfood(vm.operacao_ifood);
+        trocarConteudo(alvo.querySelector("[data-copiloto-ifood]"), novo);
+        return;
+      }
+      for (const bloco of alvo.querySelectorAll(".org-palco, [data-resumo-operacao]")) bloco.hidden = false;
+      atualizarHomeItaim(alvo, vm);
+    } else {
+      const novo = document.createElement("div");
+      novo.innerHTML = operacaoDoIfood(vm.operacao_ifood);
+      trocarConteudo(alvo.querySelector("[data-copiloto-ifood]"), novo);
+    }
   };
   const intervalo = setInterval(atualizar, 15000);
   document.addEventListener("visibilitychange", atualizar);
@@ -453,14 +503,13 @@ async function desenhar(rota, opcoes = {}) {
     // Uma resposta de rota/unidade anterior nao pode substituir o contexto atual.
     if (geracao !== estado.geracao) return;
     if (vm.home_operacional) {
-      alvo.innerHTML = telaHome({ ...vm.home_operacional, operacao_ifood: vm.operacao_ifood,
-        rota_home: "/copiloto?unidade=ITAIM" });
+      alvo.innerHTML = renderizarHomeItaim(vm);
     } else {
       const pedidosIfood = rota === "/copiloto" && vm.operacao_ifood
         ? `<div class="org" data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : "";
       alvo.innerHTML = s.tela(vm) + pedidosIfood + tata;
     }
-    ligarPedidosDoCopiloto(alvo, api, geracao);
+    ligarPedidosDoCopiloto(alvo, api, geracao, vm);
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);

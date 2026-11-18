@@ -202,10 +202,14 @@ function faixaTecnica(vm) {
 
 function legenda(vm) {
   if (vm.rota_home && vm.sem_leitura_operacional) {
+    const ambiente = vm.modo === "ambiente" ? vm.sinais_em_segundo_plano.find(s => s.severidade >= 2) : null;
+    const apoio = ambiente?.resumo ?? (vm.operacao_ifood?.disponivel
+      ? "Pedidos registrados no iFood. A medição de cada área aparece no mapa."
+      : "A leitura dos pedidos está indisponível nesta atualização.");
     return `<div class="org-legenda">
       <span class="org-legenda__kicker">Delivery · Itaim</span>
-      <h1 class="org-legenda__frase">Operação do Itaim</h1>
-      <p class="org-legenda__apoio">A fila de preparo e de prontos vem do Gestor do iFood. A medição de cada área aparece no mapa.</p>
+      <h1 class="org-legenda__frase">${vm.foco ? "Foco" : ambiente ? "Acompanhar" : "Operação do Itaim"}</h1>
+      ${vm.foco ? "" : `<p class="org-legenda__apoio">${esc(apoio)}</p>`}
     </div>`;
   }
   const p = vm.pulso;
@@ -288,7 +292,17 @@ function marca(a) {
  *    e o que o estado nao diz. Nenhum dado mudou: `causadora` continua vindo
  *    pronta, e nada foi escondido.
  */
-function subarea(s) {
+function linhaDemandaDaPraca(grupos) {
+  const emPreparo = grupos.reduce((total, p) => total + (p.em_preparo ?? 0), 0);
+  const prontos = grupos.reduce((total, p) => total + (p.prontos ?? 0), 0);
+  const textos = [
+    emPreparo > 0 ? `${emPreparo} ${emPreparo === 1 ? "item" : "itens"} na fila` : "",
+    prontos > 0 ? `${prontos} em pedidos prontos` : "",
+  ].filter(Boolean);
+  return textos.length ? `<span class="org-demanda-praca">${esc(textos.join(" · "))} <span class="sr-only">no iFood</span></span>` : "";
+}
+
+function subarea(s, grupos) {
   return `<li class="org-sub" data-cor="${esc(s.cor)}" data-degrau="${degrau(
     s.cor,
   )}"${s.causadora ? ' data-causadora="sim"' : ""}>
@@ -296,6 +310,7 @@ function subarea(s) {
       <span class="org-sub__nome">${esc(s.rotulo)}</span>
       <span class="org-sub__estado">${esc(s.estado_texto)}</span>
     </span>
+    ${linhaDemandaDaPraca(grupos.filter(p => p.praca === s.id))}
     ${s.causadora ? '<span class="org-sub__causa">origem do congestionamento</span>' : ""}
     <span class="sr-only">${esc(s.motivo)}</span>
   </li>`;
@@ -322,8 +337,9 @@ function area(a, vm) {
   const ordenadas = [...a.subareas].sort(
     (x, y) => Number(y.causadora) - Number(x.causadora),
   );
+  const grupos = vm.operacao_ifood?.previa_por_praca?.grupos ?? [];
   const subs = a.subareas.length
-    ? `<ul class="org-subs">${ordenadas.map(subarea).join("")}</ul>`
+    ? `<ul class="org-subs">${ordenadas.map(s => subarea(s, grupos)).join("")}</ul>`
     : "";
 
   return `<div class="org-area" data-area="${esc(a.id)}" data-forma="${forma}" data-cor="${esc(
@@ -338,6 +354,7 @@ function area(a, vm) {
       <span class="org-area__nome">${esc(a.rotulo)}</span>
       <span class="org-area__estado">${esc(a.estado_texto)}</span>
     </a>
+    ${linhaDemandaDaPraca(grupos.filter(p => p.ambiente === a.id))}
     <p class="org-area__info">${esc(a.motivo)}</p>
     ${subs}
   </div>`;
@@ -590,7 +607,7 @@ function aproximacao(vm, id) {
         ${
           a.subareas.length
             ? `<h3 class="org-aprox__rotulo">Subareas</h3><ul class="org-subs org-subs--aberta">${a.subareas
-                .map(subarea)
+                .map(s => subarea(s, vm.operacao_ifood?.previa_por_praca?.grupos ?? []))
                 .join("")}</ul>`
             : ""
         }
@@ -899,7 +916,7 @@ function resto(vm) {
       degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 
-  return `<section class="org-resto">
+  return `<section class="org-resto" data-resumo-operacao>
     <div class="org-resto__linha">
       <span class="org-resto__rotulo">resto da operacao</span>
       <span class="org-resto__conta">${esc(resumoLinha)}</span>
@@ -1127,7 +1144,7 @@ function filaDoItaim(o, atencao, detalhes) {
   const atualizado = Number.isFinite(instante.getTime()) ? new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
   }).format(instante) : "";
-  return `<section class="org-resto org-ifood org-fila" data-ifood="lido" data-velha="nao" aria-label="Pedidos do Itaim">
+  return `<section class="org-resto org-ifood org-turno-filas" data-ifood="lido" data-velha="nao" aria-label="Pedidos do Itaim">
     <div class="org-fila__topo">
       <h2>Pedidos do Itaim</h2>
       <p>Gestor do iFood${atualizado ? ` · Atualizado às ${esc(atualizado)}` : ""}</p>
@@ -1248,7 +1265,7 @@ export function telaHome(vm) {
   }">
     ${faixaDemonstracao(vm)}
     ${topo(vm)}
-    ${vm.rota_home && !ampliada ? pedidos : ""}
+    ${vm.rota_home && !ampliada && !vm.foco ? pedidos : ""}
     ${faixaParcial(vm)}
     <div class="org-palco">
       ${faixaTecnica(vm)}
@@ -1280,7 +1297,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
-    ${!vm.rota_home || ampliada ? pedidos : ""}
+    ${!vm.rota_home || ampliada || vm.foco ? pedidos : ""}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}

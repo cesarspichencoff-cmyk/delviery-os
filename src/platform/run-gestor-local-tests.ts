@@ -14,9 +14,12 @@ import { lerPedidosDoGestorLocal, type PedidoDoGestor } from "./leitura/pedidos-
 import { conciliarGestorTeknisa } from "./leitura/conciliacao-gestor-teknisa";
 import { lerPracasDaRevisao, type PedidoReal } from "./leitura/pedidos-reais-do-reader";
 import { operacaoDoIfoodVM } from "../product/viewmodels/home-operacao-ifood-vm";
+import { fatosDoGestorLocal, criarAtencaoDoGestor } from "../product/eventos/atencao-gestor-local";
+import { homeVM } from "../product/viewmodels/home-vm";
+import type { LeituraOperacional } from "../product/viewmodels/sinais";
 
 let n = 0;
-const TOTAL = 24;
+const TOTAL = 28;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -317,6 +320,8 @@ ok("G20 prévia preserva o item comprovado e lista o complemento e o item penden
     () => ["montagem_outros", null]);
   assert.ok(vm.disponivel && vm.previa_por_praca);
   assert.equal(vm.previa_por_praca.grupos[0]?.itens[0]?.descricao, "1× Poke");
+  assert.equal(vm.previa_por_praca.grupos[0]?.em_preparo, 1);
+  assert.equal(vm.previa_por_praca.grupos[0]?.prontos, 0);
   assert.deepEqual(vm.previa_por_praca.grupos[0]?.itens[0]?.opcoes, ["1× Molho tare"]);
   assert.deepEqual(vm.previa_por_praca.pendentes.map(p => p.descricao), ["2× Temaki"]);
 });
@@ -335,6 +340,74 @@ ok("G25 a praça aceita a observação ligada à linha e preserva a origem dos t
   assert.equal(item?.conferir_observacao, true);
   assert.equal(vm.previa_por_praca.pendentes.length, 0);
 });
+function janelaParaAtencao() {
+  if (g.estado !== "lido") throw Error("fixture do Gestor");
+  const pedido = { ...g.pedidos.find(p => p.codigo_curto === "1111")!, criado_em: iso(85),
+    inicio_do_preparo: iso(80), eventos: { CONFIRMED: iso(81) }, ultimo_evento: "CONFIRMED" };
+  return { ...g, gravado_em: iso(0), pedidos: [pedido] };
+}
+
+function leituraParaAtencao(fatos: ReturnType<typeof fatosDoGestorLocal>, agora: number): LeituraOperacional {
+  return {
+    procedencia: "real", observado_em: new Date(agora).toISOString(),
+    pedidos: fatos.pedidos, fontes: [fatos.fonte], carga_por_praca: {}, baseline_por_praca: {},
+    chegadas_na_hora: null, chegadas_normais: null,
+  };
+}
+
+ok("G26 fatos locais preservam etapa oficial e não inferem produção, saída ou entrega", () => {
+  const janela = janelaParaAtencao();
+  const p = janela.pedidos[0]!;
+  const fatos = (pedidos: readonly PedidoDoGestor[]) => fatosDoGestorLocal({ ...janela, pedidos }, AGORA).pedidos;
+  assert.equal(fatos([p])[0]?.minutos_sem_ficar_pronto, 80);
+  assert.deepEqual(fatos([{ ...p, eventos: {} }]), []);
+  assert.deepEqual(fatos([{ ...p, ultimo_evento: "CANCELLED" }]), []);
+  const pronto = { ...p, eventos: { ...p.eventos, READY_TO_PICKUP: iso(73) } };
+  assert.equal(fatos([pronto])[0]?.minutos_pronto_sem_sair, 73);
+  assert.equal(fatos([pronto])[0]?.minutos_sem_ficar_pronto, null);
+  assert.deepEqual(fatos([{ ...pronto, tipo: "TAKEOUT" }]), []);
+  assert.deepEqual(fatos([{ ...pronto, eventos: { ...pronto.eventos, ARRIVED_AT_DESTINATION: iso(65) } }]), []);
+  const saiu = { ...pronto, eventos: { ...pronto.eventos, DISPATCHED: iso(70) } };
+  assert.equal(fatos([saiu])[0]?.minutos_em_rua, 70);
+  assert.equal(fatos([saiu])[0]?.minutos_pronto_sem_sair, null);
+  assert.deepEqual(fatos([{ ...saiu, eventos: { ...saiu.eventos, CONCLUDED: iso(64) } }]), []);
+  assert.deepEqual(fatos([p, { ...p, id_interno: uuid() }]), []);
+});
+
+ok("G27 Operação Viva elege um Foco sustentado e o retira na hora se a fonte ficar velha", () => {
+  const janela = janelaParaAtencao();
+  const eleger = criarAtencaoDoGestor();
+  const leitura = (min: number, fonteVencida = false) => {
+    const agora = AGORA + min * 60_000;
+    const fatos = fatosDoGestorLocal({ ...janela, gravado_em: fonteVencida ? iso(25) : janela.gravado_em }, agora);
+    const leitura = leituraParaAtencao(fatos, agora);
+    return homeVM(leitura, { tipo: "real", temporal: eleger(leitura, fatos, agora) });
+  };
+  for (const min of [0, 1, 2]) assert.equal(leitura(min).foco, null);
+  const foco = leitura(3);
+  assert.match(foco.foco?.situacao ?? "", /1111/);
+  assert.equal(foco.foco?.orientacao?.primeiro_olhar, "Pedido 1111");
+  assert.equal(foco.foco?.orientacao?.executa, false);
+  assert.equal(foco.pulso.observado, false);
+  assert.doesNotMatch(JSON.stringify(foco), new RegExp(janela.pedidos[0]!.id_interno));
+  assert.equal(leitura(4, true).foco, null);
+});
+
+ok("G28 uma lacuna de leitura ou troca de identidade não adianta o Foco", () => {
+  const janela = janelaParaAtencao();
+  const eleger = criarAtencaoDoGestor();
+  const avaliar = (min: number, pedidos = janela.pedidos) => {
+    const agora = AGORA + min * 60_000;
+    const fatos = fatosDoGestorLocal({ ...janela, pedidos }, agora);
+    return eleger(leituraParaAtencao(fatos, agora), fatos, agora);
+  };
+  assert.equal(avaliar(0).modo, "ambiente");
+  assert.equal(avaliar(3).modo, "ambiente");
+  assert.equal(avaliar(4).modo, "ambiente");
+  assert.equal(avaliar(5).modo, "ambiente");
+  assert.equal(avaliar(6, [{ ...janela.pedidos[0]!, id_interno: uuid() }]).modo, "ambiente");
+});
+
 void (async () => {
   const raizProjeto = process.cwd();
   const bin = join(raizProjeto, "dist/tools/product_system_server.js");
@@ -389,6 +462,13 @@ void (async () => {
       assert.ok(painel.home_operacional.ambientes.length > 0);
       assert.ok(painel.operacao_ifood.previa_por_praca);
       assert.equal(painel.celulas_operacionais, undefined);
+    });
+    ok("G29 polling do Itaim recebe a eleição e a tela completa identifica a leitura de Entregas", () => {
+      assert.equal(v2.home_operacional.demonstracao, false);
+      assert.equal(v2.home_operacional.pulso.observado, false);
+      assert.equal(v2.home_operacional.fontes.find((f: any) => f.id === "gestor_ifood_eventos")?.estado, "saudavel");
+      assert.equal(v2.home_operacional.entregas, undefined);
+      assert.equal(painel.home_operacional.entregas?.disponivel, false);
     });
     ok("G21 todos os itens em preparo ou prontos aparecem na praça ou em A conferir", () => {
       const previa = v2.operacao_ifood.previa_por_praca;

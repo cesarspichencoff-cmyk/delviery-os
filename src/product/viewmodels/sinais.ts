@@ -58,6 +58,8 @@ export interface ItemDoPedido {
 
 export interface PedidoLeitura {
   readonly id: string;
+  /** Referência exibida; a identidade da eleição pode ser opaca. */
+  readonly codigo_publico?: string;
   readonly itens: readonly ItemDoPedido[];
   /** Minutos desde que ficou pronto e ainda nao saiu. `null` = nao observado. */
   readonly minutos_pronto_sem_sair: number | null;
@@ -306,10 +308,10 @@ function s1(l: LeituraOperacional): SinalBruto[] {
       ambiente: "motoboy" as AmbienteId,
       subarea: null,
       pedido_id: p.id,
-      alvo_rotulo: alvo(p.id, null, "motoboy"),
-      resumo: `Pedido ${p.id} pronto ha ${p.minutos_pronto_sem_sair} minutos e ainda nao saiu.`,
+      alvo_rotulo: alvo(p.codigo_publico ?? p.id, null, "motoboy"),
+      resumo: `Pedido ${p.codigo_publico ?? p.id} pronto ha ${p.minutos_pronto_sem_sair} minutos e ainda nao saiu.`,
       evidencias: [
-        ev("tempo_pronto_sem_sair", `${p.id}=${p.minutos_pronto_sem_sair}min`, l.observado_em),
+        ev("tempo_pronto_sem_sair", `${p.codigo_publico ?? p.id}=${p.minutos_pronto_sem_sair}min`, l.observado_em),
       ],
       orientacao: "Verificar com o despacho quem leva este pedido.",
       limitacao:
@@ -341,7 +343,7 @@ function s2(l: LeituraOperacional): SinalBruto[] {
       alvo_rotulo: alvo(null, null, "motoboy"),
       resumo: `${esperando.length} pedidos prontos esperando para sair.`,
       evidencias: [
-        ev("pedidos_prontos_parados", esperando.map((p) => p.id).join(","), l.observado_em),
+        ev("pedidos_prontos_parados", esperando.map((p) => p.codigo_publico ?? p.id).join(","), l.observado_em),
       ],
       orientacao: "Olhar o despacho antes de olhar a producao.",
       limitacao: "Mede acumulo, nao capacidade de entrega.",
@@ -369,9 +371,9 @@ function s3(l: LeituraOperacional): SinalBruto[] {
       ambiente: "motoboy" as AmbienteId,
       subarea: null,
       pedido_id: p.id,
-      alvo_rotulo: alvo(p.id, null, "motoboy"),
-      resumo: `Pedido ${p.id} saiu ha ${p.minutos_em_rua} minutos e nao consta entregue.`,
-      evidencias: [ev("tempo_em_rua", `${p.id}=${p.minutos_em_rua}min`, l.observado_em)],
+      alvo_rotulo: alvo(p.codigo_publico ?? p.id, null, "motoboy"),
+      resumo: `Pedido ${p.codigo_publico ?? p.id} saiu ha ${p.minutos_em_rua} minutos e nao consta entregue.`,
+      evidencias: [ev("tempo_em_rua", `${p.codigo_publico ?? p.id}=${p.minutos_em_rua}min`, l.observado_em)],
       orientacao: "Atendimento pode se antecipar ao cliente.",
       limitacao:
         "Sem GPS confirmado nesta leitura: 'nao consta entregue' nao e o mesmo que 'nao foi entregue'.",
@@ -401,13 +403,13 @@ function s4(l: LeituraOperacional): SinalBruto[] {
         ambiente: pior ? ambienteDaPraca(pior) : null,
         subarea: pior,
         pedido_id: p.id,
-        alvo_rotulo: alvo(p.id, null, null),
-        resumo: `Pedido ${p.id} ha ${p.minutos_sem_ficar_pronto} minutos sem ficar pronto${
+        alvo_rotulo: alvo(p.codigo_publico ?? p.id, null, null),
+        resumo: `Pedido ${p.codigo_publico ?? p.id} ha ${p.minutos_sem_ficar_pronto} minutos sem ficar pronto${
           pior ? `, passando por ${rotuloDaPraca(pior)}` : ""
         }.`,
         evidencias: [
-          ev("tempo_sem_ficar_pronto", `${p.id}=${p.minutos_sem_ficar_pronto}min`, l.observado_em),
-          ...(pior ? [ev("praca_do_pedido", `${p.id} -> ${rotuloDaPraca(pior)}`, l.observado_em)] : []),
+          ev("tempo_sem_ficar_pronto", `${p.codigo_publico ?? p.id}=${p.minutos_sem_ficar_pronto}min`, l.observado_em),
+          ...(pior ? [ev("praca_do_pedido", `${p.codigo_publico ?? p.id} -> ${rotuloDaPraca(pior)}`, l.observado_em)] : []),
         ],
         orientacao: pior
           ? `Olhar ${rotuloDaPraca(pior)} primeiro.`

@@ -12,7 +12,7 @@ import { pedidoReaderVM, type PedidoDaHome } from "./home-pedidos-reader-vm";
 import type { PedidosDoGestorLocal, PedidoDoGestor } from "../../platform/leitura/pedidos-do-gestor-local";
 import type { PedidoReal, PedidosReaisDoReader } from "../../platform/leitura/pedidos-reais-do-reader";
 import { conciliarGestorTeknisa, placedDe, type ClasseDoPar, type ParDaConciliacao } from "../../platform/leitura/conciliacao-gestor-teknisa";
-import { PRACAS, type PracaId } from "./areas";
+import { PRACAS, type AmbienteId, type PracaId } from "./areas";
 
 export const LIMITE_DE_CONCLUIDOS = 15;
 /** O Gestor grava a cada mudanca; sem escrita ha mais que isto, a leitura e dita velha. */
@@ -67,7 +67,10 @@ interface LinhaDaPrevia {
   readonly opcoes: readonly string[];
 }
 interface PreviaPorPraca {
-  readonly grupos: readonly { readonly rotulo: string; readonly itens: readonly LinhaDaPrevia[] }[];
+  readonly grupos: readonly {
+    readonly praca: PracaId; readonly ambiente: AmbienteId; readonly rotulo: string;
+    readonly em_preparo: number; readonly prontos: number; readonly itens: readonly LinhaDaPrevia[];
+  }[];
   readonly pendentes: readonly (AtencaoDaHome & Partial<Omit<LinhaDaPrevia, "codigo" | "hora">>)[];
   readonly notas_gerais: readonly { readonly codigo: string; readonly hora: string }[];
 }
@@ -186,7 +189,14 @@ function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas
   return {
     grupos: PRACAS.flatMap(p => {
       const itens = grupos.get(p.id);
-      return itens ? [{ rotulo: p.rotulo, itens }] : [];
+      if (!itens) return [];
+      let em_preparo = 0;
+      let prontos = 0;
+      for (const item of itens) {
+        if (item.etapa === "em preparo") em_preparo += item.quantidade;
+        else prontos += item.quantidade;
+      }
+      return [{ praca: p.id, ambiente: p.ambiente, rotulo: p.rotulo, itens, em_preparo, prontos }];
     }),
     pendentes,
     notas_gerais: notasGerais,

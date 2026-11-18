@@ -58,6 +58,7 @@ import { lerHistoricoOperacional } from "../src/platform/leitura/historico-opera
 import { lerSaudeDaFonteTata, type AvaliadorDeSaude, type SaudeDaFonteTata } from "../src/platform/leitura/saude-fonte-tata";
 import { lerDemandaDoGestor, type DemandaDoGestor } from "../src/platform/leitura/demanda-do-gestor";
 import { leituraDaDemanda } from "../src/product/eventos/demanda-gestor";
+import { criarAtencaoDoGestor, fatosDoGestorLocal } from "../src/product/eventos/atencao-gestor-local";
 import { lerPedidosDoReader } from "../src/platform/leitura/pedidos-do-reader";
 import {
   conciliarComReader,
@@ -195,14 +196,18 @@ const DIR_READER_V3_COPILOTO = (process.env.DELIVERYOS_READER_V3_PROJECTION_DIR 
 const UNIDADE_READER_V3 = (process.env.DELIVERYOS_READER_V3_UNIT_ID || "").trim();
 const PREVIA_PRACAS_ITAIM = process.env.DELIVERYOS_ITAIM_PREVIA_PRACAS === "1"
   && UNIDADE_READER_V3 === "ITAIM" && isAbsolute(DIR_LEITOR_TATA) && !ESCOPO_SHADOW;
-let memoIfood: { em: number; vm: OperacaoDoIfoodVM } | null = null;
+let memoIfood: {
+  em: number; vm: OperacaoDoIfoodVM; gestor: ReturnType<typeof lerPedidosDoGestorLocal>;
+} | null = null;
+const atencaoItaim = criarAtencaoDoGestor();
 function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfoodVM {
   if (!memoIfood || agoraMs - memoIfood.em >= 10_000) {
     const agora = new Date(agoraMs);
-    const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora),
+    const gestor = lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora);
+    const vm = operacaoDoIfoodVM(gestor,
       leituraDaTeknisaAgora(agoraMs).leitura, agora, Boolean(DIR_READER_V3_COPILOTO) && !ESCOPO_SHADOW,
       PREVIA_PRACAS_ITAIM ? pedido => lerPracasDaRevisao(DIR_LEITOR_TATA, pedido) : undefined);
-    memoIfood = { em: agoraMs, vm };
+    memoIfood = { em: agoraMs, vm, gestor };
   }
   const vm = memoIfood.vm;
   if (comPrevia || !vm.disponivel || !vm.previa_por_praca) return vm;
@@ -239,6 +244,7 @@ function homeDaOperacao(
   gestor: DemandaDoGestor,
   agoraMs: number,
   conciliacao: ConciliacaoComReader | null,
+  fatos?: ReturnType<typeof fatosDoGestorLocal>,
 ) {
   const agoraIso = new Date(agoraMs).toISOString();
   const d = leituraDaDemanda(gestor, { tenant: INQUILINO_DA_LEITURA, agora_iso: agoraIso }, conciliacao);
@@ -271,23 +277,24 @@ function homeDaOperacao(
       ambientes: ["conferencia"],
     },
   ];
+  if (fatos) fontes.push(fatos.fonte);
   const leitura: LeituraOperacional = {
     procedencia: d.procedencia,
-    observado_em: d.observado_em ?? agoraIso,
-    pedidos: d.pedidos,
+    observado_em: fatos?.fonte.estado === "saudavel" ? agoraIso : d.observado_em ?? agoraIso,
+    pedidos: fatos?.pedidos ?? d.pedidos,
     carga_por_praca: {},
     baseline_por_praca: {},
     chegadas_na_hora: null,
     chegadas_normais: null,
     fontes,
-    ...(d.linhagem !== null ? { linhagem: d.linhagem } : {}),
+    ...(!fatos && d.linhagem !== null ? { linhagem: d.linhagem } : {}),
   };
   // Leitura de laboratorio (feed FIXTURE) atravessa como DEMONSTRACAO declarada.
   // So a leitura real passa pela eleicao temporal da Operacao Viva.
   const vm = d.procedencia === "real"
     ? homeVM(leitura, {
         tipo: "real",
-        temporal: elegerModo({
+        temporal: fatos ? atencaoItaim(leitura, fatos, agoraMs) : elegerModo({
           estado: ESTADO_INICIAL,
           agora_min: Math.floor(agoraMs / 60000),
           candidatas: [],
@@ -299,10 +306,10 @@ function homeDaOperacao(
         tipo: "demonstracao",
         motivo: "feed de laboratorio (FIXTURE) do observador do Gestor",
       });
-  // Demanda observada nunca elege Foco, nunca sustenta a contagem da casa, e
-  // sem ela a leitura real continua "Sem leitura".
-  if (vm.foco !== null || vm.pulso.observado !== false ||
-      (d.demanda === null ? !vm.sem_leitura_operacional : !vm.leitura_parcial_de_pedidos))
+  // A demanda montada não elege Foco. A janela local sustenta eventos individuais,
+  // e nenhuma das fontes parciais sustenta a contagem da casa.
+  if ((!fatos && vm.foco !== null) || vm.pulso.observado !== false ||
+      (!fatos && (d.demanda === null ? !vm.sem_leitura_operacional : !vm.leitura_parcial_de_pedidos)))
     throw Error("HOME_SOURCE_GUARD_VIOLATED");
   return {
     ...vm,
@@ -808,11 +815,12 @@ export async function criarServidor(): Promise<http.Server> {
         const pedidosIfood: OperacaoDoIfoodVM | null = operacaoIfood?.disponivel && operacaoIfood.leitura_velha
           ? { disponivel: false, titulo: "Leitura do Gestor desatualizada",
             explicacao: "Os pedidos voltam a aparecer após uma gravação recente do aplicativo." }
-          : readerNaUnidade && operacaoIfood?.disponivel && leituraDaTeknisaAgora(agoraMs).leitura.estado !== "lido"
+          : !previaItaim && readerNaUnidade && operacaoIfood?.disponivel && leituraDaTeknisaAgora(agoraMs).leitura.estado !== "lido"
             ? { disponivel: false, titulo: "Conferência com a Teknisa indisponível",
               explicacao: "A projeção do Reader V3 está indisponível nesta leitura." }
             : operacaoIfood;
-        if (url.searchParams.get("pedidos") === "1") {
+        const soPedidos = url.searchParams.get("pedidos") === "1";
+        if (soPedidos && !previaItaim) {
           if (!pedidosIfood) return json(res, 404, { erro: "pedidos_ifood_fora_do_escopo" });
           return json(res, 200, { operacao_ifood: pedidosIfood });
         }
@@ -822,9 +830,16 @@ export async function criarServidor(): Promise<http.Server> {
           const demanda = lerDemandaDoGestor(dirDemandaGestor, agoraMs);
           const demandaReal: DemandaDoGestor = "modo" in demanda && demanda.modo !== "real"
             ? { estado: "nao_configurada" } : demanda;
-          void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata)
-            .then(reader => json(res, 200, {
-              home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null), aprofundamentos: [] },
+          const fatos = fatosDoGestorLocal(memoIfood?.gestor ?? { estado: "nao_configurado" }, agoraMs);
+          const ruaDaHome = soPedidos ? Promise.resolve(undefined) :
+            lerRealidade(clientePlataforma, undefined, "ITAIM")
+              .catch((): LeituraDeRealidade => ({ disponivel: false, motivo: "indisponivel",
+                explicacao: "A leitura da plataforma falhou nesta requisicao." }))
+              .then(l => leituraDaRuaDe(l, new Date(agoraMs).toISOString(), "ITAIM"));
+          void Promise.all([lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome])
+            .then(([reader, rua]) => json(res, 200, {
+              home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null, fatos),
+                aprofundamentos: [], ...(rua ? { entregas: rua } : {}) },
               operacao_ifood: pedidosIfood,
             }))
             .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));

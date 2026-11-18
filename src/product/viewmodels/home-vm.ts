@@ -501,7 +501,7 @@ function orientacaoVM(
     porque: sinal.resumo,
     primeiro_olhar:
       sinal.pedido_id !== null
-        ? `Pedido ${sinal.pedido_id}`
+        ? sinal.alvo_rotulo
         : sinal.subarea !== null
           ? rotuloDaPraca(sinal.subarea)
           : sinal.ambiente !== null
