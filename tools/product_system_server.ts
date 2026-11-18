@@ -32,7 +32,7 @@ import { conferenceBrainVM } from "../src/product/viewmodels/conference-vm";
 import { copilotoVM } from "../src/product/viewmodels/copiloto-vm";
 import { GRUPOS, MODULOS, UNIDADES } from "../src/product/viewmodels/modulos";
 import { observarFilaDoPiloto } from "../src/platform/leitura/fila-do-piloto";
-import { lerProntosDeEntregas, type DeclaracaoDaFila } from "../src/platform/leitura/prontos-de-entregas";
+import { lerProntosDeEntregas, lerProntosDoPiloto } from "../src/platform/leitura/prontos-de-entregas";
 import {
   montarCadeiaDemo,
   montarEntregasDemo,
@@ -144,6 +144,29 @@ function motivoDoObservadorDaFila(): string | null {
   if (alvo.protocol === "https:" || (alvo.protocol === "http:" && loopback)) return null;
   return "endereco_do_piloto_sem_tls";
 }
+/** Uma observação para os pedidos simultâneos do painel. A autoridade continua sendo o piloto. */
+let consultaDaFila: ReturnType<typeof consultarFilaDoPiloto> | null = null;
+function consultarFilaDoPiloto() {
+  const motivo = motivoDoObservadorDaFila();
+  return motivo
+    ? Promise.resolve({ origem: "observacao_do_piloto" as const, indisponivel: motivo })
+    : observarFilaDoPiloto({ url_base: URL_FILA_PILOTO, token: TOKEN_FILA_PILOTO, prazo_ms: 2_000 });
+}
+function filaDoPilotoAgora() {
+  if (!consultaDaFila) consultaDaFila = consultarFilaDoPiloto().finally(() => { consultaDaFila = null; });
+  return consultaDaFila;
+}
+
+async function resumoDaFilaDoItaim() {
+  const observacao = await filaDoPilotoAgora();
+  const r = lerProntosDoPiloto({ agora: new Date(), unit_id: "ITAIM", fila: observacao });
+  const fila = r.estado_atual.na_fila;
+  const modoNaoConfirmado = fila.grupos.some(g => g.source_mode !== "real");
+  return { disponivel: fila.estado === "observado" && !modoNaoConfirmado,
+    total: fila.estado === "observado" && !modoNaoConfirmado ? fila.grupos[0]?.total ?? 0 : null,
+    observado_em: fila.observado_em };
+}
+
 const UNIDADES_NAVEGACAO = URL_PLATAFORMA && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_LEITURA_PILOTO)
   ? [...UNIDADES, { unit_id: UNIDADE_LEITURA_PILOTO,
       nome: `Leitura da plataforma · ${UNIDADE_LEITURA_PILOTO}`,
@@ -836,10 +859,12 @@ export async function criarServidor(): Promise<http.Server> {
               .catch((): LeituraDeRealidade => ({ disponivel: false, motivo: "indisponivel",
                 explicacao: "A leitura da plataforma falhou nesta requisicao." }))
               .then(l => leituraDaRuaDe(l, new Date(agoraMs).toISOString(), "ITAIM"));
-          void Promise.all([lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome])
-            .then(([reader, rua]) => json(res, 200, {
+          void Promise.all([
+            lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome, resumoDaFilaDoItaim(),
+          ])
+            .then(([reader, rua, fila]) => json(res, 200, {
               home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null, fatos),
-                aprofundamentos: [], ...(rua ? { entregas: rua } : {}) },
+                aprofundamentos: [], ...(rua ? { entregas: rua } : {}), fila_entregas: fila },
               operacao_ifood: pedidosIfood,
             }))
             .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
@@ -884,21 +909,26 @@ export async function criarServidor(): Promise<http.Server> {
       if (p === "/api/entregas/prontos") {
         // Estado atual (fila + fatos) e trajetória do pronto. A fila vem do
         // observador local, por loopback; os fatos, da conexão que este
-        // servidor já tem. Nenhuma tela usa isto ainda: mostrar no Copiloto é
-        // a exceção visual que espera decisão. Ausência nunca vira zero.
+        // servidor já tem. Sem banco, só a fila local pode ser observada.
+        // Ausência nunca vira zero.
         const unidade = ESCOPO_SHADOW?.unit_id ||
           (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || UNIDADE_LEITURA_PILOTO || "";
         if (!/^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(unidade)) return json(res, 400, { erro: "unidade_obrigatoria" });
-        if (!clientePlataforma) {
+        if (!clientePlataforma && motivoDoObservadorDaFila()) {
           return json(res, 200, { disponivel: false, motivo: "integracao_pendente", unit_id: unidade });
         }
-        const motivo = motivoDoObservadorDaFila();
-        const fila: Promise<DeclaracaoDaFila> = motivo
-          ? Promise.resolve({ origem: "observacao_do_piloto", indisponivel: motivo })
-          : observarFilaDoPiloto({ url_base: URL_FILA_PILOTO, token: TOKEN_FILA_PILOTO, prazo_ms: 2_000 });
-        void fila
-          .then((declaracao) => lerProntosDeEntregas(clientePlataforma, { agora: new Date(), unit_id: unidade, fila: declaracao }))
-          .then((r) => json(res, 200, { disponivel: true, unit_id: unidade, ...r }))
+        void filaDoPilotoAgora()
+          .then(declaracao => {
+            const opcoes = { agora: new Date(), unit_id: unidade, fila: declaracao };
+            return clientePlataforma ? lerProntosDeEntregas(clientePlataforma, opcoes) : lerProntosDoPiloto(opcoes);
+          })
+          .then(r => {
+            const fila = r.estado_atual.na_fila;
+            if (!clientePlataforma && fila.estado !== "observado") {
+              return json(res, 200, { disponivel: false, motivo: fila.motivo, unit_id: unidade, ...r });
+            }
+            return json(res, 200, { disponivel: true, unit_id: unidade, ...r });
+          })
           // Nunca o erro cru do driver (traria host ou caminho): só a ausência.
           .catch(() => json(res, 200, { disponivel: false, motivo: "indisponivel", unit_id: unidade }));
         return;

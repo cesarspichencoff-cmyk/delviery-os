@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -19,7 +20,7 @@ import { homeVM } from "../product/viewmodels/home-vm";
 import type { LeituraOperacional } from "../product/viewmodels/sinais";
 
 let n = 0;
-const TOTAL = 28;
+const TOTAL = 29;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -413,10 +414,29 @@ void (async () => {
   const bin = join(raizProjeto, "dist/tools/product_system_server.js");
   if (!existsSync(bin)) { console.log("PULADO G12: dist/tools/product_system_server.js ausente (rode npm run build:platform) — NAO e verde"); return; }
   const porta = 9500 + Math.floor(Math.random() * 90);
+  const tokenObservador = "canario-do-observador-fila-fixture-00";
+  let modoFila = "real";
+  let idadeFilaMs = 0;
+  const observador = createServer((req, res) => {
+    if (req.headers.authorization !== `Bearer ${tokenObservador}` || req.url !== "/api/ready-orders/observation") {
+      res.writeHead(403); res.end(); return;
+    }
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ schema: "deliveryos.ready-queue-observation.v1", unit_id: "ITAIM",
+      origin: { system: "entregas-pilot", storage_backend: "file", process_started_at: iso(10) },
+      availability: "available", observed_at: new Date(Date.now() - idadeFilaMs).toISOString(),
+      reason: null, total: 1, invalid_entries: 0,
+      entries: [{ order_ref: "FILA-FICTICIA-1", registered_at: iso(2), channel: "proprio", source_mode: modoFila }],
+      facts_watermark: { availability: "unavailable", covered_types: [], last_event_id: null } }));
+  });
+  await new Promise<void>(r => observador.listen(0, "127.0.0.1", r));
+  const endereco = observador.address();
+  assert.ok(endereco && typeof endereco === "object");
   const filho = spawn(process.execPath, [bin], { cwd: raizProjeto, windowsHide: true, stdio: "ignore",
     env: { ...process.env, PRODUCT_UI_PORT: String(porta), TATA_READER_INSTALL_ROOT: raizR,
       DELIVERYOS_GESTOR_LOCAL_DIR: raizG, DELIVERYOS_DATABASE_URL: "", DELIVERYOS_READER_V3_PROJECTION_DIR: "",
-      DELIVERYOS_READER_V3_UNIT_ID: "ITAIM", DELIVERYOS_ITAIM_PREVIA_PRACAS: "1" } });
+      DELIVERYOS_READER_V3_UNIT_ID: "ITAIM", DELIVERYOS_ITAIM_PREVIA_PRACAS: "1",
+      DELIVERYOS_FILA_PILOTO_URL: `http://127.0.0.1:${endereco.port}`, DELIVERYOS_FILA_PILOTO_TOKEN: tokenObservador } });
   try {
     let corpo: Record<string, any> | null = null;
     for (let i = 0; i < 80 && !corpo; i++) {
@@ -469,6 +489,22 @@ void (async () => {
       assert.equal(v2.home_operacional.fontes.find((f: any) => f.id === "gestor_ifood_eventos")?.estado, "saudavel");
       assert.equal(v2.home_operacional.entregas, undefined);
       assert.equal(painel.home_operacional.entregas?.disponivel, false);
+    });
+    const filaPublicaUrl = `http://127.0.0.1:${porta}/api/entregas/prontos?unit_id=ITAIM`;
+    const filaPublica = await (await fetch(filaPublicaUrl)).json();
+    modoFila = "simulated";
+    const simulada = await (await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1")).json();
+    idadeFilaMs = 61_000;
+    const stale = await (await fetch(filaPublicaUrl)).json();
+    ok("G30 fila própria lê o piloto, sem banco, sem misturar simulação nem inventar saída", () => {
+      assert.equal(v2.home_operacional.fila_entregas.total, 1);
+      assert.doesNotMatch(JSON.stringify(v2.home_operacional), /FILA-FICTICIA-1|canario-do-observador/);
+      assert.equal(filaPublica.disponivel, true);
+      assert.equal(filaPublica.estado_atual.na_fila.grupos[0].total, 1);
+      assert.equal(filaPublica.trajetoria.estado, "indisponivel");
+      assert.equal(simulada.home_operacional.fila_entregas.total, null);
+      assert.equal(stale.disponivel, false);
+      assert.equal(stale.motivo, "observacao_desatualizada");
     });
     ok("G21 todos os itens em preparo ou prontos aparecem na praça ou em A conferir", () => {
       const previa = v2.operacao_ifood.previa_por_praca;
@@ -540,7 +576,8 @@ void (async () => {
     }
   } finally {
     // GESTOR_LOCAL_PRENDER=1: deixa a Home da fixture no ar para a prova visual (nada real nela).
-    if (process.env.GESTOR_LOCAL_PRENDER) console.log(`PRENDER http://127.0.0.1:${porta}/`); else filho.kill();
+    if (process.env.GESTOR_LOCAL_PRENDER) console.log(`PRENDER http://127.0.0.1:${porta}/`);
+    else { filho.kill(); observador.close(); }
   }
 })().finally(() => {
   if (!process.env.GESTOR_LOCAL_PRENDER) { rmSync(raizG, { recursive: true, force: true }); rmSync(raizR, { recursive: true, force: true }); }

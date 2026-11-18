@@ -1822,7 +1822,8 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
 }
 
 .org-palco[hidden],
-[data-resumo-operacao][hidden] {
+[data-resumo-operacao][hidden],
+[data-fila-entregas][hidden] {
   display: none;
 }
 

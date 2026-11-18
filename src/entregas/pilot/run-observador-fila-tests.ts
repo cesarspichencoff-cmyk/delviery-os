@@ -29,6 +29,8 @@ import { loadPilotConfig, type PilotConfig } from "./pilot-config";
 import { PilotApplicationFacade } from "./pilot-facade";
 import { createPilotLogger } from "./pilot-log";
 import { FilePilotReadyOrderStore } from "./ready-orders";
+import { observarFilaDoPiloto } from "../../platform/leitura/fila-do-piloto";
+import { lerProntosDoPiloto } from "../../platform/leitura/prontos-de-entregas";
 
 const UNIT = "ITAIM";
 let passed = 0;
@@ -199,6 +201,28 @@ async function provaDeProcesso(): Promise<void> {
       assert.equal(o.unit_id, UNIT);
       assert.deepEqual(o.entries.map((e) => e.order_ref), ["H-1"]);
       assert.equal(r.texto.includes("Rua Sintética"), false);
+    });
+
+    await teste("H4 fila do piloto em arquivo é legível sem banco e trajetória fica desconhecida", async () => {
+      const fila = await observarFilaDoPiloto({ url_base: base, token: TOKEN_OBS, prazo_ms: 2000 });
+      const agora = new Date();
+      const real = lerProntosDoPiloto({ agora, unit_id: UNIT, fila });
+      assert.equal(real.estado_atual.na_fila.estado, "observado");
+      assert.equal(real.estado_atual.na_fila.origem?.armazenamento, "file");
+      assert.equal(real.estado_atual.na_fila.grupos[0]?.source_mode, "simulated");
+      assert.equal(real.estado_atual.na_fila.grupos[0]?.total, 1);
+      assert.equal(real.estado_atual.aguardando_saida.estado, "indisponivel");
+      assert.equal(real.estado_atual.consistencia_dos_fatos, "desconhecida");
+      assert.equal(real.trajetoria.estado, "indisponivel");
+      assert.equal(lerProntosDoPiloto({ agora, unit_id: "OUTRA", fila }).estado_atual.na_fila.motivo, "unidade_divergente");
+      const depois = new Date(agora.getTime() + 61_000);
+      assert.equal(lerProntosDoPiloto({ agora: depois, unit_id: UNIT, fila }).estado_atual.na_fila.motivo,
+        "observacao_desatualizada");
+      if (!("observacao" in fila)) throw Error("fixture sem observação");
+      const parcial = { ...fila, observacao: { ...(fila.observacao as object), invalid_entries: 1 } };
+      assert.equal(lerProntosDoPiloto({ agora, unit_id: UNIT, fila: parcial }).estado_atual.na_fila.motivo, "fila_parcial");
+      const erro = await observarFilaDoPiloto({ url_base: base, token: "recusado", prazo_ms: 2000 });
+      assert.equal(lerProntosDoPiloto({ agora, unit_id: UNIT, fila: erro }).estado_atual.na_fila.estado, "indisponivel");
     });
 
     await teste("H2 processo real: em qualquer outra rota ou método o observador é recusado na borda (403), sem corpo de dado", async () => {

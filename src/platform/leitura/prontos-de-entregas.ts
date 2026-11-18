@@ -640,6 +640,31 @@ export function fonteDaObservacaoDoPiloto(observacao: unknown, opcoes: { unit_id
     ...(marca_dos_fatos !== undefined ? { marca_dos_fatos } : {}) };
 }
 
+type ObservacaoDoPiloto = Extract<DeclaracaoDaFila, { origem: "observacao_do_piloto" }>;
+
+function lerFonteDaFila(declarada: ObservacaoDoPiloto, unit_id: string, agora: string): FonteDaFila {
+  return "indisponivel" in declarada
+    ? { disponivel: false, motivo: MOTIVO_SEGURO.test(declarada.indisponivel) ? declarada.indisponivel : "observacao_indisponivel" }
+    : fonteDaObservacaoDoPiloto(declarada.observacao, { unit_id, agora });
+}
+
+/** A fila em arquivo é autoridade para seus registros presentes. Sem journal, a trajetória fica indisponível. */
+export function lerProntosDoPiloto(opcoes: { agora: Date; unit_id: string; fila: ObservacaoDoPiloto }) {
+  const agora = opcoes.agora.toISOString();
+  const observada = lerFonteDaFila(opcoes.fila, opcoes.unit_id, agora);
+  const bruto = "observacao" in opcoes.fila ? opcoes.fila.observacao : null;
+  const observadoMs = ms(observada.observado_em);
+  const motivo = objeto(bruto) && bruto.invalid_entries !== 0 ? "fila_parcial"
+    : observadoMs !== null && opcoes.agora.getTime() - observadoMs > 60_000 ? "observacao_desatualizada" : null;
+  const fila: FonteDaFila = observada.disponivel && motivo
+    ? { disponivel: false, motivo, origem: observada.origem, observado_em: observada.observado_em } : observada;
+  const eventos: FonteDosFatos = { disponivel: false, motivo: "eventos_da_plataforma_indisponiveis" };
+  return {
+    estado_atual: lerEstadoAtualDoPronto({ unit_id: opcoes.unit_id, agora, fila, eventos }),
+    trajetoria: lerTrajetoriaDoPronto({ unit_id: opcoes.unit_id, eventos }),
+  };
+}
+
 /* ------------------------------------------------------------------ *
  * Leitor PostgreSQL — somente leitura por construção                   *
  * ------------------------------------------------------------------ */
@@ -693,12 +718,8 @@ export async function lerProntosDeEntregas(
 ): Promise<{ estado_atual: EstadoAtualDoPronto; trajetoria: TrajetoriaDoPronto }> {
   const agora = opcoes.agora.toISOString();
   const declarada = opcoes.fila;
-  let observada: FonteDaFila | null = null;
-  if (declarada?.origem === "observacao_do_piloto") {
-    observada = "indisponivel" in declarada
-      ? { disponivel: false, motivo: MOTIVO_SEGURO.test(declarada.indisponivel) ? declarada.indisponivel : "observacao_indisponivel" }
-      : fonteDaObservacaoDoPiloto(declarada.observacao, { unit_id: opcoes.unit_id, agora });
-  }
+  const observada = declarada?.origem === "observacao_do_piloto"
+    ? lerFonteDaFila(declarada, opcoes.unit_id, agora) : null;
   const { fila, eventos } = await cliente.transaction(async (tx) => {
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
     let eventos: FonteDosFatos;
