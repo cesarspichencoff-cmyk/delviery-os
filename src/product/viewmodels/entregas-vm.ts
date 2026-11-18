@@ -1000,6 +1000,22 @@ function conexaoParaSelo(
   return selo("saudavel", "Ha rede e nao ha fila pendente.");
 }
 
+/**
+ * A LEITURA DA RUA para quem nao esta na tela de Entregas (a Home do gerente). E a
+ * MESMA funcao pura que a superficie /entregas usa, sobre a MESMA porta de realidade:
+ * nenhuma fonte nova, nenhuma consulta nova, nenhum estado inventado. Sem leitura, e a
+ * ausencia declarada (nunca zero). Nao carrega coordenada: posicao e so instante e frescor.
+ */
+export function leituraDaRuaDe(
+  leitura: LeituraDeRealidade,
+  agora: string,
+  unidade: string | null = null,
+): LeituraDaRuaVM {
+  if (!leitura.disponivel) return leituraAusente(leitura.motivo, leitura.explicacao);
+  const u = (unidade ?? "").trim() || null;
+  return leituraDaRua(leitura.realidade, filtrarPorUnidade(leitura.realidade, u), u, new Date(agora));
+}
+
 export function entregasVM(
   snap: UiSnapshot,
   agora: string,

@@ -41,6 +41,7 @@ import {
   type ResultadoDaEleicao,
 } from "../product/atencao/politica-temporal";
 import { homeVM } from "../product/viewmodels/home-vm";
+import { sinaisDe } from "../product/viewmodels/sinais";
 import { AMBIENTES } from "../product/viewmodels/areas";
 import {
   cenaAmbiente,
@@ -514,11 +515,20 @@ teste("I10", "positiva: a orientacao declara procedencia, e ela e distinguivel",
 });
 
 teste("I10", "negativa: uma leitura REAL produz procedencia real — os dois lados existem", () => {
-  const vm = homeVM(
-    { ...cenaFoco(), procedencia: "real" },
-    { tipo: "real", temporal: { modo: "foco", orientacao_permitida: true } },
-  );
+  const real = { ...cenaFoco(), procedencia: "real" as const };
+  const sinal = sinaisDe(real).find(s => s.codigo === "S5" && s.severidade === 3);
+  assert.ok(sinal, "positive test must have a uniquely identifiable severe S5");
+  const causaEleita: CausaCandidata = {
+    codigo: sinal.codigo, severidade: sinal.severidade,
+    ambiente: sinal.ambiente, subarea: sinal.subarea, pedido_id: sinal.pedido_id,
+    fonte_id: "carga_pracas", evidencias: sinal.evidencias.length,
+  };
+  const vm = homeVM(real, { tipo: "real", temporal: {
+    modo: "foco", orientacao_permitida: true,
+    causa: causaEleita, identidade: identidadeDaCausa(causaEleita),
+  } });
   assert.equal(vm.demonstracao, false);
+  assert.equal(vm.foco!.sinal.subarea, sinal.subarea);
   assert.equal(vm.foco!.orientacao!.procedencia, "real");
 });
 
@@ -559,7 +569,7 @@ teste("BYPASS", "uma leitura REAL nao consegue omitir a eleicao temporal", () =>
     "chamador real passou pela porta de demonstracao",
   );
   // O caminho legitimo funciona.
-  const ok = homeVM(real, { tipo: "real", temporal: { modo: "ambiente", orientacao_permitida: false } });
+  const ok = homeVM(real, { tipo: "real", temporal: { modo: "ambiente", orientacao_permitida: false, identidade: null, causa: null } });
   assert.equal(ok.modo, "ambiente", "a view model ignorou a eleicao temporal fornecida");
 });
 
@@ -570,7 +580,7 @@ teste("BYPASS", "a demonstracao precisa DIZER por que pode pular a politica", ()
   assert.equal(vm.modo, "ambiente");
   const vmTemporal = homeVM(cenaAmbiente(), {
     tipo: "real",
-    temporal: { modo: "calmo", orientacao_permitida: false },
+    temporal: { modo: "calmo", orientacao_permitida: false, identidade: null, causa: null },
   });
   assert.equal(vmTemporal.modo, "calmo", "a eleicao temporal nao venceu a severidade instantanea");
 });

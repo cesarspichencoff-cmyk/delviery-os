@@ -16,6 +16,10 @@ export interface TripCaptureView {
   unit_id: string;
   courier_actor_id: string;
   state: string;
+  /** Saída da loja, quando houver. Janela da concessão de captura (X1). */
+  started_at?: string | null;
+  /** Encerramento, quando houver. Fecha a janela da concessão. */
+  closed_at?: string | null;
 }
 
 export type CaptureControlDecision =

@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-31"
+  atualizado_em: "2026-11-14"
   state_basis: cd8ed14
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -1597,3 +1597,25 @@ Detalhe: `docs/security/DELIVERYOS_SOURCE_PROVENANCE_RELEASE_GATE_2026-10-16.md`
 - **Suspeita a reproduzir no PG do CI (lida em arquivo, não executada):** `deliveryos_critical` não tem
   `SELECT` em `identity.actor`/`identity.unit`, que `PgPilotDelegationRegistry` consulta — sob o papel
   mínimo, as rotas de delegação responderiam 503.
+- **Aberto, medido em 14/11 (X1 — posse da viagem na ingestão de GPS).** A ingestão confere que o ponto é do
+  aparelho autenticado, mas não que a viagem é do motoboy daquele aparelho: o aparelho de A, com o token de A,
+  mandando a `trip_id` de B tem o lote aceito, e a última posição da viagem de B passa a ser a de A
+  (`src/platform/run-cadeia-multiaparelho-tests.ts`, 13/13 + X1; reproduzido no Foxxy com PostgreSQL 18).
+  Exige app adulterado ou chamada direta de um motoboy já autenticado — não acontece no uso normal —, mas
+  é exatamente a mistura que a V1 multiaparelho não pode permitir. **Não corrigido de propósito:** a
+  plataforma não tem hoje a atribuição viagem→motoboy no caminho síncrono da ingestão; conferir pela
+  projeção assíncrona recusaria pontos legítimos de viagem recém-criada. Direção proposta, a decidir:
+  o piloto, que é dono da atribuição, assina a concessão (viagem, motoboy, aparelho, validade) na saída
+  confirmada; o app a anexa ao lote; a ingestão confere a assinatura. Mexe em app, piloto e plataforma.
+- **X1 fechada em 14/11** (ver D100 e `DELIVERYOS_MULTIDEVICE_V1_20261114.md` §9). Resta, ligado a ela: a composição oficial
+  (`deploy/compose.platform.yaml`) e as ferramentas de container que enviam GPS (`tools/pb19_ingestao_real.js`,
+  `tools/q017_gps_no_container.js`, `tools/papeis_compose_real.sh`, `tools/bancada_q018_*`) ainda não configuram a concessão: lá a
+  ingestão de GPS fica FECHADA (503 retentável) até receberem `DELIVERYOS_PILOT_TRIP_GRANT_SECRETS` no crítico e
+  `ENTREGAS_TRIP_GRANT_SECRET` no piloto. Falha fechada, não aberta. Não verificado aqui: o Foxxy não tem Docker.
+- **Caixa, 14/11:** rota invisível provada só no Foxxy (0 janela em 4667 amostras, mesma versão do conector e mesmo terminal padrão);
+  no caixa nada foi executado nem medido. A preparação (`preparar-feed-do-gestor.ps1 -Mode Stage`) aguarda decisão do César.
+- **Campo, 14/11 — fila offline de ações no caixa:** o piloto do caixa grava em PostgreSQL e, nesse modo, recusa o lote de ações do
+  aparelho (503 `DURABLE_RECEIPTS_UNAVAILABLE`). GPS offline sobe; saída/chegada/entrega feitas sem rede ficam no aparelho até haver
+  recibo nativo. Decisão do César: piloto de campo em arquivo, ou a migração de recibos por unidade no PostgreSQL.
+- **Composição oficial, 14/11:** já recebe `DELIVERYOS_PILOT_TRIP_GRANT_SECRETS` (PB19 verde). Ainda sem a concessão: as ferramentas
+  de container `tools/q017_gps_no_container.js`, `tools/papeis_compose_real.sh` e `tools/bancada_q018_*` — não verificáveis no Foxxy.

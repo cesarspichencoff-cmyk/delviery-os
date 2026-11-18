@@ -1,6 +1,6 @@
 /** Limite de tentativas de código de acesso (puro, relógio controlado). */
 import assert from "node:assert/strict";
-import { createAccessThrottle } from "./access-throttle";
+import { createAccessThrottle, loadSharedOrigins, normalizeOrigin } from "./access-throttle";
 
 let passou = 0;
 const falhas: string[] = [];
@@ -47,6 +47,35 @@ teste("T4 a trava vence sozinha; erros fora da janela não somam", () => {
     agora += 600;
   }
   assert.equal(t.blocked("a", "1000"), false, "erros espalhados além da janela travaram");
+});
+teste("T5 origem compartilhada declarada: um motoboy errando 5 vezes nao trava o login novo dos outros", () => {
+  const t = createAccessThrottle({ now: relogio, sharedOrigins: loadSharedOrigins("127.0.0.1,100.107.51.21", true) });
+  for (let i = 0; i < 5; i++) t.failure("::ffff:127.0.0.1");
+  assert.equal(t.blocked("127.0.0.1", "codigo-novo-de-outro-motoboy-000000"), false);
+  assert.equal(t.blocked("100.107.51.21", "x"), false);
+});
+teste("T6 ...mas o orcamento proprio tambem trava (o controle nao foi removido)", () => {
+  const t = createAccessThrottle({ now: relogio, sharedOrigins: new Set(["127.0.0.1"]), sharedMaxFailures: 40 });
+  t.success("127.0.0.1", "ja-entrou-000000000000000000");
+  for (let i = 0; i < 39; i++) t.failure("127.0.0.1");
+  assert.equal(t.blocked("127.0.0.1", "y"), false);
+  t.failure("127.0.0.1");
+  assert.equal(t.blocked("127.0.0.1", "y"), true, "40 erros na janela precisam travar a origem compartilhada");
+  assert.equal(t.blocked("127.0.0.1", "ja-entrou-000000000000000000"), false, "quem ja entrou segue");
+});
+teste("T7 origem NAO declarada continua com 5, inclusive escrita como IPv4 mapeado", () => {
+  const t = createAccessThrottle({ now: relogio, sharedOrigins: new Set(["127.0.0.1"]) });
+  for (let i = 0; i < 5; i++) t.failure("::ffff:10.0.0.9");
+  assert.equal(t.blocked("10.0.0.9", "z"), true);
+  assert.equal(normalizeOrigin("::ffff:10.0.0.9"), "10.0.0.9");
+});
+teste("T8 configuracao: so no modo remoto, so IP literal", () => {
+  assert.equal(loadSharedOrigins(undefined, false).size, 0);
+  assert.equal(loadSharedOrigins("", true).size, 0);
+  assert.throws(() => loadSharedOrigins("127.0.0.1", false), /modo remoto/);
+  for (const ruim of ["*", "10.0.0.0/8", "proxy.netbird", "127.0.0.256", "0.0.0.0 ; 1.1.1.1"])
+    assert.throws(() => loadSharedOrigins(ruim, true), /literal/, "aceitou " + ruim);
+  assert.deepEqual([...loadSharedOrigins(" 127.0.0.1 , ::ffff:100.107.51.21 ", true)].sort(), ["100.107.51.21", "127.0.0.1"]);
 });
 console.log(`\n${passou}/${passou + falhas.length} provas do limite de tentativas`);
 if (falhas.length) process.exitCode = 1;

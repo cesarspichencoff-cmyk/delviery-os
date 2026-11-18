@@ -52,6 +52,7 @@ import {
   type Procedencia,
   type Selo,
 } from "./estados";
+import { identidadeDaCausa, type ResultadoDaEleicao } from "../atencao/politica-temporal";
 import {
   SINAIS_INDISPONIVEIS,
   sinaisDe,
@@ -67,6 +68,13 @@ import {
  * ================================================================== */
 
 export type ModoOperacional = "calmo" | "ambiente" | "foco";
+
+/**
+ * O carimbo de linhagem do produtor de demanda observada
+ * (`src/product/eventos/demanda-gestor.ts`). Literal aqui de proposito: a view
+ * model le a linhagem que a leitura carrega, e nao importa o produtor.
+ */
+export const TRANSFORMACAO_DEMANDA_OBSERVADA = "demanda-gestor@1";
 
 /**
  * `sem_medicao` e uma cor propria, e nao um tom de verde. Ela existe justamente
@@ -190,6 +198,14 @@ export interface HomeVM {
    * verdadeira, a home diz QUAL fonte falta em vez de mostrar tudo verde.
    */
   readonly degradado: boolean;
+  /** Leitura real sem qualquer fonte saudavel: nao equivale a "ao vivo". */
+  readonly sem_leitura_operacional: boolean;
+  /**
+   * Ha pedidos OBSERVADOS numa fonte que nao prova cobertura total. Nao e um
+   * quarto modo nem uma contagem da casa: e a condicao em que a home mostra o
+   * que foi visto e diz, na mesma frase, que nao e tudo.
+   */
+  readonly leitura_parcial_de_pedidos: boolean;
   readonly selos: readonly Selo[];
   readonly pulso: Campo<number>;
   readonly ambientes: readonly AmbienteVM[];
@@ -400,15 +416,15 @@ function ambienteVM(
  * Criterio: severidade 3. Severidade 2 e Ambiente; severidade 1 e clima.
  */
 /**
- * O que esta view model aceita da politica temporal. Deliberadamente MINIMO: so
- * o modo eleito e se a orientacao esta liberada. Tudo o mais — pendente, foco
- * ativo, cooldown, marcacoes — pertence ao estado da politica, e trazer para ca
- * seria recriar aqui o dono da atencao que C3 ja definiu.
+ * Minimal authoritative selection from the existing Operacao Viva policy.
+ * Preserve the elected cause/identity rather than re-electing the first
+ * severe signal (which would silently preempt a persistent temporal Foco).
+ * Counters, cooldown and clocks remain owned by the temporal policy.
  */
-export interface EleicaoTemporal {
-  readonly modo: ModoOperacional;
-  readonly orientacao_permitida: boolean;
-}
+export type EleicaoTemporal = Pick<
+  ResultadoDaEleicao,
+  "modo" | "orientacao_permitida" | "identidade" | "causa"
+>;
 
 /**
  * De onde vem a leitura — e este tipo existe para fechar um bypass, nao para
@@ -434,6 +450,39 @@ export type OrigemDaLeitura =
 function elegerFoco(sinais: readonly Sinal[]): Sinal | null {
   const candidatos = sinais.filter((s) => s.severidade >= 3);
   return candidatos[0] ?? null;
+}
+
+/**
+ * Real Foco is a presentation of ONE cause elected by Operacao Viva, not a
+ * second election. Validate the policy's canonical identity, an actually
+ * healthy declared source, and a UNIQUE matching signal from this reading.
+ * Source attribution of each signal remains a separate integration gate;
+ * the identity/cause supplied here MUST come from the same policy result.
+ * Unmatched, ambiguous or malformed causes fail closed without an action.
+ */
+function focoDaEleicao(
+  sinais: readonly Sinal[],
+  fontes: LeituraOperacional["fontes"],
+  temporal: EleicaoTemporal,
+): Sinal | null {
+  if (temporal.modo !== "foco" || temporal.causa === null ||
+      temporal.identidade === null || typeof temporal.identidade !== "string") return null;
+  const causa = temporal.causa;
+  if (typeof causa.codigo !== "string" || !causa.codigo ||
+      typeof causa.fonte_id !== "string" || !causa.fonte_id ||
+      typeof causa.severidade !== "number" || causa.severidade < 1 || causa.severidade > 3 ||
+      temporal.identidade !== identidadeDaCausa(causa) ||
+      !fontes.some((f) => f.id === causa.fonte_id && f.estado === "saudavel")) return null;
+  const encontrados = sinais.filter((s) =>
+    // An elected Foco may legitimately soften before the temporal owner
+    // withdraws it. Match the PRESENT signal severity, not a new 3+ election.
+    s.severidade === causa.severidade &&
+    s.codigo.toUpperCase() === causa.codigo.toUpperCase() &&
+    s.ambiente === causa.ambiente &&
+    s.subarea === causa.subarea &&
+    s.pedido_id === causa.pedido_id
+  );
+  return encontrados.length === 1 ? encontrados[0]! : null;
 }
 
 /**
@@ -469,7 +518,7 @@ function orientacaoVM(
   };
 }
 
-function focoVM(sinal: Sinal, l: LeituraOperacional): FocoVM {
+function focoVM(sinal: Sinal, l: LeituraOperacional, orientacaoPermitida: boolean): FocoVM {
   // CONFIANCA NAO ESTIMADA — e a correcao de um defeito real.
   //
   // Ate 2026-08-03 esta linha fazia `sinal.severidade >= 3 ? 0.8 : 0.6`. Era
@@ -501,7 +550,9 @@ function focoVM(sinal: Sinal, l: LeituraOperacional): FocoVM {
     impacto: sinal.limitacao,
     tempo: `Leitura de ${l.observado_em}`,
     confianca,
-    orientacao: orientacaoVM(sinal, confianca),
+    // The Operacao Viva owns permission to orient. A severe signal alone
+    // cannot issue an imperative during temporal debounce or cooldown.
+    orientacao: orientacaoPermitida ? orientacaoVM(sinal, confianca) : null,
     sinal,
   };
 }
@@ -652,7 +703,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   const temporal: EleicaoTemporal | undefined =
     origem !== undefined && origem.tipo === "real" ? origem.temporal : undefined;
   const sinais = sinaisDe(l);
-  const foco = elegerFoco(sinais);
+  const candidatoFoco = elegerFoco(sinais);
 
   // O modo. Calmo NAO significa ausencia de informacao: significa que nada
   // esta acima do piso de interrupcao.
@@ -670,19 +721,53 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   const modo: ModoOperacional =
     temporal !== undefined
       ? temporal.modo
-      : foco !== null
+      : candidatoFoco !== null
         ? "foco"
         : sinais.some((s) => s.severidade >= 2)
           ? "ambiente"
           : "calmo";
 
+  // Severity proposes a candidate; only the temporal owner can place it in
+  // the real Foco slot. During debounce/cooldown the same severe signal stays
+  // visible in the second plane, never silently disappears or prescribes.
+  // Demonstration scenes have no temporal election and retain their baseline.
+  const foco = modo !== "foco" ? null :
+    temporal === undefined ? candidatoFoco : focoDaEleicao(sinais, l.fontes, temporal);
+  const causaNaoVinculada = temporal !== undefined && modo === "foco" && foco === null;
+  const orientacaoPermitida = temporal === undefined
+    ? modo === "foco" : (modo === "foco" && temporal.orientacao_permitida === true);
+
   const emAndamento = l.pedidos.length;
+  const existeFonteSaudavel = l.fontes.some((f) => f.estado === "saudavel");
+  // Uma fonte de cardapio ou carga saudavel nao autentica a contagem de
+  // pedidos. Neste contrato, "ifood_tempos" e a unica fonte declarada
+  // de pedidos. O Reader futuro precisa de um vinculo de origem proprio
+  // antes de poder sustentar este pulso; NAO promove-lo por apelido.
+  const fonteDePedidosSaudavel = l.fontes.some(
+    (f) => f.id === "ifood_tempos" && f.estado === "saudavel",
+  );
+  const semLeituraOperacional = l.procedencia === "real" && !fonteDePedidosSaudavel;
+  // LEITURA PARCIAL — apresentacao de um dado que ja existe, nao regra nova.
+  // A condicao e a propria leitura que a declara: pedidos presentes, fonte de
+  // pedidos `parcial`, e a linhagem carimbada pelo produtor de demanda
+  // observada. Sem o carimbo, uma fonte parcial continua sendo so degradacao.
+  const leituraParcialDePedidos =
+    l.pedidos.length > 0 &&
+    l.fontes.some((f) => f.id === "ifood_tempos" && f.estado === "parcial") &&
+    (l.linhagem?.transformacoes ?? []).includes(TRANSFORMACAO_DEMANDA_OBSERVADA);
+  // Pedido observado sem cobertura provada NUNCA sustenta a contagem da casa,
+  // nem em demonstracao: "N pedidos em andamento" afirmaria o total.
+  const pulsoSustentado = l.procedencia === "real"
+    ? fonteDePedidosSaudavel
+    : existeFonteSaudavel || l.pedidos.length > 0;
   const pulso: Campo<number> =
-    l.pedidos.length > 0 || l.fontes.some((f) => f.estado === "saudavel")
+    pulsoSustentado && !leituraParcialDePedidos
       ? observado(emAndamento, l.procedencia, l.observado_em)
       : ausente(
           "indisponivel",
-          "Nenhuma fonte de pedido respondeu. O pulso nao pode ser afirmado, e ausencia nao e zero.",
+          leituraParcialDePedidos
+            ? "Os pedidos observados nao sao o total da casa. Leitura parcial nao sustenta contagem geral; ausencia nao e zero."
+            : "A fonte de pedidos nao esta saudavel. Outras fontes nao validam esta contagem; ausencia nao e zero.",
         );
 
   const fontes = l.fontes.map(fonteVM);
@@ -694,14 +779,20 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
   );
 
   const titulo =
-    modo === "foco"
+    leituraParcialDePedidos ? "Leitura parcial" : semLeituraOperacional ? "Sem leitura" : modo === "foco"
       ? "Foco"
       : modo === "ambiente"
         ? "Ambiente"
         : "Em fluxo";
 
-  const apoio = degradado
+  const apoio = causaNaoVinculada
+    ? "A Operacao Viva manteve Foco, mas a causa nao corresponde a um sinal unico desta leitura. Orientacao retida; os alertas continuam visiveis."
+    : leituraParcialDePedidos
+    ? "Pedidos observados no Gestor do iFood. O total da casa, o preparo e a saida nao estao confirmados."
+    : degradado
     ? "Parte das fontes parou de responder. O que segue vale so para o que ainda e observado."
+    : semLeituraOperacional
+      ? "Nao ha fonte confiavel de pedidos. Nao e possivel afirmar volume nem normalidade da operacao."
     : modo === "foco"
       ? "Uma situacao pede decisao agora. As demais continuam visiveis abaixo."
       : modo === "ambiente"
@@ -744,6 +835,8 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     observado_em: l.observado_em,
     demonstracao: l.procedencia !== "real",
     degradado,
+    sem_leitura_operacional: semLeituraOperacional,
+    leitura_parcial_de_pedidos: leituraParcialDePedidos,
     selos:
       l.procedencia === "real"
         ? [selo("real")]
@@ -751,7 +844,7 @@ export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM 
     pulso,
     ambientes,
     ligacoes: ligacoesVM(ambientes),
-    foco: foco !== null ? focoVM(foco, l) : null,
+    foco: foco !== null ? focoVM(foco, l, orientacaoPermitida) : null,
     sinais_em_segundo_plano: sinais.filter((s) => s !== foco),
     total_de_sinais: sinais.length,
     fontes,

@@ -1,0 +1,67 @@
+# Delivery OS Itaim — N4: rota documental oficial Teknisa/iFood para identidade e complementos (12/11/2026)
+
+**Natureza:** pesquisa documental pública + auditoria passiva de arquivos já existentes. **Não é implementação ativa, autenticação de loja, captura autorizada da API iFood, prova de UUID↔chave nativa, leitura SQL ou aceite operacional.** PR #137 permanece DRAFT/HOLD; PR #135 igualmente.
+
+## Nova contra-rota N2-B/L3: Sale API e Order API do próprio fornecedor
+
+**Fonte adicional da própria Teknisa:** [APIs e integrações do Retail — catálogo público](https://www.teknisa.com/api), [PDF oficial de 2 páginas, documento TEK195-1P, 04/11/2025](https://www.teknisa.com/documentos/apis-integracoes-retail.pdf). A tabela registra os seguintes recursos (todos `POST`, embora alguns tenham nome de leitura):
+
+| API / rota documentada | Informação anunciada | Limite de prova |
+| --- | --- | --- |
+| Sale API — `/getSaleProducts` | Produtos vendidos **com complementos** | **Não** informa quais relações `ITCOMANDAEST` / `OBSIT*`, nível de detalhes, abrangência, relógio, chave, autorizações, preço de uso ou se atende pedidos ainda não efetivados |
+| Sale API — `/getSales` | Vendas realizadas no PDV, com itens, impostos, recebimentos e NFC-e | Pode servir como segunda testemunha de **venda efetivada**, mas não como comprovação de recebimento do pré-pedido no iFood |
+| Order API — `/orderStatus` | Retorno de estado: em produção, cupom impresso, expedido, finalizado ou cancelado | É vocabulário do fornecedor, não prova automática de prontidão **física por item**, nem de equivalência com `IDSTCOMANDA=P/X` |
+| Order API — `/order`, `/orderCancel` | Recebe ou cancela pedidos | **Proibido chamar**: ações operacionais, não são rota de auditoria |
+
+**Diferença essencial, documentada no mesmo PDF:** os pedidos recebidos de marketplace são considerados **pré-pedidos** e só viram venda efetiva após emissão no PDV. Assim, uma resposta sobre "venda" pode não cobrir o estágio de pedido em andamento. Não afirmar que a Sale API implementa exatamente o fluxo da instalação do Itaim sem evidência de contrato e produção.
+
+**Opção de menor risco e menor custo:** investigar **somente a documentação e direitos já incluídos** na relação existente com o fornecedor, antes de propor consulta SQL de seis rowsets em produção. O próprio catálogo público ressalva que APIs e integrações padrão estão sujeitas a condições comerciais; **não presumir gratuito** nem criar contratação. A disponibilidade técnica e comercial na unidade 0001 permanece `UNKNOWN`.
+
+**Gate antes de qualquer uso, mesmo para um pedido concluído:**
+1. Obter contrato técnico de request/response, identificação **forte** da venda e correspondência ao pedido iFood, incluindo unidade/loja/caixa e limites de escopo. Não basta `NRCOMANDAEXT`/número curto.
+2. Confirmar por evidência do fornecedor que `/getSaleProducts` cobre explicitamente complemento cobrado, retirada, observação gratuita, observação de item e composição de combo, com revisão e exaustividade verificáveis. A descrição resumida "com complementos" **não prova cada campo**.
+3. Confirmar que os `POST` de consulta são **estritamente somente leitura**, sem reserva/ACK/impressão/transição, e têm impacto controlado em escritores/PDV. Um verbo HTTP ou nome `get` não é prova de ausência de efeitos.
+4. Confirmar disponibilidade **já licenciada ou gratuita suficiente**; nenhuma compra, uso de token nem alteração de integração foi autorizada.
+5. Só então considerar **uma** chamada de prova isolada, parametrizada e consentida, com saída **somente de contagens, versões, vínculos e divergências sanitizadas**, jamais payload ou PII, sem tocar no CAIXA_MOOCA.
+
+**Estado:** `VENDOR_SALE_API_DOCUMENTED=YES`; `VENDOR_SALE_API_ENTITLED=UNKNOWN`; `READ_ONLY_EFFECTS_PROVEN=NO`; `N2_B_COMPLETENESS=UNKNOWN`; `N4_STRONG_JOIN=HOLD`; `L3_PHYSICAL_STATE=UNKNOWN`. Essa rota é uma alternativa de **investigação**, não prova de funcionamento e não muda a arquitetura Gestor → Operação Viva nem os gates de Home/impressão.
+
+## Fontes externas, com suas limitações
+
+1. **Teknisa, Manual _Integração Teknisa x iFood_, v4.2.0**, URL oficial: https://ead.teknisa.com/wp-content/uploads/2025/11/Manual-Integracao-Teknisa-iFood.pdf . Conteúdo lido em 12/11/2026. Páginas do manual: 3–4 (fluxo automático e restrições), 14–15 (cardápio/opções), 18–19 (responsável técnico, cadastro IFO e loja/caixa padrão), 22–24 (associação por unidade, loja e caixa). Esse manual apresenta **exemplos fictícios para a unidade 0005**; não prova qualquer configuração efetiva na unidade Itaim 0001.
+2. **iFood Developer, Food Order Details**, https://developer.ifood.com.br/en-US/docs/food/guides/modules/order/details . Documenta `GET /order/v1.0/orders/{id}` para detalhes, incluindo `id` UUID, `displayId`, `merchant`, `items` e `options`. É uma **capacidade documentada** que exige autenticação legítima; nenhum token foi obtido, nenhuma requisição foi executada.
+3. **iFood Developer, Food Order Workflow**, https://developer.ifood.com.br/en-US/docs/food/guides/modules/order/workflow . A documentação separa `GET` de detalhes de ações de ciclo de vida como polling de eventos, acknowledgment, confirmação e despacho, e relata retenção típica de detalhes por **7 dias**. Não assumir que consultar pedidos antigos será possível; preservar apenas evidência já autorizada e sem PII.
+
+## Confronto com a decisão arquitetural já tomada em 04/11
+
+Esta fonte **não substitui** o plano canônico de `docs/execution/DELIVERYOS_GESTOR_COPILOTO_MASTER_PLAN_20261104.md` nem `docs/execution/DELIVERYOS_IFOOD_FONTE_CONTINUA_DECISAO_20261104.md`. A direção aprovada em laboratório continua sendo **Gestor passivo como sensor de pedidos quando visibilidade e cobertura forem comprovadas → journal/contratos existentes → Operação Viva como motor único → Home/Copiloto**, com **TATÁ Comandas como segunda testemunha/enriquecimento**, sem uma segunda arquitetura.
+
+A decisão anterior já registrou que um aplicativo próprio iFood de leitura isolada **não é atalho de homologação**: permissões do módulo Order e exigências de aplicação operacional não foram cumpridas ou autorizadas. O manual externo e os endpoints documentados apenas ajudam a formular a **prova N4** e a distinguir observações; **não** revogam esse HOLD. Não iniciar OAuth, scraping de sessão, polling, webhook, ACK ou leitura direta da API com credenciais existentes fora do escopo do integrador. A leitura passiva do navegador iFood já aberto é uma testemunha pontual, não alimentação contínua aprovada.
+
+## Fatos novos do manual da Teknisa
+
+**Autonomia da integração:** o manual afirma que a integração recebe pedidos e gera comandas para o ForSale automaticamente. Adverte que ferramentas de terceiros que também recebam/processam pedidos **não devem interferir** no receptor existente. Portanto, **não estabelecer receptor paralelo**, não fazer `orders:polling`, `events:polling`, `acknowledgment`, `confirm`, `readyToPickup`, `dispatch`, cancelamento ou alterar configuração da loja para obter evidência. Isso é diferente de um futuro `GET` de detalhe do pedido estritamente autorizado, sem efeito no estado.
+
+**Identidade da integração:** o cadastro de integração em Odhen Retail utiliza o identificador **`IFO`** para o iFood. O campo **`Utiliza Loja e Caixa do Vendedor Padrão`** pode direcionar a loja/caixa de todas as filiais; quando desabilitado, a configuração de **`Loja`/`Caixa`** é definida por filial, na aba Unidade/Token. O token é **secreto** e não precisa nem deve ser visualizado, exportado ou registrado para conferir apenas a relação não secreta entre unidade, loja e caixa. A existência do campo no manual **não significa** que o Itaim esteja configurado de determinada maneira.
+
+**Categorias de alterações de produtos:** (1) `Acréscimo`, item/produto cobravel, preço mínimo indicado R$ 0,01 e SKU próprio; (2) `Retirada`, preço zero, identificação no formato `CDGRPOCOR|CDOCORR`; (3) `Observação` gratuita, mesmo formato de grupo/código. O caminho instalado `vendor/odhen/api/src/Service/Comanda.php` permite uma observação cobrada com linha `ITCOMANDAVEN` própria e referência via `OBSITCOMANDAVEN.NRPRODCOMVENOBS`. **O manual descreve o contrato de cadastro**, enquanto o PHP mostra **uma implementação encontrada**: não inferir que a mesma rota processou todos os pedidos `DLV_IFO` do Itaim, nem que o número de linhas nativas sempre seja igual ao número de itens da tela iFood.
+
+**Falhas técnicas:** o manual prevê o envio de e-mail automático aos destinatários da aba **E-mail do Responsável Técnico** em problemas de integração. E-mails de erro podem explicar falhas específicas quando disponíveis por canal autorizado, mas **não constituem histórico completo de pedidos recebidos com sucesso** nem vínculo forte UUID↔venda.
+
+## Fontes locais já observadas — diferença entre correlação e identidade
+
+- Portal do Parceiro iFood: uma comanda de 11/11/2026 às 22h59 mostrou duas linhas (1+1). Um evento do Reader e uma decisão local persistida coincidiam em minuto, número curto, duas quantidades e dois nomes normalizados, com mesma chave de quatro partes e hash local. Detalhes sem PII em `docs/execution/DELIVERYOS_L1_IFOOD_PORTAL_READER_ONE_ORDER_PASSIVE_WITNESS_20261112.md`.
+- É **correlação passiva de um pedido**, não associação assinada do `id` UUID do iFood à chave `CDFILIAL|CDLOJA|NRVENDAREST|NRCOMANDA`. `NRCOMANDAEXT` (número curto) é insuficiente como FK: `GET_LAST_SALE` do fornecedor instalado consulta apenas esse número com ordenação cronológica.
+- Checkpoint Reader não lê diretamente todas as tabelas filhas. O reconciliador da PR #137 compara estruturalmente combos, observações cobradas e não cobradas com dados **fornecidos por chamador**, mas nunca eleva `independentTableExhaustionProven` nem `sqlSnapshotAtomicityProven` a `true`.
+- Sondagem exclusivamente por leitura de **amostras** já gravadas de `C:\TEKNISA\LOG\vendaApi\NRORG_5315\CDFILIAL_0001_*\2026_11\VENDAS_11-11-2026.txt`: seis caixas com arquivo do dia. A cauda de até 550 linhas por arquivo não apresentou UUID, `IDORGCMDVENDA`, `NRCOMANDAEXT` nem projeção nativa completa das tabelas filhas; logo **não oferece prova suficiente nessa amostra**. Não foi feita varredura completa, leitura SQL ou cópia de dados identificáveis. Não afirmar ausência desses campos em todos os históricos.
+- Heartbeat Reader lido passivamente em 12/11/2026 09h33 BRT: `RUNNING`, último sucesso no mesmo minuto, `consecutive_failures=0`, SHA do watcher verificado, sem bloqueio fatal declarado. Isso não atesta zero impacto em escritores, nenhuma janela visível, nem fonte completa.
+
+## Rota de prova de menor risco — sem executar operação
+
+1. **Origem da loja (N4, parcial):** obter pelo **Odhen Retail em modo somente leitura e por operador autorizado**, no cadastro de integração `IFO`, os dados **não secretos**: unidade/filial, valor de `Utiliza Loja e Caixa do Vendedor Padrão`, loja e caixa efetivamente associados à unidade 0001. Cruzar com o cadastro do iFood da loja 53069 por prova autenticada do próprio estabelecimento. **Nunca ler/extrair token, senhas, cookies ou dados de cliente.** Abrir configuração sem editar ou salvar não foi executado nesta rodada.
+2. **Identidade do pedido (N4 forte):** exigir um recibo/correspondência de **mesmo pedido** entre `id` UUID do iFood e chave nativa de quatro partes, emitido ou comprovado pelo integrador/fornecedor ou por fonte técnica autenticada independente. A coincidência de horário, short code, cesta e loja não substitui isso. O manual não documenta um campo nativo de UUID nem fornece tal prova.
+3. **Completude N2-B:** para uma revisão **exata**, obter de ambiente isolado/autorizado captura exaustiva de `ITCOMANDAVEN`, `ITCOMANDAEST`, `OBSITCOMANDAVEN`, `OBSITCOMANDAEST`, `OCORRENCIA` e `PRODUTO` e estabelecer commit/tempo e associação com a mesma venda; somente contagens e divergências sanitizadas devem sair do ambiente de origem. Um conjunto de `SELECT` independentes sem snapshot não basta.
+4. **Segurança N2-A:** antes de piloto SQL, validar índice/plano e impacto em escritores num ambiente que não seja o caixa em operação. Segundo a documentação Microsoft (https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql), com `READ_COMMITTED_SNAPSHOT=OFF`, leituras usam locks e podem observar alterações entre statements; `SERIALIZABLE` pode reter locks que atrasam escritores. Nada foi configurado ou executado.
+5. **Fronteira de operação:** manter `N4_UUID_NATIVE_AUTHENTICATED=HOLD`, `N2_B_CHILD_COMPLETENESS=UNKNOWN`, `N2_A_WRITER_IMPACT=UNKNOWN`, `HOME_REAL=HOLD`, `PRINT=HOLD`, `FIELD_ACCEPTED=0/8`. Nenhum acesso à configuração de produção, API iFood, SQL, POS, terminal, deploy ou envio externo foi realizado para esta investigação.
+
+**Decisão de engenharia:** priorizar **configuração IFO/loja/caixa não secreta e recibo do integrador** em vez de repetir consultas do Reader ou substituir prova por novas fixtures. Adiar qualquer ação no ambiente de operação até autorização específica e rota comprovadamente não interferente.

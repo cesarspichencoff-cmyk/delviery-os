@@ -15,10 +15,16 @@
 
 import http from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
-import { join, extname, normalize } from "node:path";
+import { join, extname, normalize, isAbsolute } from "node:path";
 import { createRequire } from "node:module";
+import { randomBytes } from "node:crypto";
 
-import { entregasVM } from "../src/product/viewmodels/entregas-vm";
+import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
+import { lerPedidosReaisDoReaderIncremental, lerPracasDaRevisao, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
+import { lerPedidosDoGestorLocal } from "../src/platform/leitura/pedidos-do-gestor-local";
+import { operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
+import { lerPedidosReaderV3 } from "../src/platform/leitura/pedidos-reader-v3";
+import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
@@ -33,6 +39,8 @@ import {
   AGORA_DEMO,
 } from "../src/product/demo/seed-demonstracao";
 import { homeVM } from "../src/product/viewmodels/home-vm";
+import { elegerModo, ESTADO_INICIAL } from "../src/product/atencao/politica-temporal";
+import type { FonteLeitura, LeituraOperacional } from "../src/product/viewmodels/sinais";
 import {
   eventosHistoricosDeEnvelopes,
   historicoVM,
@@ -47,7 +55,15 @@ import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-ent
 import { lerRealidadeDeEntregasIncremental } from "../src/platform/leitura/realidade-de-entregas-incremental";
 import { leitorRrCancelavel, type ProtecaoRr } from "../src/platform/leitura/leitor-rr-cancelavel";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
-import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
+import { lerSaudeDaFonteTata, type AvaliadorDeSaude, type SaudeDaFonteTata } from "../src/platform/leitura/saude-fonte-tata";
+import { lerDemandaDoGestor, type DemandaDoGestor } from "../src/platform/leitura/demanda-do-gestor";
+import { leituraDaDemanda } from "../src/product/eventos/demanda-gestor";
+import { lerPedidosDoReader } from "../src/platform/leitura/pedidos-do-reader";
+import {
+  conciliarComReader,
+  type ConciliacaoComReader,
+  type Reconciliador,
+} from "../src/product/eventos/conciliacao-reader";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { configurarEscopoShadow, checarAcessoEscopado } from "../src/product/security/escopo-api-shadow";
@@ -152,6 +168,157 @@ const FAIXA_DE_AMBIENTE = LEITURA_DO_SERVIDOR
  * ausência. Só faz sentido na mesma máquina do leitor (relógio).
  */
 const DIR_LEITOR_TATA = (process.env.TATA_READER_INSTALL_ROOT || "").trim();
+
+/*
+ * Pedidos reais da Teknisa na Home (Reader V3, camada 1). Le o checkpoint do Reader (ate 250 pedidos)
+ * no maximo uma vez a cada 10 s: o polling da Home nunca vira releitura do disco do caixa por requisicao.
+ */
+let memoPedidosTeknisa: { em: number; leitura: PedidosReaisDoReader; vm: PedidosDaTeknisaVM } | null = null;
+const cacheTeknisa = novoCacheIncremental();
+function leituraDaTeknisaAgora(agoraMs: number) {
+  if (memoPedidosTeknisa && agoraMs - memoPedidosTeknisa.em < 10_000) return memoPedidosTeknisa;
+  // Incremental (sem o teto de 250 do checkpoint do Reader): so arquivos novos a cada leitura.
+  const v3 = (process.env.DELIVERYOS_READER_V3_PROJECTION_DIR || "").trim();
+  const leitura = v3 ? lerPedidosReaderV3(v3, new Date(agoraMs)) : lerPedidosReaisDoReaderIncremental(DIR_LEITOR_TATA || null, cacheTeknisa, new Date(agoraMs));
+  memoPedidosTeknisa = { em: agoraMs, leitura, vm: pedidosDaTeknisaVM(leitura, new Date(agoraMs)) };
+  return memoPedidosTeknisa;
+}
+const pedidosDaTeknisaAgora = (agoraMs: number): PedidosDaTeknisaVM => leituraDaTeknisaAgora(agoraMs).vm;
+
+/*
+ * Pedidos do iFood pelo que o PROPRIO aplicativo Gestor de Pedidos grava no disco do caixa
+ * (`DELIVERYOS_GESTOR_LOCAL_DIR`, pasta de dados do aplicativo, caminho absoluto), conciliados com a
+ * Teknisa. Sem a variavel: bloco "nao configurado", nunca zero. Mesma cadencia de 10 s.
+ */
+const DIR_GESTOR_LOCAL = (process.env.DELIVERYOS_GESTOR_LOCAL_DIR || "").trim();
+const DIR_READER_V3_COPILOTO = (process.env.DELIVERYOS_READER_V3_PROJECTION_DIR || "").trim();
+const UNIDADE_READER_V3 = (process.env.DELIVERYOS_READER_V3_UNIT_ID || "").trim();
+const PREVIA_PRACAS_ITAIM = process.env.DELIVERYOS_ITAIM_PREVIA_PRACAS === "1"
+  && UNIDADE_READER_V3 === "ITAIM" && isAbsolute(DIR_LEITOR_TATA) && !ESCOPO_SHADOW;
+let memoIfood: { em: number; vm: OperacaoDoIfoodVM } | null = null;
+function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfoodVM {
+  if (!memoIfood || agoraMs - memoIfood.em >= 10_000) {
+    const agora = new Date(agoraMs);
+    const vm = operacaoDoIfoodVM(lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora),
+      leituraDaTeknisaAgora(agoraMs).leitura, agora, Boolean(DIR_READER_V3_COPILOTO) && !ESCOPO_SHADOW,
+      PREVIA_PRACAS_ITAIM ? pedido => lerPracasDaRevisao(DIR_LEITOR_TATA, pedido) : undefined);
+    memoIfood = { em: agoraMs, vm };
+  }
+  const vm = memoIfood.vm;
+  if (comPrevia || !vm.disponivel || !vm.previa_por_praca) return vm;
+  const { previa_por_praca, ...semPrevia } = vm;
+  return semPrevia;
+}
+
+/**
+ * Onde o executor do sensor do Gestor escreve o feed de demanda observada
+ * (`runtime/reporting/gestor_mounted_demand_feed_v1.cjs`). Sem a variavel, a
+ * Home continua declarando a fonte de pedidos indisponivel — nunca zero. So faz
+ * sentido na mesma maquina do executor (relogio), como o leitor TATA.
+ */
+function diretorioDaDemandaDoGestor(raw: string | undefined): string | null {
+  const v = (raw || "").trim();
+  if (v === "") return null;
+  if (!isAbsolute(v)) throw new Error("DELIVERYOS_GESTOR_DEMAND_DIR exige caminho absoluto");
+  return v;
+}
+/** Inquilino dos fatos derivados nesta leitura. Nao e credencial nem escopo de acesso. */
+const INQUILINO_DA_LEITURA = "tata";
+
+/**
+ * Front door of the EXISTING V3.3 Home.
+ *
+ * Without a qualified demand feed: honest source-health observation, no order.
+ * With one: the orders MOUNTED on the Gestor expedition view, as level-1
+ * "demanda observada" — through the existing catalog, projector, temporal
+ * policy and homeVM. Never a house total, never physical state, never zero by
+ * absence. Reader heartbeat is NOT a Gestor order nor proof of completeness.
+ */
+function homeDaOperacao(
+  reader: SaudeDaFonteTata,
+  gestor: DemandaDoGestor,
+  agoraMs: number,
+  conciliacao: ConciliacaoComReader | null,
+) {
+  const agoraIso = new Date(agoraMs).toISOString();
+  const d = leituraDaDemanda(gestor, { tenant: INQUILINO_DA_LEITURA, agora_iso: agoraIso }, conciliacao);
+  const fontes: FonteLeitura[] = [
+    d.fonte,
+    {
+      id: "comanda_odhen", rotulo: "Reader TATA · saude tecnica",
+      estado: reader.estado,
+      detalhe: reader.configurada
+        ? "Saude tecnica observada no Reader do Itaim. Nao comprova totalidade das linhas nem preparo fisico."
+        : "Reader nao configurado nesta instancia; nao significa Reader desligado na loja.",
+      ambientes: ["conferencia"],
+    },
+    {
+      id: "carga_pracas", rotulo: "Carga por praca",
+      estado: "indisponivel",
+      detalhe: "Sem trabalhos por praca atestados. Carga desconhecida nao e zero.",
+      ambientes: ["sushi", "cozinha"],
+    },
+    {
+      id: "fila_caixa", rotulo: "Fila do caixa",
+      estado: "indisponivel",
+      detalhe: "Sem medicao operacional qualificada.",
+      ambientes: ["caixa"],
+    },
+    {
+      id: "carga_conferencia", rotulo: "Conferencia",
+      estado: "indisponivel",
+      detalhe: "Sem fonte comprovada de carga ou conclusao fisica.",
+      ambientes: ["conferencia"],
+    },
+  ];
+  const leitura: LeituraOperacional = {
+    procedencia: d.procedencia,
+    observado_em: d.observado_em ?? agoraIso,
+    pedidos: d.pedidos,
+    carga_por_praca: {},
+    baseline_por_praca: {},
+    chegadas_na_hora: null,
+    chegadas_normais: null,
+    fontes,
+    ...(d.linhagem !== null ? { linhagem: d.linhagem } : {}),
+  };
+  // Leitura de laboratorio (feed FIXTURE) atravessa como DEMONSTRACAO declarada.
+  // So a leitura real passa pela eleicao temporal da Operacao Viva.
+  const vm = d.procedencia === "real"
+    ? homeVM(leitura, {
+        tipo: "real",
+        temporal: elegerModo({
+          estado: ESTADO_INICIAL,
+          agora_min: Math.floor(agoraMs / 60000),
+          candidatas: [],
+          fontes: fontes.map(({ id, estado }) => ({ id, estado })),
+          idade_da_leitura_min: d.demanda !== null ? d.demanda.idade_s / 60 : null,
+        }),
+      })
+    : homeVM(leitura, {
+        tipo: "demonstracao",
+        motivo: "feed de laboratorio (FIXTURE) do observador do Gestor",
+      });
+  // Demanda observada nunca elege Foco, nunca sustenta a contagem da casa, e
+  // sem ela a leitura real continua "Sem leitura".
+  if (vm.foco !== null || vm.pulso.observado !== false ||
+      (d.demanda === null ? !vm.sem_leitura_operacional : !vm.leitura_parcial_de_pedidos))
+    throw Error("HOME_SOURCE_GUARD_VIOLATED");
+  return {
+    ...vm,
+    origem_desta_resposta: d.origem,
+    leitor_tecnico_configurado: reader.configurada,
+    escopo_do_produto: "ITAIM",
+    escopo_confirmado_pela_gestao: true,
+    identidade_de_cada_pedido_verificada: false,
+    pedidos_publicaveis: d.demanda !== null,
+    nivel_de_evidencia: d.demanda !== null ? d.demanda.nivel : null,
+    estado_do_join: d.estado_do_join,
+    impressao_autorizada: false,
+    demanda_observada: d.demanda,
+  };
+}
+
 const reqLocal = createRequire(join(process.cwd(), "package.json"));
 interface StoreHistorico {
   history: (entity: string, opts?: { limit?: number }) => LeituraHistoricaDoStore;
@@ -163,6 +330,10 @@ const { createStore: criarStoreConference } = reqLocal(
 const { evaluateTataReaderHealthV1: avaliarSaudeTata } = reqLocal(
   join(process.cwd(), "runtime", "tata-reader", "tata_reader_health_v1.cjs"),
 ) as { evaluateTataReaderHealthV1: AvaliadorDeSaude };
+/** O MESMO reconciliador de janela Gestor x Reader que ja existia. Nao ha copia. */
+const { reconcile: reconciliarJanela } = reqLocal(
+  join(process.cwd(), "tools", "gestor-native-shadow-reconcile", "reconcile.cjs"),
+) as { reconcile: Reconciliador };
 const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
 /** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
 const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
@@ -404,6 +575,14 @@ async function lerHistorico(
 }
 
 export async function criarServidor(): Promise<http.Server> {
+  // Lido na criacao, e nao no carregamento do modulo: uma configuracao invalida
+  // recusa ESTE servidor, e cada instancia sabe de onde le.
+  const dirDemandaGestor = diretorioDaDemandaDoGestor(process.env.DELIVERYOS_GESTOR_DEMAND_DIR);
+  // A mesma raiz do leitor TATA que a saude ja usa; aqui ela serve ao
+  // cruzamento. A chave so existe neste processo: as referencias opacas do
+  // reconciliador nao saem dele nem sobrevivem a um reinicio.
+  const dirReaderDoCruzamento = (process.env.TATA_READER_INSTALL_ROOT || "").trim() || null;
+  const chaveDoCruzamento = randomBytes(32).toString("hex");
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
   // Q-026 candidate: a request must never wait 5s in pg.Pool.connect()
@@ -498,16 +677,43 @@ export async function criarServidor(): Promise<http.Server> {
         });
       }
       if (p === "/api/home") {
-        // `cena` so existe porque esta build e de DEMONSTRACAO. Numa build com
-        // fonte real haveria uma leitura, nao um seletor de cena.
-        const pedida = url.searchParams.get("cena") as CenaHome | null;
-        const escolhida: CenaHome =
-          pedida !== null && pedida in CENAS ? pedida : "ambiente";
-        return json(res, 200, {
-          ...(pronto.home[escolhida] as object),
-          cena: escolhida,
-          cenas_disponiveis: Object.keys(CENAS),
-        });
+        // O caminho principal NAO afirma que a demonstracao e a loja.
+        // Fixtures ficam disponiveis apenas por ?cena=..., explicitamente.
+        const cenaPedida = url.searchParams.get("cena");
+        if (cenaPedida !== null) {
+          if (!Object.prototype.hasOwnProperty.call(CENAS, cenaPedida)) return json(res, 400, { erro: "cena_desconhecida" });
+          const escolhida = cenaPedida as CenaHome;
+          return json(res, 200, {
+            ...(pronto.home[escolhida] as object),
+            cena: escolhida,
+            cenas_disponiveis: Object.keys(CENAS),
+          });
+        }
+        const agoraMs = Date.now();
+        // Entregas na Home (decisao do Cesar de 15/11, Frente C): a MESMA leitura da rua da
+        // superficie /entregas, sobre a MESMA porta de realidade. Falha da plataforma vira
+        // ausencia declarada no bloco; nunca derruba a Home nem vira zero.
+        const unidadeDaHome = ESCOPO_SHADOW?.unit_id || (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        const ruaDaHome = lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id)
+          .catch((): LeituraDeRealidade => ({ disponivel: false, motivo: "indisponivel", explicacao: "A leitura da plataforma falhou nesta requisicao." }))
+          .then((l) => leituraDaRuaDe(l, new Date(agoraMs).toISOString(), unidadeDaHome));
+        void Promise.all([lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome])
+          .then(([reader, rua]) => {
+            const gestor = lerDemandaDoGestor(dirDemandaGestor, agoraMs);
+            // Nivel 2: so ha o que cruzar quando ha janela observada. O Reader
+            // e lido AGORA, do disco, e quem decide o casamento e o
+            // reconciliador de janela existente.
+            const conciliacao = gestor.estado === "observada"
+              ? conciliarComReader(gestor.janela, gestor.modo, lerPedidosDoReader(dirReaderDoCruzamento), {
+                  agora_iso: new Date(agoraMs).toISOString(),
+                  reconciliar: reconciliarJanela,
+                  chave_privada_hex: chaveDoCruzamento,
+                })
+              : null;
+            json(res, 200, { ...homeDaOperacao(reader, gestor, agoraMs, conciliacao), entregas: rua, pedidos_teknisa: pedidosDaTeknisaAgora(agoraMs), operacao_ifood: operacaoDoIfoodAgora(agoraMs) });
+          })
+          .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
+        return;
       }
       if (p === "/api/entregas") {
         const limitar = LIMITE_ENTREGAS > 0 && clientePlataforma !== null;
@@ -592,19 +798,69 @@ export async function criarServidor(): Promise<http.Server> {
         // A demo ja montada permanece separada do bloco observado do servidor.
         const unidade = ESCOPO_SHADOW?.unit_id ||
           (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        const agoraMs = Date.now();
+        const readerNaUnidade = Boolean(DIR_READER_V3_COPILOTO)
+          && /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(UNIDADE_READER_V3)
+          && (unidade === null || unidade === UNIDADE_READER_V3);
+        const previaItaim = PREVIA_PRACAS_ITAIM && unidade === "ITAIM";
+        const operacaoIfood = (readerNaUnidade || previaItaim) && !ESCOPO_SHADOW
+          ? operacaoDoIfoodAgora(agoraMs, previaItaim) : null;
+        const pedidosIfood: OperacaoDoIfoodVM | null = operacaoIfood?.disponivel && operacaoIfood.leitura_velha
+          ? { disponivel: false, titulo: "Leitura do Gestor desatualizada",
+            explicacao: "Os pedidos voltam a aparecer após uma gravação recente do aplicativo." }
+          : readerNaUnidade && operacaoIfood?.disponivel && leituraDaTeknisaAgora(agoraMs).leitura.estado !== "lido"
+            ? { disponivel: false, titulo: "Conferência com a Teknisa indisponível",
+              explicacao: "A projeção do Reader V3 está indisponível nesta leitura." }
+            : operacaoIfood;
+        if (url.searchParams.get("pedidos") === "1") {
+          if (!pedidosIfood) return json(res, 404, { erro: "pedidos_ifood_fora_do_escopo" });
+          return json(res, 200, { operacao_ifood: pedidosIfood });
+        }
+        if (previaItaim) {
+          // O endereço privado já distribuído usa a Home canônica com a leitura do Itaim.
+          // Nenhuma fixture nem payload do inspetor entra nesta resposta.
+          const demanda = lerDemandaDoGestor(dirDemandaGestor, agoraMs);
+          const demandaReal: DemandaDoGestor = "modo" in demanda && demanda.modo !== "real"
+            ? { estado: "nao_configurada" } : demanda;
+          void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata)
+            .then(reader => json(res, 200, {
+              home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null), aprofundamentos: [] },
+              operacao_ifood: pedidosIfood,
+            }))
+            .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
+          return;
+        }
         void Promise.all([
           lerHistorico(clientePlataforma, pronto.historico, unidade),
           lerRealidade(clientePlataforma, undefined, ESCOPO_SHADOW?.unit_id),
         ])
           .then(([h, leitura]) => {
             const entregas = copilotoEntregasLeitura(leitura, unidade);
-            // Uma única leitura: células herdam os mesmos fatos e o mesmo
-            // recorte, sem segundo SQL, cor operacional ou ação implícita.
+            const cobertura = celulasCopilotoV33(entregas);
+            let celulas = cobertura.celulas;
+            if (readerNaUnidade) {
+              // O Caixa herda a mesma leitura local e o mesmo cache da Home.
+              const reader = pedidosDaTeknisaAgora(agoraMs);
+              const ifood = reader.disponivel && reader.contagens.pedidos > 0 ? operacaoDoIfoodAgora(agoraMs) : null;
+              const concil = ifood?.disponivel && !ifood.leitura_velha
+                ? `${ifood.conciliacao["correspondencia_comprovada"] ?? 0} correspondências nos campos comparáveis do iFood.`
+                : "Conciliação recente com o Gestor indisponível.";
+              const descricao = reader.disponivel
+                ? reader.contagens.pedidos > 0
+                  ? `Reader V3 em sombra · ${reader.dia} · ${reader.contagens.pedidos} ${reader.contagens.pedidos === 1 ? "pedido lido" : "pedidos lidos"}, ${reader.contagens.retidos} retidos. ${concil}`
+                  : "Reader V3 em sombra. Nenhum pedido na projeção desta leitura."
+                : "Reader V3 em sombra. Projeção indisponível nesta leitura.";
+              const estado = reader.disponivel
+                ? reader.contagens.pedidos > 0 ? "historico_real_parcial" : "sem_evidencia"
+                : "nao_conectada";
+              celulas = celulas.map(c => c.id === "caixa" ? { ...c, estado, descricao } : c);
+            }
             json(res, 200, {
               ...(pronto.copiloto as object),
               historico: h.copiloto,
               entregas_observadas: entregas,
-              celulas_operacionais: celulasCopilotoV33(entregas),
+              celulas_operacionais: { ...cobertura, celulas },
+              ...(pedidosIfood ? { operacao_ifood: pedidosIfood } : {}),
             });
           })
           .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));

@@ -1,0 +1,66 @@
+name: DeliveryOS Reader V3 isolated candidate
+on:
+  pull_request:
+    branches: [integration/deliveryos-v1-connected-20261102]
+    paths:
+      - runtime/reader-v3/**
+      - runtime/reporting/native_reader_n2*.cjs
+      - tests/reader-v3/**
+      - src/platform/leitura/pedidos-reader-v3.ts
+      - .github/workflows/deliveryos-reader-v3.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - name: Preserve repository line endings for historical mutation fixtures
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npx tsc
+      - run: node --test tests/reader-v3/core.test.cjs tests/reader-v3/home.test.cjs tests/reader-v3/transport.test.cjs tests/reader-v3/staging.test.cjs tests/reader-v3/runtime.test.cjs
+      - name: Windows PowerShell 5.1 and native zero-window check
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tests/reader-v3/windows.test.ps1
+      - run: node tests/reporting/run-native-reader-n2-child-tables-review-tests.cjs
+      - run: node dist/src/platform/run-m1-bridge-tests.js
+      - run: node dist/src/platform/run-governance-tests.js
+  sql-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: Ci!Harness-${{ github.run_id }}x
+        ports: ['1433:1433']
+    env:
+      TATA_HARNESS_SQLSERVER: 127.0.0.1,1433
+      TATA_HARNESS_SA_PASSWORD: Ci!Harness-${{ github.run_id }}x
+      READER_V3_LAB_PASSWORD: Reader!Lab-${{ github.run_id }}x
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npx tsc
+      - run: node --test tests/reader-v3/sql.test.cjs

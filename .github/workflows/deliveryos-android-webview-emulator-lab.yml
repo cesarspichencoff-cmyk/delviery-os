@@ -1,0 +1,135 @@
+name: DeliveryOS Android WebView emulator lab
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-android-webview-emulator-lab.yml
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderWebViewBridgeInstrumentedTest.kt
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderRealScreenInstrumentedTest.kt
+      - android/app/src/androidTest/java/br/com/tata/entregas/RiderGpsReviewInstrumentedTest.kt
+      - tests/android/run_webview_lab.sh
+      - src/entregas/ui/rider-mobile/**
+      - src/entregas/ui/shared/**
+      - tools/entregas_pilot_server.ts
+      - src/entregas/ui/run-rider-bridge-tests.ts
+      - android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt
+      - android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt
+      - android/app/src/main/java/br/com/tata/entregas/bridge/OriginBoundNativeBridge.kt
+      - android/app/src/test/java/br/com/tata/entregas/OriginBoundNativeBridgeTest.kt
+      - android/gradle/libs.versions.toml
+      - android/app/src/main/java/br/com/tata/entregas/sync/OperationalEventRecorder.kt
+      - android/app/build.gradle.kts
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deliveryos-webview-emulator-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  webview-bridge-lab:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 29
+            expected: legacy
+          - api: 34
+            expected: modern
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pure rider escaping and CSP regression before emulator
+        run: node src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+      - name: KVM for disposable Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android WebView + real Kotlin bridge + Room + WorkManager test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          working-directory: android
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          script: bash ../tests/android/run_webview_lab.sh ${{ matrix.expected }}
+      - name: Require executed instrumentation, not just Gradle success
+        if: always()
+        env:
+          WEBVIEW_EXPECTED: ${{ matrix.expected }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root = Path("android/app/build/outputs/androidTest-results/connected")
+          files = list(root.rglob("*.xml")) if root.exists() else []
+          targets = {
+              "RiderWebViewBridgeInstrumentedTest": 1,
+              "RiderRealScreenInstrumentedTest": 1,
+          }
+          if os.environ.get("WEBVIEW_EXPECTED") == "modern":
+              targets["RiderGpsReviewInstrumentedTest"] = 1
+          counts = {name: 0 for name in targets}
+          fail = err = 0
+          for path in files:
+              try:
+                  tree = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              # A single XML suite can contain cases from MULTIPLE classes.
+              # Never attribute suite totals by filename or suite title.
+              for case in tree.findall(".//testcase"):
+                  class_name = case.attrib.get("classname", "")
+                  for target in targets:
+                      if class_name.endswith("." + target) or class_name == target:
+                          counts[target] += 1
+                  if case.find("failure") is not None:
+                      fail += 1
+                  if case.find("error") is not None:
+                      err += 1
+          print(f"ANDROID_WEBVIEW_INSTRUMENTED: counts={counts} failures={fail} errors={err}")
+          if fail or err or any(counts[name] < expected for name, expected in targets.items()):
+              raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
+          print("ANDROID_WEBVIEW_MODERN_OR_LEGACY_GATE_PASS_NO_REMOTE_RECEIPT")
+          PY
+      - name: Preserve fictional GPS HOLD screenshot (one day only)
+        if: ${{ matrix.expected == 'modern' && always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: deliveryos-rider-gps-hold-api34
+          path: tests/android/visual-proof/gps-review-hold-lab.png
+          retention-days: 1
+          if-no-files-found: error
+
+  rider-pilot-csp-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned project dependencies
+        run: npm ci --ignore-scripts
+      - name: Install isolated Chromium for functional pilot session test
+        run: npx playwright install --with-deps chromium
+      - name: Prove real pilot login, exact rider CSP headers and existing GPS gates
+        run: npx --yes tsx src/entregas/ui/run-rider-bridge-tests.ts

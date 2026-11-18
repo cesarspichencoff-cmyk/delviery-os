@@ -7,6 +7,7 @@
  */
 
 import assert from "node:assert/strict";
+import { concessaoDeTeste, segredosDeConcessaoDeTeste } from "./concessao-de-teste";
 import {
   checkEvent,
   podeLer,
@@ -198,11 +199,13 @@ function ponto(seq: number, extra: Partial<PontoAndroid> = {}): PontoAndroid {
 
 async function traduzir(pontos: PontoAndroid[], deviceId: string | null = "dev-1") {
   return traduzirLoteGps({
-    corpo: { points: pontos, correlation_id: "sync-1" },
+    corpo: { points: pontos, correlation_id: "sync-1",
+      trip_grants: [concessaoDeTeste({ actor_id: "rid-1", device_id: "dev-1", trip_id: "t-1", agora: AGORA })] },
     device_id_autenticado: deviceId,
     registro: REGISTRO,
     recebido_em: AGORA,
     source_mode: "real",
+    segredos_de_concessao: segredosDeConcessaoDeTeste(),
   });
 }
 
@@ -232,6 +235,7 @@ testeAsync("aparelho revogado é recusado ANTES de qualquer análise do lote", a
     registro: REGISTRO,
     recebido_em: AGORA,
     source_mode: "real",
+    segredos_de_concessao: segredosDeConcessaoDeTeste(),
   });
   assert.equal(r.ok, false);
   assert.equal(r.recusa, "dispositivo_revogado");

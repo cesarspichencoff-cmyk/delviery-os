@@ -27,6 +27,11 @@ export interface DepsDaRota {
   /** Modo dos fatos que esta instância aceita. Nunca tem padrão implícito. */
   source_mode: SourceMode;
   raiz?: string;
+  /**
+   * Segredos da concessão de captura por unidade (X1). Vazio = nenhum ponto entra:
+   * sem concessão não se sabe de quem é a viagem.
+   */
+  segredos_de_concessao: ReadonlyMap<string, string>;
 }
 
 export interface RespostaDaRota {
@@ -86,6 +91,16 @@ export async function tratarLoteGps(
     );
   }
 
+  // Sem segredo de concessão configurado, a plataforma não tem como saber se a
+  // viagem é deste motoboy. Fechado: nada é gravado, e o aparelho guarda tudo.
+  if (deps.segredos_de_concessao.size === 0) {
+    return responder(503, "falha_transitoria", {
+      motivo: "concessao_de_viagem_nao_configurada",
+      retentavel: true,
+      preservar_dados_locais: true,
+    });
+  }
+
   // Traduz o formato que o Android já fala. Mudar o Kotlin significaria
   // reinstalar em cada aparelho em campo; o servidor é a peça barata.
   const corpo = (corpoBruto ?? {}) as LoteGpsAndroid;
@@ -95,6 +110,7 @@ export async function tratarLoteGps(
     registro: deps.registro,
     recebido_em: agora,
     source_mode: deps.source_mode,
+    segredos_de_concessao: deps.segredos_de_concessao,
   });
 
   if (!lote.ok) {

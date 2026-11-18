@@ -12,6 +12,7 @@
  */
 
 import assert from "node:assert/strict";
+import { concessaoDeTeste, segredosDeConcessaoDeTeste } from "./concessao-de-teste";
 import { readFileSync } from "node:fs";
 import { emitirToken } from "./auth/device-token";
 import type { DispositivoConhecido, RegistroDeDispositivos } from "./ingest/device-ingest";
@@ -102,11 +103,13 @@ function deps(p: Plataforma) {
     escritor: p,
     agora: () => AGORA,
     source_mode: "real" as const,
+    segredos_de_concessao: segredosDeConcessaoDeTeste(),
   };
 }
 
 async function chamarRota(p: Plataforma, pontos: unknown[], auth = `Bearer ${token()}`) {
-  return tratarLoteGps({ authorization: auth }, { points: pontos, correlation_id: "sync-1" }, deps(p));
+  return tratarLoteGps({ authorization: auth }, { points: pontos, correlation_id: "sync-1",
+    trip_grants: [concessaoDeTeste({ actor_id: "rid-1", device_id: "dev-1", trip_id: "t-1", agora: AGORA })] }, deps(p));
 }
 
 console.log("=== Unidade 3D — ligação da ponte ao runtime real ===");

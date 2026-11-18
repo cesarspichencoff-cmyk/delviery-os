@@ -1,0 +1,723 @@
+name: Delivery OS silent fixture (isolated)
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-silent-fixture-windows.yml
+      - runtime/silent-runner/**
+      - tests/silent-runner/**
+      - runtime/reporting/diagnostic_readiness_v1.cjs
+      - tests/reporting/run-diagnostic-readiness-tests.cjs
+      - runtime/reporting/copiloto_tata_reader_adapter_v1.cjs
+      - runtime/reporting/copiloto_tata_file_feed_v1.cjs
+      - runtime/reporting/native_reader_verified_legacy_hash_v1.cjs
+      - runtime/reporting/native_reader_producer_contract_review_v1.cjs
+      - runtime/reporting/native_reader_shadow_replay_v1.cjs
+      - tests/reporting/run-native-reader-shadow-replay-tests.cjs
+      - tests/reporting/run-pr135-native-child-observation-l1-contract.cjs
+      - tests/reporting/run-reader-comandas-deliveryos-cross-branch-tests.cjs
+      - runtime/reporting/native_reader_n2n3_sanitized_receipt_v1.cjs
+      - runtime/reporting/native_reader_existing_event_binding_v1.cjs
+      - tests/reporting/run-native-reader-existing-event-binding-tests.cjs
+      - tests/reporting/build-reader-one-shot-lab-fixture.cjs
+      - runtime/reporting/native_reader_n2_base_tables_review_v1.cjs
+      - tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
+      - runtime/reporting/native_reader_n2_child_tables_review_v1.cjs
+      - tests/reporting/run-native-reader-n2-child-tables-review-tests.cjs
+      - tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
+      - tests/reporting/run-android-event-batch-4xx-source-contract-tests.cjs
+      - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejection.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/EventBatchHttpRejectionRoom.kt
+      - android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt
+      - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionTest.kt
+      - android/app/src/test/java/br/com/tata/entregas/EventBatchHttpRejectionRoomTest.kt
+      - tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
+      - labs/reader-proof/**
+      - tests/reporting/run-reader-one-shot-lab-tests.cjs
+      - tests/reporting/run-reader-one-shot-dependency-pin-tests.cjs
+      - labs/reader-proof/NativeReaderOneShotLabLauncher.cs
+      - tests/reporting/build-reader-one-shot-lab-fixture.cjs
+      - runtime/tata-reader/tata_reader_health_v1.cjs
+      - tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
+      - labs/reporting/host-shadow-loop-lab-recovery-v1.cjs
+      - tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
+      - labs/reporting/projector_source_preflight_lab_v1.cjs
+      - tests/reporting/run-projector-source-preflight-lab-tests.cjs
+      - tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+      - tests/tata-reader/run-real-feed-boundary-tests.cjs
+      - tests/tata-reader/run-file-feed-tests.cjs
+      - tests/reporting/run-native-reader-producer-contract-review-tests.cjs
+      - src/product/eventos/vinculo-reader-trabalho-praca.ts
+      - src/platform/run-reader-station-link-review-tests.ts
+      - src/product/eventos/revisar-classificacao-trabalho-praca.ts
+      - src/platform/run-reader-classification-work-review-tests.ts
+      - src/product/eventos/gesto-bancada-shadow.ts
+      - src/platform/run-gesto-bancada-shadow-tests.ts
+      - src/product/eventos/ledger-shadow.ts
+      - src/platform/run-ledger-shadow-restart-tests.ts
+      - src/entregas/ui/rider-mobile/rider.js
+      - src/entregas/ui/rider-mobile/native-bridge.js
+      - src/entregas/ui/rider-mobile/index.html
+      - tests/product/run-rider-native-sync-browser-tests.mjs
+      - src/entregas/ui/rider-mobile/queue-health.js
+      - src/product/ui/surfaces/home.js
+      - src/product/viewmodels/home-vm.ts
+      - src/platform/run-home-signals-tests.ts
+      - src/platform/run-r5b-invariant-tests.ts
+      - tests/product/run-m1b-home-visual-truth-tests.ts
+      - tests/reporting/run-deliveryos-home-source-truth-tests.cjs
+      - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+      - src/entregas/ui/rider-mobile/rider-trip-scope.js
+      - src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+      - runtime/reporting/gestor_visible_detail_probe_v1.js
+      - runtime/reporting/gestor_window_selector_v1.cjs
+      - runtime/reporting/gestor_dedicated_window_gate_v1.cjs
+      - runtime/reporting/gestor_dedicated_edge_inventory_win_v1.cs
+      - tests/gestor-shadow/DedicatedEdgeInventoryTests.cs
+      - tests/gestor-shadow/run-dedicated-window-gate-tests.cjs
+      - runtime/reporting/gestor_shadow_status_bridge_v1.cjs
+      - tests/gestor-shadow/run-visible-detail-probe-tests.cjs
+      - tests/gestor-shadow/run-window-selector-tests.cjs
+      - tests/gestor-shadow/run-status-bridge-tests.cjs
+      - tools/gestor-native-shadow-reconcile/**
+      - src/ingest/ifoodRelatorio.ts
+      - src/ingest/parserRelatorioIfood.js
+      - tests/ingest/run-ifood-partial-cancellation-contract-tests.cjs
+      - runtime/reporting/gestor_v3_visible_sensor.js
+      - tests/gestor-shadow/run-v3-visible-sensor-browser-tests.cjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deliveryos-silent-fixture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Static fixture contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # PR135's reviewed producer: pin the exact commit on an isolated runner.
+      - uses: actions/checkout@v4
+        with:
+          repository: cesarspichencoff-cmyk/delviery-os
+          ref: 66243a10c63348654bea58b48dffef303faf6b4a
+          path: pr135-source
+          persist-credentials: false
+      - name: Compile pinned PR135 producer dependencies on disposable runner
+        run: |
+          # The actual source imports compiled domain helpers. No production
+          # credentials, SQL, POS host, real orders or runner deployment.
+          cd "$GITHUB_WORKSPACE/pr135-source"
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+      - name: Node contract tests (synthetic only)
+        run: |
+          node tests/silent-runner/run-contract-tests.cjs
+          # GetIn source-shape mirror: fictional only, no productive script or session.
+          node tests/silent-runner/run-getin-source-shape-contract-tests.cjs
+          node tests/silent-runner/run-pair-contract-tests.cjs
+          node tests/reporting/run-diagnostic-readiness-tests.cjs
+          # Read-only Reader-to-Copiloto contract; synthetic only, no Windows service.
+          node tests/reporting/run-native-reader-producer-contract-review-tests.cjs
+          node tests/reporting/run-native-reader-shadow-replay-tests.cjs
+          node tests/reporting/run-pr135-native-child-observation-l1-contract.cjs "$GITHUB_WORKSPACE/pr135-source"
+          node tests/reporting/run-reader-comandas-deliveryos-cross-branch-tests.cjs "$GITHUB_WORKSPACE/pr135-source"
+          node tests/reporting/run-native-reader-n2n3-sanitized-receipt-tests.cjs
+          node tests/reporting/run-native-reader-n2-base-tables-review-tests.cjs
+          node tests/reporting/run-native-reader-n2-child-tables-review-tests.cjs
+          node tests/reporting/run-reader-sql-dmv-baseline-static-tests.cjs
+          # Source binding only: Kotlin compilation has a separate acceptance gate.
+          node tests/reporting/run-android-event-batch-4xx-source-contract-tests.cjs
+          node tests/reporting/run-reader-one-shot-dependency-pin-tests.cjs
+          node tests/reporting/run-reader-one-shot-lab-tests.cjs
+          # Existing Reader health must recognize actual shadow consumer V2.
+          node tests/tata-reader/run-health-consumer-v2-gate-tests.cjs
+          node tests/reporting/run-host-shadow-projection-retry-lab-tests.cjs
+          # Reproduce only the installed source metadata signature on disposable files.
+          # This test NEVER authorizes skipping the field projector.
+          node tests/reporting/run-projector-source-preflight-lab-tests.cjs
+          node tests/tata-reader/run-copilot-reader-adapter-tests.cjs
+          node tests/tata-reader/run-real-feed-boundary-tests.cjs
+          node tests/tata-reader/run-file-feed-tests.cjs
+          # Rider actor identity + Room queue HOLD; synthetic only, no devices.
+          node src/entregas/ui/rider-mobile/run-queue-health-tests.mjs
+          node tests/reporting/run-deliveryos-home-source-truth-tests.cjs
+          # Gestor: visibility, identity, ambiguity and privacy are fail-closed.
+          # These are pure synthetic tests; they never connect to iFood.
+          node tests/gestor-shadow/run-visible-detail-probe-tests.cjs
+          node tests/gestor-shadow/run-window-selector-tests.cjs
+          node tests/gestor-shadow/run-dedicated-window-gate-tests.cjs
+          node tests/gestor-shadow/run-status-bridge-tests.cjs
+          node tools/gestor-native-shadow-reconcile/reconcile.test.cjs
+
+  native-windows:
+    name: Windows no-console native fixture
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify SQL DMV baseline PowerShell syntax without running SQL
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $tokens=$null
+          $errors=$null
+          $probe=(Resolve-Path -LiteralPath 'labs/reader-proof/ReaderSqlDmvBaselineReviewOnly.ps1').Path
+          [System.Management.Automation.Language.Parser]::ParseFile($probe,[ref]$tokens,[ref]$errors) | Out-Null
+          if($errors.Count -ne 0){ throw ('READER_DMV_BASELINE_PS_PARSE_ERRORS_'+$errors.Count) }
+          Write-Host 'READER_SQL_DMV_BASELINE_WINDOWS_PARSE_PASS 1/1 NO_SQL'
+
+      - name: Compile and verify in isolated Windows runner
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/silent-runner/verify-windows-fixture.ps1
+          node tests/reporting/run-diagnostic-readiness-tests.cjs
+      - name: Prove dedicated Edge identity inventory in isolated Windows laboratory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'PRODUCTION_PC_FORBIDDEN' }
+          $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          if (!(Test-Path -LiteralPath $csc)) { throw 'COMPILER_MISSING' }
+          $src=(Resolve-Path -LiteralPath 'runtime/reporting/gestor_dedicated_edge_inventory_win_v1.cs').Path
+          $test=(Resolve-Path -LiteralPath 'tests/gestor-shadow/DedicatedEdgeInventoryTests.cs').Path
+          $testExe=Join-Path $env:RUNNER_TEMP 'DedicatedEdgeInventoryTests.exe'
+          $guiExe=Join-Path $env:RUNNER_TEMP 'DedicatedEdgeInventory.exe'
+          & $csc /nologo /target:exe /main:DeliveryOS.InventoryTests /reference:System.Management.dll "/out:$testExe" $src $test
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_IDENTITY_TEST_COMPILE_FAILED' }
+          & $testExe
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_IDENTITY_TEST_FAILED' }
+          & $csc /nologo /target:winexe /main:DeliveryOS.GestorReview.DedicatedEdgeInventory /reference:System.Management.dll "/out:$guiExe" $src
+          if ($LASTEXITCODE -ne 0) { throw 'NO_CONSOLE_INVENTORY_COMPILE_FAILED' }
+          $bytes=[IO.File]::ReadAllBytes($guiExe)
+          $pe=[BitConverter]::ToInt32($bytes,0x3c)
+          $subsystem=[BitConverter]::ToUInt16($bytes,$pe+24+68)
+          if ($subsystem -ne 2) { throw 'NOT_WINDOWS_GUI_SUBSYSTEM' }
+          $lab=Join-Path $env:RUNNER_TEMP 'deliveryos-edge-inventory-lab'
+          if (Test-Path -LiteralPath $lab) { throw 'LAB_DIR_ALREADY_EXISTS' }
+          [void](New-Item -ItemType Directory -Path $lab)
+          [IO.File]::WriteAllText((Join-Path $lab 'LAB_ONLY.txt'),'DELIVERYOS_EDGE_INVENTORY_LAB_ONLY_V1')
+          # WinExe has no console; pwsh may return before its work has completed.
+          $native=Start-Process -FilePath $guiExe -ArgumentList @("--lab-dir=$lab") -Wait -PassThru -WindowStyle Hidden
+          if ($native.ExitCode -ne 0) { throw ('INVENTORY_EXECUTION_FAILED_'+$native.ExitCode) }
+          $receipt=Get-Content -LiteralPath (Join-Path $lab 'inventory.status.json') -Raw | ConvertFrom-Json
+          if ($receipt.state -ne 'HOLD_NO_UNIQUE_DEDICATED_PROCESS') { throw 'LAB_INVENTORY_UNEXPECTED_STATE' }
+          if ($receipt.ordersPublishable -ne 0 -or $receipt.hideAuthorized -ne $false -or
+              $receipt.windowActionsExecuted -ne 0 -or $receipt.commandLinesExported -ne $false -or
+              $receipt.personalDataExported -ne $false) { throw 'INVENTORY_PRIVACY_OR_ACTIONS_FAILED' }
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class NativeEdgeWindowAudit {
+            public delegate bool Visit(IntPtr hwnd, IntPtr unused);
+            [DllImport("user32.dll")] static extern bool EnumWindows(Visit cb, IntPtr param);
+            [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+            [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            public static int VisibleForPid(uint pid) {
+              int total=0;
+              EnumWindows((h,p) => { uint owner=0;GetWindowThreadProcessId(h,out owner);
+                if (owner==pid && IsWindowVisible(h)) total++;
+                return true; },IntPtr.Zero);
+              return total;
+            }
+          }
+          '@
+          # Exercise a live GUI-subsystem process for 1.2 seconds only on this VM.
+          # No WindowStyle Hidden launcher option: detect windows the binary creates.
+          $focusBefore=[NativeEdgeWindowAudit]::GetForegroundWindow()
+          $held=Start-Process -FilePath $guiExe -ArgumentList @("--lab-dir=$lab","--hold-visibility-lab-only") -PassThru
+          $observed=0
+          for ($i=0; $i -lt 10; $i++) {
+            if ($held.HasExited) { throw 'INVENTORY_HOLD_EXITED_BEFORE_AUDIT' }
+            if ([NativeEdgeWindowAudit]::VisibleForPid([uint32]$held.Id) -ne 0) {
+              throw 'NATIVE_INVENTORY_VISIBLE_HWND'
+            }
+            $observed++
+            Start-Sleep -Milliseconds 70
+          }
+          if (-not $held.WaitForExit(5000)) { $held.Kill(); throw 'INVENTORY_HOLD_TIMEOUT' }
+          if ($held.ExitCode -ne 0) { throw ('INVENTORY_HOLD_FAILED_'+$held.ExitCode) }
+          if ([NativeEdgeWindowAudit]::GetForegroundWindow() -ne $focusBefore) {
+            throw 'INVENTORY_FOCUS_CHANGED'
+          }
+          if ($observed -ne 10) { throw 'INVENTORY_VISIBILITY_SAMPLES_MISSING' }
+          Write-Host 'GESTOR_DEDICATED_NATIVE_WINDOW_INVENTORY_PASS 27/27 PLUS_HOLD_RECEIPT LAB_ONLY NO_CONSOLE_SUBSYSTEM'
+          Write-Host 'GESTOR_DEDICATED_NATIVE_NO_WINDOW_RUNTIME_PASS 10/10 NO_VISIBLE_HWND NO_FOCUS_CHANGE LAB_ONLY'
+      - name: Verify Windows kernel mutex ownership and abandoned HOLD (LAB ONLY)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA' -or
+              $env:GITHUB_ACTIONS -ne 'true' -or
+              $env:GITHUB_REPOSITORY -ne 'cesarspichencoff-cmyk/delviery-os')
+            { throw 'KERNEL_MUTEX_LAB_HOST_FORBIDDEN' }
+          $src=(Resolve-Path -LiteralPath 'labs/reporting/projector_kernel_mutex_windows_lab_v1.cs').Path
+          $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          if(!(Test-Path -LiteralPath $csc)) { throw 'KERNEL_MUTEX_CSC_UNAVAILABLE' }
+          $exe=Join-Path $env:RUNNER_TEMP 'ProjectorKernelMutexWindowsLab.exe'
+          & $csc /nologo /target:winexe /main:DeliveryOS.ReportingLab.ProjectorKernelMutexWindowsLab "/out:$exe" $src
+          if($LASTEXITCODE -ne 0){throw 'KERNEL_MUTEX_COMPILE_FAILED'}
+          $bytes=[IO.File]::ReadAllBytes($exe)
+          $pe=[BitConverter]::ToInt32($bytes,0x3c)
+          if([BitConverter]::ToUInt16($bytes,$pe+24+68) -ne 2) {
+            throw 'KERNEL_MUTEX_GUI_SUBSYSTEM_REQUIRED'
+          }
+          $lab=Join-Path $env:RUNNER_TEMP 'deliveryos-kernel-mutex-lab'
+          if(Test-Path -LiteralPath $lab){throw 'KERNEL_MUTEX_NOT_DISPOSABLE'}
+          [void][IO.Directory]::CreateDirectory($lab)
+          [IO.File]::WriteAllText((Join-Path $lab 'LAB_ONLY.txt'),
+            'DELIVERYOS_PROJECTOR_KERNEL_MUTEX_LAB_ONLY_V1')
+          $labArg='"--lab-dir='+$lab+'"'
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class ProjectorMutexWindowAudit {
+            public delegate bool Visitor(IntPtr hwnd, IntPtr ignored);
+            [DllImport("user32.dll")] static extern bool EnumWindows(Visitor cb, IntPtr arg);
+            [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+            [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            public static int Visible(uint target) {
+              int n=0; EnumWindows((h,arg) => {
+                uint owner; GetWindowThreadProcessId(h,out owner);
+                if(owner==target && IsWindowVisible(h)) n++;
+                return true; },IntPtr.Zero);
+              return n;
+            }
+          }
+          '@
+          $before=[ProjectorMutexWindowAudit]::GetForegroundWindow()
+          $holder=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=hold') -PassThru
+          try {
+            $ready=$false
+            for($i=0;$i -lt 80;$i++){
+              if(Test-Path -LiteralPath (Join-Path $lab 'hold-acquired.lab')){
+                $ready=$true;break
+              }
+              if($holder.HasExited){throw 'KERNEL_MUTEX_HOLDER_EARLY_EXIT'}
+              Start-Sleep -Milliseconds 45
+            }
+            if(-not $ready){throw 'KERNEL_MUTEX_HOLDER_NOT_ACQUIRED'}
+            $busy=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
+            if($busy.ExitCode -ne 32){throw ('KERNEL_MUTEX_SECOND_OWNER_NOT_BLOCKED_'+$busy.ExitCode)}
+            for($i=0;$i -lt 10;$i++){
+              if($holder.HasExited){throw 'KERNEL_MUTEX_HOLDER_ENDED_BEFORE_VISIBILITY'}
+              if([ProjectorMutexWindowAudit]::Visible([uint32]$holder.Id) -ne 0){
+                throw 'KERNEL_MUTEX_VISIBLE_WINDOW'
+              }
+              if([ProjectorMutexWindowAudit]::GetForegroundWindow() -ne $before){
+                throw 'KERNEL_MUTEX_FOCUS_CHANGED'
+              }
+              Start-Sleep -Milliseconds 55
+            }
+            if(-not $holder.WaitForExit(8500)){throw 'KERNEL_MUTEX_HOLDER_TIMEOUT'}
+            if($holder.ExitCode -ne 0){throw ('KERNEL_MUTEX_HOLDER_FAILED_'+$holder.ExitCode)}
+            $fresh=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
+            if($fresh.ExitCode -ne 0){throw 'KERNEL_MUTEX_NORMAL_RELEASE_NOT_RECOVERED'}
+            $abandoned=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=abandon') -Wait -PassThru
+            if($abandoned.ExitCode -ne 34){throw ('KERNEL_MUTEX_ABANDONED_NOT_HELD_'+$abandoned.ExitCode)}
+            $marker=(Join-Path $lab 'integrity-review-required.hold')
+            if(!(Test-Path -LiteralPath $marker)){throw 'KERNEL_MUTEX_RECOVERY_HOLD_NOT_DURABLE'}
+            $markerText=[IO.File]::ReadAllText($marker)
+            if($markerText.Trim() -ne 'INTEGRITY_REVIEW_REQUIRED'){
+              throw 'KERNEL_MUTEX_RECOVERY_HOLD_INVALID'
+            }
+            $after=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=probe') -Wait -PassThru
+            if($after.ExitCode -ne 35){throw 'KERNEL_MUTEX_ABANDONED_RELEASE_WAS_NOT_LATCHED'}
+            $another=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=hold') -Wait -PassThru
+            if($another.ExitCode -ne 35){throw 'KERNEL_MUTEX_SECOND_ATTEMPT_BYPASSED_REVIEW'}
+            if(!(Test-Path -LiteralPath $marker)){throw 'KERNEL_MUTEX_REVIEW_HOLD_REMOVED'}
+            $invalid=Start-Process -FilePath $exe -ArgumentList @($labArg,'--mode=production') -Wait -PassThru
+            if($invalid.ExitCode -ne 77){throw 'KERNEL_MUTEX_UNAUTHORIZED_MODE_ACCEPTED'}
+            if([ProjectorMutexWindowAudit]::GetForegroundWindow() -ne $before){
+              throw 'KERNEL_MUTEX_FOCUS_CHANGED_ON_EXIT'
+            }
+            Write-Host 'TATA_REPORTING_KERNEL_MUTEX_WINDOWS_PASS 8/8 ABANDON_PERSISTENT_HOLD NO_CROSS_OWNER NO_VISIBLE_WINDOW LAB_ONLY'
+          } finally {
+            if(-not $holder.HasExited){try{$holder.Kill()}catch{}}
+            Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction SilentlyContinue
+          }
+      - name: Verify one-shot N2/N3 receipt with no-console Windows GUI parent and Node child
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ($env:COMPUTERNAME -eq 'CAIXA_MOOCA') { throw 'PRODUCTION_PC_FORBIDDEN' }
+          $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          $src=(Resolve-Path -LiteralPath 'labs/reader-proof/NativeReaderOneShotLabLauncher.cs').Path
+          $guiExe=Join-Path $env:RUNNER_TEMP 'NativeReaderOneShotLabLauncher.exe'
+          & $csc /nologo /target:winexe /main:DeliveryOS.ReaderLab.NativeReaderOneShotLabLauncher "/out:$guiExe" $src
+          if ($LASTEXITCODE -ne 0) { throw 'ONE_SHOT_GUI_COMPILE_FAILED' }
+          $bytes=[IO.File]::ReadAllBytes($guiExe)
+          $pe=[BitConverter]::ToInt32($bytes,0x3c)
+          $subsystem=[BitConverter]::ToUInt16($bytes,$pe+24+68)
+          if ($subsystem -ne 2) { throw 'ONE_SHOT_NOT_GUI_SUBSYSTEM' }
+          $lab=Join-Path $env:RUNNER_TEMP 'deliveryos-reader-proof-lab'
+          if (Test-Path -LiteralPath $lab) { throw 'ONE_SHOT_LAB_NOT_DISPOSABLE' }
+          node tests/reporting/build-reader-one-shot-lab-fixture.cjs "--lab-dir=$lab"
+          if ($LASTEXITCODE -ne 0) { throw 'ONE_SHOT_FIXTURE_BUILD_FAILED' }
+          $node=(Get-Command node).Source
+          $script=(Resolve-Path -LiteralPath 'labs/reader-proof/native_reader_one_shot_lab_cli_v1.cjs').Path
+          # Negative proof 1: same basename but attacker-selected path cannot execute.
+          $spoof=Join-Path $lab 'native_reader_one_shot_lab_cli_v1.cjs'
+          [IO.File]::WriteAllText($spoof,'process.exit(0)')
+          $wrongPath=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$spoof+'"'))
+          $rejectedPath=Start-Process -FilePath $guiExe -ArgumentList $wrongPath -Wait -PassThru
+          if($rejectedPath.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+            { throw 'ONE_SHOT_SPOOF_SCRIPT_ACCEPTED' }
+          Remove-Item -LiteralPath $spoof -Force
+          # Negative proof 2: even the approved checkout path must match its pinned blob.
+          $original=[IO.File]::ReadAllBytes($script)
+          try {
+            [IO.File]::WriteAllText($script,'// TEST TAMPER - MUST NOT RUN')
+            $exactPath=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$script+'"'))
+            $rejectedBlob=Start-Process -FilePath $guiExe -ArgumentList $exactPath -Wait -PassThru
+            if($rejectedBlob.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+              { throw 'ONE_SHOT_TAMPERED_CHECKOUT_ACCEPTED' }
+          } finally { [IO.File]::WriteAllBytes($script,$original) }
+          # Negative proof 3: a valid main script with a modified import
+          # must NOT run in the isolated lab. Restore bytes after the check.
+          $module=(Resolve-Path -LiteralPath 'runtime/reporting/native_reader_existing_event_binding_v1.cjs').Path
+          $moduleOriginal=[IO.File]::ReadAllBytes($module)
+          try {
+            [IO.File]::WriteAllText($module,'// TAMPERED_DEPENDENCY_DO_NOT_RUN')
+            $verifiedArgv=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$script+'"'))
+            $rejectedModule=Start-Process -FilePath $guiExe -ArgumentList $verifiedArgv -Wait -PassThru
+            if($rejectedModule.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+              { throw 'ONE_SHOT_TAMPERED_MODULE_ACCEPTED' }
+          } finally { [IO.File]::WriteAllBytes($module,$moduleOriginal) }
+          Write-Host 'NATIVE_READER_LAB_SCRIPT_IDENTITY_PASS 3/3 WRONG_PATH_SCRIPT_AND_DEPENDENCY_TAMPER_DENIED'
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class ReaderOneShotWindowAudit {
+            public delegate bool Visit(IntPtr hwnd,IntPtr unused);
+            [DllImport("user32.dll")] static extern bool EnumWindows(Visit cb,IntPtr unused);
+            [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint pid);
+            [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            public static int Visible(uint pid) {
+              int n=0;
+              EnumWindows((h,x) => {
+                uint owner=0;GetWindowThreadProcessId(h,out owner);
+                if(owner==pid && IsWindowVisible(h))n++;
+                return true;
+              },IntPtr.Zero);
+              return n;
+            }
+          }
+          '@
+          # Hold only in a disposable GitHub Windows virtual machine.
+          # Do NOT hide the launcher window: explicitly detect visible HWNDs.
+          $env:DELIVERYOS_READER_LAB_HOLD_MS='2500'
+          $focus=[ReaderOneShotWindowAudit]::GetForegroundWindow()
+          $argv=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),('"--script-path='+$script+'"'))
+          $parent=Start-Process -FilePath $guiExe -ArgumentList $argv -PassThru
+          Start-Sleep -Milliseconds 120
+          if ($parent.HasExited) { throw ('ONE_SHOT_EARLY_EXIT_'+$parent.ExitCode) }
+          $children=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$($parent.Id)")
+          $nodeChildren=@($children | Where-Object { $_.Name -eq 'node.exe' })
+          if ($nodeChildren.Count -ne 1) { throw 'ONE_SHOT_NODE_CHILD_NOT_UNIQUE' }
+          $nPid=[uint32]$nodeChildren[0].ProcessId
+          $samples=0
+          for($i=0;$i -lt 10;$i++){
+            if($parent.HasExited) { throw 'ONE_SHOT_ENDED_BEFORE_VISIBILITY_SAMPLES' }
+            if([ReaderOneShotWindowAudit]::Visible([uint32]$parent.Id) -ne 0 -or
+               [ReaderOneShotWindowAudit]::Visible($nPid) -ne 0)
+              { throw 'ONE_SHOT_VISIBLE_WINDOW' }
+            $samples++
+            Start-Sleep -Milliseconds 70
+          }
+          if(-not $parent.WaitForExit(6000)) { $parent.Kill(); throw 'ONE_SHOT_TIMEOUT' }
+          if($parent.ExitCode -ne 0) { throw ('ONE_SHOT_LAUNCH_FAILED_'+$parent.ExitCode) }
+          if([ReaderOneShotWindowAudit]::GetForegroundWindow() -ne $focus)
+            { throw 'ONE_SHOT_FOCUS_CHANGED' }
+          $r=Get-Content -LiteralPath (Join-Path $lab 'receipt.json') -Raw
+          $receipt=$r | ConvertFrom-Json
+          if($receipt.state -ne 'HOLD' -or
+             $receipt.reason -ne 'N2_N3_SELF_CONSISTENT_SOURCE_UNATTESTED' -or
+             $receipt.itemRows -ne 1 -or $receipt.noteRows -ne 1 -or
+             $receipt.ordersPublishable -ne 0 -or
+             $receipt.homePublishAuthorized -ne $false -or
+             $receipt.sourceIdentityVerified -ne $false -or
+             $receipt.n2ObservationReadIndependentlyComplete -ne $false -or
+             $receipt.customerDataExported -ne $false -or
+             $r.Contains('FICT_PRIVATE_SENTINEL')) { throw 'ONE_SHOT_RECEIPT_PRIVACY_FAILED' }
+          Remove-Item -LiteralPath $lab -Recurse -Force
+          Write-Host 'NATIVE_READER_ONE_SHOT_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII'
+          # Separate historical checkpoint fixture: no new Windows service, no POS.
+          # The SAME pinned GUI launcher takes an explicit fourth argument.
+          node tests/reporting/build-reader-one-shot-lab-fixture.cjs "--lab-dir=$lab" "--fixture-mode=legacy"
+          if($LASTEXITCODE -ne 0) { throw 'ONE_SHOT_LEGACY_FIXTURE_BUILD_FAILED' }
+          $legacyModule=(Resolve-Path -LiteralPath 'runtime/reporting/native_reader_legacy_one_shot_review_v1.cjs').Path
+          $legacyOriginal=[IO.File]::ReadAllBytes($legacyModule)
+          $legacyArgv=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),
+            ('"--script-path='+$script+'"'),'"--fixture-mode=legacy"')
+          try {
+            [IO.File]::WriteAllText($legacyModule,'// TAMPERED_LEGACY_REVIEWER_DO_NOT_RUN')
+            $blocked=Start-Process -FilePath $guiExe -ArgumentList $legacyArgv -Wait -PassThru
+            if($blocked.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+              { throw 'ONE_SHOT_TAMPERED_LEGACY_REVIEWER_ACCEPTED' }
+          } finally { [IO.File]::WriteAllBytes($legacyModule,$legacyOriginal) }
+          $wrongMode=@(('"--lab-dir='+$lab+'"'),('"--node-path='+$node+'"'),
+            ('"--script-path='+$script+'"'),'"--fixture-mode=production"')
+          $bad=Start-Process -FilePath $guiExe -ArgumentList $wrongMode -Wait -PassThru
+          if($bad.ExitCode -eq 0 -or (Test-Path (Join-Path $lab 'receipt.json')))
+            { throw 'ONE_SHOT_UNKNOWN_MODE_ACCEPTED' }
+          $legacyFocus=[ReaderOneShotWindowAudit]::GetForegroundWindow()
+          $legacyParent=Start-Process -FilePath $guiExe -ArgumentList $legacyArgv -PassThru
+          Start-Sleep -Milliseconds 120
+          if($legacyParent.HasExited) { throw ('ONE_SHOT_LEGACY_EARLY_EXIT_'+$legacyParent.ExitCode) }
+          $legacyChildren=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$($legacyParent.Id)")
+          $legacyNode=@($legacyChildren | Where-Object { $_.Name -eq 'node.exe' })
+          if($legacyNode.Count -ne 1) { throw 'ONE_SHOT_LEGACY_NODE_CHILD_NOT_UNIQUE' }
+          $legacyNodePid=[uint32]$legacyNode[0].ProcessId
+          $legacySamples=0
+          for($i=0;$i -lt 10;$i++){
+            if($legacyParent.HasExited) { throw 'ONE_SHOT_LEGACY_ENDED_BEFORE_SAMPLES' }
+            if([ReaderOneShotWindowAudit]::Visible([uint32]$legacyParent.Id) -ne 0 -or
+               [ReaderOneShotWindowAudit]::Visible($legacyNodePid) -ne 0)
+              { throw 'ONE_SHOT_LEGACY_VISIBLE_WINDOW' }
+            $legacySamples++
+            Start-Sleep -Milliseconds 70
+          }
+          if(-not $legacyParent.WaitForExit(6000)) { $legacyParent.Kill();throw 'ONE_SHOT_LEGACY_TIMEOUT' }
+          if($legacyParent.ExitCode -ne 0) { throw ('ONE_SHOT_LEGACY_EXIT_'+$legacyParent.ExitCode) }
+          if([ReaderOneShotWindowAudit]::GetForegroundWindow() -ne $legacyFocus)
+            { throw 'ONE_SHOT_LEGACY_FOCUS_CHANGED' }
+          $receiptRaw=Get-Content -LiteralPath (Join-Path $lab 'receipt.json') -Raw
+          $receiptLegacy=$receiptRaw | ConvertFrom-Json
+          if($receiptLegacy.state -ne 'HOLD' -or
+             $receiptLegacy.legacyDiagnosticOnly -ne $true -or
+             $receiptLegacy.legacyUppercaseNormalized -ne $true -or
+             $receiptLegacy.checkpointBound -ne $true -or
+             $receiptLegacy.itemRows -ne 1 -or $receiptLegacy.noteRows -ne 1 -or
+             $receiptLegacy.ordersPublishable -ne 0 -or
+             $receiptLegacy.homePublishAuthorized -ne $false -or
+             $receiptLegacy.sourceIdentityVerified -ne $false -or
+             $receiptLegacy.n2ObservationReadIndependentlyComplete -ne $false -or
+             $receiptLegacy.customerDataExported -ne $false -or
+             $receiptRaw.Contains('FICT_PRIVATE_SENTINEL')) { throw 'ONE_SHOT_LEGACY_RECEIPT_PRIVACY_FAILED' }
+          Remove-Item -LiteralPath $lab -Recurse -Force
+          Write-Host 'NATIVE_READER_LEGACY_NO_CONSOLE_LAB_PASS 10/10 NO_VISIBLE_PARENT_OR_CHILD NO_FOCUS_CHANGE NO_PII'
+          Write-Host 'NATIVE_READER_LEGACY_LAUNCHER_PIN_MODE_DENIAL_PASS 2/2 LAB_ONLY'
+          # Different route: reproduce the installed v0.3.1 upstream
+          # terminal-manager spawn(powershell.exe,['-Command',...],
+          # windowsHide:true), then start the pinned GUI fixture through it.
+          # This is CI only; not the connected remote daemon or the cashier.
+          node tests/reporting/build-reader-one-shot-lab-fixture.cjs "--lab-dir=$lab" "--fixture-mode=legacy"
+          if($LASTEXITCODE -ne 0) { throw 'REMOTE_SHELL_LAB_FIXTURE_FAILED' }
+          $pidFile=Join-Path $env:RUNNER_TEMP 'reader-remote-shell-proof-pid.json'
+          if(Test-Path $pidFile) { throw 'REMOTE_SHELL_PROOF_NOT_DISPOSABLE' }
+          $remoteScript=(Resolve-Path -LiteralPath 'tests/reporting/run-remote-shell-window-proof-lab.cjs').Path
+          $controllerArgs=@(('"' + $remoteScript + '"'),('"' + $lab + '"'),
+            ('"' + $guiExe + '"'),('"' + $node + '"'),('"' + $script + '"'),
+            ('"' + $pidFile + '"'))
+          $remoteFocus=[ReaderOneShotWindowAudit]::GetForegroundWindow()
+          $controller=Start-Process -FilePath $node -ArgumentList $controllerArgs -PassThru -WindowStyle Hidden
+          try {
+            $hasPid=$false
+            for($i=0;$i -lt 40;$i++) {
+              if(Test-Path -LiteralPath $pidFile) { $hasPid=$true;break }
+              if($controller.HasExited) { throw 'REMOTE_SHELL_CONTROLLER_EXITED_BEFORE_PID' }
+              Start-Sleep -Milliseconds 50
+            }
+            if(-not $hasPid) { throw 'REMOTE_SHELL_PID_MISSING' }
+            $pidDoc=Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
+            if($pidDoc.schema -ne 'deliveryos.remote-shell-visibility-lab.v1' -or
+               [int]$pidDoc.shell_pid -le 0) { throw 'REMOTE_SHELL_PID_INVALID' }
+            $shellPid=[uint32]$pidDoc.shell_pid
+            $found=$false
+            for($i=0;$i -lt 20;$i++) {
+              $shellProc=Get-CimInstance -ClassName Win32_Process -Filter "ProcessId=$shellPid"
+              $guiProcs=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$shellPid" |
+                Where-Object { $_.Name -eq 'NativeReaderOneShotLabLauncher.exe' })
+              if($shellProc -and $guiProcs.Count -eq 1){$found=$true;break}
+              if($controller.HasExited){throw 'REMOTE_SHELL_CONTROLLER_EXITED_EARLY'}
+              Start-Sleep -Milliseconds 80
+            }
+            if(-not $found) { throw 'REMOTE_SHELL_GUI_CHILD_NOT_FOUND' }
+            $guiPid=[uint32]$guiProcs[0].ProcessId
+            # The GUI can be visible to WMI a fraction before its Node child
+            # starts. A single immediate read would confuse NOT_YET_SPAWNED
+            # with a missing/duplicate child. Bound this readiness probe; never
+            # accept >1 child, never skip any of the ten visibility samples.
+            $readerNodePid=[uint32]0
+            for($i=0;$i -lt 12;$i++) {
+              $nodeProcs=@(Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId=$guiPid" |
+                Where-Object { $_.Name -eq 'node.exe' })
+              if($nodeProcs.Count -gt 1) { throw 'REMOTE_SHELL_MULTIPLE_NODE_CHILDREN' }
+              if($nodeProcs.Count -eq 1) {
+                $readerNodePid=[uint32]$nodeProcs[0].ProcessId
+                break
+              }
+              if($controller.HasExited) { throw 'REMOTE_SHELL_CONTROLLER_EXITED_BEFORE_NODE' }
+              Start-Sleep -Milliseconds 40
+            }
+            if($readerNodePid -eq 0) { throw 'REMOTE_SHELL_NODE_CHILD_NOT_OBSERVED' }
+            $sampled=0
+            for($i=0;$i -lt 10;$i++) {
+              if($controller.HasExited) { throw 'REMOTE_SHELL_ENDED_BEFORE_VISIBILITY_SAMPLES' }
+              foreach($samplePid in @($shellPid,$guiPid,$readerNodePid)){
+                if([ReaderOneShotWindowAudit]::Visible([uint32]$samplePid) -ne 0)
+                  { throw 'REMOTE_SHELL_VISIBLE_WINDOW' }
+              }
+              if([ReaderOneShotWindowAudit]::GetForegroundWindow() -ne $remoteFocus)
+                { throw 'REMOTE_SHELL_FOCUS_CHANGED_DURING_SAMPLES' }
+              $sampled++
+              Start-Sleep -Milliseconds 70
+            }
+            if(-not $controller.WaitForExit(9000)) { throw 'REMOTE_SHELL_CONTROLLER_TIMEOUT' }
+            if($controller.ExitCode -ne 0) { throw ('REMOTE_SHELL_CONTROLLER_FAILED_'+$controller.ExitCode) }
+            if([ReaderOneShotWindowAudit]::GetForegroundWindow() -ne $remoteFocus)
+              { throw 'REMOTE_SHELL_FOCUS_CHANGED_ON_EXIT' }
+            $remoteRaw=Get-Content -LiteralPath (Join-Path $lab 'receipt.json') -Raw
+            $remoteReceipt=$remoteRaw | ConvertFrom-Json
+            if($remoteReceipt.state -ne 'HOLD' -or
+               $remoteReceipt.legacyDiagnosticOnly -ne $true -or
+               $remoteReceipt.ordersPublishable -ne 0 -or
+               $remoteReceipt.customerDataExported -ne $false -or
+               $remoteRaw.Contains('FICT_PRIVATE_SENTINEL') -or
+               $remoteRaw.Contains('FICT_COMMAND')) {
+              throw 'REMOTE_SHELL_RECEIPT_NOT_SANITIZED'
+            }
+            Write-Host 'NATIVE_READER_REMOTE_V031_WINDOWS_HIDE_CHAIN_PASS 10/10 SHELL_GUI_NODE NO_FOCUS_CHANGE SYNTHETIC_ONLY'
+          } finally {
+            if(-not $controller.HasExited) { try{$controller.Kill()}catch{} }
+            Remove-Item -LiteralPath $lab -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
+          }
+
+  home-degraded-browser-fixture:
+    name: L4 Home degraded-state Chromium (synthetic only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # R5B verifies two fixed historical trees, not just HEAD.
+          # Filter blobs for the historical commits to limit transfer.
+          fetch-depth: 0
+          filter: blob:none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install declared QA dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile existing product model and read-only preview
+        run: npm run build:platform
+      - name: Prove Home follows temporal attention and keeps every pending signal
+        run: npx tsx src/platform/run-home-signals-tests.ts
+      - name: Prove R5B source and attention invariants on the same Home revision
+        run: npx tsx src/platform/run-r5b-invariant-tests.ts
+      - name: Install isolated Chromium for visible Home regression
+        run: npx playwright install --with-deps chromium
+      - name: Exercise all Home states in six viewport sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PRODUCT_UI_PORT=5368
+          export M1B_URL=http://127.0.0.1:5368
+          export TMPDIR="$RUNNER_TEMP"
+          if [ -n "${DELIVERYOS_DATABASE_URL:-}" ] || [ -n "${TATA_READER_ROOT:-}" ]; then
+            echo "HOME_L4_BROWSER_LAB_REFUSES_PRODUCTIVE_SOURCE"
+            exit 1
+          fi
+          node dist/tools/product_system_server.js > "$RUNNER_TEMP/deliveryos-home-preview.log" 2>&1 &
+          child=$!
+          trap 'kill "$child" 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+            if curl --fail --silent --max-time 1 "$M1B_URL/api/health" >/dev/null; then break; fi
+            if ! kill -0 "$child" 2>/dev/null; then
+              echo 'HOME_L4_SYNTHETIC_PREVIEW_EXITED'
+              exit 1
+            fi
+            sleep 0.25
+          done
+          curl --fail --silent --max-time 2 "$M1B_URL/api/health" >/dev/null
+          npx tsx tests/product/run-m1b-home-visual-truth-tests.ts
+      - name: Verify rider queue recovery and receipts in actual Chromium
+        env:
+          RIDER_QA_ARTIFACTS: ${{ runner.temp }}/deliveryos-rider-native-sync
+        run: node tests/product/run-rider-native-sync-browser-tests.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: l6-rider-native-sync-browser-fixture
+          path: ${{ runner.temp }}/deliveryos-rider-native-sync/
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: l4-home-degraded-visual-fixture
+          path: ${{ runner.temp }}/deliveryos-m1b-home-20261020/
+          retention-days: 7
+          if-no-files-found: warn
+
+  native-station-link-review:
+    name: Exact Reader line to R5D3 work (synthetic only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Compile existing TypeScript contracts
+        run: npm run build
+      - name: iFood partial cancellation is not total cancellation (synthetic labels, no POS)
+        run: node tests/ingest/run-ifood-partial-cancellation-contract-tests.cjs
+      - name: Reader line to work events, no live/readiness authority
+        run: node dist/src/platform/run-reader-station-link-review-tests.js
+      - name: Reader classification to exact station consistency (review only)
+        run: node dist/src/platform/run-reader-classification-work-review-tests.js
+      - name: One-touch station action only in shadow; permission + source gates
+        run: node dist/src/platform/run-gesto-bancada-shadow-tests.js
+      - name: Ledger event idempotency and corruption on restart, shadow only
+        run: node dist/src/platform/run-ledger-shadow-restart-tests.js
+
+  gestor-v3-browser-fixture:
+    name: Edge V3 isolated visible-data fixture (25 assertions)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned browser fixture dependencies
+        run: npm ci --ignore-scripts
+      - name: Browser fixture only (no Gestor credentials, orders or internet requests)
+        shell: pwsh
+        run: |
+          $edge = @(
+            'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files\Microsoft\Edge\Application\msedge.exe'
+          ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          if (-not $edge) { throw 'EDGE_EXECUTABLE_NOT_FOUND_ON_RUNNER' }
+          $env:EDGE_EXE = $edge
+          node tests/gestor-shadow/run-v3-visible-sensor-browser-tests.cjs

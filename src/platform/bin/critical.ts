@@ -17,6 +17,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { loadTripGrantSecrets } from "../../entregas/foundation/trip-capture-grant";
 import { createPrivateKey, createPublicKey, type KeyObject } from "node:crypto";
 import { loadPlatformConfig, describe, ConfigError } from "../config/platform-config";
 import { lerModoDaInstancia } from "../config/modo-da-instancia";
@@ -177,6 +178,19 @@ async function main(): Promise<void> {
     }
     throw e;
   }
+
+  // X1: sem segredo de concessão, a ingestão de GPS fica FECHADA (503 retentável,
+  // o aparelho guarda tudo). Configuração presente e inválida recusa o boot.
+  let tripGrantSecrets: ReadonlyMap<string, string>;
+  try {
+    tripGrantSecrets = loadTripGrantSecrets(process.env.DELIVERYOS_PILOT_TRIP_GRANT_SECRETS, "DELIVERYOS_PILOT_TRIP_GRANT_SECRETS");
+  } catch (e) {
+    console.error(`[critico] concessao de viagem recusada: ${e instanceof Error ? e.message : String(e)}`);
+    await cliente.close();
+    process.exit(78);
+    return;
+  }
+  console.log(`[critico] concessao de viagem: ${tripGrantSecrets.size ? "configurada para " + tripGrantSecrets.size + " unidade(s)" : "AUSENTE — nenhum ponto de GPS sera gravado"}`);
 
   let pilotReadSecrets: ReadonlyMap<string, string>;
   try {
@@ -396,6 +410,7 @@ async function main(): Promise<void> {
             escritor,
             agora: () => new Date(),
             source_mode: modoDaInstancia,
+            segredos_de_concessao: tripGrantSecrets,
           },
         )
           .then((r) => responder(res, r.status, r.corpo))

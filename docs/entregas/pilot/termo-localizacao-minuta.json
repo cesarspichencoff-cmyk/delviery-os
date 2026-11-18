@@ -1,0 +1,23 @@
+{
+  "_aviso": "MINUTA. Nao e o termo do piloto e nao vale como ciencia de ninguem. Fica fora de config/ (o piloto le config/entregas-term.json). Os campos [[PENDENTE]] sao decisao do Cesar e NAO foram inventados: razao social, CNPJ, canal de contato, responsavel pelo canal, vigencia, os dois prazos de retencao e a aprovacao. Propostas a confirmar (nao estao na lista do Cesar, mas sao materiais): access_roles e after_expiry. Revisao r2 (2026-11-15) conferiu o texto contra o codigo: inicio pela saida confirmada pelo dominio (capture-rule.js), aceite por motoboy+aparelho+hash, campos realmente gravados (device-ingest.ts: precisao, velocidade, direcao, altitude, offline), recusa de posicao simulada e fora da janela da viagem, relogio julgado contra o servidor (RELOGIO.md). TRAVA ANTES DE APROVAR: o texto promete apagar ao fim do prazo, e hoje nenhum codigo apaga ponto de GPS — platform.event_log e append-only contra UPDATE, DELETE e TRUNCATE (migrations 0001 e 0004). Aprovar sem a eliminacao implementada faz o termo mentir. Ver docs/entregas/pilot/TERMO_GPS_RECOMENDACOES.md. O teste src/entregas/consent/run-termo-minuta-tests.ts trava que esta minuta nunca seja publicavel como esta.",
+  "version": "[[PENDENTE]]",
+  "material_version": "minuta-2026-11-15-r2",
+  "unit_id": "ITAIM",
+  "title": "Termo de uso da localização do celular nas entregas",
+  "body": "Quando você sai para uma entrega pelo aplicativo Entregas, o aplicativo usa a localização do seu celular para a equipe do despacho acompanhar a entrega em andamento, ajudar se algo der errado e registrar o percurso daquela viagem.\n\nA localização só é coletada durante uma viagem sua que está em rota ou voltando para a loja. Ela começa quando o sistema confirma a saída da viagem (tocar no botão não basta) e para quando a viagem termina. Fora de uma viagem, nada é coletado. Sem o seu aceite deste termo neste celular, ou sem a sua permissão de localização no celular, nada é coletado. Enquanto a coleta está ligada, o celular mostra uma notificação fixa avisando.\n\nO que é registrado: a posição do celular e a precisão do sinal; quando o celular informa, também a velocidade, a direção e a altitude; o horário em que a posição foi medida, o horário em que chegou ao sistema, e se ela foi guardada sem internet. Tudo fica ligado à viagem e ao aparelho autorizado. Sem internet, as posições ficam guardadas no celular e são enviadas quando a conexão volta.\n\nO horário do celular não é tomado como certo: o sistema compara com o horário do servidor. Se o relógio do celular estiver adiantado, a posição é guardada como chegou, marcada como horário suspeito, e o sistema usa o horário do servidor para saber se ela é recente.\n\nPosição que o celular marca como simulada (aplicativo de localização falsa) é recusada. Posição fora de uma viagem sua, neste aparelho, também é recusada.\n\nA localização não confirma sozinha que a entrega foi feita nem que o cliente recebeu o pedido.\n\nVocê pode parar a coleta quando quiser, desligando a permissão de localização do aplicativo nas configurações do celular. Para retirar o seu aceite, ou pedir informação, correção ou eliminação dos seus dados, use o canal indicado abaixo.\n\nQuem vê: [[PENDENTE]] (proposta: a equipe de despacho e a gerência autorizadas pela loja).\n\nPor quanto tempo: os pontos detalhados do percurso ficam guardados por [[PENDENTE]] dias, e os registros da operação por [[PENDENTE]] dias. Depois disso, são apagados.\n\nResponsável pelos dados: [[PENDENTE]], CNPJ [[PENDENTE]]. Dúvidas e pedidos sobre os seus dados: [[PENDENTE]].",
+  "effective_date": "[[PENDENTE]]",
+  "controller": {
+    "legal_name": "[[PENDENTE]]",
+    "cnpj": "[[PENDENTE]]",
+    "contact_channel": "[[PENDENTE]]",
+    "contact_owner": "[[PENDENTE]]"
+  },
+  "retention": {
+    "operational_event_days": 0,
+    "detailed_point_days": 0,
+    "after_expiry": "delete"
+  },
+  "access_roles": ["despacho_autorizado", "gerencia_autorizada"],
+  "language": "pt-BR",
+  "approved": false
+}

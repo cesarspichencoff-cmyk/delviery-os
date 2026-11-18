@@ -1,0 +1,150 @@
+name: DeliveryOS Gestor observed demand to Home
+
+# Elo sensor do Gestor -> feed -> motor existente -> Home V3.3, niveis 1 e 2.
+# Tudo sintetico: pagina falsa, pedidos fabricados, arquivos do Reader montados
+# em pasta temporaria. Nao usa segredo, nao publica nada, nao toca o Gestor real,
+# o caixa nem um pedido de cliente. Repositorio publico: runner padrao.
+#
+# O que NAO prova: a pagina real do Gestor, os arquivos reais do Reader, a
+# execucao no CAIXA_MOOCA, uso em operacao. Verde aqui e prova de codigo.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-gestor-demand-home.yml
+      - runtime/reporting/gestor_mounted_demand_feed_v1.cjs
+      - runtime/reporting/gestor_mounted_window_differential_v1.cjs
+      - runtime/reporting/gestor_v3_visible_sensor.js
+      - src/platform/leitura/demanda-do-gestor.ts
+      - src/platform/leitura/pedidos-do-reader.ts
+      - src/platform/leitura/pedidos-reais-do-reader.ts
+      - src/platform/run-pedidos-reais-do-reader-tests.ts
+      - src/platform/leitura/leveldb-somente-leitura.ts
+      - src/platform/leitura/pedidos-do-gestor-local.ts
+      - src/platform/leitura/conciliacao-gestor-teknisa.ts
+      - src/platform/run-gestor-local-tests.ts
+      - src/product/viewmodels/home-operacao-ifood-vm.ts
+      - tools/mutantes-gestor-local.cjs
+      - src/product/viewmodels/home-pedidos-reader-vm.ts
+      - tools/windows-local-lab/production-service-weekly-policy.json
+      - src/product/eventos/**
+      - src/product/viewmodels/home-vm.ts
+      - src/product/ui/surfaces/home.js
+      - src/product/ui/surfaces/home.css
+      - tools/product_system_server.ts
+      - tools/empacotar_home_do_caixa.cjs
+      - tools/gestor-native-shadow-reconcile/**
+      - tests/gestor-shadow/**
+      - labs/gestor-demand-feed/**
+      - docs/operations/DeliveryOS-Itaim-Gestor-Demand-Feed.xml
+      - tools/windows-local-lab/preparar-feed-do-gestor.ps1
+      - src/platform/run-home-signals-tests.ts
+      - src/platform/run-r5d1-event-lineage-tests.ts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deliveryos-gestor-demand-home-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # as guardas de congelamento e de governanca leem a historia inteira
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Tipos e build
+        run: npx tsc
+      - name: Executor do sensor (sensor real, pagina falsa)
+        run: node tests/gestor-shadow/run-mounted-demand-feed-tests.cjs
+      - name: Feed -> contratos existentes -> projetor -> homeVM -> /api/home
+        run: npx tsx tests/gestor-shadow/run-demand-feed-home-chain-tests.ts
+      - name: Reader V3 camada 1 - pedidos reais da pasta do Reader ate a Home (esquema real, valores inventados)
+        run: npx tsx src/platform/run-pedidos-reais-do-reader-tests.ts
+      - name: Gestor local (LevelDB do aplicativo) conciliado com a Teknisa ate a Home, com canarios de dado pessoal
+        run: npx tsx src/platform/run-gestor-local-tests.ts
+      - name: Mutantes do Gestor local (cada garantia removida tem de reprovar)
+        run: node tools/mutantes-gestor-local.cjs .
+      - name: Cruzamento com o Reader pelo reconciliador de janela existente
+        run: npx tsx tests/gestor-shadow/run-reader-reconciliation-tests.ts
+      - name: Mutacoes do elo (zero cegas)
+        run: node tests/gestor-shadow/run-demand-feed-mutation-tests.cjs
+      - name: Sensor, diferencial e reconciliadores existentes
+        run: |
+          node tests/gestor-shadow/run-mounted-order-props-shadow-tests.cjs
+          node tests/gestor-shadow/run-mounted-window-differential-tests.cjs
+          node tests/gestor-shadow/run-mounted-p2-sensor-differential-chain-tests.cjs
+          node tools/gestor-native-shadow-reconcile/reconcile.test.cjs
+      - name: Home, produto e organismo
+        run: |
+          npx tsx src/platform/run-home-signals-tests.ts
+          npx tsx src/platform/run-product-system-tests.ts
+          npx tsx src/platform/run-organismo-visual-tests.ts
+          # Contrato estatico da verdade da Home: roda em outro workflow, e la
+          # ficou vermelho por uma linha reescrita aqui. Quem mexe na Home roda os dois.
+          node tests/reporting/run-deliveryos-home-source-truth-tests.cjs
+      - name: Guardas de congelamento e de linhagem
+        run: |
+          npx tsx src/platform/run-m1-bridge-tests.ts
+          npx tsx src/platform/run-r5a-temporal-tests.ts
+          npx tsx src/platform/run-r5b-invariant-tests.ts
+          npx tsx src/platform/run-r5d1-event-lineage-tests.ts
+          npx tsx src/platform/run-r5d2-producer-qualification-tests.ts
+          npx tsx src/platform/run-r5d3-shadow-path-tests.ts
+      - name: Governanca
+        run: npx tsx src/platform/run-governance-tests.ts
+      - name: Pacote da Home sobe de dentro da propria pasta
+        run: node tools/empacotar_home_do_caixa.cjs "$RUNNER_TEMP/pacote-home"
+
+  bancada-edge-real:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Build
+        run: npx tsc
+      - name: Edge real + DevTools real + executor + servidor da Home (pagina sintetica)
+        run: node labs/gestor-demand-feed/run-lab.cjs
+      - name: A mesma bancada com o executor acordando antes do Edge (retem e retoma)
+        run: node labs/gestor-demand-feed/run-lab.cjs
+        env:
+          LAB_EXECUTOR_FIRST: "1"
+      - name: Nenhum processo da bancada ficou vivo
+        shell: pwsh
+        run: |
+          $vivos = @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*gestor-demand-lab-*' })
+          "processos Edge da bancada: $($vivos.Count)"
+          if ($vivos.Count -ne 0) { exit 1 }
+
+  # O contrato da tarefa do caixa medido no Agendador REAL do Windows, nao por expressao
+  # regular: registra o XML publicado DESATIVADO em DeliveryOS-CI, le o que o Agendador
+  # gravou (SYSTEM por SID -> LogonType ServiceAccount), prova que LogonType explicito e a
+  # declaracao de codificacao sao recusados, e remove tudo. Sem administrador sai PULADO (3).
+  agendador-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Tarefa do caixa no Agendador real (registro desativado, leitura, remocao)
+        shell: powershell
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tests/gestor-shadow/run-task-xml-registration-tests.ps1

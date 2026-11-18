@@ -70,10 +70,10 @@ import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
 import { classifyQuality } from "../src/entregas/gps/validate";
 import { criarLeitorStatusTata } from "../src/entregas/pilot/tata-source-status";
 import { createOperatorPilotRuntime } from "../src/platform/auth/operator-pilot-runtime";
-import { createAccessThrottle, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
+import { createAccessThrottle, loadSharedOrigins, MUITAS_TENTATIVAS } from "../src/entregas/pilot/access-throttle";
+import { createHomeOperatorGateway, loadHomeGatewayConfig } from "../src/platform/auth/home-operator-gateway";
+import { emitTripCaptureGrant, isUsableTripGrantSecret } from "../src/entregas/foundation/trip-capture-grant";
 
-// Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
-const accessThrottle = createAccessThrottle();
 
 const tataSourceStatus = criarLeitorStatusTata(process.env);
 const operatorRuntime = createOperatorPilotRuntime(process.env);
@@ -166,6 +166,19 @@ if (!cloudResult.ok) {
 }
 const cloud = cloudResult.config;
 
+// Códigos curtos são decisão do César; o limite de tentativas é o que os protege.
+// Atrás do proxy e do portão de campo todos chegam do mesmo endereço: essas origens,
+// e só se DECLARADAS, ganham orçamento próprio (access-throttle.ts).
+let sharedOrigins: ReadonlySet<string>;
+try {
+  sharedOrigins = loadSharedOrigins(process.env.ENTREGAS_SHARED_ORIGINS, cloud.remote);
+} catch (e) {
+  console.error(`[piloto] ${e instanceof Error ? e.message : String(e)} — servidor NÃO subiu`);
+  process.exit(78);
+}
+const accessThrottle = createAccessThrottle({ sharedOrigins });
+if (sharedOrigins.size) console.log(`[piloto] origens compartilhadas declaradas: ${sharedOrigins.size}`);
+
 const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
 /**
  * Plataforma que atesta o Bearer nativo. Vazio não derruba o piloto: somente
@@ -173,6 +186,32 @@ const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
  */
 const PLATFORM_URL = (process.env.ENTREGAS_PLATFORM_URL || "").trim().replace(/\/$/, "");
 const PLATFORM_READ_SECRET = (process.env.ENTREGAS_PLATFORM_READ_SECRET || "").trim();
+/*
+ * X1 — concessao de captura por viagem. O piloto e o dono da atribuicao
+ * viagem -> motoboy; a plataforma so grava GPS de viagem com concessao. Sem o
+ * segredo, a resposta de captura sai sem concessao e a plataforma nao grava
+ * ponto nenhum: falha fechada, nunca aberta.
+ */
+const TRIP_GRANT_SECRET = (process.env.ENTREGAS_TRIP_GRANT_SECRET || "").trim();
+if (TRIP_GRANT_SECRET && !isUsableTripGrantSecret(TRIP_GRANT_SECRET)) {
+  console.error("ENTREGAS_TRIP_GRANT_SECRET curto ou placeholder: o piloto nao sobe.");
+  process.exit(78);
+}
+const concessaoDeCaptura = (
+  identity: { unit_id: string; actor_id: string | null; device_id: string },
+  trip: { trip_id: string; unit_id: string; courier_actor_id: string; started_at?: string | null; closed_at?: string | null } | null,
+): string | null => {
+  // So para a viagem DESTE motoboy, decidida pelo dominio; nunca a partir do pedido.
+  if (!TRIP_GRANT_SECRET || !trip || !identity.actor_id || trip.courier_actor_id !== identity.actor_id ||
+      trip.unit_id !== identity.unit_id) return null;
+  const inicio = trip.started_at ? new Date(trip.started_at) : null;
+  const fim = trip.closed_at ? new Date(trip.closed_at) : null;
+  if ((inicio && !Number.isFinite(inicio.getTime())) || (fim && !Number.isFinite(fim.getTime()))) return null;
+  try {
+    return emitTripCaptureGrant({ unit_id: identity.unit_id, actor_id: identity.actor_id, device_id: identity.device_id,
+      trip_id: trip.trip_id, started_at: inicio, closed_at: fim, now: new Date(), secret: TRIP_GRANT_SECRET });
+  } catch { return null; }
+};
 // An explicitly scoped public verification key, never the platform device secret.
 const pilotDelegationKeyB64 = process.env.ENTREGAS_PILOT_DELEGATION_PUBLIC_KEY_B64 ?? "";
 const pilotDelegationKid = process.env.ENTREGAS_PILOT_DELEGATION_KEY_ID ?? "";
@@ -461,13 +500,40 @@ function json(
   res.end(JSON.stringify(body));
 }
 
+/*
+ * Teto de corpo. Atrás de um proxy público, um corpo sem limite é memória do
+ * caixa à disposição de quem quiser. O maior uso legítimo é um lote de 100
+ * eventos do aparelho; 1 MiB cobre com folga. Acima disso a conexão é
+ * recusada e o handler não recebe nada (o JSON.parse seguinte falha e vira 4xx/5xx).
+ */
+export const PILOT_MAX_BODY_BYTES = 1024 * 1024;
 async function readBody(req: http.IncomingMessage): Promise<string> {
+  const declared = Number(req.headers["content-length"] ?? "0");
+  if (Number.isFinite(declared) && declared > PILOT_MAX_BODY_BYTES) {
+    req.destroy();
+    throw new Error("PILOT_BODY_TOO_LARGE");
+  }
   const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(c as Buffer);
+  let size = 0;
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > PILOT_MAX_BODY_BYTES) {
+      req.destroy();
+      throw new Error("PILOT_BODY_TOO_LARGE");
+    }
+    chunks.push(c as Buffer);
+  }
   return Buffer.concat(chunks).toString("utf8");
 }
 
 /** Injeta banner de piloto e esconde demo dock via snippet no HTML */
+/** Only the rider DOCUMENT gets its dedicated hardened headers/boot. */
+function isRiderIndexPath(pathname: string): boolean {
+  return pathname === "/rider-mobile" ||
+    pathname === "/rider-mobile/" ||
+    pathname === "/rider-mobile/index.html";
+}
+
 function transformHtml(html: string, pathname: string): string {
   let out = html.replace(
     /AMBIENTE DE DEMONSTRAÇÃO[^<]*/g,
@@ -499,7 +565,18 @@ function transformHtml(html: string, pathname: string): string {
   // Authorization — e a primeira leitura voltava 401, deixando a tela presa em
   // "Carregando…". Clássico e no <head>, ele roda durante o parse, antes de
   // qualquer módulo (test:entregas:rider-bridge, cenário A, prova com Chromium).
-  if (!out.includes("pilot-session-boot")) {
+  if (isRiderIndexPath(pathname)) {
+    // The CSP lives in the original rider HTML and must be parsed BEFORE
+    // this synchronous, same-origin classic bootstrap. Fail closed rather
+    // than silently reintroducing an inline script or unauthenticated UI.
+    if (!out.includes('http-equiv="Content-Security-Policy"')) {
+      throw new Error("RIDER_CSP_REQUIRED_BEFORE_BOOT");
+    }
+    const marker = "<title>ENTREGAS · Motoboy</title>";
+    if (!out.includes(marker)) throw new Error("RIDER_BOOT_MARKER_MISSING");
+    out = out.replace(marker,
+      '<script src="/rider-mobile/pilot-session-boot.js"></script>\n  ' + marker);
+  } else if (!out.includes("pilot-session-boot")) {
     const boot = `<script>
 /* pilot-session-boot */
 const TOKEN_KEY = "entregas_pilot_token";
@@ -528,9 +605,28 @@ window.entregasPilotLogin = async (token) => {
   return out;
 }
 
+/*
+ * Home (Copiloto) para outros aparelhos, por hostname proprio nesta mesma porta.
+ * Desligada sem ENTREGAS_HOME_PUBLIC_URL + ENTREGAS_HOME_UPSTREAM; configuracao
+ * parcial ou insegura derruba o boot. A credencial e a do piloto: o mesmo codigo,
+ * o mesmo limite de tentativas, conferido de novo a cada requisicao.
+ */
+const homeGateway = createHomeOperatorGateway(loadHomeGatewayConfig(process.env, cloud.publicUrl), {
+  login(code, remote) {
+    if (accessThrottle.blocked(remote, code)) return { status: "throttled" };
+    const found = requestActor(code);
+    if (found) accessThrottle.success(remote, code);
+    else accessThrottle.failure(remote);
+    return found ? { status: "ok", actor: found } : { status: "denied" };
+  },
+  actorOf: (code) => requestActor(code),
+});
+
 let autoBackupTimer: ReturnType<typeof setInterval> | null = null;
 
 const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  // Antes de tudo: uma requisicao para o hostname da Home nunca chega as rotas do piloto.
+  if (await homeGateway.handle(req, res)) return;
   if (await operatorRuntime.handle(req, res)) return;
   if (req.method === "OPTIONS") {
     const preflight = corsHeaders(req.headers.origin);
@@ -563,6 +659,17 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   if (codigoHumano) {
     if (actor) accessThrottle.success(origem, token);
     else accessThrottle.failure(origem);
+  }
+  /*
+   * D101 — pelo portão de campo (a porta pública dos celulares), só motoboy.
+   * A marca só RESTRINGE: quem a forjar pela porta interna perde poder, não
+   * ganha. Um código de gerente vazado não lê a operação pela internet.
+   */
+  const doCampo = req.headers["x-deliveryos-field"] === "1";
+  if (doCampo && actor && actor.role !== "motoboy_interno") {
+    res.writeHead(403, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
+      ...corsHeaders(req.headers.origin) });
+    return res.end(JSON.stringify({ ok: false, code: "papel_fora_do_campo" }));
   }
   /*
    * Q-028 — o observador local é identidade de MÁQUINA, exclusivamente de
@@ -633,6 +740,12 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       const tentativa = body.token || "";
       const origemLogin = req.socket.remoteAddress || "desconhecida";
       if (accessThrottle.blocked(origemLogin, tentativa)) return reply(429, { ok: false, human: MUITAS_TENTATIVAS });
+      // D101: no campo, código de outro papel recebe a MESMA recusa do código errado
+      // (a tela não confirma códigos) e conta como erro para o limite de tentativas.
+      if (doCampo && requestActor(tentativa)?.role !== "motoboy_interno") {
+        accessThrottle.failure(origemLogin);
+        return reply(401, facade.login(""));
+      }
       // login() valida e registra a entrada; o vinculo desta requisicao ja'
       // foi feito no topo do handler e nao depende deste corpo.
       const result = facade.login(tentativa);
@@ -770,12 +883,15 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         return reply(503, { ok: false, unknown: true, reason: decisaoTrip.reason });
       }
       if (decisaoTrip.decision === "stop") {
+        // Viagem encerrada continua sendo DELE: a concessao fecha a janela no
+        // encerramento, e os pontos captados offline durante a viagem ainda sobem.
         return reply(200, {
           ok: true,
           capture: false,
           trip_id: tripId,
           reason: decisaoTrip.reason,
           checked_at: new Date().toISOString(),
+          trip_grant: decisaoTrip.reason === "trip_not_active" ? concessaoDeCaptura(identidade.identity, trip) : null,
         });
       }
 
@@ -798,12 +914,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         term_publishable: termoPublicavelAgora,
         term_accepted_for_device: termAccepted,
       });
+      const capturaLiberada = decisaoPrivacidade.decision === "continue";
       return reply(200, {
         ok: true,
-        capture: decisaoPrivacidade.decision === "continue",
+        capture: capturaLiberada,
         trip_id: tripId,
         reason: decisaoPrivacidade.reason,
         checked_at: new Date().toISOString(),
+        // Sem captura liberada (flag, termo, aceite), nenhuma concessao: a plataforma
+        // nao pode aceitar ponto que o piloto nao permitiria captar.
+        trip_grant: capturaLiberada ? concessaoDeCaptura(identidade.identity, trip) : null,
       });
     }
 
@@ -919,6 +1039,42 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       });
     }
 
+    /*
+     * X1 — concessões de viagem para a fila de GPS do aparelho, pela credencial
+     * DELEGADA ao piloto (pt1), nunca pelo token da plataforma. O SyncWorker usa
+     * esta rota quando a concessão guardada não cobre os pontos da fila (ex.:
+     * viagem encerrada enquanto o aparelho estava offline). Só concede a viagem
+     * que o domínio atribui ao motoboy da delegação, e só depois da saída.
+     */
+    if (url.pathname === "/api/device/trip-grants" && req.method === "POST") {
+      const delegated = typeof req.headers.authorization === "string"
+        ? /^Bearer\s+(pt1\.[^\s]+)$/i.exec(req.headers.authorization)?.[1]
+        : undefined;
+      if (!delegated) return reply(401, { ok: false, code: "pilot_delegation_required" });
+      const auth = await authorizeDelegatedPilotHttp({
+        bearer: delegated, unit_id: cfg.unit_id,
+        public_key: pilotDelegationPublicKey, key_id: pilotDelegationKid,
+        platform_base_url: PLATFORM_URL, now_s: Math.floor(Date.now() / 1000),
+      });
+      if (!auth.ok) return reply(auth.status, { ok: false, code: auth.reason, retryable: auth.status === 503 });
+      if (doCampo && auth.claims.role !== "motoboy_interno") return reply(403, { ok: false, code: "papel_fora_do_campo" });
+      if (!TRIP_GRANT_SECRET) return reply(503, { ok: false, code: "trip_grant_not_configured", retryable: true });
+      let corpo: { trip_ids?: unknown };
+      try { corpo = JSON.parse(await readBody(req)) as { trip_ids?: unknown }; }
+      catch { return reply(400, { ok: false, code: "INVALID_BODY" }); }
+      const ids = Array.isArray(corpo.trip_ids) ? corpo.trip_ids : [];
+      if (!ids.length || ids.length > 20 || !ids.every((x) => typeof x === "string" && x.length > 0 && x.length <= 128))
+        return reply(400, { ok: false, code: "INVALID_TRIP_IDS" });
+      const identidade = { unit_id: auth.claims.unit_id, actor_id: auth.claims.actor_id, device_id: auth.claims.device_id };
+      const grants: Record<string, string | null> = {};
+      for (const tripId of new Set(ids as string[])) {
+        const trip = await facade.readTripCaptureState(tripId);
+        // Sem saída registrada não houve captura autorizada: nada a conceder.
+        grants[tripId] = trip && trip.started_at ? concessaoDeCaptura(identidade, trip) : null;
+      }
+      return reply(200, { ok: true, grants });
+    }
+
     if (url.pathname === "/api/events/batch" && req.method === "POST") {
       let eventActor: ActorContext | null = actor;
       let attestedDeviceId: string | null = null;
@@ -938,6 +1094,8 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         eventActor = {actor_id:auth.claims.actor_id,role:auth.claims.role};
         attestedDeviceId = auth.claims.device_id;
       }
+      if (doCampo && eventActor && eventActor.role !== "motoboy_interno")
+        return reply(403, { ok: false, code: "papel_fora_do_campo" });
       if (!eventActor) return reply(401, { ok: false, human: NO_SESSION });
       if (!persistenceBackend?.native_inbound_receipts.available) {
         return reply(503, { ok: false, code: "DURABLE_RECEIPTS_UNAVAILABLE", retryable: true });
@@ -1272,10 +1430,23 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     if (ext === ".html") {
       body = transformHtml(body.toString("utf8"), path);
     }
-    res.writeHead(200, { "Content-Type": mime[ext] || "text/plain" });
+    // The meta policy governs scripts/subframes. frame-ancestors is only
+    // enforceable via HTTP response headers, never via a meta CSP.
+    // Keep all other static routes exactly as before.
+    const riderHeaders = ext === ".html" && isRiderIndexPath(path) ? {
+      "Content-Security-Policy": "frame-ancestors 'none'",
+      "X-Frame-Options": "DENY",
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "no-store",
+    } : {};
+    res.writeHead(200, { "Content-Type": mime[ext] || "text/plain", ...riderHeaders });
     res.end(body);
   } catch (e) {
     const technical = e instanceof Error ? e.message : String(e);
+    if (technical === "PILOT_BODY_TOO_LARGE") {
+      if (!res.headersSent && !res.destroyed) reply(413, { ok: false, code: "BODY_TOO_LARGE" });
+      return;
+    }
     log.error("command_failed", "Erro interno do servidor.", technical);
     reply(500, {
       error: "Algo deu errado. Avise o responsável pelo piloto.",
@@ -1349,6 +1520,7 @@ async function startServer(): Promise<void> {
     if (persistenceBackend?.database_role) {
       console.log(`  papel do banco: ${persistenceBackend.database_role}`);
     }
+    console.log(`  Home por operador (outros aparelhos): ${homeGateway.enabled ? "SIM, so leitura, por codigo de gerente/lider" : "NAO"}`);
 
     if (facade.supportsFileBackup) {
       const mins = cfg.backup.auto_interval_minutes || 30;

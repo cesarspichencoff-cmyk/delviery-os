@@ -16,6 +16,12 @@
       "port": 5290
     },
     {
+      "name": "gestor-demand-lab",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["labs/gestor-demand-feed/run-lab.cjs", "--serve"],
+      "port": 5296
+    },
+    {
       "name": "lab-operacao-viva-v4",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "ui:lab"],

@@ -580,7 +580,7 @@ teste("PF2 o projetor e PURO: sem relogio, sem random, sem I/O", () => {
   }
 });
 
-teste("PF3 nenhum produtor vivo, flag ou recomendacao nasceu", () => {
+teste("PF3 o projetor so tem chamadores NOMEADOS, e nenhuma flag ou recomendacao nasceu nele", () => {
   for (const arq of [
     "src/product/eventos/catalogo-operacional.ts",
     "src/product/eventos/projetar-leitura.ts",
@@ -614,13 +614,62 @@ teste("PF3 nenhum produtor vivo, flag ou recomendacao nasceu", () => {
   // `/run-.*-tests\.ts$/`, qualquer arquivo de teste novo entraria sozinho e a
   // guarda passaria a afirmar menos do que afirma hoje. Nenhum comportamento de
   // produto muda: o projetor continua sem chamador de runtime.
+  //
+  // 2026-11-13 — O PROJETOR GANHOU UM CHAMADOR DE RUNTIME, POR DECISAO (D97).
+  // Ate aqui esta guarda afirmava "nenhum produtor vivo nasceu". Isso deixou de
+  // ser verdade de proposito: o Cesar mandou ligar a demanda observada no Gestor
+  // a Home pelo motor existente, e `demanda-gestor.ts` e esse elo. A guarda nao
+  // foi afrouxada para um padrao: a lista continua FECHADA e por NOME, e cada
+  // nome novo diz o que e. Medido antes de mexer, com historico completo: a
+  // guarda ja estava vermelha por tres arquivos que entraram entre 04 e 12/11
+  // sem registro aqui — eles sao nomeados agora, com a classe de cada um.
+  const NOMEADOS: Readonly<Record<string, string>> = {
+    // O unico chamador de RUNTIME: alimenta `/api/home` (D97).
+    "src/product/eventos/demanda-gestor.ts": "runtime_demanda_observada_D97",
+    // Modulos de revisao: so emitem fonte `fixture:` e nao tem chamador de produto.
+    "src/product/eventos/gestor-health-shadow-flow.ts": "revisao_fixture_sem_chamador_de_produto",
+    "src/product/eventos/vinculo-reader-trabalho-praca.ts": "revisao_fixture_sem_chamador_de_produto",
+    // Gate que exercita o projetor, fora da familia `run-r5*`.
+    "src/platform/run-gesto-bancada-shadow-tests.ts": "gate",
+  };
   for (const c of chamadores) {
     assert.ok(
       /\/run-r5[a-z0-9-]*-tests\.ts$/.test(c) ||
         c.endsWith("/run-m1-bridge-tests.ts") ||
-        c.endsWith("projetar-leitura.ts"),
-      `o projetor ganhou chamador de runtime: ${c}`,
+        c.endsWith("projetar-leitura.ts") ||
+        Object.prototype.hasOwnProperty.call(NOMEADOS, c),
+      `o projetor ganhou chamador NAO NOMEADO: ${c}`,
     );
+  }
+  // Todo nome da lista precisa existir e chamar o projetor: nome morto na lista
+  // e autorizacao esquecida, e a proxima pessoa herdaria uma porta aberta.
+  for (const nome of Object.keys(NOMEADOS)) {
+    assert.ok(chamadores.includes(nome), `chamador nomeado nao chama mais o projetor: ${nome}`);
+  }
+  // A FAMILIA DE REVISAO continua sem chamador de produto. Ela e fechada: os
+  // modulos podem se citar entre si e ser exercitados por gates, e mais nada.
+  // Se o servidor, uma view model ou o produtor de runtime importar um deles,
+  // ele deixa de ser revisao — e esta guarda acusa. (Medido ao escrever: a
+  // primeira versao deste controle nomeava dois modulos e a cadeia tinha quatro.)
+  const FAMILIA_DE_REVISAO = [
+    "gestor-health-shadow-flow",
+    "vinculo-reader-trabalho-praca",
+    "revisar-classificacao-trabalho-praca",
+    "gesto-bancada-shadow",
+  ];
+  for (const modulo of FAMILIA_DE_REVISAO) {
+    let usos: string[] = [];
+    try {
+      usos = execFileSync("git", ["grep", "-l", "--untracked", modulo, "--", "src/", "tools/"], { cwd: raiz, encoding: "utf8" })
+        .trim().split("\n").filter((l) => l !== "").map((l) => l.split("\\").join("/"));
+    } catch { usos = []; }
+    assert.ok(usos.length >= 1, `modulo de revisao nao encontrado: ${modulo}`);
+    for (const u of usos) {
+      assert.ok(
+        FAMILIA_DE_REVISAO.some((m) => u.endsWith(`/${m}.ts`)) || /\/run-[a-z0-9-]+-tests\.ts$/.test(u),
+        `modulo de revisao ${modulo} ganhou chamador de produto: ${u}`,
+      );
+    }
   }
   assert.ok(chamadores.length >= 2, "a busca por chamadores nao encontrou nada");
 });

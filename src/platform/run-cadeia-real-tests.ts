@@ -34,6 +34,7 @@
  */
 
 import assert from "node:assert/strict";
+import { ambienteDeConcessaoDeTeste, concessaoDaBancada, registrarVinculoDeTeste, registrarViagemDeTeste } from "./concessao-de-teste";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -161,8 +162,8 @@ function ultimaLinha<T>(p: Processo, rotulo: string): T | null {
 interface Escopo { unit_id: string; source_mode: string; fatos: number; digest: string; viagens: number; frescor: Record<string, number> }
 interface Replay { estado: string; aplicados: number; duplicados: number; escopos: Escopo[] }
 
-const subirCritico = (b: BancoIsolado, modo: string) =>
-  subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: modo });
+const subirCritico = (b: BancoIsolado, modo: string, unidades: string[] = []) =>
+  subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: modo, DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ambienteDeConcessaoDeTeste(...unidades) });
 const subirAssincrono = (b: BancoIsolado) => {
   // No Windows, child.kill(SIGTERM) encerra sem entregar o sinal ao handler.
   // O canal IPC só existe no teste e aciona o MESMO encerrar() do binário.
@@ -200,6 +201,7 @@ async function autorizarAparelho(
      ) VALUES ($1, $2, $3, 'aparelho da cadeia', $4, now())`,
     [device_id, unit_id, actor_id, device_proof_sha256],
   );
+  registrarVinculoDeTeste(device_id, unit_id, actor_id);
 }
 
 async function revogarAparelho(b: BancoIsolado, device_id: string): Promise<void> {
@@ -277,7 +279,7 @@ async function main(): Promise<void> {
     const porta = (falso.address() as { port: number }).port;
     const dir = mkdtempSync(join(tmpdir(), "cadeia-a2-"));
     try {
-      const ap = new AparelhoLogico({ diretorio: dir, plataformaUrl: `http://127.0.0.1:${porta}` });
+      const ap = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dir, plataformaUrl: `http://127.0.0.1:${porta}` });
       ap.capturar("t-a2", -23.5, -46.6, "2026-09-24T10:00:00.000Z");
       const resultados = [];
       for (let i = 0; i < 3; i += 1) resultados.push(await ap.sincronizar());
@@ -453,23 +455,24 @@ async function main(): Promise<void> {
   const UNIDADE = `CAD${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const MOTOBOY = `m-${UNIDADE.toLowerCase()}`;
   const VIAGEM = `t-${UNIDADE.toLowerCase()}`;
+  registrarViagemDeTeste(VIAGEM, UNIDADE, MOTOBOY);
   const MODO = "simulated" as const;
   const papeis: string[] = [];
 
   try {
-    critico = subirCritico(b, MODO);
+    critico = subirCritico(b, MODO, [UNIDADE]);
     assert.ok(await ate(critico, /\[critico\] ouvindo/), `o crítico não subiu:\n${critico.saida()}`);
     const urlCritico = `http://127.0.0.1:${critico.porta}`;
     const PORTA_MORTA = "http://127.0.0.1:9";
 
     // 1. aparelho lógico novo
-    let ap = new AparelhoLogico({ diretorio: dir, plataformaUrl: urlCritico });
+    let ap = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dir, plataformaUrl: urlCritico });
 
     await teste("C1 aparelho novo nasce com identidade e segredo PRÓPRIOS, persistidos antes de qualquer rede", () => {
       assert.match(ap.deviceId, /^dev-[0-9a-f]{16}$/);
       const segredo = ap.db.get(KEY_DEVICE_SECRET);
       assert.ok(segredo && segredo.length >= 32, "segredo ausente ou curto");
-      const denovo = new AparelhoLogico({ diretorio: dir, plataformaUrl: urlCritico });
+      const denovo = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dir, plataformaUrl: urlCritico });
       assert.equal(denovo.deviceId, ap.deviceId, "reabrir o Room trocou a identidade");
       assert.equal(denovo.db.get(KEY_DEVICE_SECRET), segredo, "reabrir o Room trocou o segredo");
     });
@@ -518,7 +521,7 @@ async function main(): Promise<void> {
     await teste("C4 a sessão SOBREVIVE ao reinício do app: reabrir o Room devolve o mesmo token, sem novo bootstrap", async () => {
       const antes = DeviceSession.sessaoAtual(ap.db)!;
       const sessoesAntes = (await b.cliente.query(`SELECT count(*)::int AS n FROM platform.audit WHERE object_id = $1`, [ap.deviceId]))[0].n;
-      ap = new AparelhoLogico({ diretorio: dir, plataformaUrl: urlCritico });
+      ap = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dir, plataformaUrl: urlCritico });
       const depois = DeviceSession.sessaoAtual(ap.db);
       assert.deepEqual(depois, antes);
       assert.equal(await ap.sincronizar(), "success");
@@ -672,7 +675,7 @@ async function main(): Promise<void> {
     await teste("E2 A NÃO FALA COMO B: token de A com pontos de B é recusado ponto a ponto; token de B exige o segredo de B", async () => {
       const dirB = mkdtempSync(join(tmpdir(), "cadeia-aparelho-b-"));
       try {
-        const apB = new AparelhoLogico({ diretorio: dirB, plataformaUrl: urlCritico });
+        const apB = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirB, plataformaUrl: urlCritico });
         await autorizarAparelho(b, apB.deviceId, UNIDADE, `${MOTOBOY}-b`, hashDoSegredo(apB.db.get(KEY_DEVICE_SECRET)!));
         // A tenta empurrar um ponto em nome de B, com o token de A.
         const tokenA = DeviceSession.sessaoAtual(ap.db)!.token;
@@ -732,7 +735,7 @@ async function main(): Promise<void> {
     await teste("N1 CONTROLE: localização simulada (is_mock) num aparelho autorizado é recusada, e o aparelho fica sabendo", async () => {
       const dirC = mkdtempSync(join(tmpdir(), "cadeia-aparelho-c-"));
       try {
-        const apC = new AparelhoLogico({ diretorio: dirC, plataformaUrl: urlCritico });
+        const apC = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirC, plataformaUrl: urlCritico });
         await autorizarAparelho(b, apC.deviceId, UNIDADE, `${MOTOBOY}-c`, hashDoSegredo(apC.db.get(KEY_DEVICE_SECRET)!));
         apC.capturar(VIAGEM, -23.55, -46.63, "2026-09-24T10:08:00.000Z", { mock: true });
         assert.equal(await apC.sincronizar(), "success");
@@ -862,7 +865,7 @@ async function main(): Promise<void> {
     await teste("D4 AUSÊNCIA nunca vira saúde: aparelho pre-vinculado sem lote fica sem GPS, sem sincronização e sem modo", async () => {
       const dirD = mkdtempSync(join(tmpdir(), "cadeia-aparelho-d-"));
       try {
-        const apD = new AparelhoLogico({ diretorio: dirD, plataformaUrl: urlCritico });
+        const apD = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirD, plataformaUrl: urlCritico });
         await autorizarAparelho(b, apD.deviceId, UNIDADE, `${MOTOBOY}-d`, hashDoSegredo(apD.db.get(KEY_DEVICE_SECRET)!));
         const r = await lerRealidadeDeEntregas(b.cliente, { agora: AGORA_LEITURA, unit_id: UNIDADE });
         const f = await montarEntregasDemo();
@@ -949,12 +952,13 @@ async function main(): Promise<void> {
       });
 
       const VIAGEM_P = `${VIAGEM}-p`;
+      registrarViagemDeTeste(VIAGEM_P, UNIDADE, `${MOTOBOY}-p`);
       await teste("P2 o crítico sobe como papel mínimo: /ready 200, bootstrap respeita pré-vínculo, lote vira fato, sessão auditada", async () => {
-        criticoP = subir(BIN_CRITICO, comPapel(CRIT), { DELIVERYOS_SOURCE_MODE: MODO });
+        criticoP = subir(BIN_CRITICO, comPapel(CRIT), { DELIVERYOS_SOURCE_MODE: MODO, DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ambienteDeConcessaoDeTeste(UNIDADE) });
         assert.ok(await ate(criticoP, /\[critico\] ouvindo/), `o crítico não subiu com o papel mínimo:\n${criticoP.saida().slice(-800)}`);
         const ready = await fetch(`http://127.0.0.1:${criticoP.porta}/ready`);
         assert.equal(ready.status, 200, "a sonda de escrita do /ready reprova com o papel mínimo");
-        const apP = new AparelhoLogico({ diretorio: dirP, plataformaUrl: `http://127.0.0.1:${criticoP.porta}` });
+        const apP = new AparelhoLogico({ concessao: concessaoDaBancada, diretorio: dirP, plataformaUrl: `http://127.0.0.1:${criticoP.porta}` });
         await autorizarAparelho(b, apP.deviceId, UNIDADE, `${MOTOBOY}-p`, hashDoSegredo(apP.db.get(KEY_DEVICE_SECRET)!));
         apP.capturar(VIAGEM_P, -23.56, -46.64, "2026-09-24T10:09:00.000Z");
         assert.equal(await apP.sincronizar(), "success", `sincronização falhou:\n${criticoP.saida().slice(-500)}`);

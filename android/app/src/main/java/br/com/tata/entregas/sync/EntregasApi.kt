@@ -191,7 +191,11 @@ class EntregasApi(
      * Envia um lote de pontos. O servidor deduplica por `idempotency_key`;
      * mandar duas vezes é seguro por construção.
      */
-    fun sendPoints(points: List<JSONObject>, correlationId: String): ApiResult<JSONObject> =
+    fun sendPoints(
+        points: List<JSONObject>,
+        correlationId: String,
+        tripGrants: List<String> = emptyList(),
+    ): ApiResult<JSONObject> =
         request(
             "/api/gps/batch",
             "POST",
@@ -199,7 +203,17 @@ class EntregasApi(
                 put("schema_version", CLIENT_SCHEMA_VERSION)
                 put("correlation_id", correlationId)
                 put("points", JSONArray(points))
+                // X1: a plataforma só grava ponto de viagem com concessão do piloto.
+                put("trip_grants", JSONArray(tripGrants))
             },
+        )
+
+    /** X1: concessões das viagens da fila de GPS, pela credencial delegada ao piloto. */
+    fun tripGrants(tripIds: List<String>): ApiResult<JSONObject> =
+        request(
+            "/api/device/trip-grants",
+            "POST",
+            JSONObject().apply { put("trip_ids", JSONArray(tripIds)) },
         )
 
     /** Envia comandos operacionais para o domínio julgar. */

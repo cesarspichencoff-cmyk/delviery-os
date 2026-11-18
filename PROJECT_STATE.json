@@ -3,9 +3,9 @@
   "project_id": "project.deliveryos",
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
-  "active_ref": "claude/deliveryos-v1-trip-identity-20261031",
-  "checkpoint_type": "V1_SOFTWARE_READY_FIELD_ACCEPTANCE_PENDING",
-  "state_basis_head": "737258f1fe6ecc4a213e9317ea8ce20ffea1da17",
+  "active_ref": "feat/gestor-shadow-observer-20261103",
+  "checkpoint_type": "V1_L1_REAL_IFOOD_BROWSER_NATIVE_READER_ONE_ORDER_CANDIDATE_SOURCE_TRUTH_HOLD",
+  "state_basis_head": "8fe73ea9904b18793143eb6203562865a4f12e09",
   "verified_state_refs": [
     "docs/execution/ANDROID_PREPARACAO_2026-10-26.md",
     "docs/execution/ITAIM_ONLY_IMPLEMENTACAO_2026-10-25.md",
@@ -35,7 +35,11 @@
     "docs/execution/LEITOR_ISOLADO_2026-10-28.md",
     "docs/design/COPILOTO_LEITOR_VISUAL_2026-10-28.md",
     "docs/execution/FECHAMENTO_PILOTO_2026-10-28.md",
-    "docs/execution/evidencias/operator-package-2026-10-29/offline-preparation.json"
+    "docs/execution/evidencias/operator-package-2026-10-29/offline-preparation.json",
+    "docs/execution/DELIVERYOS_V1_LAUNCH_ACCEPTANCE_20261103.md",
+    "docs/execution/DELIVERYOS_V1_ETAPAS_PROGRESSO_ATUAL.md",
+    "docs/execution/DELIVERYOS_L1_PR135_CHILD_OBSERVATION_VETO_CROSS_BRANCH_PROOF_20261108.md",
+    "docs/execution/DELIVERYOS_L1_SQL_LOCK_BASELINE_AND_NATIVE_LOG_AUDIT_20261108.md"
   ],
   "verified_state": [
     "Android run 40232235279: 16 JUnit suites, 110 tests, zero failures/errors.",
@@ -100,7 +104,7 @@
     "2026-10-31 Cesar approved ownership rule and console rider choice for release ('Sim, pode fazer o que for necessario...').",
     "2026-11-01 Cesar decisions applied: short per-terminal codes kept off-repo with attempt throttle (machine credentials exempt); field APK signing from GitHub secrets via tag workflow; term approved pending legal fields; five former out-of-scope items moved into V1. CI 737258f1 product and Android success."
   ],
-  "next_action": "Implement V1 additions in order (address on trip, PostgreSQL offline receipts, GPS cadence, non-GMS provider, iFood shadow); in parallel Cesar fills term legal fields, creates the signing key with tools/android_gerar_chave_campo.sh and GitHub secrets, sets the per-terminal codes in the host pilot.json, and runs section 4 of LIBERACAO_V1.",
+  "next_action": "Real 11/11/2026 Itaim order: iFood 53069 merchant identity proven via authenticated store selector. Same short code/minute, exact 2/2 product names and 2/2 quantities matched against persisted native shadow_decision, with event key+hash bound, origin DLV_IFO and unit 0001/01. Do not repeat identity/content confirmation tests. Remaining L1 is actual one-order CHILD TABLE completeness & writer-safe query gate (RCSI OFF, no CAIXA_MOOCA SQL/process allowed), plus original integrator UUID↔native key attestation. Existing 2-product order and source are strong observational evidence only. PR137/PR135 DRAFT/HOLD, 0/8 field acceptances, no print or deploy.",
   "unknowns": [
     "Fresh post-weekly-fix events observed. Source mode/provenance and explicit native timestamp policy still require validated live configuration; no publication performed.",
     "Windows boot autostart and graceful runtime shutdown are not configured/proven.",
@@ -153,7 +157,9 @@
     "proof": "docs/execution/evidencias/itaim-only-2026-10-25/github-transfer.json"
   },
   "pending_delta_after_basis": [
-    "Offline package readiness checks and consolidated pilot completion criteria; no activation."
+    "Somente atualizacao de metadados de continuidade neste commit; nenhuma alteracao de runtime/produto apos o codigo 29ac800.",
+    "L1/N2-A impacto de SQL nos escritores NAO PROVADO e L1/N2-B cobertura de relacoes filhas/commit independente NAO PROVADA.",
+    "Premissas operacionais de outubro nos campos historicos nao substituem este checkpoint de 11/11."
   ],
   "latest_review_transport": {
     "tested_local_code": "1923242",
@@ -204,6 +210,160 @@
       "android_junit_ci": "suites=18 tests=211 failures=0",
       "evidence": "docs/execution/COMANDOS_OFFLINE_NATIVOS_2026-10-31.md",
       "installed_anywhere": false
+    }
+  },
+  "latest_operational_checkpoint": {
+    "recorded_date_brt": "2026-11-12",
+    "state_kind": "REAL_IFOOD_MERCHANT_53069_VERIFIED_PORTAL_AND_NATIVE_TWO_ITEM_CONTENT_CORRELATED_HOLD",
+    "checked_review_branch": "feat/gestor-shadow-observer-20261103",
+    "code_basis_sha": "8fe73ea9904b18793143eb6203562865a4f12e09",
+    "review_pr": "#137 OPEN/DRAFT/HOLD, code basis 8fe73ea tested 4/4 PASS; this checkpoint only metadata",
+    "comandas_pr": "#135 OPEN/DRAFT/HOLD; HEAD 66243a10c63348654bea58b48dffef303faf6b4a",
+    "l1": "PARTIAL with real evidence: authenticated iFood merchant 53069 verified by store chooser (Tatá Sushi Rua Joao Cachoeira), and single 11/11 22:59 order correlates to native DLV_IFO 0001/01 by display ID, minute, two product names+quantities; native shadow_decision matches same order key + event snapshot hash and each CDPRODUTO. Still no independent native DB product-name master proof, UUID-to-native attestation, child-table completeness/atomic commit, or physical readiness. HOME_REAL/PRINT=HOLD.",
+    "l2": "CODIFIED_TAXONOMY_FIELD_ROUTE_HOLD",
+    "l3": "PHYSICAL_READY_UNKNOWN; 15 native state P and 1 X in passive sample, not homologated; ready_for_downstream_shadow is NOT physical ready",
+    "l4": "HOME_TEMPORAL_FOCUS_AND_SOURCE_TRUTH_CI_PASS_REAL_ORDERS_HOLD",
+    "l5": "COMANDAS_VIRTUAL_CHAIN_TESTED_PAPER_AND_CUSTODY_FIELD_HOLD",
+    "l6": "ANDROID_EMULATOR_CI_PASS_XIAOMI_FIELD_HOLD",
+    "l7": "END_TO_END_FIELD_HOLD",
+    "l8": "SILENT_WINDOWS_LAB_PASS_FIELD_HOLD",
+    "accepted_field_stages": 0,
+    "required_field_stages": 8,
+    "verification": {
+      "code_commit": "8fe73ea9904b18793143eb6203562865a4f12e09",
+      "actions_four_of_four_success": true,
+      "android_room_junit": "PASS in workflow 43149417912; device Xiaomi NOT tested in this acceptance",
+      "android_https": "PASS in workflow 43149418003; field endpoint NOT proven",
+      "android_webview": "API29 PASS, API34 3/3 PASS on rerun after an initial crash/failure, not physical field proof",
+      "home_chromium": "Synthetic Home tests PASS in silent fixture; no human acceptance",
+      "gestor_native_shadow_correlation": "40/40 PASS on code SHA, new test prevents 3 source self-claims being promoted to merchantVerified",
+      "ci_run_urls": [
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417965",
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417912",
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149418003",
+        "https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/43149417908"
+      ],
+      "world_operational_acceptance": false,
+      "current_code_unit_tests_passed": true,
+      "code_revision_field_deployed": false,
+      "portal_browser_order_read_real": true,
+      "single_reader_candidate_source_match": true,
+      "operational_order_join_proven": false
+    },
+    "last_remote_device_check": "CAIXA_MOOCA ONLINE via Desktop Commander 0.3.2, Foxxy OFFLINE, both observed in this turn; no workstation changes",
+    "next_material_gate": "N2-B: approve and safely inspect exact one-order rows in ITCOMANDAEST, OBSITCOMANDAVEN, OBSITCOMANDAEST and OCORRENCIA and prove writer-impact safety under RCSI OFF; N4: find actual integrator receipt linking iFood UUID to native 4-part key; existing portal+native 2-item content is already correlated, do not repeat it as the main task.",
+    "prohibitions": [
+      "No cashier start_process or UI interference",
+      "No PRINT/SEFAZ/merge/deploy/cutover",
+      "No official iFood/Teknisa contact or API",
+      "No paid infrastructure",
+      "Do not promote laboratory proof to field acceptance"
+    ],
+    "checkpoint_scope": "GITHUB_METADATA_ONLY; no operational SQL, iFood settings, print, production changes, purchases or deployment authorized",
+    "prior_state_interpretation": "Earlier prior artifacts predate authenticated iFood read. Live browser candidate is current evidence, yet source identity and native child completeness are NOT attested.",
+    "l1_field_sample": {
+      "observation_kind": "PASSIVE_READ_OF_PREEXISTING_FILES_NO_DEVICE_EXECUTION",
+      "observed_on_brt": "2026-11-12",
+      "native_order_date_brt": "2026-11-11",
+      "sample_count": 16,
+      "scoped_native_origin": "DLV_IFO 16/16",
+      "scoped_native_store": "CDFILIAL=0001 CDLOJA=01 16/16",
+      "event_json_legible": 16,
+      "events_with_direct_items": 16,
+      "events_with_nonempty_note_fields": 16,
+      "notes_total_nonempty": 32,
+      "notes_order_scoped": 16,
+      "notes_item_scoped": 16,
+      "note_field_counts": {
+        "DSOBSCOMANDA": 16,
+        "DSOBSPEDDIGCMD": 8,
+        "TXPRODCOMVEN": 8
+      },
+      "declared_downstream_shadow_ready": 16,
+      "declared_scan_complete": 16,
+      "declared_note_join_proven": 32,
+      "contradictions_in_declared_flags": 0,
+      "native_status_counts": {
+        "P": 15,
+        "X": 1
+      },
+      "ifood_uuid_field_present_in_event_contract": 0,
+      "independently_proven_child_table_coverage": false,
+      "independently_proven_ifood_order_uuid_binding": false,
+      "native_physical_ready_proven": false,
+      "source_tables_not_attested": [
+        "ITCOMANDAEST",
+        "OBSITCOMANDAVEN",
+        "OBSITCOMANDAEST",
+        "OCORRENCIA"
+      ],
+      "raw_order_ids_customer_details_and_note_values_persisted_in_repository": false
+    },
+    "source_kind": "AUTHENTICATED_PORTAL_UI_PLUS_PASSIVE_INSTALLED_NATIVE_READER_EVENT",
+    "l1_live_portal_candidate": {
+      "observed_date_brt": "2026-11-12",
+      "source_order_day_brt": "2026-11-11",
+      "portal_authenticated": true,
+      "portal_store_title": "Tatá Sushi (generic, no unit/merchant ID attested)",
+      "portal_order_uuid_present_in_orderId_query": true,
+      "portal_order_uuid_value_exported": false,
+      "portal_display_id_present": true,
+      "portal_order_time_present": true,
+      "portal_order_status_displayed": "CONCLUDED (UI, not native status proof)",
+      "portal_product_lines": 2,
+      "portal_line_quantities": [
+        1,
+        1
+      ],
+      "portal_modifiers_or_observations_visible": false,
+      "reader_event_found": true,
+      "candidate_count_at_same_short_code_and_minute": 1,
+      "native_origin": "DLV_IFO",
+      "native_scope": "0001/01",
+      "native_line_count": 2,
+      "native_line_quantities": [
+        1,
+        1
+      ],
+      "quantities_coincide": true,
+      "native_order_note_rows": 1,
+      "native_note_scope": "order",
+      "native_status_ambiguous": "P",
+      "uuid_present_in_native_reader_event": false,
+      "independent_store_link_proven": true,
+      "ifood_uuid_to_native_key_binding_proven": false,
+      "native_child_tables_exhaustively_read_proven": false,
+      "source_sql_transaction_atomicity_proven": false,
+      "production_or_physical_ready_proven": false,
+      "strong_commercial_order_identity_status": "CANDIDATE_NOT_ATTESTED",
+      "customer_pii_exported_to_repository": false,
+      "order_uuid_short_code_native_order_key_or_item_names_exported_to_repository": false,
+      "cashier_effects_performed": false,
+      "portal_effects_performed": false,
+      "constraints": "Browser connector read only; no manual detail action by assistant, no iFood API, no SQL, no print",
+      "merchant_ifood_id_verified": true,
+      "merchant_ifood_id": "53069",
+      "merchant_store_name": "Tatá Sushi",
+      "merchant_address_evidence": "Rua Joao Cachoeira, Vila Nova Conceicao, Sao Paulo, SP (authenticated store chooser)",
+      "merchant_store_chooser_count": 1,
+      "native_business_unit_scope": "0001/01",
+      "independent_merchant_to_native_administrative_context_correlated": true,
+      "native_administrator_ifood_enabled_in_itaim": true,
+      "native_stored_shadow_decision_present": true,
+      "native_shadow_decision_product_name_origin": "INTERNAL_CATALOG_MAPPED_DECISION_NOT_VENDOR_MASTER",
+      "product_names_confirmed_by_ifood_and_native_shadow_decision": 2,
+      "portal_order_product_lines": 2,
+      "matching_product_quantities": 2,
+      "native_source_event_line_codes_match_shadow_decision": true,
+      "native_shadow_order_key_hash_match_persisted_source_event": true,
+      "same_minute_native_candidate_count": 1,
+      "native_extended_order_note_rows": 1,
+      "independent_vendor_product_master_lookup_performed": false,
+      "vendor_item_child_table_rowset_exhausted": false,
+      "formal_ifood_uuid_to_native_key_attestation": false,
+      "contextual_real_order_source_correlation": "MULTIFACTOR_HISTORICAL_CANDIDATE",
+      "exact_child_table_coverage_status": "UNKNOWN",
+      "no_pricing_or_customer_identifiers_published": true
     }
   }
 }

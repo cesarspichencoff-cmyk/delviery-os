@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: m1_visual_change_authorization
   superseded_by: null
-  atualizado_em: "2026-10-20"
-  state_basis: 642fa1e
+  atualizado_em: "2026-11-15"
+  state_basis: 96be1b2
   missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B) · exceção leitura da rua (fora de M1B, 2026-10-09)
 ---
 
@@ -617,3 +617,18 @@ caminhos protegidos, comparada com HEAD, precisa caber em `AUTHORIZED_PATHS`.
 ## Revisao temporal de 15/10/2026 (sem ampliar autoridade)
 
 O commit 5ba2339 de 13/10 registrou o recorte historico da Q-019; o lifecycle ainda dizia 12/10. Esta revisao reconcilia a data documental sem alterar a janela historica, os baselines, a autorizacao de M1B ou a fronteira entre prova e producao.
+
+## Reader V3 + Gestor local — autorização específica de 15/11/2026
+
+César solicitou corrigir C6 de maneira estreita e continuar Reader V3 + Copiloto
+na PR #137. Esta exceção cobre somente os dois modelos de leitura já existentes:
+
+```
+src/product/viewmodels/home-operacao-ifood-vm.ts READER_V3_GESTOR_HOME_READ_ONLY
+src/product/viewmodels/home-pedidos-reader-vm.ts READER_V3_GESTOR_HOME_READ_ONLY
+```
+
+Não integra `AUTHORIZED_PATHS` de M1B. Não altera baseline, blobs históricos de
+Q-019, autoridade de Foco, impressão, serviços produtivos, credenciais ou ACLs.
+Ausência de leitura continua desconhecida; conciliação não autoriza ações.
+Guarda C6i: retirada individual, classe trocada e caminhos vizinhos reprovam.

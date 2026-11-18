@@ -113,18 +113,26 @@ function hora(iso) {
 function topo(vm) {
   const h = hora(vm.observado_em);
   // A etiqueta da demonstracao nao pode afirmar telemetria operacional viva.
-  const vivo = vm.degradado ? "falha" : vm.demonstracao ? "simulado" : "vivo";
+  // Leitura parcial nao e falha tecnica nem "ao vivo": e incompleta, e fala a
+  // linguagem do incompleto (neutro tracejado), com a hora do que foi lido.
+  const gestor = vm.rota_home && vm.operacao_ifood?.disponivel;
+  const vivo = gestor || vm.leitura_parcial_de_pedidos ? "parcial" : vm.degradado ? "falha" :
+    vm.demonstracao ? "simulado" : vm.sem_leitura_operacional ? "sem-fonte" : "vivo";
   return `<header class="org-topo">
     <span class="org-topo__marca">DeliveryOS</span>
     <span class="org-topo__casa">Tata</span>
     <span class="org-topo__vida" data-estado="${vivo}">
       <span class="org-topo__ponto" aria-hidden="true"></span>
       <span class="org-topo__nota">${
-        vm.degradado
+        gestor ? "Pedidos do iFood · leitura do Gestor" : vm.leitura_parcial_de_pedidos
+          ? `${vm.demonstracao ? "cenario simulado · " : ""}leitura parcial${h ? ` · Gestor lido as ${esc(h)}` : ""}`
+          : vm.degradado
           ? `leitura degradada${h ? ` · ultima leitura ${esc(h)}` : ""}`
           : vm.demonstracao
             ? `cenario simulado${h ? ` · horario da cena ${esc(h)}` : ""}`
-            : `ao vivo${h ? ` · leitura ${esc(h)}` : ""}`
+            : vm.sem_leitura_operacional
+              ? "sem leitura confiavel de pedidos"
+              : `ao vivo${h ? ` · leitura ${esc(h)}` : ""}`
       }</span>
     </span>
   </header>`;
@@ -158,15 +166,33 @@ function faixaDemonstracao(vm) {
  * Faixa de falha tecnica. Cinza-ardosia, no topo do palco, com a hora. Ela NAO
  * cresce, NAO fica ambar e NAO entra na contagem de pressao.
  */
+/**
+ * Faixa do incompleto. Fonte lida em parte NAO e falha tecnica: a ardosia fica
+ * para o que parou, e aqui entra o neutro tracejado, ANTES do territorio —
+ * porque esta frase qualifica tudo o que vem abaixo dela. O texto chega pronto.
+ */
+function faixaParcial(vm) {
+  if (!vm.leitura_parcial_de_pedidos || !vm.demanda_observada) return "";
+  const d = vm.demanda_observada;
+  return `<div class="org-parcial" role="status">
+    <span class="org-parcial__ponto" aria-hidden="true"></span>
+    <span class="org-parcial__texto">${esc(d.cobertura)} ${esc(d.estado_fisico)}${
+      d.retencao ? ` ${esc(d.retencao)}` : ""
+    }</span>
+  </div>`;
+}
+
 function faixaTecnica(vm) {
+  // Em leitura parcial quem fala e `faixaParcial`: as duas linguagens nao se cruzam.
+  if (vm.leitura_parcial_de_pedidos && vm.demanda_observada) return "";
   if (!vm.degradado) return "";
   const nomes = vm.fontes_degradadas.map((f) => f.rotulo).join(", ");
   const h = hora(vm.observado_em);
   return `<div class="org-tecnico" role="status">
     <span class="org-tecnico__ponto" aria-hidden="true"></span>
-    <span class="org-tecnico__texto">${esc(nomes)} sem leitura confiavel${
+    <span class="org-tecnico__texto">${esc(nomes)} ${vm.rota_home ? "sem medição confiável" : "sem leitura confiavel"}${
       h ? ` · ultima leitura as ${esc(h)}` : ""
-    }. O resto da operacao segue normal.</span>
+    }. As demais areas so podem ser avaliadas com leitura confiavel.</span>
   </div>`;
 }
 
@@ -175,9 +201,22 @@ function faixaTecnica(vm) {
  * ------------------------------------------------------------------ */
 
 function legenda(vm) {
+  if (vm.rota_home && vm.sem_leitura_operacional) {
+    return `<div class="org-legenda">
+      <span class="org-legenda__kicker">Delivery · Itaim</span>
+      <h1 class="org-legenda__frase">Operação do Itaim</h1>
+      <p class="org-legenda__apoio">A fila de preparo e de prontos vem do Gestor do iFood. A medição de cada área aparece no mapa.</p>
+    </div>`;
+  }
   const p = vm.pulso;
-  const pulso =
-    p.observado === true
+  const d = vm.leitura_parcial_de_pedidos ? vm.demanda_observada : null;
+  // "Observados no Gestor" e o que se pode afirmar. "Em andamento" afirmaria o
+  // total da casa, e isso a leitura parcial nao sustenta.
+  const pulso = d
+    ? `<p class="org-legenda__pulso"><span class="org-legenda__num">${esc(
+        d.total,
+      )}</span> ${d.total === 1 ? "pedido observado no Gestor" : "pedidos observados no Gestor"}</p>`
+    : p.observado === true
       ? `<p class="org-legenda__pulso"><span class="org-legenda__num">${esc(
           p.valor,
         )}</span> ${p.valor === 1 ? "pedido em andamento" : "pedidos em andamento"}</p>`
@@ -185,7 +224,9 @@ function legenda(vm) {
           p.explicacao,
         )}</p>`;
   return `<div class="org-legenda">
-    <span class="org-legenda__kicker">${esc(vm.modo)}</span>
+    <span class="org-legenda__kicker">${esc(
+      vm.leitura_parcial_de_pedidos ? "leitura parcial" : vm.sem_leitura_operacional ? "sem leitura" : vm.modo,
+    )}</span>
     <!--
       H1, e nao <p>. A pagina nao tinha nenhum h1 (medido em M1B-R2 §D): a
       estrutura comecava em h2, e leitor de tela e navegacao por cabecalho
@@ -270,10 +311,10 @@ function subarea(s) {
 function area(a, vm) {
   const ausencia = especieDeAusencia(a);
   const forma = FORMA[a.id] || "pilula";
-  const href = `?${new URLSearchParams({
+  const href = vm.rota_home ? `#${vm.rota_home}&area=${encodeURIComponent(a.id)}` : `?${new URLSearchParams({
     ...(vm.cena ? { cena: vm.cena } : {}),
     area: a.id,
-  }).toString()}#/`;
+  }).toString()}#${vm.rota_home ?? "/"}`;
 
   // A causadora vem PRIMEIRO, e a troca acontece no DOM — nao com `order` no
   // CSS, que separaria a ordem vista da ordem lida por teclado e por leitor de
@@ -497,7 +538,7 @@ function aproximacao(vm, id) {
   const a = vm.ambientes.find((x) => x.id === id);
   if (!a) return "";
   const ausencia = especieDeAusencia(a);
-  const volta = `?${new URLSearchParams(vm.cena ? { cena: vm.cena } : {}).toString()}#/`;
+  const volta = vm.rota_home ? `#${vm.rota_home}` : `?${new URLSearchParams(vm.cena ? { cena: vm.cena } : {}).toString()}#/`;
 
   const entram = vm.ligacoes.filter((l) => l.para === id);
   const saem = vm.ligacoes.filter((l) => l.de === id);
@@ -702,6 +743,88 @@ function aprofundamento(vm) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Demanda observada — o que cada pedido leva
+ * ------------------------------------------------------------------ */
+
+/**
+ * O conteudo dos pedidos observados: quantidade, produto, opcoes e observacao,
+ * cada observacao sob o item a que pertence. Nivel 1 de evidencia, e a propria
+ * secao diz isso: de onde veio, a que horas foi lido e o que NAO esta afirmado.
+ *
+ * Nao e uma grade de cartoes nem uma tabela: e um indice editorial que corre em
+ * colunas, com a mesma tipografia do organismo. Nao ha controle — o pedido nao
+ * e clicavel, porque nao existe acao a executar sobre ele aqui.
+ *
+ * Tudo chega pronto em `vm.demanda_observada`. Esta funcao nao conta, nao
+ * ordena, nao classifica e nao decide o que e atual.
+ */
+function pedidosObservados(vm) {
+  const d = vm.demanda_observada;
+  if (!d) return "";
+  const lido = hora(d.lido_em);
+  const item = (i) => `<li class="org-pedido__item">
+      <span class="org-pedido__qtd">${esc(i.quantidade)}×</span>
+      <span class="org-pedido__nome">${esc(i.nome)}</span>
+      ${
+        i.opcoes.length
+          ? `<ul class="org-pedido__opcoes">${i.opcoes
+              .map((o) => `<li>${esc(o.quantidade)}× ${esc(o.nome)}</li>`)
+              .join("")}</ul>`
+          : ""
+      }
+      ${
+        i.observacao
+          ? `<p class="org-pedido__obs"><span class="org-pedido__obs-rotulo">Obs.</span>${esc(
+              i.observacao,
+            )}</p>`
+          : ""
+      }
+    </li>`;
+  const pedido = (p) => {
+    const quando = p.colocado_em ? hora(p.colocado_em) : null;
+    const visto = hora(p.visto_desde);
+    const alterado = p.revisoes > 1 ? hora(p.revisado_em) : null;
+    // O nivel de evidencia vem pronto por pedido. Solido = duas fontes
+    // concordam; tracejado = so foi visto. A divergencia entre as fontes e
+    // dita em texto, sob o pedido a que pertence.
+    return `<li class="org-pedido" data-nivel="${esc(p.nivel)}">
+      <div class="org-pedido__topo">
+        <span class="org-pedido__codigo">${esc(p.codigo)}</span>
+        <span class="org-pedido__hora">${
+          quando ? `pedido das ${esc(quando)}` : visto ? `visto desde ${esc(visto)}` : ""
+        }</span>
+        ${alterado ? `<span class="org-pedido__rev">alterado as ${esc(alterado)}</span>` : ""}
+        <span class="org-pedido__nivel">${esc(p.nivel_texto)}</span>
+      </div>
+      ${
+        p.conciliacao_detalhe
+          ? `<p class="org-pedido__cruzamento">${esc(p.conciliacao_detalhe)}</p>`
+          : ""
+      }
+      <ul class="org-pedido__itens">${p.itens.map(item).join("")}</ul>
+    </li>`;
+  };
+  return `<section class="org-pedidos" aria-labelledby="pedidosTitulo">
+    <span class="org-pedidos__kicker">${esc(d.procedencia === "real" ? "leitura parcial" : "leitura simulada")}</span>
+    <h2 class="org-pedidos__titulo" id="pedidosTitulo">${esc(d.titulo)}</h2>
+    <p class="org-pedidos__origem">${esc(d.origem)}${lido ? ` · lido as ${esc(lido)}` : ""} · ${esc(
+      d.total,
+    )} ${d.total === 1 ? "pedido" : "pedidos"} · ${esc(d.unidades)} ${
+      d.unidades === 1 ? "unidade" : "unidades"
+    }</p>
+    <p class="org-pedidos__limite">${esc(d.conciliacao)}</p>
+    ${
+      d.ocultos_por_cancelamento_alegado > 0
+        ? `<p class="org-pedidos__limite">${esc(d.ocultos_por_cancelamento_alegado)} ${
+            d.ocultos_por_cancelamento_alegado === 1 ? "pedido montado nao aparece" : "pedidos montados nao aparecem"
+          } aqui: o iFood declara cancelamento.</p>`
+        : ""
+    }
+    <ol class="org-pedidos__lista">${d.pedidos.map(pedido).join("")}</ol>
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ *
  * O RESTO — condensado, nunca escondido (M1B)
  * ------------------------------------------------------------------ */
 
@@ -747,8 +870,8 @@ function aprofundamento(vm) {
  *
  * A LEI QUE NAO MUDA: recuar nunca e sumir (D42). Nada saiu do DOM.
  */
-function dobra(id, rotulo, corpo) {
-  return `<details class="org-dobra" id="dobra-${esc(id)}">
+function dobra(id, rotulo, corpo, aberta = false) {
+  return `<details class="org-dobra" id="dobra-${esc(id)}"${aberta ? " open" : ""}>
     <summary class="org-dobra__gatilho">
       <span class="org-dobra__rotulo">${esc(rotulo)}</span>
       <span class="org-dobra__sinal" aria-hidden="true"></span>
@@ -762,6 +885,7 @@ function resto(vm) {
   const criticos = vm.sinais_em_segundo_plano.filter((s) => s.severidade >= 3).length;
   const semFonte = vm.sinais_indisponiveis.length;
   const degradadas = vm.fontes.filter((f) => f.estado !== "saudavel").length;
+  const cargaSemMedicao = vm.sem_leitura_operacional && vm.rota_home && vm.operacao_ifood?.disponivel;
 
   const resumoLinha = [
     n === 0
@@ -770,7 +894,9 @@ function resto(vm) {
           criticos > 0 ? `, ${criticos} em pressao` : ""
         }`,
     `${semFonte} do catalogo sem fonte`,
-    degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
+    cargaSemMedicao ? "carga operacional sem medição" :
+      vm.sem_leitura_operacional ? "pedidos sem fonte confiavel" :
+      degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 
   return `<section class="org-resto">
@@ -848,6 +974,257 @@ function resto(vm) {
   </section>`;
 }
 
+/* ------------------------------------------------------------------ *
+ * Entregas na rua — a mesma leitura da superficie /entregas (decisao do Cesar,
+ * 15/11). Linha calma com a contagem e uma dobra com as viagens e o que pede
+ * conferencia. Sem mapa, sem coordenada, sem previsao: so o que tem fato, com a
+ * idade de cada fato. Sem leitura, a ausencia declarada — nunca zero.
+ * ------------------------------------------------------------------ */
+
+function viagemNaRua(v) {
+  // `idade` ja vem legivel do viewmodel ("ha 1 min"): nao repetir o "ha".
+  const idade = v.posicao && v.posicao.observado ? `posicao ${v.posicao.idade}` : "sem posicao confiavel";
+  return `<li class="org-sinal" data-frescor="${esc(v.frescor)}" data-procedencia="${esc(v.procedencia)}">
+    <span class="org-sinal__nome">${esc(v.aparelho || "Aparelho fora do cadastro lido")}</span>
+    <span class="org-sinal__resumo">${esc(v.estado_legivel)} · ${esc(idade)}${
+      v.ocorrencias > 0 ? ` · ${esc(String(v.ocorrencias))} ocorrencia(s) registrada(s)` : ""
+    }${v.procedencia !== "real" ? ` · ${esc(v.procedencia)}` : ""}</span>
+  </li>`;
+}
+
+function entregasNaRua(rua) {
+  if (!rua) return "";
+  if (!rua.disponivel) {
+    return `<section class="org-resto org-entregas" data-entregas="indisponivel">
+      <div class="org-resto__linha">
+        <span class="org-resto__rotulo">entregas na rua</span>
+        <span class="org-resto__conta">${esc(rua.titulo)}</span>
+      </div>
+      <p class="org-resto__nota">${esc(rua.explicacao)} ${esc(rua.restricao)}</p>
+    </section>`;
+  }
+  const c = rua.contagens;
+  // "Na rua" exige o ciclo da viagem (saida). Viagem com posicao recente e ciclo nao
+  // confirmado tambem e rua para quem acompanha: dizer "nenhuma viagem" com motoboy
+  // mandando posicao agora seria falso (medido na prova visual de 15/11).
+  const comPosicao = c.ciclo_desconhecido_com_posicao;
+  const linha = [
+    c.na_rua === 0 && comPosicao === 0
+      ? "Nenhuma viagem com posicao recente nesta leitura"
+      : c.na_rua > 0 ? `${c.na_rua} ${c.na_rua === 1 ? "viagem na rua" : "viagens na rua"}` : null,
+    comPosicao > 0 ? `${comPosicao} com posicao recente, saida e fim nao confirmados` : null,
+    c.na_rua_sem_posicao_recente > 0 ? `${c.na_rua_sem_posicao_recente} sem posicao recente` : null,
+    c.aguardando_saida > 0 ? `${c.aguardando_saida} aguardando saida` : null,
+    c.conferir > 0 ? `${c.conferir} para conferir` : null,
+    `lida as ${rua.lida_as}`,
+  ].filter(Boolean).join(" · ");
+  const naRua = [...rua.viagens.na_rua, ...rua.viagens.ciclo_desconhecido_com_posicao];
+  return `<section class="org-resto org-entregas" data-entregas="observado" data-solidez="${esc(rua.solidez)}">
+    <div class="org-resto__linha">
+      <span class="org-resto__rotulo">entregas na rua</span>
+      <span class="org-resto__conta">${esc(linha)}</span>
+      <span class="org-fonte__selo">${selos(rua.selos)}</span>
+    </div>
+    ${naRua.length ? dobra("entregas-na-rua", `Ver as ${naRua.length} ${naRua.length === 1 ? "viagem" : "viagens"} com posicao`, `<ul class="org-sinais">${naRua.map(viagemNaRua).join("")}</ul>`) : ""}
+    ${rua.conferir.length ? dobra("entregas-conferir", `Ver o que pede conferencia (${rua.conferir.length})`,
+      `<ul class="org-sinais">${rua.conferir.map((x) => `<li class="org-sinal">
+        <span class="org-sinal__nome">${esc(x.titulo)}</span>
+        <span class="org-sinal__resumo">${esc(x.detalhe)}${x.desde && x.desde.observado ? ` · desde ${esc(x.desde.idade)}` : ""}</span>
+        <span class="org-ctx__ausencia">${esc(x.restricao)}</span>
+      </li>`).join("")}</ul>`) : ""}
+    ${rua.restricao ? `<p class="org-resto__nota">${esc(rua.restricao)}</p>` : ""}
+    <ul class="org-aprof"><li><a class="org-aprof__link" href="#/entregas"><span class="org-aprof__nome">Entregas</span><span class="org-aprof__papel">viagens, aparelhos e conferencia em detalhe</span></a></li></ul>
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * Pedidos do iFood (Gestor local) conciliados com a Teknisa. A etapa e a oficial do iFood; a
+ * conferencia de itens e da Teknisa; o alerta de preparo compara com o tempo informado ao iFood.
+ * Atencao so aparece quando ha o que conferir; o resto fica na dobra.
+ * ------------------------------------------------------------------ */
+
+function pedidoDoIfood(p) {
+  const itens = p.itens.map((i) => `<li>${esc(i.descricao)}${i.opcoes.length ? ` (${esc(i.opcoes.join(", "))})` : ""}${
+    i.observacao ? ` — <em>${esc(i.observacao)}</em>` : ""}</li>`).join("");
+  const preparo = p.preparo ? ` · preparo informado ${esc(String(p.preparo.informado_min))} min${
+    p.preparo.passou_min ? `, passou ${esc(String(p.preparo.passou_min))} min` : ""}` : "";
+  return `<li class="org-sinal" data-ativo="${p.ativo ? "sim" : "nao"}" data-teknisa="${esc(p.teknisa.classe)}">
+    <span class="org-sinal__nome">${esc(p.hora)} · ${esc(p.codigo)} · ${esc(p.etapa)}</span>
+    <span class="org-sinal__resumo">${esc(p.modalidade)} · ha ${esc(String(p.minutos))} min${preparo} · ${esc(p.teknisa.texto)}${
+      p.teknisa.estado ? ` (estado ${esc(p.teknisa.estado)})` : ""}</span>
+    <ul class="org-ctx__sinais">${itens}</ul>
+    ${p.detalhes.length ? `<p class="org-ctx__ausencia">${esc(p.detalhes.join(" · "))}</p>` : ""}
+    ${p.horarios_gestor ? `<p class="org-ctx__ausencia">Horários do iFood: ${Object.entries(p.horarios_gestor)
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([evento, instante]) => `${esc(evento)} ${esc(new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit"
+      }).format(new Date(instante)))}`).join(" · ")}</p>` : ""}
+    ${p.leitor ? `<div class="org-ctx__ausencia">Leitura da Teknisa · revisão ${esc(p.leitor.revisao.slice(0, 10))}</div>
+      <ul class="org-sinais">${pedidoDaTeknisa(p.leitor.pedido)}</ul>` : ""}
+  </li>`;
+}
+
+function totalDosItens(itens) {
+  return itens.reduce((total, item) => total + item.quantidade, 0);
+}
+
+function filaPorProduto(itens, linha, etapa) {
+  const produtos = new Map();
+  for (const item of itens) {
+    if (!item.produto || !Number.isFinite(item.quantidade) || item.quantidade <= 0) continue;
+    const chave = JSON.stringify([item.codigo_produto, item.produto]);
+    const produto = produtos.get(chave) ?? { nome: item.produto, itens: [] };
+    produto.itens.push(item);
+    produtos.set(chave, produto);
+  }
+  const numeros = linhas => {
+    const pedidos = new Map();
+    for (const item of linhas) {
+      const chave = JSON.stringify([item.hora, item.codigo]);
+      const pedido = pedidos.get(chave) ?? { codigo: item.codigo, quantidade: 0 };
+      pedido.quantidade += item.quantidade;
+      pedidos.set(chave, pedido);
+    }
+    return [...pedidos.values()].map(p => `#${esc(p.codigo)} ×${esc(String(p.quantidade))}`).join(" · ");
+  };
+  const lista = [...produtos].sort(([, a], [, b]) => a.nome.localeCompare(b.nome, "pt-BR")).map(([chave, p]) =>
+    `<li class="org-sinal"><details class="org-fila__produto" id="fila-${esc(etapa)}-${esc(chave)}">
+      <summary><span class="org-sinal__nome">${esc(String(totalDosItens(p.itens)))} × ${esc(p.nome)}</span>
+        <span class="org-fila__pedidos">${numeros(p.itens)}</span>
+      </summary>
+      <ul class="org-previa__itens">${p.itens.map(linha).join("")}</ul>
+    </details></li>`).join("");
+  const semItens = itens.filter(item => !item.produto);
+  const faltantes = semItens.length
+    ? `<p class="org-resto__nota">Pedidos sem itens na leitura · ${semItens.map(p => `#${esc(p.codigo)}`).join(" · ")}</p>` : "";
+  return (lista ? `<ul class="org-sinais">${lista}</ul>` : '<p class="org-resto__nota">Nenhum item nesta etapa.</p>') + faltantes;
+}
+
+function filaDoItaim(o, atencao, detalhes) {
+  const previa = o.previa_por_praca;
+  const linha = i => `<li>
+    <span class="org-sinal__nome">${esc(i.descricao ?? "Pedido")}</span>
+    <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.etapa ? ` · ${esc(i.etapa)}` : ""}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
+    ${i.opcoes?.length ? `<span class="org-sinal__resumo">Opções · ${esc(i.opcoes.join(" · "))}</span>` : ""}
+    ${(i.observacoes ?? []).map(n => `<span class="org-previa__nota"><strong>${esc(n.fonte)}</strong> ${esc(n.texto)}</span>`).join("")}
+    ${i.conferir_observacao ? '<span class="org-sinal__resumo">Conferir a observação com a Teknisa.</span>' : ""}
+  </li>`;
+  const grupos = previa.grupos.map(p => `<li class="org-sinal">
+    <span class="org-sinal__nome">${esc(p.rotulo)}</span>
+    <ul class="org-previa__itens">${p.itens.map(linha).join("")}</ul>
+  </li>`).join("");
+  const pendentes = previa.pendentes.length ? `<li class="org-sinal">
+    <span class="org-sinal__nome">A conferir</span>
+    <ul class="org-previa__itens">${previa.pendentes.map(linha).join("")}</ul>
+  </li>` : "";
+  const notasGerais = previa.notas_gerais?.length ? dobra("ifood-notas-gerais", "Notas gerais no caixa",
+    `<p class="org-resto__nota">Estas notas pertencem à comanda inteira.</p><ul class="org-ctx__sinais">${previa.notas_gerais.map(n =>
+      `<li>${esc(n.hora)} · #${esc(n.codigo)}</li>`).join("")}</ul>`) : "";
+  const itens = [...previa.grupos.flatMap(grupo => grupo.itens), ...previa.pendentes];
+  const etapa = (id, titulo, total, corpo) => dobra(id, `${titulo} · ${total} ${total === 1 ? "pedido" : "pedidos"}`, corpo);
+  const emEntrega = o.pedidos.filter(p => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino");
+  const instante = new Date(o.lido_em);
+  const atualizado = Number.isFinite(instante.getTime()) ? new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
+  }).format(instante) : "";
+  return `<section class="org-resto org-ifood org-fila" data-ifood="lido" data-velha="nao" aria-label="Pedidos do Itaim">
+    <div class="org-fila__topo">
+      <h2>Pedidos do Itaim</h2>
+      <p>Gestor do iFood${atualizado ? ` · Atualizado às ${esc(atualizado)}` : ""}</p>
+    </div>
+    <div class="org-fila__fluxo">
+      ${etapa("ifood-em-preparo", "Em preparo", o.contagens.em_preparo, filaPorProduto(itens.filter(i => i.etapa === "em preparo"), linha, "preparo"))}
+      ${etapa("ifood-prontos", "Prontos", o.contagens.prontos, filaPorProduto(itens.filter(i => i.etapa === "pronto"), linha, "prontos"))}
+      ${etapa("ifood-em-entrega", "Saíram para entrega", o.contagens.na_rua,
+        emEntrega.length ? `<ul class="org-sinais">${emEntrega.map(pedidoDoIfood).join("")}</ul>`
+          : '<p class="org-resto__nota">Nenhum pedido nesta etapa.</p>')}
+    </div>
+    ${dobra("ifood-conferencia", o.atencao.length ? `Conferência por praça · ${o.atencao.length} avisos` : "Conferência por praça",
+      atencao + (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
+        : '<p class="org-resto__nota">Nenhum pedido em preparo ou pronto nesta leitura.</p>') + notasGerais)}
+    ${dobra("ifood-detalhes", "Histórico e fontes", detalhes)}
+  </section>`;
+}
+
+export function operacaoDoIfood(o) {
+  if (!o) return "";
+  if (!o.disponivel) {
+    return `<section class="org-resto org-ifood" data-ifood="indisponivel">
+      <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
+      <span class="org-resto__conta">${esc(o.titulo)}</span></div>
+      <p class="org-resto__nota">${esc(o.explicacao)}</p>
+    </section>`;
+  }
+  const c = o.contagens;
+  const linha = [o.titulo, c.em_preparo ? `${c.em_preparo} em preparo` : null, c.prontos ? `${c.prontos} pronto(s)` : null,
+    c.na_rua ? `${c.na_rua} na rua` : null].filter(Boolean).join(" · ");
+  const velho = o.leitura_velha
+    ? `<p class="org-resto__nota">${o.gravado_ha_min === null ? "Sem data da ultima gravacao do Gestor." : `O Gestor nao grava ha ${esc(String(o.gravado_ha_min))} min; esta leitura pode estar velha.`}</p>` : "";
+  const atencao = o.atencao.length
+    ? `<ul class="org-sinais" data-atencao="sim">${o.atencao.map((a) => `<li class="org-sinal"><span class="org-sinal__nome">${esc(a.hora)} · ${esc(a.codigo)}</span><span class="org-sinal__resumo">${esc(a.motivo)}</span></li>`).join("")}</ul>` : "";
+  const k = o.conciliacao;
+  const conc = `Na janela ${esc(o.janela || "—")}: ${k.correspondencia_comprovada} conferem com a Teknisa` +
+    (k.complemento_nao_lido_pela_teknisa ? ` · ${k.complemento_nao_lido_pela_teknisa} com complemento nao lido` : "") +
+    (k.sem_comanda_na_teknisa ? ` · ${k.sem_comanda_na_teknisa} sem comanda vista` : "") +
+    (k.item_ou_quantidade_divergente ? ` · ${k.item_ou_quantidade_divergente} com itens diferentes` : "") +
+    (k.somente_na_teknisa_na_janela ? ` · ${k.somente_na_teknisa_na_janela} so na Teknisa` : "");
+  const detalhes = `
+    ${o.pedidos.length ? dobra("ifood-pedidos", `Ver os ${o.pedidos.length} pedidos do Gestor`,
+      `<ul class="org-sinais">${o.pedidos.map(pedidoDoIfood).join("")}</ul>`) : ""}
+    <p class="org-resto__nota">${conc}</p>
+    ${dobra("ifood-limites", `Ver o que esta leitura nao prova (${o.limitacoes.length})`,
+      `<ul class="org-sinais">${o.limitacoes.map((l) => `<li class="org-sinal"><span class="org-sinal__resumo">${esc(l)}</span></li>`).join("")}</ul>`)}
+  `;
+  if (o.previa_por_praca) return filaDoItaim(o, atencao, detalhes);
+  return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
+    <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
+    <span class="org-resto__conta">${esc(linha)}</span></div>
+    ${velho}${atencao}${detalhes}
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * Pedidos da Teknisa (Reader V3) — o que o Reader viu, com itens e observacoes de texto, e sempre
+ * o que a fonte NAO le. Estado da Teknisa como codigo, sem interpretar. Sem leitura, ausencia dita.
+ * ------------------------------------------------------------------ */
+
+function pedidoDaTeknisa(p) {
+  const itens = p.itens.map((i) => `<li>${esc(i.quantidade)}× ${esc(i.descricao)}${
+    i.observacoes && i.observacoes.length ? ` — <em>${esc(i.observacoes.join(" · "))}</em>` : ""}</li>`).join("");
+  const obsPedido = p.observacoes_do_pedido && p.observacoes_do_pedido.length
+    ? `<p class="org-ctx__ausencia">Pedido: ${esc(p.observacoes_do_pedido.join(" · "))}</p>` : "";
+  return `<li class="org-sinal" data-retido="${p.retido ? "sim" : "nao"}">
+    <span class="org-sinal__nome">${esc(p.hora)} · ${esc(p.codigo || "sem codigo")} · ${esc(p.origem)}</span>
+    <span class="org-sinal__resumo">${esc(p.turno)} · Teknisa: ${esc(p.estado_teknisa)}${
+      p.retido ? ` · retido (${esc(p.motivos.join(", "))})` : ""} · ${esc(p.observacoes)}</span>
+    <ul class="org-ctx__sinais">${itens}</ul>
+    ${obsPedido}
+  </li>`;
+}
+
+function pedidosDaTeknisa(t) {
+  if (!t) return "";
+  if (!t.disponivel) {
+    return `<section class="org-resto org-teknisa" data-teknisa="indisponivel">
+      <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos na teknisa</span>
+      <span class="org-resto__conta">${esc(t.titulo)}</span></div>
+      <p class="org-resto__nota">${esc(t.explicacao)}</p>
+    </section>`;
+  }
+  const c = t.contagens;
+  const linha = [t.titulo, c.retidos > 0 ? `${c.retidos} retido(s)` : null,
+    c.estado_x > 0 ? `${c.estado_x} com estado X na Teknisa` : null].filter(Boolean).join(" · ");
+  return `<section class="org-resto org-teknisa" data-teknisa="lido" data-hoje="${t.dia_e_hoje ? "sim" : "nao"}">
+    <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos na teknisa</span>
+    <span class="org-resto__conta">${esc(linha)}</span></div>
+    ${t.pedidos.length ? dobra("teknisa-pedidos", `Ver ${t.pedidos.length === c.pedidos ? "os" : `os ${t.pedidos.length} mais recentes de`} ${c.pedidos} pedidos`,
+      `<ul class="org-sinais">${t.pedidos.map(pedidoDaTeknisa).join("")}</ul>`) : ""}
+    <p class="org-resto__nota">${esc(t.completude)}</p>
+    ${dobra("teknisa-limites", `Ver o que esta leitura nao prova (${t.limitacoes.length})`,
+      `<ul class="org-sinais">${t.limitacoes.map((l) => `<li class="org-sinal"><span class="org-sinal__resumo">${esc(l)}</span></li>`).join("")}</ul>`)}
+  </section>`;
+}
+
 /* ------------------------------------------------------------------ */
 
 /**
@@ -856,12 +1233,14 @@ function resto(vm) {
  */
 function areaAmpliada(vm) {
   if (typeof window === "undefined" || !window.location) return null;
-  const id = new URLSearchParams(window.location.search).get("area");
+  const consulta = vm.rota_home ? window.location.hash.split("?")[1] : window.location.search;
+  const id = new URLSearchParams(consulta).get("area");
   return id && vm.ambientes.some((a) => a.id === id) ? id : null;
 }
 
 export function telaHome(vm) {
   const ampliada = areaAmpliada(vm);
+  const pedidos = vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood);
   return `<div class="org" data-modo="${esc(vm.modo)}" data-degradado="${
     vm.degradado ? "sim" : "nao"
   }" data-demonstracao="${vm.demonstracao ? "sim" : "nao"}" data-vista="${
@@ -869,6 +1248,8 @@ export function telaHome(vm) {
   }">
     ${faixaDemonstracao(vm)}
     ${topo(vm)}
+    ${vm.rota_home && !ampliada ? pedidos : ""}
+    ${faixaParcial(vm)}
     <div class="org-palco">
       ${faixaTecnica(vm)}
       ${
@@ -898,6 +1279,10 @@ export function telaHome(vm) {
             }</div>`
       }
     </div>
+    ${pedidosObservados(vm)}
+    ${!vm.rota_home || ampliada ? pedidos : ""}
+    ${pedidosDaTeknisa(vm.pedidos_teknisa)}
+    ${entregasNaRua(vm.entregas)}
     ${resto(vm)}
   </div>`;
 }

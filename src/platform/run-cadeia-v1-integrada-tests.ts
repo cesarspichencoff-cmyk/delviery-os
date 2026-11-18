@@ -343,6 +343,18 @@ async function main(): Promise<void> {
       assert.equal(textos.includes("Rua Sintética"), false, "rótulo com endereço chegou à apresentação");
     });
 
+    await teste("I3b a Home do gerente mostra a viagem que SAIU como 'na rua', com o ciclo vindo do piloto, simulada e sem endereço (D103)", async () => {
+      type Rua = { disponivel: boolean; contagens: { na_rua: number }; viagens: { na_rua: Array<{ viagem_id: string; estado: string; procedencia: string }> } };
+      const h = await ate("Home com T1 na rua", async () => {
+        const x = (await ler(`/api/home?unit_id=${UNIT}`)).json as { entregas?: Rua };
+        return x.entregas?.disponivel && x.entregas.viagens.na_rua.some((v) => v.viagem_id === "T1") ? x : null;
+      });
+      const t1 = h.entregas!.viagens.na_rua.find((v) => v.viagem_id === "T1")!;
+      assert.equal(t1.estado, "em_rota", `estado: ${t1.estado}`);
+      assert.equal(t1.procedencia, "simulado");
+      assert.equal(JSON.stringify(h.entregas).includes("Rua Sintética"), false, "endereço chegou à Home");
+    });
+
     await teste("I4 identidades que não escrevem: o observador é barrado no piloto; o papel de leitura é barrado no banco", async () => {
       const r = await api("/api/command", tok.obs, { type: "CreateTrip", command_id: "obs-x", unit_id: UNIT, trip_id: "TX",
         courier_actor_id: "rid-1", deliveries: [], occurred_at: new Date().toISOString() });

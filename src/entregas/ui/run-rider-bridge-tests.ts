@@ -389,6 +389,24 @@ async function main(): Promise<void> {
       try {
         await montarViagem(p, "T-NAV-1");
         const { ctx, page, erros } = await abrir(browser, p, null);
+        await teste("A0 cabeçalhos CSP e login externo preservam o boot do motoboy", async () => {
+          const response = await page.request.get(`${p.base}/rider-mobile/`);
+          assert.equal(response.status(), 200);
+          const headers = response.headers();
+          assert.equal(headers["content-security-policy"], "frame-ancestors 'none'");
+          assert.equal(headers["x-frame-options"], "DENY");
+          assert.equal(headers["x-content-type-options"], "nosniff");
+          const html = await response.text();
+          const cspAt = html.indexOf('http-equiv="Content-Security-Policy"');
+          const bootAt = html.indexOf('<script src="/rider-mobile/pilot-session-boot.js"></script>');
+          assert.ok(cspAt >= 0 && bootAt > cspAt, "CSP precisa anteceder o boot externo");
+          assert.doesNotMatch(html, /<script>(?:\s|\/\* pilot-session-boot)/);
+          const external = await page.request.get(`${p.base}/rider-mobile/pilot-session-boot.js`);
+          assert.equal(external.status(), 200);
+          assert.match(await external.text(), /window\.entregasPilotLogin/);
+          assert.equal(await page.evaluate(() =>
+            typeof (window as unknown as { entregasPilotLogin?: unknown }).entregasPilotLogin), "function");
+        });
         await teste("A1 sem EntregasNative, a saída confirma e a viagem vai para em_rota", async () => {
           await confirmarSaida(page);
           for (let i = 0; i < 40 && (await estadoDaViagem(p, "T-NAV-1")) !== "em_rota"; i++) await pausa(100);

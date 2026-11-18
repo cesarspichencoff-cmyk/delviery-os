@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>BANCADA — pagina sintetica (NAO e o Gestor)</title>
+<style>
+  body { font: 16px system-ui, sans-serif; margin: 24px; }
+  h1 { font-size: 18px; }
+  article { border: 1px solid #999; padding: 8px 12px; margin: 8px 0; width: 320px; }
+</style>
+</head>
+<body>
+<h1>BANCADA DE LABORATORIO — pedidos sinteticos, nenhum dado real</h1>
+<main id="board"></main>
+<script>
+/*
+ * Imita SO o que o sensor le: cartoes `[data-testid="card"]` com um unico
+ * `__reactFiber$...` cuja cadeia `.return` carrega `memoizedProps.order`.
+ * Os pedidos vem de /orders.json, que o roteiro da bancada altera.
+ *
+ * A pagina tambem se vigia: conta mutacoes de DOM que nao sao dela, eventos de
+ * entrada e globais novos. O executor em teste nao pode mexer em nenhum deles.
+ */
+(function () {
+  "use strict";
+  var board = document.getElementById("board");
+  var rendering = false, last = "";
+  var probe = { armed: false, foreignMutations: 0, inputEvents: 0, renders: 0, globalsAtLoad: 0, navigations: 0 };
+  // Armado so depois do `load`: antes disso o proprio parser ainda insere nos
+  // (medido: 3 registros de `childList` vindos do fim do documento).
+  window.addEventListener("load", function () {
+    new MutationObserver(function (list) { if (!rendering) probe.foreignMutations += list.length; })
+      .observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+    probe.globalsAtLoad = Object.keys(window).length;
+    probe.armed = true;
+  });
+  ["click", "mousedown", "keydown", "focus", "blur", "scroll", "wheel", "input", "pointerdown"].forEach(function (t) {
+    window.addEventListener(t, function () { probe.inputEvents += 1; }, true);
+  });
+  window.addEventListener("beforeunload", function () { probe.navigations += 1; });
+  function render(orders) {
+    rendering = true;
+    board.textContent = "";
+    orders.forEach(function (order) {
+      var card = document.createElement("article");
+      card.setAttribute("data-testid", "card");
+      card.textContent = "Pedido #" + order.displayId + " — " + order.items.length + " linha(s)";
+      card["__reactFiber$bancada"] = { memoizedProps: {}, return: { memoizedProps: { order: order }, return: null } };
+      board.appendChild(card);
+    });
+    probe.renders += 1;
+    // O MutationObserver entrega em microtarefa: so depois dela a guarda cai.
+    Promise.resolve().then(function () { rendering = false; });
+  }
+  function poll() {
+    fetch("/orders.json", { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (text) {
+      if (text !== last) { last = text; render(JSON.parse(text)); }
+    }).catch(function () { /* a bancada pode estar encerrando */ });
+  }
+  Object.defineProperty(window, "__bancada", { value: probe, enumerable: false });
+  poll();
+  setInterval(poll, 700);
+})();
+</script>
+</body>
+</html>

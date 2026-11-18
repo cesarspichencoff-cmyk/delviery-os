@@ -196,6 +196,10 @@ services:
       # Opcional até o despacho canônico ser ativado. JSON unit_id->segredo;
       # cada piloto recebe só o segredo da própria unidade.
       DELIVERYOS_PILOT_READ_SECRETS: ${DELIVERYOS_PILOT_READ_SECRETS:-}
+      # X1 (D100): concessão de captura por viagem, JSON unit_id->segredo,
+      # igual ao ENTREGAS_TRIP_GRANT_SECRET do piloto da unidade. Vazio =
+      # ingestão de GPS FECHADA (503 retentável): falha fechada, nunca aberta.
+      DELIVERYOS_PILOT_TRIP_GRANT_SECRETS: ${DELIVERYOS_PILOT_TRIP_GRANT_SECRETS:-}
       # Natureza dos fatos que ESTA instância grava: real, simulated ou control
       # (Q-017). Só aqui, e não em `x-ambiente`: só o crítico carimba fato. O
       # assíncrono consome e reconstrói com o modo que cada fato já traz.

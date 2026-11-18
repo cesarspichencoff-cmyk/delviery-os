@@ -5,13 +5,17 @@
 const { buildTataComandaOrderTruthV1, selectLatestTataComandaOrderTruthRevisionV1 } =
   require('./tata_comanda_order_truth_v1.cjs');
 const MODES = new Set(['real', 'simulated', 'control']);
+const {explicitInstant}=require('./tata_source_time_v1.cjs');
 
 function projectTataOrdersForCopilotV1({ unitId, sourceUnitId, revisions, now, maxAgeMs }) {
   if (typeof unitId !== 'string' || !unitId.trim() || typeof sourceUnitId !== 'string' || !sourceUnitId.trim())
     throw Error('EXPLICIT_UNIT_MAPPING_REQUIRED');
-  const clock = Date.parse(now);
-  if (!Number.isFinite(clock) || !Number.isSafeInteger(maxAgeMs) || maxAgeMs <= 0)
+  // Date.parse("2026-...T20:00:00") assumes a host timezone and
+  // Date.parse of some impossible dates normalizes them. Neither is a
+  // defensible freshness clock for an operational order.
+  if (!explicitInstant(now) || !Number.isSafeInteger(maxAgeMs) || maxAgeMs <= 0)
     throw Error('EXPLICIT_FRESHNESS_POLICY_REQUIRED');
+  const clock = Date.parse(now);
   const common = { schema: 'deliveryos.copiloto-tata-orders.v1', unit_id: unitId,
     source_unit_id: sourceUnitId, read_at: now, live_source_verified: false,
     operational_order_total: null, no_action_executed: true };
@@ -23,6 +27,14 @@ function projectTataOrdersForCopilotV1({ unitId, sourceUnitId, revisions, now, m
     if (!input || typeof input.identity?.unit_id !== 'string') throw Error('SOURCE_UNIT_REQUIRED');
     if (input.identity.unit_id !== sourceUnitId) continue;
     if (!MODES.has(input.source_mode)) throw Error('EXPLICIT_SOURCE_MODE_REQUIRED');
+    // An event may enter from a future caller that bypasses the Reader
+    // adapter. Never let a naive, invalid, or host-dependent clock become
+    // an apparently fresh real order. A single bad in-scope revision
+    // blocks the whole projection rather than returning a partial "OK".
+    if (!explicitInstant(input.revision?.source_observed_at ?? input.observed_at))
+      throw Error('EXPLICIT_SOURCE_OBSERVATION_REQUIRED');
+    if (!explicitInstant(input.identity.opened_at))
+      throw Error('EXPLICIT_SOURCE_OPEN_TIME_REQUIRED');
     const truth = buildTataComandaOrderTruthV1(input);
     const key = JSON.stringify([input.source_mode, truth.identity.store_id,
       truth.identity.nr_venda_rest, truth.identity.nr_comanda, truth.identity.opened_at]);

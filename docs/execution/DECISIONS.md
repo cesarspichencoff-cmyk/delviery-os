@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-10-20"
+  atualizado_em: "2026-11-15"
   state_basis: 953a3fb
 ---
 
@@ -2105,3 +2105,172 @@ não for possível (pararia a operação para proteger um consumo que já é fai
 
 **Custo aceito:** revogar uma chave quarentena o que ela assinou e ainda não foi consumido — rotação
 exige drenar antes de revogar. A tabela de admissão cresce com todo evento consumido.
+
+### D97 — Demanda observada no Gestor entra na Home como LEITURA PARCIAL: feed em arquivo, fatos derivados, nada promovido
+
+**Decisão.** Por ordem do César (13/11/2026: ligar o sensor do Edge, o reconciliador e a Home pelo
+motor existente, distinguindo *demanda observada*, *pedido conciliado* e *estado físico confirmado*),
+o sensor que já existia ganha o executor que faltava (`runtime/reporting/gestor_mounted_demand_feed_v1.cjs`):
+um processo Node que avalia o sensor na página de expedição **já aberta**, pelo DevTools em loopback,
+e escreve um feed local e um diário. O servidor da Home lê o feed como lê a saúde do leitor TATÁ
+(arquivo, mesma máquina, mesmo relógio), e `src/product/eventos/demanda-gestor.ts` transforma cada
+pedido montado em `pedido_ciclo_observado@1` do catálogo existente, passa por `projetarLeitura`, pela
+eleição temporal e por `homeVM`. A Home ganha um estado de **apresentação** — "Leitura parcial" — e um
+índice do que cada pedido leva. Esta entrega é só o nível 1. Nenhum pedido é declarado conciliado,
+pronto, despachado ou cancelado, e a contagem da casa continua ausente.
+
+**Por que.** Medido em `c5e85542`: nada no repositório executava o sensor (só o supervisor tocava o
+DevTools, para um booleano), o resultado dele nunca saía da página, e `/api/home` montava sempre zero
+pedido. O receptor V2 é só estrutura. Faltava o elo, não outro leitor.
+
+**Alternativas recusadas:** (a) o servidor gravar eventos num ledger a cada requisição — ele é
+somente leitura por construção, e dois armazenamentos mutáveis para o mesmo fato são dual-write; os
+fatos são função determinística do feed, e a chave `pedido:revisão` os torna idempotentes; (b) estado
+novo `observado` no catálogo — `catalogo-operacional.ts` é caminho protegido e isso é decisão de
+domínio; `aceito` é a entrada do ciclo e a afirmação mais fraca que o catálogo tem; (c) declarar a
+fonte `saudavel` para reaproveitar "N pedidos em andamento" — cartões montados não provam o total;
+(d) traduzir o status de cabeçalho do iFood em `em_producao`/`pronto`/`despachado` — a semântica não
+foi qualificada na página real; ele segue opaco, e a única leitura feita é na direção segura
+(alegação de cancelamento retira o pedido da demanda, e a retirada é contada); (e) classificar item
+em praça pelo nome — `praca` e `categoria` ficam ausentes, e nenhuma carga por praça nasce daqui.
+
+**Custo aceito:** a tela do Gestor é fotografia e o motor é de eventos — a regra de ponte é "é atual
+o que a última janela fresca ainda afirma", e sair da tela não emite nada. O `PF3` do `r5d1`, que já
+estava vermelho na base por três chamadores, ganha um quarto: o projetor passa a ter chamador de
+runtime, de propósito, e o gate precisa ser reescrito por decisão própria. A eleição temporal segue
+sem estado entre requisições, porque nenhuma causa candidata existe no nível 1. Uma observação com
+padrão de dado pessoal retém a janela inteira (fecha fechado). O estado próprio do executor volta do
+feed anterior depois de um reinício; pedidos que entraram e saíram com o executor parado só existem
+no Reader.
+
+### D98 — "Conciliado" é o que o reconciliador existente casa E as quantidades confirmam; nada além
+
+**Decisão.** O nível 2 (`src/product/eventos/conciliacao-reader.ts`) não decide casamento: monta a
+entrada e entrega ao reconciliador de janela que já existia
+(`tools/gestor-native-shadow-reconcile/reconcile.cjs`), que valida escopo, frescor das duas capturas,
+colisão de número curto e revisão ambígua. Um pedido só sobe a `conciliado` quando esse reconciliador
+o devolve como candidato único **e** linhas, unidades e o multiconjunto de quantidades batem com a
+tela do Gestor. Diferença de conteúdo é `divergente` e aparece em texto sob o pedido; número repetido
+ou revisão que o próprio Reader reteve é `ambiguo`; ausência é `nao_encontrado`. O Reader é lido por
+uma porta estreita (`src/platform/leitura/pedidos-do-reader.ts`), só para o cruzamento.
+
+**Por que.** O feed existente do Reader descarta o número curto do iFood, que é a chave do
+cruzamento, e bloqueia o modo real pela lacuna N2-B — que é sobre completude de observações para
+imprimir comanda, não sobre identidade e linhas. Conciliar não precisa das tabelas filhas.
+
+**Alternativas recusadas:** casar por número curto neste módulo (segunda regra de casamento para o
+mesmo fato); promover o pedido conciliado a estado do ciclo (conciliado não é físico: continua
+`aceito`, e a fonte de pedidos continua `parcial`); usar `compare()` agora (exige o registro de
+processamento com nomes e o minuto local, que este leitor não lê — fica para o próximo passo).
+
+**Custo aceito:** "conciliado" significa número, dia e quantidades por linha — não UUID ↔ chave
+nativa (N4 aberto), não nomes de produto, não observações. O cruzamento exige a janela do Gestor com
+menos de 30 s, que é o limite do reconciliador; janela em retenção não é cruzada, e a Home diz por quê.
+
+### D99 — A Home chega a outros aparelhos pela origem do piloto, com a credencial do piloto
+
+**Data:** 2026-11-14. **Contexto:** o César exigiu a V1 em vários aparelhos. A apresentação só escuta em loopback e não sabe
+quem pede; o piloto já é o único processo exposto, atrás do proxy HTTPS, com códigos, papéis e limite de tentativas.
+
+**Decisão.** O piloto serve a Home num hostname próprio, na mesma porta. Sem sessão não sai nada; código de gerente ou líder
+abre sessão em cookie `__Host-`, reconferida no piloto a cada requisição; só GET/HEAD segue para o loopback, sem cookie nem
+credencial do visitante. Desligado por padrão; configuração parcial ou insegura derruba o boot
+(`src/platform/auth/home-operator-gateway.ts`).
+
+**Por que.** É a menor mudança que não cria outro sistema: nenhuma credencial nova, nenhum cadastro novo, nenhuma porta nova,
+nenhuma regra nova de firewall, e a interface aprovada não é tocada. A fonte de verdade continua onde está — a leitura é feita
+na máquina do Gestor e do Reader, e todos os aparelhos leem a mesma resposta.
+
+**Alternativas recusadas:** Cloudflare Tunnel/Access e Tailscale (outro agente e outra conta no caixa, com o NetBird já instalado
+e protegido por guard); ligar a apresentação na interface de rede (ela não autentica ninguém); montar a Home num prefixo do
+piloto (a interface usa caminhos absolutos); hospedar em nuvem agora (custo e credencial são decisão do César e não são
+pré-requisito para a V1); o acesso individual por e-mail já construído (melhor identidade, mas depende de provisionar o
+provedor — fica como evolução, sem bloquear).
+
+**Custo aceito:** identidade é a do código do terminal, não a da pessoa; sessão vive na memória do piloto; com o caixa fora do
+ar os aparelhos veem erro do proxy, não "sem leitura"; a escolha da Home pelo `Host` depende de o proxy real preservar o
+cabeçalho, o que só o proxy real prova.
+
+### D100 — A posse da viagem na ingestão de GPS vem de uma concessão emitida pelo piloto (X1)
+
+**Data:** 2026-11-14. **Contexto:** a ingestão aceitava qualquer `trip_id` de um aparelho autenticado (X1, medida em 13/11).
+Quem sabe de quem é a viagem é o piloto; quem sabe quem é o aparelho é a plataforma.
+
+**Decisão.** O piloto emite uma concessão de captura (HMAC-SHA256 por unidade, segredo próprio, propósito no MAC) que prende
+unidade, motoboy, aparelho, viagem e a janela da viagem, na consulta de captura que o app já faz e numa rota autenticada pela
+credencial delegada pt1. A plataforma confere a concessão por ponto (`src/entregas/foundation/trip-capture-grant.ts`). Sem segredo
+configurado, a ingestão de GPS fica fechada, retentável. Ponto captado na viagem sobe depois do fim; ponto novo depois do fim não;
+ponto recebido com a viagem aberta entra qualquer que seja o relógio do aparelho (política de relógio já decidida).
+
+**Alternativas recusadas:** ler a atribuição em `entregas.trip` no crítico (no caixa o piloto que aceita lote nativo grava em arquivo,
+não nessa tabela); conferir pela projeção assíncrona (recusaria ponto legítimo de viagem recém-criada); o crítico perguntar ao piloto a
+cada lote (acoplamento síncrono e perda da fila offline de viagem encerrada); reaproveitar a chave de produtor (registro que nunca
+admite `real` e mistura propósito); mandar o token da plataforma ao piloto pelo SyncWorker (quebra invariante testada).
+
+**Custo aceito:** segredo compartilhado a mais entre piloto e crítico; concessão válida por 72 h para subir fila offline; aparelho
+adulterado do PRÓPRIO motoboy ainda pode forjar horário dentro da própria viagem.
+
+### D101 — Celulares dos motoboys falam HTTPS pelo proxy existente, numa superfície mínima; sem NetBird no celular
+
+**Data:** 2026-11-14. **Decisão técnica, implantação depende do César.** Um serviço próprio no proxy NetBird, com `/` bloqueado e só os
+caminhos de campo liberados (rider-mobile e seus estáticos; sessão, termo, políticas, snapshot, capture-state, trip-grants e lote de
+eventos do piloto; sessão, delegação, fila e GPS do crítico por um encaminhador local), uma origem só no APK. A autenticação continua no
+servidor (token de aparelho, pré-vínculo, pt1, concessão de viagem, código do motoboy).
+
+**Por que venceu:** instala só o APK; funciona em Wi-Fi e rede móvel com certificado público; não ocupa a VPN única do Android nem
+consome usuário do plano gratuito; revogação e troca de celular continuam no servidor. **Recusadas:** NetBird em cada celular (segunda
+app, VPN única, bateria — issue 1354 aberta —, só o APK de depuração aceitaria o certificado de laboratório); senha global do proxy no
+APK; o piloto encaminhando para o crítico (o segredo do aparelho passaria pelo processo do piloto).
+
+**Pré-requisitos antes de expor:** X1 (feito); teto de corpo no piloto (feito); códigos longos para motoboys e limite de tentativas
+que funcione atrás do proxy (todos chegam de 2 origens); no hostname de campo o piloto só atende papel de motoboy; encaminhador da 8080
+sem TLS só para os dois proxies; confirmar na conta real Bypass/Block por caminho, Host preservado e dois alvos no mesmo peer.
+
+**Adendo à D101 (14/11/2026):** em vez de depender de bloqueio por caminho no proxy NetBird (recurso beta, não confirmado na
+conta real), o proxy aponta para UM alvo — o portão de campo (`src/platform/campo/portao-de-campo.ts`), que só repassa a lista
+fechada de rotas, com teto de corpo por rota, sem cookie, e marca as requisições do piloto; com a marca o piloto aceita só papel de
+motoboy. A lista do proxy vira defesa em profundidade, não a única barreira. Recusado: repassar ao crítico pelo próprio piloto
+(o segredo do aparelho passaria pelo processo de domínio). O comando direto (`/api/command`) fica na lista: a página do motoboy
+cai para ele quando a fila do aparelho não está anunciada, e o domínio já exige que a viagem seja do motoboy.
+
+### D102 — Decisões do César em 15/11/2026 sobre o campo
+
+1. **Preparação do caixa pelo conector:** autorizada e feita (ver evidência `caixa-preparacao-feed-gestor-2026-11-15`).
+2. **Ações offline do motoboy:** o piloto de campo volta a gravar em ARQUIVO (tem recibo nativo durável). Implementação no caixa
+   entra na instalação do candidato, que ainda depende de autorização própria (troca de processo em produção).
+3. **Códigos de acesso continuam com quatro dígitos** (decisão de 31/10 mantida). Risco aceito e declarado: pela porta pública todo
+   acesso chega de dois endereços do proxy; erros repetidos travam por 15 min o login NOVO de todos naquela origem (quem já entrou
+   segue) e a adivinhação fica limitada a 5 tentativas a cada 15 min por origem.
+4. **Serviço de campo no NetBird:** autorizado. Ordem obrigatória: só depois do candidato instalado no caixa (piloto e crítico com a
+   correção X1 e a restrição de papel); expor o portão na frente da versão atual do caixa exporia a falha X1.
+5. **Aparelhos físicos:** por último.
+
+### D103 — Entregas na Home do gerente (15/11/2026)
+
+**Decisao do Cesar** (mensagem "AUTORIZACAO AMPLIADA", Frente C, prioritaria): o gerente acompanha o delivery pela Home. Implementado
+como a MESMA leitura da rua da superficie /entregas (`leituraDaRuaDe`, pura) sobre a MESMA porta de realidade, anexada a /api/home:
+nenhum motor, tabela, fila ou SQL novo; linha calma + dobra na Home, link para /entregas. Sem coordenada, previsao ou confirmacao de
+entrega; procedencia por item (simulado nunca real); ausencia declarada sem banco ou com banco fora (Home segue 200).
+
+**Alternativa recusada:** um viewmodel proprio da Home para Entregas. Duplicaria as regras de frescor, solidez e conferencia que a
+leitura da rua ja tem, e as duas telas poderiam divergir sobre o mesmo motoboy.
+
+**Achado:** a leitura declara que o ciclo de vida da viagem (saida e fim) ainda nao chega pela cadeia canonica; viagem com GPS fica
+"ciclo nao confirmado". A Home diz isso; nao chama de "na rua" nem diz "nenhuma viagem".
+
+
+### D104 — Gestor do iFood lido do proprio armazenamento do aplicativo, como fonte separada (15/11/2026)
+
+**Decisao** (missao "Reader V3 + Gestor iFood + Copiloto V3.3"): os pedidos do iFood chegam a Home pelo que o aplicativo Gestor de
+Pedidos ja grava no disco do caixa (`Local Storage\leveldb`), lido como arquivo, sem abrir o banco, sem janela, sem DevTools, sem API
+e sem token (`pedidos-do-gestor-local.ts`), e conciliados com a Teknisa por funcao pura (`conciliacao-gestor-teknisa.ts`). Bloco
+proprio na Home ("pedidos no ifood"), ligado so por `DELIVERYOS_GESTOR_LOCAL_DIR`. Identidade: codigo curto + horario + itens por
+`externalCode` = `CDARVPROD` (medido: 22/22 pares; o `CDPRODUTO` nao e o codigo do iFood).
+
+**Alternativa recusada:** alimentar o pipeline de demanda observada existente (feed do sensor de tela + reconciliador de janela).
+Aquele caminho afirma "cartao montado na expedicao", exige o Edge com DevTools que nao existe no caixa hoje, e nunca rodou em campo;
+vestir a fonte local com o formato dele faria um dado gravado pelo aplicativo parecer tela observada. O pipeline segue intacto e
+desligado.
+
+**Limites declarados:** janela movel de ~25 pedidos, nao o total do dia; ausencia na Teknisa nao prova falha da integracao; a
+documentacao oficial do iFood recusou leitura automatizada (403) — etapas vem dos eventos que o proprio Gestor grava.

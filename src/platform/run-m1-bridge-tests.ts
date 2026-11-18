@@ -493,6 +493,14 @@ const EXCECAO_COPILOTO_SHADOW: readonly string[] = [
   "src/product/viewmodels/run-copiloto-celulas-v33-tests.ts",
 ];
 
+/** Cesar, 2026-11-15: Reader V3 + Gestor local, somente leitura na Home.
+ * Dois caminhos exatos; nao altera baselines, Q-019 nem aprovacao M1B. */
+const CLASSE_READER_V3_HOME = "READER_V3_GESTOR_HOME_READ_ONLY";
+const EXCECAO_READER_V3_HOME: readonly string[] = [
+  "src/product/viewmodels/home-operacao-ifood-vm.ts",
+  "src/product/viewmodels/home-pedidos-reader-vm.ts",
+];
+
 /** Q-019, Cesar 2026-10-13: excecoes retroativas de CONTEUDO EXATO.
  * Uma linha no envelope NAO libera edicoes futuras do mesmo caminho.
  * O blob hash representa o estado lido e certificado em 33f267c0de128674c7439286f1c56054c5b21b53.
@@ -562,6 +570,7 @@ function foraDoEnvelope(
       !(EXCECAO_LEITURA_DA_RUA.includes(p) && linhaExata(env, p, CLASSE_LEITURA_DA_RUA)) &&
       !(EXCECAO_Q026_HTTP_503.includes(p) && linhaExata(env, p, CLASSE_Q026_HTTP_503)) &&
       !(EXCECAO_COPILOTO_SHADOW.includes(p) && linhaExata(env, p, CLASSE_COPILOTO_SHADOW)) &&
+      !(EXCECAO_READER_V3_HOME.includes(p) && linhaExata(env, p, CLASSE_READER_V3_HOME)) &&
       !excecaoQ019Certificada(p, env, blobsQ019EmTeste[p]),
   );
 }
@@ -753,6 +762,24 @@ teste("C6f Copiloto Entregas shadow: quatro caminhos exatos, controles negativos
       [outro],
       "outra rota ganhou permissao por classe Copiloto: " + outro,
     );
+  }
+});
+
+teste("C6i Reader V3: dois caminhos, retirada e classe trocada reprovam; vizinhos continuam proibidos", () => {
+  const env = ler(ENVELOPE), autorizados = caminhosAutorizados();
+  assert.equal(EXCECAO_READER_V3_HOME.length, 2);
+  assert.deepEqual(foraDoEnvelope(EXCECAO_READER_V3_HOME, env, autorizados), []);
+  for (const p of EXCECAO_READER_V3_HOME) {
+    const sem = env.split("\n").filter(l => l.trim() !== p + " " + CLASSE_READER_V3_HOME).join("\n");
+    assert.deepEqual(foraDoEnvelope([p], sem, autorizados), [p]);
+    for (const classe of [CLASSE_COPILOTO_SHADOW, CLASSE_REALIDADE, "READER_V3_GESTOR_HOME_READ_ONLY_EXTRA"]) {
+      assert.deepEqual(foraDoEnvelope([p], sem + "\n" + p + " " + classe, autorizados), [p]);
+    }
+    assert.ok(!autorizados.some(a => a.endsWith("/") ? p.startsWith(a) : p === a));
+  }
+  for (const p of ["src/product/viewmodels/areas.ts", "src/product/viewmodels/home-reader-outro.ts", "src/product/ui/surfaces/operacao-viva.js"]) {
+    const sem = semRegistroQ019DoCaminho(env, p);
+    assert.deepEqual(foraDoEnvelope([p], sem + "\n" + p + " " + CLASSE_READER_V3_HOME, autorizados), [p]);
   }
 });
 

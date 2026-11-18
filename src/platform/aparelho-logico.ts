@@ -229,11 +229,12 @@ export class EntregasApi {
     });
   }
 
-  sendPoints(points: readonly Record<string, unknown>[], correlationId: string): Promise<ApiResult> {
+  sendPoints(points: readonly Record<string, unknown>[], correlationId: string, tripGrants: readonly string[] = []): Promise<ApiResult> {
     return this.request("/api/gps/batch", {
       schema_version: CLIENT_SCHEMA_VERSION,
       correlation_id: correlationId,
       points,
+      trip_grants: tripGrants,
     });
   }
 }
@@ -313,6 +314,12 @@ export interface OpcoesDoAparelho {
   plataformaUrl: string;
   appVersion?: string;
   agora?: () => number;
+  /**
+   * Concessão de captura por viagem (X1), como o app a recebe do piloto na
+   * consulta de estado de captura. Ausente = o aparelho não tem concessão nenhuma,
+   * e a plataforma não grava os pontos dele.
+   */
+  concessao?: (tripId: string, deviceId: string) => string | null;
 }
 
 export type ResultadoDeSync = "success" | "retry";
@@ -360,6 +367,7 @@ export class AparelhoLogico {
   plataformaUrl: string;
   private readonly appVersion: string;
   private readonly agora: () => number;
+  concessao: ((tripId: string, deviceId: string) => string | null) | null;
 
   constructor(o: OpcoesDoAparelho) {
     this.db = new RoomDeArquivo(o.diretorio);
@@ -368,6 +376,7 @@ export class AparelhoLogico {
     ensureDeviceSecret(this.db, this.agora());
     this.plataformaUrl = o.plataformaUrl;
     this.appVersion = o.appVersion ?? "1.0.0-logico";
+    this.concessao = o.concessao ?? null;
   }
 
   /** `TripLocationService` → Room: gravado ANTES de qualquer rede. */
@@ -440,7 +449,11 @@ export class AparelhoLogico {
         sequence_local: p.sequenceLocal,
         source: "device",
       }));
-      const r = await api.sendPoints(payloads, correlationId);
+      const viagens = [...new Set(points.map((p) => p.tripId))];
+      const concessoes = this.concessao
+        ? viagens.map((t) => this.concessao!(t, this.deviceId)).filter((g): g is string => typeof g === "string")
+        : [];
+      const r = await api.sendPoints(payloads, correlationId, concessoes);
       switch (r.tipo) {
         case "ok":
           if (!aplicarReciboGps(db, points, r.value)) {

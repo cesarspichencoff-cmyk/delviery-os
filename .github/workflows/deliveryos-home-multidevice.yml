@@ -1,0 +1,95 @@
+name: DeliveryOS Home on other devices (operator gate)
+
+# A Home (Copiloto) lida de outros aparelhos pela origem do piloto, com codigo
+# de gerente ou lider. Tudo sintetico: pedidos fabricados, codigos fabricados,
+# certificado de bancada gerado na hora. Nao usa segredo, nao publica nada, nao
+# toca o caixa, o proxy real nem um pedido de cliente.
+#
+# O que NAO prova: o proxy HTTPS de verdade e o Host que ele entrega, Safari,
+# aparelho fisico, rede movel, o CAIXA_MOOCA. Verde aqui e prova de codigo.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - integration/deliveryos-v1-connected-20261102
+    paths:
+      - .github/workflows/deliveryos-home-multidevice.yml
+      - src/platform/auth/home-operator-gateway.ts
+      - src/platform/run-home-operator-gateway-tests.ts
+      - src/platform/run-home-multidevice-chain-tests.ts
+      - tests/home-gateway/**
+      - labs/home-multidevice/**
+      - tools/entregas_pilot_server.ts
+      - tools/product_system_server.ts
+      - src/entregas/pilot/access-throttle.ts
+      - src/product/ui/**
+      - runtime/reporting/gestor_mounted_demand_feed_v1.cjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deliveryos-home-multidevice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  porta-e-cadeia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # a guarda M1 le a historia inteira (vermelha em clone raso, medido)
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Tipos e build
+        run: npx tsc
+      - name: Porta de operador (HTTP real, apresentacao falsa)
+        run: npx tsx src/platform/run-home-operator-gateway-tests.ts
+      - name: Cadeia com processos reais (executor, apresentacao, piloto, tres aparelhos)
+        run: npx tsx src/platform/run-home-multidevice-chain-tests.ts
+      - name: Mutacoes da porta (zero cegas)
+        run: node tests/home-gateway/run-home-gateway-mutation-tests.cjs
+      - name: O piloto segue inteiro com a porta desligada
+        run: |
+          npx tsx src/entregas/pilot/run-observador-fila-tests.ts
+          npx tsx src/platform/run-m1-bridge-tests.ts
+
+  navegador-real:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Edge real, celular e desktop, pela porta de operador
+        run: node labs/home-multidevice/browser-proof.cjs
+
+  # Motor do Safari (WebKit) com o perfil de iPhone do Playwright. NÃO é Safari num iPhone:
+  # é o mesmo motor de renderização, cookies e CSP, na bancada.
+  navegador-webkit-iphone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+      - name: Motor WebKit da mesma versão do Playwright do repositório
+        run: npx playwright install --with-deps webkit
+      - name: WebKit (perfil iPhone 13) e desktop, pela porta de operador
+        run: node labs/home-multidevice/browser-proof.cjs
+        env:
+          LAB_BROWSER: webkit
