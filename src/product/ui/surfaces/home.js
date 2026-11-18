@@ -885,6 +885,7 @@ function resto(vm) {
   const criticos = vm.sinais_em_segundo_plano.filter((s) => s.severidade >= 3).length;
   const semFonte = vm.sinais_indisponiveis.length;
   const degradadas = vm.fontes.filter((f) => f.estado !== "saudavel").length;
+  const cargaSemMedicao = vm.sem_leitura_operacional && vm.rota_home && vm.operacao_ifood?.disponivel;
 
   const resumoLinha = [
     n === 0
@@ -893,7 +894,8 @@ function resto(vm) {
           criticos > 0 ? `, ${criticos} em pressao` : ""
         }`,
     `${semFonte} do catalogo sem fonte`,
-    vm.sem_leitura_operacional ? (vm.rota_home ? "carga operacional sem medição" : "pedidos sem fonte confiavel") :
+    cargaSemMedicao ? "carga operacional sem medição" :
+      vm.sem_leitura_operacional ? "pedidos sem fonte confiavel" :
       degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 

@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions, Render
         const val APARELHO_DIVERGENTE = "aparelho_divergente"
     }
 
-    private lateinit var webView: WebView
+    private var webView: WebView? = null
     private lateinit var db: EntregasDatabase
     private val rendererReload = RendererReloadBackoff()
 
@@ -82,12 +82,13 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions, Render
         db = EntregasDatabase.get(this)
         TripNotification.ensureChannel(this)
 
-        webView = newRiderWebView(OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL))
+        val initial = newRiderWebView(OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL))
+        webView = initial
         // Inspeção remota SOMENTE no build de debug. Em release, um aparelho
         // conectado por USB poderia ler a tela e chamar a ponte nativa.
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
-        setContentView(webView)
-        Bridge.attach(webView)
+        setContentView(initial)
+        Bridge.attach(initial)
 
         lifecycleScope.launch {
             DeviceId.ensure(db)
@@ -95,7 +96,7 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions, Render
                 notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             SyncScheduler.ensurePeriodic(this@MainActivity)
-            webView.loadUrl(riderUrl)
+            if (webView === initial) initial.loadUrl(riderUrl)
         }
     }
 
@@ -169,10 +170,9 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions, Render
      * A página recarregada reconcilia sozinha, como ao reabrir o aplicativo.
      */
     override fun onRendererGone(dead: WebView, client: OriginLockedClient) {
-        val wasTheScreen = ::webView.isInitialized && dead === webView
-        (dead.parent as? ViewGroup)?.removeView(dead)
-        dead.destroy()
-        if (!wasTheScreen || isFinishing || isDestroyed) return
+        if (webView !== dead) return
+        releaseRiderWebView()
+        if (isFinishing || isDestroyed) return
 
         val fresh = newRiderWebView(client)
         webView = fresh
@@ -360,8 +360,16 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions, Render
     }
 
     override fun onDestroy() {
-        Bridge.detach()
+        releaseRiderWebView()
         super.onDestroy()
+    }
+
+    private fun releaseRiderWebView() {
+        val previous = webView ?: return
+        webView = null
+        Bridge.detach(previous)
+        (previous.parent as? ViewGroup)?.removeView(previous)
+        previous.destroy()
     }
 }
 

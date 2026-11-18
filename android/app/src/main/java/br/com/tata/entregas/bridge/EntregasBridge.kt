@@ -32,8 +32,8 @@ object Bridge {
         webViewRef = WeakReference(webView)
     }
 
-    fun detach() {
-        webViewRef = null
+    fun detach(webView: WebView) {
+        if (webViewRef?.get() === webView) webViewRef = null
     }
 
     /**
@@ -56,6 +56,7 @@ object Bridge {
         val web = webViewRef?.get() ?: return
         val script = messageDispatchScript(message)
         web.post {
+            if (webViewRef?.get() !== web) return@post
             if (!OriginBoundNativeBridge.isAuthorizedRiderDocument(
                     web.url, BuildConfig.ENTREGAS_BASE_URL,
                 )) return@post
