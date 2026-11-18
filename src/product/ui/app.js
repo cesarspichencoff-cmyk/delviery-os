@@ -394,16 +394,6 @@ function atualizarHomeItaim(alvo, vm) {
   for (const seletor of seletores) {
     trocarConteudo(atual.querySelector(seletor), nova.querySelector(seletor));
   }
-  const fila = atual.querySelector("[data-copiloto-ifood]");
-  const palco = atual.querySelector(".org-palco");
-  const filaNoTopo = atual.querySelector(".org-topo").nextElementSibling === fila;
-  const moverParaOTopo = !vm.home_operacional.foco && nova.dataset.vista === "geral";
-  if (moverParaOTopo !== filaNoTopo) {
-    const focado = fila.contains(document.activeElement) ? document.activeElement : null;
-    if (moverParaOTopo) atual.querySelector(".org-topo").after(fila);
-    else palco.after(fila);
-    focado?.focus({ preventScroll: true });
-  }
   atual.dataset.modo = nova.dataset.modo;
   atual.dataset.degradado = nova.dataset.degradado;
 }

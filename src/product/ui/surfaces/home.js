@@ -1265,7 +1265,6 @@ export function telaHome(vm) {
   }">
     ${faixaDemonstracao(vm)}
     ${topo(vm)}
-    ${vm.rota_home && !ampliada && !vm.foco ? pedidos : ""}
     ${faixaParcial(vm)}
     <div class="org-palco">
       ${faixaTecnica(vm)}
@@ -1297,7 +1296,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
-    ${!vm.rota_home || ampliada || vm.foco ? pedidos : ""}
+    ${pedidos}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}

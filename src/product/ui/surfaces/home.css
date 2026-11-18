@@ -14,12 +14,12 @@
      3. cor nunca e o unico sinal — cada degrau muda escala, brilho e texto;
      4. falha tecnica fala em cinza-ardosia, nao cresce e nunca vira ambar.
 
-   Sobre a tipografia: o canone pede Spectral, Hanken Grotesk e IBM Plex Mono.
-   Este servidor e local e nenhuma folha externa e carregada, de proposito. Os
-   tokens declaram as tres familias com fallback do sistema; o que se preserva
-   sempre e a HIERARQUIA — editorial serifada, interface sem serifa, tecnico
-   monoespacado. Limitacao registrada no checkpoint.
+   A tipografia usa Spectral, Hanken Grotesk e IBM Plex Mono, servidas pelo
+   proprio caixa. Os tokens preservam a hierarquia editorial, de interface e
+   tecnica mesmo antes de as fontes carregarem.
    =========================================================================== */
+
+@import url("/tokens/organismo-fonts.css");
 
 /* ------------------------------------------------------------------ *
  * O shell RECUA quando a home esta na tela.
@@ -575,7 +575,7 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
 .org-legenda__frase {
   margin: 0.45rem 0 0;
   font-family: var(--org-serifa);
-  font-weight: 300;
+  font-weight: 200;
   font-size: clamp(1.9rem, 4.4vw, 3rem);
   line-height: 1.08;
   letter-spacing: -0.015em;
@@ -1124,6 +1124,7 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   margin: 0 0 1rem;
   font-family: var(--org-serifa);
   font-style: italic;
+  font-weight: 300;
   font-size: 1.02rem;
   line-height: 1.45;
   color: var(--org-creme-serifa);
