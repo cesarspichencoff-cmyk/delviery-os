@@ -1131,6 +1131,16 @@ function previaDasPracas(previa) {
       : '<p class="org-resto__nota">Nenhum pedido em preparo ou pronto nesta leitura.</p>') + notasGerais);
 }
 
+function acompanharPedidos(pedidos) {
+  const prontos = pedidos.filter(p => p.etapa.startsWith("pronto"));
+  const emEntrega = pedidos.filter(p => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino");
+  const lista = (id, titulo, grupo) => dobra(id, `${titulo} · ${grupo.length}`,
+    grupo.length ? `<ul class="org-sinais">${grupo.map(pedidoDoIfood).join("")}</ul>`
+      : '<p class="org-resto__nota">Nenhum pedido nesta etapa.</p>');
+  return lista("ifood-prontos", "Prontos no iFood", prontos)
+    + lista("ifood-em-entrega", "Saíram para entrega", emEntrega);
+}
+
 export function operacaoDoIfood(o) {
   if (!o) return "";
   if (!o.disponivel) {
@@ -1156,7 +1166,7 @@ export function operacaoDoIfood(o) {
   return `<section class="org-resto org-ifood" data-ifood="lido" data-velha="${o.leitura_velha ? "sim" : "nao"}">
     <div class="org-resto__linha"><span class="org-resto__rotulo">pedidos no ifood</span>
     <span class="org-resto__conta">${esc(linha)}</span></div>
-    ${velho}${previaDasPracas(o.previa_por_praca)}${atencao}
+    ${velho}${previaDasPracas(o.previa_por_praca)}${o.previa_por_praca ? acompanharPedidos(o.pedidos) : ""}${atencao}
     ${o.pedidos.length ? dobra("ifood-pedidos", `Ver os ${o.pedidos.length} pedidos do Gestor`,
       `<ul class="org-sinais">${o.pedidos.map(pedidoDoIfood).join("")}</ul>`) : ""}
     <p class="org-resto__nota">${conc}</p>
