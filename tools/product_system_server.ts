@@ -161,9 +161,11 @@ async function resumoDaFilaDoItaim() {
   const observacao = await filaDoPilotoAgora();
   const r = lerProntosDoPiloto({ agora: new Date(), unit_id: "ITAIM", fila: observacao });
   const fila = r.estado_atual.na_fila;
-  const modoNaoConfirmado = fila.grupos.some(g => g.source_mode !== "real");
-  return { disponivel: fila.estado === "observado" && !modoNaoConfirmado,
-    total: fila.estado === "observado" && !modoNaoConfirmado ? fila.grupos[0]?.total ?? 0 : null,
+  const disponivel = fila.estado === "observado" &&
+    "modo_do_piloto" in observacao && observacao.modo_do_piloto === "real" &&
+    fila.grupos.every(g => g.source_mode === "real");
+  return { disponivel,
+    total: disponivel ? fila.grupos[0]?.total ?? 0 : null,
     observado_em: fila.observado_em };
 }
 

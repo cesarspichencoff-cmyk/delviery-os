@@ -49,7 +49,9 @@ export async function observarFilaDoPiloto(opcoes: {
     } catch {
       return indisponivel("resposta_ilegivel");
     }
-    return { origem: "observacao_do_piloto", observacao: corpo };
+    const modo = resposta.headers.get("X-DeliveryOS-Source-Mode");
+    return { origem: "observacao_do_piloto", observacao: corpo,
+      ...(modo === "real" || modo === "simulated" || modo === "control" ? { modo_do_piloto: modo } : {}) };
   } catch {
     return indisponivel(controle.signal.aborted ? "piloto_sem_resposta_no_prazo" : "piloto_inalcancavel");
   } finally {

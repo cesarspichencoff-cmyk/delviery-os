@@ -85,7 +85,7 @@ export type FonteDaFila =
 
 /** Como quem chama declara a origem da fila da unidade. */
 export type DeclaracaoDaFila =
-  | { readonly origem: "observacao_do_piloto"; readonly observacao: unknown }
+  | { readonly origem: "observacao_do_piloto"; readonly observacao: unknown; readonly modo_do_piloto?: SourceMode }
   /** A observação não pôde ser obtida (rede, prazo, credencial): ausência declarada. */
   | { readonly origem: "observacao_do_piloto"; readonly indisponivel: string }
   | { readonly origem: "postgres" };

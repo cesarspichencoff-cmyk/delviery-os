@@ -417,16 +417,19 @@ void (async () => {
   const tokenObservador = "canario-do-observador-fila-fixture-00";
   let modoFila = "real";
   let idadeFilaMs = 0;
+  let modoDoPiloto: string | null = "real";
+  let filaVazia = false;
   const observador = createServer((req, res) => {
     if (req.headers.authorization !== `Bearer ${tokenObservador}` || req.url !== "/api/ready-orders/observation") {
       res.writeHead(403); res.end(); return;
     }
     res.setHeader("Content-Type", "application/json");
+    if (modoDoPiloto) res.setHeader("X-DeliveryOS-Source-Mode", modoDoPiloto);
     res.end(JSON.stringify({ schema: "deliveryos.ready-queue-observation.v1", unit_id: "ITAIM",
       origin: { system: "entregas-pilot", storage_backend: "file", process_started_at: iso(10) },
       availability: "available", observed_at: new Date(Date.now() - idadeFilaMs).toISOString(),
-      reason: null, total: 1, invalid_entries: 0,
-      entries: [{ order_ref: "FILA-FICTICIA-1", registered_at: iso(2), channel: "proprio", source_mode: modoFila }],
+      reason: null, total: filaVazia ? 0 : 1, invalid_entries: 0,
+      entries: filaVazia ? [] : [{ order_ref: "FILA-FICTICIA-1", registered_at: iso(2), channel: "proprio", source_mode: modoFila }],
       facts_watermark: { availability: "unavailable", covered_types: [], last_event_id: null } }));
   });
   await new Promise<void>(r => observador.listen(0, "127.0.0.1", r));
@@ -494,6 +497,13 @@ void (async () => {
     const filaPublica = await (await fetch(filaPublicaUrl)).json();
     modoFila = "simulated";
     const simulada = await (await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1")).json();
+    filaVazia = true;
+    modoDoPiloto = null;
+    const antiga = await (await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1")).json();
+    modoDoPiloto = "simulated";
+    const vaziaSimulada = await (await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1")).json();
+    modoDoPiloto = "real";
+    const vaziaReal = await (await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1")).json();
     idadeFilaMs = 61_000;
     const stale = await (await fetch(filaPublicaUrl)).json();
     ok("G30 fila própria lê o piloto, sem banco, sem misturar simulação nem inventar saída", () => {
@@ -503,6 +513,9 @@ void (async () => {
       assert.equal(filaPublica.estado_atual.na_fila.grupos[0].total, 1);
       assert.equal(filaPublica.trajetoria.estado, "indisponivel");
       assert.equal(simulada.home_operacional.fila_entregas.total, null);
+      assert.equal(antiga.home_operacional.fila_entregas.total, null);
+      assert.equal(vaziaSimulada.home_operacional.fila_entregas.total, null);
+      assert.equal(vaziaReal.home_operacional.fila_entregas.total, 0);
       assert.equal(stale.disponivel, false);
       assert.equal(stale.motivo, "observacao_desatualizada");
     });

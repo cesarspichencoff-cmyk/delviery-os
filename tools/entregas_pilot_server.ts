@@ -710,6 +710,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         ok: true,
         module: "ENTREGAS",
         mode: "operational",
+        source_mode: cfg.source_mode ?? null,
         unit: cfg.unit_name,
         banner: envBanner,
         demo: false,
@@ -806,6 +807,9 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         process_started_at: PROCESS_STARTED_AT,
       });
       if (!r.ok) return reply(r.code === "session_required" ? 401 : 403, { ok: false, code: r.code });
+      // O modo vem da configuração da instância, inclusive para uma fila vazia.
+      // Um consumidor antigo continua a receber o mesmo contrato JSON.
+      if (cfg.source_mode) res.setHeader("X-DeliveryOS-Source-Mode", cfg.source_mode);
       return reply(200, r.observation);
     }
 

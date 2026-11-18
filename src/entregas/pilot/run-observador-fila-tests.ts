@@ -205,6 +205,8 @@ async function provaDeProcesso(): Promise<void> {
 
     await teste("H4 fila do piloto em arquivo é legível sem banco e trajetória fica desconhecida", async () => {
       const fila = await observarFilaDoPiloto({ url_base: base, token: TOKEN_OBS, prazo_ms: 2000 });
+      assert.ok("modo_do_piloto" in fila);
+      assert.equal(fila.modo_do_piloto, "simulated");
       const agora = new Date();
       const real = lerProntosDoPiloto({ agora, unit_id: UNIT, fila });
       assert.equal(real.estado_atual.na_fila.estado, "observado");
