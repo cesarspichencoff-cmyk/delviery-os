@@ -34,10 +34,19 @@ unset KS KSP KP KA
 adb install "$work/entregas.apk"
 installed=true
 adb shell pm path "$package" | grep '^package:'
-startup="$(adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$package")"
-printf '%s\n' "$startup" | tr -d '\r' | grep -qx 'Status: ok'
+startup="$(adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER \
+  -n "$package/br.com.tata.entregas.ui.MainActivity" 2>&1)"
+printf '%s\n' "$startup"
+if ! printf '%s\n' "$startup" | tr -d '\r' | grep -Eq '^[[:space:]]*Status: ok[[:space:]]*$'; then
+  echo 'APK_LAB_LAUNCH_FAILED'
+  exit 1
+fi
 sleep 3
-[[ -n "$(adb shell pidof "$package" | tr -d '\r')" ]] || { echo 'APK_LAB_PROCESS_NOT_RUNNING'; exit 1; }
+if [[ -z "$(adb shell pidof "$package" | tr -d '\r')" ]]; then
+  adb logcat -b crash -d -v brief | tail -n 30 || true
+  echo 'APK_LAB_PROCESS_NOT_RUNNING'
+  exit 1
+fi
 
 proof="$root/android-pilot-package-proof.txt"
 {

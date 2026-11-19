@@ -1,6 +1,6 @@
 # Android — compilação e preparação do teste
 
-Atualizado em 26/10/2026. O [gate de campo](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md) governa instalação e ensaio físico. O app exige API 26 (Android 8.0) ou superior. O Xiaomi está disponível; modelo, versão e comportamento físico ainda não foram observados.
+Atualizado em 26/10/2026. O [gate de campo](GATE_CAMPO_ANDROID_COPILOTO_2026-10-20.md) governa instalação e ensaio físico. O app exige API 26 (Android 8.0) ou superior. A bancada automatizada usa emuladores. O comportamento em rota é avaliado no ensaio de campo aprovado.
 
 ## Bancada e campo
 
@@ -31,6 +31,12 @@ bash ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebug
 ```
 
 O wrapper está sem bit de execução; usar `bash ./gradlew`. A distribuição tem SHA fixado. O download do Gradle falhou no ambiente local desta sessão; o CI fornece a prova de compilação remota.
+
+## Ensaio do empacotamento da variante pilot
+
+Na branch de Entregas, o workflow **DeliveryOS Android field release** usa Android 8 (API 26) e Android 17 (API 37) em emuladores. Faz a compilação otimizada, assina com uma chave temporária, confere o identificador e a configuração TLS efetiva no APK, verifica as duas origens de bancada, instala o pacote e abre sua atividade de entrada.
+
+As origens de bancada terminam em `.invalid`. A execução publica somente um recibo de verificação com o SHA-256 do APK. O APK e a chave são descartados no runner. O job de campo usa a custódia aprovada do projeto e continua condicionado a uma tag `entregas-campo-*`.
 
 ## Preparar a variante de campo
 
