@@ -219,19 +219,40 @@ function faixaTecnica(vm) {
  * A legenda editorial — o que a operacao esta dizendo agora
  * ------------------------------------------------------------------ */
 
+function pedidoAtual(o, chave) {
+  if (!o?.disponivel || o.leitura_velha || !/^[a-f0-9]{64}$/.test(chave ?? "")) return null;
+  const pedidos = o.pedidos.filter(p => p.chave_gestor === chave);
+  return pedidos.length === 1 && pedidos[0].ativo ? pedidos[0] : null;
+}
+
 function legenda(vm) {
   if (vm.rota_home && vm.sem_leitura_operacional) {
     const ambiente = vm.modo === "ambiente" ? vm.sinais_em_segundo_plano.find(s => s.severidade >= 2) : null;
     const medicao = vm.operacao_ifood?.medicao_itaim;
-    const apoio = ambiente?.resumo ?? (medicao
+    const o = vm.operacao_ifood;
+    const pedido = ambiente?.codigo === "S3" ? pedidoAtual(o, ambiente.pedido_id) : null;
+    const emEntrega = pedido && ["saiu para entrega", "entregador no destino"].includes(pedido.etapa);
+    const minutos = emEntrega ? ambiente.evidencias.find(e => e.tipo === "tempo_em_rua")?.referencia.match(/^(.*)=(\d+)min$/) : null;
+    const resumoEntrega = emEntrega ? `Consta em entrega no iFood${minutos?.[1] === pedido.codigo ? ` há ${minutos[2]} min` : ""}.` : "";
+    const titulo = vm.foco ? "Foco" : emEntrega ? `Conferir baixa do pedido #${pedido.codigo}` : ambiente ? ambiente.nome : "Operação do Itaim";
+    const grupos = o?.disponivel && !o.leitura_velha ? medicao?.atrasos_por_praca ?? [] : [];
+    const atrasos = grupos.map(g => {
+      const primeiro = g.pedidos[0];
+      const destino = primeiro && pedidoAtual(o, primeiro.chave_gestor);
+      return `<li><a class="org-fila__referencia" href="${esc(`#${vm.rota_home}&atrasos=${encodeURIComponent(g.praca)}`)}">${esc(g.rotulo)} · ${esc(g.pedidos.length)} em atraso</a>${
+        destino ? ` · <a class="org-fila__referencia" href="${esc(`#${vm.rota_home}&pedido=${destino.chave_gestor}`)}">#${esc(destino.codigo)}</a>` : ""}</li>`;
+    }).join("");
+    const apoio = resumoEntrega || (ambiente?.resumo ?? (medicao
       ? `${medicao.pedidos_abertos} em aberto no iFood · ${vm.operacao_ifood.contagens.em_preparo} em preparo · ${medicao.prontos_para_entrega} prontos para despacho.`
       : vm.operacao_ifood?.disponivel
       ? "Pedidos registrados no iFood. A medição de cada área aparece no mapa."
-      : "A leitura dos pedidos está indisponível nesta atualização.");
+      : "A leitura dos pedidos está indisponível nesta atualização."));
     return `<div class="org-legenda">
       <span class="org-legenda__kicker">Delivery · Itaim</span>
-      <h1 class="org-legenda__frase">${vm.foco ? "Foco" : ambiente ? "Acompanhar" : "Operação do Itaim"}</h1>
+      <h1 class="org-legenda__frase">${esc(titulo)}</h1>
       ${vm.foco ? "" : `<p class="org-legenda__apoio">${esc(apoio)}</p>`}
+      ${emEntrega ? `<a class="org-foco__pedido" href="${esc(`#${vm.rota_home}&pedido=${pedido.chave_gestor}`)}">Ver pedido</a>` : ""}
+      ${atrasos ? `<ul class="org-legenda__atrasos" aria-label="Praças com pedidos em atraso">${atrasos}</ul>` : ""}
     </div>`;
   }
   const p = vm.pulso;
@@ -328,13 +349,13 @@ function subarea(s, grupos, medicao) {
   const linhas = grupos.filter(p => p.praca === s.id);
   const atraso = medicao?.atrasos_por_praca.find(p => p.praca === s.id)?.pedidos.length;
   const medido = medicao && (linhas.length > 0 || medicao.composicao_a_conferir.length === 0);
-  const estado = s.cor === "sem_medicao" && medido ? "Fila observada" : s.estado_texto;
+  const estado = s.cor === "sem_medicao" && medido ? (linhas.length ? "" : "Sem itens nesta leitura") : s.estado_texto;
   return `<li class="org-sub" data-cor="${esc(s.cor)}" data-degrau="${degrau(
     s.cor,
   )}"${s.causadora ? ' data-causadora="sim"' : ""}>
     <span class="org-sub__linha">
       <span class="org-sub__nome">${esc(s.rotulo)}</span>
-      <span class="org-sub__estado">${esc(estado)}</span>
+      ${estado ? `<span class="org-sub__estado">${esc(estado)}</span>` : ""}
     </span>
     ${linhaDemandaDaPraca(linhas)}
     ${atraso ? `<span class="org-demanda-praca">${atraso} em atraso</span>` : ""}
@@ -404,7 +425,7 @@ function area(a, vm) {
     )}">
       ${marca(a)}
       <span class="org-area__nome">${esc(a.rotulo)}</span>
-      <span class="org-area__estado">${esc(medicaoSemPressao ? "Fila observada" : a.estado_texto)}</span>
+      ${medicaoSemPressao ? "" : `<span class="org-area__estado">${esc(a.estado_texto)}</span>`}
     </a>
     ${linhaDemandaDaPraca(demanda)}
     ${medicao ? `<p class="org-area__info">${esc(medicao)}</p>` : ""}
@@ -663,7 +684,7 @@ function aproximacao(vm, id) {
         <span class="org-area__corpo">
           ${marca(a)}
           <span class="org-area__nome">${esc(a.rotulo)}</span>
-          <span class="org-area__estado">${esc(medicao && a.cor === "sem_medicao" ? "Fila observada" : a.estado_texto)}</span>
+          ${medicao && a.cor === "sem_medicao" ? "" : `<span class="org-area__estado">${esc(a.estado_texto)}</span>`}
         </span>
       </div>
       <div class="org-aprox__coluna">
@@ -964,7 +985,7 @@ function dobra(id, rotulo, corpo, aberta = false) {
   </details>`;
 }
 
-function resto(vm) {
+function resto(vm, agrupado = false) {
   const n = vm.sinais_em_segundo_plano.length;
   const criticos = vm.sinais_em_segundo_plano.filter((s) => s.severidade >= 3).length;
   const semFonte = vm.sinais_indisponiveis.length;
@@ -984,7 +1005,7 @@ function resto(vm) {
       degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
 
-  return `<section class="org-resto" data-resumo-operacao>
+  return `<section class="org-resto"${agrupado ? "" : " data-resumo-operacao"}>
     <div class="org-resto__linha">
       <span class="org-resto__rotulo">resto da operacao</span>
       <span class="org-resto__conta">${esc(resumoLinha)}</span>
@@ -1077,15 +1098,18 @@ function viagemNaRua(v) {
   </li>`;
 }
 
-function entregasNaRua(rua) {
-  if (!rua) return "";
-  if (!rua.disponivel) {
+function entregasNaRua(rua, o) {
+  if (!rua && !o) return "";
+  if (!rua?.disponivel) {
+    const total = o?.disponivel && !o.leitura_velha ? o.contagens.na_rua : null;
+    const situacao = Number.isInteger(total)
+      ? `${total} ${total === 1 ? "pedido marcado" : "pedidos marcados"} como em entrega no iFood.` : "Contagem atual de entregas no iFood indisponível.";
     return `<section class="org-resto org-entregas" data-entregas="indisponivel">
       <div class="org-resto__linha">
-        <span class="org-resto__rotulo">entregas na rua</span>
-        <span class="org-resto__conta">${esc(rua.titulo)}</span>
+        <span class="org-resto__rotulo">Entregas na rua</span>
+        <span class="org-resto__conta">${esc(situacao)}</span>
       </div>
-      <p class="org-resto__nota">${esc(rua.explicacao)} ${esc(rua.restricao)}</p>
+      <p class="org-resto__nota">Localização dos motoboys indisponível nesta leitura.</p>
     </section>`;
   }
   const c = rua.contagens;
@@ -1359,7 +1383,7 @@ function areaAmpliada(vm) {
 export function telaHome(leitura) {
   const vm = { ...leitura, ambientes: ambientesDaHome(leitura) };
   const ampliada = areaAmpliada(vm);
-  const pedidos = vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood);
+  const pedidos = vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}${entregasNaRua(vm.entregas, vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood);
   return `<div class="org" data-modo="${esc(vm.modo)}" data-degradado="${
     vm.degradado ? "sim" : "nao"
   }" data-demonstracao="${vm.demonstracao ? "sim" : "nao"}" data-vista="${
@@ -1400,7 +1424,8 @@ export function telaHome(leitura) {
     ${pedidosObservados(vm)}
     ${pedidos}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
-    ${entregasNaRua(vm.entregas)}
-    ${resto(vm)}
+    ${vm.rota_home ? "" : entregasNaRua(vm.entregas)}
+    ${vm.rota_home ? `<section data-resumo-operacao>${dobra("detalhes-do-sistema", "Outros sinais e diagnóstico", resto(vm, true))}</section>` : resto(vm)}
   </div>`;
 }
+

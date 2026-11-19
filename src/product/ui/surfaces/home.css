@@ -2504,3 +2504,25 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   min-height: 44px;
   aspect-ratio: 1;
 }
+
+.org-legenda__atrasos {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  color: var(--org-creme);
+}
+.org-legenda__atrasos a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+.org-area__info, .org-demanda-praca {
+  color: var(--org-verde-texto);
+}
+@media (max-width: 720px) {
+  .org-area__info, .org-demanda-praca {
+    font-size: 0.9rem;
+  }
+}
