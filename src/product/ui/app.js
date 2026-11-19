@@ -390,9 +390,11 @@ function atualizarHomeItaim(alvo, vm) {
   const molde = document.createElement("template");
   molde.innerHTML = renderizarHomeItaim(vm).trim();
   const nova = molde.content.firstElementChild;
-  const seletores = [".org-topo", ".org-palco", "[data-copiloto-ifood]", "[data-resumo-operacao]"];
+  const seletores = [".org-topo", ".org-palco", "[data-copiloto-ifood]", "[data-resumo-operacao]", "[data-fila-entregas]"];
   for (const seletor of seletores) {
-    trocarConteudo(atual.querySelector(seletor), nova.querySelector(seletor));
+    const anterior = atual.querySelector(seletor);
+    const novo = nova.querySelector(seletor);
+    if (anterior && novo) trocarConteudo(anterior, novo);
   }
   atual.dataset.modo = nova.dataset.modo;
   atual.dataset.degradado = nova.dataset.degradado;
@@ -419,13 +421,13 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
       // Retira a orientação atual se uma atualização falhar. A próxima leitura
       // completa repõe os sinais e o modo de operação.
       if (!vm.home_operacional) {
-        for (const bloco of alvo.querySelectorAll(".org-palco, [data-resumo-operacao]")) bloco.hidden = true;
+        for (const bloco of alvo.querySelectorAll(".org-palco, [data-resumo-operacao], [data-fila-entregas]")) bloco.hidden = true;
         const novo = document.createElement("div");
         novo.innerHTML = operacaoDoIfood(vm.operacao_ifood);
         trocarConteudo(alvo.querySelector("[data-copiloto-ifood]"), novo);
         return;
       }
-      for (const bloco of alvo.querySelectorAll(".org-palco, [data-resumo-operacao]")) bloco.hidden = false;
+      for (const bloco of alvo.querySelectorAll(".org-palco, [data-resumo-operacao], [data-fila-entregas]")) bloco.hidden = false;
       atualizarHomeItaim(alvo, vm);
     } else {
       const novo = document.createElement("div");

@@ -1077,6 +1077,19 @@ function viagemNaRua(v) {
   </li>`;
 }
 
+function filaDoEntregas(fila) {
+  if (!fila) return "";
+  const texto = fila.disponivel
+    ? `${fila.total} ${fila.total === 1 ? "pedido aguarda" : "pedidos aguardam"} expedição`
+    : "Fila própria indisponível";
+  return `<section class="org-resto" data-fila-entregas>
+    <div class="org-resto__linha">
+      <span class="org-resto__rotulo">Expedição própria</span>
+      <span class="org-resto__conta">${esc(texto)}</span>
+    </div>
+  </section>`;
+}
+
 function entregasNaRua(rua) {
   if (!rua) return "";
   if (!rua.disponivel) {
@@ -1400,6 +1413,7 @@ export function telaHome(leitura) {
     ${pedidosObservados(vm)}
     ${pedidos}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
+    ${filaDoEntregas(vm.fila_entregas)}
     ${entregasNaRua(vm.entregas)}
     ${resto(vm)}
   </div>`;

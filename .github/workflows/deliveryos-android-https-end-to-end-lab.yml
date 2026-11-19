@@ -1,5 +1,14 @@
 name: DeliveryOS Android strict HTTPS end-to-end lab
 on:
+  push:
+    branches:
+      - feat/entregas-fila-propria-itaim
+    paths:
+      - .github/workflows/deliveryos-android-https-end-to-end-lab.yml
+      - android/**
+      - tests/android/**
+      - src/entregas/ui/rider-mobile/**
+      - src/entregas/ui/shared/**
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
@@ -24,6 +33,15 @@ concurrency:
   cancel-in-progress: true
 jobs:
   end-to-end-lab:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 34, scenario: "", label: full }
+          - { api: 37, scenario: "", label: full }
+          - { api: 37, scenario: offline-reconnect, label: offline-reconnect }
+          - { api: 37, scenario: offline-reconnect, label: field-gateway, origin_mode: gateway }
+    name: HTTPS Android ${{ matrix.api }} / ${{ matrix.label }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -35,15 +53,22 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
+      - uses: actions/setup-node@v4
+        if: matrix.origin_mode == 'gateway'
+        with:
+          node-version: '24'
       - name: KVM for disposable Android emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Real Android Worker via 2 ephemeral strict TLS origins and real rider UI
+      - name: Real Android Worker over strict TLS and real rider UI
+        env:
+          LAB_HTTPS_SCENARIO: ${{ matrix.scenario }}
+          LAB_HTTPS_ORIGIN_MODE: ${{ matrix.origin_mode || 'dual' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api == 37 && '37.0' || matrix.api }}
           target: google_apis
           arch: x86_64
           working-directory: android
@@ -51,16 +76,18 @@ jobs:
           script: bash ../tests/android/run_https_lab.sh
       - name: Require the actual Android end-to-end test result
         if: always()
+        env:
+          LAB_HTTPS_SCENARIO: ${{ matrix.scenario }}
         run: |
           python3 - <<'PY'
+          import os
           from pathlib import Path
           import xml.etree.ElementTree as ET
           root = Path("android/app/build/outputs/androidTest-results/connected")
           # Classe -> casos que TEM de ter executado. Ignorado nao conta como prova.
-          expected = {
-              "RiderHttpsWorkerEndToEndInstrumentedTest": 1,
-              "RendererGoneRecoveryInstrumentedTest": 2,
-          }
+          expected = {"RiderHttpsWorkerEndToEndInstrumentedTest": 1}
+          if not os.environ["LAB_HTTPS_SCENARIO"]:
+              expected["RendererGoneRecoveryInstrumentedTest"] = 2
           ran = {name: 0 for name in expected}
           failed = errors = 0
           for path in root.rglob("*.xml") if root.exists() else []:
@@ -74,7 +101,8 @@ jobs:
                   ran[name] += case.find("skipped") is None
           count = ran["RiderHttpsWorkerEndToEndInstrumentedTest"]
           print(f"ANDROID_REAL_HTTPS_WORKER_UI: cases={count} failed={failed} errors={errors}")
-          print("ANDROID_WEBVIEW_RENDERER_DEATH: cases=" + str(ran["RendererGoneRecoveryInstrumentedTest"]))
+          if "RendererGoneRecoveryInstrumentedTest" in ran:
+              print("ANDROID_WEBVIEW_RENDERER_DEATH: cases=" + str(ran["RendererGoneRecoveryInstrumentedTest"]))
           if ran != expected or failed or errors:
               raise SystemExit("ANDROID_REAL_HTTPS_WORKER_UI_NOT_PROVEN")
           print("ANDROID_REAL_HTTPS_WORKER_UI_LAB_PASS_NOT_FIELD_PROVEN")

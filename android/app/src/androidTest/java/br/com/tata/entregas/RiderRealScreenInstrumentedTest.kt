@@ -12,6 +12,8 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import android.util.Log
+import androidx.webkit.WebViewFeature
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -187,7 +189,24 @@ class RiderRealScreenInstrumentedTest {
                 }
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
-            val expected = InstrumentationRegistry.getArguments().getString("webviewExpected")
+            val requestedMode = InstrumentationRegistry.getArguments().getString("webviewExpected")
+            val syntaxSupported = eval(scenario, "({ a: 1 })?.a === 1 && (null ?? 7) === 7") == "true"
+            val nativeSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+            val expected = if (requestedMode == "detect") {
+                if (syntaxSupported && nativeSupported) "modern" else "legacy"
+            } else requestedMode
+            fun recordCompatibility(mode: String) {
+                val width = eval(scenario, "document.documentElement.clientWidth").toInt()
+                assertTrue("LAB_RIDER_INVALID_VIEWPORT mode=$mode width=$width",
+                    if (mode == "modern") width in 320..600 else width > 0)
+                assertEquals("LAB_RIDER_HORIZONTAL_OVERFLOW mode=$mode width=$width", "true",
+                    eval(scenario, "document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"))
+                val provider = WebView.getCurrentWebViewPackage()?.versionName
+                    ?.substringBefore("-")?.takeIf { it.matches(Regex("[0-9]+(\\.[0-9]+)*")) }
+                    ?: "0"
+                val runId = InstrumentationRegistry.getArguments().getString("entregasCompatRunId")
+                Log.i("EntregasCompat", "run=$runId mode=$mode webview=$provider viewport=$width")
+            }
             if (expected == "legacy") {
                 assertTrue("Old WebView must show an explicit compatibility HOLD",
                     until(scenario, """!!document.getElementById('compatibilityHold') &&
@@ -196,7 +215,9 @@ class RiderRealScreenInstrumentedTest {
                         window.getComputedStyle(document.getElementById('main')).display==='none' &&
                         window.getComputedStyle(document.querySelector('.m-nav')).display==='none' &&
                         document.getElementById('compatibilityTitle').textContent.includes('Não foi possível iniciar') &&
-                        document.getElementById('connLine').textContent.includes('indisponível')"""))
+                        document.getElementById('connLine').textContent.includes('indisponível') &&
+                        document.getElementById('compatibilityTitle').getBoundingClientRect().bottom > 0 &&
+                        document.getElementById('compatibilityTitle').getBoundingClientRect().top < window.innerHeight"""))
                 assertEquals("false", eval(scenario,
                     """!!document.querySelector('script[src="/rider-mobile/rider.js"]')"""))
                 assertEquals("false", eval(scenario,
@@ -206,6 +227,7 @@ class RiderRealScreenInstrumentedTest {
                 })
                 assertEquals(0, testSite.attemptedDemoMutation)
                 assertEquals(0, testSite.requestsOutsideLab)
+                recordCompatibility("legacy")
                 return@use
             }
             assertEquals("modern", expected)
@@ -387,6 +409,7 @@ class RiderRealScreenInstrumentedTest {
             assertTrue("CSP attack must not create a native Room event", runBlocking {
                 db.outbox().recent(100).none { it.eventId == "LAB_CSP_CHILD_FORGED" }
             })
+            recordCompatibility("modern")
         }
     }
 }

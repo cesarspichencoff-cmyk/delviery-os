@@ -7,7 +7,7 @@
  * INDISPONÍVEL, com motivo — a leitura publica ausência, não zero. A validação
  * do conteúdo (campos, unidade, modo, relógio) é da leitura, não daqui.
  *
- * O token é a sessão de quem observa no piloto (gerente ou líder). Ele vai só
+ * O token da máquina observadora vai só
  * no cabeçalho `Authorization` — a rota recusa token na URL — e não aparece em
  * nenhum motivo devolvido. Esta função não escolhe credencial nem lugar de
  * rede: quem chama declara.
@@ -21,8 +21,8 @@ export async function observarFilaDoPiloto(opcoes: {
   token: string;
   prazo_ms: number;
   buscar?: typeof fetch;
-}): Promise<DeclaracaoDaFila> {
-  const indisponivel = (motivo: string): DeclaracaoDaFila => ({ origem: "observacao_do_piloto", indisponivel: motivo });
+}): Promise<Extract<DeclaracaoDaFila, { origem: "observacao_do_piloto" }>> {
+  const indisponivel = (motivo: string) => ({ origem: "observacao_do_piloto" as const, indisponivel: motivo });
   let base: URL;
   try {
     base = new URL(opcoes.url_base);
@@ -49,7 +49,9 @@ export async function observarFilaDoPiloto(opcoes: {
     } catch {
       return indisponivel("resposta_ilegivel");
     }
-    return { origem: "observacao_do_piloto", observacao: corpo };
+    const modo = resposta.headers.get("X-DeliveryOS-Source-Mode");
+    return { origem: "observacao_do_piloto", observacao: corpo,
+      ...(modo === "real" || modo === "simulated" || modo === "control" ? { modo_do_piloto: modo } : {}) };
   } catch {
     return indisponivel(controle.signal.aborted ? "piloto_sem_resposta_no_prazo" : "piloto_inalcancavel");
   } finally {

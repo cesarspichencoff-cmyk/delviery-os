@@ -293,7 +293,7 @@ class SyncWorkerWorkManager4xxTest {
         val refused = point("gps-rejected-remote-pii", 2)
         db.gpsPoints().insert(accepted)
         db.gpsPoints().insert(refused)
-        val hostileReason = "CLIENTE_NOME TOKEN_ABC_123 coordenadas: -23.1234,-46.1234"
+        val hostileReason = "CLIENTE_NOME TOKEN_ABC_123 coordenadas: 0.12,0.34"
         gpsResult = ApiResult.Ok(JSONObject()
             .put("accepted", 1)
             .put("duplicate", 0)

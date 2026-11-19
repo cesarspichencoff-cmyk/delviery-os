@@ -25,11 +25,23 @@ case "$scenario" in
 esac
 two_rider_devices=()
 fixture_args=()
+origin_mode="${LAB_HTTPS_ORIGIN_MODE:-dual}"
+platform_url="https://10.0.2.2:8080"
+case "$origin_mode" in
+  dual) ;;
+  gateway)
+    [[ "$scenario" != "two-riders" ]] || { echo "LAB_GATEWAY_REQUIRES_ONE_EMULATOR"; exit 1; }
+    fixture_args=(--gateway)
+    platform_url="https://10.0.2.2:5193" ;;
+  *) echo "LAB_UNKNOWN_ORIGIN_MODE"; exit 1 ;;
+esac
 if [[ "$scenario" == "two-riders" ]]; then fixture_args=(--riders 2); fi
 work="$(mktemp -d)"
 chmod 700 "$work"
 server_pid=""
+gateway_pid=""
 cleanup() {
+  if [[ -n "$gateway_pid" ]]; then kill "$gateway_pid" 2>/dev/null || true; fi
   if [[ -n "$server_pid" ]]; then kill "$server_pid" 2>/dev/null || true; fi
   # O cenario offline liga o modo aviao; nunca deixar o emulador sem rede.
   if [[ "$scenario" == "offline-reconnect" ]]; then
@@ -83,9 +95,17 @@ python3 -u ../tests/android/https_two_server_fixture.py \
   --cert "$work/leaf.crt" --key "$work/leaf.key" \
   ${fixture_args[@]+"${fixture_args[@]}"} > "$work/fixture.log" 2>&1 &
 server_pid="$!"
-python3 - <<'PY'
-import socket, time
-for port in (5193, 8080):
+if [[ "$origin_mode" == "gateway" ]]; then
+  # Keep the exact source bytes. .mts tells Node to treat this test copy as ESM.
+  cp ../src/platform/campo/portao-de-campo.ts "$work/portao-de-campo.mts"
+  node --experimental-strip-types ../tests/android/https_field_gateway.mjs \
+    "$work/leaf.crt" "$work/leaf.key" "$work/portao-de-campo.mts" > "$work/gateway.log" 2>&1 &
+  gateway_pid="$!"
+fi
+python3 - "$origin_mode" <<'PY'
+import socket, sys, time
+ports = (5193, 8080, 15193) if sys.argv[1] == "gateway" else (5193, 8080)
+for port in ports:
     for attempt in range(80):
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=0.3):
@@ -96,6 +116,11 @@ for port in (5193, 8080):
         raise SystemExit("LAB_HTTPS_SERVER_NOT_READY")
 print("LAB_HTTPS_LOCAL_SERVERS_REACHABLE")
 PY
+if [[ -n "$gateway_pid" ]]; then
+  grep -qx 'LAB_HTTPS_FIELD_GATEWAY_READY' "$work/gateway.log"
+  grep -qx 'LAB_GATEWAY_BACKENDS_READY' "$work/fixture.log"
+  echo 'LAB_HTTPS_ONE_ORIGIN_REAL_FIELD_GATEWAY'
+fi
 
 if [[ "$scenario" == "two-riders" ]]; then
   # Dois aparelhos nao cabem num connectedDebugAndroidTest: o Gradle daria os
@@ -111,7 +136,7 @@ if [[ "$scenario" == "two-riders" ]]; then
   echo "LAB_HTTPS_SCENARIO=two-riders"
   bash ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest \
     -Pentregas.baseUrl=https://10.0.2.2:5193 \
-    -Pentregas.platformUrl=https://10.0.2.2:8080
+    "-Pentregas.platformUrl=$platform_url"
   app_apk="app/build/outputs/apk/debug/app-debug.apk"
   test_apk="app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
   for serial in "${two_rider_devices[@]}"; do
@@ -193,7 +218,7 @@ if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
   "-Pandroid.testInstrumentationRunnerArguments.class=$classes" \
   ${scenario_args[@]+"${scenario_args[@]}"} \
   -Pentregas.baseUrl=https://10.0.2.2:5193 \
-  -Pentregas.platformUrl=https://10.0.2.2:8080; then
+  "-Pentregas.platformUrl=$platform_url"; then
   # Em falha, recolher somente CLASSE de excecao e frames Kotlin locais.
   # Nunca imprimir logcat bruto, mensagens, tokens, GPS, HTTP ou payloads.
   # Collect fixed JUnit assertion categories only; never print raw XML.

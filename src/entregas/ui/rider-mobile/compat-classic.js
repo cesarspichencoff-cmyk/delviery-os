@@ -15,8 +15,10 @@
     if (started) return;
     title.textContent = "Não foi possível iniciar o Entregas";
     detail.textContent =
-      "O componente Android WebView pode estar desatualizado ou o aplicativo indisponível. " +
-      "Nenhuma ação foi registrada por esta tela. Avise o responsável antes de repetir uma confirmação.";
+      (window.EntregasNativeRaw
+        ? "Atualize o Android System WebView e o Chrome pela Play Store, se houver atualização, e reabra o Entregas. "
+        : "Atualize o navegador e tente abrir o Entregas novamente. ") +
+      "Nenhuma confirmação foi registrada por esta tela. Se o aviso continuar, avise o responsável.";
     hold.setAttribute("role", "alert");
     conn.textContent = "Aplicativo indisponível";
   }, 1200);
