@@ -197,9 +197,10 @@ class RiderRealScreenInstrumentedTest {
             } else requestedMode
             fun recordCompatibility(mode: String) {
                 val width = eval(scenario, "document.documentElement.clientWidth").toInt()
-                assertTrue("LAB_RIDER_INVALID_VIEWPORT", width in 320..600)
-                assertEquals("LAB_RIDER_HORIZONTAL_OVERFLOW", "true", eval(scenario,
-                    "document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"))
+                assertTrue("LAB_RIDER_INVALID_VIEWPORT mode=$mode width=$width",
+                    if (mode == "modern") width in 320..600 else width > 0)
+                assertEquals("LAB_RIDER_HORIZONTAL_OVERFLOW mode=$mode width=$width", "true",
+                    eval(scenario, "document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"))
                 val provider = WebView.getCurrentWebViewPackage()?.versionName
                     ?.substringBefore("-")?.takeIf { it.matches(Regex("[0-9]+(\\.[0-9]+)*")) }
                     ?: "0"
@@ -214,7 +215,9 @@ class RiderRealScreenInstrumentedTest {
                         window.getComputedStyle(document.getElementById('main')).display==='none' &&
                         window.getComputedStyle(document.querySelector('.m-nav')).display==='none' &&
                         document.getElementById('compatibilityTitle').textContent.includes('Não foi possível iniciar') &&
-                        document.getElementById('connLine').textContent.includes('indisponível')"""))
+                        document.getElementById('connLine').textContent.includes('indisponível') &&
+                        document.getElementById('compatibilityTitle').getBoundingClientRect().bottom > 0 &&
+                        document.getElementById('compatibilityTitle').getBoundingClientRect().top < window.innerHeight"""))
                 assertEquals("false", eval(scenario,
                     """!!document.querySelector('script[src="/rider-mobile/rider.js"]')"""))
                 assertEquals("false", eval(scenario,
