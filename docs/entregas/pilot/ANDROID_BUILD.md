@@ -34,9 +34,9 @@ O wrapper está sem bit de execução; usar `bash ./gradlew`. A distribuição t
 
 ## Ensaio do empacotamento da variante pilot
 
-Na branch de Entregas, o workflow **DeliveryOS Android field release** usa Android 8 (API 26) e Android 17 (API 37) em emuladores. Faz a compilação otimizada, assina com uma chave temporária, confere o identificador e a configuração TLS efetiva no APK, verifica as duas origens de bancada, instala o pacote e abre sua atividade de entrada.
+Na branch de Entregas, o workflow **DeliveryOS Android field release** usa Android 8 (API 26) e Android 17 (API 37) em emuladores. Faz a compilação otimizada, assina com uma chave temporária, confere o identificador e a configuração TLS efetiva no APK, verifica que a configuração contém a origem dos dois caminhos da bancada, instala o pacote e abre sua atividade de entrada.
 
-As origens de bancada terminam em `.invalid`. A execução publica somente um recibo de verificação com o SHA-256 do APK. O APK e a chave são descartados no runner. O job de campo usa a custódia aprovada do projeto e continua condicionado a uma tag `entregas-campo-*`.
+A origem compartilhada de bancada termina em `.invalid`. A execução publica somente um recibo de verificação com o SHA-256 do APK. O APK e a chave são descartados no runner. O job de campo usa a custódia aprovada do projeto e continua condicionado a uma tag `entregas-campo-*`.
 
 Em 19/11/2026, os dois emuladores confirmaram a assinatura, a instalação e a primeira abertura na revisão `32487e8`. Os testes de HTTPS do Android 14 e 17, incluindo reconexão no 17, também passaram na mesma revisão. [Recibo do APK](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/44468716336) · [Recibo de HTTPS](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/44468716321).
 
@@ -44,13 +44,15 @@ Em 19/11/2026, os dois emuladores confirmaram a assinatura, a instalação e a p
 
 Registrar antes da geração:
 
-- Duas URLs HTTPS verificadas: piloto e plataforma, alcançáveis pelo aparelho, com certificados confiáveis.
+- Uma origem HTTPS de campo verificada, com certificado confiável e acessível na rede dos motoboys. Os dois parâmetros do APK apontam para a mesma origem, conforme a decisão D101. O gateway encaminha separadamente as rotas do piloto e da plataforma.
 - Ambiente isolado do Itaim e modo de ensaio declarado, sem reclassificar fatos como operação real.
 - Custódia da assinatura e responsável por assinar, com chave e senha fora do Git.
 - Termo vigente, responsável, contato, retenção e aprovação definidos por César.
 - Modelo e versão Android do aparelho escolhido para o ensaio, participante autorizado, vínculo do aparelho e condições de parada.
 
-Com as URLs verificadas, gerar o APK ainda sem assinatura:
+O job `field-origin-check` confere se a configuração de assinatura está preenchida e se o gateway serve a tela e encaminha as verificações de autenticação do app, enquanto protege a rota interna de saúde. A checagem recebe só um indicador de presença dos segredos. A assinatura de campo sob custódia continua no job da tag.
+
+Com a origem verificada, gerar o APK ainda sem assinatura:
 
 ```bash
 cd android

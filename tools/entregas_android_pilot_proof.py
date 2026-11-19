@@ -49,7 +49,7 @@ def main():
     origins = [os.environ[name].encode() for name in ("BASE", "PLAT")]
     with zipfile.ZipFile(args.apk) as apk:
         dex = [apk.read(name) for name in apk.namelist() if re.fullmatch(r"classes\d*\.dex", name)]
-    require(len(set(origins)) == 2 and all(any(url in unit for unit in dex) for url in origins),
+    require(all(url and any(url in unit for unit in dex) for url in origins),
             "APK_PILOT_ORIGINS_MISMATCH")
     signature = inspect(args.tools / "apksigner",
                         ["verify", "--min-sdk-version", "26", "--print-certs", str(args.apk)])

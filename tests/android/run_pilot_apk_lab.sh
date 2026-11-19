@@ -25,7 +25,7 @@ export KSP="$(openssl rand -hex 24)"
 export KP="$KSP"
 export KA=entregas-apk-lab
 export BASE=https://entregas-piloto.invalid
-export PLAT=https://entregas-plataforma.invalid
+export PLAT="$BASE"
 keytool -genkeypair -keystore "$work/lab.jks" -alias "$KA" -keyalg RSA -keysize 2048 \
   -validity 1 -storepass:env KSP -keypass:env KP -dname 'CN=DeliveryOS Disposable APK Lab' >/dev/null 2>&1
 export KS="$(base64 -w0 "$work/lab.jks")"

@@ -1,5 +1,5 @@
 # A assinatura de campo usa a custódia do projeto e exige uma tag de campo.
-# Na branch de trabalho, só há ensaio com chave descartável e domínios .invalid.
+# A branch roda bancada descartável e verifica a configuração sem carregar a chave.
 name: DeliveryOS Android field release
 on:
   push:
@@ -14,10 +14,30 @@ on:
       - tools/android_compilar_assinar_piloto.sh
       - tools/entregas_android_pilot_proof.py
       - tools/entregas_android_lab_package.py
+      - tools/entregas_field_readiness.py
       - tests/android/run_pilot_apk_lab.sh
 permissions:
   contents: read
 jobs:
+  field-origin-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check the field gateway and signing configuration
+        env:
+          FIELD_SIGNING_CONFIGURED: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_B64 != '' && secrets.ENTREGAS_PILOT_KEYSTORE_PASSWORD != '' && secrets.ENTREGAS_PILOT_KEY_ALIAS != '' && secrets.ENTREGAS_PILOT_KEY_PASSWORD != '' }}
+          BASE: ${{ vars.ENTREGAS_PILOT_BASE_URL }}
+          PLAT: ${{ vars.ENTREGAS_PILOT_PLATFORM_URL }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == 'tag' ]]; then
+            python3 tools/entregas_field_readiness.py --require-ready
+          else
+            python3 tools/entregas_field_readiness.py
+          fi
+
   pilot-apk-lab:
     if: github.ref_type == 'branch'
     strategy:
@@ -60,6 +80,7 @@ jobs:
           retention-days: 7
 
   field-apk:
+    needs: field-origin-check
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'entregas-campo-')
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -81,14 +102,6 @@ jobs:
           PLAT: ${{ vars.ENTREGAS_PILOT_PLATFORM_URL }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import os
-          from urllib.parse import urlsplit
-          for name in ("BASE", "PLAT"):
-              host = (urlsplit(os.environ[name]).hostname or "").lower().rstrip(".")
-              if not host or host.endswith((".invalid", ".example")):
-                  raise SystemExit("FIELD_ORIGIN_UNAVAILABLE_" + name)
-          PY
           bash tools/android_compilar_assinar_piloto.sh "$RUNNER_TEMP/campo/entregas-pilot-campo.apk"
           (cd "$RUNNER_TEMP/campo" && sha256sum entregas-pilot-campo.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4

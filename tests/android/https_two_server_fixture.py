@@ -80,12 +80,33 @@ class LabHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
+    def read_lab_payload(self):
+        limit = 8192
+        if self.server.use_gateway and self.headers.get("Transfer-Encoding") == "chunked":
+            body = bytearray()
+            while True:
+                line = self.rfile.readline(32)
+                if not re.fullmatch(rb"[0-9a-fA-F]+\r\n", line):
+                    raise ValueError("LAB_CHUNK_HEADER_INVALID")
+                size = int(line, 16)
+                if size + len(body) > limit:
+                    raise ValueError("LAB_BODY_TOO_LARGE")
+                block = self.rfile.read(size + 2)
+                if len(block) != size + 2 or not block.endswith(b"\r\n"):
+                    raise ValueError("LAB_CHUNK_TRUNCATED")
+                if size == 0:
+                    return body
+                body.extend(block[:-2])
+        size = int(self.headers.get("Content-Length", "-1"))
+        if not 0 <= size <= limit:
+            return None
+        return self.rfile.read(size)
+
     def handle_one(self):
-        port = self.server.server_port
         path = self.path.split("?", 1)[0]
-        platform = port == 8080
-        if port not in (8080, 5193):
-            return self.send(404, {"error": "LAB_ORIGIN_UNKNOWN"})
+        platform = self.server.server_port == 8080
+        if self.server.use_gateway and not platform and self.headers.get("X-DeliveryOS-Field") != "1":
+            return self.send(403, {"error": "LAB_EXPECTED_FIELD_GATEWAY"})
         if self.command == "GET":
             if not platform and path == "/api/policies":
                 return self.send(200, {
@@ -115,10 +136,10 @@ class LabHandler(BaseHTTPRequestHandler):
         if self.command != "POST":
             return self.send(405, {"error": "LAB_METHOD_DENIED"})
         try:
-            size = int(self.headers.get("Content-Length", "-1"))
-            if not (0 <= size <= 8192):
+            raw = self.read_lab_payload()
+            if raw is None:
                 return self.send(413, {"error": "LAB_SIZE_REJECTED"})
-            payload = json.loads(self.rfile.read(size) or b"{}")
+            payload = json.loads(raw or b"{}")
             if not isinstance(payload, dict):
                 raise ValueError("not_object")
         except (ValueError, json.JSONDecodeError):
@@ -160,7 +181,7 @@ class LabHandler(BaseHTTPRequestHandler):
             return self.send(200, {"ok": True})
 
         if not platform and path == "/api/events/batch":
-            # A platform bearer must NEVER leak to the distinct pilot origin.
+            # The pilot never receives the platform bearer, even on the shared origin.
             if auth != "Bearer " + PILOT_TOKEN:
                 return self.send(403, {"error": "LAB_PILOT_DELEGATION_REQUIRED"})
             events = payload.get("events")
@@ -359,21 +380,27 @@ def main():
     parser.add_argument("--cert", required=True)
     parser.add_argument("--key", required=True)
     parser.add_argument("--riders", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--gateway", action="store_true")
     args = parser.parse_args()
+    if args.gateway and args.riders != 1:
+        parser.error("--gateway only runs with one rider")
     multi["enabled"] = args.riders == 2
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(args.cert, args.key)
     servers = []
-    for port in (8080, 5193):
-        if multi["enabled"]:
+    for port in (8080, 15193 if args.gateway else 5193):
+        if args.gateway:
+            server = ThreadingHTTPServer(("127.0.0.1", port), LabHandler)
+        elif multi["enabled"]:
             server = PerConnectionTlsServer(("127.0.0.1", port), LabHandler)
             server.tls = context
         else:
             server = ThreadingHTTPServer(("127.0.0.1", port), LabHandler)
             server.socket = context.wrap_socket(server.socket, server_side=True)
+        server.use_gateway = args.gateway
         servers.append(server)
-    print("LAB_HTTPS_DUAL_ORIGINS_READY", flush=True)
+    print("LAB_GATEWAY_BACKENDS_READY" if args.gateway else "LAB_HTTPS_DUAL_ORIGINS_READY", flush=True)
     for server in servers:
         threading.Thread(target=server.serve_forever, daemon=True).start()
     threading.Event().wait()
