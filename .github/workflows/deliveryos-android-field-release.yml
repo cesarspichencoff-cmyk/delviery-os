@@ -1,24 +1,77 @@
-# APK de CAMPO assinado — só por tag `entregas-campo-*`, nunca por push comum.
-# A chave fica nos segredos criptografados do projeto no GitHub (o repositório
-# é público: chave em arquivo permitiria assinar um app falso do motoboy).
-# Sem os segredos e as variáveis, o workflow FALHA — não gera APK sem assinatura.
+# A assinatura de campo usa a custódia do projeto e exige uma tag de campo.
+# Na branch de trabalho, só há ensaio com chave descartável e domínios .invalid.
 name: DeliveryOS Android field release
 on:
   push:
+    branches: [feat/entregas-fila-propria-itaim]
     tags: ["entregas-campo-*"]
+    paths:
+      - .github/workflows/deliveryos-android-field-release.yml
+      - android/app/src/main/**
+      - android/app/build.gradle.kts
+      - android/app/proguard-rules.pro
+      - android/gradle/**
+      - tools/android_compilar_assinar_piloto.sh
+      - tools/entregas_android_pilot_proof.py
+      - tools/entregas_android_lab_package.py
+      - tests/android/run_pilot_apk_lab.sh
 permissions:
   contents: read
 jobs:
-  field-apk:
+  pilot-apk-lab:
+    if: github.ref_type == 'branch'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 26, sdk: '26', arch: x86 }
+          - { api: 37, sdk: '37.0', arch: x86_64 }
+    name: APK pilot lab / Android API ${{ matrix.api }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - name: Exigir segredos e enderecos HTTPS do piloto
+          cache: gradle
+      - name: Enable KVM for the disposable emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build, sign, verify and install the pilot variant using lab-only inputs
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.sdk }}
+          target: google_apis
+          arch: ${{ matrix.arch }}
+          working-directory: android
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          script: bash ../tests/android/run_pilot_apk_lab.sh ${{ matrix.api }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: entregas-pilot-apk-evidence-api${{ matrix.api }}
+          path: android-pilot-package-proof.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  field-apk:
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'entregas-campo-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build and sign the field package under the authorized custody
         env:
           KS: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_B64 }}
           KSP: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_PASSWORD }}
@@ -28,35 +81,16 @@ jobs:
           PLAT: ${{ vars.ENTREGAS_PILOT_PLATFORM_URL }}
         run: |
           set -euo pipefail
-          for v in KS KSP KA KP BASE PLAT; do
-            if [ -z "${!v}" ]; then echo "::error::falta $v (segredo/variavel do projeto)"; exit 1; fi
-          done
-          case "$BASE$PLAT" in *http://*) echo "::error::endereco sem HTTPS"; exit 1;; esac
-      - name: APK pilot (sem assinatura no build) assinado no runner com zipalign + apksigner
-        working-directory: android
-        env:
-          KS: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_B64 }}
-          KSP: ${{ secrets.ENTREGAS_PILOT_KEYSTORE_PASSWORD }}
-          KA: ${{ secrets.ENTREGAS_PILOT_KEY_ALIAS }}
-          KP: ${{ secrets.ENTREGAS_PILOT_KEY_PASSWORD }}
-          BASE: ${{ vars.ENTREGAS_PILOT_BASE_URL }}
-          PLAT: ${{ vars.ENTREGAS_PILOT_PLATFORM_URL }}
-        run: |
-          set -euo pipefail
-          # O build.gradle.kts continua sem nenhuma config de assinatura (guarda
-          # estrutural): a assinatura acontece aqui, com a chave só no runner.
-          ks="$RUNNER_TEMP/campo.jks"
-          printf '%s' "$KS" | base64 -d > "$ks"
-          trap 'rm -f "$ks"' EXIT
-          bash ./gradlew --no-daemon --console=plain :app:assemblePilot -Pentregas.baseUrl="$BASE" -Pentregas.platformUrl="$PLAT"
-          unsigned=$(ls app/build/outputs/apk/pilot/*.apk | head -n 1)
-          tools=$(dirname "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)")
-          mkdir -p "$RUNNER_TEMP/campo"
-          out="$RUNNER_TEMP/campo/entregas-pilot-campo.apk"
-          "$tools/zipalign" -p -f 4 "$unsigned" "$RUNNER_TEMP/alinhado.apk"
-          "$tools/apksigner" sign --ks "$ks" --ks-key-alias "$KA" --ks-pass env:KSP --key-pass env:KP --out "$out" "$RUNNER_TEMP/alinhado.apk"
-          "$tools/apksigner" verify --print-certs "$out" | grep -i "certificate SHA-256" | head -1
-          (cd "$RUNNER_TEMP/campo" && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlsplit
+          for name in ("BASE", "PLAT"):
+              host = (urlsplit(os.environ[name]).hostname or "").lower().rstrip(".")
+              if not host or host.endswith((".invalid", ".example")):
+                  raise SystemExit("FIELD_ORIGIN_UNAVAILABLE_" + name)
+          PY
+          bash tools/android_compilar_assinar_piloto.sh "$RUNNER_TEMP/campo/entregas-pilot-campo.apk"
+          (cd "$RUNNER_TEMP/campo" && sha256sum entregas-pilot-campo.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: entregas-apk-campo-assinado
