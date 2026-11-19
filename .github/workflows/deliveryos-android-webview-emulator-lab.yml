@@ -1,5 +1,14 @@
 name: DeliveryOS Android WebView emulator lab
 on:
+  push:
+    branches:
+      - feat/entregas-fila-propria-itaim
+    paths:
+      - .github/workflows/deliveryos-android-webview-emulator-lab.yml
+      - android/**
+      - tests/android/run_webview_lab.sh
+      - src/entregas/ui/rider-mobile/**
+      - src/entregas/ui/shared/**
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
@@ -33,10 +42,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - api: 29
-            expected: legacy
-          - api: 34
-            expected: modern
+          - { api: 26, arch: x86, expected: detect, screen: small }
+          - { api: 27, arch: x86, expected: detect, screen: standard }
+          - { api: 28, arch: x86, expected: detect, screen: large }
+          - { api: 29, arch: x86_64, expected: legacy, screen: small }
+          - { api: 30, arch: x86_64, expected: detect, screen: standard }
+          - { api: 31, arch: x86_64, expected: detect, screen: large }
+          - { api: 32, arch: x86_64, expected: detect, screen: small }
+          - { api: 33, arch: x86_64, expected: detect, screen: standard }
+          - { api: 34, arch: x86_64, expected: modern, screen: large }
+          - { api: 35, arch: x86_64, expected: modern, screen: small }
+          - { api: 36, arch: x86_64, expected: modern, screen: standard }
+          - { api: 37, arch: x86_64, expected: modern, screen: large }
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -63,10 +80,10 @@ jobs:
         with:
           api-level: ${{ matrix.api }}
           target: google_apis
-          arch: x86_64
+          arch: ${{ matrix.arch }}
           working-directory: android
           emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
-          script: bash ../tests/android/run_webview_lab.sh ${{ matrix.expected }}
+          script: bash ../tests/android/run_webview_lab.sh ${{ matrix.expected }} ${{ matrix.api }} ${{ matrix.screen }}
       - name: Require executed instrumentation, not just Gradle success
         if: always()
         env:
@@ -89,15 +106,16 @@ jobs:
           for path in files:
               try:
                   tree = ET.parse(path).getroot()
-              except ET.ParseError:
-                  continue
+              except ET.ParseError as exc:
+                  raise SystemExit(f"Invalid Android JUnit report: {path.name}") from exc
               # A single XML suite can contain cases from MULTIPLE classes.
               # Never attribute suite totals by filename or suite title.
               for case in tree.findall(".//testcase"):
                   class_name = case.attrib.get("classname", "")
                   for target in targets:
                       if class_name.endswith("." + target) or class_name == target:
-                          counts[target] += 1
+                          if case.find("skipped") is None:
+                              counts[target] += 1
                   if case.find("failure") is not None:
                       fail += 1
                   if case.find("error") is not None:
@@ -107,11 +125,19 @@ jobs:
               raise SystemExit("ANDROID_WEBVIEW_LAB_PROOF_MISSING_OR_FAILED")
           print("ANDROID_WEBVIEW_MODERN_OR_LEGACY_GATE_PASS_NO_REMOTE_RECEIPT")
           PY
+      - name: Preserve Android emulator proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entregas-api-${{ matrix.api }}-${{ matrix.screen }}-prova
+          path: tests/android/visual-proof/android-compat.txt
+          retention-days: 7
+          if-no-files-found: error
       - name: Preserve fictional GPS HOLD screenshot (one day only)
         if: ${{ matrix.expected == 'modern' && always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: deliveryos-rider-gps-hold-api34
+          name: deliveryos-rider-gps-hold-api${{ matrix.api }}
           path: tests/android/visual-proof/gps-review-hold-lab.png
           retention-days: 1
           if-no-files-found: error

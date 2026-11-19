@@ -6,6 +6,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.webkit.WebViewFeature
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -125,8 +126,9 @@ class RiderWebViewBridgeInstrumentedTest {
                 }
                 Thread.sleep(250)
             }
-            val legacy = InstrumentationRegistry.getArguments()
-                .getString("webviewExpected") == "legacy"
+            val expected = InstrumentationRegistry.getArguments().getString("webviewExpected")
+            val legacy = expected == "legacy" || (expected == "detect" &&
+                !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT))
             if (!ready && legacy) {
                 // Old WebView with no document-start support must never fall
                 // back to the public unguarded Java bridge. The raw transport

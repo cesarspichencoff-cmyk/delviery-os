@@ -12,10 +12,37 @@ for name in DELIVERYOS_DATABASE_URL TATA_READER_ROOT ENTREGAS_DEVICE_SECRET; do
   fi
 done
 expected="${1:-}"
-case "$expected" in modern|legacy) ;; *)
+case "$expected" in modern|legacy|detect) ;; *)
   echo "LAB_WEBVIEW_UNKNOWN_VARIANT"
   exit 1 ;;
 esac
+# A grade usa um emulador isolado. Confere a API e aplica o perfil de tela
+# antes de instalar o app. A mesma rotina pode rodar fora do GitHub Actions.
+mapfile -t devices < <(adb devices | tr -d '\r' | awk 'NR > 1 && NF {print $1, $2}')
+if [[ "${#devices[@]}" -ne 1 || ! "${devices[0]}" =~ ^emulator-[0-9]+\ device$ ]]; then
+  echo "LAB_WEBVIEW_REQUIRES_ONE_EMULATOR"
+  exit 1
+fi
+export ANDROID_SERIAL="${devices[0]%% *}"
+api="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
+if [[ ! "$api" =~ ^[0-9]+$ || "$api" != "${2:-$api}" ]]; then
+  echo "LAB_WEBVIEW_WRONG_ANDROID_API"
+  exit 1
+fi
+screen="${3:-standard}"
+case "$screen" in
+  small) size=720x1280; density=320 ;;
+  standard) size=1080x1920; density=420 ;;
+  large) size=1440x2560; density=480 ;;
+  *) echo "LAB_WEBVIEW_UNKNOWN_SCREEN"; exit 1 ;;
+esac
+adb shell wm size "$size"
+adb shell wm density "$density"
+adb logcat -c
+proof=../tests/android/visual-proof/android-compat.txt
+mkdir -p "$(dirname "$proof")"
+printf 'api=%s\nprofile=%s\nsize=%s\ndensity=%s\nexpected=%s\n' \
+  "$api" "$screen" "$size" "$density" "$expected" > "$proof"
 classes="br.com.tata.entregas.RiderWebViewBridgeInstrumentedTest,br.com.tata.entregas.RiderRealScreenInstrumentedTest"
 if [[ "$expected" == "modern" ]]; then
   classes="$classes,br.com.tata.entregas.RiderGpsReviewInstrumentedTest"
@@ -102,3 +129,12 @@ if [[ "$expected" == "modern" ]]; then
   test -s ../tests/android/visual-proof/gps-review-hold-lab.png
   echo "GPS_REVIEW_REAL_WEBVIEW_SCREENSHOT_CAPTURED"
 fi
+
+# O teste Kotlin emite este recibo somente depois de verificar a tela real.
+mapfile -t evidence < <(adb logcat -d -v brief -s EntregasCompat:I '*:S' |
+  sed -nE 's/^I\/EntregasCompat *\( *[0-9]+\): (mode=(modern|legacy) webview=[0-9.]+ viewport=[0-9]+)$/\1/p')
+if [[ "${#evidence[@]}" -ne 1 || ("$expected" != detect && "${evidence[0]}" != "mode=$expected "*) ]]; then
+  echo "LAB_WEBVIEW_COMPATIBILITY_PROOF_MISSING"
+  exit 1
+fi
+printf '%s\n' "${evidence[0]}" | tee -a "$proof"

@@ -12,6 +12,8 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import android.util.Log
+import androidx.webkit.WebViewFeature
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -187,7 +189,22 @@ class RiderRealScreenInstrumentedTest {
                 }
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
-            val expected = InstrumentationRegistry.getArguments().getString("webviewExpected")
+            val requested = InstrumentationRegistry.getArguments().getString("webviewExpected")
+            val syntaxSupported = eval(scenario, "({ a: 1 })?.a === 1 && (null ?? 7) === 7") == "true"
+            val nativeSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+            val expected = if (requested == "detect") {
+                if (syntaxSupported && nativeSupported) "modern" else "legacy"
+            } else requested
+            fun recordCompatibility(mode: String) {
+                val width = eval(scenario, "document.documentElement.clientWidth").toInt()
+                assertTrue("LAB_RIDER_INVALID_VIEWPORT", width in 320..600)
+                assertEquals("LAB_RIDER_HORIZONTAL_OVERFLOW", "true", eval(scenario,
+                    "document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"))
+                val provider = WebView.getCurrentWebViewPackage()?.versionName
+                    ?.substringBefore("-")?.takeIf { it.matches(Regex("[0-9]+(\\.[0-9]+)*")) }
+                    ?: "0"
+                Log.i("EntregasCompat", "mode=$mode webview=$provider viewport=$width")
+            }
             if (expected == "legacy") {
                 assertTrue("Old WebView must show an explicit compatibility HOLD",
                     until(scenario, """!!document.getElementById('compatibilityHold') &&
@@ -206,6 +223,8 @@ class RiderRealScreenInstrumentedTest {
                 })
                 assertEquals(0, testSite.attemptedDemoMutation)
                 assertEquals(0, testSite.requestsOutsideLab)
+            recordCompatibility("modern")
+                recordCompatibility("legacy")
                 return@use
             }
             assertEquals("modern", expected)

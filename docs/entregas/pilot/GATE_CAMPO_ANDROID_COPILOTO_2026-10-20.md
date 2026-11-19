@@ -86,4 +86,11 @@ Preencher sem nomes, telefones, endereços, coordenadas, conteúdo de tokens ou 
 | Falhas, rollback realizado e prova de não coleta pós-viagem | PENDENTE |
 | Aprovação humana explícita para eventual próxima etapa | **NÃO CONCEDIDA** |
 
+### Compatibilidade Android em emuladores
+
+- A validação técnica usa emuladores Android 8 a 17 (APIs 26 a 37), com telas de 360, 411 e 480 dp distribuídas pela grade. A marca do celular não define a cobertura. O aplicativo exige Android 8 ou superior e WebView capaz de iniciar a ponte protegida.
+- A rotina registra versão do Android, provedor WebView, largura e modo observado. `mode=modern` indica que a tela abriu e a fila Room foi exercitada. `mode=legacy` indica que o aviso bloqueou as ações operacionais de forma segura. Um caso ignorado não conta como executado.
+- O laboratório HTTPS exercita aplicativo e serviço de sincronização com dados sintéticos no Android 14 e 17. O Android 17 também passa pelo cenário preparado de perda e volta da rede. A validação técnica pode ser executada sem um aparelho físico.
+- Imagens de sistema e tamanhos de tela são amostras. Sinal GPS na rua, permissões e restrições de bateria específicas de fabricantes precisam de evidência de campo para afirmar funcionamento nessas condições. O aceite do termo, o vínculo por motoboy e o APK de piloto assinado continuam como requisitos de campo.
+
 **Decisão atual: NO-GO para instalação e campo.** Não confundir documentação, CI ou simulação com liberação de produção. A [issue de integração #103](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/103) fixa iFood API como **não dependência** da V1 e mantém TATÁ Comandas em frente separada.
