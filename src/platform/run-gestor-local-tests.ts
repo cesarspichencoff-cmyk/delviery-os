@@ -19,7 +19,7 @@ import { homeVM } from "../product/viewmodels/home-vm";
 import type { LeituraOperacional } from "../product/viewmodels/sinais";
 
 let n = 0;
-const TOTAL = 28;
+const TOTAL = 29;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -339,6 +339,64 @@ ok("G25 a praça aceita a observação ligada à linha e preserva a origem dos t
   assert.deepEqual(item?.observacoes, [{ fonte: "iFood", texto: "Sem molho" }, { fonte: "Teknisa", texto: "Sem pimenta" }]);
   assert.equal(item?.conferir_observacao, true);
   assert.equal(vm.previa_por_praca.pendentes.length, 0);
+});
+
+ok("G30 mede composição, sacolas e atrasos pelo mesmo vínculo de praça e elege Foco quando persistem", () => {
+  if (g.estado !== "lido") throw Error("fixture do Gestor");
+  const base = g.pedidos.find(p => p.codigo_curto === "4444")!;
+  const item = (nome: string, codigo_externo: string, quantidade = 1) => ({ nome, codigo_externo, quantidade, observacao: null, opcoes: [] });
+  const quente = item("Yakissoba", "8000000001");
+  const frio = item("Combinado", "8000000002", 2);
+  const hot = item("Hot roll", "8000000003");
+  const lata = item("Coca-Cola Lata 350ml", "8000000004", 6);
+  const pedido = (codigo_curto: string, itens: PedidoDoGestor["itens"], eventos = base.eventos) =>
+    ({ ...base, id_interno: uuid(), codigo_curto, itens, eventos });
+  const pedidos = [pedido("1121", [quente, frio, hot]), pedido("1122", [frio, hot]), pedido("1123", [quente, frio]),
+    pedido("1124", [quente, lata], { ...base.eventos, READY_TO_PICKUP: iso(1) }), pedido("1125", [frio])];
+  const teknisa = pedidos.slice(0, 4).map(p => pr(p.codigo_curto, 39, p.itens.map(i => ({ arv: i.codigo_externo!, q: i.quantidade }))));
+  const porCodigo = { "8000000001": "cozinha_quentes", "8000000002": "combinados", "8000000003": "enrolados_quentes", "8000000004": "bar_bebidas" } as const;
+  const gestor = { ...g, gravado_em: iso(0), pedidos };
+  const reader = { estado: "lido" as const, pedidos: teknisa, lido_em: iso(0), politica: { versao: null, valida: false }, fora_do_escopo: 0, invalidos: 0, bytes_lidos: 0, duracao_ms: 0 };
+  const lerPracas = (p: PedidoReal) => p.itens.map(i => porCodigo[i.codigo_arvore as keyof typeof porCodigo] ?? null);
+  const vm = operacaoDoIfoodVM(gestor, reader, new Date(AGORA), false, lerPracas);
+  assert.ok(vm.disponivel && vm.medicao_itaim);
+  const medicao = vm.medicao_itaim;
+  assert.equal(medicao.pedidos_abertos, 5);
+  assert.equal(vm.contagens.em_preparo, 4);
+  assert.equal(medicao.prontos_para_entrega, 1);
+  assert.equal(medicao.atrasos.length, 4);
+  assert.equal(medicao.atrasos_com_praca_pendente, 1);
+  assert.deepEqual(medicao.atrasos_por_praca.map(p => [p.praca, p.pedidos.length]), [["combinados", 3], ["enrolados_quentes", 2], ["cozinha_quentes", 2]]);
+  assert.deepEqual(medicao.composicao_a_conferir.map(p => p.codigo), ["1125"]);
+  assert.equal(medicao.composicoes.find(c => c.rotulo === "Combinados + Sushi Quentes + Cozinha")?.pedidos.length, 1);
+  assert.deepEqual([...medicao.duas_sacolas.map(p => p.codigo)].sort(), ["1121", "1123", "1124"]);
+  assert.deepEqual(medicao.so_quentes.map(p => p.codigo), ["1124"]);
+  assert.deepEqual(medicao.concentracao_no_preparo, []);
+  const avaliar = criarAtencaoDoGestor();
+  const ler = (min: number, retida = false) => {
+    const agora = AGORA + min * 60_000;
+    const fatos = fatosDoGestorLocal(retida ? { ...gestor, gravado_em: iso(30) } : gestor, agora);
+    const leitura: LeituraOperacional = {
+      procedencia: "real", observado_em: new Date(agora).toISOString(), fontes: [fatos.fonte], pedidos: [],
+      carga_por_praca: {}, baseline_por_praca: {}, chegadas_na_hora: null, chegadas_normais: null,
+      atrasos_de_preparo_por_praca: retida ? [] : medicao.atrasos_por_praca.map(p => ({ praca: p.praca, total: p.pedidos.length })),
+    };
+    return homeVM(leitura, { tipo: "real", temporal: avaliar(leitura, fatos, agora) });
+  };
+  assert.equal(ler(0).modo, "ambiente");
+  ler(1);
+  ler(2);
+  assert.equal(ler(3).foco?.subarea, "combinados");
+  assert.equal(ler(4, true).foco, null);
+  const vencida = operacaoDoIfoodVM({ ...gestor, gravado_em: iso(21) }, reader, new Date(AGORA), false, lerPracas);
+  assert.ok(vencida.disponivel && !vencida.medicao_itaim);
+
+  const concentrados = Array.from({ length: 5 }, (_, i) => pedido(String(1200 + i), [frio]));
+  const vmConcentrado = operacaoDoIfoodVM({ ...gestor, pedidos: concentrados }, {
+    ...reader, pedidos: concentrados.map(p => pr(p.codigo_curto, 39, [{ arv: frio.codigo_externo, q: frio.quantidade }]))
+  }, new Date(AGORA), false, lerPracas);
+  assert.ok(vmConcentrado.disponivel && vmConcentrado.medicao_itaim);
+  assert.deepEqual(vmConcentrado.medicao_itaim.concentracao_no_preparo, [{ praca: "combinados", total: 5, em_preparo: 5 }]);
 });
 function janelaParaAtencao() {
   if (g.estado !== "lido") throw Error("fixture do Gestor");

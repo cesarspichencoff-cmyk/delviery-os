@@ -442,7 +442,20 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
 }
 
 function mostrarPedidoDoCopiloto(alvo) {
-  const chave = hashAtual().consulta.get("pedido");
+  const consulta = hashAtual().consulta;
+  const praca = consulta.get("atrasos");
+  const fila = consulta.get("fila");
+  const id = /^[a-z_]+$/.test(praca ?? "") ? `dobra-ifood-atraso-${praca}` : fila === "preparo" ? "dobra-ifood-em-preparo" : null;
+  if (id) {
+    const destino = alvo.querySelector(`#${id}`);
+    if (destino) {
+      for (let dobra = destino; dobra; dobra = dobra.parentElement.closest("details")) dobra.open = true;
+      destino.querySelector("summary")?.focus({ preventScroll: true });
+      destino.scrollIntoView({ block: "center" });
+    }
+    return;
+  }
+  const chave = consulta.get("pedido");
   if (!/^[a-f0-9]{64}$/.test(chave ?? "")) return;
   const pedido = alvo.querySelector(`[data-copiloto-ifood] [data-pedido-gestor="${chave}"]`);
   if (!pedido) {

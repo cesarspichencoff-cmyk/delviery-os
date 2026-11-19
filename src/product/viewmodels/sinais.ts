@@ -102,6 +102,8 @@ export interface LeituraOperacional {
   readonly carga_por_praca: Partial<Record<PracaId, number>>;
   /** Baseline de carga por praca. Vem do motor calibrado, nao de palpite. */
   readonly baseline_por_praca: Partial<Record<PracaId, number>>;
+  readonly atrasos_de_preparo_por_praca?: readonly { readonly praca: PracaId; readonly total: number }[];
+  readonly concentracao_no_preparo?: readonly { readonly praca: PracaId; readonly total: number; readonly em_preparo: number }[];
   /** Pedidos que chegaram na ultima hora, se medido. */
   readonly chegadas_na_hora: number | null;
   /** Media de chegadas por hora ja observada, se houver. */
@@ -286,6 +288,57 @@ export const PISOS = {
   /** Teto de plausibilidade: acima disso o dado e suspeito e nao vira sinal. */
   STALE: 120,
 } as const;
+
+export const SINAL_ATRASOS_NA_PRACA = "S5a";
+export const SINAL_CONCENTRACAO_NA_PRACA = "S5b";
+
+function atrasosNaPraca(l: LeituraOperacional): SinalBruto[] {
+  return (l.atrasos_de_preparo_por_praca ?? []).flatMap(({ praca, total }) => {
+    if (total < 2) return [];
+    const ambiente = ambienteDaPraca(praca);
+    const rotulo = rotuloDaPraca(praca);
+    return [{
+      codigo: SINAL_ATRASOS_NA_PRACA,
+      nome: "Atrasos na mesma praça",
+      severidade: sev(total >= 3 ? 3 : 2),
+      escopo: "ambiente" as const,
+      ambiente,
+      subarea: praca,
+      pedido_id: null,
+      alvo_rotulo: rotulo,
+      resumo: `${total} pedidos atrasados passam por ${rotulo}.`,
+      evidencias: [ev("pedidos_atrasados_na_praca", `${total}`, l.observado_em)],
+      orientacao: "Abra a lista de atrasados e confira quais itens ainda faltam sair.",
+      limitacao: "A praça faz parte da comanda. O motivo do atraso precisa ser conferido na operação.",
+      publico: ["gerente", "boqueta"],
+      procedencia: l.procedencia,
+      pinta_ambiente: true,
+    }];
+  });
+}
+
+function concentracaoNaPraca(l: LeituraOperacional): SinalBruto[] {
+  return (l.concentracao_no_preparo ?? []).map(({ praca, total, em_preparo }) => {
+    const rotulo = rotuloDaPraca(praca);
+    return {
+      codigo: SINAL_CONCENTRACAO_NA_PRACA,
+      nome: "Concentração de pedidos",
+      severidade: 3,
+      escopo: "ambiente",
+      ambiente: ambienteDaPraca(praca),
+      subarea: praca,
+      pedido_id: null,
+      alvo_rotulo: rotulo,
+      resumo: `${total} de ${em_preparo} pedidos em preparo passam por ${rotulo}.`,
+      evidencias: [ev("pedidos_em_preparo_na_praca", `${total} de ${em_preparo}`, l.observado_em)],
+      orientacao: "Confira a fila dessa praça e os pedidos que dependem dela.",
+      limitacao: "A concentração vem dos pedidos da janela do Gestor. A capacidade da praça depende da operação.",
+      publico: ["gerente", "boqueta"],
+      procedencia: l.procedencia,
+      pinta_ambiente: true,
+    };
+  });
+}
 
 /* ================================================================== *
  * Os 11 sinais sustentados
@@ -772,6 +825,8 @@ export function sinaisDe(l: LeituraOperacional): readonly Sinal[] {
     ...s3(l),
     ...s4(l),
     ...s5(l),
+    ...atrasosNaPraca(l),
+    ...concentracaoNaPraca(l),
     ...s6(l),
     ...s7(l),
     ...s8(l),

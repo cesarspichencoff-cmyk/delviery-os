@@ -1,10 +1,11 @@
 import type { PedidosDoGestorLocal } from "../../platform/leitura/pedidos-do-gestor-local";
 import { elegerModo, ESTADO_INICIAL, POLITICA_CANONICA, type EstadoTemporal } from "../atencao/politica-temporal";
-import { sinaisDe, type FonteLeitura, type LeituraOperacional, type PedidoLeitura } from "../viewmodels/sinais";
+import { sinaisDe, SINAL_ATRASOS_NA_PRACA, SINAL_CONCENTRACAO_NA_PRACA, type FonteLeitura, type LeituraOperacional, type PedidoLeitura } from "../viewmodels/sinais";
 import { chaveDoPedidoGestor, GESTOR_VELHO_MIN } from "../viewmodels/home-operacao-ifood-vm";
 
 const FONTE = "gestor_ifood_eventos";
 const JANELA_ENTRE_LEITURAS_MS = 90_000;
+const SINAIS_ITAIM = new Set(["S1", "S2", "S3", "S4", SINAL_ATRASOS_NA_PRACA, SINAL_CONCENTRACAO_NA_PRACA]);
 
 /** Registros de status do aplicativo. Saúde aqui vale para o evento individual, não para a cobertura da fila. */
 export function fatosDoGestorLocal(gestor: PedidosDoGestorLocal, agoraMs: number) {
@@ -64,7 +65,7 @@ export function criarAtencaoDoGestor() {
         .filter(([, min]) => agora_min >= min && agora_min - min <= POLITICA_CANONICA.cooldown_min)),
     };
     const candidatas = fatos.fonte.estado === "saudavel"
-      ? sinaisDe(leitura).filter(s => s.codigo === "S1" || s.codigo === "S2" || s.codigo === "S3" || s.codigo === "S4").map(s => ({
+      ? sinaisDe(leitura).filter(s => SINAIS_ITAIM.has(s.codigo)).map(s => ({
           codigo: s.codigo, severidade: s.severidade, ambiente: s.ambiente, subarea: s.subarea,
           pedido_id: s.pedido_id, fonte_id: FONTE, evidencias: s.evidencias.length,
         }))
