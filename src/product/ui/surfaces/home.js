@@ -225,6 +225,92 @@ function pedidoAtual(o, chave) {
   return pedidos.length === 1 && pedidos[0].ativo ? pedidos[0] : null;
 }
 
+// Pré-requisitos do cardápio aplicado ao Itaim, consultados apenas após confirmar a praça do item.
+const montagemDoCardapio = new Map([
+  ["combinado especial sashimi + sushi 1 pessoa", ["combinados", "Duplas + Enrolados"]],
+  ["combinado especial sashimi + sushi 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado especial sushi + sashimi 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado especial sushi 1 pessoa", ["combinados", "Duplas + Enrolados"]],
+  ["combinado especial sushi 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado executivo sushi", ["combinados", "Duplas + Enrolados + Sushi Quentes"]],
+  ["combinado executivo sushi + sashimi", ["combinados", "Duplas + Enrolados + Sushi Quentes"]],
+  ["combinado executivo sushi salmão", ["combinados", "Duplas + Enrolados"]],
+  ["combinado kids", ["combinados", "Duplas + Enrolados"]],
+  ["combinado salmão 1 pessoa", ["combinados", "Duplas + Enrolados"]],
+  ["combinado salmão 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado salmão/atum 1 pessoa", ["combinados", "Duplas + Enrolados"]],
+  ["combinado salmão/atum 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado sushi especial 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado tradicional sashimi + sushi 1 pessoa", ["combinados", "Duplas + Enrolados"]],
+  ["combinado tradicional sashimi + sushi 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["combinado tradicional sushi 1 pessoa", ["combinados", "Duplas + Enrolados"]],
+  ["combinado tradicional sushi 2 pessoas", ["combinados", "Duplas + Enrolados"]],
+  ["menu dia dos namorados", ["combinados", "Enrolados + Sushi Quentes + Montagem + Sobremesa + Bar"]],
+  ["menu dia dos namorados com vinho cortesia", ["combinados", "Enrolados + Sushi Quentes + Montagem + Sobremesa + Bar"]],
+]);
+
+function producaoPorPedido(o, rota) {
+  if (!rota || !o?.disponivel || o.leitura_velha || !o.previa_por_praca) return "";
+  const pedidos = o.pedidos.filter(p => p.ativo && (p.etapa === "em preparo" || p.etapa.startsWith("pronto")));
+  const linhasPorPedido = new Map();
+  function registrar(item, grupo) {
+    if (!item.chave_gestor) return;
+    const linhas = linhasPorPedido.get(item.chave_gestor) ?? [];
+    linhas.push({ item, grupo });
+    linhasPorPedido.set(item.chave_gestor, linhas);
+  }
+  for (const grupo of o.previa_por_praca.grupos) for (const item of grupo.itens) registrar(item, grupo);
+  for (const item of o.previa_por_praca.pendentes) registrar(item, null);
+  const sacolas = new Map((o.medicao_itaim?.duas_sacolas ?? []).map(s => [s.chave_gestor, s]));
+  const ordenados = [...pedidos].sort((a,b) => (b.preparo?.passou_min ?? -1) - (a.preparo?.passou_min ?? -1));
+
+  function linhaProduto({item, grupo}) {
+    const cadastro = grupo && montagemDoCardapio.get(item.produto?.normalize("NFC").toLocaleLowerCase("pt-BR").trim());
+    const apoio = cadastro && cadastro[0] === grupo.praca ? cadastro[1] : "";
+    const notas = (item.observacoes ?? []).map(n => `<span class="org-sinal__resumo">${esc(n.fonte)} · ${esc(n.texto)}</span>`).join("");
+    return `<li><strong>${esc(item.descricao ?? "Item a conferir")}</strong>
+      <span class="org-sinal__resumo">${grupo ? esc(grupo.rotulo) : "Praça a conferir no caixa"}</span>
+      ${apoio ? `<span class="org-sinal__resumo">Apoio previsto no cardápio · ${esc(apoio)}</span>` : ""}
+      ${item.opcoes?.length ? `<span class="org-sinal__resumo">Opções · ${esc(item.opcoes.join(" · "))}</span>` : ""}${notas}
+      ${item.conferir_observacao ? '<span class="org-sinal__resumo">Conferir observação na Teknisa.</span>' : ""}</li>`;
+  }
+
+  function ficha(p) {
+    const chave = p.chave_gestor;
+    if (!pedidoAtual(o, chave)) return `<li>Pedido #${esc(p.codigo)} · identidade a conferir no caixa</li>`;
+    const linhas = linhasPorPedido.get(chave) ?? [];
+    const nomes = xs => JSON.stringify(xs.map(i => i.descricao).sort());
+    const completa = p.itens.length > 0 && linhas.every(l => l.grupo && l.item.produto)
+      && nomes(linhas.map(l => l.item)) === nomes(p.itens);
+    const setores = [...new Set(linhas.filter(l => l.grupo).map(l => l.grupo.rotulo))];
+    const quantidades = p.itens.map(i => Number(/^(\d+)\s*×\s*\S/u.exec(i.descricao)?.[1]));
+    const total = quantidades.length && quantidades.every(q => Number.isSafeInteger(q) && q > 0)
+      ? quantidades.reduce((a,b) => a+b, 0) : null;
+    const tamanho = total === 1 ? "1 item · 1 unidade" : total ? `${p.itens.length} ${p.itens.length === 1 ? "linha" : "linhas"} · ${total} unidades` : "Quantidade a conferir";
+    const prefixo = completa && setores.length === 1 && setores[0] !== "Combinados" ? "Só " : "";
+    const titulo = setores.length ? prefixo + setores.join(" + ") + (completa ? "" : " · composição parcial") : "Praça a conferir";
+    const atraso = p.etapa === "em preparo" ? p.preparo?.passou_min : null;
+    const prazo = atraso == null ? p.etapa : atraso === 0 ? "Prazo recém-vencido" : `${atraso} min além do prazo`;
+    const cozinhas = [...new Set(linhas.filter(l => ["sushi","cozinha"].includes(l.grupo?.ambiente)).map(l => l.grupo.rotulo))];
+    const acao = !completa ? "Confira a composição no caixa antes de direcionar o pedido." :
+      p.etapa.startsWith("pronto") ? "Confira a montagem e a modalidade antes da saída." :
+      atraso != null && cozinhas.length ? `Confira os itens com ${cozinhas.join(" e ")}. O prazo é do pedido inteiro.` : "";
+    const itens = linhas.map(linhaProduto).join("") || p.itens.map(i => `<li>${esc(i.descricao)}</li>`).join("");
+    const s = sacolas.get(chave);
+    const embalagem = s ? `<p class="org-resto__nota">Conferir separação · ${esc(s.motivos.join(" · "))}</p>` +
+      (s.grupos ?? []).map(g => `<p>${esc(g.rotulo)} · ${esc(g.itens.map(i => i.quantidade+" × "+i.produto).join(" · "))}</p>`).join("") +
+      (s.conferir?.length ? `<p>Encaixe a conferir · ${esc(s.conferir.map(i => i.produto).join(" · "))}</p>` : "") : "";
+    const corpo = `<p class="org-resto__nota">${esc(p.etapa)} · ${esc(p.modalidade)} · ${esc(p.hora)}</p>
+      ${acao ? `<p>${esc(acao)}</p>` : ""}<ul class="org-previa__itens">${itens}</ul>${embalagem}
+      <a class="org-fila__referencia" href="${esc(`#${rota}&pedido=${chave}`)}">Ver pedido #${esc(p.codigo)}</a>`;
+    return `<li>${dobra("producao-"+chave, `#${p.codigo} · ${titulo} · ${tamanho} · ${prazo}`, corpo)}</li>`;
+  }
+  const lista = ps => `<ul class="org-previa__itens">${ps.map(ficha).join("")}</ul>`;
+  return `<section class="org-resto org-turno-filas" aria-label="Produção por pedido"><div class="org-fila__topo"><h2>Produção por pedido</h2>
+    <p>Praças dos itens em preparo e prontos</p></div>${pedidos.length ? lista(ordenados.slice(0,3)) : '<p class="org-resto__nota">Nenhum pedido nessas etapas nesta leitura.</p>'}
+    ${pedidos.length>3 ? dobra("producao-demais", `Ver os outros ${pedidos.length-3} pedidos`, lista(ordenados.slice(3))) : ""}</section>`;
+}
+
 function legenda(vm) {
   if (vm.rota_home && vm.sem_leitura_operacional) {
     const ambiente = vm.modo === "ambiente" ? vm.sinais_em_segundo_plano.find(s => s.severidade >= 2) : null;
@@ -1220,7 +1306,7 @@ function secoesDaMedicao(m) {
     <span class="org-sinal__resumo">${esc(detalhe(p) || p.etapa)}</span></li>`).join("")}</ul>`;
   const vazia = '<p class="org-resto__nota">Nenhum caso identificado nesta leitura.</p>';
   const minutos = p => p.minutos === 0 ? "Menos de 1 min de atraso" : `${p.minutos} min de atraso`;
-  const composicoes = m.composicoes.map(p => dobra(`ifood-composicao-${p.id}`, `${p.rotulo} · ${p.pedidos.length}`, referencias(p.pedidos))).join("");
+  const composicoes = m.composicoes.map(p => dobra(`ifood-composicao-${p.id}`, `${p.rotulo.replace(/^Só /, "")} · ${p.pedidos.length}`, referencias(p.pedidos))).join("");
   const soQuentes = m.so_quentes.length ? dobra("ifood-so-quentes", `Só quentes de produção · ${m.so_quentes.length}`, referencias(m.so_quentes)) : "";
   const pendentes = m.composicao_a_conferir.length ? dobra("ifood-composicao-pendente",
     `A conferir · ${m.composicao_a_conferir.length}`, referencias(m.composicao_a_conferir)) : "";
@@ -1234,7 +1320,7 @@ function secoesDaMedicao(m) {
       + (cobertura ? `<p class="org-resto__nota">${esc(cobertura)}</p>` : ""))}
     ${dobra("ifood-sacolas", `Duas ou mais sacolas · ${m.duas_sacolas.length}`,
       m.duas_sacolas.length ? referencias(m.duas_sacolas, p => p.motivos.join(" · ")) : vazia)}
-    ${dobra("ifood-composicoes", "Composição dos pedidos", soQuentes + composicoes + pendentes || vazia)}
+    ${dobra("ifood-composicoes", "Agrupar por praça principal de produção", soQuentes + composicoes + pendentes || vazia)}
   </div>`;
 }
 
@@ -1416,7 +1502,7 @@ export function telaHome(leitura) {
                 : relacoesAtivas(vm)
                   ? `<div class="org-relato">${relacoesAtivas(vm)}</div>`
                   : ""
-            }</div><div class="org-massa">${superficie(vm)}${
+            }${producaoPorPedido(vm.operacao_ifood, vm.rota_home)}</div><div class="org-massa">${superficie(vm)}${
               vm.foco ? relacoesAtivas(vm) : ""
             }</div>`
       }
