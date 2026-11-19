@@ -23,6 +23,7 @@ import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-v
 import { lerPedidosReaisDoReaderIncremental, lerPracasDaRevisao, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
 import { lerPedidosDoGestorLocal } from "../src/platform/leitura/pedidos-do-gestor-local";
 import { operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
+import type { MedicaoFilaItaim } from "../src/product/viewmodels/medicao-fila-itaim";
 import { lerPedidosReaderV3 } from "../src/platform/leitura/pedidos-reader-v3";
 import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
@@ -59,6 +60,7 @@ import { lerSaudeDaFonteTata, type AvaliadorDeSaude, type SaudeDaFonteTata } fro
 import { lerDemandaDoGestor, type DemandaDoGestor } from "../src/platform/leitura/demanda-do-gestor";
 import { leituraDaDemanda } from "../src/product/eventos/demanda-gestor";
 import { criarAtencaoDoGestor, fatosDoGestorLocal } from "../src/product/eventos/atencao-gestor-local";
+import { criarMedicaoFocoItaim } from "../src/product/eventos/medicao-foco-itaim";
 import { lerPedidosDoReader } from "../src/platform/leitura/pedidos-do-reader";
 import {
   conciliarComReader,
@@ -225,6 +227,9 @@ let memoIfood: {
   em: number; vm: OperacaoDoIfoodVM; gestor: ReturnType<typeof lerPedidosDoGestorLocal>;
 } | null = null;
 const atencaoItaim = criarAtencaoDoGestor();
+const medirFocoItaim = criarMedicaoFocoItaim(
+  process.env.DELIVERYOS_ITAIM_MEDICAO_ARQUIVO ?? "", process.env.DELIVERYOS_ITAIM_MEDICAO_DIA ?? "",
+);
 function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfoodVM {
   if (!memoIfood || agoraMs - memoIfood.em >= 10_000) {
     const agora = new Date(agoraMs);
@@ -236,7 +241,7 @@ function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfo
   }
   const vm = memoIfood.vm;
   if (comPrevia || !vm.disponivel || !vm.previa_por_praca) return vm;
-  const { previa_por_praca, ...semPrevia } = vm;
+  const { previa_por_praca, medicao_itaim, ...semPrevia } = vm;
   return semPrevia;
 }
 
@@ -270,6 +275,7 @@ function homeDaOperacao(
   agoraMs: number,
   conciliacao: ConciliacaoComReader | null,
   fatos?: ReturnType<typeof fatosDoGestorLocal>,
+  medicao?: MedicaoFilaItaim,
 ) {
   const agoraIso = new Date(agoraMs).toISOString();
   const d = leituraDaDemanda(gestor, { tenant: INQUILINO_DA_LEITURA, agora_iso: agoraIso }, conciliacao);
@@ -309,6 +315,10 @@ function homeDaOperacao(
     pedidos: fatos?.pedidos ?? d.pedidos,
     carga_por_praca: {},
     baseline_por_praca: {},
+    ...(medicao && fatos?.fonte.estado === "saudavel" ? {
+      atrasos_de_preparo_por_praca: medicao.atrasos_por_praca.map(p => ({ praca: p.praca, total: p.pedidos.length })),
+      concentracao_no_preparo: medicao.concentracao_no_preparo,
+    } : {}),
     chegadas_na_hora: null,
     chegadas_normais: null,
     fontes,
@@ -864,11 +874,15 @@ export async function criarServidor(): Promise<http.Server> {
           void Promise.all([
             lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, agoraMs, avaliarSaudeTata), ruaDaHome, resumoDaFilaDoItaim(),
           ])
-            .then(([reader, rua, fila]) => json(res, 200, {
-              home_operacional: { ...homeDaOperacao(reader, demandaReal, agoraMs, null, fatos),
-                aprofundamentos: [], ...(rua ? { entregas: rua } : {}), fila_entregas: fila },
-              operacao_ifood: pedidosIfood,
-            }))
+            .then(([reader, rua, fila]) => {
+              const home = homeDaOperacao(reader, demandaReal, agoraMs, null, fatos,
+                pedidosIfood?.disponivel ? pedidosIfood.medicao_itaim : undefined);
+              medirFocoItaim(agoraMs, home, pedidosIfood, fatos.idade_min);
+              json(res, 200, {
+                home_operacional: { ...home, aprofundamentos: [], ...(rua ? { entregas: rua } : {}), fila_entregas: fila },
+                operacao_ifood: pedidosIfood,
+              });
+            })
             .catch(() => json(res, 503, { erro: "saude_das_fontes_indisponivel" }));
           return;
         }

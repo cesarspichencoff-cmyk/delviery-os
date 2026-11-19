@@ -13,10 +13,15 @@ import type { PedidosDoGestorLocal, PedidoDoGestor } from "../../platform/leitur
 import type { PedidoReal, PedidosReaisDoReader } from "../../platform/leitura/pedidos-reais-do-reader";
 import { conciliarGestorTeknisa, placedDe, type ClasseDoPar, type ParDaConciliacao } from "../../platform/leitura/conciliacao-gestor-teknisa";
 import { PRACAS, type AmbienteId, type PracaId } from "./areas";
+import { medirFilaItaim, type MedicaoFilaItaim } from "./medicao-fila-itaim";
 
 export const LIMITE_DE_CONCLUIDOS = 15;
 /** O Gestor grava a cada mudanca; sem escrita ha mais que isto, a leitura e dita velha. */
 export const GESTOR_VELHO_MIN = 20;
+
+export function chaveDoPedidoGestor(id: string): string {
+  return createHash("sha256").update(id).digest("hex");
+}
 
 const ETAPAS: readonly [string, string][] = [
   ["CANCELLED", "cancelado"], ["CONCLUDED", "concluido"], ["ARRIVED_AT_DESTINATION", "entregador no destino"],
@@ -38,6 +43,7 @@ const TEKNISA: Record<ClasseDoPar, string> = {
 
 export interface ItemIfoodDaHome { readonly descricao: string; readonly opcoes: readonly string[]; readonly observacao: string | null }
 export interface PedidoIfoodDaHome {
+  readonly chave_gestor?: string;
   readonly hora: string;
   readonly codigo: string;
   readonly etapa: string;
@@ -55,6 +61,7 @@ export interface PedidoIfoodDaHome {
 export interface AtencaoDaHome { readonly codigo: string; readonly hora: string; readonly motivo: string }
 interface ObservacaoDaPrevia { readonly fonte: "iFood" | "Teknisa"; readonly texto: string }
 interface LinhaDaPrevia {
+  readonly chave_gestor: string;
   readonly codigo: string;
   readonly hora: string;
   readonly descricao: string;
@@ -66,7 +73,7 @@ interface LinhaDaPrevia {
   readonly observacoes: readonly ObservacaoDaPrevia[];
   readonly opcoes: readonly string[];
 }
-interface PreviaPorPraca {
+export interface PreviaPorPraca {
   readonly grupos: readonly {
     readonly praca: PracaId; readonly ambiente: AmbienteId; readonly rotulo: string;
     readonly em_preparo: number; readonly prontos: number; readonly itens: readonly LinhaDaPrevia[];
@@ -96,6 +103,7 @@ export type OperacaoDoIfoodVM =
       readonly janela: string | null;
       readonly limitacoes: readonly string[];
       readonly previa_por_praca?: PreviaPorPraca;
+      readonly medicao_itaim?: MedicaoFilaItaim;
     };
 
 const horaLocal = (ms: number) => new Date(ms - 3 * 3600_000).toISOString().slice(11, 16);
@@ -113,13 +121,14 @@ const modalidade = (g: PedidoDoGestor) => (g.tipo === "TAKEOUT" ? "retirada" : g
 function preparo(g: PedidoDoGestor, etapa: string, agora: number) {
   if (g.inicio_do_preparo === null || g.tempo_de_preparo_s === null || g.tempo_de_preparo_s <= 0) return null;
   const fim = Date.parse(g.inicio_do_preparo) + g.tempo_de_preparo_s * 1000;
-  const passou = etapa === "em preparo" && agora > fim ? Math.round((agora - fim) / 60_000) : null;
+  const passou = etapa === "em preparo" && g.eventos.CONFIRMED && agora > fim ? Math.floor((agora - fim) / 60_000) : null;
   return { informado_min: Math.round(g.tempo_de_preparo_s / 60), passou_min: passou };
 }
 
-function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boolean): PedidoIfoodDaHome {
+function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boolean, incluirChave: boolean): PedidoIfoodDaHome {
   const g = par.gestor; const etapa = etapaDe(g);
   return {
+    ...(incluirChave ? { chave_gestor: chaveDoPedidoGestor(g.id_interno) } : {}),
     hora: horaLocal(placedDe(g)), codigo: g.codigo_curto, etapa, ativo: etapa !== "concluido" && etapa !== "cancelado",
     minutos: par.minutos_desde_o_pedido, modalidade: modalidade(g), preparo: preparo(g, etapa, agora),
     teknisa: { classe: par.classe, texto: TEKNISA[par.classe], estado: par.teknisa ? par.teknisa.estado_nativo : null, comanda_em_min: par.minutos_ate_a_comanda },
@@ -144,7 +153,8 @@ function previaPorPraca(pares: readonly ParDaConciliacao[], lerPracas: LerPracas
     const status = etapaDe(gestor);
     const etapa = status.startsWith("pronto") ? "pronto" : status === "em preparo" ? status : null;
     if (gestor.teste || !etapa) continue;
-    const referencia: Pick<LinhaDaPrevia, "codigo" | "hora" | "etapa"> = {
+    const referencia: Pick<LinhaDaPrevia, "codigo" | "hora" | "etapa" | "chave_gestor"> = {
+      chave_gestor: chaveDoPedidoGestor(gestor.id_interno),
       codigo: gestor.codigo_curto, hora: horaLocal(placedDe(gestor)), etapa,
     };
     const conciliado = teknisa && !teknisa.retido && CLASSES_COM_ITENS_CONCILIADOS.has(classe)
@@ -213,7 +223,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   const t = agora.getTime();
   const reais = teknisa.estado === "lido" ? teknisa.pedidos : [];
   const c = conciliarGestorTeknisa(gestor.pedidos, reais, agora);
-  const todos = c.pares.map((p) => pedidoDaHome(p, t, incluirRevisoes));
+  const todos = c.pares.map((p) => pedidoDaHome(p, t, incluirRevisoes, lerPracas !== undefined));
   const ativos = todos.filter((p) => p.ativo).sort((a, b) => b.minutos - a.minutos);
   const concluidos = todos.filter((p) => !p.ativo).sort((a, b) => a.minutos - b.minutos).slice(0, LIMITE_DE_CONCLUIDOS);
   const atencao: AtencaoDaHome[] = [];
@@ -232,7 +242,9 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   for (const p of todos) if (p.etapa === "cancelado" && p.teknisa.estado !== null && p.minutos <= 180) atencao.push({ codigo: p.codigo, hora: p.hora, motivo: `cancelado no iFood; Teknisa mostra estado ${p.teknisa.estado}` });
   const conta = (f: (p: PedidoIfoodDaHome) => boolean) => todos.filter(f).length;
   const gravadoHa = gestor.gravado_em ? Math.max(0, Math.round((t - Date.parse(gestor.gravado_em)) / 60_000)) : null;
-  const leituraVelha = gravadoHa === null || gravadoHa > GESTOR_VELHO_MIN;
+  const idadeMs = t - Date.parse(gestor.gravado_em ?? "");
+  const leituraVelha = !Number.isFinite(idadeMs) || idadeMs < 0 || idadeMs > GESTOR_VELHO_MIN * 60_000;
+  const previa = !leituraVelha && lerPracas ? previaPorPraca(c.pares, lerPracas) : null;
   const n = ativos.length;
   return {
     disponivel: true, lido_em: gestor.lido_em, gravado_ha_min: gravadoHa, leitura_velha: leituraVelha,
@@ -241,7 +253,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
       prontos: conta((p) => p.etapa.startsWith("pronto")), na_rua: conta((p) => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino"),
       concluidos: conta((p) => p.etapa === "concluido"), cancelados: conta((p) => p.etapa === "cancelado") },
     atencao, pedidos: [...ativos, ...concluidos], conciliacao: c.contagens,
-    ...(!leituraVelha && lerPracas ? { previa_por_praca: previaPorPraca(c.pares, lerPracas) } : {}),
+    ...(previa ? { previa_por_praca: previa, medicao_itaim: medirFilaItaim(ativos, previa) } : {}),
     janela: c.janela ? `${horaLocal(Date.parse(c.janela.de))}–${horaLocal(Date.parse(c.janela.ate))}` : null,
     limitacoes: [
       "O Gestor guarda so os pedidos recentes (cerca de 25), nao o total do dia; a conciliacao vale so para essa janela.",

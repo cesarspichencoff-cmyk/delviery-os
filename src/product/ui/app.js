@@ -396,16 +396,6 @@ function atualizarHomeItaim(alvo, vm) {
     const novo = nova.querySelector(seletor);
     if (anterior && novo) trocarConteudo(anterior, novo);
   }
-  const fila = atual.querySelector("[data-copiloto-ifood]");
-  const palco = atual.querySelector(".org-palco");
-  const filaNoTopo = atual.querySelector(".org-topo").nextElementSibling === fila;
-  const moverParaOTopo = !vm.home_operacional.foco && nova.dataset.vista === "geral";
-  if (moverParaOTopo !== filaNoTopo) {
-    const focado = fila.contains(document.activeElement) ? document.activeElement : null;
-    if (moverParaOTopo) atual.querySelector(".org-topo").after(fila);
-    else palco.after(fila);
-    focado?.focus({ preventScroll: true });
-  }
   atual.dataset.modo = nova.dataset.modo;
   atual.dataset.degradado = nova.dataset.degradado;
 }
@@ -451,6 +441,40 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
     clearInterval(intervalo);
     document.removeEventListener("visibilitychange", atualizar);
   };
+}
+
+function mostrarPedidoDoCopiloto(alvo) {
+  const consulta = hashAtual().consulta;
+  const praca = consulta.get("atrasos");
+  const fila = consulta.get("fila");
+  const id = /^[a-z_]+$/.test(praca ?? "") ? `dobra-ifood-atraso-${praca}` : fila === "preparo" ? "dobra-ifood-em-preparo" : null;
+  if (id) {
+    const destino = alvo.querySelector(`#${id}`);
+    if (destino) {
+      for (let dobra = destino; dobra; dobra = dobra.parentElement.closest("details")) dobra.open = true;
+      destino.querySelector("summary")?.focus({ preventScroll: true });
+      destino.scrollIntoView({ block: "center" });
+    }
+    return;
+  }
+  const chave = consulta.get("pedido");
+  if (!/^[a-f0-9]{64}$/.test(chave ?? "")) return;
+  const pedido = alvo.querySelector(`[data-copiloto-ifood] [data-pedido-gestor="${chave}"]`);
+  if (!pedido) {
+    const aviso = document.createElement("p");
+    aviso.className = "org-resto__nota";
+    aviso.setAttribute("role", "status");
+    aviso.textContent = "O pedido não está disponível na leitura atual do Gestor.";
+    alvo.querySelector(".org-topo")?.after(aviso);
+    return;
+  }
+  for (let dobra = pedido.closest("details"); dobra; dobra = dobra.parentElement.closest("details")) {
+    dobra.open = true;
+  }
+  pedido.tabIndex = -1;
+  pedido.dataset.pedidoDestacado = "sim";
+  pedido.focus({ preventScroll: true });
+  pedido.scrollIntoView({ block: "center" });
 }
 
 async function desenhar(rota, opcoes = {}) {
@@ -515,6 +539,7 @@ async function desenhar(rota, opcoes = {}) {
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
+    if (vm.home_operacional) mostrarPedidoDoCopiloto(alvo);
   } catch (e) {
     if (geracao !== estado.geracao) return;
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",

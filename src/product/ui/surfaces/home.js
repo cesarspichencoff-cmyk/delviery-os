@@ -49,6 +49,7 @@ import { blocoLimitacoes, campo, esc, selos } from "../components/ui.js";
 const FORMA = {
   caixa: "pilula",
   sushi: "nucleo",
+  enrolados_quentes: "nucleo",
   cozinha: "nucleo",
   conferencia: "pilula",
   motoboy: "pilula",
@@ -57,10 +58,27 @@ const FORMA = {
 /** As tres fileiras da superficie, na ordem do pedido. */
 const FILEIRAS = [
   { id: "entrada", areas: ["caixa"] },
-  { id: "producao", areas: ["sushi", "cozinha"] },
+  { id: "producao", areas: ["sushi", "enrolados_quentes", "cozinha"] },
   { id: "fechamento", areas: ["conferencia"] },
   { id: "saida", areas: ["motoboy"] },
 ];
+
+function ambientesDaHome(vm) {
+  if (!vm.rota_home) return vm.ambientes;
+  const sushi = vm.ambientes.find(a => a.id === "sushi");
+  const quentes = sushi?.subareas.find(p => p.id === "enrolados_quentes");
+  if (!quentes) return vm.ambientes;
+  return vm.ambientes.flatMap(a => a !== sushi ? [a] : [
+    { ...a, subareas: a.subareas.filter(p => p !== quentes) },
+    { ...quentes, descricao: "Praça de Sushi Quentes.", medicao: a.medicao, subareas: [] },
+  ]);
+}
+
+function areaDoFoco(vm) {
+  const f = vm.foco;
+  return f?.subarea === "enrolados_quentes" && vm.ambientes.some(a => a.id === f.subarea)
+    ? f.subarea : f?.ambiente ?? null;
+}
 
 /**
  * Como a ausencia se apresenta. Sao motivos DIFERENTES e o contrato canonico
@@ -185,6 +203,7 @@ function faixaParcial(vm) {
 function faixaTecnica(vm) {
   // Em leitura parcial quem fala e `faixaParcial`: as duas linguagens nao se cruzam.
   if (vm.leitura_parcial_de_pedidos && vm.demanda_observada) return "";
+  if (vm.rota_home && vm.operacao_ifood?.medicao_itaim) return "";
   if (!vm.degradado) return "";
   const nomes = vm.fontes_degradadas.map((f) => f.rotulo).join(", ");
   const h = hora(vm.observado_em);
@@ -203,7 +222,10 @@ function faixaTecnica(vm) {
 function legenda(vm) {
   if (vm.rota_home && vm.sem_leitura_operacional) {
     const ambiente = vm.modo === "ambiente" ? vm.sinais_em_segundo_plano.find(s => s.severidade >= 2) : null;
-    const apoio = ambiente?.resumo ?? (vm.operacao_ifood?.disponivel
+    const medicao = vm.operacao_ifood?.medicao_itaim;
+    const apoio = ambiente?.resumo ?? (medicao
+      ? `${medicao.pedidos_abertos} em aberto no iFood · ${vm.operacao_ifood.contagens.em_preparo} em preparo · ${medicao.prontos_para_entrega} prontos para despacho.`
+      : vm.operacao_ifood?.disponivel
       ? "Pedidos registrados no iFood. A medição de cada área aparece no mapa."
       : "A leitura dos pedidos está indisponível nesta atualização.");
     return `<div class="org-legenda">
@@ -302,18 +324,45 @@ function linhaDemandaDaPraca(grupos) {
   return textos.length ? `<span class="org-demanda-praca">${esc(textos.join(" · "))} <span class="sr-only">no iFood</span></span>` : "";
 }
 
-function subarea(s, grupos) {
+function subarea(s, grupos, medicao) {
+  const linhas = grupos.filter(p => p.praca === s.id);
+  const atraso = medicao?.atrasos_por_praca.find(p => p.praca === s.id)?.pedidos.length;
+  const medido = medicao && (linhas.length > 0 || medicao.composicao_a_conferir.length === 0);
+  const estado = s.cor === "sem_medicao" && medido ? "Fila observada" : s.estado_texto;
   return `<li class="org-sub" data-cor="${esc(s.cor)}" data-degrau="${degrau(
     s.cor,
   )}"${s.causadora ? ' data-causadora="sim"' : ""}>
     <span class="org-sub__linha">
       <span class="org-sub__nome">${esc(s.rotulo)}</span>
-      <span class="org-sub__estado">${esc(s.estado_texto)}</span>
+      <span class="org-sub__estado">${esc(estado)}</span>
     </span>
-    ${linhaDemandaDaPraca(grupos.filter(p => p.praca === s.id))}
+    ${linhaDemandaDaPraca(linhas)}
+    ${atraso ? `<span class="org-demanda-praca">${atraso} em atraso</span>` : ""}
     ${s.causadora ? '<span class="org-sub__causa">origem do congestionamento</span>' : ""}
-    <span class="sr-only">${esc(s.motivo)}</span>
+    <span class="sr-only">${esc(medido && s.cor === "sem_medicao" ? "Pedidos por praça na leitura do iFood." : s.motivo)}</span>
   </li>`;
+}
+
+function medicaoDaArea(a, vm, grupos) {
+  const o = vm.operacao_ifood;
+  const medicao = o?.medicao_itaim;
+  if (!medicao) return null;
+  const c = o.contagens;
+  if (a.id === "caixa") return `${c.em_preparo} em preparo · ${c.aguardando_aceite} aguardando aceite`;
+  if (a.id === "motoboy") return `${medicao.prontos_para_entrega} prontos para despacho · ${c.na_rua} em entrega`;
+  if (a.id === "conferencia") return `${medicao.duas_sacolas.length} com separação de sacolas identificada`;
+  const chaves = new Set(grupos.flatMap(p => p.itens.filter(i => i.etapa === "em preparo").map(i => i.chave_gestor)));
+  const atrasados = new Set(medicao.atrasos_por_praca.filter(p => grupos.some(g => g.praca === p.praca))
+    .flatMap(p => p.pedidos.map(i => i.chave_gestor)));
+  if (grupos.length === 0 && medicao.composicao_a_conferir.length > 0) return null;
+  return `${chaves.size} em preparo nesta leitura${atrasados.size ? ` · ${atrasados.size} em atraso` : ""}`;
+}
+
+function demandaDaArea(a, vm) {
+  const grupos = vm.operacao_ifood?.previa_por_praca?.grupos ?? [];
+  const quentesSeparado = vm.ambientes.some(area => area.id === "enrolados_quentes");
+  return grupos.filter(p => a.id === "enrolados_quentes" ? p.praca === a.id
+    : p.ambiente === a.id && !(quentesSeparado && p.praca === "enrolados_quentes"));
 }
 
 /**
@@ -324,7 +373,6 @@ function subarea(s, grupos) {
  * estados tecnicos manda nunca cruzar.
  */
 function area(a, vm) {
-  const ausencia = especieDeAusencia(a);
   const forma = FORMA[a.id] || "pilula";
   const href = vm.rota_home ? `#${vm.rota_home}&area=${encodeURIComponent(a.id)}` : `?${new URLSearchParams({
     ...(vm.cena ? { cena: vm.cena } : {}),
@@ -338,24 +386,29 @@ function area(a, vm) {
     (x, y) => Number(y.causadora) - Number(x.causadora),
   );
   const grupos = vm.operacao_ifood?.previa_por_praca?.grupos ?? [];
+  const demanda = demandaDaArea(a, vm);
+  const medicao = medicaoDaArea(a, vm, demanda);
+  const ausencia = medicao ? null : especieDeAusencia(a);
+  const medicaoSemPressao = medicao && a.cor === "sem_medicao";
   const subs = a.subareas.length
-    ? `<ul class="org-subs">${ordenadas.map(s => subarea(s, grupos)).join("")}</ul>`
+    ? `<ul class="org-subs">${ordenadas.map(s => subarea(s, grupos, vm.operacao_ifood?.medicao_itaim)).join("")}</ul>`
     : "";
 
   return `<div class="org-area" data-area="${esc(a.id)}" data-forma="${forma}" data-cor="${esc(
     a.cor,
   )}" data-degrau="${degrau(a.cor)}"${
     ausencia ? ` data-ausencia="${ausencia}"` : ""
-  }${vm.foco && vm.foco.ambiente === a.id ? ' data-foco="sim"' : ""}>
+  }${areaDoFoco(vm) === a.id ? ' data-foco="sim"' : ""}>
     <a class="org-area__corpo" href="${esc(href)}" aria-label="Aproximar de ${esc(
       a.rotulo,
     )}">
       ${marca(a)}
       <span class="org-area__nome">${esc(a.rotulo)}</span>
-      <span class="org-area__estado">${esc(a.estado_texto)}</span>
+      <span class="org-area__estado">${esc(medicaoSemPressao ? "Fila observada" : a.estado_texto)}</span>
     </a>
-    ${linhaDemandaDaPraca(grupos.filter(p => p.ambiente === a.id))}
-    <p class="org-area__info">${esc(a.motivo)}</p>
+    ${linhaDemandaDaPraca(demanda)}
+    ${medicao ? `<p class="org-area__info">${esc(medicao)}</p>` : ""}
+    ${medicaoSemPressao ? "" : `<p class="org-area__info">${esc(a.motivo)}</p>`}
     ${subs}
   </div>`;
 }
@@ -375,7 +428,7 @@ function segmento(l, d) {
   return `<line class="org-fio" data-intensidade="${i}" x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}">${titulo}</line>`;
 }
 
-function ligacoesEntrada(vm) {
+function ligacoesEntrada(vm, paralelo) {
   const a = achar(vm.ligacoes, "caixa", "sushi");
   const b = achar(vm.ligacoes, "caixa", "cozinha");
   // O tronco herda a maior das duas intensidades: ele carrega as duas.
@@ -389,12 +442,13 @@ function ligacoesEntrada(vm) {
           : b;
   return `<svg class="org-lig" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
     ${segmento(tronco, { x1: 50, y1: 0, x2: 50, y2: 6 })}
-    ${segmento(a, { x1: 50, y1: 6, x2: 25, y2: 20 })}
-    ${segmento(b, { x1: 50, y1: 6, x2: 75, y2: 20 })}
+    ${segmento(a, { x1: 50, y1: 6, x2: paralelo ? 16.67 : 25, y2: 20 })}
+    ${paralelo ? segmento(null, { x1: 50, y1: 6, x2: 50, y2: 20 }) : ""}
+    ${segmento(b, { x1: 50, y1: 6, x2: paralelo ? 83.33 : 75, y2: 20 })}
   </svg>`;
 }
 
-function ligacoesFechamento(vm) {
+function ligacoesFechamento(vm, paralelo) {
   const a = achar(vm.ligacoes, "sushi", "conferencia");
   const b = achar(vm.ligacoes, "cozinha", "conferencia");
   const tronco =
@@ -406,8 +460,9 @@ function ligacoesFechamento(vm) {
           ? a
           : b;
   return `<svg class="org-lig" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
-    ${segmento(a, { x1: 25, y1: 0, x2: 50, y2: 13 })}
-    ${segmento(b, { x1: 75, y1: 0, x2: 50, y2: 13 })}
+    ${segmento(a, { x1: paralelo ? 16.67 : 25, y1: 0, x2: 50, y2: 13 })}
+    ${paralelo ? segmento(null, { x1: 50, y1: 0, x2: 50, y2: 13 }) : ""}
+    ${segmento(b, { x1: paralelo ? 83.33 : 75, y1: 0, x2: 50, y2: 13 })}
     ${segmento(tronco, { x1: 50, y1: 13, x2: 50, y2: 20 })}
   </svg>`;
 }
@@ -446,9 +501,10 @@ function superficie(vm) {
   // Qual area o Foco aponta. Nao e decisao desta tela: vem pronta em
   // `vm.foco.ambiente`. Serve para o TERRITORIO se reorganizar em volta dela —
   // a fileira que a contem segue inteira, e as outras recuam (lei 4).
-  const idFoco = vm.foco ? vm.foco.ambiente : null;
+  const idFoco = areaDoFoco(vm);
+  const paralelo = porId.has("enrolados_quentes");
   const fileira = (f) =>
-    `<div class="org-fila" data-fila="${f.id}"${
+    `<div class="org-fila" data-fila="${f.id}"${f.id === "producao" && paralelo ? ' data-paralelo="sim"' : ""}${
       idFoco !== null && f.areas.includes(idFoco) ? ' data-tem-foco="sim"' : ""
     }>${f.areas
       .map((id) => (porId.has(id) ? area(porId.get(id), vm) : ""))
@@ -456,9 +512,9 @@ function superficie(vm) {
 
   return `<div class="org-superficie">
     ${fileira(FILEIRAS[0])}
-    ${ligacoesEntrada(vm)}
+    ${ligacoesEntrada(vm, paralelo)}
     ${fileira(FILEIRAS[1])}
-    ${ligacoesFechamento(vm)}
+    ${ligacoesFechamento(vm, paralelo)}
     ${fileira(FILEIRAS[2])}
     ${ligacaoSaida(vm)}
     ${fileira(FILEIRAS[3])}
@@ -503,6 +559,13 @@ function orientacao(o) {
 function foco(vm) {
   if (!vm.foco) return "";
   const f = vm.foco;
+  const leitura = vm.operacao_ifood;
+  const chave = f.sinal.pedido_id;
+  const pedido = vm.rota_home && /^[a-f0-9]{64}$/.test(chave ?? "") && leitura?.disponivel && !leitura.leitura_velha
+    ? leitura.pedidos.filter(p => p.chave_gestor === chave) : [];
+  const listaDeAtrasos = vm.rota_home && f.sinal.codigo === "S5a" && f.subarea
+    ? `#${vm.rota_home}&atrasos=${encodeURIComponent(f.subarea)}` : null;
+  const filaEmPreparo = vm.rota_home && f.sinal.codigo === "S5b" ? `#${vm.rota_home}&fila=preparo` : null;
   const local = [f.ambiente_rotulo, f.subarea_rotulo].filter(Boolean).join(" · ");
   const evid = f.evidencias.length
     ? `<ul class="org-foco__evidencias">${f.evidencias
@@ -522,6 +585,9 @@ function foco(vm) {
     ${evid}
     <p class="org-foco__tempo">${esc(f.tempo)}</p>
     ${orientacao(f.orientacao)}
+    ${pedido.length === 1 && pedido[0].ativo ? `<a class="org-foco__pedido" href="${esc(`#${vm.rota_home}&pedido=${chave}`)}">Ver pedido</a>` : ""}
+    ${listaDeAtrasos ? `<a class="org-foco__pedido" href="${esc(listaDeAtrasos)}">Ver atrasados da praça</a>` : ""}
+    ${filaEmPreparo ? `<a class="org-foco__pedido" href="${esc(filaEmPreparo)}">Ver fila em preparo</a>` : ""}
   </aside>`;
 }
 
@@ -554,7 +620,8 @@ function minimapa(vm, focada) {
 function aproximacao(vm, id) {
   const a = vm.ambientes.find((x) => x.id === id);
   if (!a) return "";
-  const ausencia = especieDeAusencia(a);
+  const medicao = medicaoDaArea(a, vm, demandaDaArea(a, vm));
+  const ausencia = medicao ? null : especieDeAusencia(a);
   const volta = vm.rota_home ? `#${vm.rota_home}` : `?${new URLSearchParams(vm.cena ? { cena: vm.cena } : {}).toString()}#/`;
 
   const entram = vm.ligacoes.filter((l) => l.para === id);
@@ -596,23 +663,23 @@ function aproximacao(vm, id) {
         <span class="org-area__corpo">
           ${marca(a)}
           <span class="org-area__nome">${esc(a.rotulo)}</span>
-          <span class="org-area__estado">${esc(a.estado_texto)}</span>
+          <span class="org-area__estado">${esc(medicao && a.cor === "sem_medicao" ? "Fila observada" : a.estado_texto)}</span>
         </span>
       </div>
       <div class="org-aprox__coluna">
         <h2 class="org-aprox__rotulo">O que esta acontecendo</h2>
         <p class="org-aprox__descricao">${esc(a.descricao)}</p>
-        <p class="org-aprox__motivo">${esc(a.motivo)}</p>
+        ${medicao && a.cor === "sem_medicao" ? "" : `<p class="org-aprox__motivo">${esc(a.motivo)}</p>`}
         ${acontecendo}
         ${
           a.subareas.length
             ? `<h3 class="org-aprox__rotulo">Subareas</h3><ul class="org-subs org-subs--aberta">${a.subareas
-                .map(s => subarea(s, vm.operacao_ifood?.previa_por_praca?.grupos ?? []))
+                .map(s => subarea(s, vm.operacao_ifood?.previa_por_praca?.grupos ?? [], vm.operacao_ifood?.medicao_itaim))
                 .join("")}</ul>`
             : ""
         }
         ${
-          a.pressao.observado === true
+          medicao ? `<p class="org-aprox__medida">${esc(medicao)}</p>` : a.pressao.observado === true
             ? `<p class="org-aprox__medida">Carga observada: ${esc(
                 a.pressao.valor,
               )}% do ritmo normal desta area.</p>`
@@ -902,7 +969,8 @@ function resto(vm) {
   const criticos = vm.sinais_em_segundo_plano.filter((s) => s.severidade >= 3).length;
   const semFonte = vm.sinais_indisponiveis.length;
   const degradadas = vm.fontes.filter((f) => f.estado !== "saudavel").length;
-  const cargaSemMedicao = vm.sem_leitura_operacional && vm.rota_home && vm.operacao_ifood?.disponivel;
+  const cargaObservada = vm.rota_home && vm.operacao_ifood?.medicao_itaim;
+  const cargaSemMedicao = !cargaObservada && vm.sem_leitura_operacional && vm.rota_home && vm.operacao_ifood?.disponivel;
 
   const resumoLinha = [
     n === 0
@@ -911,7 +979,7 @@ function resto(vm) {
           criticos > 0 ? `, ${criticos} em pressao` : ""
         }`,
     `${semFonte} do catalogo sem fonte`,
-    cargaSemMedicao ? "carga operacional sem medição" :
+    cargaObservada ? "fila observada no iFood" : cargaSemMedicao ? "carga operacional sem medição" :
       vm.sem_leitura_operacional ? "pedidos sem fonte confiavel" :
       degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
   ].join(" · ");
@@ -1078,7 +1146,7 @@ function pedidoDoIfood(p) {
     i.observacao ? ` — <em>${esc(i.observacao)}</em>` : ""}</li>`).join("");
   const preparo = p.preparo ? ` · preparo informado ${esc(String(p.preparo.informado_min))} min${
     p.preparo.passou_min ? `, passou ${esc(String(p.preparo.passou_min))} min` : ""}` : "";
-  return `<li class="org-sinal" data-ativo="${p.ativo ? "sim" : "nao"}" data-teknisa="${esc(p.teknisa.classe)}">
+  return `<li class="org-sinal"${identificarPedido(p)} data-ativo="${p.ativo ? "sim" : "nao"}" data-teknisa="${esc(p.teknisa.classe)}">
     <span class="org-sinal__nome">${esc(p.hora)} · ${esc(p.codigo)} · ${esc(p.etapa)}</span>
     <span class="org-sinal__resumo">${esc(p.modalidade)} · ha ${esc(String(p.minutos))} min${preparo} · ${esc(p.teknisa.texto)}${
       p.teknisa.estado ? ` (estado ${esc(p.teknisa.estado)})` : ""}</span>
@@ -1092,6 +1160,10 @@ function pedidoDoIfood(p) {
     ${p.leitor ? `<div class="org-ctx__ausencia">Leitura da Teknisa · revisão ${esc(p.leitor.revisao.slice(0, 10))}</div>
       <ul class="org-sinais">${pedidoDaTeknisa(p.leitor.pedido)}</ul>` : ""}
   </li>`;
+}
+
+function identificarPedido(p) {
+  return p.chave_gestor ? ` data-pedido-gestor="${esc(p.chave_gestor)}"` : "";
 }
 
 function totalDosItens(itens) {
@@ -1130,9 +1202,35 @@ function filaPorProduto(itens, linha, etapa) {
   return (lista ? `<ul class="org-sinais">${lista}</ul>` : '<p class="org-resto__nota">Nenhum item nesta etapa.</p>') + faltantes;
 }
 
+function secoesDaMedicao(m) {
+  if (!m) return "";
+  const referencias = (pedidos, detalhe = () => "") => `<ul class="org-previa__itens">${pedidos.map(p =>
+    `<li><span class="org-sinal__nome">#${esc(p.codigo)} · ${esc(p.hora)}</span>
+    <span class="org-sinal__resumo">${esc(detalhe(p) || p.etapa)}</span></li>`).join("")}</ul>`;
+  const vazia = '<p class="org-resto__nota">Nenhum caso identificado nesta leitura.</p>';
+  const minutos = p => p.minutos === 0 ? "Menos de 1 min de atraso" : `${p.minutos} min de atraso`;
+  const composicoes = m.composicoes.map(p => dobra(`ifood-composicao-${p.id}`, `${p.rotulo} · ${p.pedidos.length}`, referencias(p.pedidos))).join("");
+  const soQuentes = m.so_quentes.length ? dobra("ifood-so-quentes", `Só quentes de produção · ${m.so_quentes.length}`, referencias(m.so_quentes)) : "";
+  const pendentes = m.composicao_a_conferir.length ? dobra("ifood-composicao-pendente",
+    `A conferir · ${m.composicao_a_conferir.length}`, referencias(m.composicao_a_conferir)) : "";
+  const atrasosPorPraca = m.atrasos_por_praca.map(p => dobra(`ifood-atraso-${p.praca}`,
+    `${p.rotulo} · ${p.pedidos.length}`, referencias(p.pedidos, minutos))).join("");
+  const cobertura = [m.preparo_sem_prazo ? `${m.preparo_sem_prazo} em preparo sem prazo disponível.` : "",
+    m.atrasos_com_praca_pendente ? `${m.atrasos_com_praca_pendente} atrasados com praça a conferir.` : ""].filter(Boolean).join(" ");
+  return `<div class="org-fila__fluxo">
+    ${dobra("ifood-atrasos", `Atrasados em preparo · ${m.atrasos.length}`,
+      (m.atrasos.length ? `<p class="org-resto__nota">O atraso usa o prazo informado ao iFood. Um pedido pode aparecer em mais de uma praça.</p>${atrasosPorPraca}${dobra("ifood-atrasos-todos", "Todos os atrasados", referencias(m.atrasos, minutos))}` : vazia)
+      + (cobertura ? `<p class="org-resto__nota">${esc(cobertura)}</p>` : ""))}
+    ${dobra("ifood-sacolas", `Duas ou mais sacolas · ${m.duas_sacolas.length}`,
+      m.duas_sacolas.length ? referencias(m.duas_sacolas, p => p.motivos.join(" · ")) : vazia)}
+    ${dobra("ifood-composicoes", "Composição dos pedidos", soQuentes + composicoes + pendentes || vazia)}
+  </div>`;
+}
+
 function filaDoItaim(o, atencao, detalhes) {
   const previa = o.previa_por_praca;
-  const linha = i => `<li>
+  const medicao = o.medicao_itaim;
+  const linha = i => `<li${identificarPedido(i)}>
     <span class="org-sinal__nome">${esc(i.descricao ?? "Pedido")}</span>
     <span class="org-sinal__resumo">${esc(i.hora)} · #${esc(i.codigo)}${i.etapa ? ` · ${esc(i.etapa)}` : ""}${i.motivo ? ` · ${esc(i.motivo)}` : ""}</span>
     ${i.opcoes?.length ? `<span class="org-sinal__resumo">Opções · ${esc(i.opcoes.join(" · "))}</span>` : ""}
@@ -1160,15 +1258,18 @@ function filaDoItaim(o, atencao, detalhes) {
   return `<section class="org-resto org-ifood org-turno-filas" data-ifood="lido" data-velha="nao" aria-label="Pedidos do Itaim">
     <div class="org-fila__topo">
       <h2>Pedidos do Itaim</h2>
-      <p>Gestor do iFood${atualizado ? ` · Atualizado às ${esc(atualizado)}` : ""}</p>
+      <p>${medicao ? `${medicao.pedidos_abertos} em aberto no Gestor do iFood` : "Gestor do iFood"}${atualizado ? ` · Atualizado às ${esc(atualizado)}` : ""}</p>
     </div>
     <div class="org-fila__fluxo">
       ${etapa("ifood-em-preparo", "Em preparo", o.contagens.em_preparo, filaPorProduto(itens.filter(i => i.etapa === "em preparo"), linha, "preparo"))}
-      ${etapa("ifood-prontos", "Prontos", o.contagens.prontos, filaPorProduto(itens.filter(i => i.etapa === "pronto"), linha, "prontos"))}
+      ${etapa("ifood-prontos", "Prontos", o.contagens.prontos,
+        (medicao ? `<p class="org-resto__nota">${medicao.prontos_para_entrega} para despacho · ${medicao.prontos_para_retirada} para retirada${medicao.prontos_sem_modalidade ? ` · ${medicao.prontos_sem_modalidade} sem modalidade` : ""}</p>` : "")
+        + filaPorProduto(itens.filter(i => i.etapa === "pronto"), linha, "prontos"))}
       ${etapa("ifood-em-entrega", "Saíram para entrega", o.contagens.na_rua,
         emEntrega.length ? `<ul class="org-sinais">${emEntrega.map(pedidoDoIfood).join("")}</ul>`
           : '<p class="org-resto__nota">Nenhum pedido nesta etapa.</p>')}
     </div>
+    ${secoesDaMedicao(medicao)}
     ${dobra("ifood-conferencia", o.atencao.length ? `Conferência por praça · ${o.atencao.length} avisos` : "Conferência por praça",
       atencao + (grupos || pendentes ? `<ul class="org-sinais">${grupos}${pendentes}</ul>`
         : '<p class="org-resto__nota">Nenhum pedido em preparo ou pronto nesta leitura.</p>') + notasGerais)}
@@ -1268,7 +1369,8 @@ function areaAmpliada(vm) {
   return id && vm.ambientes.some((a) => a.id === id) ? id : null;
 }
 
-export function telaHome(vm) {
+export function telaHome(leitura) {
+  const vm = { ...leitura, ambientes: ambientesDaHome(leitura) };
   const ampliada = areaAmpliada(vm);
   const pedidos = vm.rota_home ? `<div data-copiloto-ifood>${operacaoDoIfood(vm.operacao_ifood)}</div>` : operacaoDoIfood(vm.operacao_ifood);
   return `<div class="org" data-modo="${esc(vm.modo)}" data-degradado="${
@@ -1278,7 +1380,6 @@ export function telaHome(vm) {
   }">
     ${faixaDemonstracao(vm)}
     ${topo(vm)}
-    ${vm.rota_home && !ampliada && !vm.foco ? pedidos : ""}
     ${faixaParcial(vm)}
     <div class="org-palco">
       ${faixaTecnica(vm)}
@@ -1310,7 +1411,7 @@ export function telaHome(vm) {
       }
     </div>
     ${pedidosObservados(vm)}
-    ${!vm.rota_home || ampliada || vm.foco ? pedidos : ""}
+    ${pedidos}
     ${pedidosDaTeknisa(vm.pedidos_teknisa)}
     ${filaDoEntregas(vm.fila_entregas)}
     ${entregasNaRua(vm.entregas)}
