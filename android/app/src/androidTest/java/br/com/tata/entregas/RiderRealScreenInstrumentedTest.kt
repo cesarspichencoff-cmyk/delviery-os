@@ -189,12 +189,12 @@ class RiderRealScreenInstrumentedTest {
                 }
                 web.loadUrl("$labOrigin/rider-mobile/")
             }
-            val requested = InstrumentationRegistry.getArguments().getString("webviewExpected")
+            val requestedMode = InstrumentationRegistry.getArguments().getString("webviewExpected")
             val syntaxSupported = eval(scenario, "({ a: 1 })?.a === 1 && (null ?? 7) === 7") == "true"
             val nativeSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
-            val expected = if (requested == "detect") {
+            val expected = if (requestedMode == "detect") {
                 if (syntaxSupported && nativeSupported) "modern" else "legacy"
-            } else requested
+            } else requestedMode
             fun recordCompatibility(mode: String) {
                 val width = eval(scenario, "document.documentElement.clientWidth").toInt()
                 assertTrue("LAB_RIDER_INVALID_VIEWPORT", width in 320..600)
@@ -203,7 +203,8 @@ class RiderRealScreenInstrumentedTest {
                 val provider = WebView.getCurrentWebViewPackage()?.versionName
                     ?.substringBefore("-")?.takeIf { it.matches(Regex("[0-9]+(\\.[0-9]+)*")) }
                     ?: "0"
-                Log.i("EntregasCompat", "mode=$mode webview=$provider viewport=$width")
+                val runId = InstrumentationRegistry.getArguments().getString("entregasCompatRunId")
+                Log.i("EntregasCompat", "run=$runId mode=$mode webview=$provider viewport=$width")
             }
             if (expected == "legacy") {
                 assertTrue("Old WebView must show an explicit compatibility HOLD",
@@ -223,7 +224,6 @@ class RiderRealScreenInstrumentedTest {
                 })
                 assertEquals(0, testSite.attemptedDemoMutation)
                 assertEquals(0, testSite.requestsOutsideLab)
-            recordCompatibility("modern")
                 recordCompatibility("legacy")
                 return@use
             }
@@ -406,6 +406,7 @@ class RiderRealScreenInstrumentedTest {
             assertTrue("CSP attack must not create a native Room event", runBlocking {
                 db.outbox().recent(100).none { it.eventId == "LAB_CSP_CHILD_FORGED" }
             })
+            recordCompatibility("modern")
         }
     }
 }

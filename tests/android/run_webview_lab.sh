@@ -38,7 +38,7 @@ case "$screen" in
 esac
 adb shell wm size "$size"
 adb shell wm density "$density"
-adb logcat -c
+proof_id="$(date +%s)-$$"
 proof=../tests/android/visual-proof/android-compat.txt
 mkdir -p "$(dirname "$proof")"
 printf 'api=%s\nprofile=%s\nsize=%s\ndensity=%s\nexpected=%s\n' \
@@ -55,7 +55,8 @@ fi
 # diagnostic markers; no Room rows, request bodies, addresses or client data.
 if ! bash ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest \
   "-Pandroid.testInstrumentationRunnerArguments.class=$classes" \
-  "-Pandroid.testInstrumentationRunnerArguments.webviewExpected=$expected"; then
+  "-Pandroid.testInstrumentationRunnerArguments.webviewExpected=$expected" \
+  "-Pandroid.testInstrumentationRunnerArguments.entregasCompatRunId=$proof_id"; then
   python3 - <<'PY'
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -132,7 +133,7 @@ fi
 
 # O teste Kotlin emite este recibo somente depois de verificar a tela real.
 mapfile -t evidence < <(adb logcat -d -v brief -s EntregasCompat:I '*:S' |
-  sed -nE 's/^I\/EntregasCompat *\( *[0-9]+\): (mode=(modern|legacy) webview=[0-9.]+ viewport=[0-9]+)$/\1/p')
+  sed -nE "s/^I\/EntregasCompat *\( *[0-9]+\): run=$proof_id (mode=(modern|legacy) webview=[0-9.]+ viewport=[0-9]+)$/\\1/p")
 if [[ "${#evidence[@]}" -ne 1 || ("$expected" != detect && "${evidence[0]}" != "mode=$expected "*) ]]; then
   echo "LAB_WEBVIEW_COMPATIBILITY_PROOF_MISSING"
   exit 1

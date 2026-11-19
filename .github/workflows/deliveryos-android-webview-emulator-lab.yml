@@ -78,7 +78,7 @@ jobs:
       - name: Android WebView + real Kotlin bridge + Room + WorkManager test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api }}
+          api-level: ${{ matrix.api == 37 && '37.0' || matrix.api }}
           target: google_apis
           arch: ${{ matrix.arch }}
           working-directory: android

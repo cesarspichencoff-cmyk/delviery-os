@@ -62,7 +62,7 @@ jobs:
           LAB_HTTPS_SCENARIO: ${{ matrix.scenario }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api }}
+          api-level: ${{ matrix.api == 37 && '37.0' || matrix.api }}
           target: google_apis
           arch: x86_64
           working-directory: android
@@ -95,7 +95,8 @@ jobs:
                   ran[name] += case.find("skipped") is None
           count = ran["RiderHttpsWorkerEndToEndInstrumentedTest"]
           print(f"ANDROID_REAL_HTTPS_WORKER_UI: cases={count} failed={failed} errors={errors}")
-          print("ANDROID_WEBVIEW_RENDERER_DEATH: cases=" + str(ran["RendererGoneRecoveryInstrumentedTest"]))
+          if "RendererGoneRecoveryInstrumentedTest" in ran:
+              print("ANDROID_WEBVIEW_RENDERER_DEATH: cases=" + str(ran["RendererGoneRecoveryInstrumentedTest"]))
           if ran != expected or failed or errors:
               raise SystemExit("ANDROID_REAL_HTTPS_WORKER_UI_NOT_PROVEN")
           print("ANDROID_REAL_HTTPS_WORKER_UI_LAB_PASS_NOT_FIELD_PROVEN")
