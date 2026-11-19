@@ -38,6 +38,8 @@ Na branch de Entregas, o workflow **DeliveryOS Android field release** usa Andro
 
 As origens de bancada terminam em `.invalid`. A execução publica somente um recibo de verificação com o SHA-256 do APK. O APK e a chave são descartados no runner. O job de campo usa a custódia aprovada do projeto e continua condicionado a uma tag `entregas-campo-*`.
 
+Em 19/11/2026, os dois emuladores confirmaram a assinatura, a instalação e a primeira abertura na revisão `32487e8`. Os testes de HTTPS do Android 14 e 17, incluindo reconexão no 17, também passaram na mesma revisão. [Recibo do APK](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/44468716336) · [Recibo de HTTPS](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/44468716321).
+
 ## Preparar a variante de campo
 
 Registrar antes da geração:
@@ -46,7 +48,7 @@ Registrar antes da geração:
 - Ambiente isolado do Itaim e modo de ensaio declarado, sem reclassificar fatos como operação real.
 - Custódia da assinatura e responsável por assinar, com chave e senha fora do Git.
 - Termo vigente, responsável, contato, retenção e aprovação definidos por César.
-- Modelo/Android do Xiaomi, participante autorizado, vínculo do aparelho e parada do ensaio.
+- Modelo e versão Android do aparelho escolhido para o ensaio, participante autorizado, vínculo do aparelho e condições de parada.
 
 Com as URLs verificadas, gerar o APK ainda sem assinatura:
 
@@ -61,10 +63,10 @@ Assinar sob a custódia aprovada, conferir identidade/assinante/SHA e aplicar o 
 
 ## Fronteira de prova
 
-CI aprovado comprova os comandos e artefatos daquela revisão. Não comprova servidor publicado, instalação no Xiaomi, recibo remoto do termo, GPS em segundo plano, fila offline física, bateria ou aceitação da equipe. Nenhum comando desta página instala aplicativo, cria identidade operacional ou liga coleta.
+CI aprovado comprova os comandos e artefatos daquela revisão. Não comprova servidor publicado, instalação nos aparelhos dos motoboys, recibo remoto do termo, GPS em segundo plano, fila offline física, bateria ou aceitação da equipe. Nenhum comando desta página instala aplicativo, cria identidade operacional ou liga coleta.
 
 ## Validação dos endereços de campo
 
 A geração de `pilot`/`release` analisa a URI completa: exige HTTPS e host válido; recusa credenciais, query, fragmento, porta inválida, loopback e endereço do emulador. A mesma guarda cobre a geração direta do BuildConfig e o empacotamento. Os erros não reproduzem o endereço informado, para não revelar credenciais de uma configuração incorreta.
 
-O CI executa `:app:verifyFieldEndpointPolicy`: 19 casos recusados e três formatos aceitos, usando o mesmo validador da compilação. Esses testes não consultam DNS nem comprovam certificado TLS, alcance pelo Xiaomi ou aprovação do ambiente. IP privado com HTTPS continua sendo formato permitido, pois pode representar servidor da unidade; a confiança do certificado precisa de verificação real.
+O CI executa `:app:verifyFieldEndpointPolicy`: 19 casos recusados e três formatos aceitos, usando o mesmo validador da compilação. Esses testes não consultam DNS nem comprovam certificado TLS, alcance pela rede usada pelos motoboys ou aprovação do ambiente. IP privado com HTTPS continua sendo formato permitido, pois pode representar servidor da unidade; a confiança do certificado precisa de verificação real.
