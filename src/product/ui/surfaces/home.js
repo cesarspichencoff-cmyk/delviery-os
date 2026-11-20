@@ -36,6 +36,7 @@
  */
 
 import { blocoLimitacoes, campo, esc, selos } from "../components/ui.js";
+import { identidadeItaim, mostrarPrevisao, produtosAtrasados, rankingAtrasados, rotaItaim } from "./turno-itaim.js";
 
 /* ------------------------------------------------------------------ *
  * Vocabulario visual — a traducao, e so ela
@@ -249,9 +250,9 @@ const montagemDoCardapio = new Map([
   ["menu dia dos namorados com vinho cortesia", ["combinados", "Enrolados + Sushi Quentes + Montagem + Sobremesa + Bar"]],
 ]);
 
-function producaoPorPedido(o, rota) {
+function producaoPorPedido(o, rota, selecionado = null) {
   if (!rota || !o?.disponivel || o.leitura_velha || !o.previa_por_praca) return "";
-  const pedidos = o.pedidos.filter(p => p.ativo && (p.etapa === "em preparo" || p.etapa.startsWith("pronto")));
+  const pedidos = o.pedidos.filter(p => p.ativo && (selecionado ? p.chave_gestor === selecionado : p.etapa === "em preparo" || p.etapa.startsWith("pronto")));
   const linhasPorPedido = new Map();
   function registrar(item, grupo) {
     if (!item.chave_gestor) return;
@@ -295,16 +296,21 @@ function producaoPorPedido(o, rota) {
     const acao = !completa ? "Confira a composição no caixa antes de direcionar o pedido." :
       p.etapa.startsWith("pronto") ? "Confira a montagem e a modalidade antes da saída." :
       atraso != null && cozinhas.length ? `Confira os itens com ${cozinhas.join(" e ")}. O prazo é do pedido inteiro.` : "";
-    const itens = linhas.map(linhaProduto).join("") || p.itens.map(i => `<li>${esc(i.descricao)}</li>`).join("");
+    const itens = linhas.map(linhaProduto).join("") || p.itens.map(i => `<li>${esc(i.descricao)}
+      ${i.opcoes?.length ? `<span class="turno-nota">${esc(i.opcoes.join(" · "))}</span>` : ""}
+      ${i.observacao ? `<span class="turno-nota">${esc(i.observacao)}</span>` : ""}</li>`).join("");
     const s = sacolas.get(chave);
     const embalagem = s ? `<p class="org-resto__nota">Conferir separação · ${esc(s.motivos.join(" · "))}</p>` +
       (s.grupos ?? []).map(g => `<p>${esc(g.rotulo)} · ${esc(g.itens.map(i => i.quantidade+" × "+i.produto).join(" · "))}</p>`).join("") +
       (s.conferir?.length ? `<p>Encaixe a conferir · ${esc(s.conferir.map(i => i.produto).join(" · "))}</p>` : "") : "";
     const corpo = `<p class="org-resto__nota">${esc(p.etapa)} · ${esc(p.modalidade)} · ${esc(p.hora)}</p>
-      ${acao ? `<p>${esc(acao)}</p>` : ""}<ul class="org-previa__itens">${itens}</ul>${embalagem}
-      <a class="org-fila__referencia" href="${esc(`#${rota}&pedido=${chave}`)}">Ver pedido #${esc(p.codigo)}</a>`;
-    return `<li>${dobra("producao-"+chave, `#${p.codigo} · ${titulo} · ${tamanho} · ${prazo}`, corpo)}</li>`;
+      ${acao ? `<p>${esc(acao)}</p>` : ""}<ul class="org-previa__itens">${itens}</ul>${embalagem}`;
+    if (selecionado) return `<article class="turno-ficha"><h3>${esc(identidadeItaim(p))}</h3>
+      <p><strong>${esc(prazo)}</strong> · ${esc(titulo)} · ${esc(tamanho)}</p>${corpo}</article>`;
+    return `<li>${dobra("producao-"+chave, `${identidadeItaim(p)} · ${titulo} · ${tamanho} · ${prazo}`, corpo +
+      `<a class="turno-link" href="${esc(rotaItaim(rota,{menu:"producao", ficha:chave}))}">Abrir comanda</a>`)}</li>`;
   }
+  if (selecionado) return pedidos.length === 1 && pedidoAtual(o, selecionado) ? ficha(pedidos[0]) : "";
   const lista = ps => `<ul class="org-previa__itens">${ps.map(ficha).join("")}</ul>`;
   return `<section class="org-resto org-turno-filas" aria-label="Produção por pedido"><div class="org-fila__topo"><h2>Produção por pedido</h2>
     <p>Praças dos itens em preparo e prontos</p></div>${pedidos.length ? lista(ordenados.slice(0,3)) : '<p class="org-resto__nota">Nenhum pedido nessas etapas nesta leitura.</p>'}
@@ -482,7 +488,8 @@ function demandaDaArea(a, vm) {
  */
 function area(a, vm) {
   const forma = FORMA[a.id] || "pilula";
-  const href = vm.rota_home ? `#${vm.rota_home}&area=${encodeURIComponent(a.id)}` : `?${new URLSearchParams({
+  const menuOperacional = { caixa: "fila", conferencia: "sacolas", motoboy: "rua" }[a.id];
+  const href = vm.rota_home ? rotaItaim(vm.rota_home, menuOperacional ? {menu:menuOperacional} : {area:a.id}) : `?${new URLSearchParams({
     ...(vm.cena ? { cena: vm.cena } : {}),
     area: a.id,
   }).toString()}#${vm.rota_home ?? "/"}`;
@@ -1301,11 +1308,11 @@ function filaPorProduto(itens, linha, etapa) {
   return (lista ? `<ul class="org-sinais">${lista}</ul>` : '<p class="org-resto__nota">Nenhum item nesta etapa.</p>') + faltantes;
 }
 
-function referenciasDaFila(pedidos, rota, detalhe = () => "", complemento = () => "") {
+function referenciasDaFila(pedidos, rota, detalhe = () => "", complemento = () => "", menu = null) {
   return `<ul class="org-previa__itens">${pedidos.map(p => {
     const rotulo = `#${esc(p.codigo)} · ${esc(p.hora)}`;
     const nome = rota && /^[a-f0-9]{64}$/.test(p.chave_gestor ?? "")
-      ? `<a class="org-sinal__nome org-fila__referencia" href="${esc(`#${rota}&pedido=${p.chave_gestor}`)}">${rotulo}</a>`
+      ? `<a class="org-sinal__nome org-fila__referencia" href="${esc(menu ? rotaItaim(rota,{menu,ficha:p.chave_gestor}) : `#${rota}&pedido=${p.chave_gestor}`)}">${rotulo}</a>`
       : `<span class="org-sinal__nome">${rotulo}</span>`;
     return `<li>${nome}<span class="org-sinal__resumo">${esc(detalhe(p) || p.etapa)}</span>${complemento(p)}</li>`;
   }).join("")}</ul>`;
@@ -1514,32 +1521,8 @@ function areaAmpliada(vm) {
 const paginasCopiloto = [
   ["mapa", "Mapa e foco"], ["atrasos", "Mais atrasados"], ["sacolas", "Duas ou mais sacolas"],
   ["composicao", "Combinações por praça"], ["producao", "Produção por pedido"],
-  ["fila", "Fila e conferência"], ["rua", "Entregas na rua"], ["fontes", "Fontes e diagnóstico"]
+  ["fila", "Fila e conferência"], ["previsao", "Previsão do turno"], ["rua", "Entregas na rua"], ["fontes", "Fontes e diagnóstico"]
 ];
-
-function itensEmAtraso(vm, area) {
-  const o = vm.operacao_ifood;
-  if (!o?.disponivel || o.leitura_velha || !o.previa_por_praca || !o.medicao_itaim)
-    return "<p>Sem leitura atual de itens e prazos.</p>";
-  const atrasados = new Set(o.medicao_itaim.atrasos.map(p => p.chave_gestor));
-  const grupos = area ? demandaDaArea(area, vm) : o.previa_por_praca.grupos;
-  const blocos = grupos.map(g => {
-    const somas = new Map();
-    for (const i of g.itens) {
-      if (!atrasados.has(i.chave_gestor) || i.etapa !== "em preparo" || !pedidoAtual(o, i.chave_gestor)
-        || !i.produto || !Number.isSafeInteger(i.quantidade) || i.quantidade <= 0) continue;
-      const nome = [i.produto, ...(i.opcoes ?? [])].join(" · ");
-      somas.set(nome, (somas.get(nome) ?? 0) + i.quantidade);
-    }
-    if (!somas.size) return "";
-    const linhas = [...somas].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0],"pt-BR"));
-    return '<section><h3>'+esc(g.rotulo)+'</h3><ul>'+linhas.map(([nome,q]) =>
-      '<li><strong>'+q+' ×</strong> '+esc(nome)+'</li>').join("")+'</ul></section>';
-  }).join("");
-  return '<p>Itens em preparo de pedidos que passaram do prazo do iFood. O tempo é do pedido inteiro.</p>'
-    + (blocos || '<p>Nenhum item identificado nesta seleção.</p>')
-    + (o.medicao_itaim.atrasos_com_praca_pendente ? '<p>Há itens atrasados cuja praça ainda precisa ser conferida.</p>' : '');
-}
 
 function painelItaim(vm) {
   const o = vm.operacao_ifood;
@@ -1553,30 +1536,46 @@ function painelItaim(vm) {
   const atual = o?.disponivel && !o.leitura_velha;
   const m = atual && o.medicao_itaim;
   const ausente = '<p>Sem leitura atual para esta consulta.</p>';
-  const refs = xs => referenciasDaFila(xs, rota);
+  const refs = xs => referenciasDaFila(xs, rota, undefined, undefined, id);
+  const produto = parametros.get("produto");
+  const ficha = parametros.get("ficha");
+  const volta = rotaItaim(rota, {menu:id, area:area?.id, produto});
   let corpo;
-  if (id==="mapa") {
-    if (area) corpo='<a href="'+esc(href("mapa"))+'">← Voltar ao mapa</a><h2>'+esc(area.rotulo)+'</h2>'+itensEmAtraso(vm,area);
-    else corpo = superficie(vm) + (vm.foco ? '<section><h3>Foco</h3><p>'+esc(vm.foco.situacao)+'</p><a href="'+esc(href("mapa")+"&area="+encodeURIComponent(areaDoFoco(vm)))+'">Ver itens da praça em foco</a></section>' : relacoesAtivas(vm));
+  if (ficha) {
+    const rotulo = area ? area.rotulo : paginasCopiloto.find(([k])=>k===id)[1];
+    const dados = atual && pedidoAtual(o, ficha) ? producaoPorPedido(o, rota, ficha) : "";
+    corpo = '<a class="turno-voltar" href="' + esc(volta) + '">← Voltar a ' + esc(rotulo) + '</a>' +
+      (dados || '<p role="status">Comanda indisponível nesta leitura. Confira a fila atual.</p>');
+  } else if (id==="mapa") {
+    if (area) corpo='<a href="'+esc(href("mapa"))+'">← Voltar ao mapa</a><h2>'+esc(area.rotulo)+'</h2>'+produtosAtrasados(o, demandaDaArea(area,vm), rota, area.id, produto, pedidoAtual);
+    else {
+      const f = vm.foco;
+      const destino = f && areaDoFoco(vm);
+      const fluxo = {caixa:"fila", conferencia:"sacolas", motoboy:"rua"}[destino];
+      const link = fluxo ? href(fluxo) : rotaItaim(rota,{menu:"mapa",area:destino});
+      const acao = f?.orientacao?.acao;
+      const tempo = f?.tempo;
+      corpo = superficie(vm) + (f && atual ? '<section class="turno-foco"><h3>Foco · ' + esc(f.subarea_rotulo || f.ambiente_rotulo || "Agora") +
+        '</h3><strong>' + esc(f.situacao) + '</strong>' + (acao ? '<p>' + esc(acao) + '</p>' : '') +
+        (tempo ? '<p>' + esc(tempo) + '</p>' : '') + '<a class="turno-link" href="' + esc(link) + '">Conferir ' +
+        esc(f.subarea_rotulo || f.ambiente_rotulo || "a fila") + '</a></section>' : relacoesAtivas(vm));
+    }
   } else if (id==="atrasos" && m) {
-    corpo = '<ol>'+[...m.atrasos].sort((a,b)=>b.minutos-a.minutos).map(p=>{
-      const n = pedidoAtual(o,p.chave_gestor)?.teknisa?.sequencia;
-      return '<li><strong>'+esc(String(p.minutos))+' min de atraso</strong> · iFood #'+esc(p.codigo)+' · Teknisa '+(/^[0-9]{3}$/.test(n)?esc(n):'a conferir')+'</li>';
-    }).join("")+'</ol>'+(m.atrasos.length?'':'<p>Nenhum pedido atrasado nesta leitura.</p>')
-      + (m.perto_do_prazo?.length ? dobra("perto","Perto do prazo",refs(m.perto_do_prazo)) : "");
+    corpo = rankingAtrasados(o, rota, pedidoAtual);
   } else if (id==="sacolas" && m) {
-    corpo=m.duas_sacolas.length ? referenciasDaFila(m.duas_sacolas,rota,p=>p.motivos.join(" · "),montagemDaSacola) : "<p>Nenhuma separação sugerida nesta leitura.</p>";
+    corpo=m.duas_sacolas.length ? referenciasDaFila(m.duas_sacolas,rota,p=>p.motivos.join(" · "),montagemDaSacola, id) : "<p>Nenhuma separação sugerida nesta leitura.</p>";
   } else if (id==="composicao" && m) {
     const grupos=[{id:"quentes",rotulo:"Só quentes de produção",pedidos:m.so_quentes},...m.composicoes,
       {id:"pendente",rotulo:"Composição a conferir",pedidos:m.composicao_a_conferir}];
     corpo=grupos.filter(g=>g.pedidos.length).map(g=>dobra("grupo-"+g.id,g.rotulo+" · "+g.pedidos.length,refs(g.pedidos))).join("") || "<p>Nenhuma composição nesta leitura.</p>";
   } else if (id==="producao") corpo=producaoPorPedido(o,rota)||ausente;
   else if (id==="fila") corpo=(atual ? operacaoDoIfood(o,rota,true) : ausente)||ausente;
+  else if (id==="previsao") corpo=mostrarPrevisao(vm.previsao_turno);
   else if (id==="rua") corpo=entregasNaRua(vm.entregas,o)||"<p>Sem leitura de entregas na rua.</p>";
   else if (id==="fontes") corpo=pedidosObservados(vm)+pedidosDaTeknisa(vm.pedidos_teknisa)+resto(vm,true);
   else corpo=ausente;
   const nome=paginasCopiloto.find(([k])=>k===id)[1];
-  return '<div class="org menu-itaim">'+topo(vm)+'<div class="menu-layout"><aside class="menu-grande"><h2>Copiloto</h2><nav aria-label="Consultas do Copiloto">'+links+'</nav></aside><details class="menu-pequeno" id="menu-consultas"><summary>☰ Copiloto</summary><nav aria-label="Consultas">'+links+'</nav></details><main><div class="org-palco">'+faixaTecnica(vm)+'</div><section data-copiloto-ifood><h2>'+nome+'</h2>'+corpo+'</section><div data-resumo-operacao></div></main></div></div>';
+  return '<div class="org menu-itaim">'+topo(vm)+'<div class="menu-layout"><aside class="menu-grande"><h2>Copiloto</h2><nav aria-label="Consultas do Copiloto">'+links+'</nav></aside><details class="menu-pequeno" id="menu-consultas"><summary>☰ Copiloto <span>· ' + esc(nome) + '</span></summary><nav aria-label="Consultas">'+links+'</nav></details><div class="turno-conteudo"><div class="org-palco">'+faixaTecnica(vm)+'</div><section data-copiloto-ifood><h2>'+(ficha?"Comanda":nome)+'</h2>'+corpo+'</section><div data-resumo-operacao></div></div></div></div>';
 }
 
 export function telaHome(leitura) {

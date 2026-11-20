@@ -1,0 +1,25 @@
+{
+  "natureza": "Cenário fictício de aceite, inclusive os nomes.",
+  "unidade": "ITAIM",
+  "hora": "19:05",
+  "pedidos": [
+    {"id": 1, "ifood": "3812", "comanda": "91007", "cliente": "Ana", "etapa": "em preparo", "prazo": "18:53", "atraso_min": 12,
+     "itens": [{"produto": "Uramaki de Salmão", "quantidade": 2, "praca": "enrolados", "nota": "Sem cebolinha"}, {"produto": "Guioza", "quantidade": 1, "praca": "cozinha_quentes"}]},
+    {"id": 2, "ifood": "3940", "comanda": "96041", "cliente": "Rui", "etapa": "em preparo", "prazo": "18:59", "atraso_min": 6,
+     "itens": [{"produto": "Uramaki de Salmão", "quantidade": 3, "praca": "enrolados"}]},
+    {"id": 3, "ifood": "4108", "comanda": "92007", "cliente": "Lia", "etapa": "em preparo", "prazo": "19:09", "atraso_min": null,
+     "itens": [{"produto": "Hot Roll", "quantidade": 2, "praca": "enrolados_quentes"}]},
+    {"id": 4, "ifood": "4170", "comanda": null, "cliente": null, "etapa": "pronto", "atraso_min": null,
+     "itens": [{"produto": "Uramaki de Salmão", "quantidade": 4, "praca": "enrolados"}]},
+    {"id": 5, "ifood": "4055", "comanda": null, "cliente": null, "etapa": "cancelado", "atraso_min": null,
+     "itens": [{"produto": "Guioza", "quantidade": 9, "praca": "cozinha_quentes"}]}
+  ],
+  "resposta_esperada": {
+    "pedidos_atrasados_distintos": 2,
+    "produtos_em_pedidos_atrasados": {"enrolados": {"Uramaki de Salmão": 5}, "cozinha_quentes": {"Guioza": 1}},
+    "unidades_comerciais_nos_dois_pedidos_atrasados": 6,
+    "mais_antigo": {"sequencia": "007", "ifood": "3812", "cliente": "Ana", "atraso_min": 12},
+    "separacao_sugerida": "Conferir o Guioza quente separado dos dois Uramakis frios do pedido 3812.",
+    "risco_a_conferir": "Dois Hot Rolls do pedido 4108 vencem em quatro minutos. O sufixo 007 também existe em outro pedido."
+  }
+}

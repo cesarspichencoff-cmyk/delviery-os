@@ -419,7 +419,9 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
     relendo = true;
     let vm;
     try {
-      vm = await obter(api + (api.includes("?") ? "&" : "?") + "pedidos=1", AbortSignal.timeout(8000));
+      const incluiRua = homeItaim && hashAtual().consulta.get("menu") === "rua";
+      const endpoint = incluiRua ? api : api + (api.includes("?") ? "&" : "?") + "pedidos=1";
+      vm = await obter(endpoint, AbortSignal.timeout(8000));
     } catch {
       vm = { operacao_ifood: { disponivel: false, titulo: "Leitura do iFood indisponível",
         explicacao: "A atualização será tentada novamente." } };
@@ -458,7 +460,39 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
   };
 }
 
+const posicoesDoTurno = new Map();
+let ultimaConsultaDoTurno = null;
+
+function consultaDoTurno() {
+  const { consulta } = hashAtual();
+  const q = new URLSearchParams(consulta);
+  q.delete("produto");
+  if (!q.has("menu")) q.set("menu","mapa");
+  q.sort();
+  return q.toString();
+}
+function guardarPosicaoDoTurno() {
+  if (!ultimaConsultaDoTurno) return;
+  const painel = document.querySelector("[data-copiloto-ifood]");
+  if (painel) {
+    const abertos = [...painel.querySelectorAll("details[open][id]")].map(d => d.id);
+    posicoesDoTurno.delete(ultimaConsultaDoTurno);
+    posicoesDoTurno.set(ultimaConsultaDoTurno, { y: window.scrollY, abertos });
+    if (posicoesDoTurno.size > 24) posicoesDoTurno.delete(posicoesDoTurno.keys().next().value);
+  }
+  ultimaConsultaDoTurno = null;
+}
+
 function mostrarDestinoDoCopiloto(alvo) {
+  ultimaConsultaDoTurno = consultaDoTurno();
+  const antes = posicoesDoTurno.get(ultimaConsultaDoTurno);
+  if (antes) {
+    for (const id of antes.abertos) {
+      const d = document.getElementById(id);
+      if (d && alvo.contains(d)) d.open = true;
+    }
+    window.scrollTo(0, antes.y);
+  }
   const consulta = hashAtual().consulta;
   const codigoDePraca = id => /^[a-z_]+$/.test(id ?? "");
   const atrasos = consulta.get("atrasos");
@@ -503,6 +537,7 @@ function mostrarDestinoDoCopiloto(alvo) {
 }
 
 async function desenhar(rota, opcoes = {}) {
+  guardarPosicaoDoTurno();
   estado.pollingPedidos?.();
   estado.pollingPedidos = null;
   const geracao = ++estado.geracao;

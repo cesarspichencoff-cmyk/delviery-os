@@ -11,9 +11,10 @@
  * PRIVACIDADE, por construcao:
  *  - so as chaves `order/<uuid>` e `orderIds` da origem do Gestor sao decodificadas; qualquer outra
  *    (inclusive a que guarda o token do usuario) nao e nem copiada para a memoria;
- *  - do pedido saem so campos operacionais. Cliente, endereco, documento, telefone, pagamento,
+ *  - do pedido saem so campos operacionais. Endereco, documento, telefone, pagamento,
  *    valores, localizador, codigo de retirada, nome e identidade do entregador e nota de entrega
  *    (pode ter endereco) NUNCA saem deste modulo — a nota vira so um booleano.
+ *  - apenas a leitura operacional do Itaim solicita o nome de exibição, separado da projeção genérica.
  */
 import { isAbsolute, join, resolve } from "node:path";
 import { lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
@@ -118,7 +119,9 @@ export function pedidoOperacional(o: unknown): PedidoDoGestor | null {
 }
 
 /** `raiz`: pasta de dados do aplicativo (ex.: C:\Users\<conta>\AppData\Roaming\Gestor de Pedidos). */
-export function lerPedidosDoGestorLocal(raiz: string | null, agora: Date = new Date()): PedidosDoGestorLocal {
+export function lerPedidosDoGestorLocal(
+  raiz: string | null, agora: Date = new Date(), aoLerNome?: (id: string, nome: string) => void,
+): PedidosDoGestorLocal {
   const t0 = Date.now();
   if (raiz === null || raiz.trim() === "") return { estado: "nao_configurado" };
   if (!isAbsolute(raiz)) return { estado: "indisponivel", motivo: "caminho_invalido" };
@@ -147,7 +150,12 @@ export function lerPedidosDoGestorLocal(raiz: string | null, agora: Date = new D
     if (k.endsWith("orderIds")) { ids = Array.isArray(v) ? v.length : 0; continue; }
     const p = pedidoOperacional(v);
     if (p === null || p.teste) { descartados++; continue; }
-    if (pedidos.length < MAX_PEDIDOS) pedidos.push(p);
+    if (pedidos.length >= MAX_PEDIDOS) continue;
+    pedidos.push(p);
+    if (aoLerNome && k.slice(-36).toLowerCase() === p.id_interno && obj(v) && obj(v.customer)) {
+      const nome = txt(v.customer.name, 160)?.replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/gu, " ").replace(/\s+/gu, " ").trim();
+      if (nome) aoLerNome(p.id_interno, nome);
+    }
   }
   pedidos.sort((a, b) => (a.criado_em < b.criado_em ? 1 : a.criado_em > b.criado_em ? -1 : 0));
   return { estado: "lido", lido_em: agora.toISOString(), gravado_em: gravado ? new Date(gravado).toISOString() : null,

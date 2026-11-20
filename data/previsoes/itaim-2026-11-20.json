@@ -1,0 +1,1978 @@
+{
+  "data": "2026-11-20",
+  "unidade": "ITAIM",
+  "fuso": "America/Sao_Paulo",
+  "natureza": "previsão antes do turno",
+  "unidade_das_tabelas": "itens comerciais",
+  "fonte": "TATA_ITAIM_PREVISAO_GERAL_20NOV_V77_AUDITADA.pdf",
+  "sha256_fonte": "657f2c4619fd8cc9b4e900aa56534b79e93932ea590678cbd60f3faa05bbd01e",
+  "pedidos_ifood_pagina_2": {
+    "recebido": 358,
+    "almoco": 72,
+    "jantar": 286,
+    "alternativo_feriado": 330
+  },
+  "itens_no_plano": {
+    "delivery": 1229,
+    "salao_cenario_estimado": 800,
+    "ambos": 2029
+  },
+  "turnos_pagina_4": {
+    "almoco": {
+      "total": 466,
+      "delivery": 186,
+      "salao_estimado": 280
+    },
+    "jantar": {
+      "total": 1563,
+      "delivery": 1043,
+      "salao_estimado": 520
+    }
+  },
+  "faixas_locais_pagina_3": [
+    "11–13",
+    "13–15",
+    "18–20",
+    "20–22",
+    "22–23"
+  ],
+  "itens_ambos_canais_por_faixa": [
+    241,
+    225,
+    713,
+    662,
+    188
+  ],
+  "pracas_por_faixa": [
+    {
+      "praca_no_plano": "ENROLADOS (ALMOÇO TODOS)",
+      "unidades_por_faixa": [
+        66,
+        56,
+        167,
+        153,
+        43
+      ]
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "unidades_por_faixa": [
+        49,
+        23,
+        152,
+        136,
+        33
+      ]
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "unidades_por_faixa": [
+        49,
+        42,
+        119,
+        114,
+        31
+      ]
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "unidades_por_faixa": [
+        27,
+        38,
+        115,
+        100,
+        33
+      ]
+    },
+    {
+      "praca_no_plano": "QUENTES · JANTAR JUNTO",
+      "unidades_por_faixa": [
+        0,
+        0,
+        76,
+        68,
+        25
+      ]
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "unidades_por_faixa": [
+        14,
+        4,
+        29,
+        24,
+        6
+      ]
+    },
+    {
+      "praca_no_plano": "BAR",
+      "unidades_por_faixa": [
+        27,
+        49,
+        39,
+        44,
+        11
+      ]
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "unidades_por_faixa": [
+        1,
+        4,
+        13,
+        17,
+        4
+      ]
+    },
+    {
+      "praca_no_plano": "SEQUÊNCIAS",
+      "unidades_por_faixa": [
+        8,
+        9,
+        3,
+        2,
+        2
+      ]
+    },
+    {
+      "praca_no_plano": "CONFERIR PRAÇA",
+      "unidades_por_faixa": [
+        0,
+        0,
+        0,
+        4,
+        0
+      ]
+    }
+  ],
+  "produtos": [
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Temaki de Salmão",
+      "pagina": 5,
+      "almoco_junto": 23,
+      "jantar_delivery": 57,
+      "jantar_salao": 25,
+      "jantar_junto": null,
+      "dia": 105
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Temaki de Barriga de Salmão",
+      "pagina": 5,
+      "almoco_junto": 14,
+      "jantar_delivery": 39,
+      "jantar_salao": 14,
+      "jantar_junto": null,
+      "dia": 67
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Uramaki de Salmão Especial",
+      "pagina": 5,
+      "almoco_junto": 12,
+      "jantar_delivery": 38,
+      "jantar_salao": 13,
+      "jantar_junto": null,
+      "dia": 63
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Baterá de Salmão",
+      "pagina": 5,
+      "almoco_junto": 6,
+      "jantar_delivery": 27,
+      "jantar_salao": 9,
+      "jantar_junto": null,
+      "dia": 42
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Hossomaki de Salmão",
+      "pagina": 5,
+      "almoco_junto": 8,
+      "jantar_delivery": 25,
+      "jantar_salao": 8,
+      "jantar_junto": null,
+      "dia": 41
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Uramaki de Salmão",
+      "pagina": 5,
+      "almoco_junto": 9,
+      "jantar_delivery": 19,
+      "jantar_salao": 8,
+      "jantar_junto": null,
+      "dia": 36
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Uramaki de Atum Avocado Spicy",
+      "pagina": 5,
+      "almoco_junto": 4,
+      "jantar_delivery": 12,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 19
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Temaki de Atum Spicy",
+      "pagina": 5,
+      "almoco_junto": 2,
+      "jantar_delivery": 9,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 14
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Hossomaki de Pepino",
+      "pagina": 5,
+      "almoco_junto": 2,
+      "jantar_delivery": 7,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Temaki de Atum",
+      "pagina": 5,
+      "almoco_junto": 2,
+      "jantar_delivery": 6,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Hossomaki de Atum",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": 6,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 9
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Batera Spicy Tuna",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": 5,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 8
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Uramaki California",
+      "pagina": 5,
+      "almoco_junto": 0,
+      "jantar_delivery": 5,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 8
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Uramaki de Atum",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": 5,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 8
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Temaki Skin",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": 2,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Temaki de Salmao Grelhado",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "ENROLADOS",
+      "produto": "Uramaki Vegan",
+      "pagina": 5,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Hot Roll",
+      "pagina": 5,
+      "almoco_junto": 12,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 55,
+      "dia": 67
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Uramaki Ebiten Especial",
+      "pagina": 5,
+      "almoco_junto": 8,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 41,
+      "dia": 49
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Hot Roll Tatá",
+      "pagina": 5,
+      "almoco_junto": 3,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 15,
+      "dia": 18
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Tuna Shisô Tartar",
+      "pagina": 5,
+      "almoco_junto": 4,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 10,
+      "dia": 14
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Uramaki Ebiten",
+      "pagina": 5,
+      "almoco_junto": 2,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 10,
+      "dia": 12
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Uramaki de Salmão Skin",
+      "pagina": 5,
+      "almoco_junto": 2,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 9,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Ceviche",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 5,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Hot Roll com Shimeji",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 5,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Tartar de Salmão",
+      "pagina": 5,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 6,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Temaki Ebiten",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 4,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Tuna Crispy Rice",
+      "pagina": 5,
+      "almoco_junto": 1,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 4,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Tartar de Atum Spicy",
+      "pagina": 5,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 4,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "ENROLADOS QUENTES · JANTAR JUNTO",
+      "produto": "Hot Roll Salmao",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 1,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Salmão",
+      "pagina": 6,
+      "almoco_junto": 7,
+      "jantar_delivery": 24,
+      "jantar_salao": 5,
+      "jantar_junto": null,
+      "dia": 36
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Salmão",
+      "pagina": 6,
+      "almoco_junto": 8,
+      "jantar_delivery": 22,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 31
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Barriga de Salmão",
+      "pagina": 6,
+      "almoco_junto": 5,
+      "jantar_delivery": 19,
+      "jantar_salao": 5,
+      "jantar_junto": null,
+      "dia": 29
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Barriga de Salmão",
+      "pagina": 6,
+      "almoco_junto": 4,
+      "jantar_delivery": 14,
+      "jantar_salao": 6,
+      "jantar_junto": null,
+      "dia": 24
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo de Codorna Trufado",
+      "pagina": 6,
+      "almoco_junto": 3,
+      "jantar_delivery": 12,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 18
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Atum",
+      "pagina": 6,
+      "almoco_junto": 3,
+      "jantar_delivery": 11,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 18
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo de Salmão Shimeji",
+      "pagina": 6,
+      "almoco_junto": 4,
+      "jantar_delivery": 10,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 17
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi Tataki de Salmao",
+      "pagina": 6,
+      "almoco_junto": 3,
+      "jantar_delivery": 9,
+      "jantar_salao": 5,
+      "jantar_junto": null,
+      "dia": 17
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Salmao Trufado",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 9,
+      "jantar_salao": 5,
+      "jantar_junto": null,
+      "dia": 16
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi Tataki",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 13,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 15
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Salmao Trufado na Pedra de Sal",
+      "pagina": 6,
+      "almoco_junto": 4,
+      "jantar_delivery": 8,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 15
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Salmão Maçaricado Trufado",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 10,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 12
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo de Salmao",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 6,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 10
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Vieira",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 5,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 9
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo Atum com Foie Gras",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 4,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 8
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Atum",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 5,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 7
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Camarao",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 5,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 7
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Bluefin Toro",
+      "pagina": 6,
+      "almoco_junto": 2,
+      "jantar_delivery": 2,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Polvo Teriyaki",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 4,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Vieira",
+      "pagina": 6,
+      "almoco_junto": 3,
+      "jantar_delivery": 2,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Ebi Nikkei",
+      "pagina": 6,
+      "almoco_junto": 1,
+      "jantar_delivery": 2,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Hamachi - Yellowtail Japones",
+      "pagina": 6,
+      "almoco_junto": 1,
+      "jantar_delivery": 2,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Unagui",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 3,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Uni",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 3,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Vieira Trufado",
+      "pagina": 6,
+      "almoco_junto": 3,
+      "jantar_delivery": 2,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "By Luizinho Especial",
+      "pagina": 6,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Carapau",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Ikura",
+      "pagina": 6,
+      "almoco_junto": 0,
+      "jantar_delivery": 3,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Polvo",
+      "pagina": 7,
+      "almoco_junto": 2,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Robalo",
+      "pagina": 7,
+      "almoco_junto": 1,
+      "jantar_delivery": 2,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Atum Bluefin Akami",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Atum com Foie Gras",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Buri",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Massago",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Veira com Foie Gras",
+      "pagina": 7,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Wakame",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Tirashi",
+      "pagina": 7,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo Vieira Trufada",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo de Atum",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo de Salmao com Atum Spicy",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi Tataki de Atum",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Bluefin Akami",
+      "pagina": 7,
+      "almoco_junto": 1,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Buri",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Hamachi - Yellowtail Japones",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Vieira Trufado na Pedra de Sal",
+      "pagina": 7,
+      "almoco_junto": 1,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Polvo Trufado",
+      "pagina": 7,
+      "almoco_junto": 1,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Robalo",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Dyo de Salmao com Ikura",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sashimi de Carapau",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "DUPLAS",
+      "produto": "Sushi de Black Cod",
+      "pagina": 7,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Kids",
+      "pagina": 7,
+      "almoco_junto": 19,
+      "jantar_delivery": 52,
+      "jantar_salao": 14,
+      "jantar_junto": null,
+      "dia": 85
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Sushi Especial 2 pessoas",
+      "pagina": 7,
+      "almoco_junto": 7,
+      "jantar_delivery": 21,
+      "jantar_salao": 12,
+      "jantar_junto": null,
+      "dia": 40
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Executivo Sushi Salmão",
+      "pagina": 7,
+      "almoco_junto": 14,
+      "jantar_delivery": 18,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 35
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Especial Sushi 1 Pessoa",
+      "pagina": 7,
+      "almoco_junto": 9,
+      "jantar_delivery": 17,
+      "jantar_salao": 7,
+      "jantar_junto": null,
+      "dia": 33
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Especial Sashimi + Sushi 2 pessoas",
+      "pagina": 7,
+      "almoco_junto": 5,
+      "jantar_delivery": 12,
+      "jantar_salao": 7,
+      "jantar_junto": null,
+      "dia": 24
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Especial Sashimi + Sushi 1 pessoa",
+      "pagina": 7,
+      "almoco_junto": 4,
+      "jantar_delivery": 11,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 19
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Salmão 1 pessoa",
+      "pagina": 7,
+      "almoco_junto": 5,
+      "jantar_delivery": 11,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 19
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Salmão 2 pessoas",
+      "pagina": 8,
+      "almoco_junto": 4,
+      "jantar_delivery": 10,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 17
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Tradicional Sushi 1 pessoa",
+      "pagina": 8,
+      "almoco_junto": 3,
+      "jantar_delivery": 7,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 13
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Sushi Tradicional 2 Pessoas",
+      "pagina": 8,
+      "almoco_junto": 4,
+      "jantar_delivery": 6,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 12
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Tradicional 2 Pessoas",
+      "pagina": 8,
+      "almoco_junto": 3,
+      "jantar_delivery": 7,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 12
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Salmão/Atum 2 Pessoas",
+      "pagina": 8,
+      "almoco_junto": 3,
+      "jantar_delivery": 6,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Salmão/Atum 1 Pessoa",
+      "pagina": 8,
+      "almoco_junto": 1,
+      "jantar_delivery": 5,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 9
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Combinado Tradicional 1 Pessoa",
+      "pagina": 8,
+      "almoco_junto": 2,
+      "jantar_delivery": 3,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Tatá Box Salmão",
+      "pagina": 8,
+      "almoco_junto": 2,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "1 Letra + 1 Numero 92,00",
+      "pagina": 8,
+      "almoco_junto": 3,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "1 Letra + 2 Numeros - 104,00",
+      "pagina": 8,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Letra B - Comb Exec Sushi + Sashimi",
+      "pagina": 8,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Tatá Box Atum",
+      "pagina": 8,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "1 Letra - 72,00",
+      "pagina": 8,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "COMBINADOS",
+      "produto": "Letra a - Comb Exec Sushi",
+      "pagina": 8,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Guioza",
+      "pagina": 8,
+      "almoco_junto": 9,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 50,
+      "dia": 59
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Missoshiro",
+      "pagina": 8,
+      "almoco_junto": 8,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 27,
+      "dia": 35
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Ebi Spicy",
+      "pagina": 8,
+      "almoco_junto": 5,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 29,
+      "dia": 34
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Nasu no Missô",
+      "pagina": 8,
+      "almoco_junto": 5,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 20,
+      "dia": 25
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Edamame",
+      "pagina": 8,
+      "almoco_junto": 4,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 19,
+      "dia": 23
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Tempurá de milho doce",
+      "pagina": 8,
+      "almoco_junto": 5,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 18,
+      "dia": 23
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Yakissoba Misto",
+      "pagina": 8,
+      "almoco_junto": 7,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 16,
+      "dia": 23
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Shimeji",
+      "pagina": 8,
+      "almoco_junto": 4,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 16,
+      "dia": 20
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Salmão Grelhado",
+      "pagina": 8,
+      "almoco_junto": 6,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 9,
+      "dia": 15
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Shitake e Shimeji",
+      "pagina": 8,
+      "almoco_junto": 2,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 9,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Beef com Nira",
+      "pagina": 8,
+      "almoco_junto": 3,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 7,
+      "dia": 10
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Yakisoba de Mignon",
+      "pagina": 8,
+      "almoco_junto": 3,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 7,
+      "dia": 10
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Frango Teriyaki",
+      "pagina": 8,
+      "almoco_junto": 2,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 3,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Fishkatsu Kids",
+      "pagina": 8,
+      "almoco_junto": 1,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 2,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Shitake",
+      "pagina": 8,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 3,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Yakisoba de Frango",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 3,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Yakisoba de Frutos do Mar",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 3,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Grelhados de Frutos do Mar",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 2,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Katsudon",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 2,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Tempura Misto",
+      "pagina": 9,
+      "almoco_junto": 1,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 1,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "COZINHA · SEMPRE JUNTO",
+      "produto": "Tokyo Lamen",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": null,
+      "jantar_salao": null,
+      "jantar_junto": 2,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Carpaccio de Salmão (incl. trufado)",
+      "pagina": 9,
+      "almoco_junto": 6,
+      "jantar_delivery": 15,
+      "jantar_salao": 10,
+      "jantar_junto": null,
+      "dia": 31
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Sunomono",
+      "pagina": 9,
+      "almoco_junto": 3,
+      "jantar_delivery": 6,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 13
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Gohan",
+      "pagina": 9,
+      "almoco_junto": 2,
+      "jantar_delivery": 6,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Gengibre",
+      "pagina": 9,
+      "almoco_junto": 2,
+      "jantar_delivery": 5,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 10
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Wasabi",
+      "pagina": 9,
+      "almoco_junto": 2,
+      "jantar_delivery": 2,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Salada Executiva",
+      "pagina": 9,
+      "almoco_junto": 2,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Carpaccio de Polvo",
+      "pagina": 9,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "MONTAGEM",
+      "produto": "Tare",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Coca-Cola Zero 350 ml",
+      "pagina": 9,
+      "almoco_junto": 22,
+      "jantar_delivery": 14,
+      "jantar_salao": 15,
+      "jantar_junto": null,
+      "dia": 51
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Água com Gás 350 ml",
+      "pagina": 9,
+      "almoco_junto": 12,
+      "jantar_delivery": 1,
+      "jantar_salao": 10,
+      "jantar_junto": null,
+      "dia": 23
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Água sem Gás 350 ml",
+      "pagina": 9,
+      "almoco_junto": 7,
+      "jantar_delivery": 1,
+      "jantar_salao": 11,
+      "jantar_junto": null,
+      "dia": 19
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Coca-Cola 350 ml",
+      "pagina": 9,
+      "almoco_junto": 4,
+      "jantar_delivery": 2,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 10
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Cafe Espresso Dark Roast - Un",
+      "pagina": 9,
+      "almoco_junto": 5,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 8
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Fanta Guaraná Zero 350ml",
+      "pagina": 9,
+      "almoco_junto": 3,
+      "jantar_delivery": 1,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Heineken Long Neck - Un",
+      "pagina": 9,
+      "almoco_junto": 2,
+      "jantar_delivery": 1,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Cafe Espresso Chapada Diamantina - Un",
+      "pagina": 9,
+      "almoco_junto": 3,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Suco de Laranja",
+      "pagina": 9,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Fitzgerald",
+      "pagina": 9,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Sprite 350ml",
+      "pagina": 9,
+      "almoco_junto": 2,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Sprite Zero 350Ml",
+      "pagina": 9,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Yuchia",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Aperol Spritz",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Blue Moon Long Neck - Un",
+      "pagina": 10,
+      "almoco_junto": 2,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Fanta Guaraná 350ml",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Sake da Cada Suave 300Ml - Un",
+      "pagina": 10,
+      "almoco_junto": 2,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Ban Cha",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Cafe Descafeinado - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Caipirinha de Cachaça Premium",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Caipirinha de Sake",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Eisenbahn Ipa - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Fresh Bancha",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Gingergrape",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Heineken Long Neck sem Alcool - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Martini Tatá",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Pera Fitz",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Praya Larger Premium Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Schwepps Citrus 350Ml - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Schwepps Tonica Zero 350Ml - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Shiso Mule",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Suco de Limão",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Suco de Maracuja",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Taca Hakushika Tradicional - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "BAR",
+      "produto": "Taca Leyda Reserva Chardonnay - Un",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 0,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Cookie de Nutella",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 8,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 11
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Mochi",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 5,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 7
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Pavlova",
+      "pagina": 10,
+      "almoco_junto": 2,
+      "jantar_delivery": 0,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 6
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Choux Cream",
+      "pagina": 10,
+      "almoco_junto": 1,
+      "jantar_delivery": 3,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 4
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Cookie Tres Chocolates",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 3
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Choux Cream Melão",
+      "pagina": 10,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 2,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Tatá Chocolate",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 2,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 2
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Cookie de Pistache",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 1,
+      "jantar_salao": 0,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Mochi Doce de Leite",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Mochi Lichia",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "SOBREMESA",
+      "produto": "Sorvete Chocolate",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "SEQUÊNCIAS",
+      "produto": "Sequencia Tatá 6 Cursos",
+      "pagina": 11,
+      "almoco_junto": 15,
+      "jantar_delivery": 0,
+      "jantar_salao": 4,
+      "jantar_junto": null,
+      "dia": 19
+    },
+    {
+      "praca_no_plano": "SEQUÊNCIAS",
+      "produto": "Sugestao Tatá - 5 Cursos",
+      "pagina": 11,
+      "almoco_junto": 2,
+      "jantar_delivery": 0,
+      "jantar_salao": 3,
+      "jantar_junto": null,
+      "dia": 5
+    },
+    {
+      "praca_no_plano": "CONFERIR PRAÇA",
+      "produto": "Hand Roll Salmao, Kewpie com Massago e Shisso",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "CONFERIR PRAÇA",
+      "produto": "Personalite",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "CONFERIR PRAÇA",
+      "produto": "Salmon Pizza",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    },
+    {
+      "praca_no_plano": "CONFERIR PRAÇA",
+      "produto": "Tuna Pizza",
+      "pagina": 11,
+      "almoco_junto": 0,
+      "jantar_delivery": 0,
+      "jantar_salao": 1,
+      "jantar_junto": null,
+      "dia": 1
+    }
+  ],
+  "semantica": [
+    "Na grade por horário, Enrolados absorve os quentes no almoço.",
+    "Na lista de produtos, Enrolados Quentes continua como grupo próprio.",
+    "Cozinha e Enrolados Quentes têm jantar conjunto dos dois canais.",
+    "Um valor nulo de canal indica que a fonte agregou os canais.",
+    "Os 182 nomes vieram do PDF. Ele não oferece chave SKU estável.",
+    "Esta edição publica faixas por praça e turnos por produto. A chegada por minuto requer nova estimação."
+  ]
+}

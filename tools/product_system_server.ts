@@ -22,7 +22,8 @@ import { randomBytes } from "node:crypto";
 import { entregasVM, leituraDaRuaDe } from "../src/product/viewmodels/entregas-vm";
 import { lerPedidosReaisDoReaderIncremental, lerPracasDaRevisao, novoCacheIncremental, type PedidosReaisDoReader } from "../src/platform/leitura/pedidos-reais-do-reader";
 import { lerPedidosDoGestorLocal } from "../src/platform/leitura/pedidos-do-gestor-local";
-import { operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
+import { previsaoDoTurnoItaim } from "../src/product/viewmodels/previsao-turno-itaim";
+import { chaveDoPedidoGestor, operacaoDoIfoodVM, type OperacaoDoIfoodVM } from "../src/product/viewmodels/home-operacao-ifood-vm";
 import type { MedicaoFilaItaim } from "../src/product/viewmodels/medicao-fila-itaim";
 import { lerPedidosReaderV3 } from "../src/platform/leitura/pedidos-reader-v3";
 import { pedidosDaTeknisaVM, type PedidosDaTeknisaVM } from "../src/product/viewmodels/home-pedidos-reader-vm";
@@ -199,7 +200,7 @@ const UNIDADE_READER_V3 = (process.env.DELIVERYOS_READER_V3_UNIT_ID || "").trim(
 const PREVIA_PRACAS_ITAIM = process.env.DELIVERYOS_ITAIM_PREVIA_PRACAS === "1"
   && UNIDADE_READER_V3 === "ITAIM" && isAbsolute(DIR_LEITOR_TATA) && !ESCOPO_SHADOW;
 let memoIfood: {
-  em: number; vm: OperacaoDoIfoodVM; gestor: ReturnType<typeof lerPedidosDoGestorLocal>;
+  em: number; vm: OperacaoDoIfoodVM; nomes: Map<string, string>; gestor: ReturnType<typeof lerPedidosDoGestorLocal>;
 } | null = null;
 const atencaoItaim = criarAtencaoDoGestor();
 const medirFocoItaim = criarMedicaoFocoItaim(
@@ -208,14 +209,22 @@ const medirFocoItaim = criarMedicaoFocoItaim(
 function operacaoDoIfoodAgora(agoraMs: number, comPrevia = false): OperacaoDoIfoodVM {
   if (!memoIfood || agoraMs - memoIfood.em >= 10_000) {
     const agora = new Date(agoraMs);
-    const gestor = lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora);
+    const nomes = new Map<string, string>();
+    const gestor = lerPedidosDoGestorLocal(DIR_GESTOR_LOCAL || null, agora,
+      PREVIA_PRACAS_ITAIM ? (id, nome) => nomes.set(chaveDoPedidoGestor(id), nome) : undefined);
     const vm = operacaoDoIfoodVM(gestor,
       leituraDaTeknisaAgora(agoraMs).leitura, agora, Boolean(DIR_READER_V3_COPILOTO) && !ESCOPO_SHADOW,
       PREVIA_PRACAS_ITAIM ? pedido => lerPracasDaRevisao(DIR_LEITOR_TATA, pedido) : undefined);
-    memoIfood = { em: agoraMs, vm, gestor };
+    memoIfood = { em: agoraMs, vm, gestor, nomes };
   }
   const vm = memoIfood.vm;
-  if (comPrevia || !vm.disponivel || !vm.previa_por_praca) return vm;
+  if (!vm.disponivel || !vm.previa_por_praca) return vm;
+  if (comPrevia && !vm.leitura_velha) {
+    // Exclusivo de /api/copiloto para ITAIM. O cache, a Home geral e a medição seguem sem nomes.
+    const nomes = memoIfood.nomes;
+    return { ...vm, pedidos: vm.pedidos.map(p => p.ativo && p.chave_gestor
+      ? { ...p, nome_cliente: nomes.get(p.chave_gestor) ?? null } : p) };
+  }
   const { previa_por_praca, medicao_itaim, ...semPrevia } = vm;
   return semPrevia;
 }
@@ -852,7 +861,7 @@ export async function criarServidor(): Promise<http.Server> {
                 pedidosIfood?.disponivel ? pedidosIfood.medicao_itaim : undefined);
               medirFocoItaim(agoraMs, home, pedidosIfood, fatos.idade_min);
               json(res, 200, {
-                home_operacional: { ...home, aprofundamentos: [], ...(rua ? { entregas: rua } : {}) },
+                home_operacional: { ...home, aprofundamentos: [], previsao_turno: previsaoDoTurnoItaim(agoraMs, memoIfood?.gestor, pedidosIfood), ...(rua ? { entregas: rua } : {}) },
                 operacao_ifood: pedidosIfood,
               });
             })

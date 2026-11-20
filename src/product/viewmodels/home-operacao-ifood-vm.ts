@@ -44,6 +44,7 @@ const TEKNISA: Record<ClasseDoPar, string> = {
 export interface ItemIfoodDaHome { readonly descricao: string; readonly opcoes: readonly string[]; readonly observacao: string | null }
 export interface PedidoIfoodDaHome {
   readonly chave_gestor?: string;
+  readonly nome_cliente?: string | null;
   readonly hora: string;
   readonly codigo: string;
   readonly etapa: string;

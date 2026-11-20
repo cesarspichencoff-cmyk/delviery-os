@@ -19,7 +19,7 @@ import { homeVM } from "../product/viewmodels/home-vm";
 import type { LeituraOperacional } from "../product/viewmodels/sinais";
 
 let n = 0;
-const TOTAL = 29;
+const TOTAL = 30;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -514,6 +514,16 @@ void (async () => {
     const respostaV2 = await fetch(copilotoV2 + "?unit_id=ITAIM&pedidos=1");
     const v2 = await respostaV2.json();
     const fora = await fetch(copilotoV2 + "?unit_id=OUTRA&pedidos=1");
+    ok("G31 campo do cliente restrito à fila operacional ativa do Itaim", () => {
+      const ativo = v2.operacao_ifood.pedidos.find((p: { codigo: string }) => p.codigo === "4444");
+      const concluido = v2.operacao_ifood.pedidos.find((p: { codigo: string }) => p.codigo === "5555");
+      assert.equal(ativo.nome_cliente, "CANARIO_CLIENTE");
+      assert.equal(concluido.nome_cliente, undefined);
+      assert.doesNotMatch(JSON.stringify(v2), /CANARIO_(TELEFONE|CPF|RUA|TOKEN|RETIRADA|ENTREGADOR)/);
+      assert.ok(!JSON.stringify(corpo).includes("CANARIO_CLIENTE"));
+      assert.equal(fora.status, 404);
+    });
+
     ok("G17 cabeçalho sinaliza conferência e preserva a praça pelo caminho real do Copiloto", () => {
       assert.equal(respostaV2.status, 200);
       const previa = v2.operacao_ifood.previa_por_praca;

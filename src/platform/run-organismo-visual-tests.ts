@@ -39,6 +39,28 @@ const ler = (p: string): string => readFileSync(join(raiz, p), "utf8");
  */
 const CSS = ler("src/product/ui/surfaces/home.css").replace(/\/\*[\s\S]*?\*\//g, "");
 const TOKENS = ler("src/product/ui/tokens/organismo-tokens.css");
+// Recorta os blocos reais de movimento reduzido, incluindo as regras aninhadas.
+// Os menus responsivos definidos após um bloco continuam pertencendo ao CSS geral.
+function estilosDeMovimento(css: string) {
+  let reduzido = "", geral = "", anterior = 0;
+  const media = /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{/g;
+  for (const m of css.matchAll(media)) {
+    geral += css.slice(anterior, m.index);
+    const inicio = m.index! + m[0].length;
+    let nivel = 1, fim = inicio;
+    while (fim < css.length && nivel > 0) {
+      if (css[fim] === "{") nivel++;
+      if (css[fim] === "}") nivel--;
+      fim++;
+    }
+    assert.equal(nivel, 0, "bloco de movimento reduzido sem fechamento");
+    reduzido += css.slice(inicio, fim - 1);
+    anterior = fim;
+  }
+  assert.ok(reduzido.trim(), "a preferencia por menos movimento sumiu");
+  return { reduzido, geral: geral + css.slice(anterior) };
+}
+
 
 const NOMES = Object.keys(CENAS) as CenaHome[];
 const VMS: [CenaHome, HomeVM][] = NOMES.map((n) => [n, homeVM(cena(n))]);
@@ -406,9 +428,7 @@ teste("O13 o mobile mantem a verdade: nada essencial e escondido", () => {
 });
 
 teste("O14 reduced motion desliga o que e animacao, e so isso", () => {
-  const i = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
-  assert.ok(i > 0, "a preferencia por menos movimento sumiu");
-  const rm = CSS.slice(i);
+  const { reduzido: rm } = estilosDeMovimento(CSS);
   assert.match(rm, /animation: none/);
   assert.match(rm, /transition: none/);
   // O PAR: desligar animacao nao pode apagar informacao. O anel de pressao
@@ -601,12 +621,10 @@ teste("O23 nenhuma animacao move layout", () => {
 });
 
 teste("O24 reduced motion alcanca TUDO que anima, e nao esconde nada", () => {
-  const i = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
-  assert.ok(i > 0, "a preferencia por menos movimento sumiu");
-  const rm = CSS.slice(i);
+  const { reduzido: rm, geral } = estilosDeMovimento(CSS);
   // Todo seletor que recebe `animation:` fora do bloco precisa estar coberto.
   const animados = new Set<string>();
-  for (const m of CSS.slice(0, i).matchAll(/([^{}]+)\{[^}]*animation:\s*org[^}]*\}/g)) {
+  for (const m of geral.matchAll(/([^{}]+)\{[^}]*animation:\s*org[^}]*\}/g)) {
     for (const s of m[1]!.split(",")) animados.add(s.trim());
   }
   assert.ok(animados.size >= 3, "o inventario de animacoes ficou vazio demais para valer");
