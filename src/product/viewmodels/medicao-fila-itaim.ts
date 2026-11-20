@@ -5,13 +5,59 @@ import type { PedidoIfoodDaHome, PreviaPorPraca } from "./home-operacao-ifood-vm
 const PRACAS_FRIAS: ReadonlySet<PracaId> = new Set(["combinados", "duplas", "enrolados", "sobremesa"]);
 const PRODUCAO = PRACAS.filter(p => p.ambiente === "sushi" || p.ambiente === "cozinha");
 const QUENTES: ReadonlySet<PracaId> = new Set(["enrolados_quentes", "cozinha_quentes"]);
+const JANELA_DE_PRAZO_MIN = 5;
 const normalizar = (nome: string) => nome.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const bebidas = new Map(cardapio.itens.filter(i => i.categoria_operacional === "bebida").map(i => [normalizar(i.nome), i]));
 type Grupo = PreviaPorPraca["grupos"][number];
 type Referencia = Pick<PedidoIfoodDaHome, "chave_gestor" | "codigo" | "hora" | "etapa">;
+type ItemComPraca = { praca: PracaId; item: Grupo["itens"][number] };
+type SugestaoDeSacola = { rotulo: string; itens: { produto: string; quantidade: number; opcoes: readonly string[] }[] };
+
+function separacaoDeSacolas(linhas: readonly ItemComPraca[]) {
+  const quentes = linhas.filter(l => l.praca === "cozinha_quentes");
+  const frios = linhas.filter(l => PRACAS_FRIAS.has(l.praca));
+  const grandes: ItemComPraca[] = [];
+  const latas: ItemComPraca[] = [];
+  for (const linha of linhas) {
+    if (linha.praca !== "bar_bebidas") continue;
+    const bebida = bebidas.get(normalizar(linha.item.produto));
+    if (!bebida) continue;
+    const embalagem = `${bebida.nome} ${bebida.descricao ?? ""}`;
+    if (bebida.subcategoria_operacional === "refrigerante" && /\blata\b/i.test(embalagem)) latas.push(linha);
+    if (bebida.subcategoria_operacional === "vinho" || (bebida.subcategoria_operacional === "sake" && /\b720\s*ml\b/i.test(embalagem))) grandes.push(linha);
+  }
+  const totalDeLatas = latas.reduce((total, l) => total + l.item.quantidade, 0);
+  const grupos: SugestaoDeSacola[] = [];
+  const separados = new Set<ItemComPraca>();
+  const motivos: string[] = [];
+  const adicionar = (rotulo: string, itens: readonly ItemComPraca[]) => {
+    for (const linha of itens) separados.add(linha);
+    grupos.push({ rotulo, itens: itens.map(({ item }) => ({ produto: item.produto, quantidade: item.quantidade, opcoes: item.opcoes })) });
+  };
+  if (quentes.length > 0 && frios.length > 0) {
+    motivos.push("Quente de cozinha e itens frios");
+    adicionar("Quentes de cozinha", quentes);
+    adicionar("Frios e sobremesas", frios);
+  }
+  if (grandes.length > 0) {
+    motivos.push("Bebida grande em sacola separada");
+    adicionar("Bebidas grandes", grandes);
+  }
+  if (totalDeLatas >= 6) {
+    motivos.push(`${totalDeLatas} latas de refrigerante em sacola separada`);
+    adicionar("Latas de refrigerante", latas);
+  }
+  if (motivos.length === 0) return null;
+  const restantes = linhas.filter(l => !separados.has(l));
+  // Hot roll pode acompanhar frios ou quentes. Volume e estabilidade dependem do balcão.
+  const conferir = quentes.length > 0 && frios.length > 0 ? restantes : [];
+  if (restantes.length > 0 && conferir.length === 0) adicionar("Demais itens", restantes);
+  return { motivos, grupos,
+    conferir: conferir.map(({ item }) => ({ produto: item.produto, quantidade: item.quantidade, opcoes: item.opcoes })) };
+}
 
 export function medirFilaItaim(ativos: readonly PedidoIfoodDaHome[], previa: PreviaPorPraca) {
-  const itensPorPedido = new Map<string, { praca: PracaId; item: Grupo["itens"][number] }[]>();
+  const itensPorPedido = new Map<string, ItemComPraca[]>();
   for (const grupo of previa.grupos) for (const item of grupo.itens) {
     const linhas = itensPorPedido.get(item.chave_gestor) ?? [];
     linhas.push({ praca: grupo.praca, item });
@@ -21,8 +67,9 @@ export function medirFilaItaim(ativos: readonly PedidoIfoodDaHome[], previa: Pre
   const composicoes = new Map<string, { id: string; rotulo: string; pedidos: Referencia[] }>();
   const aConferir: Referencia[] = [];
   const soQuentes: Referencia[] = [];
-  const sacolas: (Referencia & { motivos: string[] })[] = [];
-  const atrasos: (Referencia & { minutos: number })[] = [];
+  const sacolas: (Referencia & NonNullable<ReturnType<typeof separacaoDeSacolas>> & { composicao_completa: boolean })[] = [];
+  const atrasos: (Referencia & { minutos: number; prazo?: string })[] = [];
+  const pertoDoPrazo: typeof atrasos = [];
   const atrasoPorPraca = new Map<PracaId, typeof atrasos>();
   const preparoPorPraca = new Map<PracaId, number>();
   let emPreparo = 0;
@@ -54,30 +101,18 @@ export function medirFilaItaim(ativos: readonly PedidoIfoodDaHome[], previa: Pre
       if (producao.length > 0 && producao.every(p => QUENTES.has(p.id))) soQuentes.push(referencia);
     } else aConferir.push(referencia);
 
-    const motivos: string[] = [];
-    if (pracas.has("cozinha_quentes") && [...pracas].some(praca => PRACAS_FRIAS.has(praca))) {
-      motivos.push("Quente de cozinha e itens frios");
-    }
-    let latas = 0;
-    let bebidaGrande = false;
-    for (const { praca, item } of linhas) {
-      if (praca !== "bar_bebidas") continue;
-      const bebida = bebidas.get(normalizar(item.produto));
-      if (!bebida) continue;
-      const embalagem = `${bebida.nome} ${bebida.descricao ?? ""}`;
-      if (bebida.subcategoria_operacional === "refrigerante" && /\blata\b/i.test(embalagem)) latas += item.quantidade;
-      if (bebida.subcategoria_operacional === "vinho" || (bebida.subcategoria_operacional === "sake" && /\b720\s*ml\b/i.test(embalagem))) bebidaGrande = true;
-    }
-    if (bebidaGrande && (linhas.some(l => l.praca !== "bar_bebidas") || latas >= 6)) motivos.push("Bebida grande em sacola separada");
-    if (latas >= 6 && linhas.some(l => l.praca !== "bar_bebidas")) motivos.push(`${latas} latas de refrigerante em sacola separada`);
-    if (motivos.length > 0) sacolas.push({ ...referencia, motivos });
+    const separacao = separacaoDeSacolas(linhas);
+    if (separacao && separacao.grupos.length >= 2) sacolas.push({ ...referencia, ...separacao, composicao_completa: completa });
 
     if (p.etapa !== "em preparo") continue;
     emPreparo++;
     for (const praca of pracas) preparoPorPraca.set(praca, (preparoPorPraca.get(praca) ?? 0) + 1);
     if (p.preparo === null) preparoSemPrazo++;
+    if (p.preparo?.faltam_min != null && p.preparo.faltam_min <= JANELA_DE_PRAZO_MIN) {
+      pertoDoPrazo.push({ ...referencia, minutos: p.preparo.faltam_min, prazo: p.preparo.prazo });
+    }
     if (p.preparo?.passou_min == null) continue;
-    const atraso = { ...referencia, minutos: p.preparo.passou_min };
+    const atraso = { ...referencia, minutos: p.preparo.passou_min, prazo: p.preparo.prazo };
     atrasos.push(atraso);
     if (!completa) atrasosComPracaPendente++;
     for (const praca of pracas) {
@@ -101,6 +136,7 @@ export function medirFilaItaim(ativos: readonly PedidoIfoodDaHome[], previa: Pre
       return total >= 5 && total * 5 >= emPreparo * 3 ? [{ praca: id, total, em_preparo: emPreparo }] : [];
     }),
     duas_sacolas: sacolas,
+    perto_do_prazo: pertoDoPrazo.sort((a, b) => a.minutos - b.minutos || a.hora.localeCompare(b.hora)),
     atrasos: atrasos.sort(porAtraso),
     atrasos_por_praca: PRACAS.flatMap(praca => {
       const pedidos = atrasoPorPraca.get(praca.id);

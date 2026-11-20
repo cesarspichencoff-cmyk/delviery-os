@@ -50,8 +50,8 @@ export interface PedidoIfoodDaHome {
   readonly ativo: boolean;
   readonly minutos: number;
   readonly modalidade: string;
-  readonly preparo: { readonly informado_min: number; readonly passou_min: number | null } | null;
-  readonly teknisa: { readonly classe: ClasseDoPar; readonly texto: string; readonly estado: string | null; readonly comanda_em_min: number | null };
+  readonly preparo: { readonly informado_min: number; readonly passou_min: number | null; readonly faltam_min?: number; readonly prazo?: string } | null;
+  readonly teknisa: { readonly sequencia?: string | null; readonly classe: ClasseDoPar; readonly texto: string; readonly estado: string | null; readonly comanda_em_min: number | null };
   readonly itens: readonly ItemIfoodDaHome[];
   readonly detalhes: readonly string[];
   readonly revisao_gestor?: string;
@@ -93,6 +93,7 @@ export type OperacaoDoIfoodVM =
   | {
       readonly disponivel: true;
       readonly lido_em: string;
+      readonly gravado_em: string | null;
       readonly gravado_ha_min: number | null;
       readonly leitura_velha: boolean;
       readonly titulo: string;
@@ -121,8 +122,12 @@ const modalidade = (g: PedidoDoGestor) => (g.tipo === "TAKEOUT" ? "retirada" : g
 function preparo(g: PedidoDoGestor, etapa: string, agora: number) {
   if (g.inicio_do_preparo === null || g.tempo_de_preparo_s === null || g.tempo_de_preparo_s <= 0) return null;
   const fim = Date.parse(g.inicio_do_preparo) + g.tempo_de_preparo_s * 1000;
-  const passou = etapa === "em preparo" && g.eventos.CONFIRMED && agora > fim ? Math.floor((agora - fim) / 60_000) : null;
-  return { informado_min: Math.round(g.tempo_de_preparo_s / 60), passou_min: passou };
+  if (!Number.isFinite(fim)) return null;
+  const emPreparo = etapa === "em preparo" && Boolean(g.eventos.CONFIRMED);
+  const passou = emPreparo && agora > fim ? Math.floor((agora - fim) / 60_000) : null;
+  const faltam = emPreparo && agora <= fim ? Math.ceil((fim - agora) / 60_000) : undefined;
+  return { informado_min: Math.round(g.tempo_de_preparo_s / 60), passou_min: passou,
+    ...(emPreparo ? { prazo: horaLocal(fim) } : {}), ...(faltam === undefined ? {} : { faltam_min: faltam }) };
 }
 
 function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boolean, incluirChave: boolean): PedidoIfoodDaHome {
@@ -131,7 +136,7 @@ function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boo
     ...(incluirChave ? { chave_gestor: chaveDoPedidoGestor(g.id_interno) } : {}),
     hora: horaLocal(placedDe(g)), codigo: g.codigo_curto, etapa, ativo: etapa !== "concluido" && etapa !== "cancelado",
     minutos: par.minutos_desde_o_pedido, modalidade: modalidade(g), preparo: preparo(g, etapa, agora),
-    teknisa: { classe: par.classe, texto: TEKNISA[par.classe], estado: par.teknisa ? par.teknisa.estado_nativo : null, comanda_em_min: par.minutos_ate_a_comanda },
+    teknisa: { sequencia: incluirChave && par.teknisa?.origem === "DLV_IFO" && !par.teknisa.retido && CLASSES_COM_ITENS_CONCILIADOS.has(par.classe) ? /^0001\|01\|[^|]+\|[0-9]*([0-9]{3})$/.exec(par.teknisa.chave)?.[1] ?? null : null, classe: par.classe, texto: TEKNISA[par.classe], estado: par.teknisa ? par.teknisa.estado_nativo : null, comanda_em_min: par.minutos_ate_a_comanda },
     itens: g.itens.map((i) => ({ descricao: `${i.quantidade}× ${i.nome}`, opcoes: i.opcoes.map((o) => `${o.quantidade}× ${o.nome}`), observacao: i.observacao })),
     detalhes: par.detalhes,
     ...(incluirRevisoes ? {
@@ -247,7 +252,8 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   const previa = !leituraVelha && lerPracas ? previaPorPraca(c.pares, lerPracas) : null;
   const n = ativos.length;
   return {
-    disponivel: true, lido_em: gestor.lido_em, gravado_ha_min: gravadoHa, leitura_velha: leituraVelha,
+    disponivel: true, lido_em: gestor.lido_em, gravado_em: Number.isFinite(idadeMs) ? gestor.gravado_em : null,
+    gravado_ha_min: gravadoHa, leitura_velha: leituraVelha,
     titulo: n === 0 ? "Nenhum pedido em andamento no Gestor nesta leitura" : `${n} ${n === 1 ? "pedido" : "pedidos"} em andamento no iFood`,
     contagens: { no_gestor: todos.length, em_andamento: n, aguardando_aceite: conta((p) => p.etapa === "aguardando aceite"), em_preparo: conta((p) => p.etapa === "em preparo"),
       prontos: conta((p) => p.etapa.startsWith("pronto")), na_rua: conta((p) => p.etapa === "saiu para entrega" || p.etapa === "entregador no destino"),
@@ -256,7 +262,7 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
     ...(previa ? { previa_por_praca: previa, medicao_itaim: medirFilaItaim(ativos, previa) } : {}),
     janela: c.janela ? `${horaLocal(Date.parse(c.janela.de))}–${horaLocal(Date.parse(c.janela.ate))}` : null,
     limitacoes: [
-      "O Gestor guarda so os pedidos recentes (cerca de 25), nao o total do dia; a conciliacao vale so para essa janela.",
+      "A conciliação vale para a janela recente do Gestor. A cobertura do turno precisa de conferência independente.",
       "Sem comanda vista na Teknisa nao prova falha da integracao: o Reader pode nao ter visto.",
       reais.some(p=>p.reader_v3) ? "Reader V3 le relacoes filhas; correspondencia vale para os campos comparaveis enviados pelo iFood, nao atesta fim da gravacao na Teknisa." : "Complementos e observacoes por ocorrencia da Teknisa ainda nao sao lidos pela fonte; quando faltam, o pedido diz isso.",
       "Etapa e tempo de preparo vem dos eventos que o proprio Gestor grava; preparo fisico na cozinha nao e observado.",

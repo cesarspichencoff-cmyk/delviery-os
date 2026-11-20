@@ -377,11 +377,23 @@ function renderizarHomeItaim(vm) {
 function trocarConteudo(bloco, novo) {
   if (bloco.innerHTML === novo.innerHTML) return;
   const dobras = new Map([...bloco.querySelectorAll("details[id]")].map(d => [d.id, d.open]));
-  const foco = bloco.contains(document.activeElement) ? document.activeElement.closest("details[id]")?.id : null;
+  const ativo = bloco.contains(document.activeElement) ? document.activeElement : null;
+  const foco = ativo?.closest("details[id]")?.id;
+  const href = ativo?.getAttribute("href");
+  const chave = ativo?.dataset?.pedidoDestacado === "sim" ? ativo.dataset.pedidoGestor : null;
   bloco.replaceChildren(...novo.childNodes);
   for (const dobra of bloco.querySelectorAll("details[id]")) {
     dobra.open = dobras.get(dobra.id) ?? dobra.open;
-    if (dobra.id === foco) dobra.querySelector("summary")?.focus({ preventScroll: true });
+  }
+  const contexto = foco ? document.getElementById(foco) : bloco;
+  const link = href && [...(contexto?.querySelectorAll("a[href]") ?? [])].find(a => a.getAttribute("href") === href);
+  const pedido = chave && [...(contexto?.querySelectorAll("[data-pedido-gestor]") ?? [])].find(p => p.dataset.pedidoGestor === chave);
+  if (pedido) {
+    pedido.tabIndex = -1;
+    pedido.dataset.pedidoDestacado = "sim";
+  }
+  if (ativo) {
+    (link || pedido || contexto?.querySelector("summary"))?.focus({ preventScroll: true });
   }
 }
 
@@ -434,20 +446,39 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
     }
   };
   const intervalo = setInterval(atualizar, 15000);
+  const restaurouPagina = evento => { if (evento.persisted) void atualizar(); };
   document.addEventListener("visibilitychange", atualizar);
+  window.addEventListener("pageshow", restaurouPagina);
+  window.addEventListener("online", atualizar);
   estado.pollingPedidos = () => {
     clearInterval(intervalo);
     document.removeEventListener("visibilitychange", atualizar);
+    window.removeEventListener("pageshow", restaurouPagina);
+    window.removeEventListener("online", atualizar);
   };
 }
 
-function mostrarPedidoDoCopiloto(alvo) {
+function mostrarDestinoDoCopiloto(alvo) {
   const consulta = hashAtual().consulta;
-  const praca = consulta.get("atrasos");
-  const fila = consulta.get("fila");
-  const id = /^[a-z_]+$/.test(praca ?? "") ? `dobra-ifood-atraso-${praca}` : fila === "preparo" ? "dobra-ifood-em-preparo" : null;
-  if (id) {
-    const destino = alvo.querySelector(`#${id}`);
+  const codigoDePraca = id => /^[a-z_]+$/.test(id ?? "");
+  const atrasos = consulta.get("atrasos");
+  const filaEmPreparo = consulta.get("fila") === "preparo";
+  const praca = consulta.get("praca");
+  const avisoDeDestino = texto => {
+    const aviso = document.createElement("p");
+    aviso.className = "org-resto__nota";
+    aviso.setAttribute("role", "status");
+    aviso.textContent = texto;
+    alvo.querySelector(".org-topo")?.after(aviso);
+  };
+  if (codigoDePraca(atrasos) || filaEmPreparo) {
+    const geral = codigoDePraca(atrasos) ? "dobra-ifood-atrasos" : "dobra-ifood-em-preparo";
+    const filtrado = codigoDePraca(atrasos) ? `dobra-ifood-atraso-${atrasos}`
+      : codigoDePraca(praca) ? `dobra-ifood-preparo-${praca}` : geral;
+    const alvoFiltrado = alvo.querySelector(`#${filtrado}`);
+    const destino = alvoFiltrado ?? alvo.querySelector(`#${geral}`);
+    if (!alvoFiltrado) avisoDeDestino(destino ? "A praça não aparece mais nesta fila. Mostrando a lista atual."
+      : "Esta fila não está disponível na leitura atual do Gestor.");
     if (destino) {
       for (let dobra = destino; dobra; dobra = dobra.parentElement.closest("details")) dobra.open = true;
       destino.querySelector("summary")?.focus({ preventScroll: true });
@@ -457,13 +488,9 @@ function mostrarPedidoDoCopiloto(alvo) {
   }
   const chave = consulta.get("pedido");
   if (!/^[a-f0-9]{64}$/.test(chave ?? "")) return;
-  const pedido = alvo.querySelector(`[data-copiloto-ifood] [data-pedido-gestor="${chave}"]`);
+  const pedido = alvo.querySelector(`[data-copiloto-ifood] :is(#dobra-ifood-em-preparo, #dobra-ifood-prontos, #dobra-ifood-em-entrega, #dobra-ifood-conferencia) [data-pedido-gestor="${chave}"]`);
   if (!pedido) {
-    const aviso = document.createElement("p");
-    aviso.className = "org-resto__nota";
-    aviso.setAttribute("role", "status");
-    aviso.textContent = "O pedido não está disponível na leitura atual do Gestor.";
-    alvo.querySelector(".org-topo")?.after(aviso);
+    avisoDeDestino("O pedido não está disponível nas filas atuais do Gestor.");
     return;
   }
   for (let dobra = pedido.closest("details"); dobra; dobra = dobra.parentElement.closest("details")) {
@@ -537,7 +564,7 @@ async function desenhar(rota, opcoes = {}) {
     desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
-    if (vm.home_operacional) mostrarPedidoDoCopiloto(alvo);
+    if (vm.home_operacional) mostrarDestinoDoCopiloto(alvo);
   } catch (e) {
     if (geracao !== estado.geracao) return;
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",

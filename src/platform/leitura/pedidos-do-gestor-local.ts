@@ -5,8 +5,8 @@
  *
  * Medido em 15/11 no CAIXA_MOOCA (docs/execution/READER_V3_GESTOR_CONCILIACAO_20261115.md): o
  * aplicativo guarda `order/<uuid>` com o pedido inteiro (itens, opcoes, observacao por item, horarios
- * e a linha do tempo oficial de eventos) para os pedidos RECENTES — uma janela movel de ~25 pedidos,
- * nao o historico do dia — e `orderIds`, so identificadores.
+ * e a linha do tempo oficial de eventos) para os pedidos retidos na janela local, cuja cobertura
+ * pode variar. `orderIds` armazena somente identificadores.
  *
  * PRIVACIDADE, por construcao:
  *  - so as chaves `order/<uuid>` e `orderIds` da origem do Gestor sao decodificadas; qualquer outra

@@ -361,6 +361,7 @@ ok("G30 mede composição, sacolas e atrasos pelo mesmo vínculo de praça e ele
   const vm = operacaoDoIfoodVM(gestor, reader, new Date(AGORA), false, lerPracas);
   assert.ok(vm.disponivel && vm.medicao_itaim);
   const medicao = vm.medicao_itaim;
+  assert.equal(vm.gravado_em, gestor.gravado_em);
   assert.equal(medicao.pedidos_abertos, 5);
   assert.equal(vm.contagens.em_preparo, 4);
   assert.equal(medicao.prontos_para_entrega, 1);
@@ -370,6 +371,13 @@ ok("G30 mede composição, sacolas e atrasos pelo mesmo vínculo de praça e ele
   assert.deepEqual(medicao.composicao_a_conferir.map(p => p.codigo), ["1125"]);
   assert.equal(medicao.composicoes.find(c => c.rotulo === "Combinados + Sushi Quentes + Cozinha")?.pedidos.length, 1);
   assert.deepEqual([...medicao.duas_sacolas.map(p => p.codigo)].sort(), ["1121", "1123", "1124"]);
+  const sacola = medicao.duas_sacolas.find(p => p.codigo === "1121")!;
+  assert.deepEqual(sacola.grupos.map(p => [p.rotulo, p.itens.map(i => [i.produto, i.quantidade])]),
+    [["Quentes de cozinha", [["Yakissoba", 1]]], ["Frios e sobremesas", [["Combinado", 2]]]]);
+  assert.deepEqual(sacola.conferir.map(i => i.produto), ["Hot roll"]);
+  assert.equal(sacola.composicao_completa, true);
+  assert.deepEqual(medicao.duas_sacolas.find(p => p.codigo === "1124")?.grupos.map(g => g.rotulo),
+    ["Latas de refrigerante", "Demais itens"]);
   assert.deepEqual(medicao.so_quentes.map(p => p.codigo), ["1124"]);
   assert.deepEqual(medicao.concentracao_no_preparo, []);
   const avaliar = criarAtencaoDoGestor();
@@ -397,6 +405,18 @@ ok("G30 mede composição, sacolas e atrasos pelo mesmo vínculo de praça e ele
   }, new Date(AGORA), false, lerPracas);
   assert.ok(vmConcentrado.disponivel && vmConcentrado.medicao_itaim);
   assert.deepEqual(vmConcentrado.medicao_itaim.concentracao_no_preparo, [{ praca: "combinados", total: 5, em_preparo: 5 }]);
+  const perto = operacaoDoIfoodVM({ ...gestor, pedidos: pedidos.slice(0, 3).map((p, i) => ({
+    ...p, inicio_do_preparo: iso(39), tempo_de_preparo_s: [39, 44, 45][i]! * 60,
+  })) }, reader, new Date(AGORA), false, lerPracas);
+  assert.ok(perto.disponivel && perto.medicao_itaim);
+  assert.deepEqual(perto.medicao_itaim.perto_do_prazo.map(p => [p.codigo, p.minutos]), [["1121", 0], ["1122", 5]]);
+  assert.equal(perto.medicao_itaim.atrasos.length, 0);
+  const somenteLatas = pedido("1126", [lata]);
+  const soLatas = operacaoDoIfoodVM({ ...gestor, pedidos: [somenteLatas] }, {
+    ...reader, pedidos: [pr("1126", 39, [{ arv: lata.codigo_externo, q: lata.quantidade }])],
+  }, new Date(AGORA), false, lerPracas);
+  assert.ok(soLatas.disponivel && soLatas.medicao_itaim);
+  assert.deepEqual(soLatas.medicao_itaim.duas_sacolas, []);
 });
 function janelaParaAtencao() {
   if (g.estado !== "lido") throw Error("fixture do Gestor");
