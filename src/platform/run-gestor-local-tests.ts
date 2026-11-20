@@ -19,7 +19,7 @@ import { homeVM } from "../product/viewmodels/home-vm";
 import type { LeituraOperacional } from "../product/viewmodels/sinais";
 
 let n = 0;
-const TOTAL = 30;
+const TOTAL = 31;
 const ok = (nome: string, fn: () => void) => { fn(); n++; console.log("PASS " + nome); };
 
 // ---------- escritor LevelDB minimo (so para a fixture) ----------
@@ -226,6 +226,15 @@ ok("G23 presença do entregador antes de pronto preserva preparo, atraso e prév
     ["4001", "em preparo", "Hot roll", 3], ["4002", "em preparo", "Hot roll", 3], ["4003", "pronto", "Hot roll", 3],
   ]);
   assert.ok(vm.atencao.some(p => p.codigo === "4002" && p.motivo.includes("preparo informado")));
+});
+ok("G25 gravacao do Gestor durante a leitura (idade negativa de ms) e leitura atual; 10 min no futuro e relogio errado", () => {
+  // Medido em 20/11: os arquivos da fixture sao gravados 4 ms depois do AGORA; no caixa, o Gestor grava no
+  // meio da leitura do LevelDB. Isso nao pode apagar as pracas do Copiloto por 10 s em pleno jantar.
+  if (g.estado !== "lido") throw Error("fixture do Gestor");
+  const agoraMesmo = operacaoDoIfoodVM({ ...g, gravado_em: new Date(AGORA + 30_000).toISOString() }, { estado: "nao_configurado" }, new Date(AGORA), false, () => null);
+  assert.ok(agoraMesmo.disponivel && !agoraMesmo.leitura_velha && agoraMesmo.previa_por_praca, "30 s no futuro: mesma maquina gravando agora");
+  const relogio = operacaoDoIfoodVM({ ...g, gravado_em: new Date(AGORA + 10 * 60_000).toISOString() }, { estado: "nao_configurado" }, new Date(AGORA), false, () => null);
+  assert.ok(relogio.disponivel && relogio.leitura_velha && !relogio.previa_por_praca, "10 min no futuro: relogio errado, leitura velha");
 });
 ok("G11 diario truncado no meio do lote (o Gestor escrevendo): o lote incompleto e descartado inteiro", () => {
   const d2 = mkdtempSync(join(tmpdir(), "gestor-trunc-")); const ls = join(d2, "Local Storage", "leveldb"); mkdirSync(ls, { recursive: true });

@@ -2565,3 +2565,39 @@ body:has(.org) .ds-state[data-ink="ink-faint"] {
   .menu-itaim .menu-pequeno[open] nav { position: absolute; z-index: 5; width: min(100%, 19rem); max-height: 64vh; overflow-y: auto; background: var(--org-papel, #faf8f4); color: var(--org-tinta, #221f1c); border: 1px solid currentColor; padding: .5rem; }
   .menu-itaim .menu-pequeno nav a { min-height: 44px; box-sizing: border-box; }
 }
+
+/* Copiloto Itaim · Agora em três perguntas (20/11). Estado sempre em texto; a cor só reforça. */
+.menu-itaim .turno-agora { display: grid; gap: .9rem; margin-block: .6rem 1.2rem; }
+.menu-itaim .turno-dados { padding: .55rem .7rem; border: 1px solid var(--org-linha-fraca, currentColor); border-radius: 6px; }
+.menu-itaim .turno-dados[data-estado="parcial"] { border-style: dashed; border-color: var(--org-neutro-traco, currentColor); }
+.menu-itaim .turno-dados[data-estado="velha"], .menu-itaim .turno-dados[data-estado="indisponivel"] { border-width: 2px; border-color: var(--org-falha-clara, currentColor); }
+.menu-itaim .turno-dados .turno-faltas { margin-top: .3rem; }
+.menu-itaim .turno-pergunta > h3 { margin: 0 0 .35rem; font-size: 1.08rem; }
+.menu-itaim .turno-acoes { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+.menu-itaim .turno-acao { padding: .55rem .7rem; border: 1px solid var(--org-linha-fraca, currentColor); border-inline-start: 4px solid var(--org-linha, currentColor); border-radius: 6px; }
+.menu-itaim .turno-acao[data-tipo="atraso"], .menu-itaim .turno-acao[data-tipo="fonte"] { border-inline-start-color: var(--org-ambar, currentColor); }
+.menu-itaim .turno-acao__titulo { font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.menu-itaim .turno-acao__fatos { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .15rem .6rem; margin: .2rem 0 0; }
+.menu-itaim .turno-acao__fatos > div { display: contents; }
+.menu-itaim .turno-acao__fatos dt { font-weight: 650; }
+.menu-itaim .turno-acao__fatos dd { margin: 0; }
+.menu-itaim .turno-equipe > li[data-gravidade="2"] strong::after { content: " · agir"; font-weight: 600; }
+.menu-itaim .turno-recorte { margin: .7rem 0 .2rem; font-size: 1rem; }
+.menu-itaim .turno-comanda .turno-link { min-height: 44px; display: inline-flex; align-items: center; gap: .3rem; }
+.menu-itaim .turno-obs { display: block; margin-top: .15rem; font-weight: 650; }
+.menu-itaim .turno-abas { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin: -.2rem 0 .7rem; }
+.menu-itaim .turno-abas a { min-height: 44px; display: inline-flex; align-items: center; }
+.menu-itaim .turno-abas a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-underline-offset: .2em; }
+.menu-itaim .org-sub__link { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: .18em; color: inherit; }
+.menu-itaim .turno-mapa > h3 { margin: 0 0 .35rem; font-size: 1.08rem; }
+@media (max-width: 600px) {
+  .menu-itaim .turno-acao__fatos { grid-template-columns: minmax(0, 1fr); }
+  .menu-itaim .turno-acao__fatos dd { margin-bottom: .2rem; }
+}
+/* Os títulos das três perguntas e da consulta precisam ser lidos de relance: creme sobre o fundo escuro (contraste > 12:1). */
+.menu-itaim [data-copiloto-ifood] > h2, .menu-itaim .turno-pergunta > h3, .menu-itaim .turno-mapa > h3 { color: var(--org-creme, #f2ebd9); }
+.menu-itaim .turno-pergunta > h3 { font-size: 1.15rem; letter-spacing: .01em; }
+/* Links do Copiloto (ação, praça, produto, comanda, abas): verde vivo do tema sobre o fundo escuro (contraste ~9:1). */
+.menu-itaim [data-copiloto-ifood] a, .menu-itaim .org-sub__link { color: var(--org-vivo, #8cc63f); }
+.menu-itaim [data-copiloto-ifood] a:hover { color: var(--org-vivo-hover, #9ed64f); }
+.menu-itaim [data-copiloto-ifood] section > h3, .menu-itaim [data-copiloto-ifood] h4 { color: var(--org-creme, #f2ebd9); }

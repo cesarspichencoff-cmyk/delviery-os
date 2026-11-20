@@ -36,7 +36,7 @@
  */
 
 import { blocoLimitacoes, campo, esc, selos } from "../components/ui.js";
-import { identidadeItaim, mostrarPrevisao, produtosAtrasados, rankingAtrasados, rotaItaim } from "./turno-itaim.js";
+import { decidirTurno, expedicaoAgora, identidadeItaim, listaDePracas, mostrarPrevisao, produtosAtrasados, quadroAgora, rankingAtrasados, rotaItaim, sacolasAgora } from "./turno-itaim.js";
 
 /* ------------------------------------------------------------------ *
  * Vocabulario visual — a traducao, e so ela
@@ -438,16 +438,19 @@ function linhaDemandaDaPraca(grupos) {
   return textos.length ? `<span class="org-demanda-praca">${esc(textos.join(" · "))} <span class="sr-only">no iFood</span></span>` : "";
 }
 
-function subarea(s, grupos, medicao) {
+function subarea(s, grupos, medicao, rota) {
   const linhas = grupos.filter(p => p.praca === s.id);
   const atraso = medicao?.atrasos_por_praca.find(p => p.praca === s.id)?.pedidos.length;
   const medido = medicao && (linhas.length > 0 || medicao.composicao_a_conferir.length === 0);
   const estado = s.cor === "sem_medicao" && medido ? (linhas.length ? "" : "Sem itens nesta leitura") : s.estado_texto;
+  // No Copiloto do Itaim cada praça é um toque próprio: Enrolados abre Enrolados, não o Sushi inteiro.
+  const nome = rota ? `<a class="org-sub__nome org-sub__link" href="${esc(rotaItaim(rota, { area: s.id }))}" aria-label="Abrir ${esc(s.rotulo)}">${esc(s.rotulo)}</a>`
+    : `<span class="org-sub__nome">${esc(s.rotulo)}</span>`;
   return `<li class="org-sub" data-cor="${esc(s.cor)}" data-degrau="${degrau(
     s.cor,
   )}"${s.causadora ? ' data-causadora="sim"' : ""}>
     <span class="org-sub__linha">
-      <span class="org-sub__nome">${esc(s.rotulo)}</span>
+      ${nome}
       ${estado ? `<span class="org-sub__estado">${esc(estado)}</span>` : ""}
     </span>
     ${linhaDemandaDaPraca(linhas)}
@@ -474,6 +477,8 @@ function medicaoDaArea(a, vm, grupos) {
 
 function demandaDaArea(a, vm) {
   const grupos = vm.operacao_ifood?.previa_por_praca?.grupos ?? [];
+  // Praça interna de um ambiente (Enrolados, Duplas, Combinados...): só a própria praça.
+  if (a.pai) return grupos.filter(p => p.praca === a.id);
   const quentesSeparado = vm.ambientes.some(area => area.id === "enrolados_quentes");
   return grupos.filter(p => a.id === "enrolados_quentes" ? p.praca === a.id
     : p.ambiente === a.id && !(quentesSeparado && p.praca === "enrolados_quentes"));
@@ -506,7 +511,7 @@ function area(a, vm) {
   const ausencia = medicao ? null : especieDeAusencia(a);
   const medicaoSemPressao = medicao && a.cor === "sem_medicao";
   const subs = a.subareas.length
-    ? `<ul class="org-subs">${ordenadas.map(s => subarea(s, grupos, vm.operacao_ifood?.medicao_itaim)).join("")}</ul>`
+    ? `<ul class="org-subs">${ordenadas.map(s => subarea(s, grupos, vm.operacao_ifood?.medicao_itaim, vm.rota_home)).join("")}</ul>`
     : "";
 
   return `<div class="org-area" data-area="${esc(a.id)}" data-forma="${forma}" data-cor="${esc(
@@ -1442,8 +1447,9 @@ export function operacaoDoIfood(o, rota, fluxo = false) {
     ? `<p class="org-resto__nota">${o.gravado_ha_min === null ? "Sem data da ultima gravacao do Gestor." : `O Gestor nao grava ha ${esc(String(o.gravado_ha_min))} min; esta leitura pode estar velha.`}</p>` : "";
   const atencao = o.atencao.length
     ? `<ul class="org-sinais" data-atencao="sim">${o.atencao.map((a) => `<li class="org-sinal"><span class="org-sinal__nome">${esc(a.hora)} · ${esc(a.codigo)}</span><span class="org-sinal__resumo">${esc(a.motivo)}</span></li>`).join("")}</ul>` : "";
-  const k = o.conciliacao;
-  const conc = `Na janela ${esc(o.janela || "—")}: ${k.correspondencia_comprovada} conferem com a Teknisa` +
+  // Sem o bloco de conciliação a consulta continua: a falta é dita, nunca derruba a tela inteira.
+  const k = o.conciliacao ?? null;
+  const conc = !k ? "Conciliação com a Teknisa indisponível nesta leitura." : `Na janela ${esc(o.janela || "—")}: ${k.correspondencia_comprovada} conferem com a Teknisa` +
     (k.complemento_nao_lido_pela_teknisa ? ` · ${k.complemento_nao_lido_pela_teknisa} com complemento nao lido` : "") +
     (k.sem_comanda_na_teknisa ? ` · ${k.sem_comanda_na_teknisa} sem comanda vista` : "") +
     (k.item_ou_quantidade_divergente ? ` · ${k.item_ou_quantidade_divergente} com itens diferentes` : "") +
@@ -1518,21 +1524,33 @@ function areaAmpliada(vm) {
   return id && vm.ambientes.some((a) => a.id === id) ? id : null;
 }
 
+/** As consultas do Copiloto. Os ids são estáveis: links antigos e favoritos continuam abrindo. */
 const paginasCopiloto = [
-  ["mapa", "Mapa e foco"], ["atrasos", "Mais atrasados"], ["sacolas", "Duas ou mais sacolas"],
-  ["composicao", "Combinações por praça"], ["producao", "Produção por pedido"],
-  ["fila", "Fila e conferência"], ["previsao", "Previsão do turno"], ["rua", "Entregas na rua"], ["fontes", "Fontes e diagnóstico"]
+  ["mapa", "Agora"], ["pracas", "Praças"], ["atrasos", "Mais atrasados"], ["producao", "Produção por pedido"],
+  ["composicao", "Combinações por praça"], ["sacolas", "Sacolas"], ["fila", "Fila e conferência"],
+  ["previsao", "Previsão do turno"], ["rua", "Expedição e rua"], ["fontes", "Fontes e diagnóstico"]
+];
+/** O menu agrupa as consultas pela tarefa de quem toca: [primeira consulta, rótulo, consultas do grupo]. */
+const gruposDoMenu = [
+  ["mapa", "Agora", ["mapa"]], ["pracas", "Praças", ["pracas"]], ["atrasos", "Pedidos", ["atrasos", "producao", "composicao"]],
+  ["sacolas", "Conferência", ["sacolas", "fila"]], ["previsao", "Previsão", ["previsao"]], ["rua", "Entregas", ["rua"]],
+  ["fontes", "Fontes", ["fontes"]],
 ];
 
 function painelItaim(vm) {
   const o = vm.operacao_ifood;
   const parametros = new URLSearchParams(globalThis.location?.hash.split("?")[1]);
-  const area = vm.ambientes.find(a => a.id === parametros.get("area"));
+  // A área pode ser um ambiente do mapa (Sushi, Cozinha...) ou uma praça dentro dele (Enrolados, Duplas...).
+  const pracasInternas = vm.ambientes.flatMap(a => a.subareas.map(s => ({ ...s, pai: a })));
+  const area = vm.ambientes.find(a => a.id === parametros.get("area")) ?? pracasInternas.find(s => s.id === parametros.get("area"));
   const legado = ["pedido","atrasos","fila"].some(k=>parametros.has(k));
   const id = legado ? "fila" : paginasCopiloto.find(([k])=>k===parametros.get("menu"))?.[0] ?? "mapa";
+  const grupoAtual = gruposDoMenu.find(([, , ids]) => ids.includes(id));
   const rota = vm.rota_home;
   const href = k => "#"+rota+"&menu="+k;
-  const links = paginasCopiloto.map(([k,n])=>'<a href="'+esc(href(k))+'" '+(id===k?'aria-current="page"':'')+'>'+n+'</a>').join("");
+  const links = gruposDoMenu.map(([k,n])=>'<a href="'+esc(href(k))+'" '+(grupoAtual[0]===k?'aria-current="page"':'')+'>'+n+'</a>').join("");
+  const abas = grupoAtual[2].length > 1 && !parametros.get("ficha") ? '<nav class="turno-abas" aria-label="Consultas de ' + esc(grupoAtual[1]) + '">' +
+    grupoAtual[2].map(k => '<a href="' + esc(href(k)) + '"' + (k === id ? ' aria-current="page"' : "") + ">" + esc(paginasCopiloto.find(([x]) => x === k)[1]) + "</a>").join("") + "</nav>" : "";
   const atual = o?.disponivel && !o.leitura_velha;
   const m = atual && o.medicao_itaim;
   const ausente = '<p>Sem leitura atual para esta consulta.</p>';
@@ -1547,7 +1565,7 @@ function painelItaim(vm) {
     corpo = '<a class="turno-voltar" href="' + esc(volta) + '">← Voltar a ' + esc(rotulo) + '</a>' +
       (dados || '<p role="status">Comanda indisponível nesta leitura. Confira a fila atual.</p>');
   } else if (id==="mapa") {
-    if (area) corpo='<a href="'+esc(href("mapa"))+'">← Voltar ao mapa</a><h2>'+esc(area.rotulo)+'</h2>'+produtosAtrasados(o, demandaDaArea(area,vm), rota, area.id, produto, pedidoAtual);
+    if (area) corpo='<a href="'+esc(href("mapa"))+'">← Voltar ao mapa</a>'+produtosAtrasados(o, demandaDaArea(area,vm), rota, area.id, produto, pedidoAtual);
     else {
       const f = vm.foco;
       const destino = f && areaDoFoco(vm);
@@ -1555,15 +1573,20 @@ function painelItaim(vm) {
       const link = fluxo ? href(fluxo) : rotaItaim(rota,{menu:"mapa",area:destino});
       const acao = f?.orientacao?.acao;
       const tempo = f?.tempo;
-      corpo = superficie(vm) + (f && atual ? '<section class="turno-foco"><h3>Foco · ' + esc(f.subarea_rotulo || f.ambiente_rotulo || "Agora") +
+      // As três perguntas primeiro; o mapa continua logo abaixo, com cada praça tocável.
+      corpo = quadroAgora(decidirTurno(o, vm.previsao_turno, pedidoAtual), rota) +
+        '<section class="turno-mapa" aria-labelledby="q-mapa"><h3 id="q-mapa">Mapa das praças</h3>' + superficie(vm) + "</section>" +
+        (f && atual ? '<section class="turno-foco"><h3>Sinal do sistema · ' + esc(f.subarea_rotulo || f.ambiente_rotulo || "Agora") +
         '</h3><strong>' + esc(f.situacao) + '</strong>' + (acao ? '<p>' + esc(acao) + '</p>' : '') +
         (tempo ? '<p>' + esc(tempo) + '</p>' : '') + '<a class="turno-link" href="' + esc(link) + '">Conferir ' +
         esc(f.subarea_rotulo || f.ambiente_rotulo || "a fila") + '</a></section>' : relacoesAtivas(vm));
     }
+  } else if (id==="pracas") {
+    corpo = listaDePracas(o, vm.ambientes, rota, pedidoAtual, a => demandaDaArea(a, vm));
   } else if (id==="atrasos" && m) {
     corpo = rankingAtrasados(o, rota, pedidoAtual);
-  } else if (id==="sacolas" && m) {
-    corpo=m.duas_sacolas.length ? referenciasDaFila(m.duas_sacolas,rota,p=>p.motivos.join(" · "),montagemDaSacola, id) : "<p>Nenhuma separação sugerida nesta leitura.</p>";
+  } else if (id==="sacolas") {
+    corpo = sacolasAgora(o, rota, pedidoAtual);
   } else if (id==="composicao" && m) {
     const grupos=[{id:"quentes",rotulo:"Só quentes de produção",pedidos:m.so_quentes},...m.composicoes,
       {id:"pendente",rotulo:"Composição a conferir",pedidos:m.composicao_a_conferir}];
@@ -1571,11 +1594,13 @@ function painelItaim(vm) {
   } else if (id==="producao") corpo=producaoPorPedido(o,rota)||ausente;
   else if (id==="fila") corpo=(atual ? operacaoDoIfood(o,rota,true) : ausente)||ausente;
   else if (id==="previsao") corpo=mostrarPrevisao(vm.previsao_turno);
-  else if (id==="rua") corpo=entregasNaRua(vm.entregas,o)||"<p>Sem leitura de entregas na rua.</p>";
+  else if (id==="rua") corpo='<section class="turno-expedicao" aria-labelledby="q-exp"><h3 id="q-exp">Expedição · prontos aguardando saída</h3>' +
+    expedicaoAgora(o, rota, pedidoAtual) + '</section><section aria-labelledby="q-rua"><h3 id="q-rua">Na rua</h3>' +
+    (entregasNaRua(vm.entregas,o)||"<p>Sem leitura de entregas na rua.</p>") + "</section>";
   else if (id==="fontes") corpo=pedidosObservados(vm)+pedidosDaTeknisa(vm.pedidos_teknisa)+resto(vm,true);
   else corpo=ausente;
   const nome=paginasCopiloto.find(([k])=>k===id)[1];
-  return '<div class="org menu-itaim">'+topo(vm)+'<div class="menu-layout"><aside class="menu-grande"><h2>Copiloto</h2><nav aria-label="Consultas do Copiloto">'+links+'</nav></aside><details class="menu-pequeno" id="menu-consultas"><summary>☰ Copiloto <span>· ' + esc(nome) + '</span></summary><nav aria-label="Consultas">'+links+'</nav></details><div class="turno-conteudo"><div class="org-palco">'+faixaTecnica(vm)+'</div><section data-copiloto-ifood><h2>'+(ficha?"Comanda":nome)+'</h2>'+corpo+'</section><div data-resumo-operacao></div></div></div></div>';
+  return '<div class="org menu-itaim">'+topo(vm)+'<div class="menu-layout"><aside class="menu-grande"><h2>Copiloto</h2><nav aria-label="Consultas do Copiloto">'+links+'</nav></aside><details class="menu-pequeno" id="menu-consultas"><summary>☰ Copiloto <span>· ' + esc(nome) + '</span></summary><nav aria-label="Consultas">'+links+'</nav></details><div class="turno-conteudo"><div class="org-palco">'+faixaTecnica(vm)+'</div><section data-copiloto-ifood><h2>'+esc(ficha?"Comanda":area&&id==="mapa"?area.rotulo:nome)+'</h2>'+abas+corpo+'</section><div data-resumo-operacao></div></div></div></div>';
 }
 
 export function telaHome(leitura) {

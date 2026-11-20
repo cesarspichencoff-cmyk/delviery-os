@@ -16,6 +16,8 @@ const M = [
   ['src/platform/leitura/conciliacao-gestor-teknisa.ts', [['const espera = minutos < ESPERA_PELA_TEKNISA_MIN', 'const espera = minutos < 9999']], 'espera', GESTOR],
   ['src/platform/leitura/pedidos-reais-do-reader.ts', [['idx >= 0 && idx < nItens ? itens[idx] : undefined', 'idx >= 1 && idx <= nItens ? itens[idx - 1] : undefined']], 'observacao_base_1', READER],
   ['src/platform/leitura/pedidos-reais-do-reader.ts', [['if (alvo !== undefined && produtoBate)', 'if (alvo !== undefined)']], 'observacao_sem_conferir_produto', READER],
+  ['src/product/viewmodels/home-operacao-ifood-vm.ts', [['idadeBruta < 0 && idadeBruta >= -GESTOR_FUTURO_TOLERADO_MS ? 0 : idadeBruta', 'idadeBruta']], 'gravacao_concorrente_vira_leitura_velha', GESTOR],
+  ['src/product/viewmodels/home-operacao-ifood-vm.ts', [['idadeBruta >= -GESTOR_FUTURO_TOLERADO_MS ? 0', 'idadeBruta >= -Infinity ? 0']], 'relogio_errado_vira_atual', GESTOR],
 ];
 let mortos = 0;
 for (const [f, trocas, nome, suite] of M) {

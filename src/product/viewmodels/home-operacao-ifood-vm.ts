@@ -18,6 +18,8 @@ import { medirFilaItaim, type MedicaoFilaItaim } from "./medicao-fila-itaim";
 export const LIMITE_DE_CONCLUIDOS = 15;
 /** O Gestor grava a cada mudanca; sem escrita ha mais que isto, a leitura e dita velha. */
 export const GESTOR_VELHO_MIN = 20;
+/** Gravação do Gestor "no futuro" até este limite é a escrita concorrente com a leitura, não relógio errado. */
+export const GESTOR_FUTURO_TOLERADO_MS = 120_000;
 
 export function chaveDoPedidoGestor(id: string): string {
   return createHash("sha256").update(id).digest("hex");
@@ -52,6 +54,8 @@ export interface PedidoIfoodDaHome {
   readonly minutos: number;
   readonly modalidade: string;
   readonly preparo: { readonly informado_min: number; readonly passou_min: number | null; readonly faltam_min?: number; readonly prazo?: string } | null;
+  /** Minutos desde o READY_TO_PICKUP do iFood, so para pedido pronto ainda nao coletado (expedicao). */
+  readonly pronto_ha_min?: number | null;
   readonly teknisa: { readonly sequencia?: string | null; readonly classe: ClasseDoPar; readonly texto: string; readonly estado: string | null; readonly comanda_em_min: number | null };
   readonly itens: readonly ItemIfoodDaHome[];
   readonly detalhes: readonly string[];
@@ -137,6 +141,9 @@ function pedidoDaHome(par: ParDaConciliacao, agora: number, incluirRevisoes: boo
     ...(incluirChave ? { chave_gestor: chaveDoPedidoGestor(g.id_interno) } : {}),
     hora: horaLocal(placedDe(g)), codigo: g.codigo_curto, etapa, ativo: etapa !== "concluido" && etapa !== "cancelado",
     minutos: par.minutos_desde_o_pedido, modalidade: modalidade(g), preparo: preparo(g, etapa, agora),
+    // Expedicao: quanto tempo o pedido pronto espera saida. Fato do Gestor (READY_TO_PICKUP); sem ele, null.
+    ...(incluirChave && etapa.startsWith("pronto") ? { pronto_ha_min: Number.isFinite(Date.parse(g.eventos.READY_TO_PICKUP ?? ""))
+      ? Math.max(0, Math.floor((agora - Date.parse(g.eventos.READY_TO_PICKUP!)) / 60_000)) : null } : {}),
     teknisa: { sequencia: incluirChave && par.teknisa?.origem === "DLV_IFO" && !par.teknisa.retido && CLASSES_COM_ITENS_CONCILIADOS.has(par.classe) ? /^0001\|01\|[^|]+\|[0-9]*([0-9]{3})$/.exec(par.teknisa.chave)?.[1] ?? null : null, classe: par.classe, texto: TEKNISA[par.classe], estado: par.teknisa ? par.teknisa.estado_nativo : null, comanda_em_min: par.minutos_ate_a_comanda },
     itens: g.itens.map((i) => ({ descricao: `${i.quantidade}× ${i.nome}`, opcoes: i.opcoes.map((o) => `${o.quantidade}× ${o.nome}`), observacao: i.observacao })),
     detalhes: par.detalhes,
@@ -248,7 +255,11 @@ export function operacaoDoIfoodVM(gestor: PedidosDoGestorLocal, teknisa: Pedidos
   for (const p of todos) if (p.etapa === "cancelado" && p.teknisa.estado !== null && p.minutos <= 180) atencao.push({ codigo: p.codigo, hora: p.hora, motivo: `cancelado no iFood; Teknisa mostra estado ${p.teknisa.estado}` });
   const conta = (f: (p: PedidoIfoodDaHome) => boolean) => todos.filter(f).length;
   const gravadoHa = gestor.gravado_em ? Math.max(0, Math.round((t - Date.parse(gestor.gravado_em)) / 60_000)) : null;
-  const idadeMs = t - Date.parse(gestor.gravado_em ?? "");
+  // `t` é o instante da requisição e os arquivos do Gestor são lidos DEPOIS dele: uma gravação no meio da
+  // leitura deixa a idade alguns ms negativa (medido em 20/11: -4 ms). Até GESTOR_FUTURO_TOLERADO_MS é a
+  // mesma máquina gravando agora (idade zero); além disso é relógio errado e a leitura segue tratada como velha.
+  const idadeBruta = t - Date.parse(gestor.gravado_em ?? "");
+  const idadeMs = idadeBruta < 0 && idadeBruta >= -GESTOR_FUTURO_TOLERADO_MS ? 0 : idadeBruta;
   const leituraVelha = !Number.isFinite(idadeMs) || idadeMs < 0 || idadeMs > GESTOR_VELHO_MIN * 60_000;
   const previa = !leituraVelha && lerPracas ? previaPorPraca(c.pares, lerPracas) : null;
   const n = ativos.length;

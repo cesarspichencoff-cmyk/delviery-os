@@ -414,6 +414,9 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
   if (!alvo.querySelector("[data-copiloto-ifood]")) return;
   let relendo = false;
   const homeItaim = Boolean(inicial.home_operacional);
+  // Hora da última leitura que chegou inteira: a falha diz desde quando não há dado válido.
+  let ultimaLeituraValida = Date.now();
+  const horaLocal = ms => new Date(ms).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
   const atualizar = async () => {
     if (document.hidden || relendo) return;
     relendo = true;
@@ -422,9 +425,10 @@ function ligarPedidosDoCopiloto(alvo, api, geracao, inicial) {
       const incluiRua = homeItaim && hashAtual().consulta.get("menu") === "rua";
       const endpoint = incluiRua ? api : api + (api.includes("?") ? "&" : "?") + "pedidos=1";
       vm = await obter(endpoint, AbortSignal.timeout(8000));
+      ultimaLeituraValida = Date.now();
     } catch {
       vm = { operacao_ifood: { disponivel: false, titulo: "Leitura do iFood indisponível",
-        explicacao: "A atualização será tentada novamente." } };
+        explicacao: "Últimos dados válidos às " + horaLocal(ultimaLeituraValida) + ". A atualização será tentada novamente em 15 s." } };
     } finally {
       relendo = false;
     }
